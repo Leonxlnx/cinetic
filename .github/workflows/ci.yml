@@ -282,6 +282,9 @@ jobs:
       - name: Remotion starter type check (tsc --noEmit)
         run: cd "skills/$SKILL/assets/remotion-starter" && npx tsc --noEmit
 
+      - name: Music fit test (track.py fit reads launch-simple's beat plan through the starter's tsx)
+        run: python3 "skills/$SKILL/scripts/test/fit.test.py"
+
       - name: Token tests (type roles, curves, springs, colour)
         run: node "skills/$SKILL/scripts/test/tokens.test.mjs"
 

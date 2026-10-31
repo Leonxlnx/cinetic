@@ -23,6 +23,13 @@ Usage (from the project root):
           [--map "1:2x10,11:59x2"]
       -> audio/music/edit.json (source bars -> film bars, joins, the film-time grid, ending); --map gives the
          film's bars by hand (film bar:source bar x bars, in order) instead of the planner's choice
+  python3 scripts/audio/track.py fit [TRACK.json] [--end auto|own|hit|fade] [--entry B] [--film-t0 0.25] [--out audio/music/edit.json]
+      -> the edit fitted to the film's beat plan, then the grid: the timeline (src/timeline.ts) is read at the
+         track's tempo (a provisional src/music.ts), so its BARS, its reveal (the lockup's bar) and its cuts come
+         from the script, never from a guess; the edit plays exactly those bars, lands the track's biggest entry on
+         the lockup's bar, ends on a hit (its own button or ring, else one ringing kit hit; a fade under the end card
+         only when --end fade asks), and keeps the level steady inside a shot (a step over 4 dB costs, except on a
+         bar that carries a cut); then src/music.ts as track.py grid writes it, and the film's bars checked equal
   python3 scripts/audio/track.py grid [--edit audio/music/edit.json] [--fps N] [--out src/music.ts | music.js]
       -> src/music.ts (Remotion) or music.js (HyperFrames): the film-time grid the timeline imports; an
          audio/score.json there is pointed at the edit (music.track, .edit, .licence; the key; no bpm)
@@ -117,6 +124,7 @@ ENTRY_KICK_DB, ENTRY_KICK_LOW_DB = 2.5, 12.0   # a kick entering under an intro:
 ENTRY_CONFIRM_DB, ENTRY_CONFIRM_GAP_DB = 12.0, 2.0  # a low-band entrance this big, this clear of other phases, confirms a low-confidence grid
 STOP_DB, STOP_MIN_S, STOP_MAX_S = 12.0, 0.15, 1.0
 ACCENT_DB = 6.0
+MIDSHOT_DB, MIDSHOT_W = 4.0, 2.0   # fit: a level step over 4 dB inside a shot costs 2 a dB (a section entering mid-shot)
 FADE_INTO_HIT_DB = 2.0        # ending: a fade with a hit in its last bars has fallen this much over the 2 bars before it
 PRE_MS, TAIL_MS, TAIL_SUSTAIN_MS = 8.0, 60.0, 150.0
 OPEN_FADE_S = 0.08            # an opening inside the track (bars before film bar 1) fades in from silence this long: the
@@ -981,8 +989,10 @@ def map_edit(a, spec, bars, reveal, end):
                       arc=None, splices=sum(1 for p, q in zip(path[:-1], path[1:]) if q != p + 1))
 
 
-def plan_edit(a, bars, reveal, end, start=None, entry=None, arc=None, max_splices=None):
-    """The DP over film bars. Returns (path of 0-based source bars per film bar, info)."""
+def plan_edit(a, bars, reveal, end, start=None, entry=None, arc=None, max_splices=None, cuts=None):
+    """The DP over film bars. Returns (path of 0-based source bars per film bar, info). cuts: the 1-based film bars
+    whose downbeat carries a cut (track.py fit reads them from the timeline); on every other bar a level step over
+    MIDSHOT_DB costs MIDSHOT_W a dB, so the track's sections change on the cuts, never mid-shot."""
     nb = len(a['bars'])
     if bars < 2:
         raise TrackError('--bars must be at least 2')
@@ -1044,15 +1054,17 @@ def plan_edit(a, bars, reveal, end, start=None, entry=None, arc=None, max_splice
         keep = cost[0, 0, E]
         cost[0, 0] = INF
         cost[0, 0, E] = keep
+    lstep = np.r_[0.0, np.abs(np.diff(lufs))]    # lstep[j]: the level step of playing on from bar j - 1 into bar j
     for k in range(1, bars):
         new = np.full_like(cost, INF)
         bk = np.zeros(cost.shape + (3,), int)   # (s_prev, r_prev, j_prev)
+        mid = cuts is not None and (k + 1) not in cuts  # film bar k + 1 starts inside a shot
         for s in range(smax + 1):
             for r in (0, 1):
                 prev = cost[s, r]
                 # continue: j -> j + 1
                 cand = np.full(nb, INF)
-                cand[1:] = prev[:-1]
+                cand[1:] = prev[:-1] + (MIDSHOT_W * np.maximum(0.0, lstep[1:] - MIDSHOT_DB) if mid else 0.0)
                 rr = 1
                 better = cand < new[s, rr]
                 new[s, rr] = np.where(better, cand, new[s, rr])
@@ -1063,6 +1075,8 @@ def plan_edit(a, bars, reveal, end, start=None, entry=None, arc=None, max_splice
                 tot = prev[:, None] + J              # (from i, to j)
                 if not ((k % a['phrases']['len']) == 0):
                     tot = tot + 1.0                  # a jump off a film phrase start costs more
+                if mid:
+                    tot = tot + MIDSHOT_W * np.maximum(0.0, step - MIDSHOT_DB)
                 ib = np.argmin(tot, axis=0)
                 cand = tot[ib, np.arange(nb)]
                 better = cand < new[s + 1, 0]
@@ -1247,8 +1261,12 @@ def cmd_edit(a_):
     if a_.map:
         path, info = map_edit(a, a_.map, a_.bars, a_.reveal_bar, a_.end)
     else:
-        path, info = plan_edit(a, a_.bars, a_.reveal_bar, a_.end, a_.start_bar, a_.entry, arc)
+        path, info = plan_edit(a, a_.bars, a_.reveal_bar, a_.end, a_.start_bar, a_.entry, arc, cuts=getattr(a_, 'cuts', None))
     segs = segments_of(path)
+    lufs = [b['lufs'] for b in a['bars']]
+    cut_bars = getattr(a_, 'cuts', None)
+    midshot = [dict(film_bar=k + 1, step_db=round(lufs[path[k]] - lufs[path[k - 1]], 1)) for k in range(1, len(path))
+               if cut_bars is not None and (k + 1) not in cut_bars and abs(lufs[path[k]] - lufs[path[k - 1]]) >= 6.0]
     base = os.path.dirname(os.path.abspath(tj))
     trk = os.path.join(base, a['file'])
     m48 = None
@@ -1270,6 +1288,9 @@ def cmd_edit(a_):
            'segments': segs, 'joins': joins, 'ending': ending, 'track_dips': dips,
            'film': dict(downbeats=film_down, **fg), 'key': a['key']['name'], 'key_r': a['key']['r'],
            'cost': dict(total=round(info['total'], 2), splices=info['splices'])}
+    if getattr(a_, 'fit', None):
+        doc['args']['fit'] = True
+        doc['fit'] = dict(a_.fit, midshot_steps=midshot)
     if fg['entries'] and all(abs(e - doc['reveal']['film_s']) > 0.01 for e in fg['entries']):
         doc['film']['entries'] = sorted(set(fg['entries'] + [doc['reveal']['film_s']]))
     elif not fg['entries']:
@@ -1287,7 +1308,11 @@ def cmd_edit(a_):
     for s in segs:
         print(f"  film bar {s['film_bar']:>2} at {s['film_s']:7.3f} s <- source bars {s['src_bar']}-{s['src_bar'] + s['bars'] - 1} "
               f"({s['src_from']:.3f}-{s['src_to']:.3f} s)" + (f", join tail {s['join']['tail_ms']:g} ms" if 'join' in s else ''))
-    print('  next: python3 scripts/audio/track.py grid   (writes the film-time grid the timeline imports)')
+    for m_ in midshot:
+        print(f"  warning: film bar {m_['film_bar']} starts inside a shot and the track's level steps {m_['step_db']:+.1f} dB there: "
+              'a section entering mid-shot reads as a mistake (av-audit level); cut the picture on it, or re-fit', file=sys.stderr)
+    if not getattr(a_, 'fit', None):
+        print('  next: python3 scripts/audio/track.py grid   (writes the film-time grid the timeline imports)')
     return 0
 
 
@@ -1863,6 +1888,162 @@ def cmd_analyze(a_):
     return 0
 
 
+# ------------------------------------------------------------------------------------------
+# fit: the edit fitted to the film's beat plan (the timeline read at the track's tempo)
+# ------------------------------------------------------------------------------------------
+PLAN_PROBE = r"""
+const m: any = await import(%s);
+const mu: any = m.MUSIC ?? null;
+const cue = m.CUE ?? {};
+const sal = m.SALIENCE ?? {};
+const seams = (m.SEAMS ?? []).map((x: any) => x.at);
+const acts = Object.values(m.ACT ?? {}).map((x: any) => x.from).filter((f: number) => f > 0);
+const cuts = [...acts, ...seams, ...Object.keys(sal).filter((k) => sal[k] === 'cut' && k in cue).map((k) => cue[k])];
+const bars = m.BARS ?? (m.TOTAL !== undefined && m.BAR ? Math.round((m.TOTAL - (m.TAIL ?? 0) - (mu?.t0 ?? 0)) / m.BAR) : null);
+process.stdout.write('\n@@PLAN@@' + JSON.stringify({ bars, fps: m.FPS, bpm: m.BPM, beat: m.BEAT, reveal: m.REVEAL ?? cue.lockup ?? null,
+  end: m.ACT?.end?.from ?? null, total: m.TOTAL, cuts, downbeats: mu?.downbeats ?? [] }) + '\n');
+"""
+
+
+def find_tsx(start):
+    """tsx's CLI: the project's node_modules (up from start), else the skill's own starter (up from this script)"""
+    for base, sub in ((start, ('node_modules',)), (HERE, ('node_modules',)), (HERE, ('assets', 'remotion-starter', 'node_modules'))):
+        d = os.path.abspath(base)
+        while True:
+            p = os.path.join(d, *sub, 'tsx', 'dist', 'cli.mjs')
+            if os.path.isfile(p):
+                return p
+            if os.path.dirname(d) == d:
+                break
+            d = os.path.dirname(d)
+    return None
+
+
+def read_plan(root, tsx):
+    """the film's beat plan as the timeline computes it now (BARS, the reveal, the cut frames, the downbeats)"""
+    import tempfile
+    import pathlib
+    tl = pathlib.Path(root, 'src', 'timeline.ts').resolve().as_uri()
+    tmp = tempfile.mkdtemp(prefix='cinetic-fit-')
+    probe = os.path.join(tmp, 'plan.mts')
+    try:
+        with open(probe, 'w', encoding='utf-8') as fh:
+            fh.write(PLAN_PROBE % json.dumps(tl))
+        r = subprocess.run(['node', tsx, probe], cwd=root, capture_output=True, text=True, encoding='utf-8', timeout=300)
+    finally:
+        for p in (probe,):
+            if os.path.exists(p):
+                os.remove(p)
+        os.rmdir(tmp)
+    k = (r.stdout or '').rfind('@@PLAN@@')
+    if k < 0:
+        raise TrackError('the timeline did not import (it must, before the music is fitted): '
+                         + ' | '.join((r.stderr or r.stdout or '').strip().splitlines()[-4:]))
+    return json.loads(r.stdout[k + 8:].strip().splitlines()[0])
+
+
+def end_hold(a, end, fade=2.5):
+    """the seconds the picture holds after the body for an ending mode (what MUSIC.end.hold will say)"""
+    if end in ('button', 'ring'):
+        return float(np.clip((a.get('ending') or {}).get('ring_out_s') or 0.0, RING_MIN_S, RING_MAX_S))
+    return fade if end == 'fade' else HIT_RING_S
+
+
+def provisional_grid(a, film_t0, fps, out, hold=1.0):
+    """src/music.ts at the track's tempo: its bars from bar 1 straight, the ending's hold as the edit will have it (the
+    timeline counts the film's bars on it, its tail included; fit writes the real grid after the edit)"""
+    nb = len(a['bars'])
+    segs = [dict(film_bar=1, src_bar=1, bars=nb)]
+    segs, _, film_down, ending = film_map(a, segs, film_t0, nb, 'hit')
+    fg = film_grid(a, segs, ending, film_down)
+    edit = {'bpm': a['tempo']['bpm'], 'beat_s': a['tempo']['beat_s'], 'film_bars': nb, 'phrase_len': a['phrases']['len'],
+            'film': dict(downbeats=film_down, **fg), 'ending': dict(ending, hold_s=hold)}
+    with open(out, 'w', encoding='utf-8', newline='\n') as fh:
+        fh.write(ts_file(music_obj(edit, fps)))
+
+
+def cmd_fit(a_):
+    root = os.getcwd()
+    if not os.path.isfile(os.path.join('src', 'timeline.ts')):
+        raise TrackError('fit reads the film\'s beat plan from src/timeline.ts (a Remotion project): run it from the project '
+                         'root, or use track.py edit --bars N --reveal-bar K')
+    tsx = find_tsx(root)
+    if not tsx:
+        raise TrackError('tsx not found (npm install in the film project): fit imports the timeline to read its bars')
+    tj = a_.track or find_one('audio/music', '.track.json')
+    a = read_json(tj, 'track analysis')
+    out_ts = os.path.join('src', 'music.ts')
+    fps = film_fps(out_ts)
+    if not fps:
+        raise TrackError('no FPS in src/timeline.ts')
+    fps = int(fps) if float(fps).is_integer() else float(fps)
+    old = open(out_ts, encoding='utf-8').read() if os.path.isfile(out_ts) else None
+
+    def restore():
+        if old is not None:
+            with open(out_ts, 'w', encoding='utf-8', newline='\n') as fh:
+                fh.write(old)
+    asked = a_.end or 'auto'
+    kind = (a.get('ending') or {}).get('kind')
+    end = asked if asked != 'auto' else (kind if kind in ('button', 'ring') else 'hit')
+    if asked == 'stop':
+        end = 'hit'
+    for attempt in range(3):
+        try:
+            provisional_grid(a, a_.film_t0, fps, out_ts, end_hold(a, end, a_.fade))
+            plan = read_plan(root, tsx)
+        except Exception:
+            restore()
+            raise
+        bars, down = plan.get('bars'), plan.get('downbeats') or []
+        if not bars or bars < 2:
+            restore()
+            raise TrackError('the timeline exports no BARS (the film\'s bars in the body): use track.py edit --bars N --reveal-bar K')
+        bars = int(round(bars))
+        beat_f = (plan.get('beat') or a['tempo']['beat_s'] * fps)
+
+        def bar_of(f):
+            k = int(np.searchsorted(np.array(down, float), float(f) + 0.5, side='right'))
+            return max(1, min(bars, k))
+        reveal_f = plan.get('reveal')
+        if plan.get('end') is not None and reveal_f is not None and bar_of(reveal_f) - bar_of(plan['end']) <= 1:
+            reveal_bar = bar_of(plan['end'])  # the end act opens on a downbeat: the entry lands as the last picture becomes the mark
+        else:
+            reveal_bar = bar_of(reveal_f) if reveal_f is not None else max(1, int(round(bars * 0.8)))
+        cuts = sorted({k + 1 for k in range(bars) if k < len(down) and any(abs(float(c) - down[k]) <= beat_f / 4 + 0.5 for c in plan['cuts'])})
+        print(f"fit: the film's beat plan at the track's {a['tempo']['bpm']:g} BPM: {bars} bars in the body, the reveal on bar "
+              f"{reveal_bar} (the lockup's), cuts on the downbeats of bars {', '.join(map(str, cuts)) or 'none'}")
+        ns = argparse.Namespace(track=tj, bars=bars, reveal_bar=reveal_bar, end=end, start_bar=None, entry=a_.entry, arc=None,
+                                film_t0=a_.film_t0, fade=a_.fade, map=None, out=a_.out, cache=a_.cache, gap=None, cuts=set(cuts),
+                                fit=dict(bars=bars, reveal_bar=reveal_bar, cuts=cuts, end_asked=asked))
+        try:
+            code = cmd_edit(ns)
+        except TrackError as e:
+            if end in ('button', 'ring') and asked == 'auto':
+                print(f"fit: the track's own {end} ending does not fit these bars ({e}); one ringing kit hit ends it instead", file=sys.stderr)
+                end = 'hit'
+                continue
+            restore()
+            raise
+        if code:
+            restore()
+            return code
+        end = ns.end
+        cmd_grid(argparse.Namespace(edit=a_.out, fps=None, out=None))
+        after = read_plan(root, tsx)
+        if int(round(after.get('bars') or 0)) == bars:
+            break
+        print(f"fit: with the final grid the timeline counts {after.get('bars')} bars (its tail follows the ending): fitting again",
+              file=sys.stderr)
+    else:
+        print('fit: the film\'s bars did not settle in 3 fits: check the timeline\'s tail (MUSIC.end.hold)', file=sys.stderr)
+        return 1
+    print(f"fit: film bars = music bars = {bars}; the track's entry on the lockup's bar {reveal_bar}; ending {end}"
+          + (': the bed fades under the end card, as asked' if end == 'fade' else ': a hit on the end card, never a fade under it'))
+    print('  next: npm run check (grid-check in music mode), then the sound (npm run cues, kit, audio)')
+    return 0
+
+
 def cmd_music(a_):
     """analyze -> edit -> grid again, with the settings audio/music/edit.json and its analysis hold"""
     if not os.path.isfile(a_.edit):
@@ -1884,6 +2065,12 @@ def cmd_music(a_):
     if code:
         return code
     g = e.get('args') or {}
+    if g.get('fit'):  # an edit fitted to the beat plan: fit again (the script may have changed the film's bars)
+        fv = ['fit', av[3], '--end', (e.get('fit') or {}).get('end_asked') or 'auto', '--out', a_.edit]
+        for k, flag in (('entry', '--entry'), ('film_t0', '--film-t0'), ('fade', '--fade')):
+            if g.get(k) is not None:
+                fv += [flag, str(g[k])]
+        return main(fv)
     ev = ['edit', av[3], '--bars', str(g['bars']), '--reveal-bar', str(g['reveal_bar']), '--end', g.get('end') or 'auto', '--out', a_.edit]
     for k, flag in (('start_bar', '--start-bar'), ('entry', '--entry'), ('film_t0', '--film-t0'), ('fade', '--fade'), ('arc', '--arc'),
                     ('map', '--map')):
@@ -1944,6 +2131,15 @@ def main(argv=None):
                    '(the planner is skipped; joins, ending and grid are written as usual)')
     p.add_argument('--out', default='audio/music/edit.json')
     p.add_argument('--cache', default='out/cache/music')
+    p = sub.add_parser('fit', help="the edit fitted to the film's beat plan, then the grid")
+    p.add_argument('track', nargs='?', help='the .track.json (default: the one in audio/music/)')
+    p.add_argument('--end', default='auto', choices=END_MODES,
+                   help="auto (default): the track's own button or ring, else one ringing kit hit; never a fade unless asked")
+    p.add_argument('--entry', type=int, help='the source entry bar to land on the lockup (default: the biggest drop)')
+    p.add_argument('--film-t0', type=float, default=0.25, help="film time of bar 1's downbeat, 0-0.45 s (default 0.25)")
+    p.add_argument('--fade', type=float, default=2.5, help=argparse.SUPPRESS)
+    p.add_argument('--out', default='audio/music/edit.json')
+    p.add_argument('--cache', default='out/cache/music')
     p = sub.add_parser('grid', help='write src/music.ts or music.js')
     p.add_argument('--edit', default='audio/music/edit.json')
     p.add_argument('--fps', type=float)
@@ -1956,7 +2152,7 @@ def main(argv=None):
     p.add_argument('--cache', default='out/cache/music')
     a = ap.parse_args(argv)
     try:
-        return {'add': cmd_add, 'analyze': cmd_analyze, 'edit': cmd_edit, 'grid': cmd_grid, 'check': cmd_check,
+        return {'add': cmd_add, 'analyze': cmd_analyze, 'edit': cmd_edit, 'fit': cmd_fit, 'grid': cmd_grid, 'check': cmd_check,
                 'music': cmd_music}[a.cmd](a)
     except (TrackError, CR.CreditError) as e:
         print(f'track.py: {e}', file=sys.stderr)

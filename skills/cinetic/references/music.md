@@ -30,8 +30,8 @@ node scripts/music.mjs sheet --measure              # the first three: mood, tem
 node scripts/music.mjs get '#2' --to audio/music     # -> audio/music/<name>.mp3 + <name>.licence.json
 python3 scripts/audio/listen.py --track audio/music/<name>.mp3                       # possible vocals, tempo
 python3 scripts/audio/track.py analyze audio/music/<name>.mp3 --profile crisp        # -> <name>.track.json
-python3 scripts/audio/track.py edit --bars 16 --reveal-bar 13                        # --end auto: its own ending -> audio/music/edit.json
-python3 scripts/audio/track.py grid                  # -> src/music.ts (Remotion) or music.js (HyperFrames)
+python3 scripts/audio/track.py fit                   # after the script exists: the edit fitted to the film's beat plan + src/music.ts
+#   (HyperFrames, or a film whose timeline counts no BARS: track.py edit --bars 16 --reveal-bar 13, then track.py grid)
 python3 scripts/audio/track.py check                 # joins, the ending's decay, the licence record, nothing from the track in git
 ```
 
@@ -119,6 +119,8 @@ Choose among the first three by the film's mood and pace, after listening:
 Read it before editing: is bar 1 where the music starts (a pickup is fine), does the biggest entry land on a bar line, where are the breaks, how does it end?
 
 ## 6. Editing
+
+`track.py fit [TRACK.json] [--end auto|own|hit|fade] [--entry B]` is the route once the script is written (launch-simple, and every timeline that exports `BARS`): the music is fitted after the beat plan, never planned beside it. It reads the timeline at the track's tempo (a provisional `src/music.ts`, the ending's tail included), so the film's bars, the lockup's bar and the bars whose downbeat carries a cut come from the script; the edit plays exactly those bars, lands the track's biggest entry on the bar where the end act opens (the lockup), keeps the level steady inside a shot (a step over 4 dB costs except on a cut, so the sections change on the cuts), ends on a hit (its own button or ring, else one ringing kit hit; a fade under the end card only with `--end fade`), writes the grid and checks the film's bars again on it, fitting once more when the ending's tail moved them. A new script or a new track: `npm run music` fits again.
 
 `track.py edit [TRACK.json] --bars N --reveal-bar K --end button|stop|ring [--start-bar S] [--entry B] [--arc "…"] [--film-t0 0.25] [--gap 0.4] [--map "…"]` arranges the film's bars on the track and writes `audio/music/edit.json` (editable by hand). When the beat sheet needs bars the planner does not choose, `--map "1:2x10,11:59x2"` gives them by hand (film bar:source bar x bars, in film order): the planner is skipped, and the joins, the ending and the film grid are written as usual (a `button` or `ring` map ends on the bar before the final hit). The planner's edit:
 

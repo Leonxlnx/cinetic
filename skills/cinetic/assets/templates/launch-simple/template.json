@@ -32,10 +32,9 @@
   "pick": "node scripts/music.mjs pick --mood \"<the film's mood words>\" --length <s> (a launch here: 115-136 BPM and the film's energy preferred; the curated library; with none, music.mjs search --bpm 115-136), then music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track)",
   "add": "bash scripts/new-film.sh <dir> --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL --ai-generated no --vocals no, or later: python3 scripts/audio/track.py add <file> ...",
   "then": [
-   "npx tsx -e \"import { BARS } from './src/timeline'; console.log(BARS)\"   (the film's bars at the track's tempo)",
-   "python3 scripts/audio/track.py edit --bars <BARS> --end auto  (the defaults: the track's best bars, its own ending, else a fade: never a cut)",
-   "python3 scripts/audio/track.py grid",
-   "python3 scripts/audio/track.py check"
+   "python3 scripts/audio/track.py fit   (after launch.ts is written: the film's bars, the lockup's bar and the cuts read from the timeline at the track's tempo; the edit plays exactly those bars, lands the entry on the lockup, keeps sections from changing mid-shot, ends on a hit; then src/music.ts)",
+   "python3 scripts/audio/track.py check",
+   "npm run music fits again after a change to the script or the track"
   ]
  },
  "next": [
