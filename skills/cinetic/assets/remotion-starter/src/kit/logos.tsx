@@ -8,13 +8,16 @@
 //               house key, the mark centred at its optical size (a brand whose mark is its own tile fills it)
 //   LogoChip    a mark and its name on a pill (a source, an integration)
 //   InlineLogo  a mark at 1.0 cap height inside a line of type, swapping to the next mark over 6 f
-//   LogoWall, LogoRing  12-30 tiles that arrive tumbling in 3D (20-60 deg), settle on their depth, drift with parallax
-//               and soften with depth
+//   LogoTile    one mark in the film's treatment: a neutral tile in the card material (official colours), the mark in
+//               the film's ink (its one-colour file), or bare; LogoRow lays out a row in ONE treatment at one size
+//               and logoRowCheck() flags a row whose treatments, sizes or colours clash
+//   LogoWall, LogoRing  12-30 tiles that arrive tumbling in 3D (20-60 deg) and land flat on their depth, softer
+//               further back; still unless a designed drift or orbit is given
 // A name with no file falls back to the text pill (kit Chip) or a generic glyph tile, so a film without fetched marks
 // still reads. Marks only for what the product really touches; never an endorsement, never a partnership it lacks.
 import React, { useId } from 'react';
 import { Img, staticFile } from 'remotion';
-import { TEXT_MIN, U } from '../brand/tokens';
+import { C, TEXT_MIN, U } from '../brand/tokens';
 import { Defocus } from '../fx/Defocus';
 import { clamp, E, mix, prog, rand } from '../lib/anim';
 import { oklch as fromLch } from '../lib/color';
@@ -22,7 +25,8 @@ import { f60x, fpsOf, useFilm } from '../lib/film';
 import { inkBox } from '../lib/measure';
 import { LOGOS } from '../logos';
 import { Chip } from './flow';
-import { castShadow, face, Glyph, KIT_KEY, useKitScale } from './parts';
+import { castShadow, face, Glyph, surfaceShadow, useKitScale } from './parts';
+import { cardInks, cardShadow } from './card';
 import type { GlyphName } from './sample';
 import { type KitTheme, kitTheme, shadeRgba } from './theme';
 import { kitEmpty } from './gate';
@@ -202,10 +206,7 @@ export const LogoChip: React.FC<{ theme: KitTheme; logo: LogoRef; label?: string
     </div>
   );
 };
-const chipShadow = (t: KitTheme, u: number) => {
-  const c = castShadow(14 * u);
-  return `inset 0 0 0 ${(1.2 * u).toFixed(2)}px ${t.line}, 0 ${(2 * u).toFixed(2)}px ${(KIT_KEY.contact.blur * u).toFixed(2)}px ${shadeRgba(t, KIT_KEY.contact.alpha * (t.shadeA / 0.32) * 0.7)}, ${c.dx.toFixed(2)}px ${c.dy.toFixed(2)}px ${c.blur.toFixed(2)}px ${shadeRgba(t, c.alpha * (t.shadeA / 0.24) * 0.7)}`;
-};
+const chipShadow = (t: KitTheme, u: number) => surfaceShadow(t, 10, u); // the card material at a chip's lift (kit/parts, kit/card)
 
 /** The cap height of the film's sans at `size` (measured from the face; 0.71 em when no canvas is at hand). */
 export const capHeight = (size: number, weight = 450) => {
@@ -264,6 +265,131 @@ export const InlineLogo: React.FC<{ logos: LogoRef[]; size: number; frame: numbe
       {one(i, k, false)}
     </span>
   );
+};
+
+// ------------------------------------------------------------------------------------------------ treatments and rows
+/**
+ * How a film presents other products' marks, one treatment per row (never mixed):
+ *   tile  a neutral tile in the film's card material (light on a light or mid ground, dark on a dark one), the mark in
+ *         its official colours at one optical size: the default, and the answer when official colours fight a
+ *         coloured ground (the tile gives every mark the same neutral plate)
+ *   ink   the mark in one colour, the film's ink (white on a dark ground), from the brand's own one-colour file: the
+ *         quietest row, for a monochrome or colour-field film; only for brands that publish one (logos.mjs fetches it)
+ *   bare  the official mark alone at the optical size, for a light page where every mark has a version for the ground
+ *   chip  a mark and its name on a pill (LogoChip), every pill one height
+ */
+export type LogoTreatment = 'tile' | 'ink' | 'bare' | 'chip';
+
+/** House numbers for marks in a row (shares of the tile side). */
+export const LOGO_ROW = { fill: 0.5, inkFill: 0.62, radius: 0.24, gap: 0.34, sizeTol: 0.02 } as const;
+
+/** Whether a brand publishes a one-colour mark (the record holds a mono, white or black file). */
+export const hasMono = (ref: LogoRef) => {
+  const f = logoOf(ref)?.files;
+  return !!(f && (f.mono || f.white || f.black));
+};
+
+/** Relative lightness (0..1) of a '#rrggbb' or 'rgb()' colour, for picking a tile tone from the ground. */
+const lumOf = (c: string) => {
+  const m = c.match(/^#([0-9a-f]{6})$/i);
+  if (m) {
+    const v = parseInt(m[1], 16);
+    return ((v >> 16) * 0.2126 + ((v >> 8) & 255) * 0.7152 + (v & 255) * 0.0722) / 255;
+  }
+  const r = c.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/);
+  return r ? (Number(r[1]) * 0.2126 + Number(r[2]) * 0.7152 + Number(r[3]) * 0.0722) / 255 : 1;
+};
+
+/**
+ * One mark in a treatment, `size` px square (the tile's side; bare and ink marks take the same optical box).
+ * `ground` is the colour behind it (a family's ground or a token): a tile is light on a light or mid ground, dark on a
+ * dark one; ink is `ink` (default: the card ink for the ground, near-black or near-white). `plate`: ink on a tile.
+ */
+export const LogoTile: React.FC<{ logo: LogoRef; size: number; treatment?: Exclude<LogoTreatment, 'chip'>; ground?: string; ink?: string; plate?: boolean; u?: number; style?: React.CSSProperties }> = ({
+  logo, size: s, treatment = 'tile', ground = C.paper, ink, plate, u = U, style,
+}) => {
+  const e = logoOf(logo);
+  const dark = lumOf(ground) < 0.42;
+  const g: Ground = dark ? 'dark' : 'light';
+  const withTile = treatment === 'tile' || (treatment === 'ink' && !!plate);
+  const inks = cardInks(dark ? 'dark' : 'light', ground);
+  const fillShare = treatment === 'ink' && !plate ? LOGO_ROW.inkFill : LOGO_ROW.fill;
+  const monoFile = e ? logoFile(e, 'mark', g, true) : null;
+  // on a light tile the light-ground file, whatever the ground behind the tile
+  const colourFile = e ? logoFile(e, 'mark', withTile ? (dark ? 'dark' : 'light') : g) : null;
+  const own = !!e && e.tile === 'own' && !!e.files.mark && treatment === 'tile';
+  if (!e || (!colourFile && !monoFile)) {
+    kitEmpty('LogoTile', `the real mark of ${typeof logo === 'string' ? logo : logo.name} (node scripts/logos.mjs)`);
+    return <div data-ui data-kit-empty="LogoTile" style={{ width: s, height: s, flex: 'none', ...style }} />;
+  }
+  const inkColour = ink ?? inks.text;
+  const file = treatment === 'ink' ? monoFile ?? colourFile! : colourFile ?? monoFile!;
+  const m = opticalSize(file.aspect, s * fillShare);
+  const url = `url(${staticFile(file.src)})`;
+  const mark =
+    treatment === 'ink' ? (
+      <div data-logo={e.name} style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${((s - m.w) / 2).toFixed(2)}px, ${((s - m.h) / 2).toFixed(2)}px)`, width: m.w, height: m.h, background: inkColour, WebkitMaskImage: url, maskImage: url, WebkitMaskSize: '100% 100%', maskSize: '100% 100%', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat' }} />
+    ) : own ? (
+      <Img src={staticFile(e.files.mark!.src)} data-logo={e.name} style={{ position: 'absolute', left: 0, top: 0, width: s, height: s, display: 'block' }} />
+    ) : (
+      <Img src={staticFile(file.src)} data-logo={e.name} style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${((s - m.w) / 2).toFixed(2)}px, ${((s - m.h) / 2).toFixed(2)}px)`, width: m.w, height: m.h, display: 'block' }} />
+    );
+  const k = Math.max(0.5, s / (160 * u)) * u;
+  return (
+    <div
+      data-ui
+      data-icon={e.name}
+      data-treatment={treatment}
+      style={{ position: 'relative', width: s, height: s, flex: 'none', borderRadius: s * LOGO_ROW.radius, overflow: own ? 'hidden' : 'visible', ...(withTile ? { background: `linear-gradient(180deg, ${inks.faceTop}, ${inks.faceBottom})`, boxShadow: cardShadow(inks, lumOf(ground), 0, k) } : null), ...style }}
+    >
+      {mark}
+    </div>
+  );
+};
+
+/**
+ * A row of marks in ONE treatment at ONE size, centred on its box: every tile the same side, every mark the same
+ * optical size, the same gap. `ink` on a row where a brand publishes no one-colour mark falls back to `tile` for the
+ * whole row (one treatment, never mixed). `chip` sets LogoChips one height (`size` is the pill's height).
+ */
+export const LogoRow: React.FC<{ logos: LogoRef[]; size: number; treatment?: LogoTreatment; ground?: string; ink?: string; gap?: number; theme?: KitTheme; plate?: boolean; u?: number; style?: React.CSSProperties }> = ({
+  logos, size, treatment = 'tile', ground = C.paper, ink, gap, theme, plate, u = U, style,
+}) => {
+  const g = gap ?? size * LOGO_ROW.gap;
+  const t = theme ?? (lumOf(ground) < 0.42 ? kitTheme('inkStage') : paper());
+  const tr: LogoTreatment = treatment === 'ink' && !logos.every(hasMono) ? 'tile' : treatment;
+  return (
+    <div data-ui data-logo-row={tr} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: g, ...style }}>
+      {logos.map((l, i) => (tr === 'chip' ? <LogoChip key={i} theme={t} logo={l} h={size} scale={u} /> : <LogoTile key={i} logo={l} size={size} treatment={tr} ground={ground} ink={ink} plate={plate} u={u} />))}
+    </div>
+  );
+};
+
+export type LogoRowItem = { logo: LogoRef; treatment: LogoTreatment; size: number; tone?: Ground };
+
+/**
+ * The faults of a row of marks as a film draws it: more than one treatment, sizes more than 2 % apart, mixed tile
+ * tones, ink on a brand with no one-colour file, a brand's own colour tile among neutral tiles (its colour block
+ * fights the row: ink the row, or set every mark bare), and three or more colour marks bare on a coloured ground
+ * (`field`: tile them on neutral plates or ink them). Empty: the row is consistent. Pure.
+ */
+export const logoRowCheck = (items: readonly LogoRowItem[], o: { field?: boolean } = {}) => {
+  const out: string[] = [];
+  const kinds = [...new Set(items.map((i) => i.treatment))];
+  if (kinds.length > 1) out.push(`mixed treatments (${kinds.join(', ')}): one treatment per row`);
+  const sizes = items.map((i) => i.size);
+  if (sizes.length && Math.max(...sizes) > Math.min(...sizes) * (1 + LOGO_ROW.sizeTol)) out.push(`sizes ${Math.round(Math.min(...sizes))}-${Math.round(Math.max(...sizes))} px: one size per row (the optical size evens the marks out)`);
+  const tones = [...new Set(items.filter((i) => i.treatment === 'tile').map((i) => i.tone ?? 'light'))];
+  if (tones.length > 1) out.push('light and dark tiles in one row: one tile tone, from the ground');
+  for (const i of items) {
+    const e = logoOf(i.logo);
+    if (!e) continue;
+    if (i.treatment === 'ink' && !hasMono(i.logo)) out.push(`${e.name}: ink, but the brand publishes no one-colour mark (fetch it with logos.mjs, or tile the row)`);
+    if (i.treatment === 'tile' && e.tile === 'own' && items.some((x) => x !== i && logoOf(x.logo)?.tile !== 'own')) out.push(`${e.name}: its own colour tile among neutral tiles (ink the row, or set every mark bare)`);
+  }
+  const colourBare = items.filter((i) => (i.treatment === 'bare' || i.treatment === 'chip') && logoOf(i.logo)?.tone === 'colour').length;
+  if (o.field && colourBare >= 3) out.push(`${colourBare} colour marks bare on a coloured ground: tile them on neutral plates or ink them`);
+  return out;
 };
 
 // ------------------------------------------------------------------------------------------------ walls and rings
@@ -339,7 +465,8 @@ type WallCommon = {
   /** 60 fps frames between arrivals (in the order out from the centre) */
   stagger?: number;
   dur?: number;
-  /** px a second the near tiles drift (far ones take DEPTH.drift of it): the parallax */
+  /** px a second the near tiles drift (far ones take DEPTH.drift of it): off by default (0); give it only for a designed
+   *  move that starts, travels and lands, never as an idle wander */
   drift?: number;
   tone?: Ground;
   theme?: KitTheme;
@@ -369,11 +496,11 @@ const BlankTile: React.FC<{ size: number; o: WallCommon }> = ({ size: s, o }) =>
 
 /**
  * A wall of app-icon tiles: the marks take the slots nearest the centre, blank tiles fill the grid round them; each
- * tile arrives tumbling (20-60 deg) out from the centre, settles on its depth band (smaller and softer further back)
- * and the whole wall drifts with parallax. 12-30 marks; `clear` keeps a box free for a line or a hub.
+ * tile arrives tumbling (20-60 deg) out from the centre and lands flat, facing the camera, on its depth band (smaller
+ * and softer further back); it holds still unless `drift` is given for a designed move. 12-30 marks; `clear` keeps a box free for a line or a hub.
  */
 export const LogoWall: React.FC<WallCommon & { cols?: number; rows?: number; clear?: { w: number; h: number }; blanks?: boolean }> = (props) => {
-  const { logos, frame, start = 0, w = 1920 * U, h = 1080 * U, tile = 150 * U, stagger = 2, drift = 14 * U, seed = 'wall', blanks = true } = props;
+  const { logos, frame, start = 0, w = 1920 * U, h = 1080 * U, tile = 150 * U, stagger = 2, drift = 0, seed = 'wall', blanks = true } = props;
   const fps = fpsOf();
   const cols = props.cols ?? Math.max(4, Math.round(w / (tile * 1.55)));
   const rows = props.rows ?? Math.max(3, Math.round(h / (tile * 1.5)));
@@ -392,10 +519,11 @@ export const LogoWall: React.FC<WallCommon & { cols?: number; rows?: number; cle
 
 /**
  * A ring of app-icon tiles round a centre kept free (a line, the product's own mark): the tiles arrive tumbling in
- * turn, then orbit slowly (`orbit` degrees a second); the far side of the ring is smaller and softer.
+ * turn and land flat; the ring holds still unless `orbit` (degrees a second) is given for a designed turn; the far side
+ * of the ring is smaller and softer.
  */
 export const LogoRing: React.FC<WallCommon & { rx?: number; ry?: number; orbit?: number }> = (props) => {
-  const { logos, frame, start = 0, w = 1920 * U, h = 1080 * U, tile = 132 * U, stagger = 3, rx = 640 * U, ry = 330 * U, orbit = 4, seed = 'ring' } = props;
+  const { logos, frame, start = 0, w = 1920 * U, h = 1080 * U, tile = 132 * U, stagger = 3, rx = 640 * U, ry = 330 * U, orbit = 0, seed = 'ring' } = props;
   const fps = fpsOf();
   const t = Math.max(0, frame - start) / fps;
   const slots = ringSlots(logos.length, { rx, ry, w, h, turn: (orbit * Math.PI * t) / 180, seed });
