@@ -433,7 +433,7 @@ Targets: the film's LUFS ±0.5; true peak ≤ −1.5 dBTP on the WAV and ≤ −
 
 You cannot listen, so measure what a listener hears:
 
-- **Sync:** `check-sync.py` cross-correlates the muxed audio with the WAV, then measures every placed effect and the music at every cut on the delivered file against its frame (±1 f); `av-audit.py` matches onsets to intended times (`cues_sounded.json`) within ±2 f.
+- **Sync:** `check-sync.py` cross-correlates the muxed audio with the WAV, then measures every placed effect and the music at every cut on the delivered file against its frame (±1 f), placing a ringing take (a tine, a bell) by its attack; it reports the share of cuts and of key state changes (the hit cues) that carry an onset within a frame and warns under 75 %: cuts land on the track's hits, and every key state change has its sound. `av-audit.py` matches onsets to intended times (`cues_sounded.json`) within ±2 f.
 - **Levels:** the report's `over_bed` (each effect over the bed it was levelled against, per role) and `masked` (each effect over the bed in its best band: 3 dB for roles 4 dB or less over the bed, 6 dB for the rest). The payoff, the lockup or a structural sound that reads under the music in its best band fails, whatever the over-bed range says (audibility wins: raise its role's `bed_db` or cast another sound); more than 30 % of the effects masked warns.
 - **Arc:** the momentary-loudness curve (`master.blocks()`): the intro under the body, the payoff highest, the dip, the ending.
 - **Timbre:** `kit.py audition` (and `--over-bed`), `kit.py check`, and `listen.py`'s sound sheet.

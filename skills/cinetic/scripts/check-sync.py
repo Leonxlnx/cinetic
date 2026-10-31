@@ -26,13 +26,17 @@ Two gates on the decoded audio of the rendered file (after AAC, exactly what a v
             sit within +-1 frame of the cue's frame; a role's planned offset (offset_ms: taps lead, pop-in thumps
             and whoosh peaks land after) widens the window on its side only (--strict: no widening). A take
             heard (-20 dB) more than 45 ms before its picture, a recording's pre-roll ahead of the onset the plan
-            aligned, warns. An effect the music still covers so that it cannot be found is listed; when most of
+            aligned, warns. A ringing take (a kalimba's tine, a bell: its waveform matches itself all along the ring) is
+            placed by its attack, never by the best waveform match a few hundred ms into its own ring. An effect the music still covers so that it cannot be found is listed; when most of
             them cannot be found, the audio is not this film's mix (fail).
    music    with a track (audio/music/edit.json): the edited bed is rebuilt from the edit (track.py
             build_bed: bar 1 at the edit's film_t0) and found in the decoded audio at every act change,
             structural cue and declared seam; the music must sit within +-1 frame of where the edit puts it,
             so the track's own hits land on the cuts the timeline cut to them. A hand cut that drops film_t0,
             a pad of encoder priming or a shifted mux fails here.
+   onsets   the share of cuts (act changes, declared seams, cues marked as cuts) and of key state changes (the cues
+            marked as hits: a click, a result) that carry an onset in the delivered audio within +-1 frame (a rise of
+            4 dB or more: the track's hit or an effect's attack); under 75 % warns, with the frames that have none.
    picture  (--picture: it decodes the video around every act change) the picture's own cut, the largest frame
             difference within +-6 frames, against the cue frame; a clear cut more than 1 frame off warns (a
             30 fps delivery that keeps every second frame of a 60 fps timeline shows a cut on an odd 60 fps
@@ -226,6 +230,10 @@ PLAN_CORR_FRAC = 0.75  # ... unless the plan's own position matches under this s
 LOW_FRAC = 0.5         # a take with this much of its energy under 150 Hz (a thump) is matched with its lows (40 Hz high-pass)
 BED_CORR = 0.5         # a bed window located at this correlation or more is gated
 EFFECT_SEARCH_S = 0.35  # +- search around the planned start (~10 f at 30 fps)
+TONAL_SELF = 0.8       # a template this alike to the take a few ms later (a ringing tine, a held chord) is tonal: the
+#                        waveform matches all along its ring, so the attack places it, not the best waveform match
+ONSET_DB = 4.0         # cut-onsets: a rise this big (the 15 ms after vs the 20 ms before) marks an onset in the audio
+CUT_ONSET_SHARE = 0.75  # cut-onsets: under this share of cuts (and key state changes) with an onset within a frame warns
 BED_SEARCH_S = 0.5
 
 
@@ -341,6 +349,52 @@ def locate(hay, h0, tpl, expect, search, near=True):
     return h0 + (lo + k) / SR, float(c[k])
 
 
+def attack_ratio(x, k):
+    """the attack at sample k of x: RMS of the 15 ms after k over the RMS of the 20 ms ending 5 ms before it"""
+    a, b = x[k:k + int(0.015 * SR)], x[max(0, k - int(0.025 * SR)):max(0, k - int(0.005 * SR))]
+    if len(a) < 16 or len(b) < 16:
+        return 0.0
+    return float(np.sqrt(np.mean(a * a)) / (np.sqrt(np.mean(b * b)) + 1e-9))
+
+
+def tonal(mb, i0, i1):
+    """is the template mb[i0:i1] a ringing tone: does it match the take itself 5-400 ms later nearly as well as in place?"""
+    tpl = mb[i0:i1]
+    rest = mb[i0 + int(0.005 * SR):min(len(mb), i1 + int(0.4 * SR))]
+    if len(tpl) < 64 or len(rest) < len(tpl) + 2:
+        return False
+    c = ncc(rest, tpl)
+    e = np.concatenate([[0.0], np.cumsum(np.square(rest, dtype=np.float64))])
+    loud = (e[len(tpl):] - e[:-len(tpl)]) >= 0.1 * float(np.dot(tpl, tpl))  # the ring itself, not a tail 10 dB down
+    return bool(loud.any()) and float(c[loud].max()) >= TONAL_SELF
+
+
+def locate_tonal(hay, h0, tpl, expect, search, att):
+    """locate() for a ringing take: its waveform matches all along the ring (a kalimba's tine, a bell), so among the
+    lags within 0.9 of the best correlation (each its own local peak) only those with an attack where the template has
+    its own (att samples in) count, and the one nearest the expected time wins. None when no candidate has an attack
+    (the caller keeps locate()'s answer)."""
+    s0 = int(round((expect - search - h0) * SR))
+    s1 = int(round((expect + search - h0) * SR)) + len(tpl)
+    lo = max(0, s0)
+    seg = hay[lo:min(len(hay), s1)]
+    if len(seg) < len(tpl) + 2 or np.linalg.norm(tpl) <= 0:
+        return None, 0.0
+    c = ncc(seg, tpl)
+    best = float(c.max())
+    peaks, _ = signal.find_peaks(c, height=0.9 * best)
+    own = attack_ratio(tpl, att)
+    ar = {int(k): attack_ratio(seg, int(k) + att) for k in peaks}
+    top = max(ar.values(), default=0.0)
+    # an attack where the template has its own, and among them the clear ones (a lag a few ms after the attack still
+    # sees a rise, a smaller one: its window before already holds the note)
+    cand = [k for k, r in ar.items() if r >= max(1.5, 0.35 * own, 0.6 * top)]
+    if not cand:
+        return None, 0.0
+    k = min(cand, key=lambda k: abs(h0 + (lo + k) / SR - expect))
+    return h0 + (lo + k) / SR, float(c[k])
+
+
 def effect_rows(plan, root, takes_dir, dec_hp, dec_lo, fps_v, ref_offset, tol_s, strict, sos, sos_lo):
     """each placed effect: where its sync point plays in the delivered audio against its cue frame"""
     sys.path.insert(0, os.path.join(HERE, 'audio'))
@@ -417,7 +471,8 @@ def effect_rows(plan, root, takes_dir, dec_hp, dec_lo, fps_v, ref_offset, tol_s,
         # music's bass; its knock above it is what stands clear); every other take over 150 Hz
         best = None
         for band, bsos, hay, lows in ((('lows', sos_lo, dec_lo, True),) if thump else ()) + (('over 150 Hz', sos, dec_hp, False),):
-            tpl = signal.sosfiltfilt(bsos, m)[i0:i1] if i1 - i0 > 64 else seg
+            mb = signal.sosfiltfilt(bsos, m) if i1 - i0 > 64 else m
+            tpl = mb[i0:i1] if i1 - i0 > 64 else seg
             w0 = max(0, int((expect - search - 0.25) * SR))
             w1 = min(len(hay), int((expect + search + 0.25) * SR) + len(tpl))
             local = hay[w0:w1]
@@ -436,12 +491,19 @@ def effect_rows(plan, root, takes_dir, dec_hp, dec_lo, fps_v, ref_offset, tol_s,
                 if g_o > 0:
                     local, removed = local - g_o * others, True
             got, corr = locate(local, w0 / SR, tpl, expect, search)
+            ring = tonal(mb, i0, i1)
+            if ring:  # a ringing take matches all along its ring: the attack places it
+                g2, c2 = locate_tonal(local, w0 / SR, tpl, expect, search, int(round((sp - i0 / SR) * SR)))
+                if g2 is not None:
+                    got, corr = g2, c2
             k = int(round((expect - w0 / SR) * SR))  # the take where the plan put it
             at_plan = float(ncc(local[k:k + len(tpl)], tpl)[0]) if 0 <= k and k + len(tpl) <= len(local) and len(tpl) > 64 else 0.0
             if best is None or corr > best[1]:
-                best = (got, corr, at_plan, band, removed)
-        got, corr, at_plan, band, removed = best
+                best = (got, corr, at_plan, band, removed, ring)
+        got, corr, at_plan, band, removed, ring = best
         row.update(corr=round(corr, 3), corr_at_plan=round(at_plan, 3), search_ms=round(search * 1000, 1), band=band)
+        if ring:
+            row['tonal'] = True  # placed by its attack: its waveform matches all along the ring
         if removed:
             row['others_removed'] = True
         if got is None or corr < FOUND_CORR:
@@ -613,6 +675,54 @@ def default_paths(a, root):
     return plan, edit, takes
 
 
+def cut_frames(cues):
+    """(cuts, key state changes) as cue frames: the act changes, the declared seams and the cues the timeline marks as
+    cuts; the cues it marks as hits (the product's own moments: a click, a result landing). Within 2 frames: one."""
+    sal = cues.get('salience') or {}
+    cue = cues.get('cue') or {}
+    cuts = [float(v['from']) for v in (cues.get('acts') or {}).values() if isinstance(v, dict) and float(v.get('from', 0)) > 0]
+    cuts += [float(x['at']) for x in ((cues.get('declared') or {}).get('seams') or []) if isinstance(x, dict) and x.get('at') is not None]
+    cuts += [float(cue[k]) for k, v in sal.items() if v == 'cut' and k in cue and float(cue[k]) > 0]
+    keys = [float(cue[k]) for k, v in sal.items() if v == 'hit' and k in cue]
+
+    def merge(xs):
+        out = []
+        for x in sorted(xs):
+            if not out or x - out[-1] > 2:
+                out.append(x)
+        return out
+    total = float(cues.get('total') or 0) or None
+    cuts = [x for x in merge(cuts) if total is None or x < total - 1]
+    return cuts, [x for x in merge(keys) if x not in cuts]
+
+
+def onset_at(m, t, tol_s):
+    """the biggest rise (dB) in the audio within +-tol_s of t (s): the 15 ms after each 1 ms step over the 20 ms ending
+    5 ms before it"""
+    a, b = int((t - tol_s) * SR), int((t + tol_s) * SR)
+    best = -99.0
+    for k in range(max(int(0.025 * SR), a), min(len(m) - int(0.015 * SR), b + 1), SR // 1000):
+        r = attack_ratio(m, k)
+        if r > 0:
+            best = max(best, 20 * np.log10(r))
+    return best
+
+
+def cut_onsets(dec_m, cues, fps, ref_offset, tol_s, sos_lo):
+    """the share of cuts (and of key state changes) with an onset in the delivered audio within a frame: the track's hit,
+    an effect's attack, any of them. A cut the sound does not mark reads as a slideshow edit."""
+    m = signal.sosfilt(sos_lo, dec_m)  # causal: a zero-phase filter rings ahead of a hit and would lend it to the frame before
+    cuts, keys = cut_frames(cues)
+    out = {}
+    for name, frames in (('cuts', cuts), ('key', keys)):
+        rows = [dict(f=f, rise_db=round(onset_at(m, f / float(cues['fps']) - ref_offset, tol_s), 1)) for f in frames
+                if 0 <= f / float(cues['fps']) - ref_offset <= len(m) / SR]
+        hit = [r for r in rows if r['rise_db'] >= ONSET_DB]
+        out[name] = dict(n=len(rows), with_onset=len(hit), share=round(len(hit) / len(rows), 3) if rows else None,
+                         missing=[r['f'] for r in rows if r['rise_db'] < ONSET_DB])
+    return out
+
+
 def frames_gate(a, report, say, dec, fps_v, has_video):
     cues_path = a.cues or 'out/cues.json'
     cues = read_json(cues_path)
@@ -715,6 +825,21 @@ def frames_gate(a, report, say, dec, fps_v, has_video):
 
     for line in music_say:
         say(line)
+
+    # cuts and key state changes carry hits: the share with an onset in the audio within a frame
+    co = cut_onsets(dec_m, cues, fps, a.ref_offset, tol_s, sos_lo)
+    fr['cut_onsets'] = co
+    for name, what in (('cuts', 'cuts (act changes, seams)'), ('key', "key state changes (the product's hit cues)")):
+        c = co[name]
+        if not c['n']:
+            continue
+        say(f"onsets: {c['with_onset']}/{c['n']} {what} carry an onset within +-{a.frame_tol:g} f ({100 * c['share']:.0f} %)")
+        if c['share'] < CUT_ONSET_SHARE:
+            fr['warnings'].append(f"only {100 * c['share']:.0f} % of the {what} carry an onset within a frame (house >= {100 * CUT_ONSET_SHARE:.0f} %; "
+                                  f"none at f " + ', '.join(f'{x:g}' for x in c['missing'][:10]) + (' ...' if len(c['missing']) > 10 else '')
+                                  + ("): cut on the track's own hits (fit the edit to the beat plan: track.py fit), or let an effect "
+                                     "mark the seam (a whoosh's apex, a hit)" if name == 'cuts' else
+                                     '): give each key state change its sound (sync.ts: the click, the result landing, a toggle)'))
 
     # picture
     if has_video and a.picture:
