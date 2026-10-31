@@ -145,7 +145,8 @@ const CURSOR_PRE = f60(CURSOR60.push + CURSOR60.hold + CURSOR60.travel + 2);
 /**
  * Where change i's moment starts when a creative entrance brings its card (frames from the film's start): inside the
  * device when the device shows the product working (bubble-swarm: the rows land as the questions are drawn in;
- * split-compare: the product works in its half while the old way still waits), else once the card is at rest.
+ * split-compare: the product works in its half while the old way still waits; photo-arc: the screen fills as the chosen
+ * photo opens into it), else once the card is at rest.
  */
 const deviceGo = (i: number, c0: number, c1: number) => {
   if (ARRIVAL[i] !== 'device') return c1;
@@ -153,6 +154,7 @@ const deviceGo = (i: number, c0: number, c1: number) => {
   const h = devHits(id, c1 - c0, i);
   if (id === 'bubble-swarm' && h) return c0 + h[0] + f60(4);
   if (id === 'split-compare') return c0 + f60(46);
+  if (id === 'photo-arc' && h) return c0 + h[0] + f60(8 + 16); // the chosen photo's screen fills as it opens
   return c1;
 };
 /** Frames a card's arrival takes. */
