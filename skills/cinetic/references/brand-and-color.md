@@ -14,7 +14,7 @@ Covers the brand's personality and what it decides, naming, exploring and buildi
 9. [Neutrals, the recipes and the stage](#9-neutrals-the-recipes-and-the-stage)
 9b. [Colour as shares of the frame](#9b-colour-as-shares-of-the-frame)
 10. [Palettes that read as generated](#10-palettes-that-read-as-generated)
-11. [Surfaces: shadow and hairline](#11-surfaces-shadow-and-hairline)
+11. [Surfaces: the card material](#11-surfaces-the-card-material)
 12. [Light on the ground and banding](#12-light-on-the-ground-and-banding)
 12b. [Colour devices: gradients, spectral accents, glow and glass](#12b-colour-devices-gradients-spectral-accents-glow-and-glass)
 13. [Colour in motion](#13-colour-in-motion)
@@ -67,10 +67,18 @@ mark, the model's own spark, never a generic envelope or a star standing in. It 
   `layout-audit.sh --every 6` (a mark moving from a ring into a sentence is followed); a mark drawn outside the kit
   gets a declared track (`--mark-track`). Never `--brand` for a mark's colours: that flag is the film's own brand. Marks stay marks (a ring, a wall, a ticker, a chip, a word in a
   line), never a ground or a flood.
+- **One treatment per row, in the film's material.** Official colours fight a film's palette when every mark sits on
+  its own: a row of marks takes ONE treatment at ONE size (`LogoRow`, `LogoTile`): `tile` (the default: each mark on a
+  neutral tile in the film's card material, light on a light or mid ground, dark on a dark one, official colours at one
+  optical size), `ink` (every mark in the film's ink from the brand's own one-colour file: the quietest row, for a
+  monochrome or colour-field film, and only when every brand in the row publishes one; otherwise the whole row tiles),
+  `bare` (official marks alone on a light page) or `chip` (mark and name on pills of one height). Never a brand's own
+  colour tile among neutral tiles, never mixed sizes, never three colour marks bare on a coloured field.
+  `logoRowCheck()` lists a row's faults.
 - **Real marks by default where they belong.** When the product has integrations the brief asks for them (Step 0), and
   the templates' rings, walls, tickers and chips show their marks (`kit/logos.tsx`); the text pill is the fallback
   until a mark is fetched. Generic icons (`kit/icons.ts`) are for generic actions only (send, search, a lock).
-- **Use the parts.** `AppIcon`, `LogoChip`, `InlineLogo`, `LogoWall`, `LogoRing`, `BrandLogo`
+- **Use the parts.** `LogoRow`, `LogoTile`, `AppIcon`, `LogoChip`, `InlineLogo`, `LogoWall`, `LogoRing`, `BrandLogo`
   (`references/product-ui.md` §5); check them on `npx remotion still KitLogos` and `KitLogoWall` at half size.
 
 ## 2. Personality → choices
@@ -495,15 +503,25 @@ from the name; `fx/Grounds` `FamilyGround` draws it and `familyInks()` gives its
 `palette.py --family` writes the tokens). The ground never cuts: the content moves over it, and the film's one colour
 event is declared in `COLOUR`. Two films in a row never share a family.
 
-| Family | What it is | Type | Colour field | The one colour event |
+Every family is a designed, LIT field, never a two-stop linear: a base colour and two or three lights (a key, a floor or
+fill, a tinted lobe) entering from an edge or a corner with a gaussian falloff, mixed in OKLab, with a soft optical
+vignette on the dark families, computed in float and dithered (±1.5 levels), baked once at the film's size
+(`litFieldPixels`). The field holds STILL: no drift, no breathing; the content and a purposeful camera carry the motion.
+`litFieldRange()` and `litFromEdge()` measure a field (a lit place spans 12 L* or more; no pool inside the frame).
+
+| Family | What it is | Type | Colour field | The one colour event (`event` 0..1) |
 |---|---|---|---|---|
-| `nearWhite` | 98 % light: a clean near-white page (L .97–.99) under real pictures and product UI | ink | none | none: the pictures carry the colour |
-| `blackField` | a near-black field (L .10–.12, never `#000`) under one soft key light from a top corner, about 12 L* brighter where it falls and drifting slowly (a black void on the far side, never a flat charcoal) | white | none | none |
-| `whiteBand` | white with one band of the brand colour across the top (about a quarter of the height, fading down) | ink | the band | the band floods the frame for one line, which sits on it in white or ink |
-| `deepPool` | a deep field at the accent's hue (L .22–.27, C .045–.058: enough to read as a colour, never as a charcoal, and under the C .06 line where a whole field reads as a wash) with a soft pool of light drifting slowly behind the subject | white | the whole field | none: the field is the colour |
-| `softSky` | a pale sky gradient (L .965 to .915 at a cool hue 225–240, C .015–.035), drifting | ink | the pale field | none |
-| `lightDark` | the problem on a light page, then the product on a dark stage | ink, then white | none | the turn to dark, once, on a seam |
-| `gradientField` | one pale tinted gradient (L .965 to .90 at the accent's hue, C .02–.05), drifting along its axis | ink | the pale field | none |
+| `nearWhite` | a paper sweep: near-white (L .99) lit from the top left, falling to L .93 in the far corner | ink | none | an accent lobe opens from the top right |
+| `lightStudio` | a light grey studio sweep: a top key (L .97) over a floor falling to L .80 | ink | none | an accent lobe opens |
+| `softSky` | a lit pale sky: deeper at the top (L .885, C .05, a cool hue), a pale horizon low | ink | the pale field | an accent lobe opens |
+| `gradientField` | a pale tinted mesh: two lobes of the field hue from opposite corners, white light from the top left | ink | the pale field | the lobe deepens |
+| `whiteBand` | white with one lit band of the brand colour across the top, fading down | ink | the band | the band floods the frame for one line |
+| `blackField` | studio black (L .10, never `#000`): one soft key from above left (to L .23 at the top edge), a faint floor | white | none | the key takes the accent hue |
+| `studio` | a mid slate cyclorama: a broad top key (L .47) over a slate floor (L .24): the stage for cards on a dark-mid ground | white | none | the key takes the accent hue |
+| `deepPool` | a deep field at the accent's hue (L .20, C .05) with a glow rising from the bottom edge | white | the whole field | the glow rises |
+| `duskMesh` | a deep tinted night: two lobes of the field hue (L .40 and .30) from opposite corners over L .135 | white | the lobes | the lobes rise and open |
+| `floorGlow` | near-black with one glow of the field hue rising from the floor | white | the glow | the glow rises |
+| `lightDark` | the problem on `nearWhite`, then the product on `blackField` | ink, then white | none | the turn to dark, once, on a seam |
 
 - **The field's hue** is the accent's own when the accent is a blue, teal or green; with a red or yellow accent the
   field takes a cool 230, so a red never becomes a pink field and a yellow never a cream one.
@@ -512,9 +530,9 @@ event is declared in `COLOUR`. Two films in a row never share a family.
   settled. No box, marker or underline: the colour is the emphasis.
 - **The bans stay.** No orange, amber, beige or cream grounds; no purple, violet or indigo; no neon. A family never
   takes a banned hue, whatever the accent.
-- **Light stays motivated.** A pool, a rim light or a band drifts on a 9–16 s loop and never pulses; under it the
-  ground stays clean behind the words (look-audit's ground-haze read still applies to anything that is not the
-  family's own field).
+- **Light stays motivated and still.** The light enters from an edge or a corner and holds; it never drifts, pulses or
+  breathes behind the words (an aimless move in the ground reads as the frame wandering). look-audit's ground-haze read
+  still applies to anything that is not the family's own field, and its banding read checks the bake survived.
 
 ## 10. Palettes that read as generated
 
@@ -526,13 +544,33 @@ Most of these are hard bans (§8 has the numbers); the rest are combinations to 
 - beige, cream or sand grounds, and orange, amber or terracotta accents;
 - a dark UI with a coloured glow behind every hero element.
 
-## 11. Surfaces: shadow and hairline
+## 11. Surfaces: the card material
 
-- **Shadows come from the key** (`references/lighting.md`): cast away from one light, in the ground's own hue, with a contact shadow under anything that sits on a surface. On paper, a soft drop in the ink colour at 6–12 % (house 8 %: `SHADOW.paper`, `0 12px 40px rgba(ink, .08)`); a surface can instead dip the ground 0.01 L under it.
-- **On ink**, shadows vanish, so separate surfaces with a luminance step (ink → ink2) and a 1 px top hairline at 8–12% white: `inset 0 1px 0 rgba(255,255,255,.10)`.
-- **Lifted objects.** The shadow grows with height and softens between two fixed blur levels (`FloatShadow`, `castShadow` in `fx/KeyLight`).
-- **Never as decoration:** a halo or bloom around elements, an outer glow on text, an inner glow, a gradient border, frosted UI panels. Glow, glass and coloured shadows exist only inside devices (§12b).
-- **Radii.** Use one card radius, one chip radius and the mark's radius. A nested radius is the outer radius minus the padding, or the corners look pinched.
+Every card, panel, chip tile and lockup plate is one material (`kit/card` `Card`, and `kit/parts` `Surface` /
+`surfaceShadow` / `keyFace`, which every kit part uses). A cheap card is a translucent grey slab, tilted, bobbing, with
+no edge and no shadow; a premium one is:
+
+- **Opaque, lit from above.** The face is solid, with a quiet vertical sheen (1-2 L* from top to bottom); never a
+  diagonal wash, never a see-through fill. Light cards are near-white at the ground's neutral hue; dark cards sit
+  8-12 L* over a dark ground (look-audit card-separation), their chroma held under .014 so a card never becomes a
+  second accent.
+- **An edge that catches the light.** A hairline round the edge (ink at 7 % on a light card, white at 8 % on a dark
+  one) and an inner top highlight; both drawn over the content, so a photo filling the card keeps its edge.
+- **Two shadows under the key.** A tight contact shadow and a broad soft ambient one, mostly straight down (a softbox
+  from above), nudged away from the film's light; a third, wider layer while the card is lifted toward the lens
+  (`lift` 0..1, a designed move, never an idle bob). On ink the hairline and the luminance step carry it.
+- **Radius, padding and type by size.** Radius 24 / 34 / 46 px and padding 30 / 44 / 60 px at 1080p for cards under
+  520, under 900 and wider; a nested radius is the outer minus the padding (`innerRadius`). Inside, the text face at
+  film size (`cardText`: eyebrow 36 in capitals +0.06 em, title 60, body 44, meta 38, figure 132), never under
+  `TEXT_MIN`.
+- **Facing the camera, holding still.** No resting tilt (a tilt is a designed 3D move that lands flat) and no idle
+  bobbing, floating or breathing inside a card.
+- **Glass only with its backdrop.** `tone="glass"` blurs its own copy of the picture behind it (`backdrop`) under a
+  light or dark tint and the same edge; without a backdrop it falls back to the solid face. Glass where it reads (a
+  card over a photograph or footage), never as the UI style of every panel.
+- **Never as decoration:** a halo or bloom round elements, an outer glow on text, an inner glow, a gradient border.
+  `cardFaults()` lists a hand-drawn card's faults; look-audit's cheap-card read warns on a translucent slab or a
+  shadowless card near its light ground.
 
 ## 12. Light on the ground and banding
 
@@ -547,7 +585,10 @@ Most of these are hard bans (§8 has the numbers); the rest are combinations to 
   (`--example` prints a spec; `--check` verifies one hue, chroma, the lightness swing and no banding), or
   `ditherPlate()` at render time for a plate sized to its text. Move plates by transform and opacity; cross-fade two
   plates to change colour, never animate stops. Load them with `<Img src={staticFile('fx/floor.png')} />`.
-- Check with the ×12 contrast stretch (`--preview out/qa/bands`) and the banding sheet from `scripts/forensics.py`.
+- Check with the ×12 contrast stretch (`--preview out/qa/bands`), the banding sheet from `scripts/forensics.py` and
+  `look-audit.py <film or stills> --surfaces` (banding fails a ramp whose plateaus are as wide as its step spacing;
+  the film audit runs it on full-resolution samples). Render soft fields through PNG intermediates when a JPEG pass
+  flattens the dither, and keep the master's CRF where render.sh sets it.
 
 ## 12b. Colour devices: gradients, spectral accents, glow and glass
 

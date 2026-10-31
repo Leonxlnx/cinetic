@@ -17,7 +17,7 @@ typeface wins over every default here.
 3. [Callback copy](#3-callback-copy)
 4. [Stock phrasing to cut](#4-stock-phrasing-to-cut)
 5. [String audit](#5-string-audit)
-6. [One family from the face set](#6-one-family-from-the-face-set)
+6. [The film's type: a dealt pairing](#6-the-films-type-a-dealt-pairing)
 7. [Type roles at film size](#7-type-roles-at-film-size)
 8. [The text animations: TypeLine, Words, Chain, Oversize](#8-the-text-animations-typeline-words-chain-oversize)
 9. [Type devices](#9-type-devices)
@@ -299,14 +299,65 @@ grep -rnP "\w'\w|\b1 [a-z]+s\b|lorem|ipsum|TODO|FIXME|Acme|John Doe|example\.com
 
 **Reading time** is owned by `references/timing-grid.md` §9: hold a line max(52, 36 + 7 f per word) after it resolves (3 words → 57 f, 5 → 71 f, 8 → 92 f; a line built in beats counts its full word count), leave 26–90 f of picture between the parts of a line built in beats, keep a script's copy rate at or under 12 words in any 5 s, hold the lockup 1.5–2 s, and keep a URL readable ≥ 1.7 s. A crisp film holds max(36, 28 + 6 f per word). `scripts/grid-check.ts` enforces these from `COPY`.
 
-## 6. One family from the face set
+## 6. The film's type: a dealt pairing
+
+One neutral grotesk on every film reads as the default, and the default reads cheap. A film's type is a **pairing**:
+a **voice** for the film's words (every statement, the claim, figures at size, the wordmark: `FONT.text`) and a **text
+face** for the product's UI and the captions (`FONT.ui`), plus the mono for code. The starter bundles every face of the
+pairings (`public/fonts`, SIL OFL 1.1, licences in `public/fonts/fonts.json` and each folder's `OFL.txt`), so a dealt
+pairing renders on the first try, offline, with nothing to fetch.
+
+| Pairing | Voice (`FONT.text`) | Text (`FONT.ui`) | Reads as |
+|---|---|---|---|
+| `swiss` | Instrument Sans | Inter | crisp Swiss editorial grotesk, exact and quiet |
+| `newsroom` | Schibsted Grotesk | Inter | a sturdy newsroom grotesk: firm verticals, open counters |
+| `studio` | Host Grotesk | Host Grotesk | contemporary studio grotesk, soft terminals |
+| `funnel` | Funnel Display | Funnel Sans | a display grotesk with cut details over its own text cut |
+| `wide` | Mona Sans Wide (112.5 %) | Mona Sans | an expanded, confident voice over a normal-width text cut |
+| `precise` | Hanken Grotesk | Inter | a neat neo-grotesk, light on its feet |
+| `technical` | Geist | Geist (+ Geist Mono) | developer type |
+| `geometric` | DM Sans (optical sizes) | DM Sans | round, open, friendly-precise |
+| `friendly` | Manrope | Manrope | warm, open, semi-geometric |
+| `expressive` | Bricolage Grotesque (optical sizes) | Inter | ink traps and character at display sizes, quiet text below |
+| `product` | Inter (display cut) | Inter | the neutral SF-class product type (the fallback) |
+
+```bash
+npx tsx scripts/type-deal.ts --seed "<product name>"        # deal: random over the table, the same name the same pairing
+npx tsx scripts/type-deal.ts --seed "<name>" --mood technical   # a mood weights the deal (x3); it never decides it
+npx tsx scripts/type-deal.ts --pair wide                    # the director's pick
+npx tsx scripts/type-deal.ts --list | --check
+```
+
+- **Deal it, do not default it.** The deal is random over every pairing (a mood only weights it, `product` is a third as
+  likely), and the pairings of the last two films in the history are left out, so two films in a row never share a
+  voice. Take the dealt pairing unless the brand supplies a face; say which in `TREATMENT.md`.
+- **What it writes.** `FONT.text`, `FONT.ui`, `FONT.mono`, `FACES` (every weight in use, per face) and the six `TYPE`
+  roles at the type family's sizes (§7) with the pairing's weights, its optical tracking at each size and its leads;
+  the placeholders go. `typeStyle()` sets `ui` and `caption` in the text face, the rest in the voice; the kit's UI sets in
+  the text face (`KIT_FONT`). Run it again after `type-family.mjs`, which rewrites `TYPE` to Inter's numbers.
+- **Set by size, not by guess** (`src/fx/TypePairs.ts`). `pairStyle(id, role, px)` is one role at any size: the weight
+  inside the face's axis, tracking interpolated on log size from four anchors (40, 84, 160, 400 px: small type opens,
+  big type tightens, the way a display cut is spaced), line height by size (1.3 at UI sizes, 1.2 a line, 1.05 a
+  statement, 0.92 a poster word), kerning and contextual forms on, no synthetic bold or italic.
+- **Figures.** `numeralStyle(id, px, { count })`: tabular lining figures for anything that counts or aligns,
+  proportional for a static hero number; a face whose tabular set spaces the comma like a figure (Schibsted) sets
+  proportional and counts in per-digit slots (`fx/Roll`).
+- **The wordmark and anything tight never touch.** `wordmarkStyle(id, px)` sets the end card's name at the pairing's
+  wordmark weight, 0.004 em looser than a statement. Pass any tight display word or figure run through
+  `safeTrack(text, font, px, track)`: it measures each neighbouring pair's ink gap in the browser and loosens the
+  tracking until every gap is 0.012 em or more ("Morrow3.2" and a closed-up "11" are the faults it prevents). Keep a
+  real space or a gap of 0.25 em between a name and its version.
+- **Brand faces win.** A face the brand supplies goes in with `add-font.mjs` (below) and replaces the voice (and the text
+  face, when they were one family); the rest of this section still applies.
+
+### A brand's own face, or a target to match
 
 Premium product type is set in a quiet, exact grotesk at regular to medium weights, tight on display sizes and in
 sentence case; the personality comes from size, weight, tracking, colour and motion, not from quirky letterforms. A
 rounded, techno, script, condensed or "friendly geometric" face picked for character reads cheap at film size, and
-one set at 700 reads heavier still. So the face comes from a small curated set, `scripts/faces.json` (all SIL OFL 1.1,
-free for commercial use in video, fetched from `@fontsource-variable` by `add-font.mjs`; `node scripts/add-font.mjs
---list` prints it), by look:
+one set at 700 reads heavier still. Beside the pairings, `scripts/faces.json` holds the face set by look (all SIL OFL
+1.1, free for commercial use in video, fetched from `@fontsource-variable` by `add-font.mjs`; `node scripts/add-font.mjs
+--list` prints it):
 
 | Look | Display / text | Alternates | Weights (text · display calm / bold · wordmark) | For |
 |---|---|---|---|---|
@@ -316,10 +367,9 @@ free for commercial use in video, fetched from `@fontsource-variable` by `add-fo
 | **friendly** | Manrope / Manrope | Plus Jakarta Sans, DM Sans | 500 · 600 / 700 · 700 | calm, warm brands: care, learning, community, feed ads |
 | **technical** | Geist / Geist + Geist Mono | JetBrains Mono | 450 · 500 / 600 · 600 | developer tools, APIs, infrastructure, data |
 
-- **Pick the look, then the face.** `deck.py` deals a type option per direction and names the face from the set for
-  its look (the look's main face, sometimes an alternate); the brand's three adjectives (`references/brand-and-color.md`
-  §2) confirm it. The default is the neutral look in Inter, and it is the right answer more often than not: keep it
-  unless the brand asks for another look, and say which look in `TREATMENT.md`. A face outside the set needs a
+- **A look, when no pairing fits.** `deck.py` deals a type option per direction and names the face from the set for
+  its look; the brand's three adjectives (`references/brand-and-color.md` §2) confirm it. The dealt pairing comes
+  first; a look from this table is for a brand that asks for one, said in `TREATMENT.md`. A face outside the set needs a
   reason (a brand face, a target frame) and a `font-match.mjs` ranking against the set first. It is always a clean
   sans, plus a mono if the product needs one, because serif and italic are hard bans when you invent the look. The
   starter's face is marked `// cinetic:placeholder` and `lint-film.mjs` fails until you vendor the film's face or keep
