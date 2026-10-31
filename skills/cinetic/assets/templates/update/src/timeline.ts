@@ -121,7 +121,7 @@ export const CUE: Record<string, number> = {
     ]),
   ),
   gather: beat(BEATS.payoff), // the pull back begins: every change at once, the version swinging back in front
-  swing: beat(BEATS.payoff, 2), // 'rise': the version starts out of its mask as the strip softens
+  swing: DEAL.payoff === 'rise' ? beat(BEATS.payoff) - f60(8) : beat(BEATS.payoff, 2), // 'rise': the version starts out of its mask as the last change's words drop away (the frame never empties)
   land: beat(BEATS.payoff + 1, 1), // the version lands as the subject ('pull': its swing is centred on the act line, landing here)
   markIn: beat(BEATS.end + 1, 1), // the version has stepped back: the mark's parts rise into the lockup
   // the name lands beside the mark on the last bar line: with a track, its downbeat or the track's own final hit, where
@@ -159,7 +159,7 @@ export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'update',
 /** Every seam: the camera is at its fastest on each act line, so speed carries across every one. */
 export const SEAMS: Seam[] = [
   ...UPDATE.changes.map((c, i): Seam => ({ at: beat(BEATS.change(i)), kind: 'whip', carry: 'x', dir: 1, id: `to-${c.id}` })),
-  DEAL.payoff === 'pull' ? { at: beat(BEATS.payoff), kind: 'velocity', carry: 'scale', dir: -1, id: 'pull-back' } : { at: beat(BEATS.payoff), kind: 'defocus', id: 'recede' },
+  DEAL.payoff === 'pull' ? { at: beat(BEATS.payoff), kind: 'velocity', carry: 'scale', dir: -1, id: 'pull-back' } : { at: beat(BEATS.payoff), kind: 'mask', carry: 'y', dir: -1, id: 'version-rises' },
   { at: beat(BEATS.end), kind: 'morph', carry: 'shape', id: 'version-to-lockup' }, // the version reshapes into its place beside or above the lockup
 ];
 export const STEPPED: SteppedRange[] = [];

@@ -78,13 +78,17 @@ const centreOf = (i: number) => ({ x: STRIP.x0 + i * STRIP.gap, y: STRIP.y + (i 
 const shotOf = (i: number): Shot => ({ ax: centreOf(i).x, ay: centreOf(i).y, sx: W / 2, sy: H / 2, k: 1 });
 /**
  * How far the strip steps back behind change i's words (0..1): from just before its sentence rises in until just after
- * it leaves, so the surface plays its new thing sharp on the hit, then softens and dims while the centred words are read.
+ * it leaves, so the surface plays its new thing sharp on the hit, then softens and clears while the centred words are
+ * read: each change line gets its own clean beat on the ground, never over busy UI. The strip comes back on the move
+ * to the next change (or on the 'pull' payoff's carried pull); after the last change on a 'rise' payoff it stays clear,
+ * so the version rises and the end card sets on the clean ground (no fade back: nothing on screen would carry it).
  */
 const wordsBack = (F: number) => {
   let b = 0;
   UPDATE.changes.forEach((_, i) => {
     const c = copy(`change${i + 1}`);
-    b = Math.max(b, prog(F, c.in - f60(4), c.in + f60(16), E.stdInOut) * (1 - prog(F, changeOut(i) - f60(2), changeOut(i) + f60(18), E.stdInOut)));
+    const stays = i === N - 1 && DEAL.payoff === 'rise';
+    b = Math.max(b, prog(F, c.in - f60(4), c.in + f60(16), E.stdInOut) * (stays ? 1 : 1 - prog(F, changeOut(i) - f60(2), changeOut(i) + f60(18), E.stdInOut)));
   });
   return b;
 };
@@ -145,7 +149,7 @@ export const shotAt = (F: number): Shot => {
     const next = beat(BEATS.change(i + 1));
     s = lc(s, pushIn(creep(shotOf(i), F, at, next), F, CUE[`push${i}`]), across(F, at));
   }
-  // 'pull': back over every change; 'rise': the last change keeps its frame and recedes (a slow pull of 12 %)
+  // 'pull': back over every change; 'rise': the camera keeps the last change's frame and recedes (a slow pull of 12 %) on the clean ground
   if (DEAL.payoff === 'pull') s = lc(s, WIDE, carriedProg(F, CUE.gather)); // a carried move: fastest on the act line, then decaying
   else s = { ...s, k: s.k * lmix(1, 0.88, prog(F, CUE.gather - f60(10), CUE.land + f60(30), E.strongInOut)) };
   const t3 = turnAt(F);
@@ -231,7 +235,7 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
   const leave = prog(F, beat(BEATS.change(0)) - MOVE / 2, beat(BEATS.change(0)) + MOVE / 2, E.strongInOut);
   // 'pull': the version swings in from the right with the pull, already moving on the act line (one carried move);
   // 'rise': it rises out of its mask from CUE.swing
-  const swingFrom = pull ? CUE.gather + f60(12) : CUE.gather; // 'pull': in from the right on the pull's decay, landing on CUE.land
+  const swingFrom = pull ? CUE.gather + f60(12) : CUE.swing; // 'pull': in from the right on the pull's decay, landing on CUE.land; 'rise': out of its mask from CUE.swing
   const early = F < swingFrom;
   const back = prog(F, swingFrom, CUE.land, pull ? E.glideOut : E.snapOut);
   const rest = prog(F, beat(BEATS.end) - f60(20), beat(BEATS.end) + f60(20), E.strongInOut); // the move to the end card, at its fastest on the act line
@@ -275,8 +279,9 @@ export const World: React.FC<{ from: number }> = ({ from }) => {
   return (
     <AbsoluteFill style={{ background: T.ground, overflow: 'hidden' }}>
       <LitGround frame={F} spec={{ kind: 'key', base: T.ground, seed: 7, drift: 12 }} cam={{ shot: s, base: HOOK }} />
-      {/* the strip of product moments, sharp until the payoff, then softening into a far plane behind the version */}
-      <div style={{ position: 'absolute', inset: 0, opacity: (1 - (beside ? 0.7 : 0.6) * rest) * (1 - 0.5 * stepBack) }}>
+      {/* the strip of product moments, sharp until the payoff, then softening into a far plane behind the version; it
+          clears under each change's words (their own clean beat on the ground) and comes back for the next surface */}
+      <div style={{ position: 'absolute', inset: 0, opacity: (1 - (beside ? 0.7 : 0.6) * rest) * (1 - stepBack) }}>
         <RackFocus t={soft} blur={10 * U} render={() => strip} />
       </div>
       {showNum && (

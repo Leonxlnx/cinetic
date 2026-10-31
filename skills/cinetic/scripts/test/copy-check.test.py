@@ -9,7 +9,8 @@
   3. Update films: "[Name] [version]" first passes; a script without the version fails.
   4. The readers: a TREATMENT.md Script table (with an At column), out/cues.json (a build chain is one line,
      ui and name entries set apart, the end card apart), --stdin, a .txt with times; --json carries the lines,
-     the findings and the stranger's read.
+     the findings and the stranger's read. A cues.json of a film whose content module (src/*.ts) still carries the
+     template's cinetic:placeholder marker fails scaffold (the template's sample script) until the marker goes.
   5. Every example script the skill ships passes: the Script tables in assets/TREATMENT.md, the good scripts in
      references/copy-and-type.md, references/update-films.md and references/worked-example.md; the bad ones fail.
   6. Placeholders: a script line that says "Placeholder" and a COPY ui string in lorem ipsum fail; --ui src reads
@@ -190,6 +191,24 @@ result(texts[:1] == ['Tessel moves your meetings.'] and len(texts) == 3 and len(
 cues['copy'][2]['swap'] = 'a'
 code, rep = run(['--stdin', '--format', 'launch'], json.dumps(cues))
 result(code == 0 and not rules(rep), '--stdin: the same line declared swap passes, the end card closes on the name and URL', ', '.join(rules(rep)))
+# scaffold: the same clean script in a film whose content module still carries the template's cinetic:placeholder marker
+# (the template's sample script, never this film's) fails until the marker goes; the house files (deal.ts) never count
+film = os.path.join(TMP, 'film')
+os.makedirs(os.path.join(film, 'src'), exist_ok=True)
+os.makedirs(os.path.join(film, 'out'), exist_ok=True)
+open(os.path.join(film, 'src', 'timeline.ts'), 'w', encoding='utf-8').write('export const FPS = 60;\n')
+open(os.path.join(film, 'src', 'deal.ts'), 'w', encoding='utf-8').write('// cinetic:placeholder - a house file: not the script\n')
+content = os.path.join(film, 'src', 'update.ts')
+open(content, 'w', encoding='utf-8').write('// The update film\'s facts.\n//\n// cinetic:placeholder - an invented release: write the real one, then delete this line.\nexport const U = 1;\n')
+fc = os.path.join(film, 'out', 'cues.json')
+open(fc, 'w', encoding='utf-8').write(json.dumps(cues))
+code, rep = run([fc, '--format', 'launch'])
+sc = [f for f in rep.get('findings', []) if f['rule'] == 'scaffold']
+result(code == 1 and len(sc) == 1 and sc[0]['severity'] == 'error' and sc[0]['where'] == 'src/update.ts:3',
+       "scaffold: a clean script whose content module still carries the template's marker fails (src/update.ts:3), a house file's marker does not", json.dumps(sc)[:300])
+open(content, 'w', encoding='utf-8').write('export const U = 1;\n')
+code, rep = run([fc, '--format', 'launch'])
+result(code == 0 and 'scaffold' not in rules(rep), 'scaffold: the marker deleted, the same script passes', ', '.join(rules(rep)))
 code, rep = run([script(['0 | Tessel is a calendar for teams.', '4.5 | It moves meetings that clash.'], 'timed.txt')])
 result(rep.get('timed') and [l['at'] for l in rep.get('lines', [])] == [0, 4.5], 'a .txt with "seconds | line" rows carries its times', json.dumps(rep.get('lines'))[:200])
 

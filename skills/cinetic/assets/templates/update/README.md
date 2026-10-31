@@ -12,8 +12,8 @@ end card with the version, the mark and the name. One camera carries the whole f
 is a velocity seam; the film makes one 3D camera move. Each slot deals one of two devices per film from the name
 (`src/deal.ts`, template.json "slots"): the stage (slate or paper), the hook (the last numeral rolling from the old
 value, or the new version rising out of a mask once the name is read), the turn (a yaw into the second change, or a
-pitch over the payoff), the payoff (a pull back over every change as the version swings in, or the last change
-receding as the version rises in front) and the end (the version stepping back to the upper right over the lockup, or
+pitch over the payoff), the payoff (a pull back over every change as the version swings in, or the version rising
+alone on the clean ground the last change's words leave) and the end (the version stepping back to the upper right over the lockup, or
 settling after the name as one lockup); every line is dealt a move and an exit.
 
 **What to write.**

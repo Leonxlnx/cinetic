@@ -39,6 +39,10 @@ Checks (error unless marked):
   placeholder a line or a UI string that marks itself unfinished: lorem ipsum, "Placeholder", "Label text", "Your
               text here", a generic label alone ("Button", "Caption") or a generic noun and a number ("Item 1");
               the lists are scripts/placeholders.json, which lint-film.mjs reads too
+  scaffold    (out/cues.json) the script is still a template's sample: a content module of the film (src/*.ts: the
+              file a template keeps its script and product strings in, the timeline) still carries its
+              cinetic:placeholder marker, so its lines are stand-ins (a sample product, a sample domain, a slot), never
+              this film's: write the film's own lines there, then delete the marker
   slot        (--ui) a UI string still holding a template's bracketed slot ("[Product]", "[N] items", "[$19]"): with
               --ui src every object value and list item of the film's source is read, whatever its key (a mark's
               logoName, a chip, a status, a pair's ui list), never a call's argument or a citation ("[2]")
@@ -777,6 +781,35 @@ def estimate_times(lines):
         t += (28 + 11 * (n - 1) + max(52, 36 + 7 * n) + 15) / 60
 
 
+# the film's own source files that are entry points, sound or the dealt direction, not content (precheck.mjs NOT_CONTENT)
+_NOT_CONTENT = {'index.ts', 'blur.ts', 'sync.ts', 'music.ts', 'logos.ts', 'deal.ts'}
+
+
+def scaffold_markers(path):
+    """The content modules of the film a cues.json belongs to that still carry a template's cinetic:placeholder marker:
+    (file, line) pairs. The film is the first folder holding src/timeline.ts at or above the cues file's folder."""
+    d = os.path.dirname(os.path.abspath(path))
+    for _ in range(4):
+        if os.path.isfile(os.path.join(d, 'src', 'timeline.ts')):
+            break
+        d = os.path.dirname(d)
+    else:
+        return []
+    src = os.path.join(d, 'src')
+    out = []
+    for f in sorted(os.listdir(src)):
+        if not f.endswith('.ts') or f.endswith('.d.ts') or f in _NOT_CONTENT:
+            continue
+        try:
+            text = open(os.path.join(src, f), encoding='utf-8').read()
+        except OSError:
+            continue
+        m = re.search(r'cinetic:placeholder\b', text)
+        if m:
+            out.append((f'src/{f}', text.count('\n', 0, m.start()) + 1))
+    return out
+
+
 def film_marks(path=None):
     """The real marks the film shows: the names in public/logos/logos.json (scripts/logos.mjs writes it), found beside
     the script, up to three folders above it, or in the working folder (grid-check runs from the film)."""
@@ -1139,6 +1172,12 @@ def main(argv):
         l['text'], key = key_marks(l['text'])
         marked.append(key)
     findings, name, stranger = check(lines, names, ui, name, fmt, allow, marks)
+    if a['path'] and a['path'].endswith('.json') and not a['stdin']:
+        for f, ln in scaffold_markers(a['path']):
+            findings.append({'rule': 'scaffold', 'severity': 'error', 'line': None, 'text': '', 'where': f'{f}:{ln}',
+                             'message': f'the script is still the template\'s sample: {f}:{ln} carries its cinetic:placeholder marker, so '
+                                        'these lines are stand-ins (a sample product, a sample domain, a slot), not this film\'s: write the '
+                                        'film\'s own lines and strings there (references/copy-and-type.md), then delete the marker'})
     keys = [{'line': i + 1, 'key': k or suggest_key(l['text'], name), 'marked': k is not None} for i, (l, k) in enumerate(zip(lines, marked))]
     findings += ui_findings()
     script_strings = [(l['text'], f'line {i + 1}') for i, l in enumerate(lines)] + [(u['text'], 'COPY ui') for u in ui] + [(n['text'], 'COPY name') for n in names]

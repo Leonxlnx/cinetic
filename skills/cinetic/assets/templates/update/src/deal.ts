@@ -14,7 +14,7 @@ export const SLOTS = {
   hook: ['roll', 'mask'],
   /** the film's one 3D camera move: the strip yaws as the camera travels into the second change; or the pull-back pitches down over the strip */
   turn: ['yaw', 'pitch'],
-  /** the payoff: the camera pulls back over every change as the version swings in front; or the last change recedes out of focus and the version rises in front of it */
+  /** the payoff: the camera pulls back over every change as the version swings in front; or the version rises out of its mask alone on the clean ground the last change's words leave */
   payoff: ['pull', 'rise'],
   /** the end card: the version recedes into the set and the lockup is set before it; or the version settles beside the name as one lockup */
   end: ['set', 'beside'],
@@ -73,8 +73,8 @@ export const dealDevices = (seed: number, pin: Partial<Deal> = {}): Deal => {
   return out as Deal;
 };
 
-/** The template's own deal: what its scaffold plays before the product's name is in (its invented name, Quorum). */
-const FLOOR_SEED = hashSeed('Quorum');
+/** The template's own deal: what its scaffold plays before the product's name is in (its name slot, [Product]). */
+const FLOOR_SEED = hashSeed('[Product]');
 export const FLOOR: Deal = dealDevices(FLOOR_SEED);
 /**
  * A film is never the template replayed: of the slots it deals (pins aside), at least half play another device than

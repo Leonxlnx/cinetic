@@ -101,7 +101,9 @@ const Obj: React.FC<{ item: InlineItem; cap: number; w: number; o: ObjProps }> =
   const mark = item.logo ? logoOf(item.logo) : null;
   const mf = mark ? logoFile(mark, 'mark', t.dark ? 'dark' : 'light') : null;
   return (
-    <div data-ui style={{ display: 'inline-flex', alignItems: 'center', gap: h * C.gap, height: h, padding: `0 ${h * C.pad}px`, borderRadius: h / 2, transform: `translateY(${((cap - h) / 2).toFixed(2)}px)`, background: item.on ? t.accent : t.surface, boxShadow: `inset 0 0 0 ${(1.2 * U).toFixed(2)}px ${t.line}`, boxSizing: 'border-box' }}>
+    // a block-level flex box (never inline-flex): an inline box would sit its label's baseline on the line's baseline,
+    // dropping the pill below the cap box, where the slot's clip cuts it flat; this one centres on the cap box
+    <div data-ui style={{ display: 'flex', width: 'max-content', alignItems: 'center', gap: h * C.gap, height: h, padding: `0 ${h * C.pad}px`, borderRadius: h / 2, transform: `translateY(${((cap - h) / 2).toFixed(2)}px)`, background: item.on ? t.accent : t.surface, boxShadow: `inset 0 0 0 ${(1.2 * U).toFixed(2)}px ${t.line}`, boxSizing: 'border-box' }}>
       {mf ? <Img src={staticFile(mf.src)} style={{ display: 'block', height: h * C.mark, width: h * C.mark * Math.min(INLINE.maxAspect, mf.aspect) }} /> : item.glyph ? <Glyph name={item.glyph} size={h * C.mark} color={item.on ? t.accentInk : t.accent} variant="fill" /> : null}
       <span data-text={o.id ? `${o.id}-chip` : 'inline-chip'} style={face(label, 600, item.on ? t.accentInk : t.text, -0.01, 1)}>{item.label}</span>
     </div>
