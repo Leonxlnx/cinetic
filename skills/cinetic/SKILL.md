@@ -116,19 +116,19 @@ shapes are in [templates.md](references/templates.md) (`--template none` keeps t
 `film.json`: the start time and the last three films' devices, to stay away from.
 
 **2. Direction and script (10 min).** `python3 scripts/deck.py --brief "<one line>" --format launch [--have ui,photos]
-[--brand brand/brand.json]` deals one direction from the brief and the history and writes `out/DIRECTION.md`
-(`--options 3` deals three to choose from). Copy [assets/TREATMENT.md](assets/TREATMENT.md) to the project and write
+[--brand brand/brand.json]` deals a direction from the brief and the history into `out/DIRECTION.md` (`--options
+3`: three). Copy [assets/TREATMENT.md](assets/TREATMENT.md) to the project and write
 the idea sentence (it fails with a competitor's name in it) and the script: line 1 says what the product is ("[Name]
 turns [input] into [output]."), then one concrete thing it does a line, then the claim: 3-4 lines at any length, the
 pictures between carry the rest. `python3 scripts/copy-check.py TREATMENT.md` passes before any picture work
 ([copy-and-type.md](references/copy-and-type.md)).
 
-**3. Picks and beat plan (5 min).** From [catalogue.md](references/catalogue.md) pick one text voice, two or three moves,
-the signature, two or three seam kinds, the ground family, the end-card design and, when the film shows other products,
-one presentation of their marks; write them into `film.json` `devices` and run `node scripts/film-diff.mjs`. In
-launch-simple the product's name deals the voice, the ground, the seams, the end card and the camera
-(`src/deal.ts`); pin a slot in `src/launch.ts` for a reason. Then the beat plan in
-`TREATMENT.md`: each picture beat names the visible change that proves the line before it.
+**3. Creative elements and picks (5 min).** It also deals two or three creative elements at random (`src/dealt.ts`):
+devices from `src/fx/creative`, each a whole beat with the product inside. launch-simple plays them on half its beats
+or more (`CREATIVE_PLAN`); give each its needs on its pair (`alts`, `logos`, `before`, `count`), swap one at most,
+with a reason. The deal sets voice, ground, seams, end card and camera (`src/deal.ts`); other templates pick from
+[catalogue.md](references/catalogue.md) (§0) into `film.json` `devices`, then `node scripts/film-diff.mjs`. The beat
+plan in `TREATMENT.md` names each picture beat's visible change.
 
 **4. Music (10 min).** The track is chosen before the timeline and the picture is cut to it
 ([music.md](references/music.md)): `node scripts/music.mjs pick --mood "<words>" --length <s>` (the curated library;

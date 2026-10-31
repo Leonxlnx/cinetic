@@ -1,14 +1,51 @@
 # Catalogue: what a film is made of, one pick per slot
 
-A film is one text voice, two or three moves, two or three seam kinds, one ground family, one end-card design and one
-signature, picked from the menus below for what the line says and what the product does. Pick them in the plan step
+A film is two or three dealt creative elements (§0), one text voice, two or three moves, two or three seam kinds, one
+ground family, one end-card design and one signature, picked from the menus below for what the line says and what the product does. Pick them in the plan step
 (before any act is built), write the ids into `film.json` `devices`, and run `node scripts/film-diff.mjs`: the ground,
 the voice, the signature and the end card differ from each of the last three films, and the move set (voice,
 signature, logo design, moves, seam kinds) shares at most 25 % with each of them. `film.json` `recent` lists what the
 last films used. Never take a whole shot order from anywhere: the menus are parts, the film is yours.
 
 Numbers are at 60 fps and 1080p (f@60, px@1080); `fx/Seam` and the starter's primitives convert them to the film's
-frame rate and size.
+frame rate and size. The camera moves only with a purpose (a move that starts, travels and lands; a hold may be still),
+nothing idles up and down, cards face the camera.
+
+## 0. Creative elements (two or three a film, dealt)
+
+A film is never "a line, then a card". Every film plays two or three creative elements: finished devices in the
+starter's `src/fx/creative`, each a whole beat (a line or a picture) with the product's own scene inside it.
+`deck.py` deals them at random from the whole library, seeded by the film's name and the film history: never the set
+of a recent film, nothing shared with the last one while a draw can avoid it, at least one that draws a line and one
+that draws a picture, never two of one family (`src/dealt.ts` `creative`; the sheet's last section; `deck.py
+--creative` deals them alone). launch-simple maps them onto the beats where each says the most (`CREATIVE_PLAN`), at
+least half the body's beats, drawing more from the deal's reserve for a long film, and plays them: the camera stays
+at rest under them (each brings its own move that starts, travels and lands). Build what it needs, never swap the
+deal away: one swap at most, for another device, with the reason (launch.ts `creative: { swap: { a: 'b' }, reason }`);
+a pair's `creative` pins one. Outside launch-simple: `<CreativePicture id scene={(f) => ...} focus .../>` and
+`<CreativeLine cid words .../>` from `fx/creative`. Each device's recipe and numbers: its `RECIPE` (f@60, px@1080).
+
+| id | draws | what the viewer sees | the pair gives it |
+|---|---|---|---|
+| `word-swap` | line | the line builds with its key word's slot rolling (out upward through a mask, the next in from below) through two or three alternatives on settling beats, the row re-centring; it lands on the real word in the accent | `alts` |
+| `scale-contrast` | line | the key word as large as the frame allows (cap up to 30 %, heavy, tight), its letters rising out of a mask; the rest of the line small above and under it, one centred composition | - |
+| `type-window` | line | the other words step away, the key word grows to 88 % of the width and its letters become windows onto the product; the camera dives into the thickest stroke of the middle letter while the picture inside settles to rest: word and picture in one shot | - |
+| `type-object` | line | the key word slides to the centre and a lit accent pill grows round it; the pill becomes the product's own frame (size, corner, colour together) and opens into the picture | - |
+| `split-around` | line | once read, the line parts at its key word and a lit window of the product grows in the gap; the words leave outward at speed as the window opens to the frame | - |
+| `pixel-assemble` | picture | a grid of square tiles assembles the product from its focus point outward, each flashing in two tones of the accent and clearing to its piece, the gaps closing into one screen | - |
+| `shape-morph` | picture | an accent dot morphs on phrased beats into a pill, a lit square, then the product's frame, which opens | - |
+| `object-turn` | picture | the product enters edge-on and turns to face the camera on one strong in-out, a band of light crossing it; it lands at zero and holds (the only designed tilt) | - |
+| `logo-orbit` | picture | the products it works with as official marks in the film's one ink on flat lit tiles round a ring, the turn decaying to a cruise; they collapse into the centre and the product grows out of it | `logos` |
+| `split-compare` | picture | the old way (a muted card of hand steps, each on its spinner) beside the product, a divider with a lit knob travelling to the centre; then the product takes the frame | `before` |
+| `data-sculpture` | picture | lit columns rise toward the last, tallest one in the accent while the figure above counts up and lands | `count` |
+| `colour-flood` | picture | the accent floods out of the element just pressed until it covers the frame, a check draws on the colour with the result's word, then it drains back (the film's colour event) | `word` (optional) |
+| `zoom-wall` | picture | the product fills the frame, then the camera pulls back and it is one tile of a wall of it at other moments | - |
+| `photo-arc` | picture | upright cards (the film's photos, else the product at other moments) stream along a wide arc and slow; the top one opens to the frame | `photos` (optional) |
+| `dot-button` | picture | a dot travels to where the product's button will be, grows into it, is pressed, and the product irises open from it | `label` (optional) |
+
+Devices that end on the product at rest may play the last picture (the end card is built from it); a line device that
+hands over (type-window, type-object, split-around) owns its picture's first frame, so no other device takes that
+picture. `logos` and `count` are real: the products it really works with, the product's own figure.
 
 ## 1. Text voice (one a film)
 
@@ -41,13 +78,13 @@ film's one signature, on one line.
 
 | id | recipe |
 |---|---|
-| `push` | a slow push with the subject sinking, or a decelerating push x1.4 on expo-out; holds creep 0.2-1 px/f |
+| `push` | a slow push with the subject sinking, or a decelerating push x1.4 on expo-out, landing; the hold after it may rest |
 | `whip` | 12 f in, 7 f out, the content swapping at the peak (110-220 px/f) |
 | `punch-in` | a one-frame x1.1-1.3 punch on a landing word or a click, a long settle (declare it: one snap device a film) |
 | `morph` | the outgoing hero's size, radius and colour interpolate into the incoming hero (18-30 f) |
 | `shrink-to-mark` | a big element shrinks on expo-in into the cut and becomes the next shot's mark |
 | `card-river` | a continuous stream of cards, speed in waves of 40-200 px/f (`fx/Pictures` `ArcRiver`): only where the line is about many |
-| `fan` | cards spread into a tilted three-card stack, then a settle push x1.08 |
+| `fan` | cards spread side by side into a three-card row facing the camera, then a settle push x1.08 that lands |
 | `match-hold` | the subject or the line holds while the plate behind it swaps, accelerating (8, 9, 4 ... 2 f apart) |
 | `mask-grow` | a pill or letterbox mask stretches open on expo-out onto the next picture |
 | `carousel` | elements orbit and swap on a ring; the field turns fast (11 deg/f) and decays to a cruise |
@@ -159,4 +196,5 @@ T = a line alone, centred, on the clean ground; A = the product acting, full fra
 
 A 15 s launch is 3-4 lines and 3-4 picture beats; a 30 s one 5-7 lines. Lines run 0.5-2.3 s (about 1.3), picture
 beats 1-3.5 s, the first line on screen by 1 s, 0.3-1.5 headline words a second. `assets/templates/launch-simple`
-lays this down and deals the voice, the ground, the seams, the end card and the camera.
+lays this down, deals the voice, the ground, the seams, the end card and the camera (still, or one push that lands),
+and plays the film's creative elements (§0) on at least half its beats.
