@@ -64,9 +64,12 @@ export const resolveOf = (n: number): number =>
   DEAL.voice === 'build' ? VOICE.build.stagger * (n - 1) + Math.max(VOICE.build.fade, VOICE.build.recentre) : DEAL.voice === 'blur' ? VOICE.blur.dur : VOICE.ink.stagger * (n - 1) + VOICE.ink.ink;
 /**
  * The hero line (the claim, the film's last line) takes the film's one contrasting entry: its words arrive in the voice,
- * then after a `pause` its last word snaps in, one frame at `from` x its size, settling in `settle` (f@60).
+ * centred on their own; the words glide over to open its room (`recentre` f@60, ending on the snap), then after a
+ * `pause` its last word snaps into the open slot from its left edge, one frame at `from` x its size, settling in
+ * `settle` (f@60). From its left edge, at x1.6, into a slot already open, the snapping word never covers the word
+ * before it nor leaves the frame on its big frame.
  */
-export const HERO = { pause: 8, settle: 7, from: 2.2 } as const;
+export const HERO = { pause: 8, settle: 7, from: 1.6, recentre: 12 } as const;
 /** When the hero line's last word snaps in, f@60 from the line's first frame (n words). */
 export const heroSnapAt = (n: number): number =>
   (DEAL.voice === 'blur' ? Math.round(VOICE.blur.dur * 0.6) : (DEAL.voice === 'build' ? VOICE.build.stagger : VOICE.ink.stagger) * Math.max(0, n - 1)) + HERO.pause;
@@ -111,23 +114,40 @@ const OVER_TAIL = 6;
 
 export type BeatKind = 'T' | 'TA' | 'A' | 'end';
 export type BeatPlan = { id: string; kind: BeatKind; from: number; to: number; pair: number };
-export type Mode = 'alone' | 'with' | 'over';
+export type Mode = 'alone' | 'with' | 'over' | 'none';
 
 const P = LAUNCH.pairs;
-if (P.length < 2 || P.length > 6) throw new Error(`timeline: launch.ts has ${P.length} pairs; a simple launch has 2-6 (3-4 is typical)`);
-// a key word on at most 60 % of the lines (the accent ink is the emphasis; on every line it is decoration)
-const keyed = P.filter((p) => /\*/.test(p.line)).length;
-if (keyed > 0.6 * P.length) throw new Error(`timeline: ${keyed} of ${P.length} lines mark a key word; keep it to at most 60 % (launch.ts: drop the stars on one line)`);
+if (P.length < 2 || P.length > 7) throw new Error(`timeline: launch.ts has ${P.length} pairs; a simple launch has 2-7 (3-5 is typical)`);
+/** Whether pair i has a line: a picture-only pair (no `line`) plays its picture on from the last one, no words. */
+export const hasLine = (i: number) => !!P[i]?.line?.trim();
+// the first line says what the product is and the claim closes: those two always have their words
+if (!hasLine(0) || !hasLine(P.length - 1)) throw new Error('timeline: the first pair and the last (the claim) need a line; a pair between may leave its line out (a picture-only beat)');
+// fewer words than pictures: at most two lines before the claim, the pictures between carry the rest
+const LINES_MAX = 4;
+if (P.filter((_, i) => hasLine(i)).length > LINES_MAX) throw new Error(`timeline: ${P.filter((_, i) => hasLine(i)).length} lines; a launch says at most ${LINES_MAX} (the first, the claim and two between): leave the line out of a pair whose picture says it (launch.ts: a pair with no line plays its picture alone)`);
+// a key word on at most two lines, about 40 % of them (one of two or three lines, two of four): the accent ink is the
+// emphasis; one word in the accent on line after line is a template's tic, not emphasis
+const LINES = P.filter((_, i) => hasLine(i)).length;
+export const KEYED_MAX = Math.max(1, Math.min(2, Math.round(0.4 * LINES)));
+const keyed = P.filter((p) => /\*/.test(p.line ?? '')).length;
+if (keyed > KEYED_MAX) throw new Error(`timeline: ${keyed} of ${LINES} lines mark a key word; at most ${KEYED_MAX} in a film of ${LINES} lines (launch.ts: keep the stars on the line whose word matters most, drop the others)`);
 /** How each line meets its picture: launch.ts `beat`, else the first line and the claim alone, the lines between with. */
-export const MODES: Mode[] = P.map((p, i): Mode => p.beat ?? (i === 0 || i === P.length - 1 ? 'alone' : 'with'));
+export const MODES: Mode[] = P.map((p, i): Mode => (!hasLine(i) ? 'none' : p.beat ?? (i === 0 || i === P.length - 1 ? 'alone' : 'with')));
 // lengths in half beats (8ths): a line's beat is its build, its read and its exit, rounded up; a picture's is its seconds
 // (with: the picture alone after the line; over: the line and the picture together, the longer of the two)
 const HALF = BEAT / 2;
 const beatsOf = P.map((p, i) => {
-  const n = wordCount(plain(p.line));
   const mode = MODES[i];
+  if (mode === 'none') {
+    // a picture-only pair: its picture alone, carried on from the last picture
+    const want = Math.min(PIC.max, Math.max(PIC.min, p.seconds ?? PIC.house[i % PIC.house.length]));
+    let a = Math.max(2, Math.round(SEC(want) / HALF));
+    while (a * HALF < SEC(PIC.min)) a++;
+    return { t: 0, a, mode };
+  }
+  const n = wordCount(plain(p.line ?? ''));
   const need = f60(LEAD + resolveLine(n, i === P.length - 1)) + f60(holdFor(n, pace)) + f60(mode === 'alone' ? SEAM_OUT : mode === 'over' ? LINE_EXIT + OVER_TAIL : LINE_EXIT);
-  if (need > SEC(LINE.max)) throw new Error(`timeline: "${plain(p.line)}" needs ${(need / FPS).toFixed(2)} s; a line beat holds at most ${LINE.max} s: shorten it`);
+  if (need > SEC(LINE.max)) throw new Error(`timeline: "${plain(p.line ?? '')}" needs ${(need / FPS).toFixed(2)} s; a line beat holds at most ${LINE.max} s: shorten it`);
   const want = Math.min(PIC.max, Math.max(PIC.min, p.seconds ?? PIC.house[i % PIC.house.length]));
   let a = Math.max(2, Math.round(SEC(want) / HALF));
   while (a * HALF < SEC(PIC.min)) a++;
@@ -201,7 +221,7 @@ export const CUE: Record<string, number> = {};
 P.forEach((p, i) => {
   const k = i + 1;
   const pr = PAIRS[i];
-  CUE[`line${k}`] = i === 0 ? (b(1) <= f60(54) ? b(1) : 0) : pr.from; // the first line is on screen by 1 s (frame 0 when the track's first downbeat comes later)
+  if (hasLine(i)) CUE[`line${k}`] = i === 0 ? (b(1) <= f60(54) ? b(1) : 0) : pr.from; // the first line is on screen by 1 s (frame 0 when the track's first downbeat comes later)
   CUE[`ta${k}`] = pr.ta; // alone: line -> picture; with: the line leaves, the picture racks into focus
   // the picture's own moments land where it is seen whole: after its line (alone, with), or across it (over)
   const over = MODES[i] === 'over';
@@ -213,7 +233,11 @@ P.forEach((p, i) => {
   // scene's focus box, which stays inside the safe area), starting on the beat nearest its middle that keeps 0.6 s each
   // side: two framings of the product's moment, never a one-frame jump. A line over the picture keeps the wide frame.
   const cuts: number[] = [];
-  if (!over && len * BEAT > SEC(2.2)) {
+  // a picture behind its line (with) already comes up to the camera as it racks into focus: a push after that is the
+  // same scale-up twice; and never two pictures in a row with a push (every picture sharpening, then scaling up 10-20
+  // %, is a template's tic): the one between keeps the wide frame and re-frames on its beats
+  const pushed = i > 0 && CUE[`a${i}cut`] !== undefined;
+  if (!over && MODES[i] !== 'with' && !pushed && len * BEAT > SEC(2.2)) {
     // on a beat that sounds (a track accent or a downbeat within 100 ms; any beat before the track is in), the one
     // nearest the middle that keeps 0.6 s each side and is not the picture's own moment; none: no cut, the push goes on
     const lo = SEC(0.6) / BEAT;
@@ -266,6 +290,7 @@ P.forEach((_, i) => {
   const k = i + 1;
   const pr = PAIRS[i];
   if (pr.mode === 'over') return void BEAT_PLAN.push({ id: `line${k}`, kind: 'TA', from: pr.from, to: pr.to, pair: k });
+  if (pr.mode === 'none') return void BEAT_PLAN.push({ id: `pic${k}`, kind: 'A', from: pr.from, to: pr.to, pair: k });
   BEAT_PLAN.push({ id: `line${k}`, kind: pr.mode === 'with' ? 'TA' : 'T', from: pr.from, to: pr.ta, pair: k });
   BEAT_PLAN.push({ id: `pic${k}`, kind: 'A', from: pr.ta, to: pr.to, pair: k });
 });
@@ -278,8 +303,9 @@ export const BEAT_MIX = (() => {
 })();
 
 // The seam plan: every change of picture carries something, and the frame is never empty between two scenes.
-//   line -> picture (T -> A)      seamTA: matchCut (the word slot holds the centre across the cut, the picture grows
-//                                 on), velocityCut (the line leaves at speed, the picture arrives on it), blurThrough
+//   line -> picture (T -> A)      seamTA: velocityCut (the line leaves at speed, smeared along its travel, the picture
+//                                 arrives on it), blurThrough (a dealt matchCut plays as blurThrough: a line and a
+//                                 picture share no shape to hold across a one-frame cut)
 //   picture -> line (A -> T)      seamAT: recede (the picture falls back, softening, while the line builds over it) or
 //                                 zoomThrough (the camera pushes into the picture's focus, the line building over the
 //                                 push); never a picture blurred away to an empty ground
@@ -297,19 +323,25 @@ export type SeamRecipe = 'exitEnter' | 'textSwap' | 'matchCut' | 'velocityCut' |
 export type SeamClass = 'TA' | 'AT' | 'AA' | 'end';
 export type SeamPlan = { recipe: SeamRecipe; at: number; dir?: 'left' | 'right' | 'up' | 'down'; id: string; from: number; to: number; cls: SeamClass };
 type Change = Exclude<SeamClass, 'end'>;
+// line -> picture: a line and a picture share no shape, so a match cut there holds nothing across its one-frame cut (a
+// hard cut from type to a picture): a dealt TA matchCut plays as blurThrough, and the turns go between the two that
+// carry (the speed, the blur)
+const TA_PLAYS: Record<string, SeamRecipe> = { matchCut: 'blurThrough', velocityCut: 'velocityCut', blurThrough: 'blurThrough' };
 const ALT: Record<Change, Record<string, SeamRecipe>> = {
-  TA: { matchCut: 'velocityCut', velocityCut: 'matchCut', blurThrough: 'matchCut' },
+  TA: { velocityCut: 'blurThrough', blurThrough: 'velocityCut' },
   AT: { recede: 'zoomThrough', zoomThrough: 'recede' },
-  AA: { velocityCut: 'matchCut', matchCut: 'velocityCut', blurThrough: 'velocityCut' },
+  // picture -> picture: a match cut only where it was dealt (it needs the carried element over it: stage.tsx reports a
+  // match cut with nothing carried), never as another kind's turn
+  AA: { velocityCut: 'blurThrough', matchCut: 'velocityCut', blurThrough: 'velocityCut' },
 };
-const OPTIONS: Record<Change, SeamRecipe[]> = { TA: ['matchCut', 'velocityCut', 'blurThrough'], AT: ['recede', 'zoomThrough'], AA: ['velocityCut', 'matchCut', 'blurThrough'] };
+const OPTIONS: Record<Change, SeamRecipe[]> = { TA: ['velocityCut', 'blurThrough'], AT: ['recede', 'zoomThrough'], AA: ['velocityCut', 'blurThrough', ...(DEAL.seamAA === 'matchCut' ? (['matchCut'] as SeamRecipe[]) : [])] };
 const KIND: Record<SeamRecipe, SeamKind> = { exitEnter: 'breath', textSwap: 'defocus', matchCut: 'morph', velocityCut: 'velocity', blurThrough: 'defocus', zoomThrough: 'zoomThrough', sharedElement: 'morph', recede: 'breath' };
 /** Every change of picture and how it is carried: the stage draws each, SEAMS declares them. */
 export const SEAM_PLAN: SeamPlan[] = [];
 {
   const list: SeamPlan[] = [];
   const turn: Record<Change, number> = { TA: 0, AT: 0, AA: 0 };
-  const deal = { TA: DEAL.seamTA, AT: DEAL.seamAT, AA: DEAL.seamAA } as Record<Change, SeamRecipe>;
+  const deal = { TA: TA_PLAYS[DEAL.seamTA] ?? 'blurThrough', AT: DEAL.seamAT, AA: DEAL.seamAA } as Record<Change, SeamRecipe>;
   const pick = (c: Change) => (turn[c]++ % 2 === 0 ? deal[c] : ALT[c][deal[c]]);
   const beat = (id: string) => BEAT_PLAN.findIndex((x) => x.id === id);
   let side = 0;
@@ -318,7 +350,7 @@ export const SEAM_PLAN: SeamPlan[] = [];
     const k = i + 1;
     const pr = PAIRS[i];
     if (i > 0) {
-      const into = beat(`line${k}`);
+      const into = beat(pr.mode === 'none' ? `pic${k}` : `line${k}`);
       const cls: Change = pr.mode === 'alone' ? 'AT' : 'AA';
       const r = pick(cls);
       list.push({ recipe: r, at: pr.from, dir: dirOf(r), id: cls === 'AT' ? `pic${i}-line${k}` : `pic${i}-pic${k}`, from: into - 1, to: into, cls });
@@ -374,7 +406,12 @@ const lineOut = (i: number) => (PAIRS[i].mode === 'alone' ? CUE[`ta${i + 1}`] - 
 export const COPY: Copy[] = [];
 P.forEach((p, i) => {
   const k = i + 1;
-  const text = plain(p.line);
+  if (!hasLine(i)) {
+    // a picture-only pair: only its picture's strings, read from its first frame
+    (p.ui ?? []).forEach((u, j) => COPY.push({ id: `ui${k}.${j + 1}`, text: u, kind: 'ui', in: PAIRS[i].pic, resolved: PAIRS[i].pic + f60(20), out: PAIRS[i].to }));
+    return;
+  }
+  const text = plain(p.line ?? '');
   const into = SEAM_PLAN.find((s) => s.at === PAIRS[i].from && s.cls === 'AT');
   const early = i > 0 && into ? LINE_EARLY[into.recipe] ?? 0 : 0;
   const inF = CUE[`line${k}`] + (i === 0 ? 0 : f60(LEAD)) - early;

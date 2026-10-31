@@ -1,8 +1,8 @@
 // The line: one sentence, centred in the middle band, in the film's one voice (deal.ts voice), the key word in the
 // accent ink. Set with care, in three sizes so the lines have a hierarchy in one face: a line alone at a 7.4 % cap, a
 // line over its picture a step under it (6.6 %: it shares the frame), and the claim, the film's last line and its hero,
-// at 11.2 % and a step heavier, its last word taking the film's one contrasting entry (a snap: one frame at x2.2,
-// settling in 7 f; timeline.ts HERO). Tracking tightens as a line grows, a long line keeps one row at a sentence cap
+// at 11.2 % and a step heavier, its last word taking the film's one contrasting entry (a snap from its left edge: one
+// frame at x1.6, settling in 7 f, the words before it centred until it lands and then making room; timeline.ts HERO). Tracking tightens as a line grows, a long line keeps one row at a sentence cap
 // (6-6.4 %) or breaks into two balanced
 // rows, never shrinks under a 6 % cap. Its text sits on its own composited layer while it is sharp (layer.tsx
 // usePromote), so the camera float and the line's slow creep move it sub-pixel; the blur voice's soft start goes
@@ -111,6 +111,10 @@ export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyIn
   const snap = heroSnapAt(words.length) * k;
   const snapQ = Math.round(t) - snap;
   const snapScale = snapQ < 0 ? 1 : 1 + (HERO.from - 1) * (1 - E.snapOut(clamp(snapQ / (HERO.settle * k))));
+  // until it comes, the words already there are centred on their own (never a ragged block that keeps the room for the
+  // missing word); just before it snaps in they glide over and open its room (HERO.recentre, ending on the snap), so the
+  // word lands in an open slot at its place, growing from its left edge away from the word before it
+  const landed = hero ? E.glideOut(clamp((snapQ + HERO.recentre * k) / (HERO.recentre * k))) : 1;
   // the blur voice: the whole line out of a 12 px blur, gone by 60 % of its settle (still moving), settling from 104 %
   // on a glide
   const whole = voice === 'blur' ? E.glideOut(clamp(t / (VOICE.blur.dur * k))) : 1;
@@ -119,7 +123,9 @@ export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyIn
   const odd = Number(id.replace(/\D/g, '')) % 2 === 1;
   const read = (F - (c.in + c.out) / 2) / FPS; // seconds from the middle of the read
   const lineH = size * LINE_TYPE.lead;
-  const top = cy - (rows.length * lineH) / 2;
+  // a hero word alone on the last row: the rows above stand centred in the band until it lands
+  const lone = hero && rows.length > 1 && rows[rows.length - 1] === 1;
+  const top = cy - (rows.length * lineH) / 2 + (lone ? (1 - landed) * lineH * 0.5 : 0);
   let first = 0;
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, opacity: voice === 'blur' ? clamp(whole / 0.35) : 1, transformOrigin: `${W / 2}px ${cy}px`, transform: `scale(${push.toFixed(5)})` }}>
@@ -131,9 +137,13 @@ export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyIn
           // re-centre (build): each new word of the row pushes it half its width left, settling on a glide (24 f)
           const ends = row.map((_, i) => m(row.slice(0, i + 1).map((w) => w.word).join(' ')));
           let offset = 0;
-          // the hero line is set in its final place from its first word (its entry is the snap, not the re-centre): the
-          // last word lands in the room the line kept for it
-          if (voice === 'build' && !hero) for (let i = 1; i < row.length; i++) offset += ((ends[i] - ends[i - 1]) / 2) * (1 - E.glideOut(clamp((t - (i0 + i) * VOICE.build.stagger * k) / (VOICE.build.recentre * k))));
+          // each word not yet there keeps the row centred on the words that are: the build re-centres as each word
+          // arrives; the hero line's last word makes its room as it snaps in (landed), in every voice
+          for (let i = 1; i < row.length; i++) {
+            const isLast = hero && i0 + i === last;
+            const there = isLast ? landed : voice === 'build' ? E.glideOut(clamp((t - (i0 + i) * VOICE.build.stagger * k) / (VOICE.build.recentre * k))) : 1;
+            offset += ((ends[i] - ends[i - 1]) / 2) * (1 - there);
+          }
           // the read's drift: one row drifts with the line's side; a second row drifts against it, slower (the rows part)
           const dir = (odd ? 1 : -1) * (r === 0 ? 1 : -LINE_PART);
           const drift = dir * LINE_DRIFT * life * U * read;
@@ -153,7 +163,7 @@ export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyIn
                 return (
                   <React.Fragment key={j}>
                     {j > 0 ? ' ' : ''}
-                    <span style={{ display: 'inline-block', color: snapped ? col : color, opacity: a, transformOrigin: '50% 62%', transform: snapped ? `scale(${snapScale.toFixed(4)})` : `translate3d(0px, ${rise.toFixed(3)}px, 0)` }}>{w.word}</span>
+                    <span style={{ display: 'inline-block', color: snapped ? col : color, opacity: a, transformOrigin: snapped ? '0% 62%' : '50% 62%', transform: snapped ? `scale(${snapScale.toFixed(4)})` : `translate3d(0px, ${rise.toFixed(3)}px, 0)` }}>{w.word}</span>
                   </React.Fragment>
                 );
               })}

@@ -12,7 +12,8 @@
 //                           10 f, 6 f apart
 //   ground   (fx/Grounds GROUND_FAMILIES) nearWhite, blackField, whiteBand, deepPool, softSky, lightDark, gradientField:
 //            one family for the whole film, never cut; its one colour event (a band flood, the turn to dark) is declared
-//   seamTA   matchCut       line -> picture: the word slot holds the centre across a one-frame cut, the picture grows on
+//   seamTA   matchCut       line -> picture: played as blurThrough (a line and a picture share no shape to hold across a
+//                           one-frame cut: a match cut there is a hard cut from type to a picture)
 //            velocityCut    the line leaves at speed, the picture arrives on the same speed and settles
 //            blurThrough    the line blurs away to 32 px, the picture resolves out of the same blur
 //   seamAT   recede         picture -> line: the picture falls back (shrinking, softening, fading) while the line
@@ -22,7 +23,8 @@
 //   seamAA   velocityCut    picture -> picture (into a line that arrives with its picture): one camera move carried
 //                           across the cut, the next picture arriving on the same speed
 //            matchCut       the focus point holds its place across the cut on the kept ground, the next picture
-//                           growing on from it
+//                           growing on from it: only under the carried element (precheck reports a match cut with
+//                           nothing carried over it); never another kind's turn
 //            blurThrough    the cut inside a blur, the next picture resolving out of it
 //                           (over any of them, the film's carried element, product.tsx IDEA, flies from its place in one
 //                           picture to its place in the next: the object that becomes the next scene)

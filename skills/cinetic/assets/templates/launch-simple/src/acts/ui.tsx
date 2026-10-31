@@ -21,6 +21,7 @@ import { mixColor, toOklch } from '../lib/color';
 import { measureTracked } from '../lib/measure';
 import { FPS } from '../timeline';
 import { usePromote } from './layer';
+import { BrandLogo } from '../kit/logos';
 
 /** Card numbers (px at 1080p): one radius for the film, inner padding at least 0.8 of the text's cap. */
 export const CARD = { radius: 30, pad: 48, row: 100, text: 48, small: 40, creep: 30, creepMax: 40, edge: 1.5 } as const;
@@ -285,5 +286,111 @@ export const Window: React.FC<{ cx: number; cy: number; w: number; h: number; in
       <div style={{ position: 'absolute', inset: 0, borderRadius: r, pointerEvents: 'none', boxShadow: `inset 0 ${(1.5 * U).toFixed(2)}px 0 rgba(255, 255, 255, 0.32), inset 0 0 0 ${(1.5 * U).toFixed(2)}px rgba(255, 255, 255, 0.1)` }} />
       <Glare w={w} h={h} r={r} dark />
     </div>
+  );
+};
+
+/**
+ * A status pill: a dot and a label inside one lit pill, laid out by the browser (flex), never by a width guessed from
+ * the label's letter count (a guess puts the dot on the pill's edge, or the label under its neighbour). The padding
+ * is even: the same air left of the dot as right of the label (`h` x PILL.pad), the dot `h` x PILL.dot across, the
+ * gap after it `h` x PILL.gap. Anchored at (x, y) by its `anchor` side (a pill at a card's top right: anchor 'right',
+ * x the card's inner right edge), vertically centred on y. `dot` its colour (none: a label pill); `on` 0..1 the dot's
+ * live pulse; the pill's own text sits on its own layer like every Txt.
+ */
+export const PILL = { pad: 0.42, dot: 0.24, gap: 0.26, text: 0.5 } as const;
+export const Pill: React.FC<{ x: number; y: number; h: number; label: string; fill: string; ink: string; dot?: string; anchor?: 'left' | 'right' | 'center'; on?: number; f?: number; weight?: number; opacity?: number }> = ({ x, y, h, label, fill, ink, dot, anchor = 'left', on = 0, f = 0, weight = 560, opacity = 1 }) => {
+  const promote = usePromote();
+  const H = h * U;
+  const d = H * PILL.dot;
+  const pulse = 0.5 + 0.5 * Math.sin((2 * Math.PI * f) / (FPS * 1.4));
+  const tx = anchor === 'left' ? '0%' : anchor === 'right' ? '-100%' : '-50%';
+  return (
+    <div data-ui="" style={{ position: 'absolute', left: 0, top: 0, height: H, display: 'flex', alignItems: 'center', gap: dot ? H * PILL.gap : 0, padding: `0 ${(H * PILL.pad).toFixed(2)}px`, borderRadius: H / 2, background: fill, opacity, whiteSpace: 'pre', transform: `translate3d(${x.toFixed(3)}px, ${(y - H / 2).toFixed(3)}px, 0) translateX(${tx})`, willChange: promote ? 'transform' : undefined }}>
+      {dot ? <div style={{ flex: 'none', width: d, height: d, borderRadius: d / 2, background: dot, boxShadow: `0 0 0 ${(d * 0.32 * pulse * on).toFixed(2)}px ${mixColor(dot, fill, 0.7)}` }} /> : null}
+      <span data-text={label} data-ui="" style={{ fontFamily: FONT.text, fontSize: Math.max(TEXT_MIN, h * PILL.text) * U, fontWeight: weight, letterSpacing: '-0.01em', lineHeight: 1, color: ink }}>{label}</span>
+    </div>
+  );
+};
+
+/**
+ * A state change in one control (a button that becomes a badge: "Merge" to "Merged", "Run" to "Passed"): one pill
+ * whose label swaps in place, never two controls stacked with cross-fading opacities (the old label shows through the
+ * new one). From `at` the old label leaves upward over SWAP.out f@60; the new one rises in from below over SWAP.in f@60,
+ * starting as the old one is nearly gone (SWAP.gap, negative: an overlap; they pass apart, never over each other, and
+ * the pill is never empty for a frame), while the pill's width glides between the two labels'
+ * measured widths and its fill mixes from `fill` to `toFill`. Anchored like Pill (by its right edge at a card's top
+ * right). Browser only (it measures with the film's face).
+ */
+export const SWAP = { out: 8, gap: -2, in: 14 } as const;
+export const SwapLabel: React.FC<{ f: number; at: number; x: number; y: number; h: number; from: string; to: string; fill: string; toFill: string; ink: string; toInk: string; anchor?: 'left' | 'right' | 'center'; weight?: number }> = ({ f, at, x, y, h, from, to, fill, toFill, ink, toInk, anchor = 'left', weight = 600 }) => {
+  const promote = usePromote();
+  const H = h * U;
+  const size = Math.max(TEXT_MIN, h * PILL.text) * U;
+  const pad = H * PILL.pad * 1.2;
+  const wa = measureTracked(from, size, weight, -0.01, FONT.text, { trailing: false }) + 2 * pad;
+  const wb = measureTracked(to, size, weight, -0.01, FONT.text, { trailing: false }) + 2 * pad;
+  const u = clamp((Math.round(f) - at) / (SWAP.out * k60));
+  const v = clamp((Math.round(f) - at - (SWAP.out + SWAP.gap) * k60) / (SWAP.in * k60));
+  const g = E.stdInOut(clamp((Math.round(f) - at) / ((SWAP.out + SWAP.gap + SWAP.in) * k60)));
+  const w = mix(wa, wb, g);
+  const left = anchor === 'left' ? x : anchor === 'right' ? x - w : x - w / 2;
+  const old = 1 - E.buildIn(u);
+  const neu = E.glideOut(v);
+  return (
+    <div data-ui="" style={{ position: 'absolute', left: 0, top: 0, width: w, height: H, borderRadius: H / 2, background: mixColor(fill, toFill, g), overflow: 'hidden', transform: `translate3d(${left.toFixed(3)}px, ${(y - H / 2).toFixed(3)}px, 0)`, willChange: promote ? 'transform' : undefined }}>
+      <span data-text={from} data-ui="" style={{ position: 'absolute', left: 0, top: 0, width: w, height: H, display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'pre', fontFamily: FONT.text, fontSize: size, fontWeight: weight, letterSpacing: '-0.01em', lineHeight: 1, color: ink, opacity: old, transform: `translate3d(0px, ${(-0.5 * H * E.buildIn(u)).toFixed(3)}px, 0)` }}>{u < 1 ? from : ''}</span>
+      <span data-text={to} data-ui="" style={{ position: 'absolute', left: 0, top: 0, width: w, height: H, display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'pre', fontFamily: FONT.text, fontSize: size, fontWeight: weight, letterSpacing: '-0.01em', lineHeight: 1, color: toInk, opacity: neu, transform: `translate3d(0px, ${(0.5 * H * (1 - neu)).toFixed(3)}px, 0)` }}>{v > 0 ? to : ''}</span>
+    </div>
+  );
+};
+
+/**
+ * A card's height from what it holds: `rows` heights (px at 1080p) stacked with `gap` between them, the same padding
+ * above the first and below the last (CARD.pad): content centred in its card, never 25 px of air on top and 100 below.
+ * Lay the rows out from `cardRows(...).y[i]` (each row's top inside the card).
+ */
+export const cardRows = (rows: number[], gap = 0, pad: number = CARD.pad): { h: number; y: number[] } => {
+  const y: number[] = [];
+  let at = pad;
+  for (const r of rows) {
+    y.push(at * U);
+    at += r + gap;
+  }
+  return { h: (at - (rows.length ? gap : 0) + pad) * U, y };
+};
+
+/**
+ * Other products' marks round a line held over them (pair `beat: 'over'`, SceneProps `band`): the official marks
+ * (scripts/logos.mjs, kit/logos BrandLogo), bare, no app-icon tile and no card, set beside the line at its height:
+ * the first half of the list on its left, the rest on its right, MARKS.gap x their size from the band's sides, so the
+ * line keeps the middle and nothing stacks above or below it (a mark row over a line is a stacked layout; tiles read
+ * as an app store, not as the products this one works with). Each arrives from further out on a glide (`at`, frames
+ * from the picture's start, MARKS.stagger f@60 apart) and keeps parting from the line slowly (MARKS.part px a second):
+ * two planes. `size` the marks' optical box, px at 1080 (house: 0.8 of the band's height, 150 at most).
+ */
+export const MARKS = { gap: 0.55, space: 0.45, stagger: 8, rise: 46, dur: 30, part: 6 } as const;
+export const MarksRound: React.FC<{ f: number; band: { x: number; y: number; w: number; h: number }; logos: string[]; ground?: 'light' | 'dark'; size?: number; at?: number }> = ({ f, band, logos, ground = 'light', size, at = 0 }) => {
+  const s = size !== undefined ? size * U : Math.min(band.h * 0.8, 150 * U);
+  const cy = band.y + band.h / 2;
+  const half = Math.ceil(logos.length / 2);
+  const sides: [string[], number][] = [[logos.slice(0, half), -1], [logos.slice(half), 1]];
+  const t = f / FPS;
+  return (
+    <>
+      {sides.flatMap(([list, side]) =>
+        list.map((logo, j) => {
+          const k = side < 0 ? list.length - 1 - j : j; // 0 = nearest the line
+          const i = side < 0 ? j : half + j;
+          const a = E.glideOut(clamp((f - at - i * MARKS.stagger * k60) / (MARKS.dur * k60)));
+          const edge = side < 0 ? band.x - s * MARKS.gap - s - k * s * (1 + MARKS.space) : band.x + band.w + s * MARKS.gap + k * s * (1 + MARKS.space);
+          const x = edge + side * ((1 - a) * MARKS.rise + MARKS.part * t) * U;
+          return (
+            <div key={logo} data-ui="" style={{ position: 'absolute', left: 0, top: 0, width: s, height: s, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: a, transform: `translate3d(${x.toFixed(3)}px, ${(cy - s / 2).toFixed(3)}px, 0)` }}>
+              <BrandLogo logo={logo} box={s} ground={ground} />
+            </div>
+          );
+        }),
+      )}
+    </>
   );
 };

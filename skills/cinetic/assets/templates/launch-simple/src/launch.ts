@@ -1,22 +1,26 @@
 // The film's script: everything the frames say, and nothing else. Write it first (copy-check.py reads it through the
 // timeline), then build the product's scenes in src/product.tsx. Keep this file free of React and CSS imports.
 //
-// The shape: lines and pictures that meet, never a slideshow. Each pair below is one line and the picture that proves
-// it; three to five pairs make a 15-30 s film, then the lockup, built from the last picture, with the one fact under it.
+// The shape: lines and pictures that meet, never a slideshow. Each pair below is a picture and, mostly, the line it
+// proves; three to six pairs make a 15-30 s film, then the lockup, built from the last picture, with the one fact under
+// it. Fewer words than pictures: at most four lines, the pictures between carry the rest.
 // A line meets its picture one of three ways (`beat`), and every change of picture carries something (src/timeline.ts
 // SEAM_PLAN: the picture falls back as the next line builds over it, one camera move carried across a cut, the film's
 // element flying from one scene into the next): the frame is never empty between two scenes.
 //
 //   line     one short sentence, 2-7 words (1-5 is typical), plain words, centred. Line 1 says what the product is or
-//            does, by name ("[Name] turns [input] into [output]."). Mark one key word with *stars* on at most 60 % of
-//            the lines: it takes the accent colour (never a box, an underline or a marker). The last line is the claim,
-//            the film's hero line: set larger, with the film's one contrasting entry
+//            does, by name ("[Name] turns [input] into [output]."). A line says what its picture cannot (who it is for,
+//            why it matters), never what the picture shows (copy-check repeats): leave `line` out of a pair between the
+//            first and the claim and the pair plays its picture alone, carried on from the last. Mark one key word with
+//            *stars* on at most two lines (one in a film of two or three): it takes the accent colour (never a box, an
+//            underline or a marker). The last line is the claim, the film's hero line: set larger, with the film's one
+//            contrasting entry
 //   beat     alone  the line alone on the ground (it builds over the last picture as that one falls back), then its
 //                   picture                                                   (T, then A)
-//            with   the line arrives with its picture's first motion, in front of it (the picture behind, soft and
-//                   low), then leaves as the picture racks into focus and plays on alone  (T+A, then A)
+//            with   the line arrives with its picture's first motion, in front of it (the picture far behind,
+//                   centred, soft and dim), then leaves as the picture comes up and racks into focus  (T+A, then A)
 //            over   the line holds over its whole picture: a picture composed round the line's band (SceneProps
-//                   `band`: footage under a line, logos round it)            (T+A)
+//                   `band`: footage under a line, marks beside it, acts/ui.tsx MarksRound)   (T+A)
 //            unset: the first line and the claim `alone`, the lines between `with`. Aim for about T 25 % / T+A 30 % /
 //            A 37 % of the beats (timeline.ts BEAT_MIX prints it): one `over` in a film of four or five lines gets there
 //   scene    the id of the picture beat in src/product.tsx: the product acting (input becoming output, a click and
@@ -34,7 +38,7 @@
 //            tools/input.mjs` fetches the input shot from it (src/input.ts), the first scene's real footage
 import { IDENTITY } from './brand/identity';
 
-export type Pair = { line: string; scene: string; beat?: 'alone' | 'with' | 'over'; seconds?: number; hits?: number[]; ui?: string[] };
+export type Pair = { line?: string; scene: string; beat?: 'alone' | 'with' | 'over'; seconds?: number; hits?: number[]; ui?: string[] };
 export type Launch = { name: string; pairs: Pair[]; close: string; input?: string; seed?: string; pin?: Partial<Record<string, string>> };
 
 // cinetic:placeholder - the template's stand-in script: write the product's own lines, scenes and strings, then delete this line.

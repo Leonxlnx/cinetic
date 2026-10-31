@@ -10,15 +10,20 @@ frame is never empty between two scenes. 15-30 s, one text voice, one ground fam
 
 ## What you write
 
-1. **The script, `src/launch.ts`.** Three to five pairs; each pair is one line and the picture that proves it.
+1. **The script, `src/launch.ts`.** Three to six pairs; each pair is a picture and, mostly, the line it proves.
    - `line`: one short sentence, 2-7 words (1-5 typical), plain words. Line 1 says what the product does, by name.
-     Mark one key word with `*stars*` on at most 60 % of the lines: it takes the accent ink.
+     A line says what its picture cannot (who it is for, why it matters), never what it shows (copy-check `repeats`):
+     leave `line` out of a pair between the first and the claim when its picture says it, and the pair plays its
+     picture alone, carried on from the last one. At most four lines a film; the pictures carry the rest.
+     Mark one key word with `*stars*` on at most two lines (one in a film of two or three): it takes the accent ink.
    - `scene`: the id of the picture beat in `src/product.tsx`; `seconds` (1-3.5; vary them, a long one beside a short one; unset they run 2.6, 1.6, 2.2, 3.0 in turn); `hits` (where its own
      moments land, as shares of the beat); `ui` (every string the picture shows: real words, no sample names).
    - `beat`: how the line meets its picture. `alone` (T then A: the line alone, building over the last picture as it
-     falls back), `with` (T+A then A: the line arrives with its picture's first motion, the picture rising in under it,
-     soft, then racking into focus as the line lifts away; its `hits` land after the line), `over` (T+A: the line held
-     over its whole picture, which the scene composes round the line's `band`: footage under it, logos round it).
+     falls back), `with` (T+A then A: the line arrives with its picture's first motion, the picture standing far behind
+     it, centred, smaller, soft and dim, never below it or cut by the frame, then coming up to the camera and racking
+     into focus as the line lifts away; its `hits` land after the line), `over` (T+A: the line held over its whole
+     picture, which the scene composes round the line's `band`: footage under it, other products' marks beside it with
+     `MarksRound` from `src/acts/ui.tsx`, bare marks at the line's height, never a row of app tiles above it).
      Unset: the first line and the claim `alone`, the lines between `with`. Aim for about T 25 % / T+A 30 % / A 37 % of
      the beats (`BEAT_MIX`): one `over` in a film of four or five lines gets there.
    - `close`: the one fact under the lockup (where, when, the price), 2-6 words.
@@ -37,7 +42,7 @@ frame is never empty between two scenes. 15-30 s, one text voice, one ground fam
    the task rising out of them. No clip fits: delete the file and the scene plays its code-built fallback (the phone
    alone, the pill already in its screen). Declare the clip's span to `look-audit.py` with `--imagery`.
 3. **The product's scenes, `src/product.tsx`.** One component per scene id, drawn full frame and centred in the
-   ground family's inks (`SceneProps`: `f` frames since the picture began, under its line for `with` and `over`;
+   ground family's inks (`SceneProps`: `f` frames since the picture began, behind its line for `with` and `over`;
    `dur`, `hits`, `inks`, `cut`, `band`, `carry`). Give each scene its `focus` box (x, y, w, h: the push closer frames it
    inside the safe area; a function when it is measured). The first scene
    shows the product's core change literally (input -> output); each picture proves the line before it ("lands on its
@@ -46,17 +51,25 @@ frame is never empty between two scenes. 15-30 s, one text voice, one ground fam
    names its `hero` box: the element the end card is built from. Show the product as a lit object, whole in the frame:
    the kit's `Phone` or `Laptop` (`src/kit/device.tsx`: a silver rim, glass, thickness when tilted, a contact shadow)
    with a light screen, or a lit `Card` from `src/acts/ui.tsx` (a white card on a dark ground: the film's second value;
-   `surfaceInks()` for what it holds), sized by what it holds (never an empty slab). UI type at film size: 44 px and
-   up, titles 60 and up. `ui.tsx` also has a typed field, a row that checks itself, a count, a live waveform, a
-   listening pill, a lit `Window` onto footage and `Plane` (a part nearer or farther than the stage, so the planes
-   part as the camera travels). Keep what a scene shows mounted for the whole
+   `surfaceInks()` for what it holds), sized by what it holds (never an empty slab: `cardRows` gives its height from
+   its rows with even padding above and below). UI type at film size: 44 px and up, titles 60 and up. `ui.tsx` also
+   has a typed field, a row that checks itself, a count, a live waveform, a listening pill, a status `Pill` (dot and
+   label laid out by the browser, even padding), `SwapLabel` (one control whose label changes in place: "Merge" to
+   "Merged", never two controls cross-fading), a lit `Window` onto footage and `Plane` (a part nearer or farther than
+   the stage, so the planes part as the camera travels). Never place a thing beside text by a width guessed from the
+   letter count (lint-film `text-estimate`): lay it out with flex or measure it (`measureTracked`). Siblings share a
+   line: two nodes of a diagram on one baseline, an icon centred on its label's centre line, a divider clear of both. Keep what a scene shows mounted for the whole
    beat (show and hide it with opacity), land its arrivals on its `hits`, ease its state changes, and give the picture
    colour where the product has it: a calm picture never pops, and the checks read it frame by frame.
 4. **The visual idea and the signature.** Draw the product's mechanism as one object carried through the film, never
    a set of unrelated cards: a scene names where the object sits as it ends (`carry.out`) and the next scene where it
    lands (`carry.in`); between two pictures the stage flies it from one to the other over the seam (`IDEA` in
    `src/product.tsx` draws it in flight as it changes form; without one, a lit tile in its fill), and each scene hides
-   its own copy while it flies (`carried(f, carry)`). The scaffold's: the task the phone writes lifts off the screen and
+   its own copy while it flies (`carried(f, carry)`). A match cut between two pictures needs it: with nothing carried
+   over it, it swaps one scene for another in a frame (precheck reports it; give both scenes `carry`, or pin seamAA
+   velocityCut or blurThrough). A line that says "every" or "each" draws the many: three or more at once, each with its
+   own result (every pull request its own database, side by side), or the whole lifecycle (made, used, gone on merge).
+   The scaffold's: the task the phone writes lifts off the screen and
    lands as the first task on the board; the last task chip is pushed into until it is the frame (the claim's colour
    field); the result's progress ring closes into the mark that flies into the lockup (`SIGNATURE`, one move a film,
    picked from `references/catalogue.md` §2 for the payoff). Other ideas: a route that becomes the elevation line,
@@ -77,21 +90,25 @@ One dominant thing a frame, and every frame lit and alive:
   (dithered plates, no grain: a grain over a held frame pops on every I-frame of the render).
 - **Colour.** Three values, one accent: the dark ground, light surfaces (white cards, a light phone screen) and the
   claim on a colour field in the accent (`FIELD_ON`, `EVENT_FROM`): the seam into the claim pushes into the scene's
-  `field` element until it is the frame, the claim resolves on it in white, the field leaves with it on the next seam
+  `field` element (unnamed: a disc of the accent at the scene's focus) until it is the frame, the claim resolves on it in white, the field leaves with it on the next seam
   (one run under 2 s; the band's flood and the turn to dark are their families' own events).
 - **Type.** Three sizes, one hierarchy: a line alone at a 7.4 % cap height a step under the type family's weight, a
   line over its picture a step smaller (6.6 %), the claim (the last line, the hero) at 11.2 % and a step heavier, its
-  last word taking the film's one contrasting entry (it snaps in, one frame at x2.2, settling in 7 f; the line set in
-  its place from its first word); the wordmark heavier and tighter again (`WORDMARK_TYPE`), tracking tightening with
+  last word taking the film's one contrasting entry (the words before it centred on their own, gliding over to open
+  its slot, then it snaps in from its left edge, one frame at x1.6, settling in 7 f: never a ragged block, never a
+  word over its neighbour); the wordmark heavier and tighter again (`WORDMARK_TYPE`), tracking tightening with
   size; a long line keeps one row at a sentence cap (6-6.4 %) or breaks into two balanced rows that part as they are
   read; never under 6 %.
 - **Depth.** A card's content creeps against its edge, a phone's screen against its body, the pill rides a nearer plane:
   look-audit floor-depth reads two planes in at least half the shots.
 - **Life.** Nothing holds still for more than 0.8 s: the camera travels on every picture (a picture over 2.2 s takes
   one eased push closer, `PUSH`: 24 f@60 on a strong in-out, framing its `focus` box inside the safe area, never a
-  one-frame jump), a finished line is never padded past its read, the lines creep and drift,
+  one-frame jump; never on a picture behind its line, which comes up to the camera already, and never on two pictures
+  in a row), a finished line is never padded past its read, the lines creep and drift,
   the light keeps moving; the last picture falls back behind the lockup for a second while its element flies in (the
-  product stays on screen into the end), and the fact under the lockup drifts slower than the name (two planes).
+  product stays on screen into the end, its words gone before the element crosses them), and the lockup drifts from
+  rest once it is whole, the fact on the name's axis, passing the frame's centre late in the hold and standing at most
+  28 px off it (`END_OFF_MAX`).
 
 Everything else is derived: `src/timeline.ts` fits each line beat (its build, its read, its exit) and each picture beat
 to the track's 8ths and each pair to whole bars at any tempo from 90 to 140 BPM, and puts the end on a downbeat with the
@@ -117,9 +134,9 @@ Every change of picture carries something (`SEAM_PLAN`, drawn by `acts/stage.tsx
 
 | Change | Recipes | What carries it |
 |---|---|---|
-| line -> picture | matchCut, velocityCut, blurThrough | the word slot held across the cut; the line's speed into the picture's |
+| line -> picture | velocityCut, blurThrough (a dealt matchCut plays as blurThrough) | the line's speed into the picture's, smeared along its travel; the cut inside a blur |
 | picture -> line | recede, zoomThrough | the picture falls back while the line builds over it; or the push into it, the line building over the push |
-| picture -> picture | velocityCut, matchCut, blurThrough | one camera move across the cut; the focus point held on the kept ground; the cut inside a blur; and the film's carried object (`carry`) flying between the two scenes |
+| picture -> picture | velocityCut, blurThrough, matchCut (only where dealt, and only under the carried object) | one camera move across the cut, smeared; the cut inside a blur; the film's carried object (`carry`) flying between the two scenes |
 | line over picture -> picture | (no cut) | the line lifts away, the picture rises into its place and racks into focus (a declared focus pull, `rack:`) |
 | out of the claim | velocityCut | its colour field sweeps off at speed |
 | into the end | sharedElement | the last picture's element flies into the mark |
@@ -130,7 +147,7 @@ Every change of picture carries something (`SEAM_PLAN`, drawn by `acts/stage.tsx
 |---|---|
 | voice | build (word by word, re-centring), blur (the whole line out of a blur), ink (each word pale, inking in) |
 | ground | nearWhite, blackField, whiteBand, deepPool, softSky, lightDark, gradientField (`references/brand-and-color.md` §9b) |
-| seamTA | matchCut, velocityCut, blurThrough (line -> picture) |
+| seamTA | matchCut (plays as blurThrough), velocityCut, blurThrough (line -> picture) |
 | seamAT | recede, zoomThrough (picture -> line: the line builds over the leaving picture, never on an empty ground) |
 | seamAA | velocityCut, matchCut, blurThrough (picture -> picture, into a line that arrives with its picture) |
 | end | element (the last picture's element flies into the lockup and becomes the mark), badge (the element turns into the mark, a spin blur on the fast frames); the name slides out beside it |

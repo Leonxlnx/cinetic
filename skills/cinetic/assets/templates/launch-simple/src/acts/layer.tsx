@@ -10,6 +10,7 @@ import React from 'react';
 import { defocusMix } from '../lib/defocus';
 import { uOf, useFilm } from '../lib/film';
 import type { SeamLayer } from '../fx/Seam';
+import { DirBlur } from '../fx/Defocus';
 
 /** Whether text in this subtree may sit on its own composited layer (false while an ancestor is soft). */
 export const PromoteCtx = React.createContext(true);
@@ -46,16 +47,25 @@ export const Soft: React.FC<{ sigma: number; children: React.ReactNode }> = ({ s
   );
 };
 
-/** One element of the stage placed by a seam's layer state (fx/Seam seamState): offset, scale about `origin`, opacity, blur. */
+/** The axis a layer travels on (its offset's larger part; a velocity seam moves one axis). */
+export const smearAxis = (s?: SeamLayer): 'x' | 'y' => (s && Math.abs(s.y) > Math.abs(s.x) ? 'y' : 'x');
+
+/**
+ * One element of the stage placed by a seam's layer state (fx/Seam seamState): offset, scale about `origin`, opacity,
+ * blur, and the smear of a velocity seam: a layer travelling `smear` px a film frame is blurred along its travel
+ * (fx/Defocus DirBlur, sharp under its floor), as a camera's shutter blurs it. Without it a velocity cut at 30 fps jumps
+ * 60-100 px a frame in sharp copies: a stutter that reads as a jump, never as speed.
+ */
 export const Layer: React.FC<{ s?: SeamLayer; origin: string; z: number; children: React.ReactNode }> = ({ s, origin, z, children }) => {
   const film = useFilm();
   const u = uOf(film);
   const x = s ? s.x * u : 0;
   const y = s ? s.y * u : 0;
   const k = s ? s.scale : 1;
+  const smear = s ? Math.abs(s.smear) : 0;
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: z, opacity: s ? s.opacity : 1, transformOrigin: origin, transform: `translate3d(${x.toFixed(3)}px, ${y.toFixed(3)}px, 0) scale(${k.toFixed(5)})` }}>
-      <Soft sigma={s ? s.blur : 0}>{children}</Soft>
+      <Soft sigma={s ? s.blur : 0}>{smear > 0 ? <DirBlur v={smear} axis={smearAxis(s)}><PromoteCtx.Provider value={false}>{children}</PromoteCtx.Provider></DirBlur> : children}</Soft>
     </div>
   );
 };

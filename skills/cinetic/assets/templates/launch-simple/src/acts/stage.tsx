@@ -24,8 +24,8 @@ import { spinInState } from '../fx/Wordmark';
 import { clamp, E, mix, prog } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { useFilm } from '../lib/film';
-import { holdDrift } from '../lib/continuity';
 import { measureTracked } from '../lib/measure';
+import { timingFail } from '../lib/continuity';
 import { floatAt, type FloatOpts, withLocks } from '../lib/drift';
 import { LAUNCH } from '../launch';
 import { DEAL, SEED } from '../deal';
@@ -33,7 +33,7 @@ import * as PRODUCT from '../product';
 import { SCENES } from '../product';
 import { ACT, BEAT_PLAN, COLOUR, copy, CUE, DARK_FROM, f60x, FPS, H, LINE_EXIT, PAIRS, PUSH, SEAM_PLAN, TOTAL, W } from '../timeline';
 import { Layer, PromoteCtx } from './layer';
-import { isClaim, Line, lineLayout, Text } from './line';
+import { isClaim, Line, lineLayout, Text, trackFor, weightOf } from './line';
 import { inkOn, litFace, SceneCtx } from './ui';
 import type { SeamLayer } from '../fx/Seam';
 
@@ -149,32 +149,32 @@ const camOf = (pair: number, F: number) => {
 };
 
 /**
- * Depth for a line over its picture (pair `beat: 'with'`): the line holds the middle band and the picture rises in
- * under it, below the band, soft and low (`opacity`, `blur` px at 1080p, `scale`), never a plate behind the words: its
- * focus box's top sits `below` x the frame height down (without a box, the whole picture drops `drop` x the height),
- * creeping up `creep` of the height through the line's read. `after` f@60 into the line's exit the picture rises into
- * its place as it racks into focus (`rack` f@60, one carried move: the line lifts away, the picture comes up after it),
- * and plays on alone.
+ * Depth for a line over its picture (pair `beat: 'with'`): the line holds the middle band and the picture stands far
+ * behind it, centred where it will play, never below the line and never cut by the frame (a picture low under a line is
+ * the text-top/picture-below layout, rare by the standard): smaller (`scale` about the frame's centre), soft (`blur` px
+ * at 1080p) and dim (`opacity`: on a dark ground a light card stays darker behind white words, so the line keeps its
+ * contrast), rising `creep` of the height into its place through the line's read. `after` f@60 into the line's exit it
+ * comes forward into its place as it racks into focus (`rack` f@60, one carried move: the line lifts away, the picture
+ * comes up to the camera after it), and plays on alone.
  */
-export const TA_DEPTH = { opacity: 0.55, blur: 14, scale: 0.94, below: 0.6, drop: 0.42, creep: 0.05, after: 11, rack: 30 } as const;
+export const TA_DEPTH = { opacity: { light: 0.42, dark: 0.22 }, blur: 16, scale: 0.84, creep: 0.03, after: 11, rack: 30 } as const;
 const depthOf = (pair: number, F: number) => {
   if (PAIRS[pair - 1]?.mode !== 'with') return 0;
   const out = copy(`line${pair}`).out;
   return 1 - E.glideOut(clamp((F - out - f60x(TA_DEPTH.after)) / f60x(TA_DEPTH.rack)));
 };
-/** How far a picture under its line stands below its place (px at 1080p), creeping up through the read. */
+/** How far a picture behind its line stands below its place (px at 1080p): a creep up through the read, never a drop. */
 const dropOf = (pair: number, F: number) => {
-  const f = focusOf(defOf(pair));
-  const base = f && f.h ? Math.max(0, TA_DEPTH.below * H - f.y) : TA_DEPTH.drop * H;
   const pr = PAIRS[pair - 1];
   const read = clamp((F - pr.from) / Math.max(1, copy(`line${pair}`).out - pr.from));
-  return (base + TA_DEPTH.creep * H * (1 - read)) / (H / 1080);
+  return (TA_DEPTH.creep * H * (1 - read)) / (H / 1080);
 };
-/** A layer state with the picture's depth folded in (d 0 at rest, 1 under its line). */
+/** A layer state with the picture's depth folded in (d 0 at rest, 1 behind its line). */
 const withDepth = (st: SeamLayer | undefined, d: number, pair = 0, F = 0): SeamLayer | undefined => {
   if (d <= 0) return st;
   const base = st ?? { show: true, x: 0, y: 0, scale: 1, opacity: 1, blur: 0, smear: 0, ink: 1 };
-  return { ...base, y: base.y + (pair ? dropOf(pair, F) * d : 0), opacity: base.opacity * mix(1, TA_DEPTH.opacity, d), blur: base.blur + TA_DEPTH.blur * d, scale: base.scale * mix(1, TA_DEPTH.scale, d) };
+  const dim = inksAt(F).dark ? TA_DEPTH.opacity.dark : TA_DEPTH.opacity.light;
+  return { ...base, y: base.y + (pair ? dropOf(pair, F) * d : 0), opacity: base.opacity * mix(1, dim, d), blur: base.blur + TA_DEPTH.blur * d, scale: base.scale * mix(1, TA_DEPTH.scale, d) };
 };
 /** A line over its picture leaving on its own (with, over): it lifts 30 px and softens away over LINE_EXIT f@60, ahead of the picture rising after it. */
 const lineExitOf = (pair: number, F: number): SeamLayer | undefined => {
@@ -185,12 +185,20 @@ const lineExitOf = (pair: number, F: number): SeamLayer | undefined => {
   return { show: u < 1, x: 0, y: -30 * e, scale: 1, opacity: 1 - E.stdInOut(u), blur: 11 * e, smear: 0, ink: 1 };
 };
 
-/** The band a line over its picture holds (centred, its rows at the line's size), padded half a cap. */
+/** The band a line over its picture holds: centred, as wide as its longest row measured with the film's face and as
+ * tall as its rows, padded a quarter of its size all round (what a scene sets beside the line starts right there). */
 const bandOf = (pair: number): Band => {
   const text = copy(`line${pair}`).text;
-  const { size, rows } = lineLayout(text, isClaim(`line${pair}`), true);
+  const claim = isClaim(`line${pair}`);
+  const { size, rows } = lineLayout(text, claim, true);
+  const words = text.split(/\s+/).filter(Boolean);
+  let i = 0;
+  const widest = Math.max(...rows.map((n) => {
+    const row = words.slice(i, (i += n)).join(' ');
+    return measureTracked(row, size, weightOf(claim), trackFor(size), FONT.text, { trailing: false });
+  }));
   const h = rows.length * size * 1.06 + size * 0.5;
-  const w = Math.min(W * 0.9, W * 0.62 + size);
+  const w = Math.min(W * 0.9, widest + size * 0.5);
   return { x: (W - w) / 2, y: H / 2 - h / 2, w, h };
 };
 
@@ -241,6 +249,18 @@ const carryFrames = (pair: number): SceneProps['carry'] => {
   if (!out && !inn) return undefined;
   return { ...(inn ? { in: inn.at + Math.round(f60x(CARRY.land)) - from } : {}), ...(out ? { out: out.at - Math.round(f60x(CARRY.lead)) - from } : {}) };
 };
+/**
+ * A match cut between two pictures holds a point across a one-frame cut; between two unrelated pictures with nothing
+ * carried over it, that is a hard swap of one scene for another. So a picture-to-picture match cut needs the film's
+ * carried element on both sides (SceneDef `carry`: `out` on the first scene, `in` on the second), which flies over the
+ * cut: precheck reports it (a warning in dev, an error under the ship gate), with the two ways out.
+ */
+for (const s of SEAM_PLAN) {
+  if (s.cls !== 'AA' || s.recipe !== 'matchCut') continue;
+  const k = Number(s.id.match(/^pic(\d+)-/)?.[1] ?? 0);
+  if (k && !carrySeam(k))
+    timingFail('carry', `carry: the match cut ${s.id} at f${s.at} swaps scene "${LAUNCH.pairs[k - 1]?.scene}" for "${LAUNCH.pairs[k]?.scene}" in one frame with nothing carried over it: give both scenes the film's element (SceneDef carry: out on the first, in on the second; product.tsx IDEA draws it in flight), or pin seamAA velocityCut or blurThrough in launch.ts`);
+}
 /** A scene box on screen under its picture's camera at frame F. */
 const onScreen = (pair: number, F: number, b: CarryBox) => {
   const c = camOf(pair, F);
@@ -346,26 +366,53 @@ const LetterMark: React.FC<{ size: number; inks: FamilyInks; sheen?: number; let
   );
 };
 
-/** The end card's life on its hold: the house hold drift sideways (30 px a second), centred on the end act (the element
- * lands on it). Never slower: the end hold is longer than a render part, so one part boundary (an I-frame) falls in it,
- * and a hold creeping under ~0.25 px a frame at preview size lets x264's re-sharpened I-frame pop over the frames
- * around it (forensics spike). Never a growing scale: the browser re-draws promoted text sharper in one frame now and
- * then under one. The fact under the lockup drifts at END_PART of it (two planes parting while the lockup is read). */
+/** The end card's life on its hold: a sideways drift of END_DRIFT px a film frame at 1080p (0.5: 0.25 px a frame at
+ * preview size, the least that keeps x264's re-sharpened I-frame of a render part from popping over a held frame),
+ * starting from rest as the lockup is whole (CUE.lockup: before it the mark's landing and the name's slide are the
+ * motion) and centred on the hold that follows, so the lockup passes the frame's centre while it is read and ends a
+ * few px off it (END_OFF_MAX at most: the drift slows to keep inside it on a long hold), never 70 px. Never a growing
+ * scale: the browser re-draws promoted text sharper in one frame now and then under one. The fact under the lockup
+ * moves with the name on the one axis (END_PART 1: two lines sharing a centre never shear apart; a vertical parting
+ * would tick in whole pixels, unpromoted text snapping to the pixel row). */
 export const END_DRIFT = 0.5;
-export const END_PART = 0.55;
-export const endSway = (F: number) => holdDrift(F, ACT.end.from, { px: END_DRIFT }).x - holdDrift((ACT.end.from + TOTAL) / 2, ACT.end.from, { px: END_DRIFT }).x;
+export const END_PART = 1;
+/** The most the lockup's centre stands off the frame's centre on the hold (px at 1080p). */
+export const END_OFF_MAX = 28;
+/** Where on the hold the lockup passes the frame's centre (a share of its travel): past the middle, so the last frame,
+ * the one a viewer keeps, stands closest to the centre. */
+export const END_CENTRE = 0.62;
+/** The hold drift: from the lockup's whole frame, easing up over `ease` frames to `per` px a film frame at 1080p,
+ * capped so neither end of the hold's travel stands more than END_OFF_MAX off the centre. */
+export const endDrift = (): { from: number; per: number; ease: number } => {
+  const from = CUE.lockup;
+  const hold = Math.max(1, TOTAL - from);
+  const ease = Math.round(f60x(30));
+  return { from, per: Math.min(END_DRIFT, END_OFF_MAX / (Math.max(END_CENTRE, 1 - END_CENTRE) * Math.max(1, hold - 1 - ease / 2))), ease };
+};
+/** The hold drift's offset at frame F (px at 1080p): at rest until the lockup is whole, then easing up to its speed. */
+const driftAt = (F: number) => {
+  const d = endDrift();
+  const t = Math.max(0, F - d.from);
+  // the distance under a speed ramping over `ease` frames, then constant
+  const eff = t < d.ease ? (t * t) / (2 * d.ease) : t - d.ease / 2;
+  return d.per * eff * U;
+};
+export const endSway = (F: number) => driftAt(F) - mix(driftAt(CUE.lockup), driftAt(TOTAL - 1), END_CENTRE);
 
 /**
  * The last picture leaving behind the lockup: it does not vanish with the element's take-off (12 f) but falls back
  * into the room over about a second, shrinking a few percent and going soft, so the product is still on screen while
  * the mark lands and the name arrives (the end never takes the product off screen early).
  */
-const RECEDE = { from: -12, dur: 52, scale: 0.075, blur: 18 } as const;
+const RECEDE = { from: -12, dur: 52, scale: 0.075, blur: 18, under: 0.2, ghost: 0.25 } as const;
 const recedeAt = (F: number): SeamLayer | null => {
   const u = clamp((F - (ACT.end.from + f60x(RECEDE.from))) / f60x(RECEDE.dur));
   if (u >= 1) return null;
-  // focus leaves it first (the eye goes to the element taking off), then it dims and falls back
-  return { show: true, x: 0, y: 26 * u * u, scale: 1 - RECEDE.scale * E.stdInOut(u), opacity: 1 - E.stdInOut(u), blur: RECEDE.blur * Math.sqrt(u), smear: 0, ink: 1 };
+  // focus leaves it first (the eye goes to the element taking off), then it dims and falls back: three quarters of it
+  // gone by the time the element crosses the card (RECEDE.under of the recede), so the flying element never passes over
+  // readable words; the last quarter fades with the fall
+  const o = 1 - (1 - RECEDE.ghost) * E.stdInOut(clamp(u / RECEDE.under)) - RECEDE.ghost * E.stdInOut(u);
+  return { show: true, x: 0, y: 26 * u * u, scale: 1 - RECEDE.scale * E.stdInOut(u), opacity: o, blur: RECEDE.blur * Math.sqrt(u), smear: 0, ink: 1 };
 };
 
 /** The centred lockup: the mark, the name sliding out beside it, the one fact under them, held on a slow drift. */
@@ -451,8 +498,22 @@ const Element: React.FC<{ F: number; sx?: number; sy?: number }> = ({ F, sx = 1,
 const CLAIM_BEAT = BEAT_PLAN.findIndex((b) => b.id === `line${LAUNCH.pairs.length}`);
 const FIELD_PAIR = LAUNCH.pairs.length - 1;
 const fieldDef = (): SceneDef | undefined => (FIELD_PAIR >= 1 ? (SCENES[LAUNCH.pairs[FIELD_PAIR - 1].scene] as SceneDef | undefined) : undefined);
-/** Whether the claim sits on the colour field: a family without an event of its own and a scene before it with a `field`. */
-export const FIELD_ON = FAMILY !== 'whiteBand' && FAMILY !== 'lightDark' && CLAIM_BEAT > 0 && PAIRS[PAIRS.length - 1].mode === 'alone' && !!fieldDef()?.field;
+/**
+ * The element the claim's field grows out of: the scene's own `field`, else a disc of the accent at the scene's focus
+ * (its centre; without a focus, the frame's), FIELD.seed px across, so the film's one colour event never depends on a
+ * scene naming one (a film without it stays one value for 30 s: flat).
+ */
+export const fieldBoxOf = (def?: SceneDef): FieldBox | undefined => {
+  if (!def) return undefined;
+  if (def.field) return def.field();
+  const f = focusOf(def);
+  const cx = f ? f.x + (f.w ?? 0) / 2 : W / 2;
+  const cy = f ? f.y + (f.h ?? 0) / 2 : H / 2;
+  const s = FIELD.seed * U;
+  return { x: cx - s / 2, y: cy - s / 2, w: s, h: s, radius: s / 2 };
+};
+/** Whether the claim sits on the colour field: every family without an event of its own, the claim alone after a picture. */
+export const FIELD_ON = FAMILY !== 'whiteBand' && FAMILY !== 'lightDark' && CLAIM_BEAT > 0 && PAIRS[PAIRS.length - 1].mode === 'alone' && !!fieldDef();
 /**
  * The field: the accent (or the element's own colour) lit from its top left corner (a lit field, never a flat slab,
  * never a glow behind the line); the claim in white on it, a key word in the ground's deep tone. `grow`: frames (f@60)
@@ -461,8 +522,8 @@ export const FIELD_ON = FAMILY !== 'whiteBand' && FAMILY !== 'lightDark' && CLAI
  * frame: at its top left corner, so the brightest part is the edge); `reach`: how far the field runs past the frame's
  * right edge, so a moving exit never shows its edge (the carried cut then reads the line's own speed, as on the ground).
  */
-export const FIELD = { grow: 16, light: 0.2, life: 2, key: [0.04, 0.02] as const, reach: 0.3 } as const;
-const fieldColour = () => fieldDef()?.field?.().color ?? C.accent;
+export const FIELD = { grow: 16, light: 0.2, life: 2, key: [0.04, 0.02] as const, reach: 0.3, seed: 120 } as const;
+const fieldColour = () => fieldBoxOf(fieldDef())?.color ?? C.accent;
 const fieldInks = (inks: FamilyInks): FamilyInks => {
   const bg = fieldColour();
   const type = inkOn(bg, inks);
@@ -484,7 +545,7 @@ const FieldPlate: React.FC<{ ox?: number; oy?: number }> = ({ ox = 0, oy = 0 }) 
 };
 /** The element's box on screen at frame F (the scene's camera applied), the field's first frame. */
 const fieldBoxOnScreen = (F: number) => {
-  const box = fieldDef()?.field?.();
+  const box = fieldBoxOf(fieldDef());
   if (!box) return null;
   const c = camOf(FIELD_PAIR, F);
   return { x: c.ox + (box.x - c.ox) * c.scale + c.dx, y: c.oy + (box.y - c.oy) * c.scale + c.dy, w: box.w * c.scale, h: box.h * c.scale, radius: box.radius * c.scale, color: box.color ?? C.accent };
@@ -547,7 +608,7 @@ const itemsOf = (i: number, F: number, o: { lineOnly?: boolean } = {}): Item[] =
   const onField = FIELD_ON && i === CLAIM_BEAT && b.kind === 'T';
   const lineInks = onField ? fieldInks(inks) : flood && inks.onField ? { ...inks, type: inks.onField, accent: inks.onField } : inks;
   const exit = lineExitOf(b.pair, F);
-  const line: Item[] = exit && !exit.show ? [] : [{ key: `line${b.pair}`, z: b.pair * 10 + 2, role: 'line', own: exit, node: <Line id={b.id} raw={LAUNCH.pairs[b.pair - 1].line} F={F} inks={lineInks} life={onField ? FIELD.life : 1} /> }];
+  const line: Item[] = exit && !exit.show ? [] : [{ key: `line${b.pair}`, z: b.pair * 10 + 2, role: 'line', own: exit, node: <Line id={b.id} raw={LAUNCH.pairs[b.pair - 1].line ?? ''} F={F} inks={lineInks} life={onField ? FIELD.life : 1} /> }];
   const field: Item[] = onField ? [{ key: 'field', z: b.pair * 10, role: 'field', node: <FieldPlate /> }] : [];
   return b.kind === 'TA' && !o.lineOnly ? [...field, scene, ...line] : [...field, ...line];
 };
@@ -669,7 +730,29 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
  * dithered, so the ground takes no grain of its own: a grain over a held frame turns each part boundary of the render
  * (an I-frame, x264 re-sharpening the noise) into a one-frame pop that forensics fails.
  */
-export const KEY_LIGHT = { angle: -9, sway: 2.5, lag: 0.45, drift: 0.02, period: 13, lift: { dark: 0.06, light: 0.65 }, opacity: { dark: 0.55, light: 0.65 }, far: { dark: 0.85, light: 0.5 } } as const;
+export const KEY_LIGHT = { angle: -9, sway: 2.5, lag: 0.45, drift: 0.02, period: 13, lift: { dark: 0.06, light: 0.65 }, opacity: { dark: 0.55, light: 0.65 }, far: { dark: 0.85, light: 0.5 }, head: 0.4 } as const;
+/**
+ * The key plate's stops (shares of its light, from the top edge of the light down) and the plate's run above that edge
+ * (`head`, shares of the frame height, at the top tone): turned by `angle` and `sway`, a plate whose top edge sat at
+ * the light's top would swing that edge into the frame's top corner (a hard wedge of bare ground there); the head
+ * keeps the edge far outside the frame at every angle, so the light fades in from above with no edge anywhere.
+ */
+const KEY_STOPS = [[0, 1], [0.22, 0.62], [0.48, 0.22], [0.7, 0], [1, 0]] as const;
+/** The plate's height (shares of the frame) without its head. */
+const KEY_LEN = 1.5;
+/** Where the key plate's top edge sits at a turn of `deg` degrees, px from the frame's top at the frame's left and
+ * right edges (negative: above the frame). Pure: the test reads it for every angle the sway reaches. */
+export const keyPlateTopEdge = (deg: number, ky: number = -H * 0.12) => {
+  const KW = W * 1.5;
+  const head = KEY_LIGHT.head * H;
+  const a = (deg * Math.PI) / 180;
+  // the plate's top corners about its origin (the light's top centre), turned as CSS rotate() turns them
+  const turn = (x: number, y: number) => ({ x: W / 2 + x * Math.cos(a) - y * Math.sin(a), y: ky + x * Math.sin(a) + y * Math.cos(a) });
+  const l = turn(-KW / 2, -head);
+  const r = turn(KW / 2, -head);
+  const at = (x: number) => l.y + ((r.y - l.y) * (x - l.x)) / (r.x - l.x);
+  return { left: at(0), right: at(W) };
+};
 
 const abs: React.CSSProperties = { position: 'absolute', left: 0, top: 0 };
 const at = (x: number, y: number) => `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`;
@@ -689,12 +772,14 @@ export const Ground: React.FC<{ F: number }> = ({ F }) => {
   const fl = floatAt(F, FLOAT);
   const res = Math.round(W * 0.3);
   const top = dark ? mixColor(mixColor(inks.ground, inks.accent, 0.45), C.white, K.lift.dark) : C.white;
-  const key = bakePlate('linear', [{ at: 0, color: top, alpha: 1 }, { at: 0.22, color: top, alpha: 0.62 }, { at: 0.48, color: top, alpha: 0.22 }, { at: 0.7, color: top, alpha: 0 }, { at: 1, color: top, alpha: 0 }], res, res, { vertical: true, seed: 13 });
+  // the plate runs `head` above the light's top at the top tone, so its edge never turns into the frame (KEY_STOPS)
+  const span = KEY_LEN + K.head;
+  const key = bakePlate('linear', [{ at: 0, color: top, alpha: 1 }, ...KEY_STOPS.map(([p, a]) => ({ at: (K.head + p * KEY_LEN) / span, color: top, alpha: a }))], res, res, { vertical: true, seed: 13 });
   const KW = W * 1.5;
-  const KH = H * 1.5;
+  const KH = H * span;
   const rot = K.angle + K.sway * Math.sin(2 * Math.PI * (t / K.period + ph));
   const kx = (W - KW) / 2 + K.lag * fl.x;
-  const ky = -H * 0.12 + K.lag * fl.y + H * K.drift * Math.sin(2 * Math.PI * (t / (K.period * 1.3) + ph + 0.27));
+  const ky = -H * (0.12 + K.head) + K.lag * fl.y + H * K.drift * Math.sin(2 * Math.PI * (t / (K.period * 1.3) + ph + 0.27));
   // the bottom corners: the family's far tone falling in (the right one deeper)
   const farTone = dark ? inks.far : mixColor(inks.ground, inks.type, 0.07);
   const far = bakePlate('radial', [{ at: 0, color: farTone, alpha: 1 }, { at: 0.45, color: farTone, alpha: 0.62 }, { at: 1, color: farTone, alpha: 0 }], res, res, { seed: 19 });
@@ -707,7 +792,7 @@ export const Ground: React.FC<{ F: number }> = ({ F }) => {
       <FamilyGround family={FAMILY} frame={F} dark={F >= DARK_FROM} flood={floodAt(F)} seed={SEED} />
       <Img src={far} style={{ ...abs, width: RF, height: RF, opacity: dark ? K.far.dark : K.far.light, transform: at(fx - RF / 2, fy - RF / 2) }} />
       <Img src={far} style={{ ...abs, width: RF * 0.8, height: RF * 0.8, opacity: (dark ? K.far.dark : K.far.light) * 0.7, transform: at(gx - RF * 0.4, fy - RF * 0.4) }} />
-      <Img src={key} style={{ ...abs, width: KW, height: KH, opacity: dark ? K.opacity.dark : K.opacity.light, transformOrigin: '50% 0%', transform: `${at(kx, ky)} rotate(${rot.toFixed(3)}deg)` }} />
+      <Img src={key} style={{ ...abs, width: KW, height: KH, opacity: dark ? K.opacity.dark : K.opacity.light, transformOrigin: `50% ${(K.head * H).toFixed(1)}px`, transform: `${at(kx, ky)} rotate(${rot.toFixed(3)}deg)` }} />
     </>
   );
 };
