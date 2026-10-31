@@ -7,7 +7,10 @@
  *                  meta.ts and index.tsx agree.
  *   2. recipes     each device's pure state lands: it is finite and deterministic at 30 and 60 fps, reaches its end state
  *                  inside its beat and holds it (no idle bobbing after it lands: the state no longer changes).
- *   3. no tilt     the one turning device (object-turn) lands at zero degrees and stays there; nothing else turns.
+ *   3. no tilt     the one turning device (object-turn) lands at zero degrees and stays there; letter-swing's letters
+ *                  land at exactly zero; nothing else turns. photo-arc's row stays level, travels one way, never overlaps;
+ *                  cursor-follow's camera makes one travel and one pull and lands; bubble-swarm's bubbles never overlap and
+ *                  hold still; scale-contrast's rising letters start wholly under their mask.
  *   4. timings     meta.ts's line arithmetic (lineResolve, tail) equals the components' own (buildFrames, swapResolve,
  *                  scaleResolve, WINDOW_TAIL, OBJECT_TAIL, AROUND_TAIL).
  *   5. deal        the name deals three: a line device, a picture device, families apart; another name another set; a
@@ -19,7 +22,8 @@
  *   7. item 29     no camera float or drift (deal camera still/land, the key light still, no line drift, no card creep,
  *                  Film.tsx without a Float).
  *   8. deck.py     reads the same library from meta.ts, deals two or three with a line and a picture device, never a
- *                  recent set, the needs-gated devices only with --have (or the brief's words), and writes src/dealt.ts.
+ *                  recent set, the needs-gated devices only with --have (or the brief's words), and writes src/dealt.ts;
+ *                  eight deals in a row walk the library (recency-weighted), each deal holding a device the last four lacked.
  *
  * It lays the template over the Remotion starter in a temp folder and imports through the starter's tsx (npm install in
  * assets/remotion-starter first). Usage (from the skill root): node scripts/test/creative.test.mjs [--verbose]
@@ -104,6 +108,9 @@ try {
   const TO: any = await import(${JSON.stringify(url('fx/creative/TypeObject.tsx'))});
   const SA: any = await import(${JSON.stringify(url('fx/creative/SplitAround.tsx'))});
   const TY: any = await import(${JSON.stringify(url('fx/creative/type.tsx'))});
+  const CU: any = await import(${JSON.stringify(url('fx/creative/CursorFollow.tsx'))});
+  const BS: any = await import(${JSON.stringify(url('fx/creative/BubbleSwarm.tsx'))});
+  const LS: any = await import(${JSON.stringify(url('fx/creative/LetterSwing.tsx'))});
   const finite = (v: any): boolean => (typeof v === 'number' ? Number.isFinite(v) : Array.isArray(v) ? v.every(finite) : v && typeof v === 'object' ? Object.values(v).every(finite) : true);
   // each device's pure state at fps 30 and 60 over a 2.5 s beat: finite, deterministic, landed by its end, held after
   const box = { x: 510, y: 250, w: 900, h: 580 };
@@ -118,6 +125,8 @@ try {
     'photo-arc': (t, fps) => { const n = PA.arcCount(0.55 * 2.5 * fps, film(fps)); const s = PA.arcState(t, n, 0.55 * 2.5 * fps, film(fps)); return { done: s.landed, open: s.open }; },
     'shape-morph': (t, fps) => { const sh = [0, 1, 2, 3].map((i) => ({ box: { x: 900 - i * 100, y: 500 - i * 60, w: 120 + i * 200, h: 80 + i * 120 }, r: 20, fill: '#2F6BFF' })); const s = SM.morphState(t, 2.5 * fps, sh, film(fps)); return { done: s.done, box: s.box, open: s.open }; },
     'dot-button': (t, fps) => { const s = DB.dotState(t, { x: 760, y: 700, w: 400, h: 110 }, film(fps)); return { done: s.done, box: s.box, iris: s.iris }; },
+    'cursor-follow': (t, fps) => { const s = CU.cursorState(t, { x: 700, y: 800 }, { x: 960, y: 700 }, 0.5 * 2.5 * fps, film(fps)); return { done: s.landed && s.pointerOpacity === 0, zoom: s.zoom, look: s.look }; },
+    'bubble-swarm': (t, fps) => { const s = BS.swarmState(t, 6, 0.58 * 2.5 * fps, film(fps)); return { done: s.landed, b: s.bubbles, arrive: s.arrive }; },
   };
   out.states = {};
   for (const [id, fn] of Object.entries(runs)) {
@@ -130,6 +139,60 @@ try {
     }
     out.states[id] = r;
   }
+  // item 29: photo-arc's row stays level (one y for every card at every frame), travels one way (each card's x moves
+  // monotonically until the landing), never overlaps (neighbours at least a card plus most of the gap apart)
+  {
+    const at = 75, n = PA.arcCount(at, film(60));
+    const ys = new Set(); let backtrack = 0; let minGap = Infinity; let prev: any = null;
+    for (let t = 0; t <= at + 60; t++) {
+      const s = PA.arcState(t, n, at, film(60));
+      s.cards.forEach((c: any) => ys.add(Math.round(c.y * 1000)));
+      if (t <= at) {
+        const xs = s.cards.map((c: any) => c.x);
+        for (let i = 1; i < xs.length; i++) minGap = Math.min(minGap, xs[i] - xs[i - 1]);
+        if (prev) xs.forEach((x: number, i: number) => { if (x - prev[i] > 1e-6) backtrack++; });
+        prev = xs;
+      }
+    }
+    out.arc = { ys: ys.size, backtrack, minGap: Math.round(minGap), card: Math.round(PA.ARC.h * PA.ARC.aspect + PA.ARC.gap * 0.9) };
+  }
+  // item 29: cursor-follow's camera makes one travel and one pull: the zoom never grows, each axis of the look point turns
+  // at most once, and it lands on the whole product (zoom 1, the frame's centre)
+  {
+    let zoomUp = 0, turnsX = 0, turnsY = 0, dx0 = 0, dy0 = 0, pz = Infinity, pl: any = null;
+    for (let t = 0; t <= 200; t++) {
+      const s = CU.cursorState(t, { x: 640, y: 820 }, { x: 980, y: 690 }, 75, film(60));
+      if (s.zoom > pz + 1e-9) zoomUp++;
+      pz = s.zoom;
+      if (pl) {
+        const dx = s.look.x - pl.x, dy = s.look.y - pl.y;
+        if (Math.abs(dx) > 1e-6) { if (dx0 && Math.sign(dx) !== Math.sign(dx0)) turnsX++; dx0 = dx; }
+        if (Math.abs(dy) > 1e-6) { if (dy0 && Math.sign(dy) !== Math.sign(dy0)) turnsY++; dy0 = dy; }
+      }
+      pl = s.look;
+    }
+    const end = CU.cursorState(400, { x: 640, y: 820 }, { x: 980, y: 690 }, 75, film(60));
+    out.cursor = { zoomUp, turnsX, turnsY, end: { zoom: end.zoom, x: end.look.x, y: end.look.y, landed: end.landed } };
+  }
+  // bubble-swarm: the bubbles never overlap (4-7 bubbles, many seeds) and hold still between their pop and their pull
+  {
+    let overlaps = 0;
+    for (let seed = 0; seed < 24; seed++) for (const n of [4, 5, 6, 7]) {
+      const ws = Array.from({ length: n }, (_, i) => 300 + ((seed * 37 + i * 91) % 260));
+      const b = BS.swarmLayout(ws, seed, film(60));
+      for (let i = 0; i < n; i++) for (let j = 0; j < i; j++) {
+        const ox = Math.min(b[i].x + b[i].w, b[j].x + b[j].w) - Math.max(b[i].x, b[j].x);
+        const oy = Math.min(b[i].y + b[i].h, b[j].y + b[j].h) - Math.max(b[i].y, b[j].y);
+        if (ox > 0 && oy > 0) overlaps++;
+      }
+    }
+    const a = BS.swarmState(80, 6, 87, film(60)), b2 = BS.swarmState(84, 6, 87, film(60));
+    out.swarm = { overlaps, held: JSON.stringify(a.bubbles.map((x: any) => x.pop)) === JSON.stringify(b2.bubbles.map((x: any) => x.pop)) && a.bubbles.every((x: any) => x.pull === 0) };
+  }
+  // letter-swing lands at exactly zero degrees and never swings wider than it starts; scale-contrast's rising letters
+  // start wholly under their mask (the first frame shows no stub of an ascender)
+  out.swing = { end: [32, 33, 60, 400].map((t) => LS.swingAngle(t)), max: Math.max(...Array.from({ length: 33 }, (_, t) => Math.abs(LS.swingAngle(t)))), from: LS.SWING.from };
+  out.mask = { from: SX.MASK.from, bottom: SX.MASK.bottom, rise0: SX.letterRise(0, 0, 1) };
   out.turnEnd = OT.turnState(400, film(60));
   out.turnStart = OT.turnState(0, film(60));
   // line devices: their state lands and holds too
@@ -145,6 +208,7 @@ try {
     build: [3, 5, 7].map((n) => [M.lineResolve('type-window', n), TY.buildFrames(n), M.lineResolve('type-object', n), M.lineResolve('split-around', n)]),
     swap: [[4, 2], [5, 3], [3, 1]].map(([n, a]) => [M.lineResolve('word-swap', n, 6, a), WS.swapResolve(n, a)]),
     scale: [4, 7, 11].map((c) => [M.lineResolve('scale-contrast', 4, c), SX.scaleResolve(c)]),
+    swing: [[3, 5], [5, 7], [8, 4]].map(([n, c]) => [M.lineResolve('letter-swing', n, c), LS.swingResolve(n, c)]),
     tails: [[M.metaOf('type-window').tail, TW.WINDOW_TAIL], [M.metaOf('type-object').tail, TO.OBJECT_TAIL], [M.metaOf('split-around').tail, SA.AROUND_TAIL]],
   };
   `);
@@ -163,10 +227,18 @@ try {
     const te = lib.turnEnd;
     result(te.rotY === 0 && te.rotX === 0 && te.z === 0 && te.x === 0 && te.glare === 0 && Math.abs(lib.turnStart.rotY) > 30, 'no tilt: object-turn starts edge-on and lands facing the camera at 0 deg, its light band gone', JSON.stringify({ end: te, start: lib.turnStart.rotY }));
     const t = lib.timings;
-    result(t.build.every((r) => r.every((x) => x === r[0])) && t.swap.every(([a, b]) => a === b) && t.scale.every(([a, b]) => a === b) && t.tails.every(([a, b]) => a === b), 'timings: meta.ts resolves and tails equal the components\' arithmetic', JSON.stringify(t));
+    result(t.build.every((r) => r.every((x) => x === r[0])) && t.swap.every(([a, b]) => a === b) && t.scale.every(([a, b]) => a === b) && t.swing.every(([a, b]) => a === b) && t.tails.every(([a, b]) => a === b), 'timings: meta.ts resolves and tails equal the components\' arithmetic', JSON.stringify(t));
     // no device rotates at rest: only object-turn mentions a rotate transform, and lands at zero
-    const src = fs.readdirSync(path.join(STARTER, 'src', 'fx', 'creative')).filter((f) => f.endsWith('.tsx') && f !== 'ObjectTurn.tsx').filter((f) => /rotate[XYZ]?\(/.test(fs.readFileSync(path.join(STARTER, 'src', 'fx', 'creative', f), 'utf8').replace(/rotate\(\$\{\(\(t \/ k\) \* SPLIT\.spin\)/g, '')));
+    const src = fs.readdirSync(path.join(STARTER, 'src', 'fx', 'creative')).filter((f) => f.endsWith('.tsx') && f !== 'ObjectTurn.tsx' && f !== 'LetterSwing.tsx').filter((f) => /rotate[XYZ]?\(/.test(fs.readFileSync(path.join(STARTER, 'src', 'fx', 'creative', f), 'utf8').replace(/rotate\(\$\{\(\(t \/ k\) \* SPLIT\.spin\)/g, '')));
     result(!src.length, 'no tilt: no other device turns its cards (a spinner\'s arc excepted)', src.join(' '));
+    const ar = lib.arc;
+    result(ar.ys === 1 && ar.backtrack === 0 && ar.minGap >= ar.card, "item 29: photo-arc's row stays level, travels one way and lands, its cards never overlap", JSON.stringify(ar));
+    const cu = lib.cursor;
+    result(cu.zoomUp === 0 && cu.turnsX <= 1 && cu.turnsY <= 1 && Math.abs(cu.end.zoom - 1) < 1e-9 && Math.abs(cu.end.x - 960) < 1e-6 && Math.abs(cu.end.y - 540) < 1e-6 && cu.end.landed, "item 29: cursor-follow's camera makes one travel and one pull, never drifts back, and lands on the whole product", JSON.stringify(cu));
+    result(lib.swarm.overlaps === 0 && lib.swarm.held, 'bubble-swarm: bubbles never overlap (4-7, 24 seeds) and hold still between pop and pull', JSON.stringify(lib.swarm));
+    const sw = lib.swing;
+    result(sw.end.every((x) => x === 0) && sw.max <= sw.from + 1e-9, "no tilt: letter-swing's letters land at exactly 0 deg and never swing past their start", JSON.stringify(sw));
+    result(lib.mask.from + 0.1 >= lib.mask.bottom && lib.mask.rise0 === 0, 'scale-contrast: rising letters start wholly under the mask (no ascender stub on the first frames)', JSON.stringify(lib.mask));
     const bob = fs.readdirSync(path.join(STARTER, 'src', 'fx', 'creative')).filter((f) => /Math\.sin\([^)]*\bf\b|Math\.sin\([^)]*\bt \//.test(fs.readFileSync(path.join(STARTER, 'src', 'fx', 'creative', f), 'utf8')));
     result(!bob.length, 'no bobbing: no device drives a position with a sine of the frame', bob.join(' '));
   }
@@ -284,6 +356,20 @@ opened = set()
 for n in range(60):
     opened |= set(m.deal_creative(lib, 'film%d' % n, 'it works with Slack and GitHub, 3x faster', [], [])['deal'])
 out['opened'] = sorted(x for x in opened if x in ('logo-orbit', 'data-sculpture'))
+# eight deals in a row, each one's deal the next one's history: the recency weighting walks the library
+recent, seen = [], []
+for i in range(8):
+    d = m.deal_creative(lib, 'run%d' % i, 'a calm app', [], recent)['deal']
+    seen.append(d)
+    recent = [d] + recent[:3]
+out['walk'] = len(set(x for s in seen for x in s))
+out['open_n'] = len([d for d in lib if not d['needs'] or all(x not in ('logos', 'count', 'photos') for x in d['needs'])])
+out['fresh'] = all(any(x not in set(y for s in seen[max(0, i - 4):i] for y in s) for x in seen[i]) for i in range(1, 8))
+photo, nophoto = set(), set()
+for n in range(40):
+    photo |= set(m.deal_creative(lib, 'p%d' % n, 'it turns your photos into a book', [], [])['deal'])
+    nophoto |= set(m.deal_creative(lib, 'p%d' % n, 'a calm app', [], [])['deal'])
+out['photo'] = ['photo-arc' in photo, 'photo-arc' in nophoto]
 print('@@' + json.dumps(out))
 `;
   const r = spawnSync(PY[0], [...PY.slice(1), '-c', pyCode], { encoding: 'utf8', env: { ...process.env, PYTHONUTF8: '1' } });
@@ -295,6 +381,8 @@ print('@@' + json.dumps(out))
     result(o.shape && new Set(o.deals.map((x) => [...x].sort().join())).size >= 5, 'deck.py: deals two or three, a line and a picture device, different sets for different films', JSON.stringify(o.deals));
     result(!o.recent.same && o.recent.shared <= 1, 'deck.py: never a recent set, at most one device shared with the last film', JSON.stringify(o.recent));
     result(!o.gated.length && o.opened.length === 2, 'deck.py: logo-orbit and data-sculpture only when the film has logos and a figure (--have or the brief\'s words)', JSON.stringify(o));
+    result(o.walk >= Math.min(o.open_n, 13) && o.fresh, `deck.py: eight deals in a row play ${o.walk} of the ${o.open_n} devices open to them, each deal with a device the last four films did not play`, JSON.stringify(o.walk));
+    result(o.photo[0] && !o.photo[1], 'deck.py: photo-arc only for a film with photos (--have photos or the brief\'s words)', JSON.stringify(o.photo));
   }
 } finally {
   try { fs.rmSync(TMP, { recursive: true, force: true }); } catch {}
