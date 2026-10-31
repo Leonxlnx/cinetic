@@ -8,9 +8,11 @@ import { useFloat } from './Depth';
 import { shadowTone } from './KeyLight';
 
 /**
- * Lit: a product panel placed in a lit space instead of pasted front-on. The panel turns 8-14 degrees on X and Y
- * (house rotateX 10, rotateY -12) in a perspective of 2200 px, lifted 36 px off its backing, and the film's one light
- * (lib/light FILM_LIGHT) does the rest:
+ * Lit: a product panel placed in a lit space instead of pasted flat. The panel faces the camera (house tilt 0 / 0: a
+ * card tilted at rest reads as cheap, lint-film card-tilt) in a perspective of 2200 px, lifted 36 px off its backing,
+ * and the film's one light (lib/light FILM_LIGHT) does the rest. A turn of 8-14 degrees on X and Y is a declared object
+ * move, never a resting pose: the entry that lands flat (`enter`), a turn the shot is about (a tilt animated from the
+ * frame, landing face-on), never a constant tilt:
  *   - a 1 px rim highlight on the edges that face the key, computed in the panel's own coordinates (keyLocal), so the
  *     rim slides round the edge as the panel turns and brightens as an edge turns into the light;
  *   - the face catches more or less light as it turns (n . l against a front-on panel: a faint lift toward the key,
@@ -25,16 +27,14 @@ import { shadowTone } from './KeyLight';
  *     perspective as the panel.
  * It is a lit object, never a drawing of a screen (an outline bezel): over the face lies a glass layer (glass, on by
  * default), a 1 px edge highlight along its top and key-side edges and a soft glare band crossing it diagonally, which
- * slides with the camera float (fx/Float: the glare travels `glass.travel` of the face per frame width of drift) and
- * with the panel's own turn, as a reflection does; behind the face a body `glass.depth` px deep (a slab in the same
+ * slides with a declared stage move (fx/Float: the glare travels `glass.travel` of the face per frame width of travel)
+ * and with the panel's own turn, as a reflection does; behind the face a body `glass.depth` px deep (a slab in the same
  * perspective, its key-side edge lit), so a turned panel shows its thickness instead of a paper edge.
- * It never stops: a sway of 1.4 degrees on X and Y a quarter-turn apart (7 s loop) and a float of 18 px/s on a 1:2
- * loop (9 s) keep the panel moving 0.3-1 px a frame at 30 fps through every hold, and an optional entry settles the panel from a steeper tilt on
- * E.settleOut over 48 f at 60 fps. All placement is transform (translate3d), never left/top.
- * To still the sway (the camera closes in, the panel flattens for a read), fade it: `sway={{ amount }}` scales the
- * tilt and the float together, 1 = the house drift, 0 = at rest (swayFade() gives an eased 0..1 over 24 f or more).
- * Never switch it off on a condition (`sway={cond ? false : undefined}`): the float sits up to 26 px off its centre and
- * the tilt up to 1.4 degrees, and the panel jumps there in one frame (lint-film drift-toggle; forensics jump).
+ * It holds still between its moves: no sway, no float, no bob (a panel that wobbles while it is held reads as cheap;
+ * lint-film idle-bob). It moves when it enters (an optional entry settles it from a turned pose to face-on on
+ * E.settleOut over 48 f at 60 fps), when its content changes and when it leaves. All placement is transform
+ * (translate3d), never left/top. The old living sway is off unless given as an object (`sway={{ ... }}`, which
+ * lint-film fails as an idle loop); `sway={{ amount }}` with swayFade() still fades one out without a jump.
  *
  * Draw the panel at (0, 0) in its own w x h box as the children (a kit Surface with lift 0-6: Lit draws the shadow).
  * litState() is pure: any frame, any order, any fps.
@@ -42,8 +42,8 @@ import { shadowTone } from './KeyLight';
 
 /** House numbers: px at 1080p, degrees, 60 fps frames. */
 export const LIT = {
-  tilt: { x: 10, y: -12 } as Required<Pick<Tilt, 'x' | 'y'>>,
-  tiltRange: [8, 14] as const, // |rotateX| and |rotateY| of a lit panel at rest
+  tilt: { x: 0, y: 0 } as Required<Pick<Tilt, 'x' | 'y'>>, // at rest the panel faces the camera
+  tiltRange: [8, 14] as const, // |rotateX| and |rotateY| of a declared turn (an entry, a turn the shot is about), never a resting pose
   lift: 36, // px between the panel and its backing plane
   perspective: 2200, // px (references/camera.md §9: 1800-2600)
   sway: { deg: 1.4, period: 7, float: 18, floatPeriod: 9 }, // tilt: degrees on X and Y a quarter-turn apart, s per loop; float: px/s on a 1:2 loop (never at rest)
@@ -70,9 +70,9 @@ export type LitProps = {
   w: number; // the panel's own size, px
   h: number;
   r?: number; // corner radius, px (house 12 % of the short side)
-  tilt?: Tilt; // degrees at rest (house x 10, y -12; keep |x|, |y| in 8-14)
+  tilt?: Tilt; // degrees at rest (house 0 / 0: facing the camera); animate it from the frame for a declared turn
   lift?: number; // px off the backing plane (house 36)
-  sway?: { deg?: number; period?: number; float?: number; phase?: number; amount?: number } | false; // the living drift (house 1.4 deg over 7 s, an 18 px/s float); amount 0..1 fades it (never toggle it mid-shot)
+  sway?: { deg?: number; period?: number; float?: number; phase?: number; amount?: number } | false; // off unless given (an idle loop: lint-film idle-bob); amount 0..1 fades one out
   enter?: LitEnter; // settle in from a steeper tilt (house from y +90 px, lift 0, tilt 24 / -18 over 48 f at 60 fps)
   ground: string; // the ground colour behind the panel: the shadow's hue and the spill's colour
   light?: FilmLight; // the film's light (house FILM_LIGHT)
@@ -143,8 +143,8 @@ export const litState = (frame: number, p: LitProps, film?: Partial<FilmCtx>): L
     tilt.y = mix(from.tilt?.y ?? LIT.enterFrom.tilt.y, rest.y, q);
     tilt.z = mix(from.tilt?.z ?? rest.z, rest.z, q);
   }
-  if (p.sway !== false) {
-    const sw = p.sway || {};
+  if (p.sway) {
+    const sw = p.sway;
     const k = clamp(sw.amount ?? 1); // a fade of the whole drift: tilt and float scale together, so it eases to rest
     const a = (sw.deg ?? LIT.sway.deg) * k;
     const ph = 2 * Math.PI * (frame / (fps * (sw.period ?? LIT.sway.period)) + (sw.phase ?? 0));

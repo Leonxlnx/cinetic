@@ -1,9 +1,11 @@
 // Devices as lit objects: a phone and a laptop that stand in the film's light, never a drawing of one (an outline
 // bezel on a flat field). Each is a body with a rim and a thickness, a black glass border round the screen, a glass
-// layer over it (an edge highlight and a soft glare that slides with the camera float: fx/Lit glass), a contact
+// layer over it (an edge highlight and a soft glare that slides with a declared camera move: fx/Lit glass), a contact
 // shadow where it meets the ground and a faint reflection of its body on the ground below. The screen is the
 // product's own UI (children, drawn at (0, 0) in the screen's box) or a real capture. A product shot that is a bare
-// screen uses fx/Lit itself: a tilted screen plane with glass and depth. Pure in the frame; transforms only.
+// screen uses fx/Lit itself: a screen plane facing the camera, with glass and depth. A device faces the camera and holds
+// still between its moves (no sway, no bob); a turn is a declared move (an entry that lands, a turn the shot is about).
+// Pure in the frame; transforms only.
 import React from 'react';
 import { clamp, E, mix, prog } from '../lib/anim';
 import { mixColor, oklch, toOklch } from '../lib/color';
@@ -37,8 +39,8 @@ type DeviceBase = {
   theme?: KitTheme; // the ground's theme: the shadow's hue, the reflection's ground
   ground?: string; // the ground colour under the device (house theme.ground)
   finish?: DeviceFinish; // graphite (house on a dark ground) or silver (house on paper)
-  tilt?: Tilt; // degrees (house the Lit panel's 10 / -12; 0 / 0 for a phone held frontal)
-  sway?: { amount?: number; phase?: number } | false;
+  tilt?: Tilt; // degrees at rest (house 0 / 0, facing the camera; a laptop pitches 6 to show its deck); animate it for a declared turn
+  sway?: { amount?: number; phase?: number } | false; // off unless given (an idle loop: lint-film idle-bob)
   enter?: LitEnter;
   light?: FilmLight;
   reflect?: boolean; // the body's faint reflection on the ground below (house on)
@@ -106,9 +108,9 @@ const Contact: React.FC<{ x: number; y: number; w: number; tone: string; opacity
 
 /**
  * A phone as a lit object: a graphite or silver frame lit from the key (its rim and its thickness from fx/Lit), the
- * black glass border, the island, the screen (children) under glass with a glare that slides with the camera float,
- * a contact shadow and a faint reflection on the ground. Held frontal by default (tilt 0 / 0, a slow sway); give it a
- * tilt of 8-14 degrees to stand it in the space.
+ * black glass border, the island, the screen (children) under glass with a glare that slides with a declared camera
+ * move, a contact shadow and a faint reflection on the ground. Held frontal and still by default (tilt 0 / 0, no sway);
+ * a turn of 8-14 degrees is a declared move (animate `tilt` or `enter` from a turned pose), never a resting pose.
  */
 export const Phone: React.FC<DeviceBase> = (p) => {
   const film = useFilm();
@@ -122,7 +124,7 @@ export const Phone: React.FC<DeviceBase> = (p) => {
   const tilt = p.tilt ?? { x: 0, y: 0 };
   const glass = oklch(DEVICE.glassL, 0.004, toOklch(ground)[2]);
   const I = DEVICE.phone.island;
-  const props = { x: p.x, y: p.y, w, h, r, tilt, ground, light: p.light ?? FILM_LIGHT, sway: p.sway === false ? (false as const) : { deg: 0.8, float: 10, ...(p.sway ?? {}) }, enter: p.enter, glass: { depth: 14, body: far } };
+  const props = { x: p.x, y: p.y, w, h, r, tilt, ground, light: p.light ?? FILM_LIGHT, sway: p.sway ? { deg: 0.8, float: 10, ...p.sway } : (false as const), enter: p.enter, glass: { depth: 14, body: far } };
   const st = litState(p.frame, props, film);
   const shade = shadowTone(ground, 0.3);
   return (
@@ -155,11 +157,11 @@ export const Laptop: React.FC<DeviceBase & { openAt?: number; openDur?: number }
   const S = screenBox('laptop', p.w);
   const { w, h, r } = S.outer;
   const D = DEVICE.laptop.deck;
-  const tilt = p.tilt ?? { x: 6, y: -10 };
+  const tilt = p.tilt ?? { x: 6, y: 0 }; // facing the camera, pitched just enough to show the deck
   const open = p.openAt === undefined ? 1 : prog(p.frame, p.openAt, p.openAt + (p.openDur ?? 40), E.settleOut);
   const lid = { ...tilt, x: (tilt.x ?? 0) + mix(80, 0, open) };
   const glass = oklch(DEVICE.glassL, 0.004, toOklch(ground)[2]);
-  const props = { x: p.x, y: p.y, w, h, r, tilt: lid, ground, light: p.light ?? FILM_LIGHT, sway: p.sway === false ? (false as const) : { deg: 0.6, float: 8, ...(p.sway ?? {}) }, enter: p.enter, glass: { depth: 10, body: far } };
+  const props = { x: p.x, y: p.y, w, h, r, tilt: lid, ground, light: p.light ?? FILM_LIGHT, sway: p.sway ? { deg: 0.6, float: 8, ...p.sway } : (false as const), enter: p.enter, glass: { depth: 10, body: far } };
   const st = litState(p.frame, props, film);
   const dw = w * D.w;
   const dh = w * D.h;

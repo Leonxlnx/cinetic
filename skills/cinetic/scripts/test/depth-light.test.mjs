@@ -5,12 +5,12 @@
  *   1. lib/light: the film's one light (FILM_LIGHT, from the upper left, 34 degrees up), the key vector and its
  *      screen direction, a turned panel's normal (CSS rotateZ rotateX rotateY), the light it catches, the key in its
  *      own axes, a point's shadow on the layout plane.
- *   2. fx/Lit litState(): sway.amount fades the drift without a jump (swayFade); rest tilt 10 / -12 inside 8-14, the rim's key end on the key side and sliding as the panel
- *      turns, the shadow thrown away from the key (longer and softer with the lift), no haze on the face (the light
- *      side lifts 5 % at most, the sheen 3 %), the sway never at rest (0.3-1.5 px a frame at 30 fps on a 1160 px
- *      panel), the entry home at 48 f at 60 fps (the same time at 30 fps).
+ *   2. fx/Lit litState(): rests face-on (tilt 0 / 0) and holds still (no sway unless given); a declared turn of
+ *      10 / -12: the rim's key end on the key side and sliding as the panel turns, the shadow thrown away from the key
+ *      (longer and softer with the lift), no haze on the face (the light side lifts 5 % at most, the sheen 3 %); a sway
+ *      given as an object fades out without a jump (swayFade); the entry lands face-on at 48 f at 60 fps (the same at 30).
  *   3. fx/DepthStack: planes 0.6 / 1 / 1.4, blur 6 / 0 / 10, parallax 0.5 / 1 / 1.6 (log zoom and pan at those
- *      weights), the far plane turned 8-25 degrees, the near plane fading as it passes the lens, a camera that never
+ *      weights), every plane facing the camera by default (farTurn 0), the near plane fading as it passes the lens, a camera that never
  *      freezes after the push, the same move at 30 and 60 fps, items arriving to their plane's scale; declares();
  *      depthFiller() lists the items that do not say what they carry.
  *   4. lib/camera: swing3d() (the one turn: 26 -> 4 degrees over 108 f at 60 fps, creeping on), cam3dCheck() (15-30
@@ -65,9 +65,11 @@ const f30 = { fps: 30, width: 1920, height: 1080 };
 const f60 = { fps: 60, width: 1920, height: 1080 };
 const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 const panel = { x: 960, y: 540, w: 1160, h: 740, r: 56, ground: '#35383C' };
-const rest = Lt.litState(0, { ...panel, sway: false }, f60);
+const turned = { x: 10, y: -12 }; // a declared turn (the rest is face-on)
+const flat = Lt.litState(0, panel, f60);
+const rest = Lt.litState(0, { ...panel, sway: false, tilt: turned }, f60);
 const flipped = Lt.litState(0, { ...panel, sway: false, tilt: { x: -10, y: 12 } }, f60);
-const high = Lt.litState(0, { ...panel, sway: false, lift: 72 }, f60);
+const high = Lt.litState(0, { ...panel, sway: false, tilt: turned, lift: 72 }, f60);
 // sway: the screen speed of the panel's corner, from the tilt change (px a frame)
 const corner = (s: any) => { const M = Li.panelMatrix(s.tilt); const v = Li.apply3(M, [580, -370, 0]); const z = v[2] + s.lift; return [960 + (s.x - 960 + v[0]) * (2200 / (2200 - z)), 540 + (s.y - 540 + v[1]) * (2200 / (2200 - z))]; };
 const sway = range(0, 420).map((f) => { const a = corner(Lt.litState(f, panel, f30)); const b = corner(Lt.litState(f + 1, panel, f30)); return Math.hypot(b[0] - a[0], b[1] - a[1]); });
@@ -123,12 +125,12 @@ console.log(JSON.stringify({
   faces: { front: Li.faceLight({}), house: Li.faceShift({ x: 10, y: -12 }), away: Li.faceShift({ x: -10, y: 12 }) },
   local: { front: Li.keyLocal({}), turned: Li.keyLocal({ y: 30 }) },
   ground: Li.onGround([100, 100, 36]),
-  lit: { rest: { tilt: rest.tilt, rim: rest.rim, shadow: rest.shadow, tone: rest.tone, sheen: rest.sheen, spill: rest.spill }, flipped: { rim: flipped.rim, shadow: flipped.shadow, tone: flipped.tone }, high: high.shadow, range: Lt.LIT.tiltRange, declares: Lt.declares(), frames: Lt.litFrames({ ...panel, enter: { at: 10 } }, f60),
+  lit: { flat: flat.tilt, rest: { tilt: rest.tilt, rim: rest.rim, shadow: rest.shadow, tone: rest.tone, sheen: rest.sheen, spill: rest.spill }, flipped: { rim: flipped.rim, shadow: flipped.shadow, tone: flipped.tone }, high: high.shadow, range: Lt.LIT.tiltRange, declares: Lt.declares(), frames: Lt.litFrames({ ...panel, enter: { at: 10 } }, f60),
     raking: Lt.litState(0, { ...panel, sway: false, tilt: { x: 14, y: -14 }, light: { ...Li.FILM_LIGHT, elevation: 12 } }, f60).tone, house: { liftMax: Lt.LIT.liftMax, sheen: Lt.LIT.sheen, reach: Lt.LIT.sheenReach } },
   sway: { min: Math.min(...sway), max: Math.max(...sway), mean: sway.reduce((a, b) => a + b, 0) / sway.length },
   swayAmount: (() => {
     const at = (F: number, sw: any) => Lt.litState(F, { ...panel, sway: sw }, f60);
-    const on = at(1146, undefined), off = at(1146, false), zero = at(1146, { amount: 0 }), one = at(1146, { amount: 1 });
+    const on = at(1146, {}), off = at(1146, false), zero = at(1146, { amount: 0 }), one = at(1146, { amount: 1 });
     let step = 0;
     for (let F = 1131; F <= 1190; F++) { const a = at(F - 1, { amount: Lt.swayFade(F - 1, 1145, 1185) }), b = at(F, { amount: Lt.swayFade(F, 1145, 1185) }); step = Math.max(step, Math.hypot(b.x - a.x, b.y - a.y)); }
     return { toggle: Math.hypot(on.x - off.x, on.y - off.y), zero: zero.x === off.x && zero.y === off.y && zero.tilt.x === off.tilt.x && zero.tilt.y === off.tilt.y, one: one.x === on.x && one.y === on.y && one.tilt.x === on.tilt.x, step };
@@ -221,7 +223,8 @@ const none = (d) => !d.stepped.length && !d.flashes.length && !d.cameraBlur.leng
 // 2. Lit
 {
   const L = P.lit;
-  result(L.rest.tilt.x === 10 && L.rest.tilt.y === -12 && Math.abs(L.rest.tilt.x) >= L.range[0] && Math.abs(L.rest.tilt.y) <= L.range[1], 'litState: rests at rotateX 10, rotateY -12 (inside 8-14)', JSON.stringify(L.rest.tilt));
+  result(L.flat.x === 0 && L.flat.y === 0 && L.flat.z === 0, 'litState: rests face-on (tilt 0 / 0: a card tilted at rest reads as cheap)', JSON.stringify(L.flat));
+  result(L.rest.tilt.x === 10 && L.rest.tilt.y === -12 && Math.abs(L.rest.tilt.x) >= L.range[0] && Math.abs(L.rest.tilt.y) <= L.range[1], 'litState: a declared turn of rotateX 10, rotateY -12 (inside 8-14) is kept', JSON.stringify(L.rest.tilt));
   const rr = L.rest.rim;
   result(rr.x1 < rr.x2 && rr.y1 < rr.y2 && rr.alpha > 0.5, 'litState: the rim runs from the key side (top-left) to the far side', JSON.stringify(rr));
   const fr = L.flipped.rim;
@@ -235,11 +238,11 @@ const none = (d) => !d.stepped.length && !d.flashes.length && !d.cameraBlur.leng
   result(L.house.liftMax <= 0.05 && L.house.sheen <= 0.03 && L.house.reach <= 0.4 && L.rest.sheen.alpha <= 0.03 && L.raking.alpha <= 0.05 + 1e-9 && L.rest.tone.alpha <= 0.05 + 1e-9,
     'litState: no haze on the face: the light side lifts 5 % at most (even turned into a raking key), the sheen 3 % along the key edge', `rest ${L.rest.tone.alpha.toFixed(3)}, raking ${L.raking.alpha.toFixed(3)}, sheen ${L.rest.sheen.alpha.toFixed(3)}`);
   const sw = P.sway;
-  result(sw.min >= 0.3 && sw.max <= 1.5, 'litState: the sway never rests: the corner moves 0.3-1.5 px every frame at 30 fps', `min ${sw.min.toFixed(3)} max ${sw.max.toFixed(3)} mean ${sw.mean.toFixed(3)}`);
+  result(sw.max === 0, 'litState: holds still between its moves (no sway, no float, no bob by default)', `min ${sw.min.toFixed(3)} max ${sw.max.toFixed(3)} mean ${sw.mean.toFixed(3)}`);
   const A = P.swayAmount;
-  result(A.toggle > 10 && A.zero && A.one && A.step < 2, 'litState: sway.amount fades the drift (0 = sway false, 1 = the house drift); swayFade over 40 f moves under 2 px a frame where switching it off jumps', `toggle ${A.toggle.toFixed(1)} px, fade step ${A.step.toFixed(2)} px`);
+  result(A.toggle > 10 && A.zero && A.one && A.step < 2, 'litState: a sway given as an object fades out with sway.amount (0 = sway false, 1 = the old house drift); swayFade over 40 f moves under 2 px a frame where switching it off jumps', `toggle ${A.toggle.toFixed(1)} px, fade step ${A.step.toFixed(2)} px`);
   const E = P.enter;
-  result(E.start === 0 && E.home60.tilt.x === 10 && E.home30.tilt.x === 10 && E.home60.opacity === 1, 'litState: the entry starts unseen and is home at 48 f at 60 fps (24 at 30)', `${E.start} ${JSON.stringify(E.home60.tilt)}`);
+  result(E.start === 0 && E.home60.tilt.x === 0 && E.home60.tilt.y === 0 && E.home30.tilt.x === 0 && E.home60.opacity === 1, 'litState: the entry starts unseen and lands face-on at 48 f at 60 fps (24 at 30)', `${E.start} ${JSON.stringify(E.home60.tilt)}`);
   result(close(E.half60.x, E.half30.x, 1e-9) && close(E.half60.y, E.half30.y, 1e-9), 'litState: the entry is the same at the same time at 30 and 60 fps', `${E.half60.x.toFixed(3)} / ${E.half30.x.toFixed(3)}`);
   result(none(L.declares) && L.frames.at === 10 && L.frames.home === 58, 'Lit: continuous, declares nothing; litFrames gives the entry and its landing', JSON.stringify(L.frames));
 }
@@ -250,7 +253,7 @@ const none = (d) => !d.stepped.length && !d.flashes.length && !d.cameraBlur.leng
   const pl = D.house.planes;
   result(pl.far.scale === 0.6 && pl.mid.scale === 1 && pl.near.scale === 1.4 && pl.far.blur === 6 && pl.mid.blur === 0 && pl.near.blur === 10 && pl.far.parallax === 0.5 && pl.mid.parallax === 1 && pl.near.parallax === 1.6,
     'DEPTH: scale 0.6 / 1 / 1.4, blur 6 / 0 / 10 px, parallax 0.5 / 1 / 1.6');
-  result(D.house.farTurn >= 8 && D.house.farTurn <= 25 && D.at0[0].yaw === D.house.farTurn && D.at0[1].yaw === 0 && D.at0.every((p) => close(p.k, 1)), 'depthStackState: before the move the planes sit at k 1, the far one turned 16 degrees', JSON.stringify(D.at0));
+  result(D.house.farTurn === 0 && D.at0.every((p) => p.yaw === 0) && D.at0.every((p) => close(p.k, 1)) && D.house.farTurnRange[0] === 8, 'depthStackState: before the move the planes sit at k 1, every plane facing the camera (a far wall turns 8-25 only when declared)', JSON.stringify(D.at0));
   const [far, mid, near] = D.end;
   const lm = Math.log(mid.k);
   result(close(Math.log(near.k) / lm, 1.6, 1e-9) && close(Math.log(far.k) / lm, 0.5, 1e-9) && mid.k > 1.25, 'depthStackState: on the push the near plane zooms at 1.6 and the far at 0.5 on log scale', `k ${far.k.toFixed(4)} / ${mid.k.toFixed(4)} / ${near.k.toFixed(4)}`);

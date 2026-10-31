@@ -12,7 +12,7 @@ import { RimEdge, rimLine } from './Lit';
  * reads as a space and not as one sheet of paper, with a camera that moves through it.
  *
  *   plane   scale   blur   parallax   turn
- *   far     0.6     6 px   0.5        rotated 8-25 deg as a receding wall (house rotateY 16)
+ *   far     0.6     6 px   0.5        facing the camera (house turn 0); a receding wall (8-25 deg) only when declared
  *   mid     1       0      1          the subject: sharp, readable, where the copy and the product sit
  *   near    1.4     10 px  1.6        the soft foreground: big, defocused, crossing near a frame edge
  *
@@ -22,8 +22,8 @@ import { RimEdge, rimLine } from './Lit';
  * yaw swings the near plane furthest. Blur is a fixed level per plane (lib/defocus: one or two static copies, never
  * an animated radius). The near plane fades out as it passes the lens (its zoom past `pass`), so the camera really
  * goes through it. Items sit in their plane by transform (translate3d, never left/top), drawn at the plane's scale
- * about their own centre, each with its own turn if it has one (cards stacked in perspective: rotateX / rotateY seen
- * through the stack's perspective); `rim` gives every item the film's key-side rim (fx/Lit RimEdge) from its plane's
+ * about their own centre, facing the camera (an item's own `tilt` is a declared turn, never a resting pose: lint-film
+ * card-tilt); `rim` gives every item the film's key-side rim (fx/Lit RimEdge) from its plane's
  * turn plus its own. An item may arrive (E.glideOut from 12 % smaller and 40 px lower, 34 f at 60 fps).
  *
  * Every layer carries real content: every element in frame has a job. Each item says what it shows (`carries`: the
@@ -35,7 +35,7 @@ import { RimEdge, rimLine } from './Lit';
  * floating at depth is the filler the eye reads as machine-made.
  *
  * The camera: give `cam` (moves on a base shot, or any ShotFn); the house move is depthPush(): a push of x1.32 with a
- * 90 px pan and a 6 degree yaw over 120 f at 60 fps on E.strongInOut, then a slow creep, so nothing ever freezes.
+ * 90 px pan and a 6 degree yaw over 120 f at 60 fps on E.strongInOut that lands, then a sub-pixel creep (4 % over 10 s).
  * depthStackState() is pure (any frame, any order, any fps); <DepthStack> draws it.
  */
 
@@ -46,7 +46,7 @@ export const DEPTH = {
     mid: { scale: 1, blur: 0, parallax: 1 },
     near: { scale: 1.4, blur: 10, parallax: 1.6 },
   },
-  farTurn: 16, // deg, the far plane's turn (rotateY; give farAxis 'x' for a tabletop)
+  farTurn: 0, // deg, the far plane's turn (house 0: facing the camera; rotateY 8-25 for a declared receding wall, farAxis 'x' for a tabletop)
   farTurnRange: [8, 25] as const,
   perspective: 2200,
   pass: [1.2, 1.5] as const, // the near plane's own zoom over which it fades out as it passes the lens (gone before the house push lands)
@@ -69,7 +69,7 @@ export type DepthItem = {
   w: number; // the item's own size before the plane's scale, px
   h: number;
   rot?: number; // deg, its own rotateZ (keep within 11)
-  tilt?: Tilt; // deg, its own turn in its plane (rotateX / rotateY 8-25, as cards stacked in perspective), seen in perspective
+  tilt?: Tilt; // deg, its own turn in its plane: a declared turn only (animate it, landing face-on); a constant tilt is a card tilted at rest (lint-film card-tilt)
   r?: number; // corner radius for the rim (house 12 % of the short side; a pill: h / 2)
   at?: number; // frame it starts to arrive (none: present from the start)
 };
@@ -79,7 +79,7 @@ export type DepthCam = { base?: Shot; moves: readonly CamMove[] } | ((f: number)
 export type DepthStackProps = {
   items: readonly DepthItem[];
   cam?: DepthCam; // the camera through the stack (house: depthPush(0))
-  farTurn?: number; // deg, signed (house 16; |turn| 8-25)
+  farTurn?: number; // deg, signed (house 0; a declared receding wall |turn| 8-25)
   farAxis?: 'y' | 'x'; // a receding wall (yaw) or a tabletop (pitch)
   planes?: Partial<Record<DepthPlane, Partial<PlaneSpec>>>;
   pass?: readonly [number, number] | false; // fade the near plane out between these zooms of its own (house 1.2-1.5)
@@ -101,7 +101,7 @@ export const depthPush = (at: number, o: { frames?: number; zoom?: number; pan?:
   const frames = o.frames ?? f60x(DEPTH.push.frames60, fps);
   return [
     { at, frames, zoom: o.zoom ?? DEPTH.push.zoom, pan: { x: o.pan ?? DEPTH.push.pan }, yaw: o.yaw ?? DEPTH.push.yaw, ease: o.ease ?? E.strongInOut },
-    { at: at + frames * 0.75, frames: f60x(DEPTH.push.creep60, fps), zoom: DEPTH.push.creep, ease: E.linear }, // the hold keeps moving
+    { at: at + frames * 0.75, frames: f60x(DEPTH.push.creep60, fps), zoom: DEPTH.push.creep, ease: E.linear }, // a sub-pixel creep after the landing (one way, never back)
   ];
 };
 
