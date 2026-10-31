@@ -1824,8 +1824,9 @@ def guard_out(outdir):
 # ------------------------------------------------------------------------------------------- the creative elements
 # Every film gets two or three creative elements (assets/remotion-starter/src/fx/creative: finished devices that each
 # carry a whole beat, the product's scene inside them), dealt at random from the whole library: seeded by the film's
-# name and the film history, never the set of a recent film, at most one device shared with the last one, at least one
-# that draws a line and one that draws a picture, never two of one family. The library is read from the project's own
+# name and the film history, recency-weighted (a device the last films played comes up late, so films walk the whole
+# library), never the set of a recent film, at least one device no recent film played, at most one device shared with
+# the last one, at least one that draws a line and one that draws a picture, never two of one family. The library is read from the project's own
 # src/fx/creative/meta.ts (else the skill's starter), so the deck and the film never name different devices. A device
 # that needs something the brief does not have (logos: the products it works with; number: a real figure; photos) is
 # dealt only when --have says so or the brief says it (works with ..., a figure in it).
@@ -1892,23 +1893,44 @@ def creative_haves(have, brief):
         out.add('logos')
     if re.search(r'\d', b):
         out.add('number')
+    if re.search(r'\b(photos?|photographs?|pictures|camera roll|albums?|gallery|galleries)\b', b):
+        out.add('photos')
     return out
 
 
+# How much a device the recent films played weighs in the shuffle, by how recent the film is (the last film first): a
+# device the last films never played is drawn first far more often, so a run of films walks the whole library instead of
+# circling the same few. Weights multiply over the films that played it.
+CREATIVE_RECENT_WEIGHT = (0.12, 0.3, 0.55, 0.8)
+
+
+def creative_weight(d, recent):
+    """The device's weight in the shuffle: 1, times CREATIVE_RECENT_WEIGHT[i] for each recent film i that played it."""
+    w = 1.0
+    for i, s in enumerate(list(recent)[:len(CREATIVE_RECENT_WEIGHT)]):
+        if d['id'] in s:
+            w *= CREATIVE_RECENT_WEIGHT[i]
+    return w
+
+
 def deal_creative(lib, name, brief, have, recent=(), n=CREATIVE_N):
-    """{deal, reserve, seed_key, haves} or None without a library. A seeded shuffle of the devices the film can feed, the first line
-    device, the first picture device, then the next of another family; re-dealt until no recent set repeats and at most
-    one device is shared with the last film (none while a draw can avoid it)."""
+    """{deal, reserve, seed_key, haves} or None without a library. A seeded, recency-weighted shuffle of the devices the
+    film can feed (a device the last films played is drawn late: CREATIVE_RECENT_WEIGHT), the first line device, the first
+    picture device, then the next of another family; re-dealt until no recent set repeats, at least one device is fresh
+    (played by none of the recent films) while one can be, and at most one device is shared with the last film (none
+    while a draw can avoid it)."""
     if not lib:
         return None
     haves = creative_haves(have, brief)
     ok = [d for d in lib if all(CREATIVE_NEED_HAVE.get(x) is None or CREATIVE_NEED_HAVE[x] in haves for x in d['needs'])]
     last = list(recent[0]) if recent else []
+    played = {x for s in recent for x in s}
+    fresh_left = any(d['id'] not in played for d in ok)
     key = '|'.join([(name or brief or '').strip().lower(), ';'.join(','.join(sorted(s)) for s in recent)])
     for salt in range(64):
         rng = random.Random(hashlib.sha256(f'{key}#creative#{salt}'.encode('utf-8')).hexdigest())
-        order = ok[:]
-        rng.shuffle(order)
+        # weighted shuffle (Efraimidis-Spirakis): each device's key u ** (1 / w), largest first
+        order = sorted(ok, key=lambda d: rng.random() ** (1.0 / creative_weight(d, recent)), reverse=True)
         pick = []
 
         def take(cond):
@@ -1925,8 +1947,11 @@ def deal_creative(lib, name, brief, have, recent=(), n=CREATIVE_N):
             if len(pick) == had:
                 break
         ids = [d['id'] for d in pick]
-        # the first half of the draws shares nothing with the last film; then one device at most
+        # the first half of the draws shares nothing with the last film; then one device at most; and while a fresh
+        # device exists, at least one of the deal is fresh (the first 48 draws)
         if any(sorted(ids) == sorted(s) for s in recent) or len(set(ids) & set(last)) > (0 if salt < 32 else 1):
+            continue
+        if fresh_left and salt < 48 and all(x in played for x in ids):
             continue
         reserve = [d['id'] for d in order if d['id'] not in ids] + [d['id'] for d in lib if d not in ok]
         return {'deal': ids, 'reserve': reserve, 'seed_key': key, 'haves': sorted(haves)}
