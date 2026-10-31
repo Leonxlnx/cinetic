@@ -195,6 +195,10 @@ export const CREATIVE_PLAN: CreativeSlot[] = [];
   }
   CREATIVE_PLAN.sort((a, b) => a.pair - b.pair || (a.role === 'line' ? -1 : 1));
 }
+/** Dealt creative elements that found no beat (a self-ending picture device with only the last picture free, a line
+ * device with no line but the claim): precheck names them, the ship gate fails them; add a pair (a picture-only pair
+ * works) or swap the device with a reason. */
+export const CREATIVE_UNPLACED: string[] = CREATIVE.deal.filter((id) => !CREATIVE_PLAN.some((c) => c.id === id));
 /** The line device of pair i (0-based), if any. */
 export const LINE_DEV: (CreativeMeta | undefined)[] = P.map((_, i) => metaOf(CREATIVE_PLAN.find((c) => c.pair === i + 1 && c.role === 'line')?.id ?? ''));
 /** The picture device of pair i (0-based), if any. */

@@ -31,7 +31,7 @@ import { LAUNCH } from '../launch';
 import { DEAL, SEED } from '../deal';
 import * as PRODUCT from '../product';
 import { SCENES } from '../product';
-import { ACT, BEAT_PLAN, COLOUR, copy, CREATIVE_COLOUR, CREATIVE_MISSING, CUE, DARK_FROM, f60x, FPS, H, keyWords, LINE_DEV, LINE_EXIT, PAIRS, PIC_DEV, PUSH, SEAM_PLAN, TOTAL, W } from '../timeline';
+import { ACT, BEAT_PLAN, COLOUR, copy, CREATIVE_COLOUR, CREATIVE_MISSING, CREATIVE_UNPLACED, CUE, DARK_FROM, f60x, FPS, H, keyWords, LINE_DEV, LINE_EXIT, PAIRS, PIC_DEV, PUSH, SEAM_PLAN, TOTAL, W } from '../timeline';
 import { Layer, PromoteCtx } from './layer';
 import { isClaim, Line, lineLayout, LINE_TYPE, Text, trackFor, weightOf } from './line';
 import { CARD, inkOn, litFace, SceneCtx } from './ui';
@@ -48,6 +48,7 @@ export const GROUND_AT = (F: number) => inksAt(F).ground;
 // The script a dealt creative element needs and its pair does not give (timeline.ts CREATIVE_MISSING): precheck reports
 // it, the ship gate fails it; write it on the pair, or swap the device in launch.ts creative.swap with the reason.
 for (const m of CREATIVE_MISSING) timingFail('creative', `creative: ${m}`);
+for (const id of CREATIVE_UNPLACED) timingFail('creative', `creative: ${id} was dealt but found no beat (a picture device that ends on itself never plays the last picture; a line device never the claim): add a pair, a picture-only one works, or swap it in launch.ts creative.swap with the reason`);
 
 /** The absolute film frame inside an act. */
 export const useAbs = (act: string) => useCurrentFrame() + ACT[act].from;

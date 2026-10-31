@@ -205,7 +205,7 @@ try {
   const T: any = await import(${JSON.stringify(url('timeline.ts'))});
   const S: any = await import(${JSON.stringify(url('acts/stage.tsx'))});
   const D: any = await import(${JSON.stringify(url('deal.ts'))});
-  out.plan = T.CREATIVE_PLAN; out.missing = T.CREATIVE_MISSING; out.modes = T.MODES;
+  out.plan = T.CREATIVE_PLAN; out.missing = T.CREATIVE_MISSING; out.modes = T.MODES; out.unplaced = T.CREATIVE_UNPLACED;
   out.seams = T.SEAM_PLAN.map((s: any) => [s.recipe, s.id]);
   const body = T.BEAT_PLAN.filter((b: any) => b.kind !== 'end');
   out.beats = body.length; out.colour = T.COLOUR; out.fieldOn = S.FIELD_ON; out.source = D.CREATIVE.source;
@@ -241,6 +241,11 @@ try {
     result(!b.missing.length, 'plan: word-swap with its alternatives needs nothing more', b.missing.join(' | '));
     result(!b.fieldOn && b.colour.some((c) => c.id === 'colour-flood'), 'plan: colour-flood is the film\'s colour event (declared; the claim\'s field off)', JSON.stringify(b.colour));
   }
+  // a dealt device with no beat left is named (two self-ending picture devices and a line device that hands over, three pairs)
+  writeDealt(['type-object', 'zoom-wall', 'object-turn']);
+  writeLaunch(PAIRS);
+  const u = run(probePlan);
+  result(!u.error && u.unplaced.length === 1 && u.issues.some((m) => /found no beat/.test(m)), 'plan: a dealt device that finds no beat is reported (add a pair or swap it)', u.error ?? JSON.stringify({ plan: u.plan, unplaced: u.unplaced }));
   // a swap needs a reason
   writeLaunch(PAIRS, "  creative: { swap: { 'zoom-wall': 'photo-arc' } },\n");
   const c = run(probePlan);
