@@ -31,6 +31,8 @@
  *  11. Coverr (music-fixtures/coverr-audios.json, every value invented): the free track with its Coverr License and
  *      full-length download, the energy from its waveform, vocals and premium items refused, the URLs, the record.
  *  12. The library ranks by the launch profile (earshot z) and by a real ending over a fade; the cut line names it.
+ *  13. A launch prefers 115-136 BPM (146 BPM loses to 124 BPM by the launch range) and the film's energy (a punchy track
+ *      under a calm film loses); a launch-simple film.json makes pick a launch.
  *   No test touches the network (fetch and the large-header transport are replaced by functions that fail the run).
  *
  * Usage (from the skill root):  node scripts/test/music.test.mjs [--verbose]
@@ -509,6 +511,25 @@ const ov = M.parseOpenverse(fixJson('openverse-search.json'), 'sfx');
   check(Math.abs(near.score - far.score - 3) < 1e-9 && near.why.some((w) => /close to the launch sound/.test(w)), 'library: closer to the launch films ranks higher', `${near.score} ${far.score}`);
   check(/ends on its own final hit at bar 60 \(rings 2\.1 s\): track\.py edit --end own/.test(M.planText(base)) && /track\.py edit --end fade/.test(M.planText({ ...base, cuts: { ending: { kind: 'fade' } } })),
     'library: the cut line names the ending and its edit', M.planText(base));
+}
+// 13. A launch prefers 115-136 BPM and the film's energy
+{
+  const t = (ref, bpm, mood) => ({ ref, title: ref, artist: ref, seconds: 150, file_url: 'x', licence: 'mixkit-music', mood, moods: [], bpm,
+    cuts: { reveal: { kind: 'drop', bar: 9, t: 20 }, ending: { kind: 'ring', final_bar: 60, ring_s: 2.1 } }, quality: 5 });
+  const dnb = t('mixkit:dnb', 146, 'driving'), house = t('mixkit:house', 124, 'driving'), slow = t('mixkit:slow', 92, 'elegant');
+  const launch = { moods: { driving: 1.5 }, words: ['driving'], length: 30, bpm: M.LAUNCH_BPM, launch: true, launchBpm: true, energy: 1 };
+  const plain = { moods: { driving: 1.5 }, words: ['driving'], length: 30 };
+  const gap = (w) => M.scoreLibraryTrack(house, w).score - M.scoreLibraryTrack(dnb, w).score;
+  check(gap(launch) >= 8 && gap(plain) === 0 && M.scoreLibraryTrack(dnb, launch).why.some((w) => /146 BPM outside the launch range \(115-136 for a launch\)/.test(w)),
+    'launch: a 146 BPM track loses to a 124 BPM one by the launch range (with no range given they tie)', `launch gap ${gap(launch)}, plain gap ${gap(plain)}`);
+  check(M.trackEnergy(dnb) === 2 && M.trackEnergy(house) === 2 && M.trackEnergy(slow) === 0 && M.trackEnergy(t('x', 120, 'uplifting')) === 1, 'launch: a track\'s energy from its mood and tempo');
+  const calmFilm = { ...launch, energy: 0 };
+  check(M.scoreLibraryTrack(dnb, calmFilm).why.some((w) => /punchy energy under a calm film/.test(w)) && M.scoreLibraryTrack(slow, calmFilm).why.some((w) => /calm energy, like the film/.test(w)),
+    'launch: a punchy track under a calm film loses ground, a calm one gains');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cinetic-music-fmt-'));
+  fs.writeFileSync(path.join(dir, 'film.json'), JSON.stringify({ template: 'launch-simple' }));
+  check(M.filmFormat(dir) === 'launch' && M.filmFormat(os.tmpdir()) === null, 'launch: a launch-simple film.json here makes pick a launch');
+  fs.rmSync(dir, { recursive: true, force: true });
 }
 check(fetched === 0, 'no network used', `${fetched} request(s)`);
 

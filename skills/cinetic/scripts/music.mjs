@@ -12,8 +12,8 @@
  *   node scripts/music.mjs search --mood "<words>" [--bpm 118-128] [--length 30] [--kind music|sfx]
  *        [--source all|mixkit|commons|ccmixter|openverse[,...]] [--limit 8] [--pages 4] [--out out/music/search.json]
  *        [--json] [--no-history]
- *   node scripts/music.mjs pick --mood "<words>" [--length 30] [--bpm 100-120] [--library PATH] [--limit 8]
- *        [--out out/music/search.json] [--json] [--no-history]
+ *   node scripts/music.mjs pick --mood "<words>" [--length 30] [--bpm 100-120] [--format launch] [--energy calm|crisp|punchy]
+ *        [--library PATH] [--limit 8] [--out out/music/search.json] [--json] [--no-history]
  *   node scripts/music.mjs sheet [results.json] [--pick 1,2,3] [--measure] [--json]
  *   node scripts/music.mjs get <#n|<source>:<id>> --to <film>/audio/music [--from results.json] [--name stem]
  *        [--film <dir>] [--no-history]
@@ -42,7 +42,13 @@
  *           mood (its own mood first, a second mood next), length (never shorter than the film plus its ending),
  *           tempo (--bpm; double or half time counts), the lift for the reveal and the library's quality mark;
  *           a second track by one artist, or an artist a recent film used, loses ground; a track any earlier
- *           film used is held back, the previous first offer is never first again. Writes
+ *           film used is held back, the previous first offer is never first again. A launch (--format launch, or a
+ *           film.json here whose template is launch-simple) prefers 115-136 BPM when --bpm is not given, and a tempo
+ *           outside it loses more than the brief's own range would (146 BPM drum and bass under calm cards is the
+ *           miss it prevents); --energy (calm, crisp, punchy; else the brief's mood words, else crisp for a
+ *           launch) weighs the track's energy
+ *           (its mood and tempo: calm, cinematic and elegant are calm; uplifting and playful crisp; driving,
+ *           energetic and dark, or 140 BPM and up, punchy) against the film's: the same +1.5, two apart -3. Writes
  *           the results where search does (each with its cut points: the reveal's bar and time, the body, the
  *           ending, the key, a --phase to analyse with), so sheet and get read them. The library: --library
  *           PATH, $CINETIC_MUSIC_LIBRARY, else $CINETIC_HOME/music-library.json (a library or {"link": path});
@@ -859,6 +865,17 @@ export function readLibrary(p) {
  * within -2..+2.5), a real ending (cuts.ending: the track's own final hit that rings out +2; a fade or a loop -2.5,
  * the film would have to fade it) and the library's quality mark (x 0.5); the example films' tracks lose 1.5.
  */
+/** The launch tempo range (BPM) a launch film's track prefers when the brief names none. */
+export const LAUNCH_BPM = [115, 136];
+export const ENERGIES = ['calm', 'crisp', 'punchy'];
+/** A library track's energy from its mood and tempo: 0 calm, 1 crisp, 2 punchy. */
+export const trackEnergy = (t) => {
+  const m = t.mood;
+  let e = ['calm', 'cinematic', 'elegant'].includes(m) ? 0 : ['driving', 'energetic', 'dark'].includes(m) ? 2 : 1;
+  if (Number.isFinite(t.bpm) && t.bpm >= 140) e = 2;
+  return e;
+};
+
 export function scoreLibraryTrack(t, want = {}) {
   const why = []; let s = 0;
   const L = want.length;
@@ -882,9 +899,15 @@ export function scoreLibraryTrack(t, want = {}) {
   if (want.bpm && t.bpm != null) {
     const [a, b] = want.bpm;
     const reads = [t.bpm, t.bpm * 2, t.bpm / 2];
+    const tag = want.launchBpm ? 'the launch range' : 'the brief';
     if (reads.some((v) => v >= a - 0.5 && v <= b + 0.5)) { s += 3; why.push(`${Math.round(t.bpm)} BPM fits`); }
-    else if (reads.some((v) => v >= a - 4 && v <= b + 4)) { s += 1; why.push(`${Math.round(t.bpm)} BPM near the brief`); }
-    else { s -= 3; why.push(`${Math.round(t.bpm)} BPM outside the brief`); }
+    else if (reads.some((v) => v >= a - 4 && v <= b + 4)) { s += 1; why.push(`${Math.round(t.bpm)} BPM near ${tag}`); }
+    else { s -= want.launch ? 6 : 3; why.push(`${Math.round(t.bpm)} BPM outside ${tag}${want.launch ? ` (${a}-${b} for a launch)` : ''}`); }
+  }
+  if (Number.isFinite(want.energy)) {
+    const d = Math.abs(trackEnergy(t) - want.energy);
+    if (d === 0) { s += 1.5; why.push(`${ENERGIES[want.energy]} energy, like the film`); }
+    else if (d === 2) { s -= 3; why.push(`${ENERGIES[trackEnergy(t)]} energy under a ${ENERGIES[want.energy]} film`); }
   }
   const rv = t.cuts?.reveal;
   if (rv) { s += rv.kind === 'drop' ? 1 : 0.5; why.push(`${/^[aeiou]/.test(rv.kind) ? 'an' : 'a'} ${rv.kind} at ${mmss(rv.t)} for the reveal`); }
@@ -936,6 +959,16 @@ export function libraryItem(t, r = scoreLibraryTrack(t)) {
  * loses 1 for every higher-ranked track by the same artist and 1 when one of the last five films used that artist;
  * then the history's rules (applyHistory). {items, held}.
  */
+/** launch when the film project here (film.json) is made from a launch template, else null. */
+export function filmFormat(dir = '.') {
+  try {
+    const fj = JSON.parse(fs.readFileSync(path.join(dir, 'film.json'), 'utf8'));
+    return /^launch/.test(String(fj.template || fj.format || '')) ? 'launch' : null;
+  } catch {
+    return null;
+  }
+}
+
 export function rankLibrary(tracks, want = {}, hist = {}) {
   const list = [];
   for (const t of tracks) {
@@ -1058,7 +1091,7 @@ async function download(url, dest, minBytes, referer = null) {
 // ------------------------------------------------------------------------------------------------ commands
 export class Usage extends Error {}
 export function parseArgs(argv) {
-  const VALUED = new Set(['mood', 'query', 'bpm', 'length', 'kind', 'limit', 'pages', 'out', 'pick', 'to', 'from', 'name', 'film', 'source', 'library']);
+  const VALUED = new Set(['mood', 'query', 'bpm', 'length', 'kind', 'limit', 'pages', 'out', 'pick', 'to', 'from', 'name', 'film', 'source', 'library', 'format', 'energy']);
   const FLAGS = new Set(['json', 'measure', 'no-history', 'help']);
   const args = { _: [] };
   for (let i = 0; i < argv.length; i++) {
@@ -1323,13 +1356,23 @@ async function cmdPick(args, env = process.env) {
   const q = args.mood || args.query || args._.join(' ');
   if (!q.trim()) throw new Usage('pick needs --mood "<words>" (with --length <film s> and --bpm <lo-hi>)');
   const ws = words(q);
-  const want = { words: ws, moods: moodsOfWords(ws), bpm: bpmRange(args.bpm), length: num(args.length, null, 1, 3600, 'length'), shortlist: shortlistRefs() };
+  const fmt = args.format || filmFormat();
+  if (fmt && !['launch', 'other'].includes(fmt)) throw new Usage('--format is launch (or other)');
+  const launch = fmt === 'launch';
+  // the film's energy: --energy, else the brief's first library mood (calm words calm, driving words punchy), else a
+  // launch's crisp
+  const top = Object.entries(moodsOfWords(ws)).sort((x, y) => y[1] - x[1])[0]?.[0];
+  const en = args.energy || (top ? ENERGIES[trackEnergy({ mood: top })] : launch ? 'crisp' : null);
+  if (en && !ENERGIES.includes(en)) throw new Usage(`--energy is one of ${ENERGIES.join(', ')}`);
+  const want = { words: ws, moods: moodsOfWords(ws), bpm: bpmRange(args.bpm) || (launch ? LAUNCH_BPM : null), launch, launchBpm: launch && !args.bpm,
+    energy: en ? ENERGIES.indexOf(en) : null, length: num(args.length, null, 1, 3600, 'length'), shortlist: shortlistRefs() };
   const limit = num(args.limit, 8, 1, 40, 'limit');
   const hist = readHistory(env);
   const { items, held } = rankLibrary(tracks, want, args['no-history'] ? {} : hist);
   const out = items.slice(0, limit);
   const notes = Object.keys(want.moods).length ? [] : [`no library mood in "${q}": the library's moods are ${LIB_MOODS.join(', ')} (and their words)`];
-  const r = { query: { mood: q, kind: 'music', bpm: want.bpm, length: want.length, moods: want.moods }, library: p, sources: ['library'], items: out, held, notes };
+  if (want.launchBpm) notes.push(`a launch: ${LAUNCH_BPM.join('-')} BPM preferred (--bpm sets another range)`);
+  const r = { query: { mood: q, kind: 'music', bpm: want.bpm, length: want.length, moods: want.moods, format: fmt || null, energy: en }, library: p, sources: ['library'], items: out, held, notes };
   if (!args['no-history'] && out.length) {
     hist.searches.push({ date: new Date().toISOString().slice(0, 10), kind: 'music', query: { mood: q, bpm: args.bpm || null, length: want.length, sources: ['library'] }, first: out[0].ref, offered: out.slice(0, 5).map((x) => x.ref) });
     writeHistory(hist, env);
