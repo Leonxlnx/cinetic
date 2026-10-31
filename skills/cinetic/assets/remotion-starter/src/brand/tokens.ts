@@ -41,10 +41,13 @@ export const C = {
 export const MASK = '#000000';
 
 // cinetic:placeholder - the family is the starter's stand-in, Inter (fonts.ts says how to choose): deal the film's
-// pairing with scripts/type-deal.mjs (it sets FONT, FACES and TYPE), or vendor the brand's face with add-font.mjs.
-// FONT.text is the film's voice (every statement, the claim, the wordmark: typeStyle's line, display, hero and giant
-// roles and every act that sets FONT.text); FONT.ui is the pairing's text face (product UI in the kit, captions, the
-// tagline: typeStyle's ui and caption roles); a single-family film gives both the same stack.
+// pairing with `npx tsx scripts/type-deal.ts --seed "<name>"` (it sets FONT, FACES and TYPE), or vendor the brand's
+// face with add-font.mjs.
+/**
+ * FONT.text is the film's voice (every statement, the claim, the wordmark: typeStyle's line, display, hero and giant
+ * roles and every act that sets FONT.text); FONT.ui is the pairing's text face (product UI in the kit, captions, the
+ * tagline: typeStyle's ui and caption roles); a single-family film gives both the same stack (fx/TypePairs).
+ */
 export const FONT = {
   text: '"Inter Variable", "Inter", system-ui, sans-serif', // the film's voice; typeStyle and measure.ts read it
   ui: '"Inter Variable", "Inter", system-ui, sans-serif', // the text face: kit UI, captions (fx/TypePairs)

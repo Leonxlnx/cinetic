@@ -177,7 +177,8 @@ const main = async () => {
   if (current !== pair.id) drift.push('pair');
   tk = tk.replace(/^\/\/ type pair: [^\n]*\n/m, '');
   tk = tk.replace(/^\/\/ cinetic:placeholder - the family is[^\n]*\n(?:\/\/(?! cinetic:)[^\n]*\n)*/m, '');
-  tk = tk.replace(/^export const FONT\s*=/m, `${pairLine}\nexport const FONT =`);
+  const doc = tk.indexOf("/**\n * FONT.text is the film's voice");
+  tk = doc >= 0 ? `${tk.slice(0, doc)}${pairLine}\n${tk.slice(doc)}` : tk.replace(/^export const FONT\s*=/m, `${pairLine}\nexport const FONT =`);
 
   if (flag('--check')) {
     const ok = !!current && drift.filter((d) => d !== 'pair').length === 0;

@@ -1,10 +1,10 @@
 // Local variable fonts, bundled with the film: no network at render time and every weight on
 // the axis available. Browser-only (CSS imports and a style element), so only FontGate imports this file.
 //
-// cinetic:placeholder - the film's type is not dealt yet: Inter is the starter's stand-in, not a choice. Deal the
-// film's pairing with `node scripts/type-deal.mjs --seed "<product name>"` (fx/TypePairs: a voice for the film's
-// words and a text face for UI and captions, from the faces bundled in public/fonts), which writes FONT, FACES and
-// TYPE in tokens.ts and deletes these lines; a brand's own face goes in with `node scripts/add-font.mjs <name>`.
+// cinetic:placeholder - Inter is the face set's default, the starter's stand-in, not a choice: deal the film's
+// pairing with `npx tsx scripts/type-deal.ts --seed "<product name>"` (fx/TypePairs: a voice for the film's words and
+// a text face for UI and captions, from the faces bundled in public/fonts), which writes FONT, FACES and TYPE in
+// tokens.ts and deletes these lines; a brand's own face goes in with `node scripts/add-font.mjs <name>`.
 // opsz.css: weight and optical size, so every film size (32 px and up) takes Inter's display cut.
 import '@fontsource-variable/inter/opsz.css';
 import '@fontsource-variable/geist-mono';
