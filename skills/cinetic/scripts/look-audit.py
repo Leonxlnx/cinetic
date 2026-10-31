@@ -39,8 +39,8 @@ Look checks (warn unless marked fail):
                   LOOK.whiteWorld (brand-supplied black or white excepted)
   negative-space  in reading windows the non-ground share has a median over 30 %, or a dense run
                   (> 30 %) lasts more than 6 s
-  living-ground   the camera stands still for more than 0.8 s while the ground does not change either
-                  (outside the end lock; 1 s inside a copy read window: the read lock)
+  living-ground   nothing moves (camera and ground still) for more than 1.5 s (outside the end lock; 2 s inside a copy
+                  read window): holds may rest, but not past that
   camera-lock     the camera never locks: it moves on more than 99 % of the body (3 s or longer), or no
                   copy read of 0.8 s or more holds it still for 0.5 s (two reads or more). The ground breathes;
                   the camera may stop for 0.5-1 s on each read
@@ -66,6 +66,14 @@ Look checks (warn unless marked fail):
                   A chart's bars, a frame round a picture, a coloured word's letters and footage are left out. Product
                   UI is simple: a card reads by its fill, its type and its real content, never a stripe down its side.
                   --ui-only <video | folder of stills | image> runs this read alone
+  banding         fail: a smooth ramp (a lit ground, a gradient) shows 8-bit steps on 3 or more full-resolution samples
+                  (warn on one): on the smooth, sloped pixels the run of one raw value along the slope is as wide as the
+                  step spacing the slope predicts (a dithered ramp flickers in runs of 1-4 px); 3 % of the frame in bands
+                  and 40 % of the ramp. --surfaces <video | folder | image> runs it (and cheap-card) alone
+  cheap-card      (warn) a card reads as a cheap slab on 2 or more samples: a panel floating inside the frame whose own
+                  ramp follows the ground's (translucent: the ground shows through), or, on a light ground, one under
+                  9 L* off it with no shadow under it. A card is an opaque face with a hairline, a top highlight and two
+                  shadows (kit/card Card); glass only with its backdrop
   text-on-asset   fail (--layout): a text box that cuts into a mark or a picture in view on 2 or more audited frames (warn on
                   one): the layout audit's text box crosses the edge of a mark ([data-logo]) or a picture ([data-imagery])
                   by more than 2 px each way at 1080, and the strip of the asset beside the crossing (24 px, outside the text
@@ -76,11 +84,11 @@ Look checks (warn unless marked fail):
 
 The floor against a flat film (fail; the ship gate). Body = outside the end lock (cues `declared.end`;
 without one, all but the last 2 s):
-  floor-moving    the camera or the ground moves on >= 70 % of body frames (camera fit >= 6 px/s or
+  floor-moving    something moves (camera, ground or a large layer) on >= 65 % of body frames (camera fit >= 6 px/s or
                   >= 1 %/s, the flat ground changing as light moves over it, or a layer carrying at least
                   a quarter of the frame's structure moving >= 6 px/s); inside each copy read window up to
                   1 s of a locked camera counts as alive (the read lock)
-  floor-depth     >= 2 depth planes moving at different rates (a plane the camera move does not
+  floor-depth     (warn, not the gate: planes part only under a declared move) >= 2 depth planes moving at different rates (a plane the camera move does not
                   explain, moving >= 6 px/s, while the camera moves) in >= 50 % of shots
   floor-carried   carried seams >= 40 % of all seams, to the nearest seam (declared kinds velocity,
                   morph, breath, zoomThrough, whip, snapZoom, mask, wipe, defocus; an undeclared cut
@@ -89,7 +97,7 @@ without one, all but the last 2 s):
   floor-device    something designed happens at least every 3 s (a seam, a declared step, flash or
                   camera-blur range, a move peaking over 600 px/s, a light event, a zoom over 8 %/s,
                   three or more regions launching in the same frame)
-  floor-light     one light event per act (the ground brightening or dimming, light moving over the
+  floor-light     (warn, not the gate: a still lit ground is the default) one light event per act (the ground brightening or dimming, light moving over the
                   ground, a declared light seam)
   floor-scale     the scale of the content contrasts (x1.5 in element height, or x2 in coverage)
                   between consecutive shots on >= 30 % of cuts
@@ -193,8 +201,9 @@ CARRY_ZOOM = 1.0  # %/s of zoom on both sides (the living-creep bound): scale ca
 DEVICE_PXS = 600.0  # a move peaking faster than this (px/s at 1080p) is a designed beat
 DEVICE_ZOOM = 8.0  # %/s: a snap of scale
 DEVICE_BURST = 3  # regions starting in the same frame: a coordinated launch
-MOVING_FLOOR = 0.70  # floor-moving: the camera or the ground moves on this share of the body (a read lock counts as alive)
-READ_LOCK_S = 1.0  # the camera may lock this long on each type read (lib/look.ts GRAMMAR.hold.readLockS)
+MOVING_FLOOR = 0.65  # floor-moving: something moves (camera, ground or a large layer) on this share of the body (a still hold on a read counts)
+READ_LOCK_S = 2.0  # a hold may rest this long on each type read: the camera moves with a purpose or not at all (no idle float)
+HOLD_STILL_S = 1.5  # living-ground: a still frame outside a read may rest this long
 LOCK_MIN_S = 0.5  # a lock shorter than this is not a lock
 CAMERA_NEVER_LOCKS = 0.99  # camera-lock: the camera moves on more than this share of the body
 TYPE_LINE = 0.067  # type-read: the film's largest copy line (font size) at least this share of the frame height
@@ -616,6 +625,200 @@ def ui_bar_flags(hits, add, fps):
     add('ui-accent-bar', sev, f0, f"a thin saturated vertical bar along a card's edge on {len(hits)} sample(s) (first at {x},{y} {w}x{h} px, {f0 / fps:.1f} s): "
         'product UI is simple and aligned: a card reads by its fill, its type and its real content (an icon, the real mark, a photo), never a stripe or a pill down its side')
 
+
+# surfaces (full resolution, two samples a second, with the ui read): a ramp that bands, a card that reads cheap
+BAND = dict(
+    blur=5.0,  # px at 1920 wide: the smooth estimate of the field
+    tex=1.6,  # levels: local texture under this is a smooth field (dither and fine grain sit under it)
+    slope=(0.012, 0.075),  # levels/px of the smooth field: a ramp shallow enough that 8-bit steps would sit 13-80 px apart
+    run=12,  # px: a run of one raw value this long, and at least half the step spacing the slope predicts, is a band
+    frac=0.4,  # share of the ramp's sampled pixels in bands for the ramp to read banded
+    share=0.03,  # share of the frame in bands
+    samples=3,  # samples banded before it fails (warn from 1)
+)
+CHEAP = dict(
+    block=8,  # px at 1920 wide
+    flat_std=2.2,  # luma std inside a block: flat
+    join=2.5,  # L* between neighbouring blocks of one region
+    area=0.015, fill=0.6,  # a panel: this share of the frame or more, filling this share of its box
+    step=9.0,  # L*: a panel nearer its ground than this has to read by its edge or its shadow
+    shadow=0.8,  # L*: a light-ground card's shadow darkens the strip under it at least this much
+    track=(0.6, 1.3), slope_min=6.0,  # translucency: the panel's own ramp follows the ground's (0.6-1.3 of its slope) where the ground
+    # falls 6 L* or more across the panel (a card's own top-to-bottom sheen, 1-3 L*, never reaches it)
+    samples=2,  # samples with a cheap card before it warns
+)
+
+
+def _runs(v):
+    """Run lengths of identical values along a 1-D array, one per element."""
+    ch = np.flatnonzero(np.diff(v.astype(np.int16)) != 0) + 1
+    st = np.r_[0, ch]
+    ln = np.diff(np.r_[st, len(v)])
+    return np.repeat(ln, ln)
+
+
+def banding(rgb, keep=None, P=BAND):
+    """banding: a smooth ramp (a lit ground, a gradient) that shows 8-bit contour steps. On the frame's smooth, sloped
+    pixels (the field blurred, its slope inside P['slope'], its texture under P['tex']), the run of one raw value along
+    the slope is measured on every 4th row and column: a dithered ramp flickers between levels (runs of 1-4 px), a
+    banded one holds plateaus as wide as its step spacing. Returns {share (of the frame), ramp (share), frac, run}."""
+    g = rgb[..., 1]
+    h, w = g.shape
+    s = w / 1920.0
+    gf = g.astype(np.float32)
+    sm = cv2.GaussianBlur(gf, (0, 0), max(1.0, P['blur'] * s))
+    tex = np.sqrt(cv2.GaussianBlur((gf - sm) ** 2, (0, 0), max(1.0, 3 * s)))
+    gx = cv2.Sobel(sm, cv2.CV_32F, 1, 0, ksize=3) / 8.0
+    gy = cv2.Sobel(sm, cv2.CV_32F, 0, 1, ksize=3) / 8.0
+    mag = np.hypot(gx, gy)
+    elig = (tex < P['tex']) & (mag > P['slope'][0] / s) & (mag < P['slope'][1] / s)
+    if keep is not None:
+        elig &= keep
+    tot = banded = 0
+    for r in range(2, h - 2, 4):
+        e = elig[r] & (np.abs(gx[r]) >= np.abs(gy[r]))
+        if not e.any():
+            continue
+        run = _runs(g[r])
+        need = np.maximum(P['run'] * s, 0.5 / np.maximum(np.abs(gx[r]), 1e-4))
+        tot += int(e.sum())
+        banded += int((e & (run >= need)).sum())
+    for c in range(2, w - 2, 4):
+        e = elig[:, c] & (np.abs(gy[:, c]) > np.abs(gx[:, c]))
+        if not e.any():
+            continue
+        run = _runs(g[:, c])
+        need = np.maximum(P['run'] * s, 0.5 / np.maximum(np.abs(gy[:, c]), 1e-4))
+        tot += int(e.sum())
+        banded += int((e & (run >= need)).sum())
+    lines = len(range(2, h - 2, 4)) * w + len(range(2, w - 2, 4)) * h
+    frac = banded / max(1, tot)
+    return dict(share=round(banded / max(1, lines), 4), ramp=round(tot / max(1, lines), 4), frac=round(frac, 3),
+                banded=bool(frac >= P['frac'] and banded / max(1, lines) >= P['share']))
+
+
+def _plane(Ls, ys, xs):
+    """Least-squares plane L = a + b x + c y over the given block positions: (b, c) in L* per block."""
+    if len(ys) < 6:
+        return 0.0, 0.0
+    A = np.c_[np.ones(len(xs)), xs, ys]
+    coef, *_ = np.linalg.lstsq(A, Ls, rcond=None)
+    return float(coef[1]), float(coef[2])
+
+
+def cheap_cards(rgb, keep=None, P=CHEAP):
+    """cheap-card: flat panels floating inside the frame (not touching an edge) that read as a cheap slab: translucent
+    (the ground's ramp shows through: the panel's own slope follows the ground's, at 0.6-1.3 of it, where the ground
+    falls P['slope_min'] L* or more across the panel), or, on a light ground, near the ground (under P['step']
+    L*) with no shadow under it (the strip below no darker than the ground further down). Returns the panels found
+    and the cheap ones: [{box (px), step, shadow, track, why}]."""
+    h, w = rgb.shape[:2]
+    s = w / 1920.0
+    b = max(3, int(round(P['block'] * s)))
+    mean, std = _blocks(rgb, b, keep)
+    L = lstar(mean)
+    flat = std < P['flat_std']
+    hb, wb = flat.shape
+    seen = np.zeros_like(flat)
+    regs = []
+    for y in range(hb):
+        for x in range(wb):
+            if not flat[y, x] or seen[y, x]:
+                continue
+            stack, pts = [(y, x)], []
+            seen[y, x] = True
+            while stack:
+                cy, cx = stack.pop()
+                pts.append((cy, cx))
+                for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    ny, nx = cy + dy, cx + dx
+                    if 0 <= ny < hb and 0 <= nx < wb and flat[ny, nx] and not seen[ny, nx] and abs(L[ny, nx] - L[cy, cx]) < P['join']:
+                        seen[ny, nx] = True
+                        stack.append((ny, nx))
+            ys = np.array([q[0] for q in pts])
+            xs = np.array([q[1] for q in pts])
+            y0, y1, x0, x1 = int(ys.min()), int(ys.max()), int(xs.min()), int(xs.max())
+            regs.append(dict(ys=ys, xs=xs, n=len(pts), touch=int(y0 == 0) + int(x0 == 0) + int(y1 == hb - 1) + int(x1 == wb - 1),
+                             fill=len(pts) / ((y1 - y0 + 1) * (x1 - x0 + 1)), box=[x0, y0, x1, y1]))
+    grounds = [r for r in regs if r['touch'] >= 2]
+    if not grounds:
+        return dict(panels=0, cheap=[])
+    gr = max(grounds, key=lambda r: r['n'])
+    gL = float(np.median(L[gr['ys'], gr['xs']]))
+    gb, gc = _plane(L[gr['ys'], gr['xs']], gr['ys'], gr['xs'])
+    Lpx = None
+    out, panels = [], 0
+    for r in regs:
+        if r is gr or r['touch'] or r['n'] < P['area'] * hb * wb or r['fill'] < P['fill']:
+            continue
+        panels += 1
+        pv = L[r['ys'], r['xs']]
+        step = float(np.median(pv)) - gL
+        x0, y0, x1, y1 = r['box']
+        pb, pc = _plane(pv, r['ys'], r['xs'])
+        across = abs(gb) * (x1 - x0 + 1) + abs(gc) * (y1 - y0 + 1)  # how far the ground falls across the panel (L*)
+        track = (pb * gb + pc * gc) / max(1e-6, gb * gb + gc * gc) if across >= P['slope_min'] else 0.0
+        why = []
+        pfall = abs(pb) * (x1 - x0 + 1) + abs(pc) * (y1 - y0 + 1)  # the panel's own fall (L*): a card's sheen stays under 0.6 x slope_min
+        if across >= P['slope_min'] and pfall >= P['track'][0] * P['slope_min'] and P['track'][0] <= track <= P['track'][1]:
+            why.append(f'translucent (the ground\'s ramp shows through at {track * 100:.0f} %)')
+        shadow = None
+        if gL >= 50 and abs(step) < P['step']:
+            if Lpx is None:
+                Lpx = lstar(rgb.astype(np.float32))
+            X0, X1 = int((x0 + 0.15 * (x1 - x0)) * b), int((x1 + 1 - 0.15 * (x1 - x0)) * b)
+            Yb = (y1 + 1) * b
+            near = Lpx[min(h - 1, Yb + int(4 * s)): min(h, Yb + int(0.025 * h)), X0:X1]
+            far = Lpx[min(h - 1, Yb + int(0.045 * h)): min(h, Yb + int(0.07 * h)), X0:X1]
+            if near.size and far.size:
+                shadow = round(float(far.mean() - near.mean()), 2)
+                if shadow < P['shadow']:
+                    why.append(f'{abs(step):.1f} L* off a light ground with no shadow under it')
+        if why:
+            out.append(dict(box=[x0 * b, y0 * b, (x1 + 1) * b, (y1 + 1) * b], step=round(step, 1), shadow=shadow, track=round(track, 2), why='; '.join(why)))
+    return dict(panels=panels, ground=round(gL, 1), cheap=out)
+
+
+def surface_scan(paths_or_video, info=None):
+    """banding and cheap_cards over a film (two samples a second, full resolution) or stills: (band hits, cheap hits, samples)."""
+    bands, cheap, n = [], [], 0
+
+    def one(rgb, tag):
+        nonlocal n
+        n += 1
+        bd = banding(rgb)
+        if bd['banded']:
+            bands.append(dict(tag, **bd))
+        cc = cheap_cards(rgb)
+        if cc['cheap']:
+            cheap.append(dict(tag, cards=cc['cheap']))
+
+    if info is not None:
+        for f, rgb in ui_frames(paths_or_video, info):
+            one(rgb, dict(f=f))
+    else:
+        for p in paths_or_video:
+            im = cv2.imread(p)
+            if im is not None:
+                one(cv2.cvtColor(im, cv2.COLOR_BGR2RGB), dict(file=p))
+    return bands, cheap, n
+
+
+def surface_flags(bands, cheap, n, add, fps):
+    """banding: fail on BAND['samples'] or more banded samples, warn on one; cheap-card: warn on CHEAP['samples'] or more."""
+    if bands:
+        sev = 'fail' if len(bands) >= BAND['samples'] else 'warn'
+        x = bands[0]
+        at = x.get('f', 0)
+        add('banding', sev, at, f"a smooth ramp shows 8-bit steps on {len(bands)} of {n} sample(s) (first {x.get('file') or f'{at / fps:.1f} s'}: {x['share'] * 100:.1f} % of the frame "
+            f"in plateaus, {x['frac'] * 100:.0f} % of the ramp): bake soft fields dithered (fx/Grounds litFieldPixels, fx/Gradients), never a CSS gradient over few levels; "
+            'encode with enough bits (render.sh) so the dither survives')
+    if len(cheap) >= CHEAP['samples']:
+        x = cheap[0]
+        at = x.get('f', 0)
+        c = x['cards'][0]
+        add('cheap-card', 'warn', at, f"a card reads as a cheap slab on {len(cheap)} sample(s) (first {x.get('file') or f'{at / fps:.1f} s'} at {c['box']}: {c['why']}): an opaque face "
+            'with a hairline, an inner top highlight and two shadows under the key (kit/card Card, kit/parts Surface), glass only with its backdrop')
 
 # text never cuts into a picture or a mark (the layout audit's boxes, confirmed on the pixels; scripts/ui-layout.cjs reads
 # the same crossings from the boxes alone)
@@ -1952,10 +2155,10 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
 
     floor = dict(
         moving=dict(share=round(moving_share, 3), need=MOVING_FLOOR, ok=moving_share >= MOVING_FLOOR, read_lock_frames=len(lock_frames)),
-        depth=dict(share=round(depth_share, 3), need=0.5, ok=depth_share >= 0.5, shots=depth_rows),
+        depth=dict(share=round(depth_share, 3), need=0.5, ok=depth_share >= 0.5, shots=depth_rows, gate=False),
         carried=dict(share=round(carried_share, 3), need=0.4, ok=one_take or not seam_rows or carried_n >= carried_need, seams=seam_rows, na=one_take or not seam_rows),
         device=dict(max_gap_s=round(max([(b - a) / fps for a, b in gaps] or [0]), 2), need_s=3, ok=not gaps, gaps=[[a, b] for a, b in gaps]),
-        light=dict(acts=light_rows, ok=all(r['light'] for r in light_rows)),
+        light=dict(acts=light_rows, ok=all(r['light'] for r in light_rows), gate=False),
         scale=dict(share=round(scale_share, 3), need=0.3, ok=one_take or not scale_rows or scale_share >= 0.3, cuts=scale_rows, na=one_take or not scale_rows),
     )
     acc_h = lch_of_hex(accent)[2] if accent else None
@@ -1965,13 +2168,13 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
     floor['picture'] = pf
     if args.no_picture:
         pf['reported_only'] = True
-    floor['pass'] = all(v['ok'] for k, v in floor.items() if isinstance(v, dict) and not (k == 'picture' and args.no_picture))
+    floor['pass'] = all(v['ok'] for k, v in floor.items() if isinstance(v, dict) and v.get('gate', True) and not (k == 'picture' and args.no_picture))
     if not args.no_floor and not args.no_picture:
         picture_flags(pf, framing, add, fps)
     colour_flags(pf, add)
     if not args.no_floor:
         msgs = {
-            'moving': f"the camera or the ground moves on {moving_share * 100:.0f} % of the body (floor {MOVING_FLOOR * 100:.0f} %, a read lock of up to {READ_LOCK_S:g} s counted): creep, drift or light the ground through the holds",
+            'moving': f"something moves on {moving_share * 100:.0f} % of the body (floor {MOVING_FLOOR * 100:.0f} %, a still hold of up to {READ_LOCK_S:g} s on a read counted): the beats are too long and too still; give each beat its move (an arrival, a UI interaction, a purposeful camera move), never an idle drift",
             'depth': f"{depth_share * 100:.0f} % of the shots show two planes moving at different rates (floor 50 %): parallax, a foreground pass, type over a moving ground",
             'carried': f"{carried_share * 100:.0f} % of the seams carry something across (floor 40 %): velocity, morph, breath, whip, mask",
             'device': f"{len(gaps)} stretch(es) over 3 s with nothing designed happening (longest {floor['device']['max_gap_s']} s): a device in every beat",
@@ -1980,7 +2183,7 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
         }
         for key, msg in msgs.items():
             if not floor[key]['ok']:
-                add(f'floor-{key}', 'fail', 0, msg)
+                add(f'floor-{key}', 'fail' if floor[key].get('gate', True) else 'warn', 0, msg)
 
     # --- look checks
     groups_by_sample = [s['groups'] for s in samples]
@@ -2051,14 +2254,14 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
         if still:
             cur.append(f)
         else:
-            if cur and len(cur) > hold_limit(cur[0], cur[-1], 0.8) * fps:
+            if cur and len(cur) > hold_limit(cur[0], cur[-1], HOLD_STILL_S) * fps:
                 lg_runs.append((cur[0], cur[-1]))
             cur = []
-    if cur and len(cur) > hold_limit(cur[0], cur[-1], 0.8) * fps:
+    if cur and len(cur) > hold_limit(cur[0], cur[-1], HOLD_STILL_S) * fps:
         lg_runs.append((cur[0], cur[-1]))
     if lg_runs:
         a, b = max(lg_runs, key=lambda r: r[1] - r[0])
-        add('living-ground', 'warn', f'{a}-{b}', f'{len(lg_runs)} stretch(es) where the camera and the ground both stand still (longest {(b - a + 1) / fps:.1f} s): a read lock lasts up to {READ_LOCK_S:g} s; past it the ground keeps moving')
+        add('living-ground', 'warn', f'{a}-{b}', f'{len(lg_runs)} stretch(es) where nothing moves (longest {(b - a + 1) / fps:.1f} s): a still hold rests up to {READ_LOCK_S:g} s on a read and {HOLD_STILL_S:g} s elsewhere; past it something moves with a purpose (a move that starts, travels and lands; never an idle float)')
     # camera-lock: the camera never stops, or never stops on a read
     if len(body_win) * ws >= 3 * fps:
         locked = [r for r in read_rows if r['locked']]
@@ -2097,6 +2300,8 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
     if not args.no_finish and not args.no_ui:
         ui_hits, _ = ui_scan(args.video, info)
         ui_bar_flags(ui_hits, add, fps)
+        bands_, cheap_, ns_ = surface_scan(args.video, info)
+        surface_flags(bands_, cheap_, ns_, add, fps)
     if layout and not args.no_ui:
         text_asset_flags(text_on_asset(args.video, info, layout, fps / (cues.get('fps') or fps) if cues else 1.0), add, fps)
     # luminance flips: the stage turns light <-> dark
@@ -2418,7 +2623,8 @@ def self_test(F, part='all'):
         rep = run('flat', flat, cues_for(n, seams=[dict(at=75, kind='hard', id='cut')]))
         fl = rep.get('floor', {})
         check(not fl.get('pass', True) and not fl.get('moving', {}).get('ok', True), 'a locked-off film fails the floor (nothing moves)', f"moving {fl.get('moving', {}).get('share')}")
-        check(bool(has(rep, 'floor-moving', 'fail')) and bool(has(rep, 'floor-light', 'fail')), 'the flat film fails floor-moving and floor-light')
+        check(bool(has(rep, 'floor-moving', 'fail')) and bool(has(rep, 'floor-light', 'warn')) and not has(rep, 'floor-light', 'fail'),
+              'the flat film fails floor-moving; floor-light only warns (a still lit ground is the default)')
         # a rich film: a creeping textured ground (light moving), a card moving apart from it, a carried cut, scale change
         A, B = dots(11), dots(12)
         rich = []  # three shots: a large card, a small one, a large one again (two carried seams)
@@ -2551,9 +2757,48 @@ def self_test(F, part='all'):
                            capture_output=True, text=True)
         check(r.returncode == 1, 'a hue sweep leaves the accent hue and fails the one-hue gate')
     self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part)
+    if part in ('all', 'c'):
+        surface_self_test(check)
     shutil.rmtree(tmp, ignore_errors=True)
     print('look-audit self-test: ' + ('all pass' if not bad else f'{bad} failed'))
     return 1 if bad else 0
+
+
+def surface_self_test(check):
+    """banding and cheap-card on synthetic full-size frames: a banded ramp against the same ramp dithered, a translucent
+    slab and a shadowless card against an opaque card with its shadow."""
+    H_, W_ = 540, 960
+    xs = np.linspace(0, 1, W_, dtype=np.float32)
+    ramp = 40 + 22 * xs[None, :] + 6 * np.linspace(0, 1, H_, dtype=np.float32)[:, None]
+    rng = np.random.default_rng(3)
+    banded = np.repeat(np.round(ramp)[..., None], 3, -1).astype(np.uint8)
+    dith = np.repeat(np.clip(np.round(ramp + rng.random(ramp.shape) + rng.random(ramp.shape) - 1), 0, 255)[..., None], 3, -1).astype(np.uint8)
+    b1, b2 = banding(banded), banding(dith)
+    check(b1['banded'] and not b2['banded'], 'banding: an undithered ramp bands, the same ramp dithered does not', f"{b1['frac']} vs {b2['frac']}")
+    def ramp_ground(top, bottom):
+        gy = top + (bottom - top) * np.linspace(0, 1, H_, dtype=np.float32)[:, None] + 0 * xs[None, :]
+        return np.clip(np.round(gy + rng.random(gy.shape) + rng.random(gy.shape) - 1), 0, 255)
+    def frame_with(ground, card_fn):
+        g = ground.copy()
+        card_fn(g)
+        return np.repeat(np.clip(g, 0, 255)[..., None], 3, -1).astype(np.uint8)
+    y0, y1, x0, x1 = 150, 390, 300, 660
+    dark = ramp_ground(26, 62)
+    slab = frame_with(dark, lambda g: g.__setitem__((slice(y0, y1), slice(x0, x1)), g[y0:y1, x0:x1] * 0.88 + 255 * 0.12))
+    opaque = frame_with(dark, lambda g: g.__setitem__((slice(y0, y1), slice(x0, x1)), 78.0))
+    c1, c2 = cheap_cards(slab), cheap_cards(opaque)
+    check(bool(c1['cheap']) and not c2['cheap'], 'cheap-card: a translucent slab on a dark ramp reads cheap, an opaque card on it does not',
+          f"{[c['why'] for c in c1['cheap']]} vs {[c['why'] for c in c2['cheap']]}")
+    light = ramp_ground(238, 222)
+    def flat(g):
+        g[y0:y1, x0:x1] = float(g[y0:y1, x0:x1].mean()) + 16
+    def shadowed(g):
+        yy = np.arange(H_)[:, None]
+        g -= np.exp(-(((yy - (y1 + 8)) / 8.0) ** 2)) * 12 * ((np.arange(W_)[None, :] > x0 + 6) & (np.arange(W_)[None, :] < x1 - 6))
+        flat(g)
+    c3, c4 = cheap_cards(frame_with(light, flat)), cheap_cards(frame_with(light, shadowed))
+    check(any('no shadow' in c['why'] for c in c3['cheap']) and not c4['cheap'], 'cheap-card: a card a few L* off a light ground reads cheap without a shadow, not with one',
+          f"{json.dumps(c3['cheap'])[:120]} vs {json.dumps(c4['cheap'])[:120]}")
 
 
 def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='all'):
@@ -3128,6 +3373,7 @@ def main():
     ap.add_argument('--no-finish', action='store_true', help='skip the full-resolution grain and vignette samples (and the ui-accent-bar read)')
     ap.add_argument('--no-ui', action='store_true', help='skip the ui-accent-bar read (full resolution, two samples a second) and text-on-asset')
     ap.add_argument('--ui-only', action='store_true', help='only the ui-accent-bar read, on the video, a folder of stills or one image (exit 1 on a bar); with --layout also text-on-asset')
+    ap.add_argument('--surfaces', action='store_true', help='only the banding and cheap-card reads, on the video, a folder of stills or one image (exit 1 on banding)')
     ap.add_argument('--no-audio', action='store_true', help='skip the audio onsets (cut sync)')
     ap.add_argument('--trajectory', action='store_true', help='the one-hue gate on --roi instead of the film checks')
     ap.add_argument('--roi', help='x,y,w,h for --trajectory (video pixels)')
@@ -3152,6 +3398,26 @@ def main():
         sys.exit(self_test(F, args.self_test))
     if not args.video:
         ap.error('a video is required (or --self-test)')
+    if args.surfaces:
+        stills = None
+        if os.path.isdir(args.video):
+            stills = sorted(os.path.join(args.video, x) for x in os.listdir(args.video) if x.lower().endswith(('.png', '.jpg', '.jpeg')))
+        elif args.video.lower().endswith(('.png', '.jpg', '.jpeg')):
+            stills = [args.video]
+        info_ = None if stills is not None else F.probe(args.video)
+        bands, cheap, n = surface_scan(stills if stills is not None else args.video, info_)
+        bad = len(bands) >= (1 if stills is not None else BAND['samples'])
+        res = dict(tool='look-audit', mode='surfaces', file=args.video, samples=n, banding=bands, cheap_cards=cheap, **{'pass': not bad})
+        if args.json:
+            os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
+            json.dump(res, open(args.json, 'w'), indent=1, default=lambda o: o.item() if hasattr(o, 'item') else str(o))
+        for x in bands[:20]:
+            print(f"  banding {x.get('file') or 'f' + str(x['f'])}: {x['share'] * 100:.1f} % of the frame in plateaus ({x['frac'] * 100:.0f} % of the ramp)")
+        for x in cheap[:20]:
+            for c in x['cards'][:3]:
+                print(f"  cheap-card {x.get('file') or 'f' + str(x['f'])} {c['box']}: {c['why']}")
+        print(f"look-audit surfaces: {args.video}  {n} samples, {len(bands)} banded, {len(cheap)} with a cheap card -> {'pass' if res['pass'] else 'FAIL'}")
+        sys.exit(0 if res['pass'] else 1)
     if args.ui_only:
         stills = None
         if os.path.isdir(args.video):
