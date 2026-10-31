@@ -26,16 +26,20 @@ export const useKitScale = (scale?: number) => {
   return scale ?? uOf(film);
 };
 
-/** CSS for kit text: the film's one sans, tabular figures, no wrapping. */
+/** The kit's face: the film's text face (FONT.ui, the pairing's UI cut: fx/TypePairs), else its one sans. */
+export const KIT_FONT: string = (FONT as { ui?: string }).ui ?? FONT.text;
+
+/** CSS for kit text: the text face, tabular lining figures, kerning on, no wrapping. */
 export const face = (px: number, weight: number, color: string, track = -0.015, lead = 1.15): React.CSSProperties => ({
-  fontFamily: FONT.text,
+  fontFamily: KIT_FONT,
   fontSize: px,
   fontWeight: weight,
   letterSpacing: `${track}em`,
   lineHeight: lead,
   color,
   whiteSpace: 'pre',
-  fontVariantNumeric: 'tabular-nums',
+  fontVariantNumeric: 'tabular-nums lining-nums',
+  fontKerning: 'normal',
 });
 
 /**
@@ -45,7 +49,7 @@ export const face = (px: number, weight: number, color: string, track = -0.015, 
  */
 export const fitTitle = (text: string, px: number, weight: number, maxW: number, min = 0.78): { px: number; wrap: boolean } => {
   if (typeof document === 'undefined' || !text || !(maxW > 0)) return { px, wrap: false };
-  const w = measureTracked(text, px, weight, -0.01, FONT.text, { trailing: false });
+  const w = measureTracked(text, px, weight, -0.01, KIT_FONT, { trailing: false });
   if (w <= maxW) return { px, wrap: false };
   const k = maxW / w;
   return k >= min ? { px: px * k * 0.99, wrap: false } : { px: px * min, wrap: true };
@@ -99,33 +103,35 @@ export const castShadow = (h: number, key: { azimuth: number; elevation: number 
 export const keyAngle = (azimuth: number = KIT_KEY.azimuth) => (((azimuth + 180) % 360) + 360) % 360;
 
 /**
- * A dark card's material (house numbers): the rim light on its key-side edges (white at `rim`), an inner top
- * highlight (`top`: a 1 px line along the top edge and a soft glow `glow` px deep fading down at `glowA`), and the far
- * edges falling into shade (`far`). The theme keeps the card 8 L* or more over its ground (kit/theme.ts): a dark card
- * reads off its ground by light, never as one grey a step off another (look-audit card-separation).
+ * A card's material (house numbers): the rim light (a hairline round the edge: white at `rim` on a dark card, the
+ * shade at `hair` on a light one), an inner top highlight (`top`: the edge catching the key) and, on a dark card, the
+ * far edge falling into shade (`far`). The theme keeps a dark card 8 L* or more over its ground (kit/theme.ts): a dark
+ * card reads off its ground by light, never as one grey a step off another (look-audit card-separation). kit/card.tsx
+ * is the same material as a standalone Card.
  */
-export const CARD_LIGHT = { rim: 0.16, top: 0.1, glow: 22, glowA: 0.055, far: 0.22 } as const;
+export const CARD_LIGHT = { rim: 0.08, hair: 0.07, top: 0.11, topLight: 0.9, far: 0.18 } as const;
 
 /**
- * The shadows of a surface `lift` px above its ground under the key: a tight contact shadow and a cast
- * shadow thrown away from the light, plus a hairline on the lit edge; on a dark theme the card's material too
- * (CARD_LIGHT: the key-side rim, the inner top highlight, the far edges in shade). One box-shadow value.
+ * The shadows of a surface `lift` px above its ground (28 resting): the hairline and the inner top highlight, a tight
+ * contact shadow and a broad soft ambient one, mostly straight down (a softbox key from above), nudged 22 % away from
+ * the light; the ambient layer lengthens and softens with the lift. In the theme's own shade. One box-shadow value.
  */
 export const surfaceShadow = (t: KitTheme, lift: number, u = 1) => {
-  const c = castShadow(lift * u);
-  const contact = `0 ${(2 * u).toFixed(2)}px ${(KIT_KEY.contact.blur * u).toFixed(2)}px ${shadeRgba(t, KIT_KEY.contact.alpha * (t.shadeA / 0.32))}`;
-  const cast = `${c.dx.toFixed(2)}px ${c.dy.toFixed(2)}px ${c.blur.toFixed(2)}px ${shadeRgba(t, c.alpha * (t.shadeA / 0.24))}`;
-  if (!t.dark) return `inset ${(1.5 * u).toFixed(2)}px ${(1.5 * u).toFixed(2)}px 0 rgba(255, 255, 255, 0.5), ${contact}, ${cast}`;
   const L = CARD_LIGHT;
-  const rim = `inset ${(1.2 * u).toFixed(2)}px ${(1.2 * u).toFixed(2)}px 0 rgba(255, 255, 255, ${L.rim})`;
-  const top = `inset 0 ${(1 * u).toFixed(2)}px 0 rgba(255, 255, 255, ${L.top})`;
-  const glow = `inset 0 ${(L.glow * u).toFixed(2)}px ${(L.glow * 1.4 * u).toFixed(2)}px ${(-L.glow * 0.8 * u).toFixed(2)}px rgba(255, 255, 255, ${L.glowA})`;
-  const far = `inset ${(-1 * u).toFixed(2)}px ${(-1 * u).toFixed(2)}px 0 ${shadeRgba(t, L.far)}`;
-  return `${rim}, ${top}, ${glow}, ${far}, ${contact}, ${cast}`;
+  const y1 = 1.2 * u;
+  const y2 = (4 + 0.4 * Math.max(0, lift)) * u;
+  const b2 = (12 + 1.0 * Math.max(0, lift)) * u;
+  const sp = -0.3 * Math.max(0, lift) * u;
+  const k = t.shadeA / (t.dark ? 0.32 : 0.24);
+  const contact = `${(0.22 * y1).toFixed(2)}px ${y1.toFixed(2)}px ${(2.5 * u).toFixed(2)}px ${shadeRgba(t, (t.dark ? 0.42 : 0.1) * k)}`;
+  const ambient = `${(0.22 * y2).toFixed(2)}px ${y2.toFixed(2)}px ${b2.toFixed(2)}px ${sp.toFixed(2)}px ${shadeRgba(t, (t.dark ? 0.48 : 0.15) * k)}`;
+  const hair = t.dark ? `inset 0 0 0 ${(1.25 * u).toFixed(2)}px rgba(255, 255, 255, ${L.rim})` : `inset 0 0 0 ${(1.25 * u).toFixed(2)}px ${shadeRgba(t, L.hair)}`;
+  const top = `inset 0 ${(1.2 * u).toFixed(2)}px 0 rgba(255, 255, 255, ${t.dark ? L.top : L.topLight})`;
+  return `${hair}, ${top}, ${contact}, ${ambient}`;
 };
 
-/** A face lit by the key: the fill lifted on the light's side, its own colour mid-way, a touch of shade on the far side. */
-export const keyFace = (t: KitTheme, fill: string, amount = 0.08) => `linear-gradient(${keyAngle()}deg, ${lit(t, fill, amount)} 0%, ${fill} 55%, ${mixColor(fill, `rgb(${t.shade.join(', ')})`, amount * 0.6)} 100%)`;
+/** A face lit from above: the fill lifted a touch at the top, its own colour mid-way, a touch of shade at the bottom (a vertical sheen, never a diagonal wash). */
+export const keyFace = (t: KitTheme, fill: string, amount = 0.08) => `linear-gradient(180deg, ${lit(t, fill, amount * 0.45)} 0%, ${fill} 55%, ${mixColor(fill, `rgb(${t.shade.join(', ')})`, amount * 0.3)} 100%)`;
 
 export type SurfaceProps = {
   theme: KitTheme;
@@ -133,7 +139,7 @@ export type SurfaceProps = {
   h: number;
   x?: number;
   y?: number;
-  r?: number; // corner radius (default 12 % of the short side, house RADIUS)
+  r?: number; // corner radius (default: kit/card CARD.radius by width, 24 / 34 / 46 px at 1080p, never over 12 % of the short side)
   lift?: number; // px above the ground (default 28): the cast shadow's length and softness
   tone?: 'surface' | 'raised' | 'well' | 'accent' | 'ground';
   fill?: string; // overrides the tone
@@ -142,7 +148,7 @@ export type SurfaceProps = {
   style?: React.CSSProperties;
 };
 
-/** A card or panel face on the ground, lit by the key, content clipped to it. */
+/** A card or panel face on the ground, lit from above, facing the camera, content clipped to it (kit/card.tsx Card is the standalone version). */
 export const Surface: React.FC<SurfaceProps> = ({ theme: t, w, h, x = 0, y = 0, r, lift = 28, tone = 'surface', fill, scale, children, style }) => {
   const u = useKitScale(scale);
   const base = fill ?? t[tone];
@@ -155,7 +161,7 @@ export const Surface: React.FC<SurfaceProps> = ({ theme: t, w, h, x = 0, y = 0, 
         top: 0,
         width: w,
         height: h,
-        borderRadius: r ?? Math.min(w, h) * 0.12,
+        borderRadius: r ?? Math.min(Math.min(w, h) * 0.12, (w >= 900 * u ? 46 : w >= 520 * u ? 34 : 24) * u),
         background: keyFace(t, base, tone === 'well' ? 0.03 : 0.07),
         boxShadow: tone === 'well' ? `inset ${(2 * u).toFixed(2)}px ${(3 * u).toFixed(2)}px ${(6 * u).toFixed(2)}px ${shadeRgba(t, t.shadeA * 0.8)}` : surfaceShadow(t, lift, u),
         overflow: 'hidden',
