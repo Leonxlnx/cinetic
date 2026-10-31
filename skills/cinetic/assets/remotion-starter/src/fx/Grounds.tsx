@@ -716,7 +716,7 @@ export type LitField = { L: number; C: number; h: number; lights: FieldLight[]; 
 export const LIT_FIELD = {
   grid: 4, // px between computed nodes (the field is smooth: interpolated in float between them)
   falloff: 2.2, // gaussian k: exp(-k d^2), 11 % at one extent
-  dither: { light: 1, dark: 1.5 }, // triangular dither amplitude in levels (+-): a dark ramp bands first
+  dither: { light: 1.5, dark: 1.5 }, // triangular dither amplitude in levels (+-): enough to survive a half-size render and the encode
 } as const;
 
 const labOf = (L: number, Cc: number, h: number): [number, number, number] => [L, Cc * Math.cos((h * Math.PI) / 180), Cc * Math.sin((h * Math.PI) / 180)];

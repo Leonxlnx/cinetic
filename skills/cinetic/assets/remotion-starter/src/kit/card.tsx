@@ -26,7 +26,7 @@ export const CARD = {
   pad: { sm: 30, md: 44, lg: 60 }, // inner padding by size class
   size: { md: 520, lg: 900 }, // width at which a card is md, lg (under md: sm)
   hairline: 1.25, // px
-  sheen: { light: 0.012, dark: 0.03 }, // OKLCH L from the top edge to the bottom edge
+  sheen: { light: 0.012, dark: 0.022 }, // OKLCH L from the top edge to the bottom edge
   lift: { dark: 0.09, darkMin: 0.08 }, // a dark card sits this far over its ground (look-audit card-separation: 8 L*)
   // the type inside a card: the text face (FONT.ui) at film size
   type: {
