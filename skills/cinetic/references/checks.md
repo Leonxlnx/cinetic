@@ -47,8 +47,9 @@ ground family's tokens from `palette.py --family`; the sound gates (`references/
 
 **Advisory (read them, never a ship gate by default):** `look-audit.py` (the floors against a flat film),
 `grammar-score.mjs` (closeness to the house grammar; it rewards the template, not this film), `measure-speed.py`,
-`av-audit.py` on a preview, `data-check.mjs` (fast: wrong weekdays, counts that contradict their list, one photo in
-more than half the beats; films declare shoots and people in `public/cast.json`). The long review
+`av-audit.py` on a preview, `data-check.mjs` (fast: wrong weekdays, counts that contradict their list, counters that
+should move together (a distance counting while its moving time stays frozen: `co-moving`), one photo in more than half
+the beats; films declare shoots and people in `public/cast.json`). The long review
 (`references/review-loop.md` §2-§10) adds them back with the detail pass (`detail-pair.py`), the four lenses and the rubric:
 
 ```

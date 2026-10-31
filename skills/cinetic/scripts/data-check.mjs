@@ -35,6 +35,12 @@
  *                  `"hero": true` exempts the film's one protagonist), a warning for a shoot read from the files'
  *                  names (the stem's first word: beach-laugh, beach-meet). A beat is an act file (src/acts/*.tsx),
  *                  or a section of a data module (WALK.reading), folded into the act that reads it
+ *   co-moving      counters that measure one activity and do not move together: a distance, a climb, steps, a size or a
+ *                  percentage that counts with the frame while an elapsed or moving time on the same screen stays frozen
+ *                  (or a running clock beside a frozen distance). Read per component from the readouts it draws (JSX
+ *                  children and value/text/label props), their text from literals and from the script's own strings
+ *                  (`ui(pair, k)` / `.ui[k]` of the pairs whose scene draws it); a readout labelled as a fixed property
+ *                  (Total, Goal, Summit, Next, Avg ...) may stay still
  *   wave-periodic  a waveform, spectrum or level generator built from the bar index with a modulo ("i % 8": a tall
  *                  bar every eighth bar); (warning) wave-synthetic: one made only of sines of the index. Draw the
  *                  track's own peaks (`peaks` below, kit/real.ts peaksBars) or waveBars() noise
@@ -633,7 +639,195 @@ export const run = (o) => {
     }
   }
 
+  // 6. counters that measure one activity move together (distance counting up while the moving time stays frozen)
+  coMoving(sources, { visit, unwrap, nameOf, isFn, at, add });
+
   return { ok: !findings.some((f) => f.severity === 'error') && !(o.strict && findings.length), src: rel(src), filmDate, dateFrom, files: files.length, pictures: pics.length, beats: allBeats.size, images, findings };
+};
+
+// ------------------------------------------------------------------------------------------------ co-moving counters
+/** The quantity a readout's text shows, from its value and its label: time, distance, elevation, steps, energy, size, percent. */
+export const quantityOf = (value, label = '') => {
+  const v = String(value ?? '').trim();
+  const l = String(label ?? '').toLowerCase();
+  if (!/\d/.test(v)) return null;
+  if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(v) || /\b\d+(\.\d+)?\s?(h|hr|hrs|hours?|min|mins|minutes?|sec|secs|seconds?)\b/i.test(v) || (/\b(time|elapsed|duration|eta|remaining|left)\b/.test(l) && /^\d+(\.\d+)?\s?(m|s)?$/i.test(v))) return 'time';
+  if (/\b(elevation|gain|climb|ascent|altitude|summit|height)\b/.test(l)) return 'elevation';
+  if (/\d\s?ft\b/i.test(v)) return 'elevation';
+  if (/\d\s?(mi|km|m|yd|miles?|kilometers?|kilometres?)\b/i.test(v) || /\bdistance\b/.test(l)) return 'distance';
+  if (/\bsteps?\b/i.test(v) || /\bsteps?\b/.test(l)) return 'steps';
+  if (/\b(k?cal|kj)\b/i.test(v) || /\b(calories|energy)\b/.test(l)) return 'energy';
+  if (/\d\s?(kb|mb|gb|tb)\b/i.test(v)) return 'size';
+  if (/\d\s?%/.test(v)) return 'percent';
+  return null;
+};
+// a readout that names a fixed property, not the activity's running measure: it may stay still
+const FIXED_LABEL = /\b(total|goal|target|summit|max|maximum|best|record|limit|plan|planned|route|next|avg|average|typical|est|estimated|size|length|of)\b/i;
+/** Does a counter of quantity `a` counting up beside a still readout of quantity `b` read as broken data? */
+export const coupled = (a, b) =>
+  a !== b && ((b === 'time' && ['distance', 'elevation', 'steps', 'energy', 'size', 'percent'].includes(a)) || (a === 'time' && ['distance', 'steps', 'energy'].includes(b)));
+
+/**
+ * co-moving: per component, the readouts it draws (JSX children and value/text/label props), split into the ones that
+ * move with the frame (built from f, frame, t, progress or useCurrentFrame()) and the ones that hold still. Their text
+ * comes from literals and from the script's own strings (`ui(pair, k)` or `.ui[k]`, read per pair from the file that
+ * holds `pairs: [{ ui: [...] }]`, for the pairs whose scene draws the component). A distance, a climb, steps, a size or a
+ * percentage that counts while an elapsed time on the same screen stays frozen (or a running clock beside a frozen
+ * distance) is the "made-up product" a paused frame gives away: one progress drives both.
+ */
+const coMoving = (sources, h) => {
+  const { visit, unwrap, nameOf, isFn, at, add } = h;
+  // the script's pairs: [{ scene, ui: [...] }]
+  const pairs = [];
+  for (const s of sources)
+    visit(s.ast, (n) => {
+      if (n.type !== 'ObjectProperty' || nameOf(n.key) !== 'pairs') return;
+      const arr = unwrap(n.value);
+      if (arr?.type !== 'ArrayExpression') return;
+      arr.elements.forEach((el, i) => {
+        el = unwrap(el);
+        if (el?.type !== 'ObjectExpression') return;
+        const props = Object.fromEntries(el.properties.filter((p) => p.type === 'ObjectProperty').map((p) => [nameOf(p.key), unwrap(p.value)]));
+        const ui = props.ui?.type === 'ArrayExpression' ? props.ui.elements.map((x) => (x?.type === 'StringLiteral' ? x.value : x?.type === 'TemplateLiteral' && !x.expressions.length ? x.quasis[0].value.cooked : null)) : [];
+        pairs.push({ k: i + 1, scene: props.scene?.type === 'StringLiteral' ? props.scene.value : null, ui });
+      });
+      return false;
+    });
+  // scene name -> component name: { distance: { draw: DistanceScene } } or { distance: DistanceScene }
+  const sceneOf = new Map();
+  for (const s of sources)
+    visit(s.ast, (n) => {
+      if (n.type !== 'ObjectProperty') return;
+      const v = unwrap(n.value);
+      const comp = v?.type === 'Identifier' ? v.name : v?.type === 'ObjectExpression' ? (v.properties.find((p) => p.type === 'ObjectProperty' && nameOf(p.key) === 'draw')?.value?.name ?? null) : null;
+      const key = nameOf(n.key);
+      if (comp && /^[A-Z]/.test(comp) && key && pairs.some((p) => p.scene === key)) {
+        if (!sceneOf.has(comp)) sceneOf.set(comp, new Set());
+        sceneOf.get(comp).add(key);
+      }
+    });
+  const FRAME = /^(f|frame|t|time|local|lf|progress)$/;
+  const READ_ATTR = /^(value|text|label|title|count|amount|number|stat|figure|reading|children)$/i;
+  for (const s of sources) {
+    // the components: a capitalised function or a const arrow/function
+    const comps = [];
+    visit(s.ast, (n) => {
+      if (n.type === 'FunctionDeclaration' && n.id && /^[A-Z]/.test(n.id.name)) comps.push({ name: n.id.name, fn: n });
+      if (n.type === 'VariableDeclarator' && n.id?.type === 'Identifier' && /^[A-Z]/.test(n.id.name) && isFn(unwrap(n.init))) comps.push({ name: n.id.name, fn: unwrap(n.init) });
+    });
+    for (const { name, fn } of comps) {
+      const decl = new Map(); // local name -> init
+      const moving = new Set();
+      const seed = (p) => {
+        if (!p) return;
+        if (p.type === 'Identifier' && FRAME.test(p.name)) moving.add(p.name);
+        else if (p.type === 'ObjectPattern') for (const q of p.properties) seed(q.type === 'ObjectProperty' ? q.value : q.argument);
+        else if (p.type === 'AssignmentPattern') seed(p.left);
+      };
+      fn.params.forEach(seed);
+      visit(fn.body, (n) => {
+        if (n.type === 'VariableDeclarator' && n.id?.type === 'Identifier' && n.init) {
+          decl.set(n.id.name, n.init);
+          const c = unwrap(n.init);
+          if (c?.type === 'CallExpression' && /useCurrentFrame$/.test(c.callee?.name ?? c.callee?.property?.name ?? '')) moving.add(n.id.name);
+        }
+        if (n !== fn.body && isFn(n)) return n.type === 'ArrowFunctionExpression' && n.body.type !== 'BlockStatement' ? undefined : undefined;
+      });
+      const refs = (e) => {
+        const out = new Set();
+        visit(e, (n, stack) => {
+          const p = stack[stack.length - 1];
+          if (n.type === 'Identifier' && !(p?.type === 'MemberExpression' && p.property === n && !p.computed) && !(p?.type === 'ObjectProperty' && p.key === n && !p.computed)) out.add(n.name);
+        });
+        return out;
+      };
+      for (let pass = 0; pass < 6; pass++)
+        for (const [k, init] of decl) if (!moving.has(k) && [...refs(init)].some((r) => moving.has(r))) moving.add(k);
+      const isMoving = (e) => [...refs(e)].some((r) => moving.has(r));
+      // the script strings an expression reads (accessor index k) and its literals, through the locals it uses
+      const sourcesOf = (e, seen = new Set()) => {
+        const acc = new Set();
+        const lits = [];
+        visit(e, (n, stack) => {
+          if (n.type === 'CallExpression') {
+            const last = unwrap(n.arguments[n.arguments.length - 1]);
+            if (n.callee?.type === 'Identifier' && n.callee.name === 'ui' && last?.type === 'NumericLiteral') acc.add(last.value);
+          }
+          if (n.type === 'MemberExpression' && n.computed && unwrap(n.property)?.type === 'NumericLiteral' && nameOf(unwrap(n.object)?.property) === 'ui') acc.add(unwrap(n.property).value);
+          if ((n.type === 'StringLiteral' || n.type === 'JSXText') && /\d/.test(n.value)) {
+            const p = stack[stack.length - 1];
+            if (!(p?.type === 'JSXAttribute') && !(p?.type === 'CallExpression' && p.arguments[0] === n && /replace|split|padStart|toFixed/.test(p.callee?.property?.name ?? ''))) lits.push(n.value.trim());
+          }
+          if (n.type === 'Identifier' && decl.has(n.name) && !seen.has(n.name)) {
+            seen.add(n.name);
+            const r = sourcesOf(decl.get(n.name), seen);
+            r.acc.forEach((x) => acc.add(x));
+            lits.push(...r.lits);
+          }
+        });
+        return { acc, lits };
+      };
+      // the readouts, in document order, with the plain text before each as its label
+      const reads = [];
+      let lastLabel = '';
+      visit(fn.body, (n, stack) => {
+        const p = stack[stack.length - 1];
+        if (n.type === 'JSXText') {
+          const t = n.value.trim();
+          if (!t) return;
+          if (/\d/.test(t)) reads.push({ node: n, moving: false, acc: new Set(), lits: [t], label: lastLabel });
+          else lastLabel = t;
+          return;
+        }
+        if (n.type !== 'JSXExpressionContainer' || n.expression.type === 'JSXEmptyExpression') return;
+        if (p?.type === 'JSXAttribute' && !READ_ATTR.test(nameOf(p.name) ?? '')) return false;
+        const e = unwrap(n.expression);
+        if (e.type === 'StringLiteral' && !/\d/.test(e.value)) {
+          lastLabel = e.value;
+          return false;
+        }
+        const src = sourcesOf(e);
+        const mv = isMoving(e);
+        if (!src.acc.size && !src.lits.length) {
+          // a counter built from the frame alone ({n.toLocaleString()} steps): its unit is the text right after it
+          let unit = '';
+          for (let j = stack.length - 1, child = n; j >= Math.max(0, stack.length - 3) && !unit; child = stack[j], j--) {
+            const kids = stack[j].children;
+            if (!kids) break;
+            const next = kids.slice(kids.indexOf(child) + 1).find((c) => !(c.type === 'JSXText' && !c.value.trim()));
+            if (next?.type === 'JSXText') unit = next.value.trim().split(/\s+/)[0];
+            else if (next) break;
+          }
+          if (mv && unit && !/\d/.test(unit)) reads.push({ node: n, moving: true, acc: new Set(), lits: [`0 ${unit}`], show: `the ${unit} counter`, label: lastLabel });
+          return false;
+        }
+        reads.push({ node: n, moving: mv, ...src, label: lastLabel });
+        return false;
+      });
+      if (!reads.some((r) => r.moving)) continue;
+      const scenes = sceneOf.get(name);
+      // the pairs whose scene this component draws (all of them when it reads the script but no scene names it; none
+      // when it reads no script string)
+      const cands = pairs.length && reads.some((r) => r.acc.size) ? (scenes ? pairs.filter((q) => scenes.has(q.scene)) : pairs) : [{ k: 0, ui: [] }];
+      for (const pr of cands) {
+        const movingAcc = new Set(reads.filter((r) => r.moving).flatMap((r) => [...r.acc]));
+        const val = (r) => {
+          const out = [];
+          for (const k of r.acc) if (pr.ui[k] != null) out.push({ v: pr.ui[k], label: k > 0 && pr.ui[k - 1] && !/\d/.test(pr.ui[k - 1]) ? pr.ui[k - 1] : r.label });
+          for (const l of r.lits) out.push({ v: l, show: r.show, label: r.label });
+          return out;
+        };
+        const counters = reads.filter((r) => r.moving).flatMap((r) => val(r).map((x) => ({ ...x, q: quantityOf(x.v, x.label), r })));
+        const still = reads.filter((r) => !r.moving && ![...r.acc].some((k) => movingAcc.has(k))).flatMap((r) => val(r).map((x) => ({ ...x, q: quantityOf(x.v, x.label), r })));
+        const seen = new Set();
+        for (const a of counters) for (const b of still) {
+          if (!a.q || !b.q || !coupled(a.q, b.q) || FIXED_LABEL.test(b.label) || seen.has(`${a.q}/${b.v}`)) continue;
+          seen.add(`${a.q}/${b.v}`);
+          add('co-moving', 'error', `${name}${pr.k ? ` (pair ${pr.k}${pr.scene ? `, scene ${pr.scene}` : ''})` : ''}: the ${a.q} counts (${a.show ?? a.v}) while ${b.label ? `"${b.label}" ` : ''}${b.v} (${b.q}) stays frozen on the same screen: counters that measure one activity move together; drive both from one progress (a ${b.q} that runs with the ${a.q}), or leave the frozen one out`, at(s, b.r.node), b.v);
+        }
+      }
+    }
+  }
 };
 
 // ------------------------------------------------------------------------------------------------ peaks

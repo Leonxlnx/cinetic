@@ -9,9 +9,11 @@
  *   2. The bad film fails every rule: date-weekday, date-invalid, week-start, week-past, date-far, count-list (a count
  *      over a short list, a count under its rows), dense-rows, wave-periodic, wave-synthetic, thumb-repeat (a list that
  *      names one picture three times, fill(), a numbered strip of one picture), photo-repeat, cast-repeat (declared in
- *      cast.json: an error); exit 1, and --json lists them.
+ *      cast.json: an error), co-moving (a distance counting while its moving time stays frozen, read through the
+ *      script's ui strings per scene, and a literal clock frozen beside a step counter); exit 1, and --json lists them.
  *   3. The good film passes with no warning: weekdays from the calendar, this week, counts that are their rows, 8 rows,
- *      waveBars(), distinct strip frames, each picture in at most half the beats. FILM_DATE is read from the source.
+ *      waveBars(), distinct strip frames, each picture in at most half the beats, a distance and its time counting from
+ *      one progress beside a still summit height. FILM_DATE is read from the source.
  *   4. peaks: a track of silence, a loud tone and a soft tone gives bars near 0, 1 and the soft level.
  *   5. Exit 2 on a missing source folder or an unknown option; --help answers.
  * The pictures and the track are written here (tiny PNGs, a WAV); the image and peaks parts need ffmpeg on the PATH.
@@ -90,6 +92,40 @@ write(BAD, 'src/acts/Feed.tsx', `import { PICS, APP } from '../app';\nexport con
 write(BAD, 'src/acts/End.tsx', `import { PICS } from '../app';\nexport const End = () => <div><img src={PICS.cafe} /><img src={PICS.run} /></div>;\n`);
 write(BAD, 'public/cast.json', JSON.stringify({ 'maya-*': { shoot: 'maya', people: ['maya'] } }));
 for (const n of ['maya-cafe', 'maya-park', 'maya-desk', 'tom-run', 'van']) write(BAD, `public/assets/photos/${n}.png`, png(32, 20, (x, y) => 40 + x * 5 + y * 2));
+const LAUNCH = (ui) => `export const LAUNCH = { name: 'Trail', pairs: [
+  { line: 'Know where you are.', scene: 'map', ui: ['On trail'] },
+  { line: 'See your distance as you go.', scene: 'distance', ui: ${JSON.stringify(ui)} },
+] };
+`;
+const SCENE = (time) => `import { LAUNCH } from './launch';
+const ui = (pair: number, j: number) => LAUNCH.pairs[pair - 1]?.ui?.[j] ?? '';
+const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+const MapScene = ({ f, pair }: { f: number; pair: number }) => <div>{ui(pair, 0)}</div>;
+const DistanceScene = ({ f, pair }: { f: number; pair: number }) => {
+  const run = Math.min(1, f / 60);
+  const final = parseFloat(ui(pair, 1)) || 0;
+  const unit = ui(pair, 1).replace(/^[\d.,\s]+/, '');
+  const v = mix(final - 0.7, final, run);
+  const mins = Math.round(mix(120, 134, run));
+  return (
+    <div>
+      <span>{ui(pair, 0)}</span>
+      <b>{v.toFixed(1)}</b><i>{unit}</i>
+      <span>{ui(pair, 2)}</span>
+      ${time}
+      <span>{ui(pair, 4)}</span><b>{ui(pair, 5)}</b>
+    </div>
+  );
+};
+export const SCENES = { map: { draw: MapScene }, distance: { draw: DistanceScene } };
+`;
+write(BAD, 'src/launch.ts', LAUNCH(['Distance', '4.8 mi', 'Moving time', '2:14', 'Summit', '6,312 ft']));
+write(BAD, 'src/product.tsx', SCENE('<b>{ui(pair, 3)}</b>'));
+write(BAD, 'src/acts/Steps.tsx', `export const Steps = ({ frame }: { frame: number }) => {
+  const n = Math.round(frame * 21);
+  return <div><b>{n.toLocaleString()}</b> steps<span>Elapsed</span><b>12:40</b></div>;
+};
+`);
 for (let i = 0; i < 6; i++) write(BAD, `public/assets/strips/van-${i}.png`, png(32, 20, (x, y) => 30 + x * 6 + y * 3 + ((x * 7 + y * 3 + i) % 5))); // one locked-off shot: the same picture six times
 
 // the good film
@@ -116,6 +152,8 @@ write(GOOD, 'public/cast.json', JSON.stringify({ 'maya-*': { shoot: 'maya', peop
 for (const n of ['maya-cafe', 'maya-park', 'maya-desk', 'tom-run', 'van']) write(GOOD, `public/assets/photos/${n}.png`, png(32, 20, (x, y) => 40 + x * 5 + y * 2));
 const looks = [(x, y) => x * 8, (x, y) => 255 - x * 8, (x, y) => y * 12, (x, y) => 255 - y * 12, (x, y) => ((x >> 3) + (y >> 2)) % 2 ? 230 : 20, (x, y) => (x > 16 ? 200 : 40)];
 for (let i = 0; i < 6; i++) write(GOOD, `public/assets/strips/van-${i}.png`, png(32, 20, looks[i])); // six distinct moments
+write(GOOD, 'src/launch.ts', LAUNCH(['Distance', '4.8 mi', 'Moving time', '2:14', 'Summit', '6,312 ft']));
+write(GOOD, 'src/product.tsx', SCENE("<b>{`${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, '0')}`}</b>"));
 
 const cli = (args, cwd) => spawnSync(process.execPath, [SCRIPT, ...args], { cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
 
@@ -146,13 +184,20 @@ try {
     ['week-past/warn', 1, '"Oct 12 – 18" is a past week'], ['date-far/warn', 1, '"Jun 3" is months away'], ['count-list/error', 2, '"14 today" over 4 rows; count 2 over 3 items'],
     ['dense-rows/warn', 1, '<TodayScreen rows={2}>'], ['wave-periodic/error', 1, '"i % 8"'], ['wave-synthetic/warn', 1, 'sines of the index'],
     ['thumb-repeat/error', ffmpeg ? 3 : 2, 'a list naming "van" three times, fill(), a numbered strip of one picture'], ['photo-repeat/error', 1, 'the cafe picture in 4 of 5 beats'],
-    ['cast-repeat/error', 1, 'maya (cast.json) in 4 beats'],
+    ['cast-repeat/error', 1, 'maya (cast.json) in 4 beats'], ['co-moving/error', 2, 'a distance counting beside a frozen moving time; steps counting beside a frozen clock'],
   ]) result(has(r, n), `bad film: ${r} x${n} (${what})`, rules.join(' '));
   const msg = (r) => B?.findings.find((f) => f.rule === r)?.message ?? '';
   result(/is a Wednesday, not a Tuesday/.test(msg('date-weekday')) && /says 14 but `rows` holds 4 rows/.test(B?.findings.filter((f) => f.rule === 'count-list').map((f) => f.message).join(' ') ?? ''),
     'bad film: the messages name the calendar\'s weekday and the list\'s real length', msg('date-weekday'));
   result(B?.findings.some((f) => f.rule === 'cast-repeat' && /person maya/.test(f.message)) && B?.findings.some((f) => f.rule === 'photo-repeat' && /maya-cafe/.test(f.message) && /4 beats/.test(f.message)),
     'bad film: the cast is read from cast.json and the beats from the act files', B?.findings.filter((f) => /repeat/.test(f.rule)).map((f) => f.message.slice(0, 80)).join(' | '));
+
+  const co = B?.findings.filter((f) => f.rule === 'co-moving').map((f) => f.message) ?? [];
+  result(co.some((m) => /DistanceScene \(pair 2, scene distance\): the distance counts \(4\.8 mi\) while "Moving time" 2:14/.test(m)) && co.some((m) => /Steps: the steps counts/.test(m) && /12:40/.test(m)) && !co.some((m) => /6,312/.test(m)),
+    'bad film: co-moving names the counter, the frozen readout and its label (the summit height is a fixed property)', co.join(' | '));
+  result(D.quantityOf('2:14') === 'time' && D.quantityOf('4.8 mi') === 'distance' && D.quantityOf('1,240 ft') === 'elevation' && D.quantityOf('6,312', 'Summit') === 'elevation' && D.quantityOf('38 %') === 'percent' && D.quantityOf('Moving time') === null
+    && D.coupled('distance', 'time') && D.coupled('time', 'steps') && !D.coupled('elevation', 'elevation') && !D.coupled('percent', 'size'),
+    'quantityOf reads time, distance, climb and percent; coupled pairs a running measure with its clock');
 
   // 3. the good film
   const good = cli(['src', '--json', '--today', '2026-10-29'], GOOD);
