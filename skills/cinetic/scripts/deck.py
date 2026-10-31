@@ -35,9 +35,20 @@ Usage:
   python3 scripts/deck.py --creative --brief "<one line>" [--have logos,number]  # only the creative elements
 
 Every sheet also deals the film's creative elements (two or three finished devices from the starter's fx/creative,
-each a whole beat with the product inside it), at random: seeded by the film's name and the film history, never the
-set of a recent film, at most one shared with the last. They go into src/dealt.ts (creative, reserve) and the sheet's
-last section; --have logos (the products it works with) and number (a real figure) open the devices that need them.
+each a whole beat with the product inside it), at random: seeded by the film's name, the direction and the film
+history, never the set of a recent film, at most one shared with the last, weighted toward the devices that tell the
+direction's story shape and the brief's own words (a tap, the old way, many of something). They go into src/dealt.ts
+(creative, reserve) and the sheet's last section; --have logos (the products it works with) and number (a real
+figure) open the devices that need them, and photos opens the photo devices only with five pictures or more
+(--photos N, else the images counted in the project's public/).
+
+In a template project (its src/deal.ts reads the deck's deal: launch-simple), deck.py never picks for you: run without
+--direction, it deals THREE directions, each with what the template would play (the ground family, the type
+pairing, the creative elements, the end card), into out/OPTIONS.md; hold them against the product and pick the one
+that fits it, with the reason in one line:
+  python3 scripts/deck.py --brief "<one line>" --format launch --have ui --direction <id> --why "<why it fits the product>"
+The reason heads out/DIRECTION.md; the sheet deals the film's type pairing (scripts/faces.json pairs, at random, never
+the last two films' pairing) and sets it with scripts/type-deal.ts --pair, and writes src/dealt.ts.
 
   --have      what really exists (comma-separated): ui (the product has an interface to show, built in
               code from the real product), input (it is used by typing or pointing: a text field, a prompt,
@@ -105,6 +116,8 @@ import math
 import os
 import random
 import re
+import shutil
+import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -1481,6 +1494,40 @@ def _recipe_note(name, recipes):
     return ' (lib/look.ts RECIPE)'
 
 
+def template_preview(d, inp, seed, data, root, history_on, devices, floor):
+    """What the template would play for direction `d`: ground family, type pairing, the template's deal, creative."""
+    pal = deal_slot(d, 'palette', seed)
+    fam = deal_family(data, pal, seed, d['id'], recent_grounds(history_on))
+    sh = {'direction': d, 'ground_family': fam}
+    deal, _ = template_deal(sh, devices, floor, recent_template(history_on)) if devices else ({}, {})
+    lib = creative_library(root)
+    c = deal_creative(lib, project_name(root), inp.get('brief', ''), inp.get('have', ()), recent_creative(history_on), direction=d,
+                      photos=photos_known(inp, root))
+    pr = deal_pair(project_name(root) or inp.get('brief', ''), d['id'], recent_pairs(history_on))
+    by = {x['id']: x for x in lib}
+    lines = [f'**The template plays.** ground `{(fam or {}).get("id", "?")}` ({(fam or {}).get("what", "")[:90]}); '
+             f'voice `{deal.get("voice", "?")}`, end `{deal.get("end", "?")}`, camera `{deal.get("camera", "?")}`'
+             + (f'; type `{pr["id"]}` ({pr.get("voice")} with {pr.get("text")})' if pr else '') + '.']
+    if c:
+        lines.append('**Creative elements.** ' + '; '.join(f'`{i}` ({by.get(i, {}).get("about", "")[:80]})' for i in c['deal']) + '.')
+    return lines
+
+
+def render_template_options(opts, inp, seed, data, root, history_on, devices, floor):
+    """out/OPTIONS.md for a template project: three directions, each with what the template would play."""
+    out = [f'<!-- {_cmd(inp, seed, [])} -->', f'# Pick the direction that fits the product ({len(opts)} dealt, seed {seed})', '',
+           'Each one below is a whole film: its idea, its world, and what the template would play with it. Hold each against the '
+           'product (what it does, what it touches, what its user sees): pick the one whose picture says what the product does '
+           'without the words, never the first or the most familiar. Then deal it, with the reason in one line (it heads '
+           'out/DIRECTION.md):', '',
+           f'    {_cmd(inp, seed, ["--direction", "<id>", "--why", chr(34) + "<why it fits the product>" + chr(34)])}', '']
+    for i, d in enumerate(opts, 1):
+        out += [f'## {i}. `{d["id"]}`: {d["name"]}', f'*{_tag(d)}*', '', f'**Idea.** {d["idea"]}', f'**Story.** {d["story"]["line"]}',
+                f'**World.** {d["world"]["set"].split(". ")[0].rstrip(".")}.', f'**Lockup.** {d["lockup"]["shot"]}']
+        out += template_preview(d, inp, seed, data, root, history_on, devices, floor) + ['']
+    return '\n'.join(out) + '\n'
+
+
 def render_options(opts, inp, seed, recent, pool_size, derived, data, keep):
     recipes = data.get('recipes', {})
     out = [f'<!-- {_cmd(inp, seed, ["--options", str(len(opts))])} -->',
@@ -1560,9 +1607,9 @@ def _face_line(fc):
     return f'{fam}, the {fc["look"]} look ({fc["look_name"]}, `scripts/faces.json`): {how}'
 
 
-def _type_lines(t, seed=None, did=''):
-    fc = face_for(t, seed, did)
-    face = f' Face: {_face_line(fc)}.' if fc else ''
+def _type_lines(t, seed=None, did='', pair=None):
+    fc = None if pair else face_for(t, seed, did)
+    face = f' Face: {_face_line(fc)}.' if fc else (f' Faces: the `{pair}` pairing above (its weights and tracking take the place of these).' if pair else '')
     return [f'- **{t["id"]}**: {t["sans"]}, weights {t["weights"][0]}/{t["weights"][1]}, {t["case"]}; {t["notes"]}.{face}']
 
 
@@ -1589,8 +1636,15 @@ def render_sheet(sh, data, library):
     out = [f'<!-- {_cmd(inp, sh["seed"], ["--direction", d["id"]])} -->',
            f'# Direction: {d["name"]} (`{d["id"]}`)', '',
            f'**The direction\'s idea.** {d["idea"]}', f'*{_tag(d)} · {_fit_line(d)}*', '']
+    if sh.get('why'):
+        out += [f'**Picked** `{d["id"]}` from {", ".join(f"`{o}`" for o in sh["options"]) or "the deck"}: {sh["why"]}', '']
     if not sh['chosen_from_options']:
         out += [f'(Chosen outside the dealt options {", ".join(sh["options"]) or "(none dealt)"}: say why in the treatment.)', '']
+    tp = sh.get('type_pair')
+    if tp:
+        out += [f'**Type.** the `{tp["id"]}` pairing (voice {tp["voice"]}, text {tp["text"]}; scripts/faces.json): '
+                + ('set in src/brand/tokens.ts.' if tp['set'] else f'set it: `{tp["cmd"]}`.')
+                + ' Lines take its weights and tracking, a key word its emphasis weight, the wordmark its wordmark style.', '']
     if sh.get('waits_for'):
         out += [f'(This direction\'s signature waits for planned {", ".join(sh["waits_for"])}: build them inside the film '
                 'from the description below, or deal another direction.)', '']
@@ -1644,7 +1698,7 @@ def render_sheet(sh, data, library):
         out.append(f'- **Type (the brand\'s face in the dealt setting):** {bm["family"]}, weights {t["weights"][0]}/{t["weights"][1]}, '
                    f'{t["case"]}; {t["notes"]}.')
     elif sh['type']:
-        out += ['- **Type (dealt):**'] + ['  ' + x for x in _type_lines(sh['type'], sh.get('seed'), d['id'])]
+        out += ['- **Type (dealt):**'] + ['  ' + x for x in _type_lines(sh['type'], sh.get('seed'), d['id'], (sh.get('type_pair') or {}).get('id'))]
     else:
         out += ['- **Type:** the brand fixes it (`--keep type`); set it in the roles of §4.']
     gf = sh.get('ground_family')
@@ -1885,8 +1939,75 @@ def recent_creative(history_on):
     return out[:4]
 
 
-def creative_haves(have, brief):
-    """What the film can give a device beyond its script: --have, and what the brief says (works with ..., a figure)."""
+PHOTOS_MIN = 5  # photo devices stream pictures: fewer than five read as a sparse row
+_IMG = ('.jpg', '.jpeg', '.png', '.webp', '.avif')
+
+
+def count_photos(root):
+    """Images in the project's public/ that can be the film's photos (not its fonts, marks, audio or input clip)."""
+    pub = os.path.join(root or '', 'public')
+    n = 0
+    if root and os.path.isdir(pub):
+        for dp, dn, fn in os.walk(pub):
+            dn[:] = [x for x in dn if x not in ('fonts', 'logos', 'audio', 'brand')]
+            n += sum(1 for f in fn if f.lower().endswith(_IMG))
+    return n
+
+
+# The devices that tell a direction's story shape (each takes CREATIVE_FIT_X in the shuffle), the ones the brief's own
+# words ask for (CREATIVE_WORDS), and what a type-led or an imagery-led direction leans on: the deal stays random, but a
+# film about the old way leans toward split-compare, a film about many things toward zoom-wall.
+CREATIVE_FIT = {
+    'problem-turn': ('split-compare', 'bubble-swarm', 'colour-flood', 'word-swap'),
+    'journey': ('cursor-follow', 'dot-button', 'shape-morph'),
+    'one-to-many': ('zoom-wall', 'logo-orbit', 'pixel-assemble'),
+    'many-to-one': ('bubble-swarm', 'logo-orbit', 'pixel-assemble', 'type-object'),
+    'detail-to-whole': ('zoom-wall', 'cursor-follow', 'type-window'),
+    'whole-to-detail': ('cursor-follow', 'type-window', 'split-around'),
+    'assembly': ('pixel-assemble', 'shape-morph', 'letter-swing'),
+    'chain': ('dot-button', 'cursor-follow', 'type-object'),
+    'day-arc': ('zoom-wall', 'data-sculpture', 'photo-arc'),
+    'call-response': ('split-around', 'word-swap', 'cursor-follow'),
+    'twist': ('word-swap', 'object-turn', 'colour-flood'),
+    'accelerando': ('bubble-swarm', 'zoom-wall', 'data-sculpture'),
+    'result-first': ('colour-flood', 'object-turn', 'scale-contrast'),
+    'nested': ('type-window', 'zoom-wall', 'split-around'),
+    'loop': ('shape-morph', 'object-turn', 'letter-swing'),
+    'reveal': ('type-window', 'object-turn', 'shape-morph', 'scale-contrast'),
+}
+CREATIVE_WORDS = [
+    (r'\b(tap|taps|click|clicks|press|one button|a button)\b', ('cursor-follow', 'dot-button')),
+    (r'\b(instead of|no more|old way|by hand|manual(ly)?|before and after|used to)\b', ('split-compare', 'bubble-swarm')),
+    (r'\b(every|all your|hundreds|thousands|any number of)\b', ('zoom-wall', 'pixel-assemble')),
+    (r'\b(messages|pings|questions|notifications|emails|threads)\b', ('bubble-swarm',)),
+    (r'\b(faster|times|percent|%|hours saved)\b', ('data-sculpture',)),
+]
+CREATIVE_FIT_X = 2.5
+CREATIVE_LINE_X = 1.6  # a type-led direction: line devices
+CREATIVE_PHOTO_X = 2.0  # an imagery-led direction: photo devices (with the photos)
+
+
+def creative_fit(dev, direction=None, brief=''):
+    """How much a device suits the direction and the brief (1 = neutral; the deal multiplies its recency weight)."""
+    w = 1.0
+    if direction:
+        if dev['id'] in CREATIVE_FIT.get((direction.get('story') or {}).get('shape', ''), ()):
+            w *= CREATIVE_FIT_X
+        if dev['role'] == 'line' and is_type_led(direction):
+            w *= CREATIVE_LINE_X
+        if 'photos' in dev['needs'] and is_imagery(direction):
+            w *= CREATIVE_PHOTO_X
+    b = (brief or '').lower()
+    for pat, ids in CREATIVE_WORDS:
+        if dev['id'] in ids and re.search(pat, b):
+            w *= 1.8
+            break
+    return w
+
+
+def creative_haves(have, brief, photos=None):
+    """What the film can give a device beyond its script: --have, and what the brief says (works with ..., a figure);
+    photos only with PHOTOS_MIN pictures or more when their count is known."""
     out = set(have or ())
     b = (brief or '').lower()
     if re.search(r'\b(works? with|integrat\w*|connects? (to|with)|plugs? into|syncs? with|for (slack|github|notion|figma|gmail|google))\b', b):
@@ -1895,6 +2016,8 @@ def creative_haves(have, brief):
         out.add('number')
     if re.search(r'\b(photos?|photographs?|pictures|camera roll|albums?|gallery|galleries)\b', b):
         out.add('photos')
+    if photos is not None and photos < PHOTOS_MIN:
+        out.discard('photos')
     return out
 
 
@@ -1913,7 +2036,7 @@ def creative_weight(d, recent):
     return w
 
 
-def deal_creative(lib, name, brief, have, recent=(), n=CREATIVE_N):
+def deal_creative(lib, name, brief, have, recent=(), n=CREATIVE_N, direction=None, photos=None):
     """{deal, reserve, seed_key, haves} or None without a library. A seeded, recency-weighted shuffle of the devices the
     film can feed (a device the last films played is drawn late: CREATIVE_RECENT_WEIGHT), the first line device, the first
     picture device, then the next of another family; re-dealt until no recent set repeats, at least one device is fresh
@@ -1921,16 +2044,17 @@ def deal_creative(lib, name, brief, have, recent=(), n=CREATIVE_N):
     while a draw can avoid it)."""
     if not lib:
         return None
-    haves = creative_haves(have, brief)
+    haves = creative_haves(have, brief, photos)
     ok = [d for d in lib if all(CREATIVE_NEED_HAVE.get(x) is None or CREATIVE_NEED_HAVE[x] in haves for x in d['needs'])]
     last = list(recent[0]) if recent else []
     played = {x for s in recent for x in s}
     fresh_left = any(d['id'] not in played for d in ok)
-    key = '|'.join([(name or brief or '').strip().lower(), ';'.join(','.join(sorted(s)) for s in recent)])
+    key = '|'.join([(name or brief or '').strip().lower(), ';'.join(','.join(sorted(s)) for s in recent)] + ([direction['id']] if direction else []))
+    fit = {d['id']: creative_fit(d, direction, brief) for d in ok}
     for salt in range(64):
         rng = random.Random(hashlib.sha256(f'{key}#creative#{salt}'.encode('utf-8')).hexdigest())
         # weighted shuffle (Efraimidis-Spirakis): each device's key u ** (1 / w), largest first
-        order = sorted(ok, key=lambda d: rng.random() ** (1.0 / creative_weight(d, recent)), reverse=True)
+        order = sorted(ok, key=lambda d: rng.random() ** (1.0 / (creative_weight(d, recent) * fit[d['id']])), reverse=True)
         pick = []
 
         def take(cond):
@@ -1954,7 +2078,8 @@ def deal_creative(lib, name, brief, have, recent=(), n=CREATIVE_N):
         if fresh_left and salt < 48 and all(x in played for x in ids):
             continue
         reserve = [d['id'] for d in order if d['id'] not in ids] + [d['id'] for d in lib if d not in ok]
-        return {'deal': ids, 'reserve': reserve, 'seed_key': key, 'haves': sorted(haves)}
+        return {'deal': ids, 'reserve': reserve, 'seed_key': key, 'haves': sorted(haves),
+                'fits': [i for i in ids if fit.get(i, 1.0) > 1.0]}
     return None
 
 
@@ -2092,16 +2217,69 @@ def dealt_body(direction, deal, creative):
             + json.dumps(obj, ensure_ascii=False) + ';\n')
 
 
+def photos_known(inp, root):
+    """The film's photo count: --photos, else the images in the project's public/ (None outside a project)."""
+    if inp.get('photos') is not None:
+        return inp['photos']
+    return count_photos(root) if root and os.path.isdir(os.path.join(root, 'src')) else None
+
+
 def deal_film_creative(sh, root):
     """The film's creative elements for the sheet: sh['creative'] = {deal, reserve, ...} (None without a library)."""
     inp = sh.get('input') or {}
     lib = creative_library(root)
-    c = deal_creative(lib, project_name(root), inp.get('brief', ''), inp.get('have', ()), recent_creative(sh.get('history', True)))
+    c = deal_creative(lib, project_name(root), inp.get('brief', ''), inp.get('have', ()), recent_creative(sh.get('history', True)),
+                      direction=sh.get('direction'), photos=photos_known(inp, root))
     if c:
         sh['creative'] = c
     else:
         sh.pop('creative', None)
     return lib
+
+
+def recent_pairs(history_on, n=2):
+    """The type pairings of the last `n` films (the film history's devices.type, newest first)."""
+    out = []
+    for f in film_history(history_on):
+        t = (f.get('devices') or {}).get('type')
+        if isinstance(t, str) and t and t not in out:
+            out.append(t)
+    return out[:n]
+
+
+def deal_pair(name, direction_id, recent=()):
+    """The film's type pairing from scripts/faces.json `pairs`: at random (seeded by the name and the direction), the
+    last films' pairings left out, the neutral `product` pairing a third as likely. None without the table."""
+    fs = _face_set()
+    pairs = [x for x in ((fs or {}).get('pairs') or []) if isinstance(x, dict) and x.get('id')]
+    if not pairs:
+        return None
+    pool = [x for x in pairs if x['id'] not in recent] or pairs
+    rng = random.Random(hashlib.sha256(f'type|{(name or "").strip().lower()}|{direction_id}'.encode('utf-8')).hexdigest())
+    w = [1 / 3 if x['id'] == 'product' else 1.0 for x in pool]
+    r = rng.random() * sum(w)
+    for x, wt in zip(pool, w):
+        r -= wt
+        if r <= 0:
+            return x
+    return pool[-1]
+
+
+def set_pair(root, pair_id):
+    """Write the pairing into the project's tokens with scripts/type-deal.ts --pair (node + tsx); the command to run
+    by hand when it cannot run here."""
+    cmd = f'npx tsx scripts/type-deal.ts --pair {pair_id}'
+    if not os.path.isfile(os.path.join(root, 'scripts', 'type-deal.ts')) or not os.path.isfile(os.path.join(root, 'src', 'brand', 'tokens.ts')):
+        return False, cmd
+    tsx = os.path.join(root, 'node_modules', 'tsx', 'dist', 'cli.mjs')
+    node = shutil.which('node')
+    if not node or not os.path.isfile(tsx):
+        return False, cmd
+    try:
+        r = subprocess.run([node, tsx, 'scripts/type-deal.ts', '--pair', pair_id, '--quiet'], cwd=root, capture_output=True, text=True, timeout=180)
+    except (OSError, subprocess.TimeoutExpired):
+        return False, cmd
+    return r.returncode == 0, cmd
 
 
 def write_template_deal(sh, outdir):
@@ -2118,6 +2296,12 @@ def write_template_deal(sh, outdir):
     with open(os.path.join(root, 'src', 'dealt.ts'), 'w', encoding='utf-8', newline='\n') as fh:
         fh.write(dealt_body(sh['direction']['id'], deal, sh.get('creative')))
     sh['template_deal'] = {'file': rel, 'deal': deal, 'why': why}
+    # the type pairing (scripts/faces.json pairs), set in the tokens with type-deal.ts (the template reads it from there)
+    if 'type' not in (sh.get('keep') or []):
+        pr = deal_pair(project_name(root) or (sh.get('input') or {}).get('brief', ''), sh['direction']['id'], recent_pairs(sh.get('history', True)))
+        if pr:
+            ok, cmd = set_pair(root, pr['id'])
+            sh['type_pair'] = {'id': pr['id'], 'voice': pr.get('voice'), 'text': pr.get('text'), 'set': ok, 'cmd': cmd}
 
 
 def deal_creative_only(outdir, brief, have, history_on):
@@ -2200,6 +2384,8 @@ def main():
     ap.add_argument('--no-history', action='store_true', help='neither read nor write the deal history')
     ap.add_argument('--repeat', default='', help='signature,end: repeats of the last three films the brief asks for (else refused)')
     ap.add_argument('--creative', action='store_true', help='deal only the creative elements into src/dealt.ts (keeps a direction already dealt there)')
+    ap.add_argument('--why', default='', help='with --direction in a template project: one line on why this direction fits the product (required there)')
+    ap.add_argument('--photos', type=int, help='how many pictures worth showing the film has (photo devices need 5 or more; default: the images in public/)')
     a = ap.parse_args()
 
     data, deck_problems = load_deck(a.deck)
@@ -2334,6 +2520,8 @@ def main():
     if a.brand and not os.path.isfile(a.brand):
         fail(f'--brand: {a.brand} not found (write it with scripts/brand.py)')
     inp = {'brief': a.brief, 'format': a.format, 'pace': a.pace or 'calm', 'have': have, 'seconds': a.seconds, 'avoid': avoid}
+    if a.photos is not None:
+        inp['photos'] = a.photos
     if a.no_imagery:
         inp['imagery'] = False
     if a.format == 'update':
@@ -2361,6 +2549,24 @@ def main():
         return 0
 
     allowed = {x.strip() for x in a.repeat.split(',') if x.strip()}
+    root = os.path.dirname(os.path.abspath(a.out))
+    t_devices, t_floor = template_slots(root)
+    if t_devices and not a.direction:
+        # a template project: three directions, each with what the template would play; the agent picks (--why)
+        if not opts:
+            fail('no direction fits these filters (try another --format, --pace or --seconds, or say what --have)', 1)
+        guard_out(a.out)
+        os.makedirs(a.out, exist_ok=True)
+        md = render_template_options(opts, inp, seed, data, root, history_on, t_devices, t_floor)
+        with open(os.path.join(a.out, 'OPTIONS.md'), 'w', encoding='utf-8', newline='\n') as fh:
+            fh.write(md)
+        print(md, end='')
+        print(f'deck: three directions in {os.path.join(a.out, "OPTIONS.md")}: pick the one that fits the product, then deal it with '
+              '--direction <id> --why "<one line>"', file=sys.stderr)
+        return 0
+    if t_devices and len(a.why.split()) < 4:
+        fail('--direction in a template project needs --why "<one line: why this direction fits the product>" (a few words at least): '
+             'the reason heads out/DIRECTION.md; run without --direction to see the three dealt options (out/OPTIONS.md)')
     if not a.direction:
         # one direction dealt from the brief and the history: the first option that repeats nothing of the last films
         if not opts:
@@ -2381,10 +2587,13 @@ def main():
     options = [o['id'] for o in opts]
     waits = [p for p in d.get('requires', []) if p not in ready]
     sh = make_sheet(d, inp, seed, options, set(keep), history_on, data, waits=waits)
+    if a.why.strip():
+        sh['why'] = ' '.join(a.why.split())
     md = write_sheet(sh, a.out, data, library)
     write_history(history_on, {'direction': d['id'], 'format': a.format, 'signature': d['signature']['family'], 'lockup': d['lockup']['kind'],
                                **({'ground': sh['ground_family']['id']} if sh.get('ground_family') else {}),
-                               **({'creative': sh['creative']['deal']} if sh.get('creative') else {})})
+                               **({'creative': sh['creative']['deal']} if sh.get('creative') else {}),
+                               **({'type': sh['type_pair']['id']} if sh.get('type_pair') else {})})
     print(md, end='')
     return 0
 

@@ -732,5 +732,50 @@ if made:  # never leave a sheet in the skill
 result(r.returncode == 2 and 'inside the skill folder' in r.stderr and not made,
        'deck.py run from the skill folder refuses to write out/ there', (r.stderr or r.stdout)[-160:])
 
+
+# a template project (src/deal.ts reads ./dealt): deck.py never picks for the agent. Without --direction it deals three
+# directions with what the template would play into out/OPTIONS.md and writes no deal; --direction needs --why there
+proj = tempfile.mkdtemp(dir=TMP)
+os.makedirs(os.path.join(proj, 'src', 'brand'))
+with open(os.path.join(proj, 'src', 'deal.ts'), 'w', encoding='utf-8') as fh:
+    fh.write("import { DEALT } from './dealt';\nexport const DEVICES = {\n  voice: ['build', 'blur', 'ink'],\n  ground: ['nearWhite', 'lightStudio', 'softSky', 'gradientField', 'whiteBand', 'blackField', 'studio', 'deepPool', 'duskMesh', 'floorGlow', 'lightDark'],\n  end: ['element', 'badge'],\n  camera: ['still', 'land'],\n} as const;\nexport const FLOOR = { voice: 'build', ground: 'nearWhite', end: 'element', camera: 'still' };\n")
+with open(os.path.join(proj, 'src', 'brand', 'identity.ts'), 'w', encoding='utf-8') as fh:
+    fh.write("export const IDENTITY = { name: 'Tarn', supplied: false } as const;\n")
+pout = os.path.join(proj, 'out')
+r = run('--brief', 'a budgeting app for shared flats', '--format', 'launch', '--have', 'ui', '--no-history', '--out', pout, cwd=proj)
+opt_ids = re.findall(r'^## \d+\. `([a-z0-9-]+)`', r.stdout, re.M)
+result(r.returncode == 0 and len(opt_ids) == 3 and os.path.isfile(os.path.join(pout, 'OPTIONS.md')) and not os.path.exists(os.path.join(proj, 'src', 'dealt.ts'))
+       and r.stdout.count('**The template plays.**') == 3 and r.stdout.count('**Creative elements.**') == 3 and '--why' in r.stdout,
+       'a template project: three directions with what the template plays each (out/OPTIONS.md), no deal until the agent picks', (r.stderr or r.stdout)[-200:])
+r = run('--brief', 'a budgeting app for shared flats', '--format', 'launch', '--have', 'ui', '--no-history', '--out', pout, '--direction', opt_ids[0] if opt_ids else 'fold', cwd=proj)
+result(r.returncode == 2 and '--why' in r.stderr and not os.path.exists(os.path.join(proj, 'src', 'dealt.ts')),
+       'a template project: --direction without --why is refused', (r.stderr or '')[-160:])
+why = 'flatmates split one bill: the wall of moments closing into one picture is that'
+r = run('--brief', 'a budgeting app for shared flats', '--format', 'launch', '--have', 'ui', '--no-history', '--out', pout, '--direction', opt_ids[0] if opt_ids else 'fold', '--why', why, cwd=proj)
+md = open(os.path.join(pout, 'DIRECTION.md'), encoding='utf-8').read() if os.path.isfile(os.path.join(pout, 'DIRECTION.md')) else ''
+dealt = open(os.path.join(proj, 'src', 'dealt.ts'), encoding='utf-8').read() if os.path.isfile(os.path.join(proj, 'src', 'dealt.ts')) else ''
+result(r.returncode == 0 and f'**Picked** `{opt_ids[0] if opt_ids else ""}`' in md and why in md and '"ground"' in dealt and '**Type.** the `' in md,
+       'a template project: the pick deals the sheet, its reason heads DIRECTION.md, the type pairing is dealt', (r.stderr or '')[-160:])
+# the eleven ground families are all dealable
+fams = {f['id'] for f in DATA['ground_families']['families']}
+result(fams >= {'nearWhite', 'lightStudio', 'softSky', 'gradientField', 'whiteBand', 'blackField', 'studio', 'deepPool', 'duskMesh', 'floorGlow', 'lightDark'},
+       'the deck deals all eleven ground families of fx/Grounds', ','.join(sorted(fams)))
+# the type pairing: from scripts/faces.json pairs, never the last two films' pairings
+pairs = [x['id'] for x in (deck._face_set() or {}).get('pairs', [])]
+dealt_pairs = [deck.deal_pair(f'film {i}', 'fold', recent=pairs[:2])['id'] for i in range(30)] if pairs else []
+result(len(pairs) >= 11 and dealt_pairs and not set(dealt_pairs) & set(pairs[:2]) and len(set(dealt_pairs)) >= 5,
+       'the type pairing comes from faces.json pairs at random, never the last two films\' pairings', f'{sorted(set(dealt_pairs))}')
+# photo devices only with five pictures or more; the deal leans toward the devices that tell the direction's story
+lib = deck.creative_library()
+few = deck.deal_creative(lib, 'x', 'a photo album app', ['photos'], photos=3)
+many = [deck.deal_creative(lib, f'album {i}', 'a photo album app', ['photos'], photos=8) for i in range(40)]
+result(few and 'photo-arc' not in few['deal'] + few['reserve'][:0] and all('photo-arc' not in deck.deal_creative(lib, f'a{i}', 'a photo album app', ['photos'], photos=3)['deal'] for i in range(40))
+       and any('photo-arc' in c['deal'] for c in many),
+       'photo devices are dealt only with five photos or more', f"{sum('photo-arc' in c['deal'] for c in many)} of 40 with 8 photos")
+turn = dict(BY_ID[next(iter(BY_ID))], story={'shape': 'problem-turn', 'line': 'x'})
+fit_n = sum(1 for i in range(60) if set(deck.deal_creative(lib, f'f{i}', 'a ledger', ['ui'], direction=turn)['deal']) & set(deck.CREATIVE_FIT['problem-turn']))
+base_n = sum(1 for i in range(60) if set(deck.deal_creative(lib, f'f{i}', 'a ledger', ['ui'])['deal']) & set(deck.CREATIVE_FIT['problem-turn']))
+result(fit_n > base_n, 'the creative deal leans toward the devices that tell the picked direction\'s story shape', f'{fit_n} vs {base_n} of 60')
+
 print(f'\n{"all pass" if not failed else f"{failed} failed"}')
 sys.exit(1 if failed else 0)

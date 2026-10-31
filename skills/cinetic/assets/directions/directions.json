@@ -226,6 +226,57 @@
     "type": "ink",
     "field": "the pale field",
     "event": "none"
+   },
+   {
+    "id": "lightStudio",
+    "name": "light studio sweep",
+    "tones": [
+     "light",
+     "mid"
+    ],
+    "recipe": "stoneMid",
+    "what": "a light grey studio sweep: a broad key from above over a floor falling away, the product standing on it like an object on a set",
+    "type": "ink",
+    "field": "none",
+    "event": "an accent lobe opens from the top right"
+   },
+   {
+    "id": "studio",
+    "name": "slate studio",
+    "tones": [
+     "mid",
+     "dark"
+    ],
+    "recipe": "slateMid",
+    "what": "a mid slate cyclorama under one broad key from above, the floor a step darker: a lit room the product stands in",
+    "type": "white",
+    "field": "none",
+    "event": "the key takes the accent's hue"
+   },
+   {
+    "id": "duskMesh",
+    "name": "deep tinted night",
+    "tones": [
+     "dark",
+     "field"
+    ],
+    "recipe": "deepField",
+    "what": "a deep night at the accent's hue, two soft lobes of it from opposite corners, the middle kept dark for the subject",
+    "type": "white",
+    "field": "the two lobes",
+    "event": "the lobes rise and open"
+   },
+   {
+    "id": "floorGlow",
+    "name": "black with a lit floor",
+    "tones": [
+     "dark"
+    ],
+    "recipe": "inkStage",
+    "what": "near-black with one pool of the field hue rising from the floor, the product lit from below and behind like a stage",
+    "type": "white",
+    "field": "the floor's pool",
+    "event": "the pool rises"
    }
   ]
  },
@@ -1328,6 +1379,18 @@
   },
   "LogoRing": {
    "file": "kit/logos.tsx",
+   "status": "built"
+  },
+  "LogoRow": {
+   "file": "kit/logos.tsx",
+   "status": "built"
+  },
+  "LogoTile": {
+   "file": "kit/logos.tsx",
+   "status": "built"
+  },
+  "CardRule": {
+   "file": "kit/card.tsx",
    "status": "built"
   },
   "ContentTile": {
