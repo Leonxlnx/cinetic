@@ -15,7 +15,7 @@ import { BASE, Caption, GROUNDS, INK, useAbs, World } from './stage';
 /** The opening line's centre: centred, in the middle band (39 % of the height), the box arriving under it. */
 const WHAT_Y = 0.39;
 
-// INPUT - the request box on the lit stage, tilted in the film's one light (fx/Lit: rim on the key side, its shadow on
+// INPUT - the request box on the lit stage, facing the camera in the film's one light (fx/Lit: rim on the key side, its shadow on
 // the ground). The line over it says what the product is (the crisp hero entry); a rim light glides along the box; the
 // request types and the send button arms (it lights in the accent on a glide, a small swell); the camera creeps the whole time and leaves on a whip right into the close-up (through one near-white
 // frame when the deal's cut is the flash). The box arrives by the deal's device:
@@ -25,7 +25,7 @@ const WHAT_Y = 0.39;
 //           the foreground soft and cropped by the frame edge
 
 /** The box in the world (px at 1080p): size, centre offset, the rim light's streak, the device numbers. */
-export const BOX = { w: 1240, h: 216, y: 70, streak: 240, tilt: { x: 9, y: -10 }, enter60: 66, drop: { k: 1.9, frames60: 96 }, track: { pan: 760, frames60: 110 } } as const;
+export const BOX = { w: 1240, h: 216, y: 70, streak: 240, tilt: { x: 0, y: 0 }, enter60: 66, drop: { k: 1.9, frames60: 96 }, track: { pan: 760, frames60: 110 } } as const;
 
 /** The box's centre in the world. */
 export const boxCentre = () => ({ x: W / 2, y: H / 2 + BOX.y * U });
@@ -102,7 +102,7 @@ const PlaneTiles: React.FC<{ F: number; base: Shot; moves: CamMove[] }> = ({ F, 
     <Defocus sigma={10}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: '0 0', transform: `translate(${shot.sx}px, ${shot.sy}px) scale(${shot.k}) translate(${-shot.ax}px, ${-shot.ay}px)` }}>
         {spots.map((p, i) => (
-          <div key={i} style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${(p.x * U).toFixed(1)}px, ${(p.y * U).toFixed(1)}px, 0) rotate(${(i % 2 ? 8 : -6).toFixed(1)}deg)` }}>
+          <div key={i} style={{ position: 'absolute', left: 0, top: 0, transform: `translate3d(${(p.x * U).toFixed(1)}px, ${(p.y * U).toFixed(1)}px, 0)` }}>
             {marks.length ? <AppIcon logo={marks[i % marks.length]} size={size} theme={INK} tone="dark" lift={40} /> : <GlyphTile theme={INK} name={TEASER.cards[i % 3].glyph} size={size} />}
           </div>
         ))}

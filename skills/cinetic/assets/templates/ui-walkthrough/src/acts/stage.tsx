@@ -2,13 +2,13 @@
 // per film), one clean lit ground per act (fx/Grounds: the flat base or a very subtle gradient keyed to the film's one
 // light, no plates, no pools, no haze; never the same ground on more than two consecutive shots), the absolute frame,
 // a line of the script on its dealt move (acts/type.tsx),
-// the camera helpers, the whole-frame launch and carry at a velocity seam, and the hold drift every shot keeps.
+// the camera helpers, the whole-frame launch and carry at a velocity seam, and the still hold between moves.
 // Retell it in the dealt direction's world (out/DIRECTION.md): its grounds, light and type replace this floor; the
 // product's own screens replace the kit parts the acts use.
 import React from 'react';
 import { staticFile, useCurrentFrame } from 'remotion';
 import { C, SAFE, TYPE, U } from '../brand/tokens';
-import { DEAL, DEAL_SEED } from '../deal';
+import { DEAL_SEED } from '../deal';
 import { type GroundKind, groundKey, type GroundSpec, LitGround, placeGrounds, seeded } from '../fx/Grounds';
 import { LIT, type LitProps, litState } from '../fx/Lit';
 import { panelMatrix } from '../lib/light';
@@ -16,9 +16,8 @@ import { kitTheme, type KitTheme } from '../kit';
 import { clamp, E, prog } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { type Shot } from '../lib/camera';
-import { holdDrift } from '../lib/continuity';
-import { type FloatOpts, withLocks } from '../lib/drift';
-import { dipAmp, type StageSpec } from '../fx/Float';
+import { type FloatOpts } from '../lib/drift';
+import { type StageSpec } from '../fx/Float';
 import { ReadBack as PictureBack } from '../fx/ReadBack';
 import { carry, launch } from '../lib/handoff';
 import { fitSize } from '../lib/measure';
@@ -89,15 +88,13 @@ export const GROUNDS: Record<ActName, GroundSpec> = (() => {
 })();
 
 /**
- * The camera float every act sits on (Film.tsx ActStage; lib/drift, fx/Float): one continuous drift through the whole
- * walkthrough (sideways up to 31 px/s, a push of up to 3 % carrying the turns), seeded by the film, so no shot sits
- * still while one small thing moves: a playhead, a counter, a toggle (forensics.py motion-energy). It eases to rest
- * once, on the promise's read (withLocks: where the drift runs fastest inside the read, never beside a turn). The
- * grounds hold still under it (LitGround), the content moves over them.
+ * The stage every act stands on (Film.tsx ActStage; lib/drift, fx/Float): the camera is still unless an act declares a
+ * move (no float, no drift). The acts' own cameras (Cam, carryIn, launchOut, the card's one turn) make the moves, each
+ * from rest to rest; between them the picture holds still while the product changes.
  */
-export const FLOAT: FloatOpts = withLocks({ seed: DEAL_SEED }, [copy('promise')], { fps: FPS });
-/** How an act stands on the stage beside the float (fx/Float StageSpec): the claim set flush to the accent's edge floats at 0.4 between its seams. */
-export const STAGE: Partial<Record<ActName, StageSpec>> = DEAL.claim === 'accent' ? { claim: { amp: dipAmp(ACT.claim.from, ACT.claim.from + ACT.claim.dur, 0.4, f60x(24)) } } : {};
+export const FLOAT: FloatOpts = {};
+/** How an act stands on the stage (fx/Float StageSpec): give an act `moves` (lib/drift stageMove) only for a move with a purpose. */
+export const STAGE: Partial<Record<ActName, StageSpec>> = {};
 
 /** The absolute film frame inside an act (acts are Sequences: their own frame starts at 0). */
 export const useAbs = (act: ActName) => useCurrentFrame() + ACT[act].from;
@@ -143,10 +140,10 @@ export const At: React.FC<{ x: number; y: number; w?: number; h?: number; style?
 );
 
 /**
- * The drift under every hold (lib/continuity holdDrift): 0.5 px/f@60 along `angle` from the act's first frame, so no
- * frame of the act is ever still between its moves.
+ * A still hold: the offset every act adds between its moves. The picture rests while the product changes (no drift,
+ * no float: a hold may be completely still); a creep is lib/continuity holdDrift at 0.2 px/f@60 at most, one way.
  */
-export const drift = (act: ActName, F: number, angle = 200, px = 0.5) => holdDrift(F, ACT[act].from, { px, angle }, { fps: FPS, width: W, height: H });
+export const HOLD = { x: 0, y: 0 } as const;
 
 /**
  * The whole frame's launch into a velocity seam (the camera, the ground with it, so the cut reads as one move): up
@@ -165,8 +162,8 @@ export const carryIn = (act: ActName, F: number, vCut: number, settle = 40, rati
 
 /**
  * Where a point of a lit panel lands on screen: (dx, dy) px from the panel's centre, through the panel's pose at frame
- * F (fx/Lit litState: its tilt, sway and lift) and its perspective. For a cursor or a pointer that must sit on a control
- * of a tilted panel.
+ * F (fx/Lit litState: its tilt and lift) and its perspective. For a cursor or a pointer that must sit on a control of a
+ * lit panel, also while it turns.
  */
 export const onLit = (F: number, p: LitProps, dx: number, dy: number) => {
   const s = litState(F, p, { fps: FPS, width: W, height: H });

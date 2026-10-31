@@ -28,7 +28,7 @@ export const ACTS: Record<ActName, React.FC> = { open: Open, card: Card, proof: 
 export const actComponent = (name: string): React.FC => ACTS[name as ActName];
 
 // The film: one Sequence per act, handing off on exact frames (every act line is a seam: speed, scale or shape carried),
-// each act on the film's camera float over its ground (acts/stage.tsx FLOAT, STAGE).
+// each act on its stage over its ground, the camera still unless the act declares a move (acts/stage.tsx FLOAT, STAGE).
 export const Film: React.FC<FilmProps> = ({ audit = false, safe }) => {
   const hasScore = getStaticFiles().some((s) => s.name === SOUNDTRACK);
   return (

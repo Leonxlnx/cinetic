@@ -36,8 +36,8 @@ export const EMPH = filmEmphasis(['what', 'pain', 'close'], { kind: EMPH_KIND, k
 export const EMPHASIS_CHECK = checkFilmEmphasis(EMPH);
 /** A line's key words from explain.ts `keys`, found in its text. */
 export const keysFor = (id: string, text: string) => keysOf(text, (EXPLAIN.keys as Record<string, string | undefined>)[id]) ?? undefined;
-import { type FloatOpts, withLocks } from '../lib/drift';
-import { ACT, type ActName, copy, CUE, f60x, FPS, H, W } from '../timeline';
+import { type FloatOpts } from '../lib/drift';
+import { ACT, type ActName, CUE, f60x, H, W } from '../timeline';
 
 /**
  * The page: a tinted white, ink type, the one accent. The product's own stage is the mid stone, a deeper place in the
@@ -51,13 +51,11 @@ export const SHOT = kitTheme('stoneMid', C.accent);
 export const useAbs = (act: ActName) => useCurrentFrame() + ACT[act].from;
 
 /**
- * The camera float every act sits on (Film.tsx ActStage; lib/drift, fx/Float): one continuous drift through the whole
- * film (sideways up to 31 px/s, a push of up to 3 % carrying the turns), seeded by the film, so no shot sits still
- * while one small thing moves (forensics.py motion-energy). It eases to rest once, on the read of what the product is
- * (withLocks: where the drift runs fastest inside the read, never beside a turn). The grounds hold still under it
- * (LitGround), the content moves over them.
+ * The stage every act stands on (Film.tsx ActStage; lib/drift, fx/Float): the camera is still unless an act declares a
+ * move (no float, no drift). The acts' own cameras make the moves, each from rest to rest; between them the picture
+ * holds still while the product changes.
  */
-export const FLOAT: FloatOpts = withLocks({ seed: SEED }, [copy('what')], { fps: FPS });
+export const FLOAT: FloatOpts = {};
 
 /**
  * The page's grounds, one per act, dealt from the film's seed (fx/Grounds dealGrounds, the clean kinds): two paper

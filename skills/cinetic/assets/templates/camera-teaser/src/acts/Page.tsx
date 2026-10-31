@@ -20,7 +20,7 @@ import { BASE, circIn, FONT, glass, GROUNDS, INK, useAbs, World } from './stage'
 // moment: the page blurs and dims while the camera pushes in, the done toast pops sharp at the push's midpoint, and a
 // circ-in pull-out takes everything to black. The deal's device:
 //   cascade  the page is the frame: the title's letters swing in on an arc a frame apart, the cards cascade under it
-//   panel    the page sits in one lit browser panel tilted in the film's light, the title arriving on the crisp entry
+//   panel    the page sits in one lit browser panel facing the camera in the film's light, the title arriving on the crisp entry
 
 export const PAGE_LAYOUT = { title: 190, titleY: 250, card: { w: 430, h: 470 }, gap: 44, cardY: 650, from: 1.18, rise: 150, carry: 260, decay60: 0.86 } as const;
 
@@ -118,7 +118,7 @@ export const Page: React.FC = () => {
         <div {...(backdrop ? { 'data-audit-copy': true } : {})} style={{ position: 'absolute', inset: 0, transform: `translate3d(0, ${carry.toFixed(2)}px, 0)` }}>
           <World F={F} act="page" base={cam.base} moves={cam.moves} smear={false}>
             {DEAL.page === 'panel' ? (
-              <Lit frame={F} x={W / 2} y={H / 2 + 10 * U} w={panelW} h={panelH} r={30 * U} tilt={{ x: 9, y: 10 }} ground={GROUNDS.page.base} id="page">
+              <Lit frame={F} x={W / 2} y={H / 2 + 10 * U} w={panelW} h={panelH} r={30 * U} ground={GROUNDS.page.base} id="page">
                 <div style={{ position: 'absolute', inset: 0, ...glass(30 * U), background: INK.surface }}>
                   <PageContent F={F} k={0.84} w={panelW} h={panelH} />
                 </div>

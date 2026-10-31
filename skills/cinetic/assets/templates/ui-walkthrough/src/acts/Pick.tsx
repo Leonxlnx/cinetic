@@ -14,7 +14,7 @@ import { mixColor } from '../lib/color';
 import { CUE, f60x, H, W } from '../timeline';
 import { WALK } from '../walk';
 import { WHIP_LEFT } from './Insight';
-import { carryIn, drift, Ground, GROUNDS, ReadBack, ScriptLine, themeOf, useAbs } from './stage';
+import { carryIn, Ground, HOLD, GROUNDS, ReadBack, ScriptLine, themeOf, useAbs } from './stage';
 
 // PICK - step three. The options arrive on the whip's leftward speed, carried and settling; the line says what the
 // product makes from the pick. The camera eases in onto the chosen row (a settle of 40 f, never a jump), the others
@@ -26,8 +26,8 @@ const ROWS = { w: 1400 * U, h: 168 * U, gap: 28 * U, y: 400 * U } as const;
 const HEAD = { w: 820 * U, h: 112 * U, y: 250 * U } as const;
 /** The chooser's sheet behind the rows. */
 const SHEET = { w: 1540 * U, h: 3 * 168 * U + 2 * 28 * U + 64 * U + 80 * U, y: 400 * U - 64 * U - 40 * U } as const;
-/** The options' plane: tilted in the film's light like every product panel. */
-const TILTED: React.CSSProperties = { position: 'absolute', inset: 0, transformOrigin: '50% 55%', transform: `perspective(${2200 * U}px) rotateX(7deg) rotateY(-6deg)` };
+/** The options' plane: facing the camera like every product panel. */
+const PLANE: React.CSSProperties = { position: 'absolute', inset: 0 };
 const BUILD = { w: 1240 * U, h: 700 * U, cy: 790 * U } as const; // its foot runs off the frame
 /** The camera onto the chosen row: x1.22, a 40 f settle. */
 const zoomAt = (F: number) => lmix(1, 1.22, prog(F, CUE.select, CUE.select + f60x(40), E.settleOut));
@@ -46,7 +46,7 @@ const Build: React.FC<{ F: number }> = ({ F }) => {
   const rows = phraseOnsets(CUE.build + f60x(16), WALK.page.rows.length, f60x(DEAL.build === 'assemble' ? 14 : 10), { shape: 'settle', seed: `${WALK.name}:build` }); // lib/cadence: phrased into the last section, never a metronome
   const rowAt = (i: number) => rows[Math.min(i, rows.length - 1)];
   return (
-    <Lit frame={F} x={W / 2} y={BUILD.cy} w={BUILD.w} h={BUILD.h} r={34 * U} tilt={{ x: 11, y: 9 }} ground={GROUNDS.pick.base} enter={{ at: CUE.build - f60x(6), dur60: 46 }} id="build">
+    <Lit frame={F} x={W / 2} y={BUILD.cy} w={BUILD.w} h={BUILD.h} r={34 * U} ground={GROUNDS.pick.base} enter={{ at: CUE.build - f60x(6), dur60: 46 }} id="build">
       <Surface theme={t} w={BUILD.w} h={BUILD.h} lift={4} r={34 * U}>
         {DEAL.build === 'stream' && (
           <div style={{ position: 'absolute', left: 0, top: 0, width: BUILD.w * (pct / 100), height: 6 * U, background: t.accent }} />
@@ -85,7 +85,7 @@ export const Pick: React.FC = () => {
   const pick = WALK.pick;
   const carried = carryIn('pick', F, WHIP_LEFT.vCut, 60, 0.75);
   const cv = (carried - carryIn('pick', F - 1, WHIP_LEFT.vCut, 60, 0.75)) / U;
-  const d = drift('pick', F, 340, 0.4);
+  const d = HOLD; // the hold rests between moves (no drift)
   const rowY = (i: number) => ROWS.y + i * (ROWS.h + ROWS.gap);
   const oy = rowY(pick) + ROWS.h / 2;
   const gone = prog(F, CUE.select + f60x(8), CUE.select + f60x(34), E.stdInOut); // the other rows fall back and fade
@@ -102,8 +102,8 @@ export const Pick: React.FC = () => {
         <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${(carried + d.x).toFixed(2)}px, ${d.y.toFixed(3)}px, 0)` }}>
           <Ground act="pick" F={F} />
           <ReadBack id="pick" F={F}>
-          <div style={TILTED}>
-          {/* the sheet the options sit on: the product's chooser, lit and tilted with them; it falls back as the build takes over */}
+          <div style={PLANE}>
+          {/* the sheet the options sit on: the product's chooser, lit with them; it falls back as the build takes over */}
           <div style={{ position: 'absolute', left: 0, top: 0, opacity: (1 - m) * sheetIn, transformOrigin: `${(SHEET.w / 2).toFixed(2)}px ${(oy - SHEET.y).toFixed(2)}px`, transform: `translate3d(${((W - SHEET.w) / 2).toFixed(2)}px, ${SHEET.y.toFixed(2)}px, 0) scale(${(zoom * mix(0.94, 1, sheetIn)).toFixed(5)})` }}>
             <Surface theme={t} w={SHEET.w} h={SHEET.h} tone="raised" lift={30} r={36 * U}>
               <div style={{ position: 'absolute', left: 0, top: 0, width: SHEET.w, height: 64 * U, background: mixColor(t.surface, t.ground, 0.25), boxShadow: `inset 0 -${(1 * U).toFixed(2)}px 0 ${t.line}` }} />
@@ -137,7 +137,7 @@ export const Pick: React.FC = () => {
           </div>
           </div>
           {F >= CUE.build - f60x(6) && <Build F={F} />}
-          <div style={TILTED}>
+          <div style={PLANE}>
           {headOn && (
             // the head: the morph's own box (no pop where the row hands over), its content arriving inside it
             <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: HEAD.w, height: HEAD.h, display: 'flex', alignItems: 'center', gap: 22 * U, padding: `0 ${34 * U}px`, boxSizing: 'border-box', borderRadius: HEAD.h / 2, background: t.surface, boxShadow: `${surfaceShadow(t, 30, U)}, inset 0 0 0 ${(3 * U).toFixed(2)}px ${t.accent}`, transform: `translate3d(${((W - HEAD.w) / 2).toFixed(2)}px, ${HEAD.y.toFixed(2)}px, 0)` }}>

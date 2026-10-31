@@ -134,7 +134,7 @@ export const RunShot: React.FC<{ F: number }> = ({ F }) => {
   return (
     <div style={{ position: 'absolute', inset: 0, transform: `translate3d(0, ${enter.toFixed(2)}px, 0)` }}>
       <div style={{ ...camera3d(shot), width: W, height: H }}>
-        <Lit frame={F} x={px} y={P.y} w={pw} h={P.h} r={30 * U} tilt={{ x: 9, y: -11 }} ground={GROUNDS.run.base} id="run">
+        <Lit frame={F} x={px} y={P.y} w={pw} h={P.h} r={30 * U} ground={GROUNDS.run.base} id="run">
           <div style={{ position: 'absolute', inset: 0, borderRadius: 30 * U, background: PAGE.surface, boxShadow: surfaceShadow(PAGE, 18, U), overflow: 'hidden' }}>
             {/* split: the run's content at 80 % (the panel is narrower), so every row and the bubble stay whole */}
             <div style={{ position: 'absolute', left: 0, top: 0, transformOrigin: '0 0', transform: `translate3d(${pad}px, ${pad}px, 0) scale(${split ? 0.8 : 1})` }}>
@@ -143,7 +143,7 @@ export const RunShot: React.FC<{ F: number }> = ({ F }) => {
           </div>
         </Lit>
         {split && (
-          <Lit frame={F} x={W / 2 + (P.w * 0.62) / 2 + 40 * U} y={P.y + 30 * U} w={P.w * 0.62} h={P.h * 0.9} r={26 * U} tilt={{ x: 9, y: -13 }} ground={GROUNDS.run.base} id="screen" sway={{ phase: 0.4 }}>
+          <Lit frame={F} x={W / 2 + (P.w * 0.62) / 2 + 40 * U} y={P.y + 30 * U} w={P.w * 0.62} h={P.h * 0.9} r={26 * U} ground={GROUNDS.run.base} id="screen">
             <div style={{ position: 'absolute', inset: 0, borderRadius: 26 * U, overflow: 'hidden', background: PAGE.surface }}>
               <DenseScreen frame={F} theme={PAGE} world={WORLD} layout="table" w={P.w * 0.62} h={P.h * 0.9} scale={0.7} view={0.95} focus={focusRows} drawAt={ACT.run.from} lift={0} />
             </div>
@@ -162,7 +162,7 @@ const StackShot: React.FC<{ F: number }> = ({ F }) => {
   const ch = 150 * U;
   const ui = RUN_LAYOUT.type * U;
   const mid = (RUN.steps.length - 1) / 2;
-  const cards: DepthItem[] = RUN.steps.map((_, i) => ({ id: `step${i}`, plane: 'mid', carries: 'ui', x: W / 2 + (i - mid) * 40 * U, y: H / 2 + 150 * U + (i - mid) * 150 * U, w: cw, h: ch, r: ch * 0.24, tilt: { x: 10, y: -12 }, at: STEPS[i] }));
+  const cards: DepthItem[] = RUN.steps.map((_, i) => ({ id: `step${i}`, plane: 'mid', carries: 'ui', x: W / 2 + (i - mid) * 40 * U, y: H / 2 + 150 * U + (i - mid) * 150 * U, w: cw, h: ch, r: ch * 0.24, at: STEPS[i] }));
   return (
     <div style={{ position: 'absolute', inset: 0, transform: `translate3d(0, ${enter.toFixed(2)}px, 0)` }}>
       <DepthStack

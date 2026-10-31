@@ -27,7 +27,7 @@ import { carryOffset, EMPH, keysFor, LightEvent, lineSize, PAGE, quadIn, SEAM, S
 //          creeping and rising slowly under the push into the cut: one poster line, never two in a row
 
 /** The turn (60 fps frames) and the panel at rest (px at 1080p). */
-export const TURN = { frames: 108, from: -8 - CAM3D.house, to: -8 } as const;
+export const TURN = { frames: 108, from: -CAM3D.house, to: 0, pitch: 9 } as const; // turns round and lands face-on (a declared object move)
 const PANEL = { w: 1100, h: 660, x: 960, y: 560 } as const;
 
 export const Taglines: React.FC = () => {
@@ -56,8 +56,8 @@ export const Taglines: React.FC = () => {
     );
   }
   const p = prog(F, ACT.taglines.from - f60x(10), ACT.taglines.from - f60x(10) + f60x(TURN.frames), E.strongInOut);
-  const creepT = Math.max(0, F - ACT.taglines.from - f60x(TURN.frames)) / FPS;
-  const yaw = mix(TURN.from, TURN.to, p) + 0.5 * creepT;
+  const yaw = mix(TURN.from, TURN.to, p);
+  const pitch = mix(TURN.pitch, 0, p);
   const w = PANEL.w * U;
   const h = PANEL.h * U;
   return (
@@ -66,7 +66,7 @@ export const Taglines: React.FC = () => {
       <LightEvent F={F} act="taglines" dark />
       <div style={{ position: 'absolute', inset: 0, transformOrigin: '50% 50%', transform: `scale(${push.toFixed(5)})` }}>
         <ReadBack F={F} at={tags[0].in} out={tags[tags.length - 1].out}>
-          <Lit frame={F} x={PANEL.x * U + carry} y={PANEL.y * U} w={w} h={h} r={22 * U} tilt={{ x: 9, y: yaw }} ground={SHOT.ground} id="panel">
+          <Lit frame={F} x={PANEL.x * U + carry} y={PANEL.y * U} w={w} h={h} r={22 * U} tilt={{ x: pitch, y: yaw }} ground={SHOT.ground} id="panel">
             <DenseScreen frame={F} theme={PAGE} world={WORLD} layout="table" w={w} h={h} scale={w / 1600} focus={null} lift={0} drawAt={ACT.taglines.from} />
           </Lit>
         </ReadBack>

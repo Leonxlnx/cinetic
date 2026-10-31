@@ -40,8 +40,8 @@ const crowdItems = (lineW: number, lineH: number): DepthItem[] => {
     { id: 't2', plane: 'far', carries: tile, x: 1600 * U, y: 280 * U, w: 300 * U, h: 300 * U, r: 34 * U },
     { id: 't3', plane: 'far', carries: tile, x: 520 * U, y: 860 * U, w: 280 * U, h: 280 * U, r: 32 * U },
     { id: 't4', plane: 'far', carries: tile, x: 1420 * U, y: 880 * U, w: 300 * U, h: 300 * U, r: 34 * U },
-    { id: 't5', plane: 'near', carries: tile, x: 60 * U, y: 960 * U, w: 300 * U, h: 300 * U, r: 34 * U, tilt: { x: 10, y: 16 } },
-    { id: 't6', plane: 'near', carries: tile, x: 1880 * U, y: 110 * U, w: 280 * U, h: 280 * U, r: 32 * U, tilt: { x: -10, y: -14 } },
+    { id: 't5', plane: 'near', carries: tile, x: 60 * U, y: 960 * U, w: 300 * U, h: 300 * U, r: 34 * U },
+    { id: 't6', plane: 'near', carries: tile, x: 1880 * U, y: 110 * U, w: 280 * U, h: 280 * U, r: 32 * U },
   ];
 };
 const NODES = worldNodes(WORLD, 8);

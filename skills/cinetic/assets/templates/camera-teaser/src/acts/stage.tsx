@@ -31,12 +31,11 @@ export const INK = kitTheme('inkStage', C.accent);
 export const useAbs = (act: ActName) => useCurrentFrame() + ACT[act].from;
 
 /**
- * The camera float every act sits on (Film.tsx ActStage; lib/drift, fx/Float): one continuous drift through the whole
- * film (sideways up to 31 px/s, a push of up to 3 % carrying the turns), seeded by the film, so no shot sits still
- * while one small thing moves (forensics.py motion-energy). The camera's own whips and pushes carry the reads; the
- * float runs under them. The grounds hold still under it (LitGround), the content moves over them.
+ * The stage every act stands on (Film.tsx ActStage; lib/drift, fx/Float): the camera is still unless an act declares a
+ * move (no float, no drift). The acts' own cameras make the moves, each from rest to rest; between them the picture
+ * holds still while the product changes.
  */
-export const FLOAT: FloatOpts = { seed: DEAL_SEED };
+export const FLOAT: FloatOpts = {};
 
 /** The resting shot: the world's centre framed at the screen's centre at x1. Every act's camera starts from it. */
 export const BASE: Shot = { ax: W / 2, ay: H / 2, sx: W / 2, sy: H / 2, k: 1 };

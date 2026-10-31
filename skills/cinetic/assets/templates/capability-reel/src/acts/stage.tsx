@@ -8,9 +8,8 @@ import { useCurrentFrame } from 'remotion';
 import { C, SAFE, TYPE, U } from '../brand/tokens';
 import { kitTheme } from '../kit';
 import { fitSize } from '../lib/measure';
-import { type FloatOpts, withLocks } from '../lib/drift';
-import { IDENTITY } from '../brand/identity';
-import { ACT, type ActName, copy, FPS, H, W } from '../timeline';
+import { type FloatOpts } from '../lib/drift';
+import { ACT, type ActName, H, W } from '../timeline';
 
 /** The paper, the ink stage of the end card (a tinted near-black, never #000) and the theme on the accent. */
 export const LIGHT = kitTheme('tintedPaper', C.accent);
@@ -20,13 +19,11 @@ export const INK = kitTheme('inkStage', C.accent);
 export const useAbs = (act: ActName) => useCurrentFrame() + ACT[act].from;
 
 /**
- * The camera float every act sits on (Film.tsx ActStage; lib/drift, fx/Float): one continuous drift through the whole
- * film (sideways up to 31 px/s, a push of up to 3 % carrying the turns), seeded by the film, so no shot sits still
- * while one small thing moves (forensics.py motion-energy). It eases to rest once, on the statement's read (withLocks:
- * where the drift runs fastest inside the read, never beside a turn). The grounds hold still under it (LitGround), the
- * content moves over them.
+ * The stage every act stands on (Film.tsx ActStage; lib/drift, fx/Float): the camera is still unless an act declares a
+ * move (no float, no drift). The acts' own cameras make the moves, each from rest to rest; between them the picture
+ * holds still while the product changes.
  */
-export const FLOAT: FloatOpts = withLocks({ seed: IDENTITY.name }, [copy('statement')], { fps: FPS });
+export const FLOAT: FloatOpts = {};
 
 /** The size a line of the script is set at: its role's size, smaller only when it would not fit `share` of the safe width. */
 export const lineSize = (text: string, role: 'line' | 'display' | 'hero' = 'line', share = 1) =>

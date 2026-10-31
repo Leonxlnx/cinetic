@@ -12,7 +12,7 @@ import { mixColor } from '../lib/color';
 import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
 import { WHIP_UP } from './Field';
-import { carryIn, drift, Ground, GROUNDS, themeOf, useAbs } from './stage';
+import { carryIn, Ground, HOLD, GROUNDS, themeOf, useAbs } from './stage';
 
 // FEED - step two: the product reads every item, by the dealt device: 'lens' is the product's own dense screen (kit
 // DenseScreen: a table of real rows, one line lifted and readable) whose focus line travels down the rows, gliding a
@@ -105,7 +105,7 @@ export const Feed: React.FC = () => {
   const t = themeOf('feed');
   const carried = carryIn('feed', F, WHIP_UP.vCut, 44, 0.7);
   const cv = (carried - carryIn('feed', F - 1, WHIP_UP.vCut, 44, 0.7)) / U;
-  const d = drift('feed', F, 250, 0.4);
+  const d = HOLD; // the hold rests between moves (no drift)
   const lift = prog(F, CUE.lift, CUE.lift + f60x(24), E.glideOut);
   const fall = prog(F, CUE.lift, CUE.lift + f60x(40), E.stdInOut); // the rest falls back, softens and is gone before the act line
   // the found item collapses into the pill: width and height lead, the travel on E.strongInOut into the act line
@@ -117,7 +117,7 @@ export const Feed: React.FC = () => {
   const keyRow = WALK.feed.rows[WALK.feed.key];
   const read =
     DEAL.read === 'lens' ? (
-      <Lit frame={F} x={W / 2} y={H / 2 + 110 * U} w={1640 * U} h={940 * U} r={22 * U} tilt={{ x: 9, y: -10 }} ground={GROUNDS.feed.base} id="read-window">
+      <Lit frame={F} x={W / 2} y={H / 2 + 110 * U} w={1640 * U} h={940 * U} r={22 * U} ground={GROUNDS.feed.base} id="read-window">
         <DenseScreen frame={F} theme={t} world={readWorld()} layout="table" w={1640 * U} h={940 * U} focus={LENS} view={lmix(1, 1.18, prog(F, CUE.flick, CUE.land, E.strongInOut))} lift={0} />
       </Lit>
     ) : DEAL.read === 'ticker' ? (
@@ -137,7 +137,7 @@ export const Feed: React.FC = () => {
         />
       </div>
     ) : (
-      <div data-audit-scroll style={{ position: 'absolute', inset: 0, transformOrigin: `${W / 2}px ${H / 2}px`, transform: `perspective(${2200 * U}px) rotateX(10deg) rotateY(-8deg)` }}>
+      <div data-audit-scroll style={{ position: 'absolute', inset: 0, transformOrigin: `${W / 2}px ${H / 2}px`, transform: undefined }}>
         <DirBlur v={s.v / U} axis="y" id="feed-flick" style={{ maskImage: 'linear-gradient(180deg, transparent 0%, black 22%, black 82%, transparent 100%)' }}>
           {Array.from({ length: FEED.rows }, (_, i) => {
             const y = H / 2 - FEED.h / 2 + i * FEED.pitch - s.y;
@@ -167,8 +167,8 @@ export const Feed: React.FC = () => {
       </DirBlur>
       {/* the found item: lifting to the front and collapsing into the pill */}
       {F >= (DEAL.read === 'flick' ? CUE.lift : CUE.land - f60x(8)) && (
-        // 'flick': the item leaves the list from exactly where the list holds it (its drift and its tilt), easing flat
-        <div style={{ position: 'absolute', inset: 0, transformOrigin: `${W / 2}px ${H / 2}px`, transform: DEAL.read === 'flick' ? `translate3d(${(d.x * (1 - lift)).toFixed(3)}px, ${((d.y + carried) * (1 - lift)).toFixed(3)}px, 0) perspective(${2200 * U}px) rotateX(${(10 * (1 - lift)).toFixed(3)}deg) rotateY(${(-8 * (1 - lift)).toFixed(3)}deg)` : undefined }}>
+        // 'flick': the item leaves the list from exactly where the list holds it
+        <div style={{ position: 'absolute', inset: 0, transformOrigin: `${W / 2}px ${H / 2}px`, transform: DEAL.read === 'flick' ? `translate3d(${(d.x * (1 - lift)).toFixed(3)}px, ${((d.y + carried) * (1 - lift)).toFixed(3)}px, 0)` : undefined }}>
         <div style={{ position: 'absolute', left: 0, top: 0, width: box.w, height: box.h, borderRadius: mix(30 * U, PILL_BOX.h / 2, m), overflow: 'hidden', opacity: clamp(appear * 1.6), background: t.surface, boxShadow: `${surfaceShadow(t, 34, U)}, inset 0 0 0 ${(3 * U).toFixed(2)}px ${t.accent}`, transform: `translate3d(${(W / 2 - box.w / 2).toFixed(2)}px, ${(box.cy - box.h / 2 + (1 - appear) * 50 * U).toFixed(2)}px, 0) scale(${mix(0.9, 1, appear).toFixed(4)})` }}>
           <div style={{ opacity: 1 - clamp(m / 0.5), transform: `translate3d(0, ${(-26 * U * m).toFixed(2)}px, 0)` }}>
             <Item i={FEED.landRow} on={1} row={keyRow} />

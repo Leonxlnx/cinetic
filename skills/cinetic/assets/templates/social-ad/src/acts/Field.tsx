@@ -32,7 +32,7 @@ const STACK: DepthItem[] = [
   { id: 'f0', plane: 'far', carries: 'data', x: 1500 * U, y: 180 * U, w: 520 * U, h: 420 * U, r: 44 * U },
   { id: 'f1', plane: 'far', carries: 'data', x: 420 * U, y: 900 * U, w: 520 * U, h: 420 * U, r: 44 * U },
   { id: 'f2', plane: 'far', carries: 'data', x: 960 * U, y: 120 * U, w: 480 * U, h: 380 * U, r: 44 * U },
-  { id: 'n0', plane: 'near', carries: 'data', x: 1880 * U, y: 1000 * U, w: 380 * U, h: 380 * U, r: 40 * U, tilt: { x: -10, y: -14 } },
+  { id: 'n0', plane: 'near', carries: 'data', x: 1880 * U, y: 1000 * U, w: 380 * U, h: 380 * U, r: 40 * U },
 ];
 
 /** The claim's layout centred on (cx, cy): the head's width, the pill's box and the last word's centre. */

@@ -10,7 +10,7 @@ import { Img, staticFile, useCurrentFrame } from 'remotion';
 import { C, FONT, SAFE, TYPE, U } from '../brand/tokens';
 import { LogoMark } from '../brand/Mark';
 import { LOGO } from '../brand/logo';
-import { dipAmp, type StageSpec } from '../fx/Float';
+import { type StageSpec } from '../fx/Float';
 import { bakePlate } from '../fx/Gradients';
 import { dealGrounds, type GroundSpec, LitGround, placeGrounds } from '../fx/Grounds';
 import { shadowTone } from '../fx/KeyLight';
@@ -23,9 +23,9 @@ import { FILM_LIGHT, keyDir } from '../lib/light';
 import { checkFilmEmphasis, type EmphasisName, filmEmphasis, keysOf } from '../fx/TypeEmphasis';
 import { fitSize, measureTracked } from '../lib/measure';
 import { AD } from '../ad';
-import { DEAL, SEED } from '../deal';
-import { type FloatOpts, withLocks } from '../lib/drift';
-import { ACT, type ActName, copy, CUE, f60x, FPS, H, W } from '../timeline';
+import { SEED } from '../deal';
+import { type FloatOpts } from '../lib/drift';
+import { ACT, type ActName, CUE, f60x, H, W } from '../timeline';
 
 /** The page (a tinted white), and the product's stage (the mid slate: white type reads on it). */
 export const PAGE = kitTheme('tintedPaper', C.accent);
@@ -153,15 +153,13 @@ export const LightEvent: React.FC<{ F: number; act: ActName; dark?: boolean; amo
 };
 
 /**
- * The camera float every act sits on (Film.tsx ActStage; lib/drift, fx/Float): one continuous drift through the whole
- * ad (sideways up to 31 px/s, a push of up to 3 % carrying the turns), seeded by the film, so no shot sits still while
- * one small thing moves (forensics.py motion-energy). It eases to rest once, on the opener's read (withLocks: where
- * the drift runs fastest inside the read, never beside a turn). The grounds hold still under it (LitGround), the
- * content moves over them.
+ * The stage every act stands on (Film.tsx ActStage; lib/drift, fx/Float): the camera is still unless an act declares a
+ * move (no float, no drift). The acts' own cameras make the moves, each from rest to rest; between them the picture
+ * holds still while the product changes.
  */
-export const FLOAT: FloatOpts = withLocks({ seed: SEED }, [copy('what')], { fps: FPS });
-/** How an act stands on the stage beside the float (fx/Float StageSpec): the claim set flush to the accent's edge floats at 0.4 between its seams. */
-export const STAGE: Partial<Record<ActName, StageSpec>> = DEAL.taglines === 'claim' ? { taglines: { amp: dipAmp(ACT.taglines.from, ACT.end.from, 0.4, f60x(24)) } } : {};
+export const FLOAT: FloatOpts = {};
+/** How an act stands on the stage (fx/Float StageSpec): give an act `moves` (lib/drift stageMove) only for a move with a purpose. */
+export const STAGE: Partial<Record<ActName, StageSpec>> = {};
 
 /** The act's ground and its light event. */
 export const ActGround: React.FC<{ F: number; act: ActName; spec?: GroundSpec }> = ({ F, act, spec }) => {

@@ -12,7 +12,7 @@ import { landBeforeCut, timingFail } from '../lib/continuity';
 import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
 import { CLAIM_EXIT } from './Claim';
-import { At, Cam, drift, Ground, GROUNDS, launchOut, onLit, ReadBack, ScriptLine, themeOf, useAbs } from './stage';
+import { At, Cam, Ground, HOLD, GROUNDS, launchOut, onLit, ReadBack, ScriptLine, themeOf, useAbs } from './stage';
 
 // FIELD - step one, in the product's own window: a lit app window (fx/Lit, kit AppWindow: the workspace, its nav and
 // its people around the field, dense and real) arrives on the claim's zoom. The field's placeholder is cleared by a held
@@ -51,18 +51,18 @@ export const Field: React.FC = () => {
   const F = useAbs('field');
   const t = themeOf('field');
   const world = filmWorld({ workspace: WALK.name, records: WALK.results.map((r) => ({ title: r.title, sub: r.meta })) });
-  const lit: LitProps = { x: WIN.cx, y: WIN.cy, w: WIN.w, h: WIN.h, r: 26 * U, tilt: { x: 9, y: -8 }, ground: GROUNDS.field.base };
+  const lit: LitProps = { x: WIN.cx, y: WIN.cy, w: WIN.w, h: WIN.h, r: 26 * U, ground: GROUNDS.field.base };
   // the claim's zoom carried in and settling; the pull-back about the upper third; the whip up into the cut
   const k = lmix(CLAIM_EXIT.k, 1, prog(F, ACT.field.from, ACT.field.from + f60x(40), E.glideOut)) * lmix(1, PULL.k, prog(F, CUE.pullBack, CUE.pullBack + f60x(PULL.frames60), E.strongInOut));
   const up = launchOut('field', F, WHIP_UP.vCut);
   const whipV = (up - launchOut('field', F - 1, WHIP_UP.vCut)) / U;
-  const d = drift('field', F, 20, 0.4);
+  const d = HOLD; // the hold rests between moves (no drift)
   // the window's main area and the field inside it (px in the window)
   const side = Math.min(250 * U, WIN.w * 0.18);
   const main = { x: side, y: 46 * U, w: WIN.w - side, h: WIN.h - 46 * U };
   const pad = 40 * U;
   const fieldW = main.w - 2 * pad;
-  // the hand: up from below onto the button of the tilted window, the press, then off the frame
+  // the hand: up from below onto the button of the window, the press, then off the frame
   const btnIn = { x: main.x + pad + fieldW - FIELD.button / 2 - 20 * U, y: main.y + FIELD.top + FIELD.h / 2 };
   const btn = onLit(F, lit, btnIn.x - WIN.w / 2, btnIn.y - WIN.h / 2);
   const hand = cursorRise(F, CUE.cursor, { x: btn.x, y: btn.y + 10 * U }, {}, { fps: FPS, width: W, height: H });

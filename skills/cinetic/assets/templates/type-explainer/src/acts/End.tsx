@@ -29,7 +29,7 @@ export const End: React.FC = () => {
   const hub = hubOnScreen(ACT.end.from);
   const nm = copy('wordmark');
   const close = copy('close');
-  const k = creep(F, ACT.end.from, { pctPerSec: 0.03 }, FPS); // the lockup keeps creeping in: the end lock never freezes
+  const k = creep(F, ACT.end.from, { pctPerSec: 0.012 }, FPS); // a sub-pixel creep under the lockup (the end lock may hold still)
   if (DEAL.end === 'claim') {
     const flood = prog(F, ACT.end.from + f60x(4), ACT.end.from + f60x(40), E.glideOut);
     const inked = prog(F, ACT.end.from + f60x(8), ACT.end.from + f60x(30), E.stdInOut);

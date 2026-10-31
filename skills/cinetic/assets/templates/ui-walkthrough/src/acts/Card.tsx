@@ -10,9 +10,9 @@ import { clamp, E, lmix, mix, prog } from '../lib/anim';
 import { intoCut } from '../lib/handoff';
 import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
-import { carryIn, drift, Ground, GROUNDS, OPEN_EXIT, themeOf, useAbs } from './stage';
+import { carryIn, Ground, HOLD, GROUNDS, OPEN_EXIT, themeOf, useAbs } from './stage';
 
-// CARD - the signature: the user's input as one lit card (fx/Lit: tilted in the film's one light, rimmed on its key
+// CARD - the signature: the user's input as one lit card (fx/Lit: in the film's one light, rimmed on its key
 // side, casting its shadow on the ground) carried up on the promise's speed, while the film makes its one 3D turn: the
 // card swings 24 degrees round to face the viewer over 108 f, the chips beside it parallaxing. Then the same card
 // becomes the output in place, by the dealt device: 'flip' turns it over through edge-on (its back is the output),
@@ -21,7 +21,7 @@ import { carryIn, drift, Ground, GROUNDS, OPEN_EXIT, themeOf, useAbs } from './s
 // the zoom-through that opens the proof. Continuity comes from the container, never from a cut or a one-frame jump.
 
 /** The card at film size and the turn it makes (degrees). */
-export const CARD = { w: 1340 * U, h: 760 * U, r: 44 * U, turn: { from: -36, to: -12, x: 10, frames60: 108 } } as const;
+export const CARD = { w: 1340 * U, h: 760 * U, r: 44 * U, turn: { from: -36, to: 0, x: 0, frames60: 108 } } as const;
 const cx = W / 2;
 const cy = H / 2 + 14 * U;
 const pad = 64 * U;
@@ -131,8 +131,8 @@ export const Card: React.FC = () => {
   const g = GROUNDS.card.base;
   const carried = carryIn('card', F, OPEN_EXIT.vCut); // the whole frame arrives on the promise's speed
   const cv = carried - carryIn('card', F - 1, OPEN_EXIT.vCut);
-  const d = drift('card', F, 160, 0.4);
-  // the film's one 3D turn: the card swings round to face the viewer (its tilt is the camera's yaw against it)
+  const d = HOLD; // the hold rests between moves (no drift)
+  // the film's one 3D turn: the card swings round and lands face-on to the viewer (a declared object move, never a resting tilt)
   const swing = prog(F, CUE.rise + f60x(4), CUE.rise + f60x(4 + CARD.turn.frames60), E.strongInOut);
   const yaw = mix(CARD.turn.from, CARD.turn.to, swing);
   const p = turnAt(F);

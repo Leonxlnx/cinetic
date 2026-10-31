@@ -18,7 +18,7 @@ import { glass, INK, useAbs, World } from './stage';
 // (their marks on the cards). The stack leaves up about 380 px on an ease-in, still crossing the frame at the cut, and
 // the page arrives moving the same way. The deal's device:
 //   stack  the cards stand stacked in perspective in a depth stack (fx/DepthStack: the products' tiles on the far
-//          wall turned 16 degrees, two soft tiles crossing the near plane), the camera pushing through it
+//          wall facing the camera, two soft tiles crossing the near plane), the camera pushing through it
 //   wall   the cards land one above the next in front of a wall of tiles (kit ContentWall: the products' marks nearest
 //          the centre, the product's own records round them), the wall drifting in parallax
 //   ring   the cards land in the middle of a ring of tiles that tumble in and orbit (kit ContentRing)
@@ -66,9 +66,9 @@ const Stack: React.FC<{ F: number }> = ({ F }) => {
   const content = marks.length ? ('mark' as const) : ('icon' as const);
   const n = Math.min(4, Math.max(3, marks.length));
   const wall = [{ x: 300, y: 290 }, { x: 1640, y: 250 }, { x: 330, y: 830 }, { x: 1660, y: 810 }];
-  const far: DepthItem[] = Array.from({ length: n }, (_, k) => ({ id: `far${k}`, plane: 'far', carries: content, x: wall[k].x * U, y: wall[k].y * U, w: tile, h: tile, r: tile * 0.23, rot: k % 2 ? 6 : -5, at: CUE.cards + f60x(5 * k) }));
-  const near: DepthItem[] = [{ id: 'near0', plane: 'near', carries: content, x: 1830 * U, y: 1000 * U, w: tile * 0.9, h: tile * 0.9, rot: 8 }];
-  const cards: DepthItem[] = TEASER.cards.map((_, i) => ({ id: `card${i}`, plane: 'mid', carries: 'ui' as const, x: W / 2 + (i - 1) * 60 * U, y: H / 2 + 110 * U + (i - 1) * CARD.gap * U, w, h, r: h * 0.24, tilt: { x: 12, y: -14 }, at: landAt(i) }));
+  const far: DepthItem[] = Array.from({ length: n }, (_, k) => ({ id: `far${k}`, plane: 'far', carries: content, x: wall[k].x * U, y: wall[k].y * U, w: tile, h: tile, r: tile * 0.23, at: CUE.cards + f60x(5 * k) }));
+  const near: DepthItem[] = [{ id: 'near0', plane: 'near', carries: content, x: 1830 * U, y: 1000 * U, w: tile * 0.9, h: tile * 0.9 }];
+  const cards: DepthItem[] = TEASER.cards.map((_, i) => ({ id: `card${i}`, plane: 'mid', carries: 'ui' as const, x: W / 2 + (i - 1) * 60 * U, y: H / 2 + 110 * U + (i - 1) * CARD.gap * U, w, h, r: h * 0.24, at: landAt(i) }));
   return (
     <DepthStack
       frame={F}

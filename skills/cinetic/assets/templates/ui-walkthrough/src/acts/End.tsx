@@ -11,7 +11,7 @@ import { measureTracked } from '../lib/measure';
 import { ReadBack } from '../fx/ReadBack';
 import { ACT, copy, CUE, f60x, FPS, H, moveOf, TOTAL, W } from '../timeline';
 import { PageFace } from './Page';
-import { drift, Ground, GROUNDS, lineSize, themeOf, useAbs } from './stage';
+import { Ground, HOLD, GROUNDS, lineSize, themeOf, useAbs } from './stage';
 import { HeroLine } from './type';
 
 /** The mark's parts land phrased, the last after a held beat (it carries the glint): lib/cadence, the span of a 6 f stagger. */
@@ -19,7 +19,7 @@ const PART_ON = phrase(LOGO.parts.length, f60x(6), { shape: 'settle', seed: 'mar
 
 // END - the lockup, built from the mark's own parts: they arrive in turn, the name is set beside them on a confident
 // move (never letter by letter) and the payoff line arrives under it on its dealt move, the lockup centred. By the
-// dealt device: 'side' keeps the output live behind the lockup, lit and tilted, stepping back (soft, dim, a little
+// dealt device: 'side' keeps the output live behind the lockup, lit and facing the camera, stepping back (soft, dim, a little
 // smaller) as the name arrives (the end card built from the film's last picture); 'centre' sets the lockup alone in
 // the middle of a clean ground. A slow push keeps the lock alive; it holds about a second and a half before the tail.
 
@@ -38,16 +38,16 @@ export const End: React.FC = () => {
   const x0 = (W - rowW) / 2;
   const yRow = H / 2 - 70 * U;
   const k = lmix(1.04, 1, prog(F, ACT.end.from, ACT.end.from + f60x(50), E.glideOut)) * lmix(1, 1.03, prog(F, ACT.end.from, ACT.end.from + ACT.end.dur, E.linear));
-  const d = drift('end', F, 0, 0.3);
+  const d = HOLD; // the hold rests between moves (no drift)
   const page = prog(F, ACT.end.from, ACT.end.from + f60x(56), E.glideOut);
   return (
     <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>
       <Ground act="end" F={F} />
       {!centre && (
-        // the output, live behind its name: lit and tilted, cropped by the bottom edge, stepping back as the name lands
+        // the output, live behind its name: lit, facing the camera, cropped by the bottom edge, stepping back as the name lands
         <ReadBack F={F} at={name.in} out={TOTAL + 600} dim={0.8} blur={9} scale={0.06}>
           <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${(d.x * 1.6).toFixed(2)}px, ${((1 - page) * 120 * U).toFixed(2)}px, 0)` }}>
-            <Lit frame={F} x={W / 2} y={H * 0.62} w={900 * U} h={1100 * U} r={36 * U} tilt={{ x: 10, y: -6 }} ground={GROUNDS.end.base} id="end-page">
+            <Lit frame={F} x={W / 2} y={H * 0.62} w={900 * U} h={1100 * U} r={36 * U} ground={GROUNDS.end.base} id="end-page">
               <PageFace F={F} w={900 * U} h={1100 * U} seed="end" />
             </Lit>
           </div>

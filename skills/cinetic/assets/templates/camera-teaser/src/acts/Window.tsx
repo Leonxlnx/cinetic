@@ -17,8 +17,8 @@ import { BASE, Caption, glass, GROUNDS, INK, useAbs, World } from './stage';
 const WORLD = filmWorld(TEASER.screen);
 
 // WINDOW - the product working, under the film's one 3D turn (lib/camera swing3d: 22 degrees on one axis over 108 f
-// at 60 fps on E.strongInOut, landing nearly front-on and creeping on). The app window arrives on the turn itself (one
-// carrying move, no rise queued before it), lit and tilted in the film's light; its status chip pulses; the code
+// at 60 fps on E.strongInOut, landing front-on and creeping on). The app window arrives on the turn itself (one
+// carrying move, no rise queued before it), lit in the film's light; its status chip pulses; the code
 // streams by line cadence (kit CodePanel in the film's mono). The camera drifts on, then whips out upward into the
 // cut. The deal's device:
 //   yaw    the camera swings round a vertical hinge to face the window
@@ -27,12 +27,12 @@ const WORLD = filmWorld(TEASER.screen);
 //          readable at a time), the camera swinging round the hinge between them
 
 /** The window (px at 1080p), its head, the turn and the code's row cadence: [60 fps frames from the stream cue, share of the rows]. */
-export const WIN = { w: 1400, h: 720, y: -40, head: 92, tilt: { x: 8, y: -9 }, turn: 22, zoom: 1.12 } as const;
+export const WIN = { w: 1400, h: 720, y: -40, head: 92, tilt: { x: 0, y: 0 }, turn: 22, zoom: 1.12 } as const;
 export const STREAM: [number, number][] = [[0, 0.01], [2, 0.05], [22, 0.1], [42, 0.35], [66, 0.6], [102, 1]];
 
-/** The window shot's camera: the turn (it opens turned and lands nearly front-on), its creep, the whip out. After a dive the shot opens still zooming in. */
+/** The window shot's camera: the turn (it opens turned and lands front-on), its creep, the whip out. After a dive the shot opens still zooming in. */
 export const windowMoves = (): { base: Shot; moves: CamMove[] } => {
-  const sw = swing3d({ at: CUE.window, axis: DEAL.window === 'pitch' ? 'pitch' : 'yaw', from: DEAL.window === 'pitch' ? 4 + WIN.turn : -(4 + WIN.turn), to: DEAL.window === 'pitch' ? 4 : -4, zoom: WIN.zoom, ...(DEAL.window === 'pitch' ? { look: { y: -30 * U } } : { pan: { x: -40 * U } }) });
+  const sw = swing3d({ at: CUE.window, axis: DEAL.window === 'pitch' ? 'pitch' : 'yaw', from: DEAL.window === 'pitch' ? 4 + WIN.turn : -(4 + WIN.turn), to: 0, zoom: WIN.zoom, ...(DEAL.window === 'pitch' ? { look: { y: -30 * U } } : { pan: { x: -40 * U } }) });
   const dive = DEAL.launch === 'dive' ? 0.6 : 1;
   const base: Shot = { ...BASE, k: dive, ...sw.start };
   const moves: CamMove[] = [

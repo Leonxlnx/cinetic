@@ -8,7 +8,7 @@ import { ContentWall, Notice, type TileNode } from '../kit';
 import { E, lmix, prog } from '../lib/anim';
 import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
-import { Cam, drift, Ground, GROUNDS, themeOf, useAbs } from './stage';
+import { Cam, Ground, HOLD, GROUNDS, themeOf, useAbs } from './stage';
 
 // PROOF - results arriving, faster and faster, by the dealt device: 'stack' piles notices in front (fx/Stack: the
 // newest rises from behind into the front slot, the older ones step back smaller), 'river' sends them flowing up through
@@ -76,7 +76,7 @@ export const Proof: React.FC = () => {
   const t = themeOf('proof');
   // the zoom-through's speed carried in: the camera settles from 1.3x (glide), then a slow push keeps the act alive
   const k = lmix(1.3, 1, prog(F, ACT.proof.from, ACT.proof.from + f60x(34), E.glideOut)) * lmix(1, 1.06, prog(F, ACT.proof.from, ACT.claim.from, E.linear));
-  const d = drift('proof', F, 300, 0.5);
+  const d = HOLD; // the hold rests between moves (no drift)
   // the wipe into the claim: a panel of the claim's ground rising from the bottom edge, covering the frame on the act line
   const wipe = prog(F, CUE.wipe, ACT.claim.from, E.launchIn);
   const n = Math.min(WALK.proof.length, TOASTS.length);
@@ -90,7 +90,7 @@ export const Proof: React.FC = () => {
         ) : DEAL.proof === 'wall' ? (
           <ContentWall nodes={nodes} frame={F} start={ACT.proof.from - Math.round(f60x(26))} tile={250 * U} stagger={3} theme={t} seed={`${WALK.name}:proof`} clear={{ w: 0, h: 0 }} />
         ) : (
-          <div style={{ position: 'absolute', inset: 0, transformOrigin: `${W / 2}px ${H / 2}px`, transform: `perspective(${2200 * U}px) rotateX(9deg) rotateY(-11deg)` }}>
+          <div style={{ position: 'absolute', inset: 0, transformOrigin: `${W / 2}px ${H / 2}px`, transform: undefined }}>
             <Stack frame={F} arrivals={[ACT.proof.from - Math.round(f60x(18)), ...TOASTS.slice(1, n)]} enter={24} x={W / 2} y={H * 0.3} width={NOTICE.w} height={NOTICE.h} render={(i) => <N i={i} />} />
           </div>
         )}

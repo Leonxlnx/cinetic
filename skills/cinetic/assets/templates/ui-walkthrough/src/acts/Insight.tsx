@@ -8,7 +8,7 @@ import { phrase } from '../lib/cadence';
 import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
 import { facePhoto, PILL_BOX, PillContent } from './Feed';
-import { drift, Ground, launchOut, ScriptLine, themeOf, useAbs } from './stage';
+import { Ground, HOLD, launchOut, ScriptLine, themeOf, useAbs } from './stage';
 
 // INSIGHT - what the product found, as one pill: the people who asked (crafted portraits), the insight, a count chip
 // that glides in on its beat and a ring that catches the light once; the line above says it in a sentence on its dealt
@@ -53,7 +53,7 @@ export const Insight: React.FC = () => {
   const dx = launchOut('insight', F, WHIP_LEFT.vCut);
   const whipV = (dx - launchOut('insight', F - 1, WHIP_LEFT.vCut)) / U;
   const k = lmix(1, 1.06, prog(F, ACT.insight.from, ACT.pick.from, E.linear));
-  const d = drift('insight', F, 90, 0.35);
+  const d = HOLD; // the hold rests between moves (no drift)
   const glint = hitPulse(F - CUE.pillGlint, 3, 10, FPS); // the pill's ring catches the light once before the whip
   return (
     <AbsoluteFill style={{ background: t.ground, overflow: 'hidden' }}>

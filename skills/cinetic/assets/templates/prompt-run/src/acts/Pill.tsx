@@ -102,8 +102,8 @@ const WallTools: React.FC<{ F: number }> = ({ F }) => {
   const tile = 260 * U;
   const n = RUN.tools.length;
   const spots = [{ x: 330, y: 250 }, { x: 960, y: 170 }, { x: 1590, y: 250 }, { x: 420, y: 860 }, { x: 1500, y: 880 }, { x: 960, y: 930 }, { x: 150, y: 560 }];
-  const far: DepthItem[] = Array.from({ length: n }, (_, k) => ({ id: `far${k}`, plane: 'far', carries: 'icon', x: spots[k].x * U, y: spots[k].y * U, w: tile, h: tile, r: tile * 0.23, rot: k % 2 ? 5 : -4, at: ACT.pill.from + f60x(4 * k) }));
-  const near: DepthItem[] = [{ id: `near${n}`, plane: 'near', carries: 'icon', x: 1820 * U, y: 960 * U, w: tile, h: tile, rot: 8, at: ACT.pill.from + f60x(10) }];
+  const far: DepthItem[] = Array.from({ length: n }, (_, k) => ({ id: `far${k}`, plane: 'far', carries: 'icon', x: spots[k].x * U, y: spots[k].y * U, w: tile, h: tile, r: tile * 0.23, at: ACT.pill.from + f60x(4 * k) }));
+  const near: DepthItem[] = [{ id: `near${n}`, plane: 'near', carries: 'icon', x: 1820 * U, y: 960 * U, w: tile, h: tile, at: ACT.pill.from + f60x(10) }];
   return (
     <DepthStack
       frame={F}

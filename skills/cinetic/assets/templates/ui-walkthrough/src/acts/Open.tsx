@@ -12,7 +12,7 @@ import { measureTracked } from '../lib/measure';
 import { ACT, copy, CUE, f60x, H, moveOf, W } from '../timeline';
 import { WALK } from '../walk';
 import { CARD, InputFace } from './Card';
-import { drift, Ground, GROUNDS, launchOut, OPEN_EXIT, themeOf, useAbs } from './stage';
+import { Ground, HOLD, GROUNDS, launchOut, OPEN_EXIT, themeOf, useAbs } from './stage';
 import { MarkLine } from './type';
 
 // OPEN - the promise, already moving on frame 0: one sentence that says what the product is, with the real mark of the
@@ -52,7 +52,7 @@ export const Open: React.FC = () => {
   const L = promiseLayout(ground, lineY);
   const lift = launchOut('open', F, OPEN_EXIT.vCut); // the whole frame, ground with it
   const v = lift - launchOut('open', F - 1, OPEN_EXIT.vCut);
-  const d = drift('open', F, 270, 0.45);
+  const d = HOLD; // the hold rests between moves (no drift)
   // the camera is already arriving on frame 0 (a settle from 1.12x over the line's move); 'line' then keeps a slow
   // linear push under the hold (the line never parks); 'push' brings its own camera, 'card' rides the card's rise
   const kIn = lmix(1.12, 1, prog(F, 0, f60x(110), E.settleOut));
@@ -76,7 +76,7 @@ export const Open: React.FC = () => {
       theme={t}
     />
   );
-  // 'card': the input's card rises into the lower third, lit and tilted, cropped by the bottom edge, while the line reads
+  // 'card': the input's card rises into the lower third, lit and facing the camera, cropped by the bottom edge, while the line reads
   const rise = prog(F, CUE.object, CUE.object + f60x(84), E.glideOut);
   const cardTop = lmix(H + 40 * U, H * 0.62, rise);
   return (
@@ -93,7 +93,7 @@ export const Open: React.FC = () => {
           ) : (
             <div style={{ position: 'absolute', inset: 0, transformOrigin: `${(DEAL.open === 'card' ? W / 2 : L.read.x).toFixed(1)}px ${lineY}px`, transform: `scale(${k.toFixed(5)})` }}>
               {DEAL.open === 'card' && F >= CUE.object && (
-                <Lit frame={F} x={W / 2} y={cardTop + CARD.h / 2} w={CARD.w} h={CARD.h} r={CARD.r} tilt={{ x: 18, y: -30 }} ground={GROUNDS.open.base} id="open-card">
+                <Lit frame={F} x={W / 2} y={cardTop + CARD.h / 2} w={CARD.w} h={CARD.h} r={CARD.r} ground={GROUNDS.open.base} id="open-card">
                   <Surface theme={themeOf('card')} w={CARD.w} h={CARD.h} tone="raised" lift={4} r={CARD.r}>
                     <InputFace w={CARD.w} h={CARD.h} />
                   </Surface>

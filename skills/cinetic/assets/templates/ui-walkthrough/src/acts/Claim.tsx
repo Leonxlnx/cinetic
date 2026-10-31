@@ -9,7 +9,7 @@ import { intoCut } from '../lib/handoff';
 import { measureTracked } from '../lib/measure';
 import { ACT, copy, CUE, FPS, H, moveOf, W } from '../timeline';
 import { WALK, withSlot } from '../walk';
-import { drift, Ground, lineSize, themeOf, useAbs } from './stage';
+import { Ground, HOLD, lineSize, themeOf, useAbs } from './stage';
 import { HeroLine, MarkLine } from './type';
 
 // CLAIM - the speed claim, by the dealt device: 'accent' sets it on the accent like a poster (fx/TypeClaim: cap 16 % of
@@ -38,7 +38,7 @@ export const Claim: React.FC = () => {
   const t = themeOf('claim');
   const c = copy('claim');
   const out = lmix(1, CLAIM_EXIT.k, intoCut(F, ACT.field.from, 30, FPS)); // the push into the cut
-  const d = drift('claim', F, 180, 0.4);
+  const d = HOLD; // the hold rests between moves (no drift)
   const size = lineSize(c.text, 'display', 0.84);
   const read = numberPoint(c.text, size, W / 2, H / 2);
   if (DEAL.claim === 'accent') {

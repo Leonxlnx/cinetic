@@ -26,12 +26,12 @@ export const WORLD = filmWorld(EXPLAIN.screen);
 /** The panel at rest (px at 1080p): the screen's size and centre. */
 export const PANEL = { w: 1360, h: 782, x: 960, y: 540 } as const;
 
-/** The turn: the screen's yaw from `from` to `to` degrees over the move, then a creep (lib/camera CAM3D numbers). */
+/** The turn: the screen turns round and lands face-on over the move (lib/camera CAM3D numbers), then a sub-pixel creep of its pan. */
 export const TURN = { from: ACT.picture.from - f60x(40), frames: f60x(140) } as const; // it starts while the pill grows, so the pill already turns
 const turnOf = (F: number) => {
   const p = prog(F, TURN.from, TURN.from + TURN.frames, E.strongInOut);
   const creep = Math.max(0, F - TURN.from - TURN.frames) / FPS;
-  return { yaw: mix(-8 - CAM3D.house, -8, p) + 0.6 * creep, pan: mix(70, 0, p) * U - 8 * creep * U };
+  return { yaw: mix(-CAM3D.house, 0, p), pitch: mix(9, 0, p), pan: mix(70, 0, p) * U - 8 * creep * U };
 };
 
 /** The screen itself, drawn at w x h (the kit's dense screen, or the supplied photo). */
@@ -49,8 +49,8 @@ const STACK: DepthItem[] = [
   { id: 'far0', plane: 'far', carries: 'data', x: 300, y: 300, w: 360, h: 360, r: 40 },
   { id: 'far1', plane: 'far', carries: 'data', x: 1640, y: 760, w: 360, h: 360, r: 40 },
   { id: 'far2', plane: 'far', carries: 'data', x: 1580, y: 250, w: 320, h: 320, r: 36 },
-  { id: 'near0', plane: 'near', carries: 'data', x: 170, y: 900, w: 300, h: 300, r: 34, tilt: { x: 8, y: 14 } },
-  { id: 'near1', plane: 'near', carries: 'data', x: 1800, y: 140, w: 280, h: 280, r: 32, tilt: { x: -8, y: -12 } },
+  { id: 'near0', plane: 'near', carries: 'data', x: 170, y: 900, w: 300, h: 300, r: 34 },
+  { id: 'near1', plane: 'near', carries: 'data', x: 1800, y: 140, w: 280, h: 280, r: 32 },
 ];
 
 /** The product moment at absolute frame F, at the full frame: its ground, the screen in its light, the device's camera. */
@@ -91,7 +91,7 @@ export const ProductScene: React.FC<{ F: number }> = ({ F }) => {
     <AbsoluteFill style={{ overflow: 'hidden' }}>
       <LitGround frame={F} spec={GROUNDS.picture} cam={{ base: { ax: W / 2, ay: H / 2, sx: W / 2, sy: H / 2, k: 1 }, shot: { ax: W / 2, ay: H / 2, sx: W / 2 + t.pan * 1.6, sy: H / 2, k: 1 } }} />
       <LightEvent F={F} act="picture" dark />
-      <Lit frame={F} x={PANEL.x * U + t.pan} y={PANEL.y * U} w={w} h={h} r={22 * U} tilt={{ x: 9, y: t.yaw }} ground={SHOT.ground} id="product">
+      <Lit frame={F} x={PANEL.x * U + t.pan} y={PANEL.y * U} w={w} h={h} r={22 * U} tilt={{ x: t.pitch, y: t.yaw }} ground={SHOT.ground} id="product">
         <Screen F={F} w={w} h={h} />
       </Lit>
     </AbsoluteFill>

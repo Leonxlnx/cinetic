@@ -12,8 +12,8 @@ import { ACT, CUE, f60x, FPS, H, W } from '../timeline';
 import { WALK } from '../walk';
 import { CENTRE, Ground, GROUNDS, themeOf, useAbs } from './stage';
 
-// PAGE - the output, live, by the dealt device: 'lit' rises one page up over the build, settling from a steep tilt onto
-// its lit tilt (fx/Lit), its preview developing and its body scrolling a little to show it is real; 'stack' lands the
+// PAGE - the output, live, by the dealt device: 'lit' rises one page up over the build, turning from a steep tilt to
+// face the camera as it lands (fx/Lit), its preview developing and its body scrolling a little to show it is real; 'stack' lands the
 // page between its siblings (the other outputs the product made) in a depth stack the camera pushes through. Then it
 // recedes and softens while the end card assembles in front of it.
 
@@ -80,13 +80,13 @@ export const Page: React.FC = () => {
               items={[
                 { id: 'far-0', plane: 'far', carries: 'ui', x: W * 0.16, y: H * 0.62, w: PAGE.w * 0.7, h: PAGE.h * 0.7, at: ACT.page.from },
                 { id: 'far-1', plane: 'far', carries: 'ui', x: W * 0.86, y: H * 0.7, w: PAGE.w * 0.7, h: PAGE.h * 0.7, at: ACT.page.from + f60x(6) },
-                { id: 'page', plane: 'mid', carries: 'ui', x: W / 2, y: top - 40 * U, w: PAGE.w, h: PAGE.h, r: 40 * U, tilt: { x: 10, y: -8 }, at: ACT.page.from },
+                { id: 'page', plane: 'mid', carries: 'ui', x: W / 2, y: top - 40 * U, w: PAGE.w, h: PAGE.h, r: 40 * U, at: ACT.page.from },
                 { id: 'near-0', plane: 'near', carries: 'ui', x: W * 0.06, y: H * 0.95, w: 520 * U, h: 380 * U, at: ACT.page.from + f60x(10) },
               ]}
               render={(id) => (id === 'page' ? <PageFace F={F} scroll={scroll} /> : id.startsWith('far') ? <PageFace F={F} seed={id} w={PAGE.w * 0.7} h={PAGE.h * 0.7} /> : <ContentTile node={{ glyph: 'check', label: WALK.page.cta, sub: WALK.page.rows[1], preview: 'list', seed: `${WALK.name}:near` }} theme={PAGE_THEME} w={520 * U} aspect={520 / 380} />)}
             />
           ) : (
-            <Lit frame={F} x={W / 2} y={top} w={PAGE.w} h={PAGE.h} r={40 * U} tilt={{ x: 11, y: -9 }} ground={GROUNDS.page.base} enter={{ at: ACT.page.from, dur60: (CUE.pageLand - ACT.page.from) * (60 / FPS) + 20, from: { y: top + H * 0.75, tilt: { x: 30, y: -14 } } }} id="page">
+            <Lit frame={F} x={W / 2} y={top} w={PAGE.w} h={PAGE.h} r={40 * U} ground={GROUNDS.page.base} enter={{ at: ACT.page.from, dur60: (CUE.pageLand - ACT.page.from) * (60 / FPS) + 20, from: { y: top + H * 0.75, tilt: { x: 30, y: -14 } } }} id="page">
               <PageFace F={F} scroll={scroll} />
             </Lit>
           )}
