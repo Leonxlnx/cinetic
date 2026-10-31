@@ -1,6 +1,7 @@
 // The line: one sentence, centred in the middle band, in the film's one voice (deal.ts voice), the key word in the
-// accent ink. Set with care: a statement's cap is 7.4 % of the frame height (the claim, the film's last line, 8.6 %),
-// its tracking tightens as it grows, a long line keeps one row at a sentence cap (6-6.4 %) or breaks into two balanced
+// accent ink. Set with care: a statement's cap is 7.4 % of the frame height (the claim, the film's last line, 8.6 % and
+// a step heavier: the statements sit a step under the type family's line weight, so the lines have a hierarchy in one
+// face), its tracking tightens as it grows, a long line keeps one row at a sentence cap (6-6.4 %) or breaks into two balanced
 // rows, never shrinks under a 6 % cap. Its text sits on its own composited layer while it is sharp (layer.tsx
 // usePromote), so the camera float and the line's slow creep move it sub-pixel; the blur voice's soft start goes
 // through layer.tsx Soft (fixed levels). Two rows part while they are read (the first drifting one way, the second the
@@ -21,7 +22,7 @@ import { Soft, usePromote } from './layer';
  * drop to on one row, the widths (one row at the target up to `width`, a sentence row up to `sentence.width`: under
  * look-audit's 61 % and 75 % lines once the read's creep has grown it), the leading of two rows and the floor.
  */
-export const LINE_TYPE = { weight: TYPE.line.weight, cap: 0.727, target: 0.074, claim: 0.086, sentence: { lo: 0.06, hi: 0.064, width: 0.72 }, width: 0.585, lead: 1.06, floor: 0.06 } as const;
+export const LINE_TYPE = { weight: Math.max(400, TYPE.line.weight - 60), claimWeight: Math.min(800, TYPE.line.weight + 80), cap: 0.727, target: 0.074, claim: 0.086, sentence: { lo: 0.06, hi: 0.064, width: 0.72 }, width: 0.585, lead: 1.06, floor: 0.06 } as const;
 /** Tracking for a display size (px): -0.01 em at 60 px tightening to -0.03 em at 130 px and over (letters kept apart). */
 export const trackFor = (size: number) => -0.01 - 0.02 * clamp((size - 60) / 70);
 
@@ -29,14 +30,16 @@ export const trackFor = (size: number) => -0.01 - 0.02 * clamp((size - 60) / 70)
 export const isClaim = (id: string) => id === `line${LAUNCH.pairs.length}`;
 
 const capPx = (cap: number) => (cap * H) / LINE_TYPE.cap;
-const widthOf = (s: string, size: number) => measureTracked(s, size, LINE_TYPE.weight, trackFor(size), FONT.text, { trailing: false });
+const widthOf = (s: string, size: number, wt: number = LINE_TYPE.weight) => measureTracked(s, size, wt, trackFor(size), FONT.text, { trailing: false });
+/** A line's weight: the claim a step heavier than the statements. */
+export const weightOf = (claim: boolean) => (claim ? LINE_TYPE.claimWeight : LINE_TYPE.weight);
 
 /** The two rows of a line broken where they balance best (the longer row as short as it can be). */
-const balance = (words: string[], size: number): [string[], string[]] => {
+const balance = (words: string[], size: number, wt: number): [string[], string[]] => {
   let best: [string[], string[]] = [words, []];
   let bw = Infinity;
   for (let i = 1; i < words.length; i++) {
-    const w = Math.max(widthOf(words.slice(0, i).join(' '), size), widthOf(words.slice(i).join(' '), size));
+    const w = Math.max(widthOf(words.slice(0, i).join(' '), size, wt), widthOf(words.slice(i).join(' '), size, wt));
     if (w < bw) [bw, best] = [w, [words.slice(0, i), words.slice(i)]];
   }
   return best;
@@ -47,16 +50,17 @@ export const lineLayout = (text: string, claim = false): { size: number; rows: n
   const words = text.split(/\s+/).filter(Boolean);
   const target = capPx(claim ? LINE_TYPE.claim : LINE_TYPE.target);
   // one row at the target
-  if (widthOf(text, target) <= W * LINE_TYPE.width) return { size: target, rows: [words.length] };
+  const wt = weightOf(claim);
+  if (widthOf(text, target, wt) <= W * LINE_TYPE.width) return { size: target, rows: [words.length] };
   // one row at a sentence cap (a statement, never the claim, which takes two rows before it gets smaller)
   if (!claim) {
-    const s = Math.min(capPx(LINE_TYPE.sentence.hi), (W * LINE_TYPE.sentence.width * 100) / widthOf(text, 100));
+    const s = Math.min(capPx(LINE_TYPE.sentence.hi), (W * LINE_TYPE.sentence.width * 100) / widthOf(text, 100, wt));
     if (s >= capPx(LINE_TYPE.sentence.lo)) return { size: s, rows: [words.length] };
   }
-  if (words.length < 2) return { size: Math.max(capPx(LINE_TYPE.floor), (W * LINE_TYPE.sentence.width * 100) / widthOf(text, 100)), rows: [1] };
+  if (words.length < 2) return { size: Math.max(capPx(LINE_TYPE.floor), (W * LINE_TYPE.sentence.width * 100) / widthOf(text, 100, wt)), rows: [1] };
   // two balanced rows at the target, shrinking only as far as they must
-  const [a, b] = balance(words, target);
-  const wide = Math.max(widthOf(a.join(' '), 100), widthOf(b.join(' '), 100));
+  const [a, b] = balance(words, target, wt);
+  const wide = Math.max(widthOf(a.join(' '), 100, wt), widthOf(b.join(' '), 100, wt));
   const size = Math.max(capPx(LINE_TYPE.floor), Math.min(target, (W * LINE_TYPE.width * 100) / wide));
   return { size, rows: [a.length, b.length] };
 };
@@ -82,14 +86,17 @@ export const Text: React.FC<{ id?: string; x: number; y: number; style: React.CS
   );
 };
 
-/** One line in the film's one voice, centred on (W/2, cy). The key word (stars in launch.ts) takes the accent ink. */
-export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyInks; cy?: number }> = ({ id, raw, F, inks, cy = H / 2 }) => {
+/** One line in the film's one voice, centred on (W/2, cy). The key word (stars in launch.ts) takes the accent ink.
+ * `life` scales its read's drift and creep: a line on a colour field (white on a mid tone, less contrast than on the
+ * dark ground) needs about twice the travel to read as alive rather than frozen. */
+export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyInks; cy?: number; life?: number }> = ({ id, raw, F, inks, cy = H / 2, life = 1 }) => {
   const c = copy(id);
   const words = keyWords(raw);
   const text = words.map((w) => w.word).join(' ');
   const { size, rows } = lineLayout(text, isClaim(id));
   const track = trackFor(size);
-  const m = (s: string) => measureTracked(s, size, LINE_TYPE.weight, track, FONT.text, { trailing: false });
+  const wt = weightOf(isClaim(id));
+  const m = (s: string) => measureTracked(s, size, wt, track, FONT.text, { trailing: false });
   const t = F - c.in;
   const k = FPS / 60;
   const voice = DEAL.voice;
@@ -97,7 +104,7 @@ export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyIn
   // on a glide
   const whole = voice === 'blur' ? E.glideOut(clamp(t / (VOICE.blur.dur * k))) : 1;
   const sigma = voice === 'blur' ? VOICE.blur.blur * clamp(1 - whole / 0.6) : 0;
-  const push = (voice === 'blur' ? mix(VOICE.blur.from, 1, whole) : 1) * (1 + LINE_CREEP * Math.max(0, t) / FPS);
+  const push = (voice === 'blur' ? mix(VOICE.blur.from, 1, whole) : 1) * (1 + (LINE_CREEP * life * Math.max(0, t)) / FPS);
   const odd = Number(id.replace(/\D/g, '')) % 2 === 1;
   const read = (F - (c.in + c.out) / 2) / FPS; // seconds from the middle of the read
   const lineH = size * LINE_TYPE.lead;
@@ -116,9 +123,9 @@ export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyIn
           if (voice === 'build') for (let i = 1; i < row.length; i++) offset += ((ends[i] - ends[i - 1]) / 2) * (1 - E.glideOut(clamp((t - (i0 + i) * VOICE.build.stagger * k) / (VOICE.build.recentre * k))));
           // the read's drift: one row drifts with the line's side; a second row drifts against it, slower (the rows part)
           const dir = (odd ? 1 : -1) * (r === 0 ? 1 : -LINE_PART);
-          const drift = dir * LINE_DRIFT * U * read;
+          const drift = dir * LINE_DRIFT * life * U * read;
           return (
-            <Text key={r} id={id} x={offset + drift} y={top + r * lineH} width={W} style={{ textAlign: 'center', fontFamily: FONT.text, fontSize: size, fontWeight: LINE_TYPE.weight, letterSpacing: `${track}em`, lineHeight: LINE_TYPE.lead, fontKerning: 'normal' }}>
+            <Text key={r} id={id} x={offset + drift} y={top + r * lineH} width={W} style={{ textAlign: 'center', fontFamily: FONT.text, fontSize: size, fontWeight: wt, letterSpacing: `${track}em`, lineHeight: LINE_TYPE.lead, fontKerning: 'normal' }}>
               {row.map((w, j) => {
                 const i = i0 + j;
                 const s = i * (voice === 'build' ? VOICE.build.stagger : VOICE.ink.stagger) * k;
