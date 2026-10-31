@@ -80,15 +80,19 @@ const shotOf = (i: number): Shot => ({ ax: centreOf(i).x, ay: centreOf(i).y, sx:
  * How far the strip steps back behind change i's words (0..1): from just before its sentence rises in until just after
  * it leaves, so the surface plays its new thing sharp on the hit, then softens and clears while the centred words are
  * read: each change line gets its own clean beat on the ground, never over busy UI. The strip comes back on the move
- * to the next change (or on the 'pull' payoff's carried pull); after the last change on a 'rise' payoff it stays clear,
- * so the version rises and the end card sets on the clean ground (no fade back: nothing on screen would carry it).
+ * to the next change (or on the 'pull' payoff's carried pull), once the words have left: their exit ends 2/60 s before
+ * that act line, so the strip starts back 8/60 s before it, still faint and soft under the last of the exit, and is
+ * whole 14/60 s after it (coming back from the words' own exit, it showed sharp under the half-gone line for a third of
+ * a second); after the last change on a 'rise' payoff it stays clear, so the version rises and the end card sets on
+ * the clean ground (no fade back: nothing on screen would carry it).
  */
 const wordsBack = (F: number) => {
   let b = 0;
   UPDATE.changes.forEach((_, i) => {
     const c = copy(`change${i + 1}`);
     const stays = i === N - 1 && DEAL.payoff === 'rise';
-    b = Math.max(b, prog(F, c.in - f60(4), c.in + f60(16), E.stdInOut) * (stays ? 1 : 1 - prog(F, changeOut(i) - f60(2), changeOut(i) + f60(18), E.stdInOut)));
+    const next = beat(BEATS.change(i + 1)); // the act line of the move to the next surface (changeOut + the exit + 2/60 s)
+    b = Math.max(b, prog(F, c.in - f60(4), c.in + f60(16), E.stdInOut) * (stays ? 1 : 1 - prog(F, next - f60(8), next + f60(14), E.stdInOut)));
   });
   return b;
 };
