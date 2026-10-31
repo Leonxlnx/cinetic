@@ -5,7 +5,8 @@
   "voice": "build",
   "ground": "nearWhite",
   "seamTA": "matchCut",
-  "seamAT": "blurThrough",
+  "seamAT": "recede",
+  "seamAA": "velocityCut",
   "end": "element",
   "camera": "drift"
  }

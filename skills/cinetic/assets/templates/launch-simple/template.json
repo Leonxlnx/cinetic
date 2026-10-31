@@ -1,26 +1,28 @@
 {
  "name": "launch-simple",
- "about": "The default launch film, 15-30 s: a line alone in the middle of a clean ground, then the product doing what the line said, then the next line, then the product again, then a centred lockup built from the last picture with the one fact under it. One text voice, one ground family, three or four seam kinds, everything fitted to the music's bars and the script's lines. The agent writes the script (src/launch.ts) and the product's scenes (src/product.tsx); the timeline, the seams, the ground, the end card and the sound plan follow. new-film.sh lays these files over the Remotion starter (the default for --format launch).",
+ "about": "The default launch film, 15-30 s: lines and pictures that meet, never a slideshow. The first line alone on a lit ground, then the product doing what it said; the next lines arrive with their pictures (the picture rising in under the line, racking into focus as it leaves); the claim alone on its colour field, the hero line; then a centred lockup built from the last picture with the one fact under it. Every change of picture carries something (a camera move across the cut, the picture falling back under the next line, one object flying from one scene into the next): the frame is never empty between two scenes. One text voice, one ground family, three or four seam kinds, everything fitted to the music's bars and the script's lines. The agent writes the script (src/launch.ts), fetches the input shot (tools/input.mjs) and writes the product's scenes (src/product.tsx); the timeline, the seams, the ground, the end card and the sound plan follow. new-film.sh lays these files over the Remotion starter (the default for --format launch).",
  "engine": "remotion",
  "pace": "crisp",
  "type_family": "bold",
  "bpm": 120,
  "end_hold": [2, 3],
  "beats": {
-  "T": "a line alone, centred in the middle band, on a clean ground: 0.5-2.4 s (about 1.3), one entry voice for the film",
+  "T": "a line alone, centred in the middle band, on a clean ground (launch.ts beat 'alone'; it builds over the last picture as that one falls back): 0.5-2.4 s (about 1.3), one entry voice for the film",
   "A": "the product or the picture acting, full frame, centred, no statement over it: 1-3.5 s, varied (a long one beside a short one)",
-  "TA": "a line over the picture's start, only where it names what the picture is doing: at most 40 % of the beats",
-  "end": "the centred lockup built from the last picture's element, the one fact under it, held 2-3 s"
+  "TA": "a line with its picture: the picture rising in under it, soft, then racking into focus as the line leaves (beat 'with'), or the line held over a picture composed round it (beat 'over'): at most 40 % of the beats",
+  "end": "the centred lockup built from the last picture's element, the one fact under it, held 2-3 s",
+  "mix": "unset, the first line and the claim alone, the lines between with; aim for about T 25 % / T+A 30 % / A 37 % (timeline.ts BEAT_MIX): one 'over' in a film of four or five lines gets there"
  },
  "deal": {
   "file": "src/deal.ts",
   "seed": "the deck's direction when scripts/deck.py dealt one in this project (it writes src/dealt.ts: one source), else the product's name (IDENTITY.name) or launch.ts seed; launch.ts pin fixes a slot by hand",
-  "print": "npx tsx -e \"import { DEAL, DEAL_SOURCE } from './src/deal'; console.log(DEAL_SOURCE); import { SEAM_PLAN, BEAT_PLAN } from './src/timeline'; console.log(DEAL, SEAM_PLAN.map((s) => s.recipe), BEAT_PLAN.map((b) => b.kind + ' ' + ((b.to - b.from) / 60).toFixed(2)))\"",
+  "print": "npx tsx -e \"import { DEAL, DEAL_SOURCE } from './src/deal'; console.log(DEAL_SOURCE); import { SEAM_PLAN, BEAT_PLAN, BEAT_MIX } from './src/timeline'; console.log(DEAL, SEAM_PLAN.map((s) => s.recipe), BEAT_PLAN.map((b) => b.kind + ' ' + ((b.to - b.from) / 60).toFixed(2)), BEAT_MIX)\"",
   "slots": {
    "voice": ["build", "blur", "ink"],
    "ground": ["nearWhite", "blackField", "whiteBand", "deepPool", "softSky", "lightDark", "gradientField"],
-   "seamTA": ["matchCut", "blurThrough", "velocityCut"],
-   "seamAT": ["blurThrough", "zoomThrough"],
+   "seamTA": ["matchCut", "velocityCut", "blurThrough"],
+   "seamAT": ["recede", "zoomThrough"],
+   "seamAA": ["velocityCut", "matchCut", "blurThrough"],
    "end": ["element", "badge"],
    "camera": ["drift", "rise"]
   }
@@ -38,8 +40,9 @@
   ]
  },
  "next": [
-  "simple launch: write the script in src/launch.ts (3-4 pairs: a line of 2-7 words and the picture that proves it; line 1 says what the product does by name; the strings each picture shows; the one fact for the end card) and the product's name in src/brand/identity.ts,",
-  "  build each picture in src/product.tsx from the product's real screens (the first one shows its core change literally: input -> output), the last one with its hero element,",
+  "simple launch: write the script in src/launch.ts (3-5 pairs: a line of 2-7 words and the picture that proves it; line 1 says what the product does by name; how each line meets its picture, `beat` alone, with or over (unset: the first and the last alone, the others with); the strings each picture shows; the one fact for the end card; `input`, the core action in plain words) and the product's name in src/brand/identity.ts,",
+  "  fetch the input shot: node tools/input.mjs (the footage recipe for launch.ts input, else a search in its words; it writes src/input.ts; --pick <n> after a look, --none \"<why>\" when no footage fits),",
+  "  build each picture in src/product.tsx from the product's real screens (the first one shows its core change literally: input -> output), each with its focus box, one object carried from scene to scene (SceneDef carry, IDEA), the last one with its hero element,",
   "  see the deal: run deck.py here once (its direction becomes src/dealt.ts, the one deal the film plays; with none, the name deals), then npx tsx -e \"import { DEAL, DEAL_SOURCE } from './src/deal'; console.log(DEAL_SOURCE, DEAL)\" (launch.ts pin fixes a slot),",
   "  then the music (below), npm run check, and a contact sheet of out/preview.mp4 against references/checks.md (the placement, beat and seam gates)"
  ],
@@ -49,6 +52,7 @@
   "src/deal.ts",
   "src/dealt.ts",
   "src/recent.ts",
+  "src/input.ts",
   "src/timeline.ts",
   "src/Film.tsx",
   "src/Root.tsx",
@@ -58,7 +62,8 @@
   "src/acts/line.tsx",
   "src/acts/ui.tsx",
   "src/brand/identity.ts",
-  "src/brand/logo.ts"
+  "src/brand/logo.ts",
+  "tools/input.mjs"
  ],
  "keep_if_present": [
   "src/brand/identity.ts",

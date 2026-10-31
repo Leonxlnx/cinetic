@@ -8,8 +8,8 @@
 //
 // Premium by default, and still one thing a frame:
 //   - The core action is REAL FOOTAGE. The first scene opens on the input shot (a person giving the input: speaking
-//     into the phone, typing, paying), found with `node scripts/assets.mjs recipe "<the input in your words>"` and saved
-//     as public/assets/input.mp4 (`get #n --to public/assets --name input --trim <start>,3`; set INPUT below). It plays
+//     into the phone, typing, paying), fetched by `node tools/input.mjs` from launch.ts `input` (the footage recipe
+//     for those words, else a search in them) into public/assets/input.mp4 and src/input.ts (INPUT reads it). It plays
 //     in a lit window graded into the film (a soft source shown smaller reads sharp), the product's listening pill on
 //     its lower edge; on the cut the window rises away, the lit phone rises in and the pill flies into its screen (one
 //     element carried across, never a hard cut). With no clip it plays the code-built fallback: the phone alone.
@@ -17,15 +17,18 @@
 //     reflection), whole in the frame, its screen light and full: the film's second value beside the dark ground.
 //     Cards are lit too (acts/ui.tsx litFace): never a flat slab, never an empty one (a card is sized by what it holds).
 //   - The picture proves the line before it: "lands on its day" shows the tasks dropping into their days.
-//   - One signature, carried through the film (SIGNATURE): the task chip the steps end on is pushed into until it is
-//     the frame (the claim's colour field, stage.tsx), and the result's progress ring closes into the mark.
+//   - One visual idea, carried through the film as one object (SceneDef `carry`, drawn by the stage between two
+//     pictures; IDEA draws it in flight when it changes form): the task the phone writes lifts off the screen and lands
+//     as the first task on the board; the task chip the steps end on is pushed into until it is the frame (the claim's
+//     colour field, stage.tsx); the result's progress ring closes into the mark (SIGNATURE).
+//   - The push closer frames `focus` (a box: x, y, w, h) inside the safe area: give every scene its box.
 //   - UI type at film size: 44 px and up (cap 3 %+), titles 60+.
 // Build the product's real screens here; acts/ui.tsx has a card, a typed field, a row that checks itself, a count, a
 // live waveform, a listening pill and a lit window. Give the picture colour where the product has it.
 import React from 'react';
 import { getStaticFiles, staticFile } from 'remotion';
 import { C, FONT, U } from './brand/tokens';
-import type { SceneDef, SceneProps } from './acts/stage';
+import { carryOpacity, type SceneDef, type SceneProps } from './acts/stage';
 import { Card, CARD, lightSurface, ListenPill, litFace, Plane, Row, surfaceInks, Txt, Window, wrapWords } from './acts/ui';
 import { usePromote } from './acts/layer';
 import { Footage } from './fx/Footage';
@@ -34,6 +37,7 @@ import { kitTheme } from './kit/theme';
 import { clamp, E, mix } from './lib/anim';
 import { mixColor } from './lib/color';
 import type { FamilyInks } from './fx/Grounds';
+import { INPUT_SHOT } from './input';
 import { LAUNCH } from './launch';
 import { FPS, H, W } from './timeline';
 
@@ -41,14 +45,14 @@ const ui = (pair: number, j: number) => LAUNCH.pairs[pair - 1]?.ui?.[j] ?? '';
 const k60 = FPS / 60; // choreography counts below are f@60
 
 /**
- * The input shot (public/ path, its size and rate from `assets.mjs probe`, the source second it starts at, the point the
- * picture is framed on). Missing file: the code-built fallback.
+ * The input shot (src/input.ts, written by tools/input.mjs: its public/ path, size and rate, the source second it starts
+ * at) and the point the picture is framed on. None fetched or none that fits: the code-built fallback.
  */
-export const INPUT = { clip: 'assets/input.mp4', w: 1920, h: 1080, fps: 30, from: 0, focus: [0.5, 0.42] as [number, number] };
-/** Whether the input clip is in public/ (read at render time; a Node import sees none). */
+export const INPUT = { ...INPUT_SHOT, focus: [0.5, 0.42] as [number, number] };
+/** Whether the input clip is fetched and in public/ (read at render time; a Node import sees none). */
 export const hasClip = () => {
   try {
-    return getStaticFiles().some((s) => s.name === INPUT.clip);
+    return INPUT_SHOT.status === 'fetched' && getStaticFiles().some((s) => s.name === INPUT.clip);
   } catch {
     return false;
   }
@@ -138,7 +142,7 @@ const screenLayout = (sw: number) => {
 
 /** The phone's light screen: the transcript arriving word by word under the listening panel (the pill, which flies in
  * and is drawn by the scene), the task landing under it as a chip in the accent, the record button live below. */
-const InputScreen: React.FC<{ f: number; sw: number; sh: number; inks: FamilyInks; saidAt: number; per: number; outAt: number; live: number; pair: number }> = ({ f, sw, sh, inks, saidAt, per, outAt, live, pair }) => {
+const InputScreen: React.FC<{ f: number; sw: number; sh: number; inks: FamilyInks; saidAt: number; per: number; outAt: number; live: number; pair: number; chipOn?: number }> = ({ f, sw, sh, inks, saidAt, per, outAt, live, pair, chipOn = 1 }) => {
   const L = screenLayout(sw);
   const bg = mixColor(lightSurface(inks), inks.dark ? inks.ground : C.ink, 0.045);
   const si = surfaceInks(inks, C.white);
@@ -160,7 +164,7 @@ const InputScreen: React.FC<{ f: number; sw: number; sh: number; inks: FamilyInk
     <div style={{ position: 'absolute', inset: 0, background: bg }}>
       <div style={{ position: 'absolute', inset: 0, transform: `translate3d(0px, ${(-creep).toFixed(3)}px, 0)` }}>
         <Spoken f={f} at={saidAt} per={per} x={L.pad} y={L.said.y} w={sw - 2 * L.pad} text={said} size={L.said.size} color={si.type} />
-        <div data-ui="" style={{ position: 'absolute', left: 0, top: 0, width: sw - 2 * L.panel.x, height: chipH, borderRadius: 26 * L.s, ...litFace(C.accent, si, { accent: true }), opacity: inn, transform: `translate3d(${L.panel.x.toFixed(3)}px, ${(chipY + rise).toFixed(3)}px, 0)` }}>
+        <div data-ui="" style={{ position: 'absolute', left: 0, top: 0, width: sw - 2 * L.panel.x, height: chipH, borderRadius: 26 * L.s, ...litFace(C.accent, si, { accent: true }), opacity: inn * chipOn, transform: `translate3d(${L.panel.x.toFixed(3)}px, ${(chipY + rise).toFixed(3)}px, 0)` }}>
           <div style={{ position: 'absolute', left: 24 * L.s, top: 26 * L.s, width: 38 * L.s, height: 38 * L.s, borderRadius: 19 * L.s, boxSizing: 'border-box', border: `${(3 * L.s).toFixed(2)}px solid ${C.white}`, background: mixColor(C.accent, C.white, chk) }}>
             <Check size={32 * L.s} color={C.accent} p={chk} width={5} />
           </div>
@@ -182,7 +186,7 @@ const InputScreen: React.FC<{ f: number; sw: number; sh: number; inks: FamilyInk
  * flies into the top of its screen, the words landing under it and the task rising out of them. Without it: the phone
  * alone from the first frame, the pill already in its screen.
  */
-const Input: React.FC<SceneProps> = ({ f, dur, hits, inks, pair, cut }) => {
+const Input: React.FC<SceneProps> = ({ f, dur, hits, inks, pair, cut, carry }) => {
   const clip = hasClip();
   const split = clip ? cut ?? Math.round(dur * 0.5) : -Infinity;
   const said = ui(pair, 0);
@@ -218,7 +222,7 @@ const Input: React.FC<SceneProps> = ({ f, dur, hits, inks, pair, cut }) => {
       )}
       <div style={{ position: 'absolute', inset: 0, opacity: enterU > 0 ? 1 : 0 }}>
         <Phone frame={f} x={P.x} y={P.y + phoneDy} w={P.w} theme={theme} ground={inks.ground} finish="silver" tilt={{ x: 3, y: -9 }} sway={false} reflect={false}>
-          <InputScreen f={f} sw={P.S.w} sh={P.S.h} inks={inks} saidAt={saidAt} per={per} outAt={outAt} live={live} pair={pair} />
+          <InputScreen f={f} sw={P.S.w} sh={P.S.h} inks={inks} saidAt={saidAt} per={per} outAt={outAt} live={live} pair={pair} chipOn={carryOpacity(f, carry)} />
         </Phone>
       </div>
       <Plane z={mix(1.25, 1, fly)}>
@@ -284,7 +288,7 @@ const TaskChip: React.FC<{ x: number; y: number; w: number; h: number; lines: st
 /** Each item lands in its slot on its hit: the chips drop onto the lit columns from the camera's side (a little larger
  * and lifted, landing on a settle: a true landing), the columns' names already there. With no slots: rows on one lit
  * card, each checking itself after it arrives. */
-const Steps: React.FC<SceneProps> = ({ f, hits, inks, pair }) => {
+const Steps: React.FC<SceneProps> = ({ f, hits, inks, pair, carry }) => {
   const st = stepsOf(pair);
   const surf = lightSurface(inks);
   const si = surfaceInks(inks, surf);
@@ -311,6 +315,8 @@ const Steps: React.FC<SceneProps> = ({ f, hits, inks, pair }) => {
         const p = clamp((f - (at - 10 * k60)) / (24 * k60));
         const drop = E.settleOut(p);
         // it fades in over its first 10 f while it drops (never most of its opacity in one frame: a pop)
+        // the first task arrives carried from the phone (the stage flies it in): it shows, landed, once it is here
+        if (k === 0 && carry?.in !== undefined) return <TaskChip key={k} x={c.x} y={c.y} w={c.w} h={c.h} lines={c.lines} inks={inks} opacity={carryOpacity(f, carry)} />;
         return <TaskChip key={k} x={c.x} y={c.y} w={c.w} h={c.h} lines={c.lines} inks={inks} k={mix(1.2, 1, drop)} lift={1 - drop} opacity={E.stdInOut(clamp((f - (at - 10 * k60)) / (10 * k60)))} />;
       })}
     </>
@@ -374,12 +380,48 @@ const Result: React.FC<SceneProps> = ({ f, dur, hits, inks, pair }) => {
   );
 };
 
+// ------------------------------------------------------------------------------------------------ the carried task
+
+/** The task chip on the phone's screen as it leaves (scene px; the phone held still at its place). */
+const inputChip = (pair: number) => {
+  const P = phoneBox();
+  const L = screenLayout(P.S.w);
+  const sl = wrapWords(ui(pair, 0), P.S.w - 2 * L.pad, L.said.size, 560, -0.015);
+  const rl = wrapWords(ui(pair, 1), P.S.w - 2 * L.panel.x - 110 * L.s, L.chip.size, 560, -0.01);
+  const chipY = L.said.y + sl.length * L.said.size * 1.16 * U + 44 * L.s;
+  return { x: P.x - P.w / 2 + P.S.x + L.panel.x, y: P.top + P.S.y + chipY - 14 * L.s, w: P.S.w - 2 * L.panel.x, h: 2 * 26 * L.s + rl.length * L.chip.size * 1.2 * U, radius: 26 * L.s, fill: 'accent' };
+};
+/** The board's first slot, where the carried task lands (scene px). */
+const stepsFirst = (pair: number) => {
+  const c = boardLayout(pair).chips[0];
+  return { x: c.x, y: c.y, w: c.w, h: c.h, radius: 24 * U, fill: 'accent' };
+};
+const pairOf = (scene: string) => LAUNCH.pairs.findIndex((p) => p.scene === scene) + 1;
+
 export const SCENES: Record<string, SceneDef> = {
-  // with the clip the change is the scene's own (footage -> device); without it the stage cuts to a closer frame
-  input: { draw: Input, cut: () => (hasClip() ? 'scene' : 'closer'), focus: { x: W / 2, y: PHONE.cy * U } },
-  // `field`: the box the claim's colour field grows out of (stage.tsx: the push into it becomes the next frame)
-  steps: { draw: Steps, field: () => stepsField(LAUNCH.pairs.findIndex((p) => p.scene === 'steps') + 1) },
-  result: { draw: Result, hero: { ...resultLayout(LAUNCH.pairs.findIndex((p) => p.scene === 'result') + 1).ring, fill: 'accent' }, focus: { x: W / 2, y: H / 2 } },
+  // with the clip the change is the scene's own (footage -> device); without it the camera pushes closer. `carry.out`:
+  // the task it writes leaves the screen for the next picture
+  input: { draw: Input, cut: () => (hasClip() ? 'scene' : 'closer'), focus: () => ({ x: W / 2 - 280 * U, y: phoneBox().top - 30 * U, w: 560 * U, h: phoneBox().h + 60 * U }), carry: { out: () => inputChip(pairOf('input')) } },
+  // `carry.in`: the task lands as the board's first chip; `field`: the box the claim's colour field grows out of
+  // (stage.tsx: the push into it becomes the next frame)
+  steps: {
+    draw: Steps,
+    focus: () => {
+      const B = boardLayout(Math.max(1, pairOf('steps')));
+      const w = B.n * B.cw + (B.n - 1) * BOARD.gap * U;
+      return { x: B.x0 - 20 * U, y: B.y0 - 20 * U, w: w + 40 * U, h: B.ch + 40 * U };
+    },
+    carry: stepsOf(Math.max(1, pairOf('steps'))).board ? { in: () => stepsFirst(pairOf('steps')) } : undefined,
+    field: () => stepsField(pairOf('steps')),
+  },
+  result: {
+    draw: Result,
+    hero: { ...resultLayout(Math.max(1, pairOf('result'))).ring, fill: 'accent' },
+    focus: () => {
+      const R = resultLayout(Math.max(1, pairOf('result')));
+      return { x: R.x - 20 * U, y: R.y - 40 * U, w: R.w + 40 * U, h: R.h + 60 * U };
+    },
+  },
 };
 /** The stand-in mark the lockup draws while brand/logo.ts keeps LOGO_STANDIN (stage.tsx): the result's ring, closed. */
 export const HERO_MARK = MarkArt;

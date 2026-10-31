@@ -1,7 +1,9 @@
 // The line: one sentence, centred in the middle band, in the film's one voice (deal.ts voice), the key word in the
-// accent ink. Set with care: a statement's cap is 7.4 % of the frame height (the claim, the film's last line, 8.6 % and
-// a step heavier: the statements sit a step under the type family's line weight, so the lines have a hierarchy in one
-// face), its tracking tightens as it grows, a long line keeps one row at a sentence cap (6-6.4 %) or breaks into two balanced
+// accent ink. Set with care, in three sizes so the lines have a hierarchy in one face: a line alone at a 7.4 % cap, a
+// line over its picture a step under it (6.6 %: it shares the frame), and the claim, the film's last line and its hero,
+// at 11.2 % and a step heavier, its last word taking the film's one contrasting entry (a snap: one frame at x2.2,
+// settling in 7 f; timeline.ts HERO). Tracking tightens as a line grows, a long line keeps one row at a sentence cap
+// (6-6.4 %) or breaks into two balanced
 // rows, never shrinks under a 6 % cap. Its text sits on its own composited layer while it is sharp (layer.tsx
 // usePromote), so the camera float and the line's slow creep move it sub-pixel; the blur voice's soft start goes
 // through layer.tsx Soft (fixed levels). Two rows part while they are read (the first drifting one way, the second the
@@ -14,7 +16,7 @@ import { mixColor } from '../lib/color';
 import { measureTracked } from '../lib/measure';
 import { DEAL } from '../deal';
 import { LAUNCH } from '../launch';
-import { copy, FPS, H, keyWords, VOICE, W } from '../timeline';
+import { copy, FPS, H, HERO, heroSnapAt, keyWords, PAIRS, VOICE, W } from '../timeline';
 import { Soft, usePromote } from './layer';
 
 /**
@@ -22,12 +24,14 @@ import { Soft, usePromote } from './layer';
  * drop to on one row, the widths (one row at the target up to `width`, a sentence row up to `sentence.width`: under
  * look-audit's 61 % and 75 % lines once the read's creep has grown it), the leading of two rows and the floor.
  */
-export const LINE_TYPE = { weight: Math.max(400, TYPE.line.weight - 60), claimWeight: Math.min(800, TYPE.line.weight + 80), cap: 0.727, target: 0.074, claim: 0.086, sentence: { lo: 0.06, hi: 0.064, width: 0.72 }, width: 0.585, lead: 1.06, floor: 0.06 } as const;
+export const LINE_TYPE = { weight: Math.max(400, TYPE.line.weight - 60), claimWeight: Math.min(800, TYPE.line.weight + 80), cap: 0.727, target: 0.074, over: 0.066, claim: 0.112, claimWidth: 0.72, sentence: { lo: 0.06, hi: 0.064, width: 0.72 }, width: 0.585, lead: 1.06, floor: 0.06 } as const;
 /** Tracking for a display size (px): -0.01 em at 60 px tightening to -0.03 em at 130 px and over (letters kept apart). */
 export const trackFor = (size: number) => -0.01 - 0.02 * clamp((size - 60) / 70);
 
-/** The film's claim: its last line, set larger. */
+/** The film's claim: its last line, the hero, set largest. */
 export const isClaim = (id: string) => id === `line${LAUNCH.pairs.length}`;
+/** A line that shares the frame with its picture (launch.ts beat with or over): a step smaller. */
+export const isOver = (id: string) => PAIRS[Number(id.replace(/\D/g, '')) - 1]?.mode !== 'alone';
 
 const capPx = (cap: number) => (cap * H) / LINE_TYPE.cap;
 const widthOf = (s: string, size: number, wt: number = LINE_TYPE.weight) => measureTracked(s, size, wt, trackFor(size), FONT.text, { trailing: false });
@@ -46,12 +50,12 @@ const balance = (words: string[], size: number, wt: number): [string[], string[]
 };
 
 /** How a line is set: its size (px) and its rows (word counts per row). Browser only (it measures with the film's face). */
-export const lineLayout = (text: string, claim = false): { size: number; rows: number[] } => {
+export const lineLayout = (text: string, claim = false, over = false): { size: number; rows: number[] } => {
   const words = text.split(/\s+/).filter(Boolean);
-  const target = capPx(claim ? LINE_TYPE.claim : LINE_TYPE.target);
-  // one row at the target
+  const target = capPx(claim ? LINE_TYPE.claim : over ? LINE_TYPE.over : LINE_TYPE.target);
+  // one row at the target (the hero line may run wider: it is the one big line)
   const wt = weightOf(claim);
-  if (widthOf(text, target, wt) <= W * LINE_TYPE.width) return { size: target, rows: [words.length] };
+  if (widthOf(text, target, wt) <= W * (claim ? LINE_TYPE.claimWidth : LINE_TYPE.width)) return { size: target, rows: [words.length] };
   // one row at a sentence cap (a statement, never the claim, which takes two rows before it gets smaller)
   if (!claim) {
     const s = Math.min(capPx(LINE_TYPE.sentence.hi), (W * LINE_TYPE.sentence.width * 100) / widthOf(text, 100, wt));
@@ -93,13 +97,20 @@ export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyIn
   const c = copy(id);
   const words = keyWords(raw);
   const text = words.map((w) => w.word).join(' ');
-  const { size, rows } = lineLayout(text, isClaim(id));
+  const hero = isClaim(id);
+  const { size, rows } = lineLayout(text, hero, isOver(id));
   const track = trackFor(size);
-  const wt = weightOf(isClaim(id));
+  const wt = weightOf(hero);
   const m = (s: string) => measureTracked(s, size, wt, track, FONT.text, { trailing: false });
   const t = F - c.in;
   const k = FPS / 60;
   const voice = DEAL.voice;
+  // the hero line's last word: hidden until its snap (one frame at HERO.from x, settling in HERO.settle), a frame-whole
+  // state (sub-frames never disagree on whether it is in)
+  const last = words.length - 1;
+  const snap = heroSnapAt(words.length) * k;
+  const snapQ = Math.round(t) - snap;
+  const snapScale = snapQ < 0 ? 1 : 1 + (HERO.from - 1) * (1 - E.snapOut(clamp(snapQ / (HERO.settle * k))));
   // the blur voice: the whole line out of a 12 px blur, gone by 60 % of its settle (still moving), settling from 104 %
   // on a glide
   const whole = voice === 'blur' ? E.glideOut(clamp(t / (VOICE.blur.dur * k))) : 1;
@@ -120,7 +131,9 @@ export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyIn
           // re-centre (build): each new word of the row pushes it half its width left, settling on a glide (24 f)
           const ends = row.map((_, i) => m(row.slice(0, i + 1).map((w) => w.word).join(' ')));
           let offset = 0;
-          if (voice === 'build') for (let i = 1; i < row.length; i++) offset += ((ends[i] - ends[i - 1]) / 2) * (1 - E.glideOut(clamp((t - (i0 + i) * VOICE.build.stagger * k) / (VOICE.build.recentre * k))));
+          // the hero line is set in its final place from its first word (its entry is the snap, not the re-centre): the
+          // last word lands in the room the line kept for it
+          if (voice === 'build' && !hero) for (let i = 1; i < row.length; i++) offset += ((ends[i] - ends[i - 1]) / 2) * (1 - E.glideOut(clamp((t - (i0 + i) * VOICE.build.stagger * k) / (VOICE.build.recentre * k))));
           // the read's drift: one row drifts with the line's side; a second row drifts against it, slower (the rows part)
           const dir = (odd ? 1 : -1) * (r === 0 ? 1 : -LINE_PART);
           const drift = dir * LINE_DRIFT * life * U * read;
@@ -130,7 +143,8 @@ export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyIn
                 const i = i0 + j;
                 const s = i * (voice === 'build' ? VOICE.build.stagger : VOICE.ink.stagger) * k;
                 const p = clamp((t - s) / ((voice === 'build' ? VOICE.build.fade : VOICE.ink.fade) * k));
-                const a = voice === 'blur' ? 1 : E.snapOut(p);
+                const snapped = hero && i === last;
+                const a = snapped ? (snapQ >= 0 ? 1 : 0) : voice === 'blur' ? 1 : E.snapOut(p);
                 const inked = voice === 'ink' ? E.softOut(clamp((t - s) / (VOICE.ink.ink * k))) : 1;
                 const col = w.key ? inks.accent : inks.type;
                 const color = voice === 'ink' ? mixColor(mixColor(inks.type, inks.ground, 0.72), col, inked) : col;
@@ -139,7 +153,7 @@ export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyIn
                 return (
                   <React.Fragment key={j}>
                     {j > 0 ? ' ' : ''}
-                    <span style={{ display: 'inline-block', color, opacity: a, transform: `translate3d(0px, ${rise.toFixed(3)}px, 0)` }}>{w.word}</span>
+                    <span style={{ display: 'inline-block', color: snapped ? col : color, opacity: a, transformOrigin: '50% 62%', transform: snapped ? `scale(${snapScale.toFixed(4)})` : `translate3d(0px, ${rise.toFixed(3)}px, 0)` }}>{w.word}</span>
                   </React.Fragment>
                 );
               })}

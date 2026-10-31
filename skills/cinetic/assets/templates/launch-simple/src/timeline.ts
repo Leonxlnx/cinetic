@@ -1,5 +1,5 @@
-// The single source of truth for time, for a simple launch: a line alone, the product acting, the next line, the
-// product again ... the lockup. The script lives in src/launch.ts, the choices in src/deal.ts; everything below is
+// The single source of truth for time, for a simple launch: lines that meet their pictures (alone, with or over
+// them), every change of picture carried, then the lockup. The script lives in src/launch.ts, the choices in src/deal.ts; everything below is
 // derived from them and from the music, so a new script, a new track or a new tempo needs no edit here. Picture
 // (src/acts), sound (src/sync.ts -> out/cues.json) and QA (scripts/grid-check.ts) all import this file. Think in beats,
 // never in seconds. Keep it free of React and CSS imports: Node scripts load it directly.
@@ -62,6 +62,16 @@ export const VOICE = {
 } as const;
 export const resolveOf = (n: number): number =>
   DEAL.voice === 'build' ? VOICE.build.stagger * (n - 1) + Math.max(VOICE.build.fade, VOICE.build.recentre) : DEAL.voice === 'blur' ? VOICE.blur.dur : VOICE.ink.stagger * (n - 1) + VOICE.ink.ink;
+/**
+ * The hero line (the claim, the film's last line) takes the film's one contrasting entry: its words arrive in the voice,
+ * then after a `pause` its last word snaps in, one frame at `from` x its size, settling in `settle` (f@60).
+ */
+export const HERO = { pause: 8, settle: 7, from: 2.2 } as const;
+/** When the hero line's last word snaps in, f@60 from the line's first frame (n words). */
+export const heroSnapAt = (n: number): number =>
+  (DEAL.voice === 'blur' ? Math.round(VOICE.blur.dur * 0.6) : (DEAL.voice === 'build' ? VOICE.build.stagger : VOICE.ink.stagger) * Math.max(0, n - 1)) + HERO.pause;
+/** When a line of n words is whole, f@60 from its first frame: the hero line once its last word has settled. */
+export const resolveLine = (n: number, hero: boolean): number => (hero ? Math.max(n > 1 ? resolveOf(n - 1) : 0, heroSnapAt(n) + HERO.settle) : resolveOf(n));
 
 /** The script's words on screen: the stars that mark a key word are not drawn. */
 export const plain = (s: string) => s.replace(/\*/g, '');
@@ -78,46 +88,65 @@ export const keyWords = (s: string): { word: string; key: boolean }[] => {
   return out;
 };
 
-// ---- The beat plan: every pair is a line beat (T, or T+A when the line sits over the picture's start) then a picture
-// beat (A), each on the track's 8ths; the pairs together end on a bar line, then the end in whole bars, then the tail.
-// Two acts: the pairs and the end (an act line re-draws the whole frame, so it never falls on a seam's cut).
+// ---- The beat plan. Never a slideshow: a line meets its picture one of three ways (launch.ts `beat`):
+//   alone  T then A: the line alone on the ground (it builds over the last picture as that one leaves, so the frame is
+//          never empty), then its picture
+//   with   TA then A: the line arrives with its picture's first motion, in front of it (the picture behind, soft and
+//          low), and leaves as the picture racks into focus and plays on alone: one shot, no cut
+//   over   TA: the line holds over its whole picture, the picture composed round the line's band (logos round a line,
+//          footage under it)
+// Unset: the first line and the claim (the last line) stand alone, the lines between arrive with their pictures, so the
+// beats mix about T 20-33 % / T+A 17-30 % / A 50 % (one `over` brings A to about 37 %). Each beat sits on the track's
+// 8ths; the pairs together end on a bar line, then the end in whole bars, then the tail. Two acts: the pairs and the end
+// (an act line re-draws the whole frame, so it never falls on a seam's cut).
 const SEC = (s: number) => s * FPS;
-const LINE = { min: 0.5, max: 2.4 } as const; // a line alone holds 0.5-2.4 s (house: about 1.3)
+const LINE = { min: 0.5, max: 2.4 } as const; // a line beat holds 0.5-2.4 s (house: about 1.3)
 const PIC = { min: 1, max: 3.5, house: [2.6, 1.6, 2.2, 3.0] } as const; // a picture beat runs 1-3.5 s; unset, they vary (a long one beside a short one)
 const SEAM_OUT = 14; // f@60 the outgoing line needs inside its beat for the seam (the longest line exit, blurThrough)
+/** f@60: a line over a picture leaves on its own (it lifts and softens away) while the picture racks into focus. */
+export const LINE_EXIT = 16;
 const LEAD = 0; // f@60 between a line's beat and its first word: the seam brings the line in, its first word on the cue
+/** f@60 a line held over its whole picture (over) is gone before the picture's seam out begins. */
+const OVER_TAIL = 6;
 
 export type BeatKind = 'T' | 'TA' | 'A' | 'end';
 export type BeatPlan = { id: string; kind: BeatKind; from: number; to: number; pair: number };
+export type Mode = 'alone' | 'with' | 'over';
 
 const P = LAUNCH.pairs;
 if (P.length < 2 || P.length > 6) throw new Error(`timeline: launch.ts has ${P.length} pairs; a simple launch has 2-6 (3-4 is typical)`);
 // a key word on at most 60 % of the lines (the accent ink is the emphasis; on every line it is decoration)
 const keyed = P.filter((p) => /\*/.test(p.line)).length;
 if (keyed > 0.6 * P.length) throw new Error(`timeline: ${keyed} of ${P.length} lines mark a key word; keep it to at most 60 % (launch.ts: drop the stars on one line)`);
+/** How each line meets its picture: launch.ts `beat`, else the first line and the claim alone, the lines between with. */
+export const MODES: Mode[] = P.map((p, i): Mode => p.beat ?? (i === 0 || i === P.length - 1 ? 'alone' : 'with'));
 // lengths in half beats (8ths): a line's beat is its build, its read and its exit, rounded up; a picture's is its seconds
+// (with: the picture alone after the line; over: the line and the picture together, the longer of the two)
 const HALF = BEAT / 2;
 const beatsOf = P.map((p, i) => {
   const n = wordCount(plain(p.line));
-  const need = f60(LEAD + resolveOf(n)) + f60(holdFor(n, pace)) + f60(SEAM_OUT);
-  if (need > SEC(LINE.max)) throw new Error(`timeline: "${plain(p.line)}" needs ${(need / FPS).toFixed(2)} s; a line alone holds at most ${LINE.max} s: shorten it`);
-  const t = Math.max(Math.ceil(need / HALF), Math.ceil(SEC(LINE.min) / HALF));
+  const mode = MODES[i];
+  const need = f60(LEAD + resolveLine(n, i === P.length - 1)) + f60(holdFor(n, pace)) + f60(mode === 'alone' ? SEAM_OUT : mode === 'over' ? LINE_EXIT + OVER_TAIL : LINE_EXIT);
+  if (need > SEC(LINE.max)) throw new Error(`timeline: "${plain(p.line)}" needs ${(need / FPS).toFixed(2)} s; a line beat holds at most ${LINE.max} s: shorten it`);
   const want = Math.min(PIC.max, Math.max(PIC.min, p.seconds ?? PIC.house[i % PIC.house.length]));
   let a = Math.max(2, Math.round(SEC(want) / HALF));
   while (a * HALF < SEC(PIC.min)) a++;
-  return { t, a };
+  let t = Math.max(Math.ceil(need / HALF), Math.ceil(SEC(LINE.min) / HALF));
+  // over: one beat, the line held over the whole picture (never shorter than the line needs)
+  if (mode === 'over') (t = Math.max(t, a)), (a = 0);
+  return { t, a, mode };
 });
 // the pairs end on a bar line (the end starts on a downbeat): the spare 8ths go to the pictures, last first, while they
-// stay under 3.5 s, then to the lines while they stay under 2.4 s, then to the last picture
+// stay under 3.5 s, then to the last picture (never to a line: a finished line held longer only freezes)
 {
   let spare = (8 - (beatsOf.reduce((n, x) => n + x.t + x.a, 0) % 8)) % 8;
-  for (let pass = 0; pass < 2 && spare > 0; pass++)
-    for (let i = beatsOf.length - 1; i >= 0 && spare > 0; i--) {
-      const x = beatsOf[i];
-      if (pass === 0 && (x.a + 1) * HALF <= SEC(PIC.max) + 0.5) (x.a++, spare--);
-      else if (pass === 1 && (x.t + 1) * HALF <= SEC(LINE.max) + 0.5) (x.t++, spare--);
-    }
-  beatsOf[beatsOf.length - 1].a += spare;
+  for (let i = beatsOf.length - 1; i >= 0 && spare > 0; i--) {
+    const x = beatsOf[i];
+    if (x.a > 0 && (x.a + 1) * HALF <= SEC(PIC.max) + 0.5) (x.a++, spare--);
+  }
+  const last = beatsOf[beatsOf.length - 1];
+  if (last.a > 0) last.a += spare;
+  else last.t += spare;
 }
 // the end: the element lands as the mark (18 f), the name slides out (30 f) and is read (24 + 36 f), the fact under it
 // is built and read; from the frame all of it is whole the lockup holds 2-3 s (house 2.5) to the end
@@ -135,8 +164,16 @@ for (const x of beatsOf) {
 }
 const endBeat = acc / 2;
 const lastBeat = endBeat + endBars * 4;
-/** Each pair: its first frame (the line), the cut to the picture, its last frame. */
-export const PAIRS = P.map((_, i) => ({ k: i + 1, from: i === 0 ? 0 : bt(startH[i] / 2), ta: bt((startH[i] + beatsOf[i].t) / 2), to: bt((startH[i] + beatsOf[i].t + beatsOf[i].a) / 2) }));
+/**
+ * Each pair: its first frame (the line), the end of its line beat (alone: the cut to the picture; with: the line gone,
+ * the picture racked into focus and playing on alone; over: the pair's end), its last frame, how the line meets the
+ * picture and the picture's first frame (alone: the cut; with and over: the line's first frame, the picture under it).
+ */
+export const PAIRS = P.map((_, i) => {
+  const from = i === 0 ? 0 : bt(startH[i] / 2);
+  const ta = bt((startH[i] + beatsOf[i].t) / 2);
+  return { k: i + 1, from, ta, to: bt((startH[i] + beatsOf[i].t + beatsOf[i].a) / 2), mode: MODES[i], pic: MODES[i] === 'alone' ? ta : from };
+});
 export const TOTAL = bt(lastBeat) + TAIL;
 
 /**
@@ -152,22 +189,31 @@ export type ActName = string;
 /** Bars in the body: track.py edit --bars takes this number. */
 export const BARS = lastBeat / 4;
 
+/**
+ * The push closer (CUE a<pair>cut): a real camera move, never a one-frame jump. `dur` f@60 on E.strongInOut from the
+ * cue, to `max` at most (and `min` at least, or no push), framing the scene's focus box with `margin` of the frame on
+ * every side (the safe area); its text re-drawn sharp once it lands.
+ */
+export const PUSH = { dur: 24, max: 1.22, min: 1.08, margin: 0.05 } as const;
+
 // ---- Cues (absolute frames on the 16th grid). Picture code reads these; src/sync.ts turns them into sound.
 export const CUE: Record<string, number> = {};
 P.forEach((p, i) => {
   const k = i + 1;
   const pr = PAIRS[i];
   CUE[`line${k}`] = i === 0 ? (b(1) <= f60(54) ? b(1) : 0) : pr.from; // the first line is on screen by 1 s (frame 0 when the track's first downbeat comes later)
-  CUE[`ta${k}`] = pr.ta; // line -> picture
-  const a0 = (startH[i] + beatsOf[i].t) / 2; // the picture's first beat
-  const len = beatsOf[i].a / 2;
+  CUE[`ta${k}`] = pr.ta; // alone: line -> picture; with: the line leaves, the picture racks into focus
+  // the picture's own moments land where it is seen whole: after its line (alone, with), or across it (over)
+  const over = MODES[i] === 'over';
+  const a0 = (startH[i] + (over ? 0 : beatsOf[i].t)) / 2; // the first beat the picture plays alone (over: the pair's first)
+  const len = (over ? beatsOf[i].t : beatsOf[i].a) / 2;
   const hitBeats = (p.hits ?? [0.35]).map((h) => Math.max(0.25, Math.min(len - 0.5, Math.round(h * len * 4) / 4)));
   hitBeats.forEach((x, j) => (CUE[`a${k}h${j + 1}`] = bt(a0 + x)));
-  // a picture beat over 2.2 s cuts once to a closer frame of the same shot (x1.45 in one frame about the scene's focus,
-  // a crop that bleeds past the frame, still pushing: a cut-in), on the beat nearest its middle that keeps 0.6 s each
-  // side: shots of 1-2 s, and two framings of the product's moment
+  // a picture beat over 2.2 s takes the camera closer once: an eased push (PUSH: 24 f@60 on a strong in-out, about the
+  // scene's focus box, which stays inside the safe area), starting on the beat nearest its middle that keeps 0.6 s each
+  // side: two framings of the product's moment, never a one-frame jump. A line over the picture keeps the wide frame.
   const cuts: number[] = [];
-  if (len * BEAT > SEC(2.2)) {
+  if (!over && len * BEAT > SEC(2.2)) {
     // on a beat that sounds (a track accent or a downbeat within 100 ms; any beat before the track is in), the one
     // nearest the middle that keeps 0.6 s each side and is not the picture's own moment; none: no cut, the push goes on
     const lo = SEC(0.6) / BEAT;
@@ -214,35 +260,79 @@ CUE.lockup = onGridUp(CUE.name + f60(END_PRE.slide)); // the lockup is whole and
 CUE.close = onGridUp(CUE.name + f60(END_PRE.read) + rest); // the one fact rises under it, once the name is read
 CUE.last = bt(lastBeat);
 
-// The seam plan: the dealt kind and its next choice take turns at each kind of change, so no kind runs over 45 % of
-// them; into the end, the element carried into the mark.
-export type SeamRecipe = 'exitEnter' | 'textSwap' | 'matchCut' | 'velocityCut' | 'blurThrough' | 'zoomThrough' | 'sharedElement';
-export type SeamPlan = { recipe: SeamRecipe; at: number; dir?: 'left' | 'right' | 'up' | 'down'; id: string; from: number; to: number };
-// line -> picture may carry speed (the outgoing line is whole and the picture is whole on its first frame); picture ->
-// line never does (the incoming line builds from nothing), so the picture blurs away or the camera pushes through it
-const ALT_TA: Record<string, SeamRecipe> = { matchCut: 'blurThrough', blurThrough: 'matchCut', velocityCut: 'matchCut' };
-const ALT_AT: Record<string, SeamRecipe> = { blurThrough: 'zoomThrough', zoomThrough: 'blurThrough' };
-const KIND: Record<SeamRecipe, SeamKind> = { exitEnter: 'breath', textSwap: 'defocus', matchCut: 'morph', velocityCut: 'velocity', blurThrough: 'defocus', zoomThrough: 'zoomThrough', sharedElement: 'morph' };
-/** Every change of beat and how it is carried: the stage draws each with fx/Seam, SEAMS declares them. */
+//** The beat plan (grid-check `beats`): what each stretch of the film is, a line alone, a line over a picture, a picture, the end. */
+export const BEAT_PLAN: BeatPlan[] = [];
+P.forEach((_, i) => {
+  const k = i + 1;
+  const pr = PAIRS[i];
+  if (pr.mode === 'over') return void BEAT_PLAN.push({ id: `line${k}`, kind: 'TA', from: pr.from, to: pr.to, pair: k });
+  BEAT_PLAN.push({ id: `line${k}`, kind: pr.mode === 'with' ? 'TA' : 'T', from: pr.from, to: pr.ta, pair: k });
+  BEAT_PLAN.push({ id: `pic${k}`, kind: 'A', from: pr.ta, to: pr.to, pair: k });
+});
+BEAT_PLAN.push({ id: 'end', kind: 'end', from: ACT.end.from, to: TOTAL, pair: 0 });
+/** The share of each beat kind in the body (T, TA, A, in %), for the plan print and the review: about 25 / 30 / 37. */
+export const BEAT_MIX = (() => {
+  const body = BEAT_PLAN.filter((x) => x.kind !== 'end');
+  const share = (k: BeatKind) => Math.round((100 * body.filter((x) => x.kind === k).length) / Math.max(1, body.length));
+  return { T: share('T'), TA: share('TA'), A: share('A') };
+})();
+
+// The seam plan: every change of picture carries something, and the frame is never empty between two scenes.
+//   line -> picture (T -> A)      seamTA: matchCut (the word slot holds the centre across the cut, the picture grows
+//                                 on), velocityCut (the line leaves at speed, the picture arrives on it), blurThrough
+//   picture -> line (A -> T)      seamAT: recede (the picture falls back, softening, while the line builds over it) or
+//                                 zoomThrough (the camera pushes into the picture's focus, the line building over the
+//                                 push); never a picture blurred away to an empty ground
+//   picture -> picture (A -> TA)  seamAA: velocityCut (one camera move carried across the cut), matchCut (the focus
+//                                 point holds its place, the ground kept), blurThrough (the cut inside a blur); the
+//                                 film's carried element (product.tsx IDEA) flies between the two scenes over any of
+//                                 them (a push through would fill the frame with the outgoing picture and lose the
+//                                 ground: the incoming picture rises in under its line, never at the push's anchor)
+//   out of the claim              velocityCut: the claim's colour field sweeps off at speed (a ground flip carried by
+//                                 motion, never a match cut across it)
+//   into the end                  the last picture's element carried into the mark
+// A line over its picture (with) leaves on its own and the picture racks into focus: one shot, no seam. The dealt kind
+// and its next choice take turns at each kind of change, and no kind runs over 45 % of them.
+export type SeamRecipe = 'exitEnter' | 'textSwap' | 'matchCut' | 'velocityCut' | 'blurThrough' | 'zoomThrough' | 'sharedElement' | 'recede';
+export type SeamClass = 'TA' | 'AT' | 'AA' | 'end';
+export type SeamPlan = { recipe: SeamRecipe; at: number; dir?: 'left' | 'right' | 'up' | 'down'; id: string; from: number; to: number; cls: SeamClass };
+type Change = Exclude<SeamClass, 'end'>;
+const ALT: Record<Change, Record<string, SeamRecipe>> = {
+  TA: { matchCut: 'velocityCut', velocityCut: 'matchCut', blurThrough: 'matchCut' },
+  AT: { recede: 'zoomThrough', zoomThrough: 'recede' },
+  AA: { velocityCut: 'matchCut', matchCut: 'velocityCut', blurThrough: 'velocityCut' },
+};
+const OPTIONS: Record<Change, SeamRecipe[]> = { TA: ['matchCut', 'velocityCut', 'blurThrough'], AT: ['recede', 'zoomThrough'], AA: ['velocityCut', 'matchCut', 'blurThrough'] };
+const KIND: Record<SeamRecipe, SeamKind> = { exitEnter: 'breath', textSwap: 'defocus', matchCut: 'morph', velocityCut: 'velocity', blurThrough: 'defocus', zoomThrough: 'zoomThrough', sharedElement: 'morph', recede: 'breath' };
+/** Every change of picture and how it is carried: the stage draws each, SEAMS declares them. */
 export const SEAM_PLAN: SeamPlan[] = [];
 {
   const list: SeamPlan[] = [];
-  let ta = 0;
-  let at = 0;
+  const turn: Record<Change, number> = { TA: 0, AT: 0, AA: 0 };
+  const deal = { TA: DEAL.seamTA, AT: DEAL.seamAT, AA: DEAL.seamAA } as Record<Change, SeamRecipe>;
+  const pick = (c: Change) => (turn[c]++ % 2 === 0 ? deal[c] : ALT[c][deal[c]]);
+  const beat = (id: string) => BEAT_PLAN.findIndex((x) => x.id === id);
+  let side = 0;
+  const dirOf = (r: SeamRecipe): SeamPlan['dir'] => (r === 'velocityCut' ? (side++ % 2 ? 'right' : 'left') : 'up');
   P.forEach((_, i) => {
     const k = i + 1;
+    const pr = PAIRS[i];
     if (i > 0) {
-      // a pair that opens an act starts on the act line: a push through would cut there in one frame, so it blurs through
-      const r = (startH[i] % 8 === 0 ? (at++, 'blurThrough') : at++ % 2 === 0 ? DEAL.seamAT : ALT_AT[DEAL.seamAT]) as SeamRecipe;
-      list.push({ recipe: r, at: PAIRS[i].from, dir: 'up', id: `pic${i}-line${k}`, from: 2 * i - 1, to: 2 * i });
+      const into = beat(`line${k}`);
+      const cls: Change = pr.mode === 'alone' ? 'AT' : 'AA';
+      const r = pick(cls);
+      list.push({ recipe: r, at: pr.from, dir: dirOf(r), id: cls === 'AT' ? `pic${i}-line${k}` : `pic${i}-pic${k}`, from: into - 1, to: into, cls });
     }
-    const r = (ta++ % 2 === 0 ? DEAL.seamTA : ALT_TA[DEAL.seamTA]) as SeamRecipe;
-    list.push({ recipe: r, at: CUE[`ta${k}`], dir: r === 'velocityCut' ? (k % 2 ? 'left' : 'right') : 'up', id: `line${k}-pic${k}`, from: 2 * i, to: 2 * i + 1 });
+    if (pr.mode === 'alone') {
+      // out of the claim: its colour field sweeps off at speed
+      const r = k === P.length ? 'velocityCut' : pick('TA');
+      list.push({ recipe: r, at: CUE[`ta${k}`], dir: dirOf(r), id: `line${k}-pic${k}`, from: beat(`line${k}`), to: beat(`pic${k}`), cls: 'TA' });
+    }
   });
   // into the end (on the act line, so never a cut there): the last picture's element carried into the mark (turning
   // as it goes, for the badge)
-  list.push({ recipe: 'sharedElement', at: ACT.end.from, id: 'into-the-lockup', from: 2 * P.length - 1, to: 2 * P.length });
-  // no kind over 45 %: the most used one gives way to the third choice where it repeats
+  list.push({ recipe: 'sharedElement', at: ACT.end.from, id: 'into-the-lockup', from: BEAT_PLAN.length - 2, to: BEAT_PLAN.length - 1, cls: 'end' });
+  // no kind over 45 %: the most used one gives way to another choice of its class where it repeats
   const cap = Math.floor(0.45 * list.length);
   const ACT_LINES = new Set(Object.values(ACT).map((a) => a.from));
   for (let guard = 0; guard < 8; guard++) {
@@ -250,15 +340,17 @@ export const SEAM_PLAN: SeamPlan[] = [];
     for (const s of list) n.set(KIND[s.recipe], (n.get(KIND[s.recipe]) ?? 0) + 1);
     const [top, c] = [...n.entries()].sort((x, y) => y[1] - x[1])[0];
     if (c <= cap) break;
-    // the latest seam of the top kind that can take another kind (a push through never cuts on an act line)
-    const nextOf = (x: SeamPlan) => (x.id.startsWith('line') ? (['matchCut', 'velocityCut', 'blurThrough'] as SeamRecipe[]).find((r) => KIND[r] !== top) : (['blurThrough', 'zoomThrough'] as SeamRecipe[]).find((r) => KIND[r] !== top && (r !== 'zoomThrough' || !ACT_LINES.has(x.at))));
-    const s = [...list].reverse().find((x) => KIND[x.recipe] === top && x.id !== 'into-the-lockup' && nextOf(x));
+    // the latest seam of the top kind that can take another kind
+    // the least used kind its class offers (never the top one; a push through never cuts on an act line)
+    const nextOf = (x: SeamPlan) => (x.cls === 'end' || x.id === `line${P.length}-pic${P.length}` ? undefined : OPTIONS[x.cls].filter((r) => KIND[r] !== top && (r !== 'zoomThrough' || !ACT_LINES.has(x.at))).sort((a, b) => (n.get(KIND[a]) ?? 0) - (n.get(KIND[b]) ?? 0))[0]);
+    const s = [...list].reverse().find((x) => KIND[x.recipe] === top && nextOf(x));
     if (!s) break;
     s.recipe = nextOf(s) as SeamRecipe;
-    if (s.recipe === 'velocityCut') s.dir = 'left';
+    s.dir = dirOf(s.recipe);
   }
   SEAM_PLAN.push(...list);
 }
+
 // ---- Every on-screen word of the film.
 export type Copy = {
   id: string;
@@ -274,28 +366,28 @@ export type Copy = {
 };
 /** The seam out of a line beat starts this many frames before its cut (its exit, fx/Seam seamSpan). */
 export const SEAM_LEAD: Record<string, number> = { matchCut: f60(10), exitEnter: f60(18), blurThrough: f60(14), velocityCut: f60(12) };
+/** A line after a push through starts building this many frames before the cut, over the push: never an empty frame. */
+export const LINE_EARLY: Partial<Record<SeamRecipe, number>> = { zoomThrough: f60(10) };
 const leadOf = (k: number) => SEAM_LEAD[SEAM_PLAN.find((s) => s.id === `line${k}-pic${k}`)?.recipe ?? 'exitEnter'] ?? f60(18);
+/** The frame a line starts to leave: alone, its seam's lead before the cut; with and over, its own exit, as it ends. */
+const lineOut = (i: number) => (PAIRS[i].mode === 'alone' ? CUE[`ta${i + 1}`] - leadOf(i + 1) : PAIRS[i].mode === 'with' ? PAIRS[i].ta - f60(LINE_EXIT) : PAIRS[i].to - f60(LINE_EXIT + OVER_TAIL));
 export const COPY: Copy[] = [];
 P.forEach((p, i) => {
   const k = i + 1;
   const text = plain(p.line);
-  const inF = CUE[`line${k}`] + (i === 0 ? 0 : f60(LEAD));
+  const into = SEAM_PLAN.find((s) => s.at === PAIRS[i].from && s.cls === 'AT');
+  const early = i > 0 && into ? LINE_EARLY[into.recipe] ?? 0 : 0;
+  const inF = CUE[`line${k}`] + (i === 0 ? 0 : f60(LEAD)) - early;
   // the blur voice brings a line into focus whole: its hold is read, not a per-word rate
-  COPY.push({ id: `line${k}`, text, in: inF, resolved: inF + f60(resolveOf(wordCount(text))), out: CUE[`ta${k}`] - leadOf(k), ...(DEAL.voice === 'blur' ? { reveal: 'focus' as const } : {}) });
+  COPY.push({ id: `line${k}`, text, in: inF, resolved: inF + f60(resolveLine(wordCount(text), i === P.length - 1)), out: lineOut(i), ...(DEAL.voice === 'blur' ? { reveal: 'focus' as const } : {}) });
   const pr = PAIRS[i];
-  (p.ui ?? []).forEach((u, j) => COPY.push({ id: `ui${k}.${j + 1}`, text: u, kind: 'ui', in: p.over ? pr.from : pr.ta, resolved: (p.over ? pr.from : pr.ta) + f60(20), out: pr.to }));
+  // the picture's strings are read once it is sharp: alone, from the cut; with, from the rack (soft under the line, they
+  // are not readable); over, once the line is whole
+  const read = pr.mode === 'with' ? pr.ta : pr.mode === 'over' ? COPY[COPY.length - 1].resolved : pr.pic;
+  (p.ui ?? []).forEach((u, j) => COPY.push({ id: `ui${k}.${j + 1}`, text: u, kind: 'ui', in: read, resolved: read + f60(20), out: pr.to }));
 });
 COPY.push({ id: 'wordmark', text: LAUNCH.name, kind: 'name', in: CUE.name, resolved: CUE.name + f60(END_PRE.named), out: TOTAL });
 COPY.push({ id: 'close', text: LAUNCH.close, in: CUE.close, resolved: CUE.close + f60(22), out: TOTAL, reveal: 'focus' });
-
-/** The beat plan (grid-check `beats`): what each stretch of the film is, a line alone, a line over a picture, a picture, the end. */
-export const BEAT_PLAN: BeatPlan[] = [];
-P.forEach((p, i) => {
-  const k = i + 1;
-  BEAT_PLAN.push({ id: `line${k}`, kind: p.over ? 'TA' : 'T', from: PAIRS[i].from, to: PAIRS[i].ta, pair: k });
-  BEAT_PLAN.push({ id: `pic${k}`, kind: 'A', from: PAIRS[i].ta, to: PAIRS[i].to, pair: k });
-});
-BEAT_PLAN.push({ id: 'end', kind: 'end', from: ACT.end.from, to: TOTAL, pair: 0 });
 
 // ---- Declarations: what the picture does on purpose (grid-check validates them; export-cues writes them).
 export type BlurPolicy = 'crisp' | 'camera';
@@ -316,13 +408,16 @@ export type Salience = 'copy' | 'hit' | 'cut' | 'move' | 'life';
 
 export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'launch', oneTake: false, whiteWorld: false };
 
-/** The seams, as fx/Seam seamDeclares writes them (kind from the recipe, the recipe in the id). */
-/** The seams, as fx/Seam seamDeclares writes them (kind from the recipe, the recipe in the id), and the cuts to a closer
- * frame: a hard cut in one frame (the ground kept, the scene's focus held), never a move that has to land. */
-const PUNCH: Seam[] = Object.keys(CUE).filter((k) => /^a\d+cut$/.test(k)).map((k) => ({ at: CUE[k], kind: 'hard', id: `punchIn:pic${k.slice(1, -3)}` }));
-export const SEAMS: Seam[] = [...PUNCH, ...SEAM_PLAN.map((s) => {
+/**
+ * The seams, as fx/Seam seamDeclares writes them (kind from the recipe, the recipe in the id), and the focus pulls: a
+ * line over its picture (with) leaves and the picture racks into focus, one shot changing from the line beat to the
+ * picture beat without a cut (a defocus seam, `rack:`). The push closer is a camera move inside its shot (PUSH), not a
+ * seam.
+ */
+const RACKS: Seam[] = PAIRS.filter((p) => p.mode === 'with').map((p) => ({ at: p.ta, kind: 'defocus', carry: 'scale', id: `rack:line${p.k}-pic${p.k}` }));
+export const SEAMS: Seam[] = [...RACKS, ...SEAM_PLAN.map((s) => {
   const axis = s.dir === 'left' || s.dir === 'right' ? 'x' : 'y';
-  const carry = ({ matchCut: 'scale', velocityCut: axis, blurThrough: 'scale', zoomThrough: 'scale', sharedElement: 'shape' } as Partial<Record<SeamRecipe, Seam['carry']>>)[s.recipe];
+  const carry = ({ matchCut: 'scale', velocityCut: axis, blurThrough: 'scale', zoomThrough: 'scale', sharedElement: 'shape', recede: 'scale' } as Partial<Record<SeamRecipe, Seam['carry']>>)[s.recipe];
   const out: Seam = { at: s.at, kind: KIND[s.recipe], id: `${s.recipe}:${s.id}` };
   if (carry) out.carry = carry;
   if (s.recipe === 'velocityCut' || s.recipe === 'exitEnter') out.dir = s.dir === 'left' || s.dir === 'up' ? -1 : 1;
@@ -330,15 +425,21 @@ export const SEAMS: Seam[] = [...PUNCH, ...SEAM_PLAN.map((s) => {
   return out;
 })].sort((x, y) => x.at - y.at);
 export const STEPPED: SteppedRange[] = [];
-export const FLASHES: Flash[] = [];
+/** The hero line's snap (its last word one frame at HERO.from x, timeline HERO): the film's one designed flash. */
+export const FLASHES: Flash[] = (() => {
+  const c = COPY.find((x) => x.id === `line${P.length}`) as Copy;
+  return [{ f: c.in + Math.round(f60x(heroSnapAt(wordCount(c.text)))), frames: 1, id: 'hero-snap' }];
+})();
 export const CAMERA_BLUR: CameraBlurRange[] = [];
 /**
- * The ground family's one colour event: the white-with-a-band family floods the middle line's beat with the band's
- * colour (that line sits on the colour field); the light-then-dark family turns dark at the middle pair and stays.
+ * The ground family's one colour event: the white-with-a-band family floods the claim's beat with the band's colour
+ * (the claim, alone, sits on the colour field, as the other families' claim sits on the accent field the scene before
+ * it grows: stage.tsx FIELD); the light-then-dark family turns dark at the middle pair and stays.
  */
 const mid = Math.floor(P.length / 2) + 1;
+const claimAlone = MODES[P.length - 1] === 'alone';
 export const COLOUR: ColourRange[] =
-  DEAL.ground === 'whiteBand' ? [{ from: PAIRS[mid - 1].from, to: PAIRS[mid - 1].ta, id: 'band-flood' }]
+  DEAL.ground === 'whiteBand' ? [claimAlone ? { from: PAIRS[P.length - 1].from, to: PAIRS[P.length - 1].ta, id: 'band-flood' } : { from: PAIRS[mid - 1].from, to: PAIRS[mid - 1].ta, id: 'band-flood' }]
   : DEAL.ground === 'lightDark' ? [{ from: PAIRS[mid - 1].from, to: Math.min(TOTAL, PAIRS[mid - 1].from + SEC(2)), id: 'turn-to-dark' }]
   : [];
 /** The frame the light-then-dark family turns dark (never, for the others). */
@@ -350,7 +451,7 @@ export const SPRING_CLASS = '';
 /** CUE names that must land on a music event: none (every act line already does). */
 export const STRUCTURAL: string[] = [];
 export const SALIENCE: Record<string, Salience> = Object.fromEntries(
-  Object.keys(CUE).map((k) => [k, /^line/.test(k) ? 'copy' : /^ta/.test(k) ? 'cut' : /^a\d+cut$/.test(k) ? 'move' : /^a\d+h/.test(k) ? 'hit' : /^a\d+m/.test(k) ? 'move' : k === 'close' ? 'copy' : k === 'end' ? 'cut' : k === 'last' ? 'cut' : 'hit'] as const),
+  Object.keys(CUE).map((k) => [k, /^line/.test(k) ? 'copy' : /^ta/.test(k) ? (MODES[Number(k.slice(2)) - 1] === 'alone' ? 'cut' : 'move') : /^a\d+cut$/.test(k) ? 'move' : /^a\d+h/.test(k) ? 'hit' : /^a\d+m/.test(k) ? 'move' : k === 'close' ? 'copy' : k === 'end' ? 'cut' : k === 'last' ? 'cut' : 'hit'] as const),
 );
 
 /** When each COPY entry is being read: [from, to) frame ranges by id (src/lib/pace.ts readingWindows()). */

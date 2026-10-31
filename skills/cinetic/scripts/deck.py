@@ -1815,7 +1815,7 @@ def guard_out(outdir):
 
 
 # --------------------------------------------------------------------------------- the template's deal (one source)
-# A template that deals its own devices (launch-simple's src/deal.ts: voice, ground, seamTA, seamAT, end, camera) plays
+# A template that deals its own devices (launch-simple's src/deal.ts: voice, ground, seamTA, seamAT, seamAA, end, camera) plays
 # the deck's direction instead of a second deal from the product's name: deck.py maps the dealt direction onto the
 # template's slots and writes src/dealt.ts, which deal.ts reads first (launch.ts `pin` still fixes a slot by hand).
 # The vocabularies are read from the project's own deal.ts, so the deck and the template never name different devices.
@@ -1824,6 +1824,10 @@ SEAM_TA = {'morph': 'matchCut', 'mask': 'matchCut', 'hard': 'matchCut', 'stepped
            'defocus': 'blurThrough', 'breath': 'blurThrough', 'light': 'blurThrough', 'dissolveUi': 'blurThrough',
            'colour': 'blurThrough'}
 PUSH_SEAMS = ('zoomThrough', 'snapZoom')
+# picture -> picture: one camera move carried across (velocity), a point held on the kept ground (morph), a blur
+SEAM_AA = {'velocity': 'velocityCut', 'whip': 'velocityCut', 'wipe': 'velocityCut', 'morph': 'matchCut', 'mask': 'matchCut',
+           'hard': 'matchCut', 'zoomThrough': 'matchCut', 'snapZoom': 'matchCut', 'defocus': 'blurThrough',
+           'breath': 'blurThrough', 'light': 'blurThrough', 'dissolveUi': 'blurThrough'}
 BADGE_LOCKUPS = ('world-object', 'pull-back', 'light-finds', 'resolve')  # the hero object turns as it becomes the mark
 RISE_MOTIONS = ('crane', 'dolly')
 
@@ -1887,8 +1891,9 @@ def template_deal(sh, devices, floor, recent=None):
         'voice': voice,
         'ground': ([fam] if fam else [], f'ground family {fam}' if fam else 'no ground family dealt'),
         'seamTA': (ta, 'seams ' + ', '.join(seams[:4])),
-        'seamAT': ((['zoomThrough', 'blurThrough'] if push else ['blurThrough', 'zoomThrough']),
-                   'a push seam: the camera goes through the picture' if push else 'no push seam: the picture blurs away'),
+        'seamAT': ((['zoomThrough', 'recede'] if push else ['recede', 'zoomThrough']),
+                   'a push seam: the camera goes through the picture' if push else 'no push seam: the picture falls back under the line'),
+        'seamAA': (list(dict.fromkeys(SEAM_AA[x] for x in seams if x in SEAM_AA)), 'seams ' + ', '.join(seams[:4])),
         'end': ((['badge', 'element'] if lk in BADGE_LOCKUPS else ['element', 'badge']), f'lockup {lk}'),
         'camera': ((['rise', 'drift'] if motion in RISE_MOTIONS else ['drift', 'rise']), f'camera {motion}'),
     }
@@ -1903,7 +1908,7 @@ def template_deal(sh, devices, floor, recent=None):
         why[slot] = reason + ('' if deal[slot] == ranked[0] else f" (its first choice, {ranked[0]}, was a recent film's)")
     if floor:
         slots = [x for x in devices if x in floor]
-        for slot in ('camera', 'seamAT', 'end', 'voice', 'seamTA', 'ground'):
+        for slot in ('camera', 'seamAT', 'seamAA', 'end', 'voice', 'seamTA', 'ground'):
             if 2 * sum(deal[x] != floor[x] for x in slots) >= len(slots):
                 break
             if slot in slots and deal[slot] == floor[slot]:

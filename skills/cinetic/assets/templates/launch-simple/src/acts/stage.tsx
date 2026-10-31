@@ -1,6 +1,7 @@
 // The one stage every act draws: the dealt ground family under everything (never cut), the line in the dealt voice
-// (acts/line.tsx), the product's scene, the seams between them (fx/Seam seamState, drawn by acts/layer.tsx) and the
-// centred lockup built from the last picture. An act is a window on this one stage (acts are Sequences: each draws the
+// (acts/line.tsx), the product's scene (under its line: rising in, soft, then racking into focus), the seams between
+// them (fx/Seam seamState and the recede, drawn by acts/layer.tsx), the film's carried object flying between two
+// pictures, and the centred lockup built from the last picture. An act is a window on this one stage (acts are Sequences: each draws the
 // absolute frame), so a seam that crosses an act line is the same picture on both sides. Every element (a line, a
 // scene, the end card) keeps one layer for its whole life, so nothing is re-drawn in a new place for a frame. The
 // product's scenes live in src/product.tsx, the words in src/launch.ts; this file rarely needs an edit.
@@ -30,9 +31,9 @@ import { LAUNCH } from '../launch';
 import { DEAL, SEED } from '../deal';
 import * as PRODUCT from '../product';
 import { SCENES } from '../product';
-import { ACT, BEAT_PLAN, COLOUR, copy, CUE, DARK_FROM, f60x, FPS, H, PAIRS, SEAM_PLAN, TOTAL, W } from '../timeline';
+import { ACT, BEAT_PLAN, COLOUR, copy, CUE, DARK_FROM, f60x, FPS, H, LINE_EXIT, PAIRS, PUSH, SEAM_PLAN, TOTAL, W } from '../timeline';
 import { Layer, PromoteCtx } from './layer';
-import { Line, Text } from './line';
+import { isClaim, Line, lineLayout, Text } from './line';
 import { inkOn, litFace, SceneCtx } from './ui';
 import type { SeamLayer } from '../fx/Seam';
 
@@ -52,60 +53,235 @@ export const useAbs = (act: string) => useCurrentFrame() + ACT[act].from;
 
 // ------------------------------------------------------------------------------------------------ the scenes
 
-export type SceneProps = { f: number; dur: number; hits: number[]; inks: FamilyInks; pair: number; cut?: number };
+/** The band a line over its picture holds (pair `beat: 'over'`): the box the scene keeps clear, film px. */
+export type Band = { x: number; y: number; w: number; h: number };
+/**
+ * What a scene draws from: `f` frames since its picture began (with and over: under its line), `dur` its length, `hits`
+ * the frames of its own moments, `cut` the frame of the push closer (or the scene's own change, cut 'scene'), `band`
+ * the line's box when the line holds over the picture (keep it clear), `carry` the frames the stage holds the film's
+ * carried element (product.tsx IDEA): until `in` it is still flying into this scene, from `out` it is flying on to the
+ * next, so the scene draws its own copy only between them (`carried(f, carry)`).
+ */
+export type SceneProps = { f: number; dur: number; hits: number[]; inks: FamilyInks; pair: number; cut?: number; band?: Band; carry?: { in?: number; out?: number } };
+/** How much of the scene's own copy of the carried element shows at scene frame f: it hands over to the stage's flying
+ * copy over CARRY.fade f@60 as it leaves (from `out`) and takes it back over CARRY.fade as it lands (to `in`): a
+ * cross-fade, never a swap in one frame. Use it as the copy's opacity. */
+export const carryOpacity = (f: number, carry?: SceneProps['carry']) => {
+  const k = FPS / 60;
+  const a = carry?.in === undefined ? 1 : clamp((f - (carry.in - CARRY.fade * k)) / (CARRY.fade * k));
+  const b = carry?.out === undefined ? 1 : 1 - clamp((f - carry.out) / (CARRY.fade * k));
+  return Math.min(a, b);
+};
+/** Whether the scene draws its own copy of the carried element at scene frame f at all. */
+export const carried = (f: number, carry?: SceneProps['carry']) => carryOpacity(f, carry) > 0;
 /**
  * A scene: its drawing; `hero`, the box of the element the end card is built from (the last scene) and its `fill`
- * ('accent', a colour, or the card surface by default); `focus`, the point the closer frame pushes in on (default: the
- * hero's centre, else the frame's): put the picture's own moment there; `cut`, what happens on the beat's cut CUE:
- * 'closer' (default) the stage cuts to a closer frame of the same shot, 'scene' the scene cuts itself (the input
- * footage to the lit device: SceneProps `cut` is its frame) and the stage keeps the camera's scale; `field`, on the
- * scene before the claim, the box (scene px) of the element the claim's colour field grows out of, and its colour.
+ * ('accent', a colour, or the card surface by default); `focus`, what the push closer frames: a box (x, y, w, h in
+ * scene px; the push keeps it inside the safe area) or a point (a short push about it); put the picture's own moment
+ * there; `cut`, what happens on the beat's cut CUE: 'closer' (default) the camera pushes closer, 'scene' the scene
+ * changes itself (the input footage to the lit device: SceneProps `cut` is its frame) and the camera keeps its scale;
+ * (a function when it is measured: it is read at draw time); `field`, on the scene before the claim, the box (scene px) of the element the claim's colour field grows out of, and
+ * its colour; `carry`, where the film's carried element (product.tsx IDEA) sits as the scene begins (`in`) and as it
+ * ends (`out`), scene px: between two pictures that both name it, it flies from one to the other over the seam.
  */
 type CutMode = 'closer' | 'scene';
 export type FieldBox = { x: number; y: number; w: number; h: number; radius: number; color?: string };
-export type SceneDef = { draw: React.FC<SceneProps>; hero?: { x: number; y: number; w: number; h: number; radius: number; fill?: string }; focus?: { x: number; y: number }; cut?: CutMode | (() => CutMode); field?: () => FieldBox };
+export type CarryBox = { x: number; y: number; w: number; h: number; radius: number; fill?: string };
+export type Focus = { x: number; y: number; w?: number; h?: number };
+/** A scene's focus, read at draw time (a box measured with the film's face is browser-only). */
+const focusOf = (def?: SceneDef): Focus | undefined => (typeof def?.focus === 'function' ? def.focus() : def?.focus);
+export type SceneDef = {
+  draw: React.FC<SceneProps>;
+  hero?: { x: number; y: number; w: number; h: number; radius: number; fill?: string };
+  focus?: Focus | (() => Focus);
+  cut?: CutMode | (() => CutMode);
+  field?: () => FieldBox;
+  carry?: { in?: () => CarryBox; out?: () => CarryBox };
+};
 const cutMode = (def?: SceneDef): CutMode => (typeof def?.cut === 'function' ? def.cut() : def?.cut ?? 'closer');
-/** The closer frame: the picture beat's one punch-in (a cut, x1.45), a crop of the same shot that bleeds past the frame's edges. */
-export const CLOSER = 1.45;
+const defOf = (pair: number) => SCENES[LAUNCH.pairs[pair - 1]?.scene] as SceneDef | undefined;
+
+/**
+ * The push closer (timeline.ts PUSH, CUE a<pair>cut): the camera moves in on a strong in-out, never in one frame. With
+ * a focus box it frames the box with PUSH.margin of the frame on every side (inside the safe area), re-centring on it;
+ * a box that already fills the frame takes no push. With a focus point (or none: the hero's centre, else the frame's)
+ * it pushes PUSH.min about the point.
+ */
+const pushOf = (def?: SceneDef) => {
+  const f = focusOf(def);
+  if (f && f.w && f.h) {
+    const fit = Math.min(((1 - 2 * PUSH.margin) * W) / f.w, ((1 - 2 * PUSH.margin) * H) / f.h);
+    const s = Math.min(PUSH.max, fit);
+    const cx = f.x + f.w / 2;
+    const cy = f.y + f.h / 2;
+    if (s < PUSH.min) return { s: 1, ox: cx, oy: cy, tx: 0, ty: 0 };
+    return { s, ox: cx, oy: cy, tx: W / 2 - cx, ty: H / 2 - cy };
+  }
+  const ox = f?.x ?? (def?.hero ? def.hero.x + def.hero.w / 2 : W / 2);
+  const oy = f?.y ?? (def?.hero ? def.hero.y + def.hero.h / 2 : H / 2);
+  return { s: PUSH.min, ox, oy, tx: 0, ty: 0 };
+};
 
 /** The picture beat's camera at frame F: the dealt drift (sideways, 1.5 % of the width a second, odd pictures right and
- * even ones left) or rise (1.5 % of the height a second), a step of 1.5 % of the frame along it at each re-frame, back and forth (CUE
- * a<pair>m<k>, settling in 34 f) and the cut to a closer frame (CUE a<pair>cut: x1.45 about the scene's focus). The
- * camera only travels: a scale that grows through a shot makes the browser re-draw promoted text sharper in one frame. */
+ * even ones left) or rise (1.5 % of the height a second), a step of 1.5 % of the frame along it at each re-frame, back and
+ * forth (CUE a<pair>m<k>, settling in 34 f), and the push closer (CUE a<pair>cut). `phase`: before, during and after the
+ * push (the scene's text is re-drawn sharp once it lands). */
 const camOf = (pair: number, F: number) => {
-  const p = LAUNCH.pairs[pair - 1];
-  const def = SCENES[p.scene] as SceneDef | undefined;
+  const def = defOf(pair);
   const pr = PAIRS[pair - 1];
-  const from = p.over ? pr.from : pr.ta;
+  const from = pr.pic;
   const dur = pr.to - from;
   const u = (F - from) / Math.max(1, dur);
   const cut = CUE[`a${pair}cut`];
-  const closer = cut !== undefined && F >= cut && cutMode(def) === 'closer' ? CLOSER : 1;
+  const P = pushOf(def);
+  const pushing = cut !== undefined && cutMode(def) === 'closer' && P.s > 1;
+  const e = pushing ? E.strongInOut(clamp((F - (cut - 1)) / f60x(PUSH.dur))) : 0;
   // re-frames step back and forth (+1.5 %, -1.5 %, ...), so the frame never wanders off the product
   const steps = Object.keys(CUE).filter((n) => n.startsWith(`a${pair}m`)).reduce((m, n, j) => m + (j % 2 ? -0.75 : 0.75) * E.settleOut(clamp((F - CUE[n]) / f60x(34))), 0);
   const side = pair % 2 ? 1 : -1;
-  const dx = DEAL.camera === 'drift' ? ((u - 0.5) * 0.015 * (dur / FPS) + 0.02 * steps) * W * side : 0;
-  const dy = DEAL.camera === 'rise' ? -((u - 0.5) * 0.015 * (dur / FPS) + 0.02 * steps) * H : 0;
-  const scale = closer;
-  const ox = def?.focus?.x ?? (def?.hero ? def.hero.x + def.hero.w / 2 : W / 2);
-  const oy = def?.focus?.y ?? (def?.hero ? def.hero.y + def.hero.h / 2 : H / 2);
-  return { from, dur, dx, dy, scale, ox, oy, closer: closer > 1, cut: cut === undefined ? undefined : cut - from };
+  // the travel narrows as the push frames its box, so the closer frame keeps the safe area
+  const travel = 1 - 0.6 * e;
+  const dx = (DEAL.camera === 'drift' ? ((u - 0.5) * 0.015 * (dur / FPS) + 0.02 * steps) * W * side : 0) * travel + P.tx * e;
+  const dy = (DEAL.camera === 'rise' ? -((u - 0.5) * 0.015 * (dur / FPS) + 0.02 * steps) * H : 0) * travel + P.ty * e;
+  const scale = 1 + (P.s - 1) * e;
+  const phase: 'wide' | 'push' | 'closer' = e <= 0 ? 'wide' : e >= 1 ? 'closer' : 'push';
+  return { from, dur, dx, dy, scale, ox: P.ox, oy: P.oy, phase, cut: cut === undefined ? undefined : cut - from };
 };
 
-/** A picture beat: the product's scene, full frame, on the dealt camera. The closer frame is a new shot (a cut): the
- * scene is drawn afresh there, at its new size (its text sharp at the closer scale). */
+/**
+ * Depth for a line over its picture (pair `beat: 'with'`): the line holds the middle band and the picture rises in
+ * under it, below the band, soft and low (`opacity`, `blur` px at 1080p, `scale`), never a plate behind the words: its
+ * focus box's top sits `below` x the frame height down (without a box, the whole picture drops `drop` x the height),
+ * creeping up `creep` of the height through the line's read. `after` f@60 into the line's exit the picture rises into
+ * its place as it racks into focus (`rack` f@60, one carried move: the line lifts away, the picture comes up after it),
+ * and plays on alone.
+ */
+export const TA_DEPTH = { opacity: 0.55, blur: 14, scale: 0.94, below: 0.6, drop: 0.42, creep: 0.05, after: 11, rack: 30 } as const;
+const depthOf = (pair: number, F: number) => {
+  if (PAIRS[pair - 1]?.mode !== 'with') return 0;
+  const out = copy(`line${pair}`).out;
+  return 1 - E.glideOut(clamp((F - out - f60x(TA_DEPTH.after)) / f60x(TA_DEPTH.rack)));
+};
+/** How far a picture under its line stands below its place (px at 1080p), creeping up through the read. */
+const dropOf = (pair: number, F: number) => {
+  const f = focusOf(defOf(pair));
+  const base = f && f.h ? Math.max(0, TA_DEPTH.below * H - f.y) : TA_DEPTH.drop * H;
+  const pr = PAIRS[pair - 1];
+  const read = clamp((F - pr.from) / Math.max(1, copy(`line${pair}`).out - pr.from));
+  return (base + TA_DEPTH.creep * H * (1 - read)) / (H / 1080);
+};
+/** A layer state with the picture's depth folded in (d 0 at rest, 1 under its line). */
+const withDepth = (st: SeamLayer | undefined, d: number, pair = 0, F = 0): SeamLayer | undefined => {
+  if (d <= 0) return st;
+  const base = st ?? { show: true, x: 0, y: 0, scale: 1, opacity: 1, blur: 0, smear: 0, ink: 1 };
+  return { ...base, y: base.y + (pair ? dropOf(pair, F) * d : 0), opacity: base.opacity * mix(1, TA_DEPTH.opacity, d), blur: base.blur + TA_DEPTH.blur * d, scale: base.scale * mix(1, TA_DEPTH.scale, d) };
+};
+/** A line over its picture leaving on its own (with, over): it lifts 30 px and softens away over LINE_EXIT f@60, ahead of the picture rising after it. */
+const lineExitOf = (pair: number, F: number): SeamLayer | undefined => {
+  if (PAIRS[pair - 1]?.mode === 'alone') return undefined;
+  const u = clamp((F - copy(`line${pair}`).out) / f60x(LINE_EXIT));
+  if (u <= 0) return undefined;
+  const e = E.buildIn(u);
+  return { show: u < 1, x: 0, y: -30 * e, scale: 1, opacity: 1 - E.stdInOut(u), blur: 11 * e, smear: 0, ink: 1 };
+};
+
+/** The band a line over its picture holds (centred, its rows at the line's size), padded half a cap. */
+const bandOf = (pair: number): Band => {
+  const text = copy(`line${pair}`).text;
+  const { size, rows } = lineLayout(text, isClaim(`line${pair}`), true);
+  const h = rows.length * size * 1.06 + size * 0.5;
+  const w = Math.min(W * 0.9, W * 0.62 + size);
+  return { x: (W - w) / 2, y: H / 2 - h / 2, w, h };
+};
+
+/** A picture beat: the product's scene, full frame, on the dealt camera. The push closer draws its text unpromoted (the
+ * browser re-draws it at every step of the scale); landed, the scene is drawn afresh at its closer size, sharp. */
 const Scene: React.FC<{ pair: number; F: number }> = ({ pair, F }) => {
-  const p = LAUNCH.pairs[pair - 1];
-  const def = SCENES[p.scene] as SceneDef | undefined;
+  const def = defOf(pair);
   if (!def) return null;
   const c = camOf(pair, F);
   const hits = Object.keys(CUE).filter((n) => n.startsWith(`a${pair}h`)).map((n) => CUE[n] - c.from);
   const Draw = def.draw;
+  const band = PAIRS[pair - 1].mode === 'over' ? bandOf(pair) : undefined;
+  const carry = carryFrames(pair);
   return (
-    <div key={c.closer ? 'closer' : 'wide'} data-audit-push={c.closer ? 'bleed' : undefined} style={{ position: 'absolute', inset: 0, transformOrigin: `${c.ox.toFixed(1)}px ${c.oy.toFixed(1)}px`, transform: `translate3d(${c.dx.toFixed(3)}px, ${c.dy.toFixed(3)}px, 0) scale(${c.scale.toFixed(5)})` }}>
-      <SceneCtx.Provider value={{ f: F - c.from, dur: c.dur, cam: { dx: c.dx, dy: c.dy } }}>
-        <Draw f={F - c.from} dur={c.dur} hits={hits} inks={inksAt(F)} pair={pair} cut={c.cut} />
-      </SceneCtx.Provider>
+    <div key={c.phase} style={{ position: 'absolute', inset: 0, transformOrigin: `${c.ox.toFixed(1)}px ${c.oy.toFixed(1)}px`, transform: `translate3d(${c.dx.toFixed(3)}px, ${c.dy.toFixed(3)}px, 0) scale(${c.scale.toFixed(5)})` }}>
+      <PromoteCtx.Provider value={c.phase !== 'push'}>
+        <SceneCtx.Provider value={{ f: F - c.from, dur: c.dur, cam: { dx: c.dx, dy: c.dy } }}>
+          <Draw f={F - c.from} dur={c.dur} hits={hits} inks={inksAt(F)} pair={pair} cut={c.cut} band={band} carry={carry} />
+        </SceneCtx.Provider>
+      </PromoteCtx.Provider>
+    </div>
+  );
+};
+
+// ------------------------------------------------------------------------------------------------ the carried element
+
+/**
+ * The film's carried element (product.tsx IDEA, the visual idea drawn as one object): between two pictures that both
+ * name it (SceneDef `carry`: `out` on the first, `in` on the second), it leaves its place in the outgoing picture
+ * `lead` f@60 before the seam and lands in its place in the incoming one `land` f@60 after it, on a strong in-out (its
+ * size on a log scale, a soft arc on the way, its corner and colour mixed), drawn by IDEA (`p` 0 as it leaves, 1 as it
+ * lands: the object transforming) or, without one, as a lit tile, cross-fading with the scenes' own copies over `fade`
+ * f@60 at either end (carryOpacity). It never cuts: one object carried across the change.
+ */
+export const CARRY = { lead: 14, land: 22, arc: 0.06, fade: 6 } as const;
+type IdeaFC = React.FC<{ w: number; h: number; p: number; inks: FamilyInks; F: number; from: number; to: number }>;
+const IDEA = (PRODUCT as { IDEA?: IdeaFC }).IDEA ?? null;
+/** The picture-to-picture seam out of pair k (into pair k + 1), when both scenes carry the element. */
+const carrySeam = (pair: number) => {
+  const s = SEAM_PLAN.find((x) => x.cls === 'AA' && x.id === `pic${pair}-pic${pair + 1}`);
+  return s && defOf(pair)?.carry?.out && defOf(pair + 1)?.carry?.in ? s : undefined;
+};
+/** The scene frames the stage holds the element for pair k (SceneProps `carry`). */
+const carryFrames = (pair: number): SceneProps['carry'] => {
+  const out = carrySeam(pair);
+  const inn = carrySeam(pair - 1);
+  const from = PAIRS[pair - 1].pic;
+  if (!out && !inn) return undefined;
+  return { ...(inn ? { in: inn.at + Math.round(f60x(CARRY.land)) - from } : {}), ...(out ? { out: out.at - Math.round(f60x(CARRY.lead)) - from } : {}) };
+};
+/** A scene box on screen under its picture's camera at frame F. */
+const onScreen = (pair: number, F: number, b: CarryBox) => {
+  const c = camOf(pair, F);
+  return { x: c.ox + (b.x - c.ox) * c.scale + c.dx, y: c.oy + (b.y - c.oy) * c.scale + c.dy, w: b.w * c.scale, h: b.h * c.scale, radius: b.radius * c.scale };
+};
+const Carried: React.FC<{ F: number }> = ({ F }) => {
+  const s = SEAM_PLAN.find((x) => x.cls === 'AA' && F >= x.at - f60x(CARRY.lead) && F < x.at + f60x(CARRY.land));
+  if (!s) return null;
+  const k = Number(s.id.match(/^pic(\d+)-/)?.[1] ?? 0);
+  if (!carrySeam(k)) return null;
+  const t0 = s.at - Math.round(f60x(CARRY.lead));
+  const t1 = s.at + Math.round(f60x(CARRY.land));
+  const p = E.strongInOut(clamp((F - t0) / Math.max(1, t1 - t0)));
+  const ob = defOf(k)?.carry?.out?.() as CarryBox;
+  const ib = defOf(k + 1)?.carry?.in?.() as CarryBox;
+  const a = onScreen(k, t0, ob);
+  const b = onScreen(k + 1, t1, ib);
+  const lm = (x: number, y: number) => Math.exp(mix(Math.log(Math.max(1, x)), Math.log(Math.max(1, y)), p));
+  const w = lm(a.w, b.w);
+  const h = lm(a.h, b.h);
+  const x = mix(a.x + a.w / 2, b.x + b.w / 2, p) - w / 2;
+  // a soft arc: the element rises a little on its way (a thrown object, never a straight slide)
+  const y = mix(a.y + a.h / 2, b.y + b.h / 2, p) - h / 2 - Math.sin(Math.PI * p) * CARRY.arc * H;
+  const inks = inksAt(F);
+  const fill = (v?: string) => (!v ? inks.surface : v === 'accent' ? C.accent : v);
+  // it lands in the next picture's depth (a picture under its line stands back: the element goes with it), cross-fading
+  // with the scenes' own copies at either end
+  const fade = Math.min(clamp((F - t0) / f60x(CARRY.fade)), clamp((t1 - F) / f60x(CARRY.fade)));
+  const d0 = withDepth(undefined, depthOf(k + 1, F) * p, k + 1, F);
+  const depth = d0 ? { ...d0, opacity: d0.opacity * fade } : { show: true, x: 0, y: 0, scale: 1, opacity: fade, blur: 0, smear: 0, ink: 1 };
+  return (
+    <div key="carried" style={{ position: 'absolute', inset: 0, zIndex: 998 }}>
+      <Layer s={depth} origin={`${W / 2}px ${H / 2}px`} z={998}>
+        <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, transform: `translate3d(${x.toFixed(3)}px, ${y.toFixed(3)}px, 0)` }}>
+          {IDEA ? (
+            <IDEA w={w} h={h} p={p} inks={inks} F={F} from={k} to={k + 1} />
+          ) : (
+            <div style={{ position: 'absolute', inset: 0, borderRadius: mix(a.radius, b.radius, p), ...litFace(mixColor(fill(ob.fill), fill(ib.fill), p), inks, { accent: true }) }} />
+          )}
+        </div>
+      </Layer>
     </div>
   );
 };
@@ -276,7 +452,7 @@ const CLAIM_BEAT = BEAT_PLAN.findIndex((b) => b.id === `line${LAUNCH.pairs.lengt
 const FIELD_PAIR = LAUNCH.pairs.length - 1;
 const fieldDef = (): SceneDef | undefined => (FIELD_PAIR >= 1 ? (SCENES[LAUNCH.pairs[FIELD_PAIR - 1].scene] as SceneDef | undefined) : undefined);
 /** Whether the claim sits on the colour field: a family without an event of its own and a scene before it with a `field`. */
-export const FIELD_ON = FAMILY !== 'whiteBand' && FAMILY !== 'lightDark' && CLAIM_BEAT > 0 && !LAUNCH.pairs[LAUNCH.pairs.length - 1].over && !!fieldDef()?.field;
+export const FIELD_ON = FAMILY !== 'whiteBand' && FAMILY !== 'lightDark' && CLAIM_BEAT > 0 && PAIRS[PAIRS.length - 1].mode === 'alone' && !!fieldDef()?.field;
 /**
  * The field: the accent (or the element's own colour) lit from its top left corner (a lit field, never a flat slab,
  * never a glow behind the line); the claim in white on it, a key word in the ground's deep tone. `grow`: frames (f@60)
@@ -327,8 +503,34 @@ const beatAt = (F: number): number => {
 };
 const seamFor = (at: number) => SEAM_PLAN.find((s) => s.at === at);
 
-/** One element on the stage: a line, a scene or the end card, each with its own key (its layer lives as long as it shows). */
-type Item = { key: string; z: number; node: React.ReactNode };
+/**
+ * Picture -> line, `recede`: the picture falls back while the next line builds over it on the kept ground (it shrinks
+ * by `scale`, softens to `blur` px and fades over `dur` f@60 from the line's first frame): the frame is never empty, and
+ * the outgoing picture's motion carries the change.
+ */
+export const RECEDE_IN = { dur: 26, scale: 0.12, blur: 16, drop: 18 } as const;
+const recedeState = (F: number, at: number): { out: SeamLayer; in: SeamLayer } => {
+  const u = clamp((F - at) / f60x(RECEDE_IN.dur));
+  const e = E.buildIn(u);
+  return {
+    out: { show: F < at || u < 1, x: 0, y: RECEDE_IN.drop * e, scale: 1 - RECEDE_IN.scale * E.stdInOut(u), opacity: 1 - E.stdInOut(u), blur: RECEDE_IN.blur * Math.sqrt(u), smear: 0, ink: 1 },
+    in: { show: F >= at, x: 0, y: 0, scale: 1, opacity: 1, blur: 0, smear: 0, ink: 1 },
+  };
+};
+/** The frames a planned seam spans, [start, end). */
+const spanOf = (s: (typeof SEAM_PLAN)[number], film: ReturnType<typeof useFilm>): [number, number] =>
+  s.recipe === 'recede' ? [s.at, s.at + Math.ceil(f60x(RECEDE_IN.dur))] : seamSpan({ recipe: s.recipe, at: s.at, dir: s.dir, id: s.id } as SeamOpts, film);
+
+/** Two layer states, one inside the other (a seam's move around an element's own depth or exit). */
+const compose = (a?: SeamLayer, b?: SeamLayer): SeamLayer | undefined => {
+  if (!a) return b;
+  if (!b) return a;
+  return { show: a.show && b.show, x: a.x + b.x, y: a.y + b.y, scale: a.scale * b.scale, opacity: a.opacity * b.opacity, blur: a.blur + b.blur, smear: a.smear + b.smear, ink: Math.min(a.ink, b.ink) };
+};
+
+/** One element on the stage: a line, a scene or the end card, each with its own key (its layer lives as long as it
+ * shows); `own`, its own state (a picture's depth behind its line, a line's exit over its picture); `role`, what it is. */
+type Item = { key: string; z: number; node: React.ReactNode; own?: SeamLayer; role: 'scene' | 'line' | 'field' | 'end' };
 
 /** The elements beat `i` shows at frame F, at rest (the seam moves them). */
 const itemsOf = (i: number, F: number, o: { lineOnly?: boolean } = {}): Item[] => {
@@ -336,16 +538,18 @@ const itemsOf = (i: number, F: number, o: { lineOnly?: boolean } = {}): Item[] =
   if (!b) return [];
   // the lockup only drifts sideways: its text is drawn in place every frame (unpromoted text moves sub-pixel sideways),
   // never a promoted layer the browser re-draws now and then over a long hold
-  if (b.kind === 'end') return [{ key: 'end', z: 1000, node: <PromoteCtx.Provider value={false}><EndCard F={F} /></PromoteCtx.Provider> }];
-  const scene: Item = { key: `scene${b.pair}`, z: b.pair * 10 + 1, node: <Scene pair={b.pair} F={F} /> };
+  if (b.kind === 'end') return [{ key: 'end', z: 1000, role: 'end', node: <PromoteCtx.Provider value={false}><EndCard F={F} /></PromoteCtx.Provider> }];
+  // a picture under its line stands back (with): low and soft until the line leaves, then racking into focus
+  const scene: Item = { key: `scene${b.pair}`, z: b.pair * 10 + 1, role: 'scene', node: <Scene pair={b.pair} F={F} />, own: withDepth(undefined, depthOf(b.pair, F), b.pair, F) };
   if (b.kind === 'A') return [scene];
   const inks = inksAt(F);
   const flood = COLOUR.find((c) => c.id === 'band-flood' && F >= c.from && F < c.to);
   const onField = FIELD_ON && i === CLAIM_BEAT && b.kind === 'T';
   const lineInks = onField ? fieldInks(inks) : flood && inks.onField ? { ...inks, type: inks.onField, accent: inks.onField } : inks;
-  const line: Item = { key: `line${b.pair}`, z: b.pair * 10 + 2, node: <Line id={b.id} raw={LAUNCH.pairs[b.pair - 1].line} F={F} inks={lineInks} life={onField ? FIELD.life : 1} /> };
-  const field: Item[] = onField ? [{ key: 'field', z: b.pair * 10, node: <FieldPlate /> }] : [];
-  return b.kind === 'TA' && !o.lineOnly ? [...field, scene, line] : [...field, line];
+  const exit = lineExitOf(b.pair, F);
+  const line: Item[] = exit && !exit.show ? [] : [{ key: `line${b.pair}`, z: b.pair * 10 + 2, role: 'line', own: exit, node: <Line id={b.id} raw={LAUNCH.pairs[b.pair - 1].line} F={F} inks={lineInks} life={onField ? FIELD.life : 1} /> }];
+  const field: Item[] = onField ? [{ key: 'field', z: b.pair * 10, role: 'field', node: <FieldPlate /> }] : [];
+  return b.kind === 'TA' && !o.lineOnly ? [...field, scene, ...line] : [...field, ...line];
 };
 
 /** The band flood of the white-with-a-band family: 0..1 over its colour event, rising and falling in 18 f. */
@@ -355,7 +559,13 @@ const floodAt = (F: number) => {
   return Math.min(prog(F, c.from - f60x(14), c.from + f60x(4), E.glideOut), 1 - prog(F, c.to - f60x(16), c.to, E.softIn));
 };
 
-/** The stage at the absolute frame F: the ground is drawn under it (Ground); here, the beat, or the seam between two. */
+/**
+ * The stage at the absolute frame F: the ground is drawn under it (Ground); here, the beat, or the seam between two.
+ * Every change of picture carries something and the frame is never empty: a line after a picture builds over the
+ * picture as it leaves (recede, or over the push of a zoomThrough); a line that arrives with its picture stays put while
+ * the picture comes in under it (only the picture takes the seam's move); the film's carried element flies over a
+ * picture-to-picture seam (Carried).
+ */
 export const Stage: React.FC<{ F: number }> = ({ F }) => {
   const film = useFilm();
   const i = beatAt(F);
@@ -363,18 +573,19 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
   const next = BEAT_PLAN[i + 1];
   const inS = seamFor(b.from);
   const outS = next ? seamFor(next.from) : undefined;
-  const s = inS && F < seamSpan(inS, film)[1] ? inS : outS && F >= seamSpan(outS, film)[0] ? outS : undefined;
+  const s = inS && F < spanOf(inS, film)[1] ? inS : outS && F >= spanOf(outS, film)[0] ? outS : undefined;
   const centre = `${W / 2}px ${H / 2}px`;
-  const layers: { item: Item; st?: SeamLayer; origin?: string }[] = [];
+  const layers: { item: Item; st?: SeamLayer; origin?: string; moving?: boolean }[] = [];
+  const push = (it: Item, st?: SeamLayer, origin?: string) => layers.push({ item: it, st: compose(st, it.own), origin, moving: !!st });
   let element: React.ReactNode = null;
   let grow: React.ReactNode = null;
   if (!s) {
-    for (const it of itemsOf(i, F)) layers.push({ item: it });
+    for (const it of itemsOf(i, F)) push(it);
     // the last picture falls back behind the lockup for a second after the element's take-off
     const r = b.kind === 'end' ? recedeAt(F) : null;
-    if (r) for (const it of itemsOf(i - 1, F)) layers.push({ item: it, st: r });
+    if (r) for (const it of itemsOf(i - 1, F)) push(it, r);
   } else {
-    const opts: SeamOpts = { recipe: s.recipe, at: s.at, dir: s.dir, id: s.id };
+    const opts: SeamOpts = { recipe: s.recipe === 'recede' ? 'exitEnter' : s.recipe, at: s.at, dir: s.dir, id: s.id };
     let toBox: { x: number; y: number; w: number; h: number } | undefined;
     if (s.recipe === 'sharedElement') {
       // the element leaves from where the hero stands on screen at the cut (the picture's camera applied) and lands
@@ -388,25 +599,19 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
     // into the claim's field: the seam pushes into the element the field grows out of (its centre holds its place)
     const intoField = FIELD_ON && s.to === CLAIM_BEAT;
     const fb = intoField ? fieldBoxOnScreen(Math.min(F, s.at - 1)) : null;
-    const st = seamState(F, opts, film);
-    // an exit and enter fades its outgoing shot a touch faster than it moves: the last frames of the exit's
-    // acceleration are already invisible, so no move stops dead where the layer leaves
-    if (s.recipe === 'exitEnter') st.out.opacity *= st.out.opacity;
+    const st = s.recipe === 'recede' ? { ...recedeState(F, s.at), element: 0, box: undefined } : seamState(F, opts, film);
     // the last picture recedes behind the lockup instead of leaving with the element's take-off
     if (s.recipe === 'sharedElement') Object.assign(st.out, recedeAt(F) ?? { show: false });
     const outOrigin = fb ? `${(fb.x + fb.w / 2).toFixed(2)}px ${(fb.y + fb.h / 2).toFixed(2)}px` : centre;
-    // a line over a picture leaves on its own: the picture under it plays on at rest
-    const over = BEAT_PLAN[s.from]?.kind === 'TA' && BEAT_PLAN[s.to]?.kind === 'A';
-    if (over) {
-      for (const it of itemsOf(s.to, F)) layers.push({ item: it });
-      if (st.out.show) for (const it of itemsOf(s.from, F, { lineOnly: true })) layers.push({ item: it, st: st.out });
-    } else {
-      if (st.out.show) for (const it of itemsOf(s.from, F)) layers.push({ item: it, st: st.out, origin: outOrigin });
-      if (st.in.show) for (const it of itemsOf(s.to, F)) layers.push({ item: it, st: st.in });
-    }
+    if (st.out.show) for (const it of itemsOf(s.from, F)) push(it, st.out, outOrigin);
+    // the incoming beat: a picture takes the seam's move; a line that arrives with its picture (picture -> picture) holds
+    // its centre while the picture comes in under it; a line after a push through builds over the push (LINE_EARLY)
+    const incoming = itemsOf(s.to, F);
+    if (st.in.show) for (const it of incoming) push(it, it.role === 'line' && s.cls === 'AA' ? undefined : st.in);
+    else if (s.cls === 'AT') for (const it of incoming) if (it.role === 'line' && F >= copy(BEAT_PLAN[s.to].id).in) push(it);
     if (fb && F < s.at) {
-      // the element grows into the frame ahead of the push (log size, centre to the frame's, corners to square), on
-      // top of the outgoing picture, its words fading under its colour in the first frames; whole on the cut's frame
+      // the element grows into the frame ahead of the cut (log size, centre to the frame's, corners to square), on top
+      // of the outgoing picture, its words fading under its colour in the first frames; whole on the cut's frame
       const u = clamp((F - (s.at - f60x(FIELD.grow))) / f60x(FIELD.grow));
       if (u > 0) {
         const e = E.launchIn(u);
@@ -439,13 +644,14 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
   layers.sort((p, q) => p.item.z - q.item.z);
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-      {layers.map(({ item, st, origin }) => (
+      {layers.map(({ item, st, origin, moving }) => (
         // both sides of a seam are in flight: the layout audit holds them to no resting rule (safe zone, widths)
-        <div key={item.key} data-audit-push={st ? 'moving' : undefined} style={{ position: 'absolute', inset: 0, zIndex: item.z }}>
+        <div key={item.key} data-audit-push={moving ? 'moving' : undefined} style={{ position: 'absolute', inset: 0, zIndex: item.z }}>
           <Layer s={st} origin={origin ?? centre} z={item.z}>{item.node}</Layer>
         </div>
       ))}
       {grow}
+      <Carried F={F} />
       {element}
     </div>
   );

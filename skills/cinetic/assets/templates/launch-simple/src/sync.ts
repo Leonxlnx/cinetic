@@ -2,10 +2,10 @@
 // and writes out/cues.json; scripts/audio/score.py voices each event with the film's kit on its exact frame, over the
 // film's licensed track. The track carries the film and its cuts; the effects mark what the picture does: each line
 // once it is whole (one soft text sound), each picture's own moments (launch.ts hits: the click, the result), the
-// cut to its closer frame (a soft tick), the seams that move (a whoosh on the speed, never on a cross-blur), the element becoming the mark and ONE clean hit on
-// the lockup.
+// push closer (a soft swell under the camera's move), the seams that move (a whoosh on the speed, never on a
+// cross-blur or a focus pull), the element becoming the mark and ONE clean hit on the lockup.
 import { DEAL } from './deal';
-import { ACT, copy, CUE, type Declares, f60, type Salience, SEAM_PLAN, TOTAL } from './timeline';
+import { ACT, copy, CUE, type Declares, f60, PUSH, type Salience, SEAM_PLAN, TOTAL } from './timeline';
 import { LAUNCH } from './launch';
 
 export type Kind =
@@ -41,8 +41,8 @@ export default function cues(): SoundEvent[] {
     ev.push({ f: copy(`line${k}`).resolved, kind: 'text', weight: 0.65, pan: 0, action: 'text', id: `line${k}-whole` });
     const hits = Object.keys(CUE).filter((n) => n.startsWith(`a${k}h`));
     hits.forEach((n, j) => ev.push({ f: CUE[n], kind: j === hits.length - 1 ? 'pop' : 'click', weight: 0.6, pan: (j % 2 ? 0.1 : -0.1), action: j === hits.length - 1 ? 'card-land' : 'press', id: `pic${k}-${n}` }));
-    // the cut to the closer frame sits on a soft tick (a cut lands on a sound)
-    if (CUE[`a${k}cut`] !== undefined) ev.push({ f: CUE[`a${k}cut`], kind: 'tick', weight: 0.35, pan: 0, action: 'jump-cut', id: `pic${k}-closer` });
+    // the push closer: a soft swell under the camera's move (it lands with the push, PUSH.dur f@60 after the cue)
+    if (CUE[`a${k}cut`] !== undefined) ev.push({ f: CUE[`a${k}cut`], kind: 'swell', weight: 0.3, pan: 0, dur: f60(PUSH.dur), apexFrac: 0.8, action: 'shape', id: `pic${k}-closer` });
   });
   for (const s of SEAM_PLAN) {
     if (s.recipe === 'velocityCut') ev.push({ f: s.at, kind: 'whoosh', weight: 0.55, pan: s.dir === 'left' ? -0.4 : 0.4, dur: f60(26), apexFrac: 0.62, action: 'whip', id: `seam-${s.id}` });
