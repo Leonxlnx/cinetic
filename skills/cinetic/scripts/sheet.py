@@ -20,7 +20,7 @@ the one render.sh keeps in out/render/<name>/bundle) and renders the range from 
 --sequence --every-nth-frame` into a temp dir (run it from the project root); with --frames, each run of
 consecutive frames is one render from the same bundle (stills at cue -2, 0 and +2 cost no bundle each). fps and
 duration are read with `npx remotion compositions` on that bundle unless --fps and --to (or --frames) are given. Exit: 0 ok, 1 nothing decoded or rendered, 2 usage error.
-Needs ffmpeg/ffprobe, numpy and opencv-python (and Node + Remotion for --comp).
+Needs ffmpeg/ffprobe, numpy and opencv-python or Pillow (either draws the tiles; and Node + Remotion for --comp).
 """
 import argparse
 import glob
@@ -33,11 +33,12 @@ import subprocess
 import sys
 import tempfile
 
-import cv2
 import numpy as np
 
 sys.dont_write_bytecode = True  # no __pycache__ in the project's scripts/
-from forensics import decode, label, probe, tile  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# opencv or Pillow: forensics' sheet helpers use whichever is installed and name the install when neither is
+from forensics import decode, imread, imwrite, inferno, label, need_images, probe, resize_area, rgb2bgr, tile  # noqa: E402
 
 
 def die(msg, code=2):
@@ -165,7 +166,7 @@ def render_comp(args, a, b, every):
         print(f'sheet: warning: rendered {len(files)} files for {len(expected)} frames', file=sys.stderr)
     out = {}
     for f, p in zip(expected, files):
-        im = cv2.imread(p)
+        im = imread(p)
         out[f] = im
     shutil.rmtree(tmp, ignore_errors=True)
     return out
@@ -195,7 +196,7 @@ def grab_video(path, info, frames, width, with_prev):
 def diff_tile(cur, prev):
     d = np.abs(cur.astype(np.int16) - prev.astype(np.int16)).max(axis=2)
     d = np.clip(d * 4, 0, 255).astype(np.uint8)
-    return cv2.applyColorMap(d, cv2.COLORMAP_INFERNO)
+    return inferno(d)
 
 
 def build(frames, imgs, fps, args, acts, cue, half, bgr):
@@ -204,10 +205,10 @@ def build(frames, imgs, fps, args, acts, cue, half, bgr):
         if f not in imgs:
             continue
         im = imgs[f]
-        im = im if bgr else cv2.cvtColor(im, cv2.COLOR_RGB2BGR)
+        im = im if bgr else rgb2bgr(im)
         if im.shape[1] != args.width:
             h = int(round(args.width * im.shape[0] / im.shape[1] / 2)) * 2
-            im = cv2.resize(im, (args.width, h), interpolation=cv2.INTER_AREA)
+            im = resize_area(im, (args.width, h))
         g = f + args.offset  # label in film frames when a per-act composition starts later in the film
         tiles.append(label(im.copy(), f'f{g} {g / fps:.2f}s', sublabel(g, acts, cue, half)))
         if args.diff:
@@ -215,8 +216,8 @@ def build(frames, imgs, fps, args, acts, cue, half, bgr):
             if pv is None:
                 dt = np.zeros_like(im)
             else:
-                pv = pv if bgr else cv2.cvtColor(pv, cv2.COLOR_RGB2BGR)
-                pv = cv2.resize(pv, (im.shape[1], im.shape[0]), interpolation=cv2.INTER_AREA)
+                pv = pv if bgr else rgb2bgr(pv)
+                pv = resize_area(pv, (im.shape[1], im.shape[0]))
                 dt = diff_tile(im, pv)
             tiles.append(label(dt, f'f{f - 1 + args.offset}->f{f + args.offset} x4'))
     return tiles
@@ -226,17 +227,17 @@ def sheet_of_images(args):
     """Tile existing images (stills, frames grabbed earlier) at one tile width, each labelled with its file name."""
     tiles = []
     for path in args.images:
-        im = cv2.imread(path, cv2.IMREAD_COLOR)
+        im = imread(path)
         if im is None:
             die(f'cannot read {path}')
         w = args.width or 480
-        tiles.append(label(cv2.resize(im, (w, max(1, round(im.shape[0] * w / im.shape[1]))), interpolation=cv2.INTER_AREA),
+        tiles.append(label(resize_area(im, (w, max(1, round(im.shape[0] * w / im.shape[1])))).copy(),
                            os.path.splitext(os.path.basename(path))[0]))
     h = max(t.shape[0] for t in tiles)  # pad mixed aspect ratios to one row height
     tiles = [np.pad(t, ((0, h - t.shape[0]), (0, 0), (0, 0)), constant_values=90) for t in tiles]
     cols = args.cols or max(1, min(len(tiles), 8, max(2, round(1920 / tiles[0].shape[1]))))
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
-    cv2.imwrite(args.out, tile(tiles, cols))
+    imwrite(args.out, tile(tiles, cols))
     print(f'{args.out}  ({len(tiles)} images)')
     sys.exit(0)
 
@@ -274,6 +275,7 @@ def main():
     if extra and not args.comp:
         die(f'unknown arguments: {" ".join(extra)}')
     args.extra = extra
+    need_images('a contact sheet')  # opencv or Pillow, else the install line before any decode or bundle
     if args.images:
         sheet_of_images(args)
         return
@@ -348,7 +350,7 @@ def main():
         if not tiles:
             continue
         path = stem + suffix + ext
-        cv2.imwrite(path, tile(tiles, cols))
+        imwrite(path, tile(tiles, cols))
         manifest.append(dict(path=path, frames=[f for f in frames if f in imgs], every=every, fps=fps))
         step = '' if args.frames else f', every {every}'
         print(f'{path}  ({len([f for f in frames if f in imgs])} frames, f{frames[0] + args.offset}-'

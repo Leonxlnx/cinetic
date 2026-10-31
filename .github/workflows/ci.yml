@@ -260,10 +260,11 @@ jobs:
       - name: Copy check tests (copy-check.py)
         run: python3 "skills/$SKILL/scripts/test/copy-check.test.py"
 
-      - name: Cast and detail-pair tests (audio/kit.py cast, detail-pair.py)
+      - name: Cast, detail-pair and sheet tests (audio/kit.py cast, detail-pair.py, sheet.py and forensics.py without opencv)
         run: |
           python3 "skills/$SKILL/scripts/test/cast.test.py"
           python3 "skills/$SKILL/scripts/test/detail-pair.test.py"
+          python3 "skills/$SKILL/scripts/test/sheet.test.py"
 
       - name: Real marks and music finder tests (logos.mjs, music.mjs; offline fixtures, no network)
         run: |

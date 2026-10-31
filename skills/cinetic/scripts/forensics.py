@@ -163,7 +163,9 @@ px/s already. An explicit flag is taken as given. A pop, a spike and a repeated 
 Writes JSON (--json), a x12 banding stretch sheet and a x25 smear sheet next to it, and a short
 summary on stdout.
 Exit: 0 no failing check (warnings allowed), 1 a failing check, 2 usage or decode error.
-Needs ffmpeg/ffprobe, numpy and opencv-python.
+Needs ffmpeg/ffprobe, numpy and opencv-python (the measurements use optical flow); without opencv it stops at once and
+names the install. Its sheet helpers (label, tile, imread, imwrite, resize_area, rgb2bgr, inferno), shared with sheet.py
+and detail-pair.py, fall back to Pillow when opencv is missing.
 """
 import argparse
 import json
@@ -174,8 +176,18 @@ import subprocess
 import sys
 from collections import deque
 
-import cv2
 import numpy as np
+
+try:
+    import cv2
+except ModuleNotFoundError:  # the measurements need it (main() names the install); the sheet helpers fall back to Pillow
+    cv2 = None
+try:
+    from PIL import Image, ImageDraw, ImageFont
+except ModuleNotFoundError:
+    Image = ImageDraw = ImageFont = None
+
+CV2_INSTALL = f'{sys.executable} -m pip install opencv-python-headless'
 
 SW, SH = 480, 270  # MAD analysis size; the thresholds are calibrated at this size
 # Hold and quiet limits per pace: a calm film holds its reads longer (a drifting line is alive). The runs are in 60 fps
@@ -562,7 +574,86 @@ def act_of(f, acts):
 # ------------------------------------------------------------------------------------------
 # sheet helpers (labelled tiles), shared with sheet.py
 # ------------------------------------------------------------------------------------------
+def need_images(what):
+    """Stop with the install line when neither opencv nor Pillow can do `what`."""
+    if cv2 is None and Image is None:
+        die(f'{what} needs opencv or Pillow: {CV2_INSTALL} (or {sys.executable} -m pip install pillow)')
+
+
+def imread(path):
+    """A picture file as a BGR uint8 array (None when it cannot be read)."""
+    need_images('reading pictures')
+    if cv2 is not None:
+        return cv2.imread(path, cv2.IMREAD_COLOR)
+    try:
+        return np.ascontiguousarray(np.asarray(Image.open(path).convert('RGB'))[:, :, ::-1])
+    except OSError:
+        return None
+
+
+def imwrite(path, img):
+    """Write a BGR uint8 array (PNG or JPEG by the extension)."""
+    need_images('writing a sheet')
+    if cv2 is not None:
+        return cv2.imwrite(path, img)
+    Image.fromarray(np.ascontiguousarray(img[:, :, ::-1])).save(path)
+    return True
+
+
+def resize_area(img, size):
+    """Resize to (w, h) with an area filter (opencv INTER_AREA, else Pillow's box filter)."""
+    w, h = int(size[0]), int(size[1])
+    if img.shape[1] == w and img.shape[0] == h:
+        return img
+    if cv2 is not None:
+        return cv2.resize(img, (w, h), interpolation=cv2.INTER_AREA)
+    need_images('resizing')
+    return np.asarray(Image.fromarray(np.ascontiguousarray(img)).resize((w, h), Image.BOX))
+
+
+def rgb2bgr(img):
+    return np.ascontiguousarray(img[:, :, ::-1])
+
+
+_INFERNO = [(0, (0, 0, 4)), (32, (33, 12, 74)), (64, (87, 16, 110)), (96, (138, 34, 106)), (128, (188, 55, 84)), (160, (228, 90, 49)),
+            (192, (249, 142, 9)), (224, (249, 203, 53)), (255, (252, 255, 164))]  # RGB anchors of the inferno ramp
+
+
+def inferno(d):
+    """A uint8 map as BGR in the inferno ramp (opencv's colour map, else the same ramp from nine anchors)."""
+    if cv2 is not None:
+        return cv2.applyColorMap(d, cv2.COLORMAP_INFERNO)
+    xs = [a for a, _ in _INFERNO]
+    lut = np.stack([np.interp(np.arange(256), xs, [c[k] for _, c in _INFERNO]) for k in (2, 1, 0)], axis=1).astype(np.uint8)
+    return lut[d]
+
+
+def _label_pil(img, text, sub):
+    """label() without opencv: Pillow's default font on the same dark bars."""
+    if Image is None:
+        return img
+    im = Image.fromarray(np.ascontiguousarray(img[:, :, ::-1]))
+    dr = ImageDraw.Draw(im)
+    size = max(11, round(img.shape[1] / 40))
+    try:
+        font = ImageFont.load_default(size=size)
+    except TypeError:  # an old Pillow: the fixed bitmap font
+        font = ImageFont.load_default()
+    x0, y0, x1, y1 = dr.textbbox((0, 0), text, font=font)
+    dr.rectangle((0, 0, x1 - x0 + 8, y1 - y0 + 8), fill=(0, 0, 0))
+    dr.text((4 - x0, 4 - y0), text, font=font, fill=(255, 255, 255))
+    if sub:
+        top = y1 - y0 + 8
+        a0, b0, a1, b1 = dr.textbbox((0, 0), sub, font=font)
+        dr.rectangle((0, top, a1 - a0 + 8, top + b1 - b0 + 8), fill=(40, 40, 40))
+        dr.text((4 - a0, top + 4 - b0), sub, font=font, fill=(255, 230, 120))
+    img[:] = np.asarray(im)[:, :, ::-1]
+    return img
+
+
 def label(img, text, sub=None):
+    if cv2 is None:
+        return _label_pil(img, text, sub)
     font, sc = cv2.FONT_HERSHEY_SIMPLEX, max(0.4, img.shape[1] / 900)
     (tw, th), base = cv2.getTextSize(text, font, sc, 1)
     cv2.rectangle(img, (0, 0), (tw + 8, th + base + 6), (0, 0, 0), -1)
@@ -3326,6 +3417,9 @@ def main():
     g.add_argument('--det-min', type=float, default=0.3)
     g.add_argument('--det-ratio', type=float, default=5.0)
     args = ap.parse_args()
+    if cv2 is None:
+        die(f'the measurements need opencv (optical flow, edges), which {sys.executable} does not have: {CV2_INSTALL}, '
+            'or run it with a Python that has it (PYTHON=<python> node scripts/py.mjs scripts/forensics.py ...)')
     if args.self_test:
         sys.exit(self_test())
     if not args.video:
