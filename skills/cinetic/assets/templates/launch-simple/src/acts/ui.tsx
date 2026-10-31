@@ -1,6 +1,8 @@
 // Small product-UI parts for the picture beats, drawn in the ground family's inks and lit by the film's one key light
 // (top left, lib/light FILM_LIGHT): a card, a typed field, a list row that checks itself, a count, a live waveform, a
-// listening pill and the planes that part under the picture's camera. They take every string from the scene (from
+// listening pill, a lit window onto footage and the planes that part under the picture's camera. A light surface on a
+// dark ground (a white card, a phone's light screen) is the film's second value: its content takes surfaceInks().
+// They take every string from the scene (from
 // launch.ts `ui`): nothing here carries sample content. Rebuild the product's own screens with them, or with the kit
 // (src/kit: the lit Phone and Laptop in kit/device.tsx), at film size (brand/tokens UI_FILM).
 //
@@ -21,7 +23,7 @@ import { FPS } from '../timeline';
 import { usePromote } from './layer';
 
 /** Card numbers (px at 1080p): one radius for the film, inner padding at least 0.8 of the text's cap. */
-export const CARD = { radius: 30, pad: 48, row: 92, text: 44, small: 38, creep: 30, creepMax: 40, edge: 1.5 } as const;
+export const CARD = { radius: 30, pad: 48, row: 100, text: 48, small: 40, creep: 30, creepMax: 40, edge: 1.5 } as const;
 const k60 = FPS / 60;
 
 /** The picture beat's clock and camera (stage.tsx Scene provides it): frames since the beat began, its length, and the
@@ -43,10 +45,32 @@ export const Plane: React.FC<{ z: number; children: React.ReactNode; style?: Rea
   return <div style={{ position: 'absolute', inset: 0, transform: `translate3d(${dx.toFixed(3)}px, ${dy.toFixed(3)}px, 0)`, ...style }}>{children}</div>;
 };
 
+/** Whether a colour is a light surface (OKLCH L over .8): its content takes dark ink. */
+export const isLight = (c: string) => toOklch(c)[0] > 0.8;
+
+/**
+ * The inks for content drawn on a surface `bg`: on a light surface (a white card on a dark ground, a light screen) the
+ * ink, a muted ink, a hairline and the brand accent at full depth (a dark ground's lifted accent washes out on white);
+ * on a dark surface the ground's own inks.
+ */
+export const surfaceInks = (inks: FamilyInks, bg: string): FamilyInks =>
+  isLight(bg) ? { ...inks, type: C.ink, mute: mixColor(C.ink, bg, 0.5), line: mixColor(C.ink, bg, 0.84), accent: C.accent, surface: bg, dark: false } : inks;
+
+/** The film's light surface on this ground: white with a breath of the ground's hue in it (never a cream). */
+export const lightSurface = (inks: FamilyInks) => (inks.dark ? mixColor(C.white, inks.ground, 0.035) : C.white);
+
 /** The lit face of a card: its fill lit from the key (brighter toward the top left), its rim and its shadow (CSS). */
 export const litFace = (bg: string, inks: FamilyInks, o: { lift?: number; accent?: boolean } = {}) => {
   const e = (CARD.edge * U).toFixed(2);
   const lift = o.lift ?? 0;
+  if (inks.dark && isLight(bg) && !o.accent) {
+    // a light card on a dark ground: the face falling off a few percent away from the key, its thickness as a shaded
+    // lower edge, a tight contact shadow and a wide soft one (an object standing in the room, never a sticker)
+    const face = `linear-gradient(158deg, ${bg} 0%, ${bg} 46%, ${mixColor(bg, inks.ground, 0.07)} 100%)`;
+    const edge = `inset 0 ${(-2.5 * U).toFixed(2)}px 0 ${mixColor(bg, inks.ground, 0.16)}, inset 0 ${e}px 0 ${C.white}`;
+    const shadow = `0 ${(8 * U).toFixed(1)}px ${(18 * U).toFixed(1)}px rgba(0, 0, 0, ${(0.26 + 0.06 * lift).toFixed(3)}), 0 ${(40 * U + lift * 12 * U).toFixed(1)}px ${(96 * U).toFixed(1)}px rgba(0, 0, 0, ${(0.36 + 0.08 * lift).toFixed(3)})`;
+    return { background: face, boxShadow: `${edge}, ${shadow}` };
+  }
   if (inks.dark || o.accent) {
     // a dark (or brand-coloured) card: the face a touch brighter where the key falls, a rim on the edges facing it,
     // a deep contact shadow on the ground
@@ -81,9 +105,9 @@ export const Card: React.FC<{ f: number; at?: number; cx: number; cy: number; w:
   const raw = ((clock.dur / 2 - clock.f) * CARD.creep) / FPS;
   const dy = creep ? CARD.creepMax * Math.tanh(raw / CARD.creepMax) * U : 0;
   return (
-    <div data-ui="" style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, borderRadius: CARD.radius * U, ...litFace(bg, inks, { lift, accent: !!fill }), opacity: a, transform: `translate3d(${(cx - w / 2).toFixed(3)}px, ${(cy - h / 2 + (1 - a) * 24 * U - lift * 6 * U).toFixed(3)}px, 0)`, overflow: 'hidden' }}>
+    <div data-ui="" style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, borderRadius: CARD.radius * U, ...litFace(bg, inks, { lift, accent: !!fill && !isLight(fill) }), opacity: a, transform: `translate3d(${(cx - w / 2).toFixed(3)}px, ${(cy - h / 2 + (1 - a) * 24 * U - lift * 6 * U).toFixed(3)}px, 0)`, overflow: 'hidden' }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, transform: `translate3d(0px, ${dy.toFixed(3)}px, 0)` }}>{children}</div>
-      <Glare w={w} h={h} r={CARD.radius * U} dark={inks.dark || !!fill} />
+      <Glare w={w} h={h} r={CARD.radius * U} dark={(inks.dark || !!fill) && !isLight(bg)} />
     </div>
   );
 };
@@ -164,22 +188,24 @@ export const Typed: React.FC<{ f: number; at: number; x: number; y: number; text
   );
 };
 
-/** A list row: arriving on `at` (a hit), its round check filling from `done` over 16 f, the label easing to the muted ink. */
-export const Row: React.FC<{ f: number; at: number; done?: number; x: number; y: number; w: number; label: string; inks: FamilyInks }> = ({ f, at, done, x, y, w, label, inks }) => {
+/** A list row: arriving on `at` (a hit), its round check filling from `done` over 16 f, the label easing to the muted ink
+ * (`size` its text, `h` its height, px at 1080p). */
+export const Row: React.FC<{ f: number; at: number; done?: number; x: number; y: number; w: number; label: string; inks: FamilyInks; size?: number; h?: number }> = ({ f, at, done, x, y, w, label, inks, size = CARD.text, h = CARD.row }) => {
   const p = clamp((f - at) / (20 * k60));
   const a = E.snapOut(p);
   const q = clamp((f - at) / (34 * k60)); // the rise lands on a glide (34 f), its opacity on the hit
   const d = done === undefined ? 0 : E.stdInOut(clamp((f - done) / (16 * k60)));
-  const r = 20 * U;
+  const r = size * 0.42 * U;
+  const b = Math.max(2.5, size * 0.052) * U;
   return (
-    <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: CARD.row * U, opacity: a, transform: `translate3d(${x.toFixed(3)}px, ${(y + (1 - arrive(E.glideOut(q))) * 18 * U).toFixed(3)}px, 0)` }}>
-      <div style={{ position: 'absolute', left: 0, top: (CARD.row * U) / 2 - r, width: 2 * r, height: 2 * r, borderRadius: r, boxSizing: 'border-box', border: `${(2.5 * U).toFixed(2)}px solid ${mixColor(inks.line, inks.accent, d)}` }}>
-        <div style={{ position: 'absolute', inset: -2.5 * U, borderRadius: r, background: `radial-gradient(circle at 34% 30%, ${mixColor(inks.accent, C.white, 0.22)} 0%, ${inks.accent} 62%)`, opacity: d }} />
-        <svg width={2 * r} height={2 * r} viewBox="0 0 40 40" style={{ position: 'absolute', left: -2.5 * U, top: -2.5 * U, opacity: clamp(d * 3) }}>
+    <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h * U, opacity: a, transform: `translate3d(${x.toFixed(3)}px, ${(y + (1 - arrive(E.glideOut(q))) * 18 * U).toFixed(3)}px, 0)` }}>
+      <div style={{ position: 'absolute', left: 0, top: (h * U) / 2 - r, width: 2 * r, height: 2 * r, borderRadius: r, boxSizing: 'border-box', border: `${b.toFixed(2)}px solid ${mixColor(inks.line, inks.accent, d)}` }}>
+        <div style={{ position: 'absolute', inset: -b, borderRadius: r, background: `radial-gradient(circle at 34% 30%, ${mixColor(inks.accent, C.white, 0.22)} 0%, ${inks.accent} 62%)`, opacity: d }} />
+        <svg width={2 * r} height={2 * r} viewBox="0 0 40 40" style={{ position: 'absolute', left: -b, top: -b, opacity: clamp(d * 3) }}>
           <path d="M12 21 L18 27 L29 14" fill="none" stroke={inkOn(inks.accent, inks)} strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={30} strokeDashoffset={30 * (1 - d)} />
         </svg>
       </div>
-      <Txt x={2 * r + 28 * U} y={(CARD.row * U) / 2 - CARD.text * U * 0.62} color={mixColor(inks.type, inks.mute, 0.6 * d)}>{label}</Txt>
+      <Txt x={2 * r + size * 0.6 * U} y={(h * U) / 2 - size * U * 0.62} size={size} color={mixColor(inks.type, inks.mute, 0.6 * d)}>{label}</Txt>
     </div>
   );
 };
@@ -219,22 +245,45 @@ export const Waveform: React.FC<{ f: number; w: number; h: number; color: string
 };
 
 /**
- * The product listening, as a pill on the near plane over the input footage: a lit dark pill (never a frosted panel)
- * holding the accent's live dot and a waveform, arriving on `at` (a short rise on a glide) and staying live. Centred on
- * (cx, cy); the footage stays the picture, the pill says the product is taking it in.
+ * The product listening, as a pill: a light lit pill (the product's own surface: it reads as UI on any picture, never
+ * a dark smudge or a frosted panel) holding the accent's live dot, pulsing, and a live waveform in the accent, arriving
+ * on `at` (a short rise on a glide). Centred on (cx, cy), `w` x `h` px at 1080p (animate them to fly it into the
+ * product: `n` bars stay fixed, so nothing pops while it changes size); `live` 0 settles the waveform.
  */
-export const ListenPill: React.FC<{ f: number; at: number; cx: number; cy: number; inks: FamilyInks; w?: number }> = ({ f, at, cx, cy, inks, w = 480 }) => {
+export const ListenPill: React.FC<{ f: number; at: number; cx: number; cy: number; inks: FamilyInks; w?: number; h?: number; n?: number; live?: number; opacity?: number }> = ({ f, at, cx, cy, inks, w = 600, h = 136, n = 22, live = 1, opacity = 1 }) => {
   const a = E.glideOut(clamp((f - at) / (30 * k60)));
   const pw = w * U;
-  const ph = 116 * U;
-  const bg = mixColor(C.ink, C.white, 0.16);
+  const ph = h * U;
+  const bg = lightSurface({ ...inks, dark: true });
   const pulse = 0.5 + 0.5 * Math.sin((2 * Math.PI * f) / (FPS * 1.4));
+  const dot = ph * 0.24;
+  const wx = ph * 0.36 + dot + ph * 0.28;
   return (
-    <div data-ui="" style={{ position: 'absolute', left: 0, top: 0, width: pw, height: ph, borderRadius: ph / 2, ...litFace(bg, { ...inks, dark: true }), opacity: a, transform: `translate3d(${(cx - pw / 2).toFixed(3)}px, ${(cy - ph / 2 + (1 - a) * 26 * U).toFixed(3)}px, 0)` }}>
-      <div style={{ position: 'absolute', left: ph * 0.36, top: ph / 2 - 15 * U, width: 30 * U, height: 30 * U, borderRadius: 15 * U, background: inks.accent, boxShadow: `0 0 0 ${(6 * U * pulse).toFixed(2)}px ${mixColor(inks.accent, bg, 0.6)}` }} />
-      <div style={{ position: 'absolute', left: ph * 0.36 + 62 * U, top: ph * 0.26 }}>
-        <Waveform f={f} w={pw - ph * 0.36 - 62 * U - ph * 0.4} h={ph * 0.48} color={C.white} n={20} />
+    <div data-ui="" style={{ position: 'absolute', left: 0, top: 0, width: pw, height: ph, borderRadius: ph / 2, ...litFace(bg, { ...inks, dark: true }), opacity: a * opacity, transform: `translate3d(${(cx - pw / 2).toFixed(3)}px, ${(cy - ph / 2 + (1 - a) * 26 * U).toFixed(3)}px, 0)` }}>
+      <div style={{ position: 'absolute', left: ph * 0.36, top: ph / 2 - dot / 2, width: dot, height: dot, borderRadius: dot / 2, background: C.accent, boxShadow: `0 0 0 ${(dot * 0.24 * pulse * live).toFixed(2)}px ${mixColor(C.accent, bg, 0.74)}` }} />
+      <div style={{ position: 'absolute', left: wx, top: ph * 0.25 }}>
+        <Waveform f={f} w={pw - wx - ph * 0.4} h={ph * 0.5} color={C.accent} n={n} live={live} />
       </div>
+    </div>
+  );
+};
+
+/**
+ * A lit window onto footage or a photograph: the picture inside a rounded frame standing in the room (a rim catching
+ * the key, a contact shadow on the ground, a glare sliding against the camera), centred on (cx, cy), `w` x `h` px. The
+ * picture (`children`) is laid out at the frame's full width and scaled into the window, so a soft source is shown
+ * smaller and reads sharp; grade it into the film (a tint at the ground's hue, kit/theme photoGrade).
+ */
+export const Window: React.FC<{ cx: number; cy: number; w: number; h: number; inks: FamilyInks; children: React.ReactNode; opacity?: number; scale?: number }> = ({ cx, cy, w, h, inks, children, opacity = 1, scale = 1 }) => {
+  const r = CARD.radius * 1.2 * U;
+  const k = w / 1920;
+  return (
+    <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, opacity, borderRadius: r, transformOrigin: '50% 50%', transform: `translate3d(${(cx - w / 2).toFixed(3)}px, ${(cy - h / 2).toFixed(3)}px, 0) scale(${scale.toFixed(5)})`, boxShadow: `0 ${(14 * U).toFixed(1)}px ${(30 * U).toFixed(1)}px rgba(0, 0, 0, 0.34), 0 ${(48 * U).toFixed(1)}px ${(120 * U).toFixed(1)}px rgba(0, 0, 0, ${inks.dark ? 0.5 : 0.18})` }}>
+      <div data-imagery="" style={{ position: 'absolute', inset: 0, borderRadius: r, overflow: 'hidden', isolation: 'isolate' }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, width: 1920, height: (1920 * h) / w, transformOrigin: '0 0', transform: `scale(${k.toFixed(5)})` }}>{children}</div>
+      </div>
+      <div style={{ position: 'absolute', inset: 0, borderRadius: r, pointerEvents: 'none', boxShadow: `inset 0 ${(1.5 * U).toFixed(2)}px 0 rgba(255, 255, 255, 0.32), inset 0 0 0 ${(1.5 * U).toFixed(2)}px rgba(255, 255, 255, 0.1)` }} />
+      <Glare w={w} h={h} r={r} dark />
     </div>
   );
 };
