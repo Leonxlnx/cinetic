@@ -22,12 +22,14 @@ node scripts/lint-film.mjs src [--strict]                     # every build step
 node scripts/precheck.mjs [--ship]                            # before every still or render: imports, frames, timing, kit, fit
 python3 scripts/copy-check.py --ui src                        # the product's UI strings: real words, no slot, no sample
 npm run cues                                                  # out/cues.json (declarations, copy, events)
-bash scripts/render.sh Film out/preview.mp4 --preview         # muted render, mux, probe.py and check-sync.py
+node scripts/frames.mjs end                                   # the ending as stills, early: the lockup must read
+bash scripts/render.sh Film out/draft.mp4 --draft --max-min 9   # the whole film, half size; rerun until exit 0
 bash scripts/layout-audit.sh Film --copy --scale 0.5          # placement, overlaps, kit icons, stand-ins
-python3 scripts/forensics.py out/preview.mp4 --cues out/cues.json --grammar-only   # motion and seam gates, small decode
-python3 scripts/forensics.py out/preview.mp4 --cues out/cues.json --seams          # the seam checks alone, seconds
+python3 scripts/forensics.py out/draft.mp4 --cues out/cues.json --grammar-only     # motion and seam gates, small decode
+python3 scripts/forensics.py out/draft.mp4 --cues out/cues.json --seams            # the seam checks alone, seconds
 node scripts/logos.mjs check                                  # a film that shows other products' marks
-node scripts/frames.mjs sheet                                 # the contact sheet for the director pass
+node scripts/frames.mjs sheet --from out/draft.mp4            # the contact sheet for the director pass (16 tiles, seconds)
+bash scripts/render.sh Film out/film.mp4 --max-min 9          # the master by 70 % of the budget; rerun until exit 0
 python3 scripts/forensics.py out/film.mp4 --cues out/cues.json --json out/qa/forensics.json   # full, on the master only
 node scripts/film-diff.mjs --record                           # after the ship gate: the film joins the history
 ```
@@ -110,7 +112,7 @@ Reads `timeline.ts` (a HyperFrames project: `timeline.js`) and checks it against
 | `picture-change`, `opener` (warn) | a layout or type change at least every 2.5 s outside the end lock and the tail (a cut or seam, a COPY entry arriving or leaving, a CUE whose salience is `hit`, `cut`, `copy` or `move`; `life` is not a change); at least two in the first 2.5 s |
 | `seam-plan` | a fade only ends the film; UI dissolves ≤ 8 f@60 and never across an act line; any seam kind ≤ 3 times except the signature; ≥ 40 % of seams carried; a cut film has at least one velocity seam |
 | `declares-cover` | every step, flash, camera-blur need and seam that a primitive declares is covered by the timeline's declarations |
-| `event-gap`, `density-plan` | no stretch past 72 f without an event or a reading hold (48 f in crisp); starts per second and concurrency in band |
+| `event-gap`, `density-plan` | a stretch past 72 f without an event or a reading hold (48 f in crisp) is a warning (a hold may rest, still); past 150 f@60 (2.5 s, `--max-rest`) it fails; starts per second and concurrency in band |
 | `stagger-shape`, `accent-time`, `end-lock`, `exit-length` | irregular staggers in the house range; the accent transient on type; the end lock held; exits long enough to read as moves |
 | `script` | the film's words are a script: every line (an entry, a build chain joined, a replace fragment; not ui strings, `kind: 'name'` or the end card) holds 2–7 words (over 7 an error, a single word a warning, called a keyword); more than half the lines a single word warns as a keyword pile; then `copy-check.py` reads every entry as a stranger would and its errors are script errors (vague or fancy words, metaphors, slogan shapes, no verb, two claims in a line, no name, nothing that says what the product is by 3 s; an update film: the name and the version by 3 s, from `LOOK.filmType`; `--no-copy` skips it); two lines on screen together after the first one's read is an error unless the later one declares `swap: '<id>'`; a sentence set on two lines warns. A film whose lines are mostly sentences reads at the script's budget: 50 words, 2.4 words a second in any 5 s, 1.6 over the body, text on up to 85 % (`references/copy-and-type.md` §1–2b) |
 | text flow | `fragment` (chain parts), `copy-lines`, `copy-concurrent`, `read-first`, `reveal-rate`, `chain-gap`, `chain-beat`, `word-rate`, `word-total`, `text-hold`, `text-share` (`references/copy-and-type.md`) |

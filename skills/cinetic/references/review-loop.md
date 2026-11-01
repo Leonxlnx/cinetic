@@ -21,24 +21,29 @@ The numbers here are proven defaults from building and shipping films, not dogma
 
 ## 1. The default review
 
-One round on a preview, then the master. It fits the film's time budget (90 minutes from scaffold to master, 120 at most).
+One round on the draft, then the master, on the time plan in SKILL.md (a whole draft with its ending by 45 % of the
+budget, the final started by 70 %, never a cut film).
 
-1. **Render the preview** (`bash scripts/render.sh Film out/preview.mp4 --preview`: muted render, mux, `probe.py` and
-   `check-sync.py`).
+1. **Render the draft** (`bash scripts/render.sh Film out/draft.mp4 --draft`: the whole film at half size, a fast
+   encode, the current sound, `out/qa/draft-sheet.png`). The ending was already looked at as stills
+   (`node scripts/frames.mjs end`).
 2. **The fast gates**, each seconds to a minute on a 30 s film: `copy-check.py --ui src`, `grid-check.ts`,
    `lint-film.mjs src`, `layout-audit.sh Film --copy --scale 0.5` (placement, overlaps, kit icons, stand-ins),
-   `forensics.py out/preview.mp4 --cues out/cues.json --grammar-only` (the motion and seam gates on a small decode;
+   `forensics.py out/draft.mp4 --cues out/cues.json --grammar-only` (the motion and seam gates on a small decode;
    `--seams` alone in seconds), `logos.mjs check` when the film shows other products' marks, `film-diff.mjs`
    (`references/checks.md` §1 lists them in order). A gate that costs more than 5 minutes on a 30 s film is advisory.
-3. **One contact sheet**: `node scripts/frames.mjs sheet` (about 30 labelled tiles over the film).
+3. **One contact sheet, cut from the draft**: `node scripts/frames.mjs sheet --from out/draft.mp4` (16 labelled tiles;
+   `--frames A-B --every N` for one act, `grab --from out/draft.mp4 <frames>` for full frames). No per-frame stills.
 4. **The director pass** (`assets/critics/director.md`): the picture beats read with the words ignored first (what
    does the product do in each?), then the checklist: words in the middle, line then picture, one voice and quiet
    emphasis, seams that flow, clean UI, current marks and a centred end card built from the last element, its own film
    against the last three, plain words, less text, the picture telling it, colour, premium rather than merely clean,
    and the time left. Run it as a subagent with the filled template, or yourself with the sheet open before the code.
-5. **Fix** in order of impact per minute: every P0, then the P1s the time allows. Re-render only the acts you changed.
+5. **Fix** in order of impact per minute: every P0, then the P1s the time allows, then the draft again (only the parts
+   whose source changed re-render).
 6. **A second round only when a gate fails or a P0 was fixed**; otherwise go to the master. Stop after three rounds.
-7. **The master** (`bash scripts/render.sh Film out/film.mp4`, `--blur` when the film's policy asks) gets a check, not
+7. **The master** (`bash scripts/render.sh Film out/film.mp4 --max-min 9`, rerun until exit 0; `--blur` when the film's
+   policy asks), started by 70 % of the budget; out of time, `--from-draft out/draft.mp4` is the delivery. It gets a check, not
    a round: full `forensics.py` on it, `probe.py` and `check-sync.py` (render.sh runs both), the sound gates, then
    `film-diff.mjs --record`.
 
@@ -56,7 +61,7 @@ the four lenses, the verifier and the 12-dimension rubric belong to the long rev
 - **A dev round can render every 4th frame.** The `FilmEvery` composition is the film sampled (`step` 4 by default,
   `offset` 0; the next round `--props='{"step":4,"offset":2}'`): a whole-film check at half size in about a quarter of
   the time, with a paired sheet that still shows every move. Judge timing and spacing on it, motion on a preview.
-- **Every critique round reviews a preview** (`render.sh --preview`), which carries the same BT.709 tags as the master, so colour and banding judgements carry over. Previews are minutes; a blurred master is tens of minutes, and blurring a film that is still changing wastes them.
+- **Every critique round reviews a draft** (`render.sh --draft`, or a full-size `--preview` for banding and small type), which carries the same BT.709 tags as the master, so colour judgements carry over. Drafts are minutes; a blurred master is tens of minutes, and blurring a film that is still changing wastes them.
 - **The blurred master is rendered once, after the last critique round, and gets a check, not a round:** `forensics.py` and `av-audit.py` on the master, the fastest frames at full size (`fastest_frames` in `out/samples.json`, printed by `render.sh`), and a quick director glance at the watch sheets for stamped copies, smears and blur across cuts. If that check finds a problem in one act, re-render that act's range and splice it (§7) rather than re-blurring the film.
 
 ## 2. The long review, step by step (optional)
