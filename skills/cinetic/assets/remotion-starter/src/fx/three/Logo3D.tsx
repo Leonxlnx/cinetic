@@ -4,12 +4,15 @@
 // back, turns the mark to face the camera and presses its depth flat, and the mark lands exactly on the 2D lockup:
 // the last 3D frame and the flat drawing (brand/Mark LogoMark) are the same pixels, so the swap is invisible and the
 // lockup plays on in 2D. One move that starts, travels and lands; nothing idles after it.
-// Without hardware WebGL (software GL, no context) the part draws the same move flat: the 2D mark pulling back to the
-// lockup.
+// Without hardware WebGL (software GL, no context) the part draws the same move as a CSS-3D solid (SolidMark): the
+// mark's face over a stack of its own silhouette receding in depth, each slice darker, turned by the same pose in a
+// real perspective, a light gradient across the face from the key's side and a soft shadow under it, pressing flat as
+// it lands on the lockup. A software render reads as an object, never a big flat logo shrinking.
 import React, { useEffect, useMemo } from 'react';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
 import { type Logo, LogoMark, logoParts, SAMPLE_MARK_SVG } from '../../brand/Mark';
-import { E, rand } from '../../lib/anim';
+import { clamp, E, rand } from '../../lib/anim';
+import { mixColor } from '../../lib/color';
 import { type Finish, markSolid } from './geo';
 import { draws3D, type GlMode } from './gl';
 import type { Light3D } from './light';
@@ -140,6 +143,68 @@ export const FlatMark: React.FC<{ logo?: Logo; lockup: Lockup; scale?: number; o
   );
 };
 
+/** The SVG of a mark's parts in one colour (a mask: the face's light gradient drawn only inside the mark). */
+const markMaskUrl = (lg: Logo) => {
+  const paths = lg.parts.flatMap((p) => p.items.filter((it) => it.fill !== 'none').map((it) => `<path d="${it.d}" transform="${it.transform}" fill="#fff"${it.fillRule ? ` fill-rule="${it.fillRule}"` : ''}/>`)).join('');
+  return `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${paths}</svg>`)}")`;
+};
+/** House numbers of the CSS-3D solid: slices a px of depth (capped), the side's darkening front to back, the face's
+ * light, the shadow's strength and the lens (CSS perspective, px at 1080p). */
+export const SOLID2D = { perPx: 0.42, min: 6, max: 30, side: [0.38, 0.62] as [number, number], light: 0.34, shadow: 0.32, perspective: 1600 } as const;
+/**
+ * The 3D move without WebGL: the mark's face over `n` slices of its own silhouette receding along its depth, each darker
+ * toward the back (the side walls), in one CSS 3D transform (perspective, the pose's turn); a light gradient across the
+ * face from the key's side, masked by the mark; a soft shadow under it. As the pose lands the depth presses to nothing,
+ * the turn unwinds and the light fades: the last frame is the flat lockup.
+ */
+export const SolidMark: React.FC<{ logo: Logo; lockup: Lockup; p: number; o: PoseOpts; light?: Light3D; W: number; H: number }> = ({ logo, lockup, p, o, light, W, H }) => {
+  const st = logoPose(clamp01(p), o);
+  const size = lockup.size;
+  const box = logo.box;
+  // where the close-up stands (the focus point of the mark at the frame's centre) and where it lands
+  const end = { x: lockup.x + ((box.x + box.w / 2) * size) / 100, y: lockup.y + ((box.y + box.h / 2) * size) / 100 };
+  const start = { x: W / 2 - o.focus[0] * o.mirror * (box.w / 100) * size * o.scale, y: H / 2 - o.focus[1] * (box.h / 100) * size * o.scale };
+  const cx = start.x + (end.x - start.x) * st.travel;
+  const cy = start.y + (end.y - start.y) * st.travel;
+  const s = st.scale;
+  const depthPx = (o.depth / 100) * size * s * st.depth;
+  const n = Math.round(clamp(depthPx * SOLID2D.perPx, SOLID2D.min, SOLID2D.max) * Math.min(1, st.depth * 4));
+  // the light gradient runs from the key's side across the face; the side walls darker the further back
+  const lightA = SOLID2D.light * (1 - st.flat);
+  const angle = (((light?.azimuth ?? 315) + 180) % 360).toFixed(1);
+  const sideOf = (fill: string, k: number) => mixColor(fill, '#000000', SOLID2D.side[0] + (SOLID2D.side[1] - SOLID2D.side[0]) * (k / Math.max(1, n)));
+  const fillOf = (k: number) => (part: { fill: string; items: { fill: string }[] }) => {
+    const f = part.items.find((it) => it.fill && it.fill !== 'none')?.fill ?? part.fill ?? '#000000';
+    return sideOf(/^#[0-9a-f]{6}$/i.test(f) ? f : '#444444', k);
+  };
+  const face = size * s;
+  const left = cx - (((box.x + box.w / 2) * face) / 100);
+  const top = cy - (((box.y + box.h / 2) * face) / 100);
+  const turn = `perspective(${(SOLID2D.perspective * H) / 1080}px) rotateX(${(-st.pitch).toFixed(3)}deg) rotateY(${st.yaw.toFixed(3)}deg) rotateZ(${st.roll.toFixed(3)}deg)`;
+  const origin = `${(((box.x + box.w / 2) * face) / 100).toFixed(2)}px ${(((box.y + box.h / 2) * face) / 100).toFixed(2)}px`;
+  const shadowA = SOLID2D.shadow * (1 - st.flat) * clamp(st.depth * 1.5);
+  return (
+    <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, pointerEvents: 'none' }}>
+      {shadowA > 0.004 ? (
+        <div style={{ position: 'absolute', left: cx - face * 0.42, top: cy + (box.h / 200) * face * 0.92, width: face * 0.84, height: face * 0.16, borderRadius: '50%', background: `radial-gradient(closest-side, rgba(0, 0, 0, ${shadowA.toFixed(3)}), rgba(0, 0, 0, 0))` }} />
+      ) : null}
+      <div style={{ position: 'absolute', left, top, width: face, height: face, transformStyle: 'preserve-3d', transformOrigin: origin, transform: turn }}>
+        {Array.from({ length: n }, (_, i) => n - i).map((k) => (
+          <div key={k} style={{ position: 'absolute', inset: 0, transform: `translateZ(${(-(depthPx * k) / n).toFixed(2)}px)` }}>
+            <LogoMark logo={logo} size={face} fill={fillOf(k)} />
+          </div>
+        ))}
+        <div style={{ position: 'absolute', inset: 0 }}>
+          <LogoMark logo={logo} size={face} />
+          {lightA > 0.004 ? (
+            <div style={{ position: 'absolute', inset: 0, maskImage: markMaskUrl(logo), WebkitMaskImage: markMaskUrl(logo), maskSize: '100% 100%', WebkitMaskSize: '100% 100%', background: `linear-gradient(${angle}deg, rgba(255, 255, 255, ${lightA.toFixed(3)}) 0%, rgba(255, 255, 255, 0) 55%, rgba(0, 0, 0, ${(lightA * 0.6).toFixed(3)}) 100%)` }} />
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /** The mark as a solid object pulled back into its flat lockup (see the file's header). */
 export const Logo3D: React.FC<Logo3DProps> = ({ lockup, logo, at = 0, dur = LOGO3D.dur, finish = 'gloss', depth = LOGO3D.depth, bevel = LOGO3D.bevel, from, light, backdrop, samples, gl = 'auto', seed }) => {
   const frame = useCurrentFrame();
@@ -151,9 +216,8 @@ export const Logo3D: React.FC<Logo3DProps> = ({ lockup, logo, at = 0, dur = LOGO
   const p = (frame - at) / durF;
   if (p >= 1) return <FlatMark logo={lg} lockup={lockup} />;
   if (!draws3D(gl)) {
-    // the 2D move: the flat mark pulling back to the lockup on the same curve
-    const st = logoPose(clamp01(p), o);
-    return <FlatMark logo={lg} lockup={lockup} scale={Math.min(st.scale, 2.6)} />;
+    // the move as a CSS-3D solid on the same curve (no WebGL needed): an object, never a big flat logo shrinking
+    return <SolidMark logo={lg} lockup={lockup} p={p} o={o} light={light} W={W} H={H} />;
   }
   return (
     <Stage3D frame={frame} light={light} backdrop={backdrop} samples={samples} fov={o.fov}>
