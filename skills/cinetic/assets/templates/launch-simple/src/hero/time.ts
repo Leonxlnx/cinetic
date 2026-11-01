@@ -34,9 +34,12 @@ export const heroTimes = (id: string, dur: number, fps: number, lineWhole = 0): 
       return { move: [f(4), Math.max(f(60), send - f(4))], at: { rise, land, type, typeEnd: send - f(14), send } };
     }
     case 'macro-type': {
+      // push in on the first keys, ride the caret while it types, then pull back to the whole request (read whole for at
+      // least 20 f@60: the sentence the product starts from is never only seen cut by the frame), and press send
       const type = f(26);
-      const send = Math.max(type + f(70), end - f(22));
-      return { move: [type - f(26), f(44)], at: { type, typeEnd: send - f(30), point: send - f(26), send } };
+      const send = Math.max(type + f(100), end - f(20));
+      const typeEnd = send - f(60);
+      return { move: [type - f(26), f(44)], at: { type, typeEnd, pull: typeEnd + f(2), point: send - f(24), send } };
     }
     case 'black-glass': {
       // the pane racks in out of the dark (9 f), the camera's push lands, then the request types and sends

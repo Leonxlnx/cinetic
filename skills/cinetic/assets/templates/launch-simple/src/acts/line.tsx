@@ -16,10 +16,20 @@ import type { FamilyInks } from '../fx/Grounds';
 import { arrive, clamp, E, mix } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { measureTracked } from '../lib/measure';
-import { DEAL } from '../deal';
 import { LAUNCH } from '../launch';
-import { copy, FPS, H, HERO, heroSnapAt, keyWords, PAIRS, VOICE, W } from '../timeline';
+import { copy, FPS, H, HERO, heroSnapAt, keyWords, PAIRS, VOICE, voiceOf, W } from '../timeline';
 import { Soft, usePromote } from './layer';
+import { PLATE_WORLD, WORLD_SPEC } from '../world';
+import { toOklch } from '../lib/color';
+
+/**
+ * The line's ground on a photograph: a soft pool of the place's own deep tone behind the line (its light tone behind dark
+ * type), wide and feathered, fading in with the first word and leaving with the line. A line over a bright band of
+ * clouds or haze reads at 3:1 or better with it; a halo of text-shadow round each letter only muddies them. `a`: its
+ * strength at the centre; `w`, `h`: its size as multiples of the line's width and its rows' height.
+ */
+export const TYPE_POOL = { a: 0.42, w: 1.6, h: 3.0, in: 10 } as const;
+const poolOn = (type: string) => PLATE_WORLD && toOklch(type)[0] > 0.6;
 
 /**
  * The film's type pairing (fx/TypePairs), read from the tokens scripts/type-deal.ts wrote (FONT.text the voice, FONT.ui
@@ -45,15 +55,16 @@ export const EMPHASIS_WEIGHT = Math.min(860, Math.max(PAIR ? TYPE_PAIRS[PAIR].em
  * may drop to on one row, the widths (one row at the target up to `width`, a sentence row up to `sentence.width`: under
  * look-audit's 61 % and 75 % lines), the leading of two rows and the floor.
  */
-export const LINE_TYPE = { weight: roleWeight('line', Math.max(400, TYPE.line.weight - 60)), claimWeight: roleWeight('hero', Math.min(800, TYPE.line.weight + 80)), keyWeight: EMPHASIS_WEIGHT, cap: 0.727, target: 0.074, over: 0.066, claim: 0.112, claimWidth: 0.72, sentence: { lo: 0.06, hi: 0.064, width: 0.72 }, width: 0.585, lead: 1.06, floor: 0.06 } as const;
+export const LINE_TYPE = { weight: roleWeight('line', Math.max(400, TYPE.line.weight - 60)), claimWeight: roleWeight('hero', Math.min(800, TYPE.line.weight + 80)), keyWeight: EMPHASIS_WEIGHT, cap: 0.727, target: 0.066, aside: 0.05, over: 0.058, claim: 0.118, claimWidth: 0.76, sentence: { lo: 0.05, hi: 0.06, width: 0.72 }, width: 0.585, lead: 1.06, floor: 0.046 } as const;
 /** Tracking for a display size (px): the pairing's optical tracking at that size; without a pairing -0.01 em at 60 px
  * tightening to -0.03 em at 130 px and over (letters kept apart). */
 export const trackFor = (size: number) => (PAIR ? roleSetting(PAIR, 'line', size, FAM).track : -0.01 - 0.02 * clamp((size - 60) / 70));
 
 /** Words a line never sets apart on its own (the automatic key word is the last word that is not one of them). */
 const PLAIN = new Set(['a', 'an', 'the', 'to', 'of', 'in', 'on', 'for', 'and', 'or', 'with', 'your', 'you', 'it', 'its', 'is', 'are', 'be', 'into', 'at', 'by', 'from', 'that', 'this', 'just', 'now', 'all', 'every', 'each', 'our', 'we', 'my', 'me', 'up', 'out', 'so', 'as', 'than', 'then', 'no', 'not']);
-/** Whether a line with no starred word sets its last content word apart by weight (in its own ink, not the accent). */
-export const KEY_AUTO = true;
+/** Whether a line with no starred word sets its last content word apart by weight (in its own ink, not the accent). Off:
+ * a word set apart on every line is the template's tic; the one starred word of the film is the emphasis. */
+export const KEY_AUTO = false;
 /**
  * The line's words with the one set apart: the starred word (`key`: the accent ink and the emphasis weight), else,
  * with KEY_AUTO, the last content word (`strong`: the emphasis weight in the line's ink). One word a line, never two.
@@ -70,6 +81,12 @@ export const keyed = (words: { word: string; key: boolean }[]): { word: string; 
 export const isClaim = (id: string) => id === `line${LAUNCH.pairs.length}`;
 /** A line that shares the frame with its picture (launch.ts beat with or over): a step smaller. */
 export const isOver = (id: string) => PAIRS[Number(id.replace(/\D/g, '')) - 1]?.mode !== 'alone';
+/** A line between the first and the claim: an aside, set a size down (three sizes in a film: the statement, the asides,
+ * the claim at more than twice their cap), never every line one size. */
+export const isAside = (id: string) => {
+  const k = Number(id.replace(/\D/g, ''));
+  return k > 1 && k < LAUNCH.pairs.length;
+};
 
 const capPx = (cap: number) => (cap * H) / LINE_TYPE.cap;
 const widthOf = (s: string, size: number, wt: number = LINE_TYPE.weight) => measureTracked(s, size, wt, trackFor(size), FONT.text, { trailing: false });
@@ -88,9 +105,9 @@ const balance = (words: string[], size: number, wt: number): [string[], string[]
 };
 
 /** How a line is set: its size (px) and its rows (word counts per row). Browser only (it measures with the film's face). */
-export const lineLayout = (text: string, claim = false, over = false): { size: number; rows: number[] } => {
+export const lineLayout = (text: string, claim = false, over: boolean | 'aside' = false): { size: number; rows: number[] } => {
   const words = text.split(/\s+/).filter(Boolean);
-  const target = capPx(claim ? LINE_TYPE.claim : over ? LINE_TYPE.over : LINE_TYPE.target);
+  const target = capPx(claim ? LINE_TYPE.claim : over === 'aside' ? LINE_TYPE.aside : over ? LINE_TYPE.over : LINE_TYPE.target);
   // one row at the target (the hero line may run wider: it is the one big line)
   const wt = weightOf(claim);
   if (widthOf(text, target, wt) <= W * (claim ? LINE_TYPE.claimWidth : LINE_TYPE.width)) return { size: target, rows: [words.length] };
@@ -135,7 +152,7 @@ export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyIn
   const words = keyed(keyWords(raw));
   const text = words.map((w) => w.word).join(' ');
   const hero = isClaim(id);
-  const { size, rows } = lineLayout(text, hero, isOver(id));
+  const { size, rows } = lineLayout(text, hero, isOver(id) || (isAside(id) ? 'aside' : false));
   const track = trackFor(size);
   const wt = weightOf(hero);
   const wOf = (w: { strong: boolean }) => (w.strong ? Math.max(LINE_TYPE.keyWeight, wt + 100) : wt);
@@ -147,7 +164,7 @@ export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyIn
   };
   const t = F - c.in;
   const k = FPS / 60;
-  const voice = DEAL.voice;
+  const voice = voiceOf(Number(id.replace(/\D/g, '')) - 1);
   // the hero line's last word: hidden until its snap (one frame at HERO.from x, settling in HERO.settle), a frame-whole
   // state (sub-frames never disagree on whether it is in)
   const last = words.length - 1;
@@ -170,8 +187,15 @@ export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyIn
   const lone = hero && rows.length > 1 && rows[rows.length - 1] === 1;
   const top = cy - (rows.length * lineH) / 2 + (lone ? (1 - landed) * lineH * 0.5 : 0);
   let first = 0;
+  // the pool behind the line on a photograph: as wide as its widest row, faded in with its first word
+  const widest = Math.max(...rows.map((n, r) => { const st = rows.slice(0, r).reduce((a, b) => a + b, 0); const e = ends(words.slice(st, st + n)); return e[e.length - 1] ?? 0; }));
+  const poolA = poolOn(inks.type) ? TYPE_POOL.a * E.softOut(clamp(t / (TYPE_POOL.in * k))) : 0;
+  const deep = mixColor(WORLD_SPEC.base, '#000000', 0.4);
+  const pw = widest * TYPE_POOL.w + size * 2;
+  const ph = rows.length * lineH * TYPE_POOL.h;
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, opacity: voice === 'blur' ? clamp(whole / 0.35) : 1, transformOrigin: `${W / 2}px ${cy}px`, transform: `scale(${push.toFixed(5)})` }}>
+      {poolA > 0.004 ? <div data-pool="" style={{ position: 'absolute', left: W / 2 - pw / 2, top: cy - ph / 2, width: pw, height: ph, borderRadius: '50%', background: `radial-gradient(closest-side, ${deep} 0%, ${deep} 38%, transparent 100%)`, opacity: poolA }} /> : null}
       <Soft sigma={sigma}>
         {rows.map((n, r) => {
           const row = words.slice(first, first + n);

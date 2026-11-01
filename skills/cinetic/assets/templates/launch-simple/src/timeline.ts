@@ -61,8 +61,21 @@ export const VOICE = {
   blur: { dur: 34, blur: 12, from: 1.04 },
   ink: { stagger: 6, ink: 10, fade: 8 },
 } as const;
-export const resolveOf = (n: number): number =>
-  DEAL.voice === 'build' ? VOICE.build.stagger * (n - 1) + Math.max(VOICE.build.fade, VOICE.build.recentre) : DEAL.voice === 'blur' ? VOICE.blur.dur : VOICE.ink.stagger * (n - 1) + VOICE.ink.ink;
+/**
+ * Headline systems rotate: the dealt voice is the first line's, and each line after it takes the next voice in turn
+ * (build -> blur -> ink -> build), so no two lines in a row arrive the same way; the face stays the film's one pairing.
+ * The same entry on every line, one size and one highlighted last word, is the template look the user named.
+ */
+export type Voice = 'build' | 'blur' | 'ink';
+const VOICES: Voice[] = ['build', 'blur', 'ink'];
+/** The voice of pair i's line (0-based pair index; pairs without a line are skipped in the turn). */
+export const voiceOf = (i: number): Voice => {
+  const nth = LAUNCH.pairs.slice(0, i).filter((p) => !!p.line?.trim()).length;
+  const v0 = Math.max(0, VOICES.indexOf(DEAL.voice as Voice));
+  return VOICES[(v0 + nth) % VOICES.length];
+};
+export const resolveOf = (n: number, voice: Voice = DEAL.voice as Voice): number =>
+  voice === 'build' ? VOICE.build.stagger * (n - 1) + Math.max(VOICE.build.fade, VOICE.build.recentre) : voice === 'blur' ? VOICE.blur.dur : VOICE.ink.stagger * (n - 1) + VOICE.ink.ink;
 /**
  * The hero line (the claim, the film's last line) takes the film's one contrasting entry: its words arrive in the voice,
  * centred on their own; the words glide over to open its room (`recentre` f@60, ending on the snap), then after a
@@ -72,10 +85,10 @@ export const resolveOf = (n: number): number =>
  */
 export const HERO = { pause: 8, settle: 7, from: 1.6, recentre: 12 } as const;
 /** When the hero line's last word snaps in, f@60 from the line's first frame (n words). */
-export const heroSnapAt = (n: number): number =>
-  (DEAL.voice === 'blur' ? Math.round(VOICE.blur.dur * 0.6) : (DEAL.voice === 'build' ? VOICE.build.stagger : VOICE.ink.stagger) * Math.max(0, n - 1)) + HERO.pause;
+export const heroSnapAt = (n: number, voice: Voice = voiceOf(LAUNCH.pairs.length - 1)): number =>
+  (voice === 'blur' ? Math.round(VOICE.blur.dur * 0.6) : (voice === 'build' ? VOICE.build.stagger : VOICE.ink.stagger) * Math.max(0, n - 1)) + HERO.pause;
 /** When a line of n words is whole, f@60 from its first frame: the hero line once its last word has settled. */
-export const resolveLine = (n: number, hero: boolean): number => (hero ? Math.max(n > 1 ? resolveOf(n - 1) : 0, heroSnapAt(n) + HERO.settle) : resolveOf(n));
+export const resolveLine = (n: number, hero: boolean, voice?: Voice): number => (hero ? Math.max(n > 1 ? resolveOf(n - 1, voice) : 0, heroSnapAt(n, voice) + HERO.settle) : resolveOf(n, voice));
 
 /** The script's words on screen: the stars that mark a key word are not drawn. */
 export const plain = (s: string) => s.replace(/\*/g, '');
@@ -106,7 +119,7 @@ export const keyWords = (s: string): { word: string; key: boolean }[] => {
 const SEC = (s: number) => s * FPS;
 const LINE = { min: 0.5, max: 2.4 } as const; // a line beat holds 0.5-2.4 s (house: about 1.3)
 const PIC = { min: 1, max: 3.5, house: [2.6, 1.6, 2.2, 3.0] } as const; // a picture beat runs 1-3.5 s; unset, they vary (a long one beside a short one)
-const SEAM_OUT = 14; // f@60 the outgoing line needs inside its beat for the seam (the longest line exit, blurThrough)
+const SEAM_OUT = 24; // f@60 the outgoing line needs inside its beat for the seam (the longest line exit, the velocity cut's whip)
 /** f@60: a line over a picture leaves on its own (it lifts and softens away) while the picture racks into focus. */
 export const LINE_EXIT = 16;
 /** f@60 a line after a hero shot waits for the shot to fall back and go soft before its first word. */
@@ -114,6 +127,15 @@ export const HERO_LATE = 10;
 const LEAD = 0; // f@60 between a line's beat and its first word: the seam brings the line in, its first word on the cue
 /** f@60 a line held over its whole picture (over) is gone before the picture's seam out begins. */
 const OVER_TAIL = 6;
+/**
+ * The opening on a photographic world (src/world.tsx): the place is seen sharp for its first `at` f@60, then the lens
+ * racks to the type over `rack` f@60 and the place stays soft behind. The first line waits for `read` of the rack, so
+ * its first words never build over the sharp, bright picture (white words over a sharp city's lights).
+ */
+export const OPEN_RACK = { at: 10, rack: 22, read: 0.7 } as const;
+const PLATE_KINDS = new Set(['clouds', 'sky', 'aerial', 'sea', 'nightCity', 'studio', 'macro']);
+/** f@60 from the first frame to the first line's first word: after the opening rack on a photographic world. */
+export const FIRST_WORD = PLATE_KINDS.has(DEAL.ground) ? Math.round(OPEN_RACK.at + OPEN_RACK.rack * OPEN_RACK.read) : 0;
 
 export type BeatKind = 'T' | 'TA' | 'A' | 'end';
 export type BeatPlan = { id: string; kind: BeatKind; from: number; to: number; pair: number };
@@ -169,9 +191,9 @@ const planHeroes = (taken: Taken): { slots: HeroSlot[]; end: string | null; benc
   const free = (i: number, what: 'line' | 'pic') => !taken[what].has(i) && !over.has(i) && !(what === 'pic' ? pic : line).has(i);
   // the type-only beats left once pair j is held over its picture: pairs alone by default or by a shot (never fewer later)
   const typeOnly = (j: number) =>
-    P.filter((p, i) => hasLine(i) && i !== j && !over.has(i) && (p.beat === 'alone' || (p.beat === undefined && (i === 0 || i === LAST || pic.has(i) || line.has(i) || taken.line.has(i) || taken.pic.has(i))))).length;
+    P.filter((p, i) => hasLine(i) && i !== j && !over.has(i) && (p.beat === 'alone' || (p.beat === undefined && (i === 0 || i === LAST || line.has(i) || taken.line.has(i) || taken.pic.has(i))))).length;
   const ok: Record<HeroRole, (i: number) => boolean> = {
-    picture: (i) => free(i, 'pic') && P[i].beat !== 'over' && P[i].beat !== 'with' && (i !== LAST || !!end),
+    picture: (i) => free(i, 'pic') && P[i].beat !== 'over' && (i !== LAST || !!end),
     over: (i) => hasLine(i) && free(i, 'pic') && free(i, 'line') && (P[i].beat === undefined || P[i].beat === 'over') && (i !== LAST || !!end) && typeOnly(i) >= 2,
     line: (i) => hasLine(i) && i !== LAST && free(i, 'line') && (P[i].beat === undefined || P[i].beat === 'alone'),
     end: () => !end,
@@ -312,11 +334,14 @@ export const resolveAt = (i: number): number => {
     const key = words.find((w) => w.key) ?? words[words.length - 1];
     return lineResolve(dev.id, words.length, key?.word.length ?? 6, P[i].alts?.length ?? 0) ?? resolveLine(words.length, false);
   }
-  return resolveLine(wordCount(plain(P[i].line ?? '')), i === P.length - 1);
+  return resolveLine(wordCount(plain(P[i].line ?? '')), i === P.length - 1, voiceOf(i));
 };
 /** How each line meets its picture: launch.ts `beat`, else the first line, the claim and every pair a creative element
  * takes alone, the lines between with. */
-export const MODES: Mode[] = P.map((p, i): Mode => (!hasLine(i) ? 'none' : HERO_OVER[i] ? 'over' : p.beat ?? (i === 0 || i === P.length - 1 || LINE_DEV[i] || PIC_DEV[i] || HERO_PIC[i] || HERO_LINE[i] ? 'alone' : 'with')));
+// a hero picture between the first line and the claim arrives with its line (the shot standing back, soft and dark,
+// its first frame held under the line, then coming up and racking in as the line leaves, its own clock starting there):
+// a hero shot after every line alone made every film "a line, then a card", line after line
+export const MODES: Mode[] = P.map((p, i): Mode => (!hasLine(i) ? 'none' : HERO_OVER[i] ? 'over' : p.beat ?? (i === 0 || i === P.length - 1 || LINE_DEV[i] || PIC_DEV[i] || HERO_LINE[i] ? 'alone' : 'with')));
 CREATIVE_PLAN.forEach((c) => {
   if (c.role === 'line' && MODES[c.pair - 1] !== 'alone') throw new Error(`timeline: pair ${c.pair} plays the line device ${c.id}, which draws the line on its own beat: leave its \`beat\` unset (or alone)`);
   if (c.role === 'picture' && MODES[c.pair - 1] === 'over') throw new Error(`timeline: pair ${c.pair} plays the picture device ${c.id} under a line held over it (beat over): a creative picture takes the frame; set beat alone or with`);
@@ -552,8 +577,9 @@ export const SEAM_PLAN: SeamPlan[] = [];
   const deal = { TA: TA_PLAYS[DEAL.seamTA] ?? 'blurThrough', AT: DEAL.seamAT, AA: DEAL.seamAA } as Record<Change, SeamRecipe>;
   const pick = (c: Change) => (turn[c]++ % 2 === 0 ? deal[c] : ALT[c][deal[c]]);
   const beat = (id: string) => BEAT_PLAN.findIndex((x) => x.id === id);
-  let side = 0;
-  const dirOf = (r: SeamRecipe): SeamPlan['dir'] => (r === 'velocityCut' ? (side++ % 2 ? 'right' : 'left') : 'up');
+  // every whip of a film travels the same way (the film moves on, like a page turned): whips that alternate sides read
+  // as a camera panning here and then back
+  const dirOf = (r: SeamRecipe): SeamPlan['dir'] => (r === 'velocityCut' ? 'left' : 'up');
   P.forEach((_, i) => {
     const k = i + 1;
     const pr = PAIRS[i];
@@ -613,8 +639,18 @@ export type Copy = {
   reveal?: 'focus';
   swap?: string | boolean;
 };
-/** The seam out of a line beat starts this many frames before its cut (its exit, fx/Seam seamSpan). */
-export const SEAM_LEAD: Record<string, number> = { matchCut: f60(10), exitEnter: f60(18), blurThrough: f60(14), velocityCut: f60(12) };
+/**
+ * What a seam carries beyond its recipe (fx/Seam SeamOpts), so a cut between two full-frame pictures is never seen: a
+ * velocity cut is a whip whose outgoing shot travels `travel` of the frame by the cut on an accelerating curve (mostly
+ * gone and smeared at about 260 px a frame on the cut frame at 30 fps, where the house launch moved a picture 270 px and
+ * left it in frame); a blur-through cuts inside a `peak` px blur with both shots dimmed to `dim` on the cut frame
+ * (light passing, never a sharp-edged card swapped for a mark).
+ */
+export const SEAM_CARRY = { travel: 0.75, peak: 48, dim: 0.55 } as const;
+export const seamExtra = (recipe: string, dir?: 'left' | 'right' | 'up' | 'down'): { travel?: number; peak?: number; dim?: number } =>
+  recipe === 'velocityCut' ? { travel: SEAM_CARRY.travel * (dir === 'up' || dir === 'down' ? H : W) } : recipe === 'blurThrough' ? { peak: SEAM_CARRY.peak, dim: SEAM_CARRY.dim } : {};
+/** The seam out of a line beat starts this many frames before its cut (its exit, fx/Seam seamSpan; the whip is 24 f@60). */
+export const SEAM_LEAD: Record<string, number> = { matchCut: f60(10), exitEnter: f60(18), blurThrough: f60(14), velocityCut: f60(24) };
 /** A line after a push through starts building this many frames before the cut, over the push: never an empty frame. */
 export const LINE_EARLY: Partial<Record<SeamRecipe, number>> = { zoomThrough: f60(10) };
 const leadOf = (k: number) => SEAM_LEAD[SEAM_PLAN.find((s) => s.id === `line${k}-pic${k}`)?.recipe ?? 'exitEnter'] ?? f60(18);
@@ -633,9 +669,9 @@ P.forEach((p, i) => {
   const early = i > 0 && into ? LINE_EARLY[into.recipe] ?? 0 : 0;
   // after a hero shot the line waits until the shot has gone soft (its own words never read under the line's first)
   const late = i > 0 && into && (HERO_PIC[i - 1] || HERO_OVER[i - 1]) ? f60(HERO_LATE) : 0;
-  const inF = CUE[`line${k}`] + (i === 0 ? 0 : f60(LEAD)) - early + late;
+  const inF = i === 0 ? Math.max(CUE[`line${k}`], f60(FIRST_WORD)) : CUE[`line${k}`] + f60(LEAD) - early + late;
   // the blur voice brings a line into focus whole: its hold is read, not a per-word rate
-  COPY.push({ id: `line${k}`, text, in: inF, resolved: inF + f60(resolveAt(i)), out: lineOut(i), ...((DEAL.voice === 'blur' && !LINE_DEV[i]) || LINE_DEV[i]?.id === 'scale-contrast' ? { reveal: 'focus' as const } : {}) });
+  COPY.push({ id: `line${k}`, text, in: inF, resolved: inF + f60(resolveAt(i)), out: lineOut(i), ...((voiceOf(i) === 'blur' && !LINE_DEV[i]) || LINE_DEV[i]?.id === 'scale-contrast' ? { reveal: 'focus' as const } : {}) });
   // the alternatives a word-swap rolls through are on screen too (counted apart, as the product's own words are)
   if (LINE_DEV[i]?.id === 'word-swap') (p.alts ?? []).forEach((w, j) => COPY.push({ id: `alt${k}.${j + 1}`, text: w, kind: 'ui', in: inF, resolved: inF + f60(resolveAt(i)) - f60(8), out: inF + f60(resolveAt(i)) }));
   const pr = PAIRS[i];
@@ -685,7 +721,13 @@ export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'launch',
  * seam.
  */
 const RACKS: Seam[] = PAIRS.filter((p) => p.mode === 'with').map((p) => ({ at: p.ta, kind: 'defocus', carry: 'scale', id: `rack:line${p.k}-pic${p.k}` }));
-export const SEAMS: Seam[] = [...RACKS, ...SEAM_PLAN.map((s) => {
+/**
+ * The film's ending: the lockup lands, holds still while it is read (no drift: a hold may be still), then the whole
+ * frame settles out over the last `fade` f@60 into the world's deep tone with the music's ring-out, never a last frame
+ * caught mid-move at full brightness.
+ */
+export const END_FADE = { fade: 36 } as const;
+export const SEAMS: Seam[] = [...RACKS, { at: TOTAL - f60(END_FADE.fade), kind: 'fadeEnd' as SeamKind, id: 'fadeEnd:settle-out' }, ...SEAM_PLAN.map((s) => {
   const axis = s.dir === 'left' || s.dir === 'right' ? 'x' : 'y';
   const carry = ({ matchCut: 'scale', velocityCut: axis, blurThrough: 'scale', zoomThrough: 'scale', sharedElement: 'shape', recede: 'scale', handover: 'shape' } as Partial<Record<SeamRecipe, Seam['carry']>>)[s.recipe];
   const out: Seam = { at: s.at, kind: KIND[s.recipe], id: `${s.recipe}:${s.id}` };

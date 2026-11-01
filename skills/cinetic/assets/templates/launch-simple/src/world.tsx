@@ -18,6 +18,8 @@ import { type BuiltKind, isPlateWorld, type PlateKind, type PlateMove, plateMove
 import { clamp, E } from './lib/anim';
 import { mixColor } from './lib/color';
 import { timingFail } from './lib/continuity';
+import { worldPath } from './fx/world';
+import { OPEN_RACK, SEAM_PLAN } from './timeline';
 
 /** The dealt world. */
 export const WORLD_KIND = DEAL.ground as WorldKind;
@@ -85,24 +87,35 @@ export const SCREEN_TONE: 'light' | 'dark' = SURFACE_DARK ? 'dark' : 'light';
  * soft place also sinks under a veil of its own deep tone (`veil`): the subject is the brightest thing in the frame, as
  * at night. The hero shots draw their own grounds.
  */
-export const FOCUS = { at: 14, rack: 22, veil: 0.4 } as const;
+export const FOCUS = { at: OPEN_RACK.at, rack: OPEN_RACK.rack, veil: 0.16 } as const;
 /** How far the world has gone soft at film frame F (0 sharp, 1 soft). */
 export const worldSoftAt = (F: number, fps: number) => E.stdInOut(clamp((F - (FOCUS.at * fps) / 60) / ((FOCUS.rack * fps) / 60)));
 
-/** The world under the whole film (Film.tsx, Root.tsx): one place, still, never cut; the light parts inside read it. `F`:
- * the film frame (the soft copy's rack). */
+/**
+ * The film's path through its world (fx/world worldPath): the camera enters the place on the opening frames (a push that
+ * lands as the lens racks to the type) and moves on with every change of picture, landing just after each cut, so the
+ * place carries the cut and is never one still photograph for the whole film; every hold between is still, every move
+ * the same way (deeper and higher), never a drift.
+ */
+export const WORLD_MOVES = (fps: number) => worldPath(SEAM_PLAN.filter((s) => s.recipe !== 'handover').map((s) => s.at), { fps });
+/** The world under the whole film (Film.tsx, Root.tsx): one place, never cut, moving only with the film's path; the light
+ * parts inside read it. `F`: the film frame (the soft copy's rack, the path). `push`/`frame`: a shot's own move on its
+ * own clock, added to the path. */
 export const FilmWorld: React.FC<{ F?: number; fps?: number; push?: PlateMove; frame?: number; children?: React.ReactNode }> = ({ F = 0, fps = 30, push, frame, children }) => {
   const w = worldDrawn();
   const soft = w.soft ? worldSoftAt(F, fps) : 0;
-  const m = plateMove(frame ?? 0, push);
+  // the path on the film's clock, a shot's own move shifted onto it
+  const off = frame === undefined ? 0 : F - frame;
+  const moves: PlateMove[] = [...WORLD_MOVES(fps), ...(push ? [{ ...push, from: push.from + off, to: push.to + off }] : [])];
+  const m = plateMove(F, moves);
   const focus = WORLD_SPEC.plate?.focus ?? [0.5, 0.5];
   // the world's corner falloff drawn over the soft copy too (the same as the world's own: black at its strength in the
   // corners, nothing inside the middle 45 %), so the rack never changes the frame's light
   const vig = w.soft && WORLD_SPEC.vignette > 0 ? bakePlate('radial', [{ at: 0, color: C.ink, alpha: 0 }, { at: 0.45, color: C.ink, alpha: 0 }, { at: 1, color: C.ink, alpha: WORLD_SPEC.vignette }], 320, 180, { rx: 0.7, ry: 0.7 }) : '';
   const fill: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' };
   return (
-    <World kind={w.kind} src={w.src} soft={w.soft} spec={w.soft ? { vignette: 0 } : undefined} push={push} frame={frame}>
-      {soft > 0.001 ? <Img src={w.soft as string} data-imagery="" style={{ ...fill, objectFit: 'cover', opacity: soft, transformOrigin: `${focus[0] * 100}% ${focus[1] * 100}%`, transform: push ? `translate(${m.x.toFixed(2)}px, ${m.y.toFixed(2)}px) scale(${m.s.toFixed(5)})` : undefined }} /> : null}
+    <World kind={w.kind} src={w.src} soft={w.soft} spec={w.soft ? { vignette: 0 } : undefined} push={moves} frame={F}>
+      {soft > 0.001 ? <Img src={w.soft as string} data-imagery="" style={{ ...fill, objectFit: 'cover', opacity: soft, transformOrigin: `${focus[0] * 100}% ${focus[1] * 100}%`, transform: `translate(${m.x.toFixed(2)}px, ${m.y.toFixed(2)}px) scale(${m.s.toFixed(5)})` }} /> : null}
       {soft > 0.001 && WORLD_DARK ? <div style={{ ...fill, background: WORLD_SPEC.base, opacity: FOCUS.veil * soft }} /> : null}
       {vig ? <Img src={vig} style={fill} /> : null}
       {children}

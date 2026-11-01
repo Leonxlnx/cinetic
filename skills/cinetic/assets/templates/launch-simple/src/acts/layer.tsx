@@ -63,8 +63,10 @@ export const Layer: React.FC<{ s?: SeamLayer; origin: string; z: number; childre
   const y = s ? s.y * u : 0;
   const k = s ? s.scale : 1;
   const smear = s ? Math.abs(s.smear) : 0;
+  // a light picture leaving a dark world darkens into it (dim), never a translucent ghost with the world through it
+  const dim = s?.dim !== undefined && s.dim < 0.999 ? `brightness(${Math.max(0, s.dim).toFixed(3)})` : undefined;
   return (
-    <div style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: z, opacity: s ? s.opacity : 1, transformOrigin: origin, transform: `translate3d(${x.toFixed(3)}px, ${y.toFixed(3)}px, 0) scale(${k.toFixed(5)})` }}>
+    <div style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: z, opacity: s ? s.opacity : 1, filter: dim, transformOrigin: origin, transform: `translate3d(${x.toFixed(3)}px, ${y.toFixed(3)}px, 0) scale(${k.toFixed(5)})` }}>
       <Soft sigma={s ? s.blur : 0}>{smear > 0 ? <DirBlur v={smear} axis={smearAxis(s)}><PromoteCtx.Provider value={false}>{children}</PromoteCtx.Provider></DirBlur> : children}</Soft>
     </div>
   );

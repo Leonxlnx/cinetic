@@ -15,9 +15,10 @@
 import React, { useMemo } from 'react';
 import { Img, Sequence, useCurrentFrame } from 'remotion';
 import { C, FONT, U } from '../brand/tokens';
+import { LogoMark } from '../brand/Mark';
+import * as BRAND_LOGO from '../brand/logo';
 import { type Box, type Cam, camera, type Frame, crane, FanFocus, follow, frame, frameOf, type FramingFn, macro, pageTravelCamera, Plane, pull, push, PushIn, rack, restCam, Stage3D, type V3 } from '../fx/depth/index';
 import { Glass, RimLight } from '../fx/light';
-import { useWorld } from '../fx/world';
 import { Cursor } from '../fx/Cursor';
 import type { FamilyInks } from '../fx/Grounds';
 import { TYPE_FEATURES } from '../fx/TypePairs';
@@ -31,7 +32,7 @@ import { Soft } from '../acts/layer';
 import { keyed, Line, LINE_TYPE, lineLayout, trackFor, weightOf } from '../acts/line';
 import { copy, H, HERO_PLAN, keyWords, W } from '../timeline';
 import { timingFail } from '../lib/continuity';
-import { FilmWorld, FOCUS, SCREEN_TONE, WORLD_DARK, WORLD_SPEC } from '../world';
+import { FilmWorld, SCREEN_TONE } from '../world';
 import { Bloom1, ContentCard, content, cpsFor, firstFace, GlassCardContent, InputContent, inputSend, k60, LineExit, useSkin, useSpec } from './parts';
 import { heroTimes } from './time';
 
@@ -50,18 +51,14 @@ const openOf = (fr: FramingFn): Partial<Cam> => {
 };
 /** The side a shot's camera stands on, from the film's seed (two films dealt the same shot see it from either side). */
 const sideOf = (seed: number) => (seed % 2 === 0 ? 1 : -1);
-/** The world's ground as the depth stage's ground: its soft copy where it has one (a macro or a page shot sees it far),
- * sunk under the same veil as the film's soft world on a dark photograph (src/world.tsx FOCUS). */
-const StageGround: React.FC = () => {
-  const w = useWorld();
-  if (!w) return null;
-  return (
-    <>
-      {w.ground({ soft: true })}
-      {w.hasSoft && WORLD_DARK ? <div style={{ position: 'absolute', inset: 0, background: WORLD_SPEC.base, opacity: FOCUS.veil }} /> : null}
-    </>
-  );
-};
+/**
+ * The depth stage's ground: none of its own. The film's world (src/world.tsx FilmWorld, drawn once under every act, soft
+ * after the opening rack) is the ground every shot stands in; a shot that drew its own full-frame copy of it carried
+ * that copy through the seams with its pictures (a box of the world sliding off with a whip, a dark rectangle as the
+ * shot darkened under the next line). Light that belongs to the place goes in the world (fx/world), light that belongs
+ * to the shot inside its planes (fx/light).
+ */
+const StageGround: React.FC = () => null;
 
 // ------------------------------------------------------------------------------------------------ glass-input (over)
 
@@ -111,9 +108,11 @@ const GlassInput: React.FC<HeroOverProps> = ({ f, dur, F, from, inks, line }) =>
 
 /**
  * The product's input at macro scale: the bar is as wide as its request, the camera pushes onto the first characters
- * (x2.6) as the first keys land and rides the caret (trailing it, landing when the typing stops), the world soft
- * behind; then a soft pointer reaches send and presses it and a glow the size of the button blooms.
+ * (x2.2) as the first keys land and rides the caret (trailing it), the world soft behind; as the typing stops it pulls
+ * back to the whole bar, so the request is read whole and sharp before anything happens to it; then a soft pointer
+ * reaches send and presses it and a glow the size of the button blooms on the button.
  */
+export const MACRO_TYPE = { mag: 2.2, fill: 0.86, pull: 34 } as const;
 const MacroTypeShot: React.FC<HeroPicProps> = ({ f, dur, inks }) => {
   const film = useFilm();
   const fps = film.fps;
@@ -136,10 +135,11 @@ const MacroTypeShot: React.FC<HeroPicProps> = ({ f, dur, inks }) => {
     const fo = t.move[0] + t.move[1];
     return camera(
       [
-        push(t.move[0], (from: Cam, fr: Frame) => ({ ...macro(box, { mag: 2.6, yaw: -3 })(from, fr), target: caret(fo) }), { frames: t.move[1], film, id: 'macro-push' }),
-        follow(fo, caret, { frames: Math.max(lag + 1, t.at.typeEnd - fo + lag + k60(12, fps)), lag, film, id: 'macro-follow' }),
+        push(t.move[0], (from: Cam, fr: Frame) => ({ ...macro(box, { mag: MACRO_TYPE.mag, yaw: 0 })(from, fr), target: caret(fo) }), { frames: t.move[1], film, id: 'macro-push' }),
+        follow(fo, caret, { frames: Math.max(lag + 1, t.at.pull - fo), lag, film, id: 'macro-follow' }),
+        pull(t.at.pull, frame(box, { fill: MACRO_TYPE.fill }), { frames: k60(MACRO_TYPE.pull, fps), film, id: 'macro-read' }),
       ],
-      { film, base: { ...openOf(frame(box, { fill: 0.84, anchor: [0.36, 0.5] })), yaw: -2 } },
+      { film, base: { ...openOf(frame(box, { fill: 0.84, anchor: [0.36, 0.5] })), yaw: 0 } },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, dur, fps, wPx]);
@@ -272,49 +272,79 @@ const PageFly: React.FC<HeroPicProps> = ({ dur, seed }) => {
 
 /**
  * What the product sets off, as notifications: each new one drops into the front slot and pushes the others one slot
- * back (up and away in depth), so the front one is sharp and each further back is softer: the lens gives the ladder.
- * The camera stands a little below and to one side and makes one push that lands; real names, amounts and times.
+ * back (up a third of a card and away in depth), so the front one is sharp and each further back is softer: the lens
+ * gives the ladder. The stack faces the camera square and centred, and the camera stands square in front of it on a
+ * long lens (85 mm: a card off the axis never keystones into a tilted card) and makes one straight push that lands on
+ * the front card. Each card says how long ago by its place in the stack, newest first ("now" in front, older behind it),
+ * so the times always run the right way when paused, whatever order the content lists them in.
  */
-const ToastStack: React.FC<HeroPicProps> = ({ dur, inks, seed }) => {
+export const TOAST_STACK = { lens: 85, step: 0.34, z: -260, push: 1.16, y: 0.56, pt: 1.3, ago: ['now', '1m', '3m', '6m', '9m'] } as const;
+/** The time a notice shows in slot k of the stack (0 the front, the newest): content's own times when they run newest
+ * first in that order, else the house ladder. */
+export const toastAgo = (agos: string[], k: number): string => {
+  const mins = agos.map((a) => (/^now$/i.test(a.trim()) ? 0 : Number((/(\d+)/.exec(a) ?? [])[1] ?? NaN)));
+  const ordered = mins.every((m, i) => Number.isFinite(m) && (i === 0 || m <= mins[i - 1])); // arrival order: oldest first
+  if (ordered && mins.length) {
+    const byNewest = [...agos].reverse();
+    return byNewest[Math.min(k, byNewest.length - 1)];
+  }
+  return TOAST_STACK.ago[Math.min(k, TOAST_STACK.ago.length - 1)];
+};
+const ToastStack: React.FC<HeroPicProps> = ({ dur, inks }) => {
   const film = useFilm();
   const fps = film.fps;
   const t = heroTimes('toast-stack', dur, fps);
   const C0 = content();
-  const side = sideOf(seed);
   const items = C0.notices.items.slice(0, (t.seq ?? []).length);
   const seq = (t.seq ?? []).slice(0, items.length);
-  const pt = SCREEN.pt * U * 1.18;
+  const agos = items.map((n) => n.ago ?? '');
+  const pt = SCREEN.pt * U * TOAST_STACK.pt;
   const w = 540 * pt;
   const ch = 96 * pt;
-  const y0 = H * 0.6;
-  const step = { y: -ch * 0.62, z: -240 };
+  const y0 = H * TOAST_STACK.y;
+  const step = { y: -ch * TOAST_STACK.step, z: TOAST_STACK.z };
   const cam = useMemo(
     () =>
-      camera([push(t.move[0], (from: Cam) => ({ target: [W / 2, y0 - ch * 0.9, -260] as V3, dist: from.dist / 1.22, pitch: -9, yaw: 13 * side }), { frames: t.move[1], ease: E.glideOut, film, id: 'toast-push' })], {
+      camera([push(t.move[0], (from: Cam) => ({ target: [W / 2, y0 - ch * 0.3, 0] as V3, dist: from.dist / TOAST_STACK.push, yaw: 0, pitch: 0, roll: 0 }), { frames: t.move[1], ease: E.glideOut, film, id: 'toast-push' })], {
         film,
-        base: { target: [W / 2, y0 - ch * 1.1, -320], pitch: -6, yaw: 8 * side, focus: [W / 2, y0, 0] },
+        base: { target: [W / 2, y0 - ch * 0.45, 0], lens: TOAST_STACK.lens, yaw: 0, pitch: 0, roll: 0, focus: [W / 2, y0, 0] },
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dur, fps, side],
+    [dur, fps],
   );
   return (
     <Stage3D camera={cam} ground={<StageGround />}>
       {items.map((it, j) => {
-        const move = (g: number) => {
-          const enter = E.snapOut(clamp((g - seq[j]) / k60(16, fps)));
+        // how many have arrived after it (each pushes it back one slot on a glide): its slot, and the time it shows
+        const backOf = (g: number) => {
           let back = 0;
           for (let k = j + 1; k < seq.length; k++) back += E.strongInOut(clamp((g - seq[k]) / k60(18, fps)));
-          const s = back;
+          return back;
+        };
+        const move = (g: number) => {
+          const enter = E.snapOut(clamp((g - seq[j]) / k60(16, fps)));
+          const s = backOf(g);
           return { y: step.y * s + (1 - enter) * ch * 0.9, z: step.z * s + (1 - enter) * 120, opacity: g < seq[j] ? 0 : clamp(enter * 2) * clamp(4.6 - s) };
         };
+        // the label changes only while the card is pushed back (soft, moving): paused, the times always run newest first
         return (
           <Plane key={j} id={`toast-${j}`} box={{ x: (W - w) / 2, y: y0 - ch / 2, w, h: ch }} move={move} order={j}>
-            <NoticeStack items={[it]} mode="list" tone="light" ground={inks.ground} w={w} pt={pt} frame={600} />
+            <ToastCard item={it} ago={(g) => toastAgo(agos, Math.round(backOf(g)))} inks={inks} w={w} pt={pt} />
           </Plane>
         );
       })}
     </Stage3D>
   );
+};
+/** The product's own mark for its own notifications (a notice marked `own`, or from app 'self'): the brand's mark once
+ * scripts/brand.py has written it; until then the notice keeps its glyph. */
+export const ownMark = (BRAND_LOGO as { LOGO_STANDIN?: boolean }).LOGO_STANDIN === true ? undefined : (size: number) => <LogoMark logo={BRAND_LOGO.LOGO} size={size} />;
+/** One notice of the stack, its time read from its slot at the frame the plane draws. */
+const ToastCard: React.FC<{ item: ReturnType<typeof content>['notices']['items'][number]; ago: (g: number) => string; inks: FamilyInks; w: number; pt: number }> = ({ item, ago, inks, w, pt }) => {
+  const g = useCurrentFrame();
+  const it = item as typeof item & { own?: boolean; app?: unknown };
+  const own = !!it.own || it.app === 'self';
+  return <NoticeStack items={[{ ...item, app: own ? undefined : (item.app as never), own, ago: ago(g) }]} mode="list" tone="light" ground={inks.ground} w={w} pt={pt} frame={600} ownMark={ownMark} />;
 };
 
 // ------------------------------------------------------------------------------------------------ fan-focus (picture)
@@ -566,7 +596,7 @@ const PushPress: React.FC<HeroPicProps> = ({ f, dur, scene, button, focus }) => 
     }>
       <div style={{ position: 'absolute', inset: 0 }}>
         {scene?.(f)}
-        <Bloom1 f={f} at={t.at.press + k60(4, fps)} x={cx} y={cy} r={Math.max(b.w, b.h) * 1.1} fps={fps} />
+        <Bloom1 f={f} at={t.at.press + k60(4, fps)} x={cx} y={cy} r={Math.max(b.w, b.h) * 0.8} fps={fps} on="any" />
       </div>
     </PushIn>
   );

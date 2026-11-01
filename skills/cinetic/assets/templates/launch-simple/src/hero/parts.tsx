@@ -33,18 +33,29 @@ export const k60 = (n: number, fps: number) => (n * fps) / 60;
  * tint of the accent (a pale world cannot add light), dark ones add it. `r`: where it falls to nothing (about 2.2x the
  * source's own radius: the click blooms past the button, never across the frame).
  */
-export const Bloom1: React.FC<{ f: number; at: number; x: number; y: number; r: number; fps: number; color?: string; rise?: number; hold?: number; fall?: number; peak?: number }> = ({ f, at, x, y, r, fps, color, rise = 4, hold = 3, fall = 22, peak = 1 }) => {
+export const Bloom1: React.FC<{ f: number; at: number; x: number; y: number; r: number; fps: number; color?: string; rise?: number; hold?: number; fall?: number; peak?: number; on?: 'light' | 'dark' | 'any' }> = ({ f, at, x, y, r, fps, color, rise = 4, hold = 3, fall = 22, peak = 1, on }) => {
   const spec = useSpec();
-  const dark = spec.tone === 'dark';
+  // the surface the light falls on, not the world's tone: added light (plus-lighter) shows only where the surface is dark,
+  // so a press on a white card in a dark world bloomed that way vanishes on the card and glows on the world past its
+  // edge: a glow behind the card instead of on the button. 'light': an accent glow in normal blend; 'any' (a scene whose
+  // surface the shot does not know): an accent halo in normal blend with a small added-light core, on the button either way
   const a = f < at ? 0 : f < at + k60(rise, fps) ? E.softOut(prog(f, at, at + k60(rise, fps))) : f < at + k60(rise + hold, fps) ? 1 : 1 - E.softIn(prog(f, at + k60(rise + hold, fps), at + k60(rise + hold + fall, fps)));
   if (a <= 0.001) return null;
-  const col = color ?? (dark ? mixColor(C.accent, C.white, 0.45) : C.accent);
-  return (
+  const pool = (dark: boolean, rr: number, k: number) => (
     <Img
-      src={poolUrl(col, 192, 192)}
-      style={{ position: 'absolute', left: 0, top: 0, width: 2 * r, height: 2 * r, transform: `translate(${(x - r).toFixed(2)}px, ${(y - r).toFixed(2)}px)`, opacity: clamp(a * peak * (dark ? 0.9 : 0.38)), mixBlendMode: dark ? 'plus-lighter' : 'normal', pointerEvents: 'none' }}
+      src={poolUrl(color ?? (dark ? mixColor(C.accent, C.white, 0.45) : C.accent), 192, 192)}
+      style={{ position: 'absolute', left: 0, top: 0, width: 2 * rr, height: 2 * rr, transform: `translate(${(x - rr).toFixed(2)}px, ${(y - rr).toFixed(2)}px)`, opacity: clamp(a * peak * k), mixBlendMode: dark ? 'plus-lighter' : 'normal', pointerEvents: 'none' }}
     />
   );
+  if (on === 'any')
+    return (
+      <>
+        {pool(false, r, 0.34)}
+        {pool(true, r * 0.45, 0.7)}
+      </>
+    );
+  const dark = (on ?? spec.tone) === 'dark';
+  return pool(dark, r, dark ? 0.9 : 0.38);
 };
 
 /** A line held over its shot leaving on its own once its read is over: it lifts 30 px and softens away (16 f@60). */

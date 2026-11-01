@@ -32,7 +32,7 @@ import { LAUNCH } from '../launch';
 import { DEAL, SEED } from '../deal';
 import * as PRODUCT from '../product';
 import { SCENES } from '../product';
-import { ACT, BEAT_PLAN, COLOUR, copy, CREATIVE_COLOUR, CREATIVE_MISSING, CREATIVE_UNPLACED, CUE, f60x, FPS, H, HERO_END, HERO_LINE, HERO_OVER, HERO_PIC, keyWords, LINE_DEV, LINE_EXIT, PAIRS, PIC_DEV, PUSH, SEAM_PLAN, TOTAL, W } from '../timeline';
+import { ACT, BEAT_PLAN, COLOUR, copy, CREATIVE_COLOUR, CREATIVE_MISSING, CREATIVE_UNPLACED, CUE, END_FADE, f60x, FPS, H, HERO_END, HERO_LINE, HERO_OVER, HERO_PIC, keyWords, LINE_DEV, LINE_EXIT, PAIRS, PIC_DEV, PUSH, SEAM_PLAN, seamExtra, TOTAL, W } from '../timeline';
 import { HeroLine, HeroOver, HeroPicture } from '../hero/shots';
 import { FilmWorld, inksOfWorld, PLATE_WORLD, WORLD_SPEC } from '../world';
 import { Layer, PromoteCtx } from './layer';
@@ -231,6 +231,9 @@ const camOf = (pair: number, F: number) => {
  * comes up to the camera after it), and plays on alone.
  */
 export const TA_DEPTH = { opacity: { light: 0.42, dark: 0.22 }, blur: 16, scale: 0.84, creep: 0.03, after: 11, rack: 30 } as const;
+/** On a dark world the picture behind its line is darkened to this brightness instead of made translucent (a light card
+ * at a fifth of its opacity is a grey ghost with the world showing through it; darkened it is the same card in shadow). */
+export const DARK_DIM = 0.26;
 const depthOf = (pair: number, F: number) => {
   if (PAIRS[pair - 1]?.mode !== 'with') return 0;
   const out = copy(`line${pair}`).out;
@@ -246,8 +249,15 @@ const dropOf = (pair: number, F: number) => {
 const withDepth = (st: SeamLayer | undefined, d: number, pair = 0, F = 0): SeamLayer | undefined => {
   if (d <= 0) return st;
   const base = st ?? { show: true, x: 0, y: 0, scale: 1, opacity: 1, blur: 0, smear: 0, ink: 1 };
-  const dim = inksAt(F).dark ? TA_DEPTH.opacity.dark : TA_DEPTH.opacity.light;
-  return { ...base, y: base.y + (pair ? dropOf(pair, F) * d : 0), opacity: base.opacity * mix(1, dim, d), blur: base.blur + TA_DEPTH.blur * d, scale: base.scale * mix(1, TA_DEPTH.scale, d) };
+  const dark = inksAt(F).dark;
+  return {
+    ...base,
+    y: base.y + (pair ? dropOf(pair, F) * d : 0),
+    opacity: base.opacity * (dark ? 1 : mix(1, TA_DEPTH.opacity.light, d)),
+    dim: (base.dim ?? 1) * (dark ? mix(1, DARK_DIM, d) : 1),
+    blur: base.blur + TA_DEPTH.blur * d,
+    scale: base.scale * mix(1, TA_DEPTH.scale, d),
+  };
 };
 /** A line over its picture leaving on its own (with, over): it lifts 30 px and softens away over LINE_EXIT f@60, ahead of the picture rising after it. */
 const lineExitOf = (pair: number, F: number): SeamLayer | undefined => {
@@ -296,6 +306,7 @@ const Scene: React.FC<{ pair: number; F: number }> = ({ pair, F }) => {
     );
     const fb = focusBox(def);
     const btn = def.button?.();
+    // with its line, the shot's first motion plays behind the line (standing back, soft and dark), then it comes up
     return <HeroPicture id={hero.id} f={F - c.from} dur={c.dur} F={F} inks={inksAt(F)} pair={pair} seed={SEED + pair} scene={sceneAt} button={btn ? framed(def, btn) : undefined} focus={fb ? framed(def, fb) : undefined} />;
   }
   const dev = PIC_DEV[pair - 1];
@@ -445,8 +456,13 @@ const Carried: React.FC<{ F: number }> = ({ F }) => {
 
 // ------------------------------------------------------------------------------------------------ the end card
 
-/** The lockup's sizes (px at 1080p): the name's size, the mark's height, the gap, the fact's size below. */
-export const LOCK = { name: 150, mark: 132, gap: 0.36, fact: 50, below: 128 } as const;
+/**
+ * The lockup's sizes (px at 1080p): the name's size, the mark's height (the stand-ins' box), the fact's size below. A
+ * drawn mark is laid out by its ink, never by its 100-unit box: its ink stands `markInk` x the name's cap height and
+ * sits `gapCap` x the cap height from the name (a flag whose ink fills two thirds of its box laid out by the box ends
+ * small beside the name with a gap as wide as itself). `cap`: the face's cap height as a share of its size.
+ */
+export const LOCK = { name: 150, mark: 132, gap: 0.36, fact: 50, below: 128, markInk: 1.3, gapCap: 0.44, cap: 0.72 } as const;
 /** The name as a wordmark, not a line: without a pairing, heavier and tighter than the statements (one face, a second
  * weight); with the film's pairing (line.tsx PAIR), its wordmark weight and tracking (fx/TypePairs wordmarkStyle). */
 export const WORDMARK_TYPE = { weight: 700, track: -0.045 } as const;
@@ -461,14 +477,23 @@ const wordmarkOf = (name: string, size: number) => {
 const lockLayout = () => {
   const name = copy('wordmark').text;
   const size = LOCK.name * U;
-  const markH = LOCK.mark * U;
-  const gap = markH * LOCK.gap;
   const wm = wordmarkOf(name, size);
   const wName = measureTracked(name, size, wm.weight, wm.track, FONT.text, { trailing: false });
-  const total = markH + gap + wName;
-  const left = (W - total) / 2;
   const cy = H / 2 - 30 * U;
-  return { name, size, markH, gap, wName, left, cy, wm, mark: { x: left, y: cy - markH / 2, w: markH, h: markH } };
+  // the drawn mark's ink in its 100-unit box (the stand-ins fill theirs)
+  const ink = !LOGO_STANDIN && !LOGO_RASTER && LOGO.box && LOGO.box.h > 1 ? LOGO.box : { x: 0, y: 0, w: 100, h: 100 };
+  const capH = size * LOCK.cap;
+  const markH = ink.h < 100 ? (capH * LOCK.markInk) / (ink.h / 100) : LOCK.mark * U;
+  const inkW = (markH * ink.w) / 100;
+  const gapInk = ink.h < 100 ? capH * LOCK.gapCap : markH * LOCK.gap;
+  const inkLeft = (W - (inkW + gapInk + wName)) / 2;
+  const left = inkLeft - (markH * ink.x) / 100;
+  // the ink centred on the name's caps (a touch above the em box's middle)
+  const inkCy = ink.h < 100 ? cy - size * 0.06 : cy;
+  const top = inkCy - (markH * (ink.y + ink.h / 2)) / 100;
+  // gap: from the box's right edge to the name; alone: how far the lockup moves for the mark alone to stand centred
+  const gap = inkLeft + inkW + gapInk - (left + markH);
+  return { name, size, markH, gap, wName, left, cy, wm, alone: (gapInk + wName) / 2, mark: { x: left, y: top, w: markH, h: markH } };
 };
 
 /** The last picture's hero element (product.tsx `hero`), the box the end card is built from. */
@@ -492,6 +517,20 @@ const LOGO_RASTER = (BRAND_LOGO as { LOGO_RASTER?: string | null }).LOGO_RASTER 
  */
 type HeroMarkFC = React.FC<{ size: number; color: string; ring?: number; fill?: number; check?: number; id: string }>;
 const HERO_MARK = (PRODUCT as { HERO_MARK?: HeroMarkFC }).HERO_MARK ?? null;
+/**
+ * The brand's mark on the ground keeps its own colours (an official mark is never recoloured, and the 3D mark it lands
+ * from is drawn in them: a blue flag turning white as it lands is a second, unmotivated event); only its near-black
+ * parts take the world's type ink on a dark world.
+ */
+const markFill = (inks: FamilyInks) => (part: { items: { fill?: string }[] }) => {
+  if (!inks.dark) return undefined;
+  const f = part.items.find((it) => it.fill && it.fill !== 'none')?.fill ?? '';
+  const m = /^#([0-9a-f]{6})$/i.exec(f.trim());
+  if (!m) return undefined;
+  const n = parseInt(m[1], 16);
+  const lum = 0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
+  return lum < 60 ? inks.type : undefined;
+};
 /** The hero mark's colour on the ground: the accent, lifted on a dark ground (it leaves the light card at full depth). */
 const markColor = (inks: FamilyInks, t = 1) => mixColor(C.accent, inks.dark ? mixColor(inks.accent, C.white, 0.08) : C.accent, t);
 
@@ -521,7 +560,7 @@ const LetterMark: React.FC<{ size: number; inks: FamilyInks; sheen?: number; let
  * scale: the browser re-draws promoted text sharper in one frame now and then under one. The fact under the lockup
  * moves with the name on the one axis (END_PART 1: two lines sharing a centre never shear apart; a vertical parting
  * would tick in whole pixels, unpromoted text snapping to the pixel row). */
-export const END_DRIFT = 0.5;
+export const END_DRIFT = 0;
 export const END_PART = 1;
 /** The most the lockup's centre stands off the frame's centre on the hold (px at 1080p). */
 export const END_OFF_MAX = 28;
@@ -559,6 +598,11 @@ const recedeAt = (F: number): SeamLayer | null => {
   // gone by the time the element crosses the card (RECEDE.under of the recede), so the flying element never passes over
   // readable words; the last quarter fades with the fall
   const o = 1 - (1 - RECEDE.ghost) * E.stdInOut(clamp(u / RECEDE.under)) - RECEDE.ghost * E.stdInOut(u);
+  // on a dark world it darkens into the world first and goes only once dark (never a translucent card over the place)
+  if (inksAt(F).dark) {
+    const dim = 1 - (1 - RECEDE_IN.dark.dim) * E.glideOut(clamp(u / RECEDE.under / 1.6));
+    return { show: true, x: 0, y: 26 * u * u, scale: 1 - RECEDE.scale * E.stdInOut(u), opacity: 1 - E.stdInOut(clamp((u - 0.35) / 0.6)), dim, blur: RECEDE.blur * 1.4 * Math.sqrt(u), smear: 0, ink: 1 };
+  }
   return { show: true, x: 0, y: 26 * u * u, scale: 1 - RECEDE.scale * E.stdInOut(u), opacity: o, blur: RECEDE.blur * Math.sqrt(u), smear: 0, ink: 1 };
 };
 
@@ -570,8 +614,11 @@ const recedeAt = (F: number): SeamLayer | null => {
  */
 const MARK3D = HERO_END === 'logo-3d' && !LOGO_STANDIN;
 if (HERO_END === 'logo-3d' && LOGO_STANDIN) timingFail('hero', 'hero: logo-3d was dealt for the end card but the brand has no mark yet (src/brand/logo.ts is the stand-in): run scripts/brand.py with the brand\'s SVG, or swap it in launch.ts heroes.swap with the reason');
-/** f@60 from the end's first frame to the drawn mark: the element lands in 18; the 3D mark's pull-back takes 76. */
-const MARK_LAND = MARK3D ? 76 : 18;
+/**
+ * f@60 from the end's first frame to the drawn mark: the element lands in 18; the 3D mark's pull-back runs until 8 f@60
+ * before the name slides out (CUE.name, on the grid), so the mark never waits small and alone for the name.
+ */
+const MARK_LAND = MARK3D ? Math.max(60, ((CUE.name - ACT.end.from) * 60) / FPS - 8) : 18;
 // fx/three loads three.js: only a film whose end card is the 3D mark needs it, so the part is required where it plays
 // (the bundler takes it in; a Node import of this file never loads three.js)
 declare const require: (id: string) => unknown;
@@ -596,7 +643,7 @@ const EndCard: React.FC<{ F: number }> = ({ F }) => {
   const markOn = F >= ACT.end.from + f60x(MARK_LAND) ? 1 : 0;
   // the name slides out from behind the mark toward its place, the lockup re-centring as it does (M.lockup)
   const n = prog(F, CUE.name, CUE.lockup, E.glideOut);
-  const shiftX = ((1 - n) * (L.gap + L.wName)) / 2; // before the name: the mark alone sits at the centre
+  const shiftX = (1 - n) * L.alone; // before the name: the mark alone sits at the centre
   const named = F >= CUE.name ? 1 : 0;
   const factIn = E.snapOut(clamp((F - fact.in) / f60x(22)));
   const markNode = LOGO_STANDIN && HERO_MARK ? (
@@ -606,13 +653,13 @@ const EndCard: React.FC<{ F: number }> = ({ F }) => {
   ) : LOGO_RASTER ? (
     <Img src={staticFile(LOGO_RASTER)} style={{ position: 'absolute', left: 0, top: 0, width: L.markH, height: L.markH, objectFit: 'contain' }} />
   ) : (
-    <LogoMark logo={LOGO} size={L.markH} fill={() => (inks.type === C.white ? C.white : undefined)} />
+    <LogoMark logo={LOGO} size={L.markH} fill={markFill(inks)} />
   );
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${(L.cy + LOCK.below * U * 0.4).toFixed(1)}px`, transform: `translate3d(${sway.toFixed(3)}px, 0, 0)` }}>
       {MARK3D && !markOn ? (
         <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H }}>
-          {React.createElement(logo3D(), { lockup: { x: L.mark.x + (L.gap + L.wName) / 2, y: L.mark.y, size: L.markH }, logo: LOGO, at: 0, dur: MARK_LAND, seed: SEED, light: markLight(), gl: MARK3D_GL })}
+          {React.createElement(logo3D(), { lockup: { x: L.mark.x + L.alone, y: L.mark.y, size: L.markH }, logo: LOGO, at: 0, dur: MARK_LAND, seed: SEED, light: markLight(), gl: MARK3D_GL })}
         </div>
       ) : null}
       <div style={{ position: 'absolute', left: 0, top: 0, width: L.markH, height: L.markH, opacity: markOn, transform: `translate3d(${(L.mark.x + shiftX).toFixed(3)}px, ${L.mark.y.toFixed(3)}px, 0)` }}>
@@ -656,7 +703,7 @@ const Element: React.FC<{ F: number; sx?: number; sy?: number }> = ({ F, sx = 1,
   ) : (
     <div style={{ position: 'absolute', inset: 0, opacity: take, borderRadius: radius, background: mixColor(heroFill(inks), inks.ground, t), boxShadow: inks.dark ? 'none' : `0 ${(18 * (1 - t)).toFixed(1)}px ${(48 * (1 - t)).toFixed(1)}px rgba(0, 0, 0, ${(0.1 * (1 - t)).toFixed(3)})` }}>
       <div style={{ position: 'absolute', inset: 0, opacity: glyph }}>
-        <LogoMark logo={LOGO} size={L.markH} fill={() => (inks.type === C.white ? C.white : undefined)} />
+        <LogoMark logo={LOGO} size={L.markH} fill={markFill(inks)} />
       </div>
     </div>
   );
@@ -745,25 +792,32 @@ const seamFor = (at: number) => SEAM_PLAN.find((s) => s.at === at);
  * by `scale`, softens to `blur` px and fades over `dur` f@60 from the line's first frame): the frame is never empty, and
  * the outgoing picture's motion carries the change.
  */
-export const RECEDE_IN = { dur: 26, scale: 0.12, blur: 16, drop: 18, gone: 0.62 } as const;
+export const RECEDE_IN = { dur: 30, scale: 0.14, blur: 36, drop: 22, gone: 0.62, dark: { dim: 0.14, fast: 0.32, from: 0.22, out: 0.62 } } as const;
 const recedeState = (F: number, at: number): { out: SeamLayer; in: SeamLayer } => {
   const u = clamp((F - at) / f60x(RECEDE_IN.dur));
   const e = E.buildIn(u);
+  // on a dark world the picture darkens into the world as it falls back and softens (front-loaded: under the line's
+  // first word it is already a dark, soft shape), its opacity going only once it is dark: never a translucent card with
+  // the world's lights showing through it. On a light world it fades (a white card on a light ground leaves no ghost),
+  // gone by RECEDE_IN.gone of the recede.
+  const D = RECEDE_IN.dark;
+  const dark = inksAt(F).dark;
+  const opacity = dark ? 1 - E.stdInOut(clamp((u - D.from) / (D.out - D.from))) : 1 - E.stdInOut(clamp(u / RECEDE_IN.gone));
+  const dim = dark ? 1 - (1 - D.dim) * E.glideOut(clamp(u / D.fast)) : 1;
   return {
-    // it is gone by RECEDE_IN.gone of the recede (a soft shadow left fading under the line reads as a ghost card)
-    out: { show: F < at || u < 1, x: 0, y: RECEDE_IN.drop * e, scale: 1 - RECEDE_IN.scale * E.stdInOut(u), opacity: 1 - E.stdInOut(clamp(u / RECEDE_IN.gone)), blur: RECEDE_IN.blur * Math.sqrt(u), smear: 0, ink: 1 },
+    out: { show: F < at || u < 1, x: 0, y: RECEDE_IN.drop * e, scale: 1 - RECEDE_IN.scale * E.stdInOut(u), opacity, dim, blur: RECEDE_IN.blur * Math.sqrt(u), smear: 0, ink: 1 },
     in: { show: F >= at, x: 0, y: 0, scale: 1, opacity: 1, blur: 0, smear: 0, ink: 1 },
   };
 };
 /** The frames a planned seam spans, [start, end). */
 const spanOf = (s: (typeof SEAM_PLAN)[number], film: ReturnType<typeof useFilm>): [number, number] =>
-  s.recipe === 'handover' ? [s.at - 1, s.at + 1] : s.recipe === 'recede' ? [s.at, s.at + Math.ceil(f60x(RECEDE_IN.dur))] : seamSpan({ recipe: s.recipe, at: s.at, dir: s.dir, id: s.id } as SeamOpts, film);
+  s.recipe === 'handover' ? [s.at - 1, s.at + 1] : s.recipe === 'recede' ? [s.at, s.at + Math.ceil(f60x(RECEDE_IN.dur))] : seamSpan({ recipe: s.recipe, at: s.at, dir: s.dir, id: s.id, ...seamExtra(s.recipe, s.dir) } as SeamOpts, film);
 
 /** Two layer states, one inside the other (a seam's move around an element's own depth or exit). */
 const compose = (a?: SeamLayer, b?: SeamLayer): SeamLayer | undefined => {
   if (!a) return b;
   if (!b) return a;
-  return { show: a.show && b.show, x: a.x + b.x, y: a.y + b.y, scale: a.scale * b.scale, opacity: a.opacity * b.opacity, blur: a.blur + b.blur, smear: a.smear + b.smear, ink: Math.min(a.ink, b.ink) };
+  return { show: a.show && b.show, x: a.x + b.x, y: a.y + b.y, scale: a.scale * b.scale, opacity: a.opacity * b.opacity, blur: a.blur + b.blur, smear: a.smear + b.smear, ink: Math.min(a.ink, b.ink), dim: (a.dim ?? 1) * (b.dim ?? 1) };
 };
 
 /** One element on the stage: a line, a scene or the end card, each with its own key (its layer lives as long as it
@@ -838,7 +892,7 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
     const r = b.kind === 'end' && !HERO_END ? recedeAt(F) : null;
     if (r) for (const it of itemsOf(i - 1, F)) push(it, r);
   } else {
-    const opts: SeamOpts = { recipe: s.recipe === 'recede' || s.recipe === 'handover' ? 'exitEnter' : s.recipe, at: s.at, dir: s.dir, id: s.id };
+    const opts: SeamOpts = { recipe: s.recipe === 'recede' || s.recipe === 'handover' ? 'exitEnter' : s.recipe, at: s.at, dir: s.dir, id: s.id, ...seamExtra(s.recipe, s.dir) };
     let toBox: { x: number; y: number; w: number; h: number } | undefined;
     if (s.recipe === 'sharedElement') {
       // the element leaves from where the hero stands on screen at the cut (the picture's camera applied) and lands
@@ -846,7 +900,7 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
       const L = lockLayout();
       const hb = heroBox();
       const c = camOf(LAUNCH.pairs.length, s.at - 1);
-      toBox = { ...L.mark, x: L.mark.x + (L.gap + L.wName) / 2 + endSway(F) };
+      toBox = { ...L.mark, x: L.mark.x + L.alone + endSway(F) };
       Object.assign(opts, { fromBox: { x: c.ox + (hb.x - c.ox) * c.scale + c.dx, y: c.oy + (hb.y - c.oy) * c.scale + c.dy, w: hb.w * c.scale, h: hb.h * c.scale }, toBox });
     }
     // into the claim's field: the seam pushes into the element the field grows out of (its centre holds its place)
@@ -896,8 +950,12 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
     }
   }
   layers.sort((p, q) => p.item.z - q.item.z);
+  // the ending settles out: the whole frame, world and lockup, into the world's deep tone over END_FADE (timeline)
+  const fadeU = clamp((F - (TOTAL - f60x(END_FADE.fade))) / f60x(END_FADE.fade));
+  const fadeTo = WORLD_SPEC.tone === 'dark' ? mixColor(WORLD_SPEC.base, '#000000', 0.55) : WORLD_SPEC.base;
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+      {fadeU > 0 ? <div key="fade-out" style={{ position: 'absolute', left: -4, top: -4, right: -4, bottom: -4, zIndex: 3000, background: fadeTo, opacity: E.stdInOut(fadeU) }} /> : null}
       {layers.map(({ item, st, origin, moving }) => (
         // both sides of a seam are in flight: the layout audit holds them to no resting rule (safe zone, widths)
         <div key={item.key} data-audit-push={moving ? 'moving' : undefined} style={{ position: 'absolute', inset: 0, zIndex: item.z }}>

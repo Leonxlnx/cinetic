@@ -15,10 +15,16 @@ One place for the whole film, dealt with the direction (deal.ts `ground`), never
 `macro` are photographs: `node scripts/assets.mjs plate <kind>`, look at the sheet (light, a calm area for the type),
 then `--pick <n> --to public/plates --accent '<accent>'`; until the plate is there a built world of the same tone stands in
 and precheck says so. Its key light is read by everything in it: fx/light Glass frosts exactly this ground, rims face the
-key, sweeps are that light crossing an edge. A photograph is seen sharp for the opening frames, then the lens racks to the
-type and the product and the place stays soft behind them (`FOCUS`; on a dark world under a veil of its own deep tone, so
-the subject is the brightest thing in the frame). A photograph carries the film's colour: the claim stands in it (the
-colour field plays on built worlds only).
+key, sweeps are that light crossing an edge. A photograph belongs to the subject: deck.py ranks a plate first only when
+the brief names what it shows (a studio for makers, a trail from above for hikers), else the built worlds come first. It
+is seen sharp for the opening frames, then the lens racks to the type and the product and the place stays soft behind
+them (`FOCUS`, a light veil of 0.16 on a dark world); the first line waits for the rack (`FIRST_WORD`), and every line on
+a photograph stands on a soft pool of the place's deep tone (`TYPE_POOL` in acts/line.tsx), never a text-shadow halo.
+The film travels through its world (`WORLD_MOVES`, fx/world `worldPath`): the camera enters the place as the film opens
+and moves on with every change of picture, landing just after the cut, always the same way, still between: the place
+carries the cut and is never one still photograph under every scene. The shots draw no copy of the world of their own (it
+slid off with the whips and turned into a dark box behind the next line). A photograph carries the film's colour: the
+claim stands in it (the colour field plays on built worlds only).
 
 ## The hero shots (src/hero)
 
@@ -29,23 +35,25 @@ the creative elements take the beats left (a dealt creative element with no beat
 | shot | role | what the viewer sees | fills itself from |
 |---|---|---|---|
 | `glass-input` | over | the line over the world and under it the input as frosted glass; one push in (the near glass grows more than the place) as the request types; a band of light crosses it as it lands and as it sends | `prompt` |
-| `macro-type` | picture | the input at macro scale (x2.6): the push lands on the first key, the camera rides the caret, the world soft behind; a pointer presses send, a glow the size of the button | `prompt` |
+| `macro-type` | picture | the input at macro scale (x2.2): the push lands on the first key, the camera rides the caret, then pulls back to the whole request, read sharp before send; a pointer presses send, a glow on the button | `prompt` |
 | `black-glass` | picture | the composer as a frosted pane racking in out of the dark (9 f), a light along its rim, one push that lands, the request typing once sharp (best on a dark world) | `prompt` |
 | `page-fly` | picture | the page the product makes flies in lying back and the camera travels it from the headline to the table, the far edge soft, a lit edge | `doc` |
-| `toast-stack` | picture | notifications drop into the front slot and push the stack back into depth: the front one sharp, each further back softer (the lens gives the ladder) | `notices` |
+| `toast-stack` | picture | notifications drop into the front slot and push the stack back into depth: the front one sharp, each further back softer (the lens gives the ladder); the stack square and centred under an 85 mm lens, the times by slot (newest "now" in front), the product's own notice with its mark | `notices` |
 | `fan-focus` | picture | results as cards fanned in depth, the camera to one side closing on one while the focus racks to it | `comments` |
 | `rise-behind` | over | the line's key word giant, cards of the product's content rising behind it as the camera pulls back, the focus racking from the word to the cards | `plans` |
 | `porthole` | line | the line read, its words part and a porthole opens in the gap with a real face, a shadow ring and a band of light on its rim | `people` |
 | `carousel` | picture | a ring of the film's real pictures turning; the camera cranes down to eye level as it slows and lands the chosen one facing the camera (needs pictures) | `thumbs` |
-| `push-press` | picture | the product's screen read whole, then one push into its button as a pointer presses it: a glow, the screen answers (the scene's `button`) | the scene |
-| `logo-3d` | end | the end card through the brand's mark as a solid: a close-up of its bevels pulls back and lands on the flat lockup (needs the brand's SVG) | `brand/logo.ts` |
+| `push-press` | picture | the product's screen read whole, then one push into its button as a pointer presses it: a glow on the button (on a white card or a dark one), the screen answers (the scene's `button`) | the scene |
+| `logo-3d` | end | the end card through the brand's mark as a solid: a close-up of its bevels pulls back and lands on the flat lockup just before the name slides out (needs the brand's SVG; a CSS-3D solid on software GL) | `brand/logo.ts` |
 
 Rules every shot keeps: the shot runs on its own clock (its camera through declared fx/depth shots: one move a shot,
 front-loaded, landing, never a drift), cards face the camera (a ring or a page turn only as the shot's designed move),
 smear only on fast frames (the stage draws it from the speed), the line after a shot waits until the shot is soft
-(`HERO_LATE`). A pair's `hero` pins a shot (pins are placed first, by role); launch.ts `heroes.swap` trades one for
-another with a reason. Software GL draws logo-3d flat (the same pull-back); a GPU draws the solid
-(`MARK3D_GL` in acts/stage.tsx). Print the plan with template.json `deal.print`.
+(`HERO_LATE`). A hero picture between the first line and the claim arrives with its line (`with`: the shot's first
+motion behind the line, soft and darkened, then it comes up and racks in as the line leaves), so a film is never a line
+alone, then a card, line after line. A pair's `hero` pins a shot (pins are placed first, by role); launch.ts
+`heroes.swap` trades one for another with a reason. Software GL draws logo-3d as a CSS-3D solid (the same pull-back);
+a GPU draws the WebGL solid (`MARK3D_GL` in acts/stage.tsx). Print the plan with template.json `deal.print`.
 
 ## What you write
 
@@ -137,28 +145,32 @@ One dominant thing a frame, and every frame lit and alive:
   `field` element (unnamed: a disc of the accent at the scene's focus) until it is the frame, the claim resolves on it in white, the field leaves with it on the next seam
   (one run under 2 s; the band's flood and the turn to dark are their families' own events).
 - **Type.** The film's dealt pairing (`fx/TypePairs`, set in the tokens by `type-deal.ts`; `acts/line.tsx` `PAIR`
-  reads it back): its weights and its optical tracking. Every line sets one key word apart in the pairing's emphasis
-  weight (the starred word in the accent ink; a line without a star its last content word, in its own ink: `KEY_AUTO`),
-  never every line one size, one weight, plain white. Three sizes, one hierarchy: a line alone at a 7.4 % cap height in
-  the pairing's line weight, a line over its picture a step smaller (6.6 %), the claim (the last line, the hero) at 11.2 % in its hero weight, its
+  reads it back): its weights and its optical tracking. Headline systems rotate: the dealt voice is line 1's and each
+  line after takes the next voice in turn (timeline.ts `voiceOf`: build -> blur -> ink), never every line one entry. The
+  starred word takes the accent ink and the emphasis weight; a line without a star sets nothing apart (`KEY_AUTO` off:
+  one highlighted last word on every line is the template's tic). Three sizes, one hierarchy: line 1 alone at a 6.6 %
+  cap height in the pairing's line weight, the lines between it and the claim a size down (5 %, `aside`; 5.8 % over
+  their picture), the claim (the last line, the hero) at 11.8 % in its hero weight, its
   last word taking the film's one contrasting entry (the words before it centred on their own, gliding over to open
   its slot, then it snaps in from its left edge, one frame at x1.6, settling in 7 f: never a ragged block, never a
   word over its neighbour); the wordmark in the pairing's wordmark style (`wordmarkStyle`), its tracking loosened
   just enough that no two letters touch (`safeTrack`); a long line keeps one row at a sentence cap (6-6.4 %) or breaks into two balanced rows that part as they are
   read; never under 6 %.
 - **Cards.** Every card is the kit's one material (`kit/card.tsx`, through `acts/ui.tsx` `Card` and `litFace`): an
-  opaque face with a quiet vertical sheen lit from above, a hairline and an inner top highlight over its content, a
-  tight contact shadow and a broad soft one; cards face the camera and hold still (no creep, no bob, no resting tilt),
-  a designed turn only as a creative element (object-turn) that lands facing.
+  opaque face with a vertical sheen lit from above (3 L*), a hairline and an inner top highlight over its content, on a
+  dark world its top edge catching the key, a tight contact shadow and a broad soft one; cards face the camera and hold
+  still (no creep, no bob, no resting tilt; a shot's camera rests square to them, on a long lens for a stack), a designed
+  turn only as a creative element (object-turn) that lands facing.
 - **Life with a purpose.** The camera moves only to say something: a move that starts, travels and lands, then a hold
   that may be still. No float, no drift, no re-frame back and forth. A picture over 2.2 s takes one eased push closer
   (`PUSH`: 24 f@60 on a strong in-out, framing its `focus` box inside the safe area; never on a picture behind its line,
   never two pictures in a row, never under a creative picture); the dealt camera `land` gives each product picture one
   slow push that lands (`LAND`). The creative elements carry the motion (below); a finished line is never padded past
   its read and holds its place (no drift); the last picture falls back behind the lockup for a second while its element flies in (the
-  product stays on screen into the end, its words gone before the element crosses them), and the lockup drifts from
-  rest once it is whole, the fact on the name's axis, passing the frame's centre late in the hold and standing at most
-  28 px off it (`END_OFF_MAX`).
+  product stays on screen into the end, its words gone before the element crosses them, darkening into a dark world),
+  and the lockup holds still once it is whole (no drift: `END_DRIFT` 0), then the whole frame settles out into the
+  world's deep tone over the last 0.6 s with the music's ring-out (timeline.ts `END_FADE`, declared `fadeEnd`). A drawn
+  mark is laid out by its ink (1.3x the name's cap height, 0.44 cap from the name) in its own colours.
 
 Everything else is derived: `src/timeline.ts` fits each line beat (its build, its read, its exit) and each picture beat
 to the track's 8ths and each pair to whole bars at any tempo from 90 to 140 BPM, and puts the end on a downbeat with the
@@ -211,9 +223,9 @@ Every change of picture carries something (`SEAM_PLAN`, drawn by `acts/stage.tsx
 
 | Change | Recipes | What carries it |
 |---|---|---|
-| line -> picture | velocityCut, blurThrough (a dealt matchCut plays as blurThrough) | the line's speed into the picture's, smeared along its travel; the cut inside a blur |
-| picture -> line | recede, zoomThrough | the picture falls back while the line builds over it; or the push into it, the line building over the push |
-| picture -> picture | velocityCut, blurThrough, matchCut (only where dealt, and only under the carried object) | one camera move across the cut, smeared; the cut inside a blur; the film's carried object (`carry`) flying between the two scenes |
+| line -> picture | velocityCut, blurThrough (a dealt matchCut plays as blurThrough) | the line whipped out at speed (0.75 of the frame by the cut, smeared), the picture arriving on it; the cut inside a 48 px blur with both shots dimmed |
+| picture -> line | recede, zoomThrough | the picture falls back (and on a dark world darkens into it first) while the line builds over it; or the push into it, the line building over the push |
+| picture -> picture | velocityCut, blurThrough, matchCut (only where dealt, and only under the carried object) | a whip across the cut that hides it (timeline.ts `SEAM_CARRY`; every whip of a film the same way); the cut inside a blur; the film's carried object (`carry`) flying between the two scenes |
 | line over picture -> picture | (no cut) | the line lifts away, the picture rises into its place and racks into focus (a declared focus pull, `rack:`) |
 | out of the claim | velocityCut | its colour field sweeps off at speed |
 | into the end | sharedElement | the last picture's element flies into the mark |
