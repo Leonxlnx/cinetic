@@ -11,7 +11,8 @@
  *      scripts/test/ (its fixtures break the rules on purpose), never with a plain cp -R.
  *   5. One way to find Python: what scripts/py.mjs --which prints passes a version check (on Windows
  *      python3 is often the Microsoft Store alias, which runs nothing), $PYTHON and then $CINETIC_PYTHON
- *      are taken as given, no Python on the PATH exits 127, and no script or test spawns a bare python3
+ *      are taken as given, the interpreter tools.json remembers is found with nothing on the PATH, no Python
+ *      on the PATH and none remembered exits 127, and no script or test spawns a bare python3
  *      or reads those variables itself (shell scripts honour $PYTHON, then ask py.mjs --which).
  *   6. scripts/requirements.txt lists every third-party package a script in scripts/ or scripts/audio/ imports
  *      (earshot, in its own environment, aside), and py.mjs --check answers with exit 0, or exit 1 and the pip line.
@@ -21,7 +22,7 @@
  * Exit codes: 0 all pass, 1 a test failed.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -136,8 +137,19 @@ if (existsSync(setup)) {
   result(which({ ...bare, PYTHON: '/a/python', CINETIC_PYTHON: '/b/python' }).stdout.trim() === '/a/python', 'py.mjs: $PYTHON comes before $CINETIC_PYTHON');
   const empty = mkdtempSync(join(tmpdir(), 'cinetic-nopy-'));
   try {
-    const n = which({ ...bare, PATH: empty, Path: empty });
-    result(n.status === 127 && n.stdout === '', 'py.mjs --which with no Python on the PATH: exit 127, nothing named', `exit ${n.status} ${n.stdout.trim()}`);
+    // no Python on the PATH and none remembered (an empty CINETIC_HOME: no tools.json)
+    const n = which({ ...bare, PATH: empty, Path: empty, CINETIC_HOME: empty });
+    result(n.status === 127 && n.stdout === '', 'py.mjs --which with no Python on the PATH and none remembered: exit 127, nothing named', `exit ${n.status} ${n.stdout.trim()}`);
+    // the interpreter an earlier run remembered (tools.json python) is found with nothing on the PATH
+    const exe = w.status === 0 && cmd.length === 1 && existsSync(cmd[0]) ? cmd[0] : null;
+    if (exe) {
+      const home = mkdtempSync(join(tmpdir(), 'cinetic-home-'));
+      try {
+        writeFileSync(join(home, 'tools.json'), JSON.stringify({ python: exe }));
+        const r = which({ ...bare, PATH: empty, Path: empty, CINETIC_HOME: home });
+        result(r.status === 0 && r.stdout.trim() === exe, 'py.mjs --which falls back to the interpreter tools.json remembers (python in $CINETIC_HOME/tools.json)', `exit ${r.status} ${r.stdout.trim()}`);
+      } finally { rmSync(home, { recursive: true, force: true }); }
+    } else console.log('skip  py.mjs and tools.json: the Python found here is no single interpreter path');
   } finally { rmSync(empty, { recursive: true, force: true }); }
   const files = [];
   for (const sub of ['', 'audio', 'test']) for (const f of readdirSync(join(SCRIPTS, sub))) if (/\.(mjs|cjs|js|ts|sh)$/.test(f)) files.push(join(sub, f));
