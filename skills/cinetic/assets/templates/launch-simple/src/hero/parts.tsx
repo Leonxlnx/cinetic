@@ -162,6 +162,34 @@ export const ContentCard: React.FC<{ w: number; h: number; inks: FamilyInks; tit
   );
 };
 
+/**
+ * A card's content on glass (fx/light Glass draws the pane): the world's glass type colour, a title, a big value and up to
+ * three rows with checks; the badge in the accent; set in the card's lower part, so a word in front of the cards (a
+ * giant word with cards rising behind it) crosses frosted glass, never the card's words.
+ */
+export const GlassCardContent: React.FC<{ w: number; h: number; title: string; value?: string; sub?: string; rows?: string[]; badge?: string }> = ({ w, h, title, value, sub, rows = [], badge }) => {
+  const spec = useSpec();
+  const ink = spec.glass.text;
+  const mute = mixColor(ink, spec.tone === 'dark' ? spec.base : C.white, 0.38);
+  const accent = spec.tone === 'dark' ? mixColor(C.accent, C.white, 0.3) : C.accent;
+  return (
+    <div data-ui style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, padding: 34 * U, boxSizing: 'border-box', fontFamily: KIT_FONT, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: 16 * U }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 * U }}>
+        <div style={{ fontSize: 40 * U, fontWeight: 620, color: ink, letterSpacing: '-0.012em', whiteSpace: 'nowrap' }}>{title}</div>
+        {/* lint-ok: a plan tag in the card's corner, read with the card it labels */}
+        {badge ? <div style={{ marginLeft: 'auto', fontSize: 26 * U, fontWeight: 600, color: accent, boxShadow: `inset 0 0 0 ${(1.5 * U).toFixed(2)}px ${accent}`, padding: `${5 * U}px ${14 * U}px`, borderRadius: 999 }}>{badge}</div> : null}
+      </div>
+      {value ? <div style={{ fontSize: 76 * U, fontWeight: 650, color: ink, letterSpacing: '-0.03em', lineHeight: 1 }}>{value}{sub ? <span style={{ fontSize: 36 * U, fontWeight: 500, color: mute, letterSpacing: 0 }}>{` ${sub}`}</span> : null}</div> : null}
+      {rows.slice(0, 3).map((r, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 * U, fontSize: 36 * U, color: ink, lineHeight: 1.2 }}>
+          <Icon name="check" size={32 * U} color={accent} weight="bold" />
+          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>{r}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 /** The film's content (src/content.ts), with the lists the shots draw on never empty. */
 export const content = () => CONTENT;
 /** The cast's first face (the product's user), if fetched. */

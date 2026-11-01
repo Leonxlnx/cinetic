@@ -32,7 +32,7 @@ import { keyed, Line, LINE_TYPE, lineLayout, trackFor, weightOf } from '../acts/
 import { copy, H, HERO_PLAN, keyWords, W } from '../timeline';
 import { timingFail } from '../lib/continuity';
 import { FilmWorld, FOCUS, SCREEN_TONE, WORLD_DARK, WORLD_SPEC } from '../world';
-import { Bloom1, ContentCard, content, cpsFor, firstFace, InputContent, inputSend, k60, LineExit, useSkin, useSpec } from './parts';
+import { Bloom1, ContentCard, content, cpsFor, firstFace, GlassCardContent, InputContent, inputSend, k60, LineExit, useSkin, useSpec } from './parts';
 import { heroTimes } from './time';
 
 // what a placed shot needs from the film's content: precheck names it (the ship gate fails it)
@@ -344,7 +344,7 @@ const FanFocusShot: React.FC<HeroPicProps> = ({ dur, inks, seed }) => {
  * product's own content rising behind it while the camera pulls back from the word; the focus holds the word, then
  * racks to the cards as the reveal lands; the line leaves on its own at the end.
  */
-const RiseBehindShot: React.FC<HeroOverProps> = ({ dur, F, from, inks, line }) => {
+const RiseBehindShot: React.FC<HeroOverProps> = ({ f, dur, F, from, inks, line }) => {
   const film = useFilm();
   const fps = film.fps;
   const spec = useSpec();
@@ -356,13 +356,14 @@ const RiseBehindShot: React.FC<HeroOverProps> = ({ dur, F, from, inks, line }) =
   const key = words[ki]?.word ?? '';
   const rest = words.filter((_, i) => i !== ki).map((x) => x.word);
   const small = rest.length ? `${words.slice(0, ki).map((x) => x.word).join(' ')}${ki > 0 && ki < words.length - 1 ? ' … ' : ' '}${words.slice(ki + 1).map((x) => x.word).join(' ')}`.trim() : '';
-  const gsize = Math.min(330 * U, (W * 0.7) / Math.max(1, key.length * 0.56));
+  const gsize = Math.min(300 * U, (W * 0.66) / Math.max(1, key.length * 0.56));
   const gw = Math.min(W * 0.9, measureTracked(key, gsize, 760, -0.04, FONT.text, { trailing: false }) + gsize * 0.2);
-  const wordBox: Box = { x: (W - gw) / 2, y: H * 0.47 - gsize * 0.6, w: gw, h: gsize * 1.2 };
+  // the word stands over the cards' upper glass, their words set low in them: it crosses glass, never their words
+  const wordBox: Box = { x: (W - gw) / 2, y: H * 0.39 - gsize * 0.6, w: gw, h: gsize * 1.2 };
   const plans = C0.plans.plans.slice(0, 3);
   const cw = 500 * U;
-  const chh = 600 * U;
-  const row = { cx: W / 2, cy: H * 0.5 + 30 * U, gap: 44 * U };
+  const chh = 640 * U;
+  const row = { cx: W / 2, cy: H * 0.58, gap: 44 * U };
   const cam = useMemo(() => {
     const wc: V3 = [wordBox.x + wordBox.w / 2, wordBox.y + wordBox.h / 2, 140];
     return camera([pull(t.move[0], (from: Cam) => ({ target: [W / 2, H / 2, 0] as V3, dist: from.dist * 1.3 }), { frames: t.move[1], film, id: 'rise-pull' }), rack(t.move[0] + t.move[1] * 0.55, [row.cx, row.cy, -180], { frames: k60(36, fps), film, id: 'rise-rack' })], {
@@ -381,14 +382,22 @@ const RiseBehindShot: React.FC<HeroOverProps> = ({ dur, F, from, inks, line }) =
   return (
     <LineExit F={F} out={c.out} fps={fps}>
       <Stage3D camera={cam} ground={<StageGround />}>
-        {plans.map((p, i) => (
-          <Plane key={i} id={`rise-${i}`} box={{ x: row.cx - (plans.length * cw + (plans.length - 1) * row.gap) / 2 + i * (cw + row.gap), y: row.cy - chh / 2, w: cw, h: chh }} z={-180} move={(g: number) => {
-            const e = E.glideOut(clamp((g - seq[i]) / k60(40, fps)));
-            return { y: 460 * (1 - e), opacity: clamp(e * 4) };
-          }}>
-            <ContentCard w={cw} h={chh} inks={inks} title={p.name} value={typeof p.price === 'number' ? `${C0.plans.currency}${p.price}` : String(p.price)} sub={p.period} rows={p.features} badge={p.badge} />
-          </Plane>
-        ))}
+        {plans.map((p, i) => {
+          const box = { x: row.cx - (plans.length * cw + (plans.length - 1) * row.gap) / 2 + i * (cw + row.gap), y: row.cy - chh / 2, w: cw, h: chh };
+          return (
+            <Plane key={i} id={`rise-${i}`} box={box} z={-180} move={(g: number) => {
+              const e = E.glideOut(clamp((g - seq[i]) / k60(40, fps)));
+              return { y: 460 * (1 - e), opacity: clamp(e * 4) };
+            }}>
+              {/* glass cards: each frosts the world where it stands (laid out in frame px, so the frost is registered) */}
+              <div style={{ position: 'absolute', left: -box.x, top: -box.y, width: W, height: H }}>
+                <Glass x={box.x} y={box.y} w={cw} h={chh} r={30 * U} sweep={seq[i] + k60(34, fps)} sweepKind="edge" frame={f}>
+                  <GlassCardContent w={cw} h={chh} title={p.name} value={typeof p.price === 'number' ? `${C0.plans.currency}${p.price}` : String(p.price)} sub={p.period} rows={p.features} badge={p.badge} />
+                </Glass>
+              </div>
+            </Plane>
+          );
+        })}
         <Plane id="rise-word" box={wordBox} z={140} move={() => ({ opacity: enter, y: (1 - enter) * 40 })}>
           {giant}
         </Plane>
