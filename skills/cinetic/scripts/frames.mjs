@@ -5,19 +5,26 @@
 //
 //   node scripts/frames.mjs still 120,480,1000            # out/stills/f0120.png ... at half size, one browser
 //   node scripts/frames.mjs still 600 --scale 1            # one frame at full size
-//   node scripts/frames.mjs sheet                          # out/qa/sheet.png: about 36 frames over the film, 6 across
+//   node scripts/frames.mjs sheet                          # out/qa/sheet.png: 16 frames over the film, 4 across
 //   node scripts/frames.mjs sheet --every 30               # every 30th frame (a 60 fps film: two tiles a second)
 //   node scripts/frames.mjs sheet --frames 840-1079 --every 4 --out out/qa/field.png   # one act, every 4th frame
 //   node scripts/frames.mjs sheet --frames 358-364,1796 --scale 0.5                      # a cue and its neighbours
+//   node scripts/frames.mjs end                            # the ending as stills: out/stills/end-f*.png (the lockup, early)
+//   node scripts/frames.mjs sheet --from out/draft.mp4     # a sheet from a rendered video (ffmpeg only: no bundle, no browser)
+//   node scripts/frames.mjs sheet --from out/draft.mp4 --frames 600-839 --every 6   # one act of the draft
+//   node scripts/frames.mjs grab --from out/draft.mp4 120,480   # review frames from the video: out/stills/draft-f0120.png
+//   node scripts/frames.mjs python                         # which Python runs the checks and sheets (numpy scipy soundfile cv2)
 //   node scripts/frames.mjs bundle                         # build or reuse the bundle; prints its folder
 //   node scripts/frames.mjs gl                             # the GL backend renders use here (probed once, cached)
 //
 // The bundle. `npx remotion bundle` costs from half a minute to several minutes on a laptop, and `npx remotion still
 // src/index.ts` pays it on every call. Here the bundle lives in out/.bundle/<key>/, where the key hashes everything a
 // bundle is made of: every file under the entry's folder (src/), remotion.config.ts, package.json, tsconfig.json, the
-// Remotion version and public/ (path, size, mtime). An unchanged source reuses it in well under a second; any edit
-// builds a new one (with Remotion's webpack cache, so only the changed modules compile). The newest 3 bundles and
-// any used in the last 2 hours stay; older ones are removed. render.sh takes its frozen copy from here (--copy-to).
+// Remotion version and public/ (path, size, mtime) but public/audio (the soundtrack is muxed by ffmpeg; frames render
+// muted, so a new mix never rebuilds the bundle). An unchanged source reuses it in well under a second; any edit
+// builds a new one (remotion.config.ts bundles with Rspack: seconds, where webpack took minutes on a busy laptop). The
+// newest 3 bundles and any used in the last 2 hours stay; older ones are removed. render.sh takes its frozen copy from
+// here (--copy-to). Build it once per state of the source: stills, sheets, the draft and the final all reuse it.
 //
 // The frames. One `npx remotion render <bundle> <comp> --sequence --frames=<list>` call: one browser, one evaluation
 // of the composition list, the frames rendered in parallel tabs. It reads remotion.config.ts like every npx remotion
@@ -29,19 +36,29 @@
 // refused), and picks the fastest from the first frame written to the last (the start-up every call pays alike is
 // left out: on a busy laptop it is 10-30 s and decided the race by noise), keeping angle unless another backend is
 // 1.25x faster; software GL beating a GPU path that draws correctly means the GPU was busy, so swangle then gets an
-// hour's fallback and the GPU path stays the answer. out/.bundle/gl.json caches it per machine and Remotion version
+// hour's fallback and the GPU path stays the answer. out/.bundle/gl.json caches it per machine and Remotion version (and ~/.cinetic/gl.json, so the next film starts from it)
 // (CINETIC_GL=<backend> overrides it, --force probes again). still and sheet use the cached pick when there is one,
 // else the config's backend, and when a render fails with it they retry once with swangle (software, always works)
 // and keep swangle for an hour (gl.json 'fallback'), then try the measured pick again: a GPU path that failed once
 // under load is not taken as broken for good (swangle renders a 1080p frame 5-8x slower). render.sh runs `gl` before
 // a final render.
 //
+// The video. Once a draft exists (render.sh --draft), look at the film through it: sheet --from and grab --from cut
+// frames out of the video with ffmpeg in seconds, with no bundle and no browser. Stills from the bundle are for a
+// frame you are fixing now (still) and for the ending before the draft (end).
+//
+// Python. `python` asks every interpreter it can find (the one scripts/py.mjs picks, a .venv here, py -0p on Windows,
+// python3 and python on the PATH) which of numpy, scipy, soundfile and cv2 it imports, and says which one to use (set
+// PYTHON to it) when the pick misses one; the answer is cached in ~/.cinetic/python.json for a day (--fresh asks
+// again). --need a,b names other modules; --print prints only the interpreter that has them (exit 1: none has).
+//
 // Options (still, sheet):
 //   --comp ID          composition (default Film)
 //   --frames SEL       frames: a list 12,40,96, a range 240-479, or both (0-100,400); still takes it positionally
-//   --every N          sheet: every Nth frame of the range (default: N that gives about 36 tiles)
-//   --scale S          still 0.5, sheet 0.25 (a 480 px tile from a 1920 px film)
-//   --cols N           sheet columns (default 6)
+//   --every N          sheet: every Nth frame of the range (default: N that gives 16 tiles; --tiles N another count)
+//   --scale S          still 0.5, sheet 0.25 (a 480 px tile from a 1920 px film; --from: tiles 480 px wide)
+//   --cols N           sheet columns (default 4)
+//   --from VIDEO       sheet, grab: frames cut from this video instead of rendered (out/draft.mp4, out/film.mp4)
 //   --out PATH         still: a folder (default out/stills); sheet: the PNG (default out/qa/sheet.png)
 //   --format F         png (still default) or jpeg (sheet tiles, default)
 //   --props JSON|FILE  input props for the composition
@@ -51,8 +68,10 @@
 //   --entry FILE       entry point (default src/index.ts)
 //   --fresh            rebuild the bundle even when one matches
 //   -- ARGS            passed to `remotion render` as they are
+// end:    --comp ID, --scale S (0.5), --at N (stills over the last N seconds, default 3).
 // bundle: --entry FILE, --fresh, --copy-to DIR (also copy it there: render.sh's frozen bundle), --quiet.
-// gl:     --force (probe again), --comp ID, --bundle DIR (probe on this bundle), --quiet (print only the backend).
+// gl:     --force (probe again), --comp ID, --bundle DIR (probe on this bundle), --quiet (print only the backend),
+//         --cached (the cached pick or nothing, never a probe).
 //
 // Prints the files it wrote. Exit 0 ok, 1 a bundle or render failed, 2 usage. Needs node, npx with @remotion/cli
 // (the project's), and ffmpeg/ffprobe for the sheet and the probe. Run it from the project root.
@@ -63,6 +82,7 @@ import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findPython } from './py.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const argv = process.argv.slice(2);
@@ -75,7 +95,7 @@ const help = () => {
 };
 if (!ARGS.length || ARGS.includes('-h') || ARGS.includes('--help')) { help(); process.exit(ARGS.length ? 0 : 2); }
 const CMD = ARGS[0];
-const FLAGS = new Set(['fresh', 'quiet', 'force']);
+const FLAGS = new Set(['fresh', 'quiet', 'force', 'print', 'cached']);
 const opt = { _: [] };
 for (let i = 1; i < ARGS.length; i++) {
   const a = ARGS[i];
@@ -93,11 +113,13 @@ const say = (msg) => { if (!opt.quiet) console.error(`frames: ${msg}`); };
 const t0 = Date.now();
 const secs = (t = t0) => ((Date.now() - t) / 1000).toFixed(1);
 
-// project root: the folder holding the entry (the current folder, else the one above this script)
+// project root: the folder holding the entry (the current folder, else the one above this script); python and the
+// commands that read a video (--from) need no project
 const ENTRY = opt.entry || 'src/index.ts';
+const NO_PROJECT = CMD === 'python' || ((CMD === 'sheet' || CMD === 'grab') && !!opt.from);
 if (!fs.existsSync(ENTRY)) {
   if (fs.existsSync(path.join(HERE, '..', ENTRY))) process.chdir(path.join(HERE, '..'));
-  else die(`no ${ENTRY} here: run from the project root or pass --entry`);
+  else if (!NO_PROJECT) die(`no ${ENTRY} here: run from the project root or pass --entry`);
 }
 const ROOT = process.cwd();
 const CACHE = path.join(ROOT, 'out', '.bundle');
@@ -148,7 +170,12 @@ function sourceKey() {
   h.update(`entry ${path.relative(ROOT, path.resolve(ENTRY))}\n`);
   for (const [p, st] of walk(srcDir)) { h.update(`${path.relative(ROOT, p)} ${st.size}\n`); h.update(fs.readFileSync(p)); }
   for (const f of ['remotion.config.ts', 'remotion.config.js', 'package.json', 'tsconfig.json']) if (fs.existsSync(f)) { h.update(`${f}\n`); h.update(fs.readFileSync(f)); }
-  for (const [p, st] of walk('public')) h.update(`${path.relative(ROOT, p)} ${st.size} ${Math.round(st.mtimeMs)}\n`);
+  // public/ but public/audio: the soundtrack is muxed by ffmpeg after the frames (renders are muted), so a new mix
+  // keeps the bundle
+  for (const [p, st] of walk('public')) {
+    const r = path.relative(ROOT, p).split(path.sep).join('/');
+    if (!r.startsWith('public/audio/')) h.update(`${r} ${st.size} ${Math.round(st.mtimeMs)}\n`);
+  }
   try { h.update(`remotion ${JSON.parse(fs.readFileSync('node_modules/remotion/package.json', 'utf8')).version}\n`); } catch { /* no local install: npx finds one */ }
   return h.digest('hex').slice(0, 16);
 }
@@ -193,14 +220,25 @@ function ensureBundle() {
 
 // ---------- the GL backend ----------
 const GLJSON = path.join(CACHE, 'gl.json');
+// the machine's copy: a new film on this machine starts from it instead of probing again (written only by a real
+// Remotion install, whose version is in the key)
+const MACHINE_GL = path.join(os.homedir(), '.cinetic', 'gl.json');
+let remotionVersion = '';
 function machineKey() {
   let rv = '';
   try { rv = JSON.parse(fs.readFileSync('node_modules/remotion/package.json', 'utf8')).version; } catch { /* ignore */ }
+  remotionVersion = rv;
   const browser = process.env.REMOTION_BROWSER || process.env.CHROMIUM_PATH || '';
   return [os.hostname(), process.platform, os.arch(), os.cpus()[0]?.model || '', rv, browser].join('|');
 }
-function readGl() { try { const g = JSON.parse(fs.readFileSync(GLJSON, 'utf8')); return g.key === machineKey() ? g : null; } catch { return null; } }
-function writeGl(g) { fs.mkdirSync(CACHE, { recursive: true }); fs.writeFileSync(GLJSON, `${JSON.stringify({ key: machineKey(), at: new Date().toISOString(), ...g }, null, 1)}\n`); }
+const readKeyed = (p) => { try { const g = JSON.parse(fs.readFileSync(p, 'utf8')); return g.key === machineKey() ? g : null; } catch { return null; } };
+function readGl() { const g = readKeyed(GLJSON); if (g) return g; machineKey(); return remotionVersion ? readKeyed(MACHINE_GL) : null; }
+function writeGl(g) {
+  const text = `${JSON.stringify({ key: machineKey(), at: new Date().toISOString(), ...g }, null, 1)}\n`;
+  fs.mkdirSync(CACHE, { recursive: true });
+  fs.writeFileSync(GLJSON, text);
+  if (remotionVersion) try { fs.mkdirSync(path.dirname(MACHINE_GL), { recursive: true }); fs.writeFileSync(MACHINE_GL, text); } catch { /* a read-only home */ }
+}
 // a swangle fallback after a GPU-path failure holds for an hour; after that the probe's pick (or the config's) again
 const FALLBACK_MS = 3600e3;
 const fallbackOf = (g) => (g?.fallback && Date.now() - Date.parse(g.fallback.at) < FALLBACK_MS ? g.fallback : null);
@@ -298,8 +336,17 @@ function renderFrames(bundle, comp, { frames, every = 1, scale, format, outDir, 
     if (want.length !== files.length) say(`warning: ${files.length} images for ${want.length} frames (every ${every})`);
     files.forEach((x, i) => { x.frame = want[i] ?? x.frame; });
   }
-  say(`${files.length} frame(s) of ${comp} at scale ${scale} in ${secs(t)} s (concurrency ${conc}, gl ${gl || 'from remotion.config.ts'})`);
+  say(`${files.length} frame(s) of ${comp} at scale ${scale} in ${secs(t)} s${steadyOf(files)} (concurrency ${conc}, gl ${gl || 'from remotion.config.ts'})`);
   return files;
+}
+// the pace once the browser runs: from the first file written to the last (the start-up every call pays is left out)
+function steadyOf(files) {
+  if (files.length < 3) return '';
+  try {
+    const ts = files.map((f) => fs.statSync(f.file).mtimeMs).sort((a, b) => a - b);
+    const per = (ts[ts.length - 1] - ts[0]) / 1000 / (files.length - 1);
+    return per > 0 ? `, ${per.toFixed(2)} s a frame once running` : '';
+  } catch { return ''; }
 }
 
 // ---------- labels for the sheet: a 5x7 pixel font drawn into an RGBA PAM, so no font file is needed ----------
@@ -361,22 +408,75 @@ function cmdStill() {
   say(`done in ${secs()} s`);
 }
 
-function cmdSheet() {
-  const comp = opt.comp || 'Film';
-  const scale = opt.scale || '0.25';
-  const cols = Math.max(1, Number(opt.cols || 6));
-  const bundle = ensureBundle();
-  const meta = compositions(bundle)[comp];
-  if (!meta) die(`no composition '${comp}' in the bundle`);
-  let frames = opt.frames ? parseSel(opt.frames) : [[0, meta.frames - 1]];
-  frames = frames.map(([a, b]) => [a, Math.min(b, meta.frames - 1)]).filter(([a, b]) => a <= b);
-  if (!frames.length) usage(`--frames outside ${comp} (0-${meta.frames - 1})`);
+// a range's frames for a sheet: every Nth, or N spread evenly (the default sheet: 16 tiles over the range)
+const TILES = () => Math.max(1, Number(opt.tiles || 16));
+function sheetFrames(total, label) {
+  let frames = opt.frames ? parseSel(opt.frames) : [[0, total - 1]];
+  frames = frames.map(([a, b]) => [a, Math.min(b, total - 1)]).filter(([a, b]) => a <= b);
+  if (!frames.length) usage(`--frames outside ${label} (0-${total - 1})`);
   let every = Number(opt.every || 0);
   if (frames.length > 1 && every > 1) usage('--every works on one range (or pass a list without --every)');
-  if (!every) every = frames.length === 1 ? Math.max(1, Math.ceil((frames[0][1] - frames[0][0] + 1) / 36)) : 1;
+  if (!every) every = frames.length === 1 ? Math.max(1, Math.ceil((frames[0][1] - frames[0][0] + 1) / TILES())) : 1;
+  return { frames, every };
+}
+
+// a video's rate and frame count (ffprobe; the count from the stream header, else duration x rate)
+function videoMeta(file) {
+  const r = tool('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=r_frame_rate,nb_frames,width,height:format=duration', '-of', 'json', file]);
+  if (r.status !== 0) die(`ffprobe could not read ${file}: ${(r.stderr || '').trim().slice(-300)}`);
+  const j = JSON.parse(r.stdout || '{}');
+  const st = (j.streams || [])[0] || {};
+  const [n, d] = String(st.r_frame_rate || '30/1').split('/').map(Number);
+  const fps = n / (d || 1);
+  const frames = Number(st.nb_frames) > 0 ? Number(st.nb_frames) : Math.round(Number(j.format?.duration || 0) * fps);
+  if (!frames) die(`${file} has no video frames`);
+  return { fps: +fps.toFixed(3), frames, w: Number(st.width), h: Number(st.height) };
+}
+
+// frames cut from a video with ffmpeg (one decode pass, the selected frames only), as [{frame, file}]
+function cutFrames(video, list, { width, format, outDir }) {
+  fs.mkdirSync(outDir, { recursive: true });
+  const sel = [];
+  // runs of consecutive frames as between(), the rest as eq(): the select expression stays short
+  for (let i = 0; i < list.length;) {
+    let j = i;
+    while (j + 1 < list.length && list[j + 1] === list[j] + 1) j++;
+    sel.push(j > i ? `between(n\\,${list[i]}\\,${list[j]})` : `eq(n\\,${list[i]})`);
+    i = j + 1;
+  }
+  const vf = [`select='${sel.join('+')}'`, ...(width ? [`scale=${width}:-2:flags=area`] : [])].join(',');
+  const ext = format === 'png' ? 'png' : 'jpg';
+  const r = tool('ffmpeg', ['-v', 'error', '-y', '-i', video, '-vf', vf, '-fps_mode', 'passthrough', ...(ext === 'jpg' ? ['-q:v', '3'] : []), path.join(outDir, `c%05d.${ext}`)]);
+  const out = fs.existsSync(outDir) ? fs.readdirSync(outDir).filter((f) => /^c\d{5}\./.test(f)).sort() : [];
+  if (r.status !== 0 || !out.length) die(`ffmpeg could not cut frames from ${video}: ${(r.stderr || '').trim().slice(-400)}`);
+  if (out.length !== list.length) say(`warning: ${out.length} frames cut for ${list.length} asked`);
+  return out.map((f, i) => ({ frame: list[i] ?? i, file: path.join(outDir, f) }));
+}
+
+function cmdSheet() {
+  const comp = opt.comp || 'Film';
+  const cols = Math.max(1, Number(opt.cols || 4));
   const tmp = tmpDir(`sheet-tmp-${process.pid}`);
   fs.rmSync(tmp, { recursive: true, force: true });
-  const files = renderFrames(bundle, comp, { frames, every, scale, format: opt.format || 'jpeg', outDir: tmp, gl: glForCall() });
+  let files;
+  let meta;
+  if (opt.from) {
+    // a sheet from a rendered video (the draft): ffmpeg only, seconds, no bundle and no browser
+    if (!fs.existsSync(opt.from)) die(`--from ${opt.from}: no such video (render it: bash scripts/render.sh Film out/draft.mp4 --draft)`);
+    meta = videoMeta(opt.from);
+    const { frames, every } = sheetFrames(meta.frames, opt.from);
+    const list = [];
+    for (const [a, b] of frames) for (let f = a; f <= b; f += every) list.push(f);
+    const width = opt.scale ? Math.round((meta.w * Number(opt.scale)) / 2) * 2 : Math.min(meta.w, 480);
+    files = cutFrames(opt.from, list, { width, format: 'jpeg', outDir: tmp });
+  } else {
+    const bundle = ensureBundle();
+    meta = compositions(bundle)[comp];
+    if (!meta) die(`no composition '${comp}' in the bundle`);
+    const { frames, every } = sheetFrames(meta.frames, comp);
+    files = renderFrames(bundle, comp, { frames, every, scale: opt.scale || '0.25', format: opt.format || 'jpeg', outDir: tmp, gl: glForCall() });
+  }
+  const every = files.length > 1 ? files[1].frame - files[0].frame : 1;
   // tiles in order, numbered for ffmpeg's image2 reader
   files.forEach((f, i) => fs.renameSync(f.file, path.join(tmp, `t${String(i).padStart(5, '0')}${path.extname(f.file)}`)));
   const ext = path.extname(files[0].file);
@@ -397,7 +497,133 @@ function cmdSheet() {
   if (ff.status !== 0 || !fs.existsSync(out)) die(`ffmpeg could not tile the sheet: ${(ff.stderr || '').trim().slice(-800)}`);
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log(path.relative(ROOT, out).split(path.sep).join('/'));
-  say(`sheet: ${n} tiles (${cols} x ${rows}, every ${every} f = ${(every / meta.fps).toFixed(2)} s) of ${comp} @ ${meta.fps} fps, ${W}x${H}, done in ${secs()} s`);
+  say(`sheet: ${n} tiles (${cols} x ${rows}, every ${every} f = ${(every / meta.fps).toFixed(2)} s) of ${opt.from || comp} @ ${meta.fps} fps, ${W}x${H}, done in ${secs()} s`);
+}
+
+// review frames from a rendered video at its own size (the draft, the final): out/stills/<name>-fNNNN.png
+function cmdGrab() {
+  const sel = opt.frames || opt._.join(',');
+  if (!opt.from || !sel) usage('grab wants --from <video> and frames: node scripts/frames.mjs grab --from out/draft.mp4 120,480');
+  if (!fs.existsSync(opt.from)) die(`--from ${opt.from}: no such video`);
+  const meta = videoMeta(opt.from);
+  const list = [...new Set(parseSel(sel).flatMap(([a, b]) => Array.from({ length: b - a + 1 }, (_, i) => a + i)))].filter((x) => x < meta.frames).sort((x, y) => x - y);
+  if (!list.length) usage(`frames outside ${opt.from} (0-${meta.frames - 1})`);
+  const tmp = tmpDir(`grab-tmp-${process.pid}`);
+  fs.rmSync(tmp, { recursive: true, force: true });
+  const files = cutFrames(opt.from, list, { width: opt.scale ? Math.round((meta.w * Number(opt.scale)) / 2) * 2 : 0, format: 'png', outDir: tmp });
+  const outDir = path.resolve(opt.out || 'out/stills');
+  fs.mkdirSync(outDir, { recursive: true });
+  const stem = path.basename(opt.from).replace(/\.[^.]+$/, '');
+  const pad = Math.max(4, String(list[list.length - 1]).length);
+  for (const x of files) {
+    const to = path.join(outDir, `${stem}-f${String(x.frame).padStart(pad, '0')}.png`);
+    fs.copyFileSync(x.file, to);
+    console.log(path.relative(ROOT, to).split(path.sep).join('/'));
+  }
+  fs.rmSync(tmp, { recursive: true, force: true });
+  say(`${files.length} frame(s) from ${opt.from} in ${secs()} s`);
+}
+
+// the ending as stills, early in the run (before any draft): the lockup's landing, its hold and the last frame. The
+// last act starts at out/cues.json's last act line when there is one; the stills spread over the last --at seconds.
+function cmdEnd() {
+  const comp = opt.comp || 'Film';
+  const bundle = ensureBundle();
+  const meta = compositions(bundle)[comp];
+  if (!meta) die(`no composition '${comp}' in the bundle`);
+  const last = meta.frames - 1;
+  const span = Math.round(Number(opt.at || 3) * meta.fps);
+  const pick = new Set([Math.max(0, last - span), Math.max(0, last - Math.round(span / 2)), Math.max(0, last - Math.round(meta.fps / 2)), last]);
+  try {
+    const c = JSON.parse(fs.readFileSync('out/cues.json', 'utf8'));
+    const starts = Object.values(c.acts || {}).map((x) => Math.round(x.from)).filter((x) => x > 0 && x < last).sort((x, y) => x - y);
+    if (starts.length) pick.add(Math.min(last, starts[starts.length - 1] + Math.round(meta.fps * 0.8)));
+  } catch { /* no cues yet: the spread alone */ }
+  const frames = [...pick].sort((x, y) => x - y);
+  const tmp = tmpDir(`end-tmp-${process.pid}`);
+  fs.rmSync(tmp, { recursive: true, force: true });
+  const files = renderFrames(bundle, comp, { frames: frames.map((x) => [x, x]), scale: opt.scale || '0.5', format: 'png', outDir: tmp, gl: glForCall() });
+  const outDir = path.resolve(opt.out || 'out/stills');
+  fs.mkdirSync(outDir, { recursive: true });
+  for (const x of files) {
+    const to = path.join(outDir, `end-f${String(x.frame).padStart(4, '0')}.png`);
+    fs.copyFileSync(x.file, to);
+    console.log(path.relative(ROOT, to).split(path.sep).join('/'));
+  }
+  fs.rmSync(tmp, { recursive: true, force: true });
+  say(`the ending: ${files.length} still(s) of the last ${(span / meta.fps).toFixed(1)} s (frames ${frames.join(', ')} of ${meta.frames}) in ${secs()} s: the lockup, the name and the mark must read here`);
+}
+
+// ---------- python: which interpreter runs the checks ----------
+// Every interpreter this machine offers is asked once which modules it imports; the answer is cached for a day.
+function cmdPython() {
+  const need = String(opt.need || 'numpy,scipy,soundfile,cv2').split(',').map((x) => x.trim()).filter(Boolean);
+  const cacheFile = path.join(os.homedir(), '.cinetic', 'python.json');
+  const key = need.join(',');
+  const fmt = (c) => (c || []).map((x) => (/\s/.test(x) ? `"${x}"` : x)).join(' ');
+  let cache = {};
+  try { cache = JSON.parse(fs.readFileSync(cacheFile, 'utf8')); } catch { /* none yet */ }
+  let res = cache[key];
+  // a day-old answer whose interpreters are still there is reused as it is (asking py.mjs again costs a Python start
+  // per candidate); --fresh asks again (after setting PYTHON to another interpreter, say)
+  const fresh = res && !opt.fresh && Date.now() - Date.parse(res.at) < 24 * 3600e3
+    && res.list.every((x) => !/[\\/]/.test(x.cmd[0]) || fs.existsSync(x.cmd[0]));
+  if (!fresh) {
+    const pickNow = findPython({ quiet: true });
+    const cands = [];
+    const addC = (c) => { if (c && c.length && !cands.some((x) => fmt(x) === fmt(c))) cands.push(c); };
+    addC(pickNow);
+    // the sound kit's interpreter (earshot's own environment) often has the rest too
+    if (process.env.EARSHOT_PYTHON && fs.existsSync(process.env.EARSHOT_PYTHON)) addC([process.env.EARSHOT_PYTHON]);
+    for (const d of [process.env.VIRTUAL_ENV, path.join(process.cwd(), '.venv'), path.join(process.cwd(), 'venv')].filter(Boolean)) {
+      const p = path.join(d, isWin ? 'Scripts' : 'bin', isWin ? 'python.exe' : 'python');
+      if (fs.existsSync(p)) addC([p]);
+    }
+    if (isWin) {
+      const r = tool('py', ['-0p']);
+      for (const l of (r.stdout || '').split(/\r?\n/)) {
+        const m = /([A-Za-z]:\\.*?pythonw?\.exe)\s*$/i.exec(l.trim());
+        if (m && fs.existsSync(m[1])) addC([m[1]]);
+      }
+    }
+    // python3 and python on the PATH, by full path (a Store alias under WindowsApps runs nothing: left out)
+    for (const dir of (process.env.PATH || '').split(path.delimiter)) {
+      if (!dir || /WindowsApps/i.test(dir)) continue;
+      for (const n of isWin ? ['python.exe', 'python3.exe'] : ['python3', 'python']) {
+        const p = path.join(dir, n);
+        try { if (fs.statSync(p).isFile()) addC([fs.realpathSync(p)]); } catch { /* not here */ }
+      }
+    }
+    const code = 'import importlib, sys\nmiss = []\nfor m in sys.argv[1:]:\n    try:\n        importlib.import_module(m)\n    except Exception:\n        miss.append(m)\nprint(sys.version.split()[0])\nprint(" ".join(miss))';
+    const list = [];
+    for (const c of cands.slice(0, 8)) {
+      const [exe, ...pre] = c;
+      const r = spawnSync(exe, [...pre, '-c', code, ...need], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 90000 });
+      if (r.status !== 0) continue;
+      const [ver = '?', miss = ''] = (r.stdout || '').split(/\r?\n/);
+      if (!/^3\.(1\d|[2-9]\d)/.test(ver)) continue; // 3.10 and newer
+      list.push({ cmd: c, version: ver, missing: miss.split(' ').filter(Boolean) });
+    }
+    res = { at: new Date().toISOString(), pick: pickNow, list };
+    cache[key] = res;
+    try { fs.mkdirSync(path.dirname(cacheFile), { recursive: true }); fs.writeFileSync(cacheFile, `${JSON.stringify(cache, null, 1)}\n`); } catch { /* a read-only home: no cache */ }
+  }
+  const full = res.list.find((x) => !x.missing.length);
+  const pick = res.list.find((x) => fmt(x.cmd) === fmt(res.pick));
+  if (opt.print) {
+    if (!full) { console.error(`frames.mjs: no Python here imports ${need.join(', ')}`); process.exit(1); }
+    console.log(fmt(full.cmd));
+    return;
+  }
+  if (pick && !pick.missing.length) console.log(`${fmt(pick.cmd)} (Python ${pick.version}) imports ${need.join(', ')}: every script uses it (node scripts/py.mjs)`);
+  else if (full) {
+    console.log(`${fmt(full.cmd)} (Python ${full.version}) imports ${need.join(', ')}${pick ? `; the default pick ${fmt(pick.cmd)} misses ${pick.missing.join(', ')}` : ''}.`);
+    console.log(`set PYTHON to it once for every step (render.sh, sheets, forensics): export PYTHON="${full.cmd.join(' ')}"`);
+  } else if (res.list.length) {
+    const best = [...res.list].sort((x, y) => x.missing.length - y.missing.length)[0];
+    console.log(`no interpreter here imports all of ${need.join(', ')}: ${res.list.map((x) => `${fmt(x.cmd)} misses ${x.missing.join(', ')}`).join('; ')}`);
+    console.log(`install the rest into the closest one: ${fmt(best.cmd)} -m pip install -r scripts/requirements.txt (then export PYTHON="${best.cmd.join(' ')}")`);
+  } else console.log('no Python 3.10+ found: install Python 3.11+ and scripts/requirements.txt, then set PYTHON to it');
 }
 
 function psnr(a, b) {
@@ -410,6 +636,8 @@ function cmdGl() {
   const env = process.env.CINETIC_GL;
   if (env) { console.log(env); return; }
   const have = readGl();
+  // --cached: the machine's pick when there is one, else nothing (the config's backend): never a probe (render.sh --draft)
+  if (opt.cached) { const g = glOf(have); if (g) console.log(g); return; }
   const fb = fallbackOf(have);
   if (have && (have.gl || fb) && !opt.force) {
     if (!opt.quiet) say(fb ? `gl swangle until an hour after ${fb.at} (${fb.why}); then ${have.gl || "the config's backend"} again`
@@ -486,4 +714,7 @@ if (CMD === 'bundle') cmdBundle();
 else if (CMD === 'still' || CMD === 'stills') cmdStill();
 else if (CMD === 'sheet') cmdSheet();
 else if (CMD === 'gl') cmdGl();
+else if (CMD === 'grab') cmdGrab();
+else if (CMD === 'end') cmdEnd();
+else if (CMD === 'python') cmdPython();
 else usage(`unknown command '${CMD}'`);
