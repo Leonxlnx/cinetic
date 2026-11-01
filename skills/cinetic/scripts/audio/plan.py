@@ -663,7 +663,9 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
             added = round(float(np.clip(depth - d0, 0.0, STOP_ADD_MAX)), 2)
             rec.update(status='arrangement' if added == 0 else 'added', **{'from': r4(t - Lx)}, length_s=r4(Lx),
                        depth_db=round(depth, 2), track_dip_db=round(d0, 2), added_db=added)
-            if ending.get('mode') in ('hit', 'stop') and abs(t - ending['bed_stops_film_s']) <= 0.05:
+            if ending.get('under_from_s') is not None and abs(t - float(ending['under_from_s'])) <= 0.05:
+                rec['through'] = END_UNDER_DB  # the lockup before a later bar line: the bed stays under from it (score.py settle_ending)
+            elif ending.get('mode') in ('hit', 'stop') and abs(t - ending['bed_stops_film_s']) <= 0.05:
                 # the lockup on a hit ending: the music breathes, its last downbeat stays under the hit while it is
                 # released, and its chord rings out through the hall (score.py ring_bed): the hit lands clear, the music resolves
                 depth = float(sd['depth'][1])

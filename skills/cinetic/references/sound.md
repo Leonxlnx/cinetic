@@ -150,7 +150,8 @@ body's dips are lifted (up to 4 dB, slewed 3 dB a bar), building 1 LU into the r
 the deepest stop-down, the bed's last downbeat comes back 6 dB under its level for the hit and its release, and that
 chord rings out through a hall as long as the end card holds (2.8-6 s): the lockup lands and the music resolves under
 it, never a fade under nothing, never a stop. When the edit's last bar line comes after the lockup with nothing on it,
-the bed's last beat moves onto the lockup (reported; `track.py fit` can end the body there).
+the lockup stays the last hit: from it the bed plays 6 dB under, and its last downbeat rings out on the bar line
+(reported; an element on the bar line, or a body ending on the lockup's bar, ends it cleaner).
 
 **Gate (Step 8):**
 - loudness: the target ±0.5 LUFS integrated (§9), true peak ≤ −1.5 dBTP on the WAV, last 480 samples digital zero;

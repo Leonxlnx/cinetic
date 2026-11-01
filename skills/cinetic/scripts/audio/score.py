@@ -1351,9 +1351,10 @@ def load_music(song, base_dir, n):
 
 def settle_ending(song, edit):
     """A hit ending whose bar line comes after the lockup with nothing on it (a template that holds the end card past
-    the body's last bar): the bed's last beat moves onto the lockup, so the lockup is the music's final hit and the end
-    card holds on its ring, never a bed playing on at full level under the end card and released on nothing. The edit
-    on disk is unchanged (track.py fit can end the body on the lockup's bar); the moved ending is reported."""
+    the body's last bar): the lockup stays the film's last hit and the music subtracts under the end card: from the
+    lockup the bed plays END_UNDER_DB under its level (plan.py: the lockup's stop-down goes through), and its last
+    downbeat on the bar line rings out (ring_bed), never a bed at full level under the end card stopping on nothing.
+    The edit on disk is unchanged; ending.under_from_s marks it, and it is reported."""
     end = dict((edit or {}).get('ending') or {})
     lock = (song.cues.get('cue') or {}).get('lockup')
     if end.get('mode') not in ('hit', 'stop') or lock is None or not edit.get('segments'):
@@ -1362,21 +1363,11 @@ def settle_ending(song, edit):
     bar = 4.0 * float(edit.get('beat_s') or song.beat)
     if not (0.3 <= t - lt <= 2.0 * bar) or any(abs(float(e['f']) / song.fps - t) <= 3.0 / song.fps for e in song.cues.get('events', [])):
         return edit
-    segs = []
-    for sg in edit['segments']:
-        if sg['film_s'] >= lt - 0.05:
-            break
-        sg = dict(sg)
-        if sg['film_s'] + (sg['src_to'] - sg['src_from']) > lt:
-            sg['src_to'] = round(sg['src_from'] + (lt - sg['film_s']), 4)
-        segs.append(sg)
-    if not segs:
-        return edit
-    end.update(bed_stops_film_s=round(lt, 4), hit_film_s=round(lt, 4), end_s=round(lt, 4), moved_from_s=round(t, 4))
+    end['under_from_s'] = round(lt, 4)
     song.warnings.append(f"the hit ending's bar line ({t:.2f} s) comes {t - lt:.1f} s after the lockup ({lt:.2f} s) with nothing on "
-                         "it: the bed's last beat lands with the lockup instead and rings out under the end card (track.py fit "
-                         "can end the body on the lockup's bar)")
-    return dict(edit, segments=segs, ending=end, joins=[j for j in edit.get('joins') or [] if float(j.get('film_s', 0)) < lt])
+                         "it: from the lockup the bed plays 6 dB under and its last downbeat rings out on the bar line (an "
+                         "element on the bar line, or a body that ends on the lockup's bar, ends it cleaner)")
+    return dict(edit, ending=end)
 
 
 def ring_hit(song, edit, placed, sfx):
@@ -1388,6 +1379,8 @@ def ring_hit(song, edit, placed, sfx):
         return None
     t = float(end.get('hit_film_s', end.get('end_s', 0.0)))
     near = [p for p in placed if 'x' in p and abs(p['sync_s'] - t) <= max(0.1, 3 / song.fps)]
+    if not near and end.get('under_from_s') is not None:
+        return None  # settle_ending said it: the lockup before the bar line is the last hit, the bed rings out
     if not near:
         song.warnings.append(f'the hit ending has no element on its bar line ({t:.2f} s, f={t * song.fps:.0f}): cue one hit or drop '
                              'there (the lockup), or end on the track\'s own ending (track.py edit --end own) or a fade (--end fade)')
