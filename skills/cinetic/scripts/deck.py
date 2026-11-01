@@ -1504,7 +1504,7 @@ def template_preview(d, inp, seed, data, root, history_on, devices, floor):
     """What the template would play for direction `d`: ground family, type pairing, the template's deal, creative."""
     pal = deal_slot(d, 'palette', seed)
     fam = deal_family(data, pal, seed, d['id'], recent_grounds(history_on))
-    sh = {'direction': d, 'ground_family': fam, 'name': project_name(root) or ''}
+    sh = {'direction': d, 'ground_family': fam, 'name': project_name(root) or '', 'input': inp}
     deal, _ = template_deal(sh, devices, floor, recent_template(history_on)) if devices else ({}, {})
     lib = creative_library(root)
     c = deal_creative(lib, project_name(root), inp.get('brief', ''), inp.get('have', ()), recent_creative(history_on), direction=d,
@@ -2145,13 +2145,36 @@ FAMILY_WORLDS = {
     'lightDark': ('clouds', 'blackField', 'sea'),
 }
 IMAGERY_WORLDS = ('clouds', 'aerial', 'sea', 'macro', 'sky', 'nightCity')
+# What each photographic world is a picture of, in the words a brief uses: a plate is a place, and a film stands in a
+# place that belongs to its subject (a night city under a ceramics class's launch is a stock photo about nothing in the
+# film). A plate whose subject the brief never names ranks below the built worlds; one it names ranks first.
+WORLD_SUBJECTS = {
+    'nightCity': r'\b(city|cities|urban|night|nightlife|nights|street|streets|downtown|bars?|clubs?|restaurants?|taxis?|rides?|metro|subway|neon)\b',
+    'clouds': r'\b(clouds?|sky|skies|flights?|fly|flying|airline|travel|trips?|weather|dreams?|calm|focus|sleep|meditat\w*)\b',
+    'sky': r'\b(sky|skies|weather|outdoors?|sun|sunny|forecast|solar|light|air)\b',
+    'aerial': r'\b(maps?|routes?|trails?|hikes?|hiking|hikers?|drives?|driving|land|farms?|logistics|outdoors?|places?|explore|exploring|trips?|travel|mountains?|cycling|runs?|running)\b',
+    'sea': r'\b(seas?|ocean|sail\w*|boats?|surf\w*|beach\w*|swim\w*|water|islands?|coast\w*|ships?|shipping|ports?|marine)\b',
+    'macro': r'\b(plants?|gardens?|gardening|nature|leaf|leaves|green|grow\w*|organic|eco|forests?|tea|coffee|herbs?|flowers?)\b',
+    'studio': r'\b(studios?|makers?|craft\w*|ceramics?|pottery|potters?|products?|shops?|stores?|photos?|photography|designs?|designers?|fashion|furniture|objects?|brands?|handmade|artists?)\b',
+}
+
+
+def world_fit(w, brief):
+    """1 when the brief names what plate world `w` is a picture of, 0 when it names nothing of it, None for a built world."""
+    if w not in PLATE_WORLDS:
+        return None
+    return 1 if re.search(WORLD_SUBJECTS.get(w, r'(?!x)x'), brief or '', re.I) else 0
 
 
 def world_prefs(sh, name=''):
     """(ranked worlds, why) for a direction: its ground family's worlds (an imagery-led direction's plates first), the top
-    three in a seeded order (the film's name: two films of one direction stand in different places), then the rest."""
+    three in a seeded order (the film's name: two films of one direction stand in different places), then the rest; then
+    the brief decides the photographs: a plate world whose subject the brief names comes first, one it does not name goes
+    after every built world (a film stands in a place that belongs to it, or in a lit field, never in a stock photo of
+    something else)."""
     d = sh['direction']
     fam = (sh.get('ground_family') or {}).get('id')
+    brief = (sh.get('input') or {}).get('brief', '') or sh.get('brief', '')
     base = list(FAMILY_WORLDS.get(fam, ()))
     if is_imagery(d):
         base = [w for w in IMAGERY_WORLDS if w not in base][:2] + base
@@ -2159,7 +2182,13 @@ def world_prefs(sh, name=''):
     rng = random.Random(hashlib.sha256(f"world|{(name or '').strip().lower()}|{d['id']}".encode('utf-8')).hexdigest())
     rng.shuffle(top)
     ranked = top + [w for w in base if w not in top] + [w for w in WORLD_KINDS if w not in base]
+    fit = [w for w in ranked if world_fit(w, brief) == 1]
+    built = [w for w in ranked if world_fit(w, brief) is None]
+    unfit = [w for w in ranked if world_fit(w, brief) == 0]
+    ranked = fit + built + unfit
     why = f"the world for ground family {fam}" + (' (an imagery-led direction: a photograph first)' if is_imagery(d) else '') if fam else 'no ground family dealt'
+    if fit:
+        why += f"; the brief names {', '.join(fit[:2])}"
     return ranked, why
 LAND_MOTIONS = ('crane', 'dolly', 'push')  # a camera that travels: each picture takes one push that lands
 
