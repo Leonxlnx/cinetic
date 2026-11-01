@@ -128,18 +128,6 @@ Every card, device bezel and bevelled shape on a dark stage carries a hairline e
 - **Use when:** Dark UI films with flat cards, panels, device bezels or bevelled brand shapes on near-black, where a drop shadow disappears and a glow is off-limits.
 - **Avoid when:** Light-mode shots, where a white hairline vanishes on paper. Also avoid it on cards that already carry cl-rim-light-sweep's travelling streak, and on layouts so dense that every lit edge turns the frame into wireframe noise.
 
-### Living light under every hold
-
-`cl-living-stage` · colour and light · accent · energy calm · launch, update, feature, loop, vertical
-
-A one-hue light field under the scene that rises into each reveal on the beat (a floor glow climbing on the hit); between reveals it holds still, never pools wandering to keep a still frame busy.
-
-- **Build:** Bake the plates with scripts/dither-gradient.py (kinds floor, pool, loop; give each the ground with "over" and run --check). <LightField frame floor={{ plate, height, strength, breathe, lift }} pools={[...]} bands={[...]} glowRise={{ at, gain: 2, dur }} /> under the scene. Lightness swing 0.05-0.20 at chroma 0.13 or less, accent hue only. Never animate a CSS gradient.
-- **Primitive:** `fx/LightField.LightField`, `fx/LightField.lightFieldState`
-- **Timing:** Pools 240 px/s at 1080p on 1-4 s loops; a band one tile every 2 s; a rise x2 over 0.9 s peaking on the hit.
-- **Use when:** Calm text holds over a coloured or mid ground where a reveal wants light on its beat.
-- **Avoid when:** A key-lit relief already gives the hold its light change (use one light system per shot).
-
 ### Monochrome world, one accent
 
 `cl-mono-one-accent` · colour and light · workhorse · energy any · any
@@ -425,6 +413,18 @@ A soft band of light swings across the frame as a product lands, accelerating li
 - **Timing:** 44 f on E.launchIn across the frame plus the band, band 0.45 of the width, gain 0.2-0.55.
 - **Use when:** A product or card lands on an ink stage and the act needs its light event.
 - **Avoid when:** Paper grounds (a white band on paper is invisible; use an exposure or a light field).
+
+### Living light under every hold
+
+`cl-living-stage` · colour and light · accent · energy calm · launch, update, feature, loop, vertical
+
+A one-hue light field under the scene that rises into each reveal on the beat (a floor glow climbing on the hit); between reveals it holds still, never pools wandering to keep a still frame busy.
+
+- **Build:** Bake the plates with scripts/dither-gradient.py (kinds floor, pool, loop; give each the ground with "over" and run --check). <LightField frame floor={{ plate, height, strength, breathe, lift }} pools={[...]} bands={[...]} glowRise={{ at, gain: 2, dur }} /> under the scene. Lightness swing 0.05-0.20 at chroma 0.13 or less, accent hue only. Never animate a CSS gradient.
+- **Primitive:** `fx/LightField.LightField`, `fx/LightField.lightFieldState`
+- **Timing:** Pools 240 px/s at 1080p on 1-4 s loops; a band one tile every 2 s; a rise x2 over 0.9 s peaking on the hit.
+- **Use when:** Calm text holds over a coloured or mid ground where a reveal wants light on its beat.
+- **Avoid when:** A key-lit relief already gives the hold its light change (use one light system per shot).
 
 ### Object materialises through a colour wash
 

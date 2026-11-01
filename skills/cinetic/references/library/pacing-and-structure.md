@@ -4,17 +4,6 @@
 
 The film's shape: acts, holds, cadence, repeats that speed up, and one long hold where it counts. 17 entries, by category and role. The [index](../technique-library.md) lists every family and each category's house rule.
 
-### Breath envelope per card
-
-`ps-breath-envelope` · pacing and structure · accent · energy medium · launch, feature, vertical
-
-Every card arrives fast and decelerates, rests through its hold while its content changes, then accelerates away and is cut on its fastest frame.
-
-- **Build:** Drive each card's container with one summed transform of three terms. Arrival: tw(f, 0, 36, 90, 0, E.out) px of translate (or scale lmix(1.08, 1, prog(f, 0, 36))), with arrive() on vertical text moves and blurIn only while the card travels faster than 12 px/f. Hold: a linear drift of 0.4-1 px/f, or breath() from src/lib/camera.ts at about +0.06%/f, optionally with letter-spacing tightening 2-3% over 40 f on E.outSoft from the landing frame. Exit: tw(f, T-16, T, 0, 100, E.in) px (or +6% scale) with blurOut, and the hard cut on frame T, which is the exit's fastest frame. Because the terms add, speed follows a U (fast, slow, fast) and never touches zero mid-card; the hold length follows the copy rule (36 f + 6 f per word).
-- **Timing:** Arrival 20-50 f E.out (default 36, peak about 15 px/f). Hold = 36 f + 6 f per word, still (a sub-pixel creep at most, 0.2 px/f@60). Exit 14-20 f E.in, reaching 19-39 px/f on the cut.
-- **Use when:** Statement cards, kinetic type and feature cards in a fast-cut film; the hold rests, the arrival and the exit carry the motion.
-- **Avoid when:** Dense UI that needs a dead-still read (lock the camera instead), and the final lockup hold.
-
 ### Each repeat runs faster
 
 `ps-faster-each-repeat` · pacing and structure · workhorse · energy medium · any
@@ -146,6 +135,17 @@ Shot lengths shrink step by step toward the climax, then one designed freeze on 
 - **Timing:** Shots 120, 90, 60, 45, 30, 30 f (about x0.7 each, minimum 24 f without text); exit ramps on the last 40% of each shot, E.in; freeze 12-15 f on the stop; climax on the next downbeat.
 - **Use when:** The run-up to a reveal, a collage burst or the lockup in launch films and stings.
 - **Avoid when:** Walkthroughs where each shot carries UI that must be read, and films already cutting under 60 f per shot throughout.
+
+### Breath envelope per card
+
+`ps-breath-envelope` · pacing and structure · accent · energy medium · launch, feature, vertical
+
+Every card arrives fast and decelerates, rests through its hold while its content changes, then accelerates away and is cut on its fastest frame.
+
+- **Build:** Drive each card's container with one summed transform of three terms. Arrival: tw(f, 0, 36, 90, 0, E.out) px of translate (or scale lmix(1.08, 1, prog(f, 0, 36))), with arrive() on vertical text moves and blurIn only while the card travels faster than 12 px/f. Hold: a linear drift of 0.4-1 px/f, or breath() from src/lib/camera.ts at about +0.06%/f, optionally with letter-spacing tightening 2-3% over 40 f on E.outSoft from the landing frame. Exit: tw(f, T-16, T, 0, 100, E.in) px (or +6% scale) with blurOut, and the hard cut on frame T, which is the exit's fastest frame. Because the terms add, speed follows a U (fast, slow, fast) and never touches zero mid-card; the hold length follows the copy rule (36 f + 6 f per word).
+- **Timing:** Arrival 20-50 f E.out (default 36, peak about 15 px/f). Hold = 36 f + 6 f per word, still (a sub-pixel creep at most, 0.2 px/f@60). Exit 14-20 f E.in, reaching 19-39 px/f on the cut.
+- **Use when:** Statement cards, kinetic type and feature cards in a fast-cut film; the hold rests, the arrival and the exit carry the motion.
+- **Avoid when:** Dense UI that needs a dead-still read (lock the camera instead), and the final lockup hold.
 
 ### Empty ground after a cut
 
