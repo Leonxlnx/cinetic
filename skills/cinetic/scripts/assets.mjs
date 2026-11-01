@@ -2143,6 +2143,116 @@ function cmdLicences(args) {
 }
 
 // ------------------------------------------------------------------------------------------------ main
+// ------------------------------------------------------------------------------------------------ plates
+/**
+ * Plates: the photograph or clip a world stands on (src/fx/world World: clouds, aerial, sky, sea, nightCity, studio,
+ * macro). A preset names what to look for and how to grade it for a world: the searches (keyless sources first,
+ * landscape, no people, no text), the focus the 16:9 crop keeps, and a grade that drains warm light toward the film's
+ * cool palette (the worlds never carry orange, amber or cream). `plate <name>` searches and saves a contact sheet;
+ * `plate <name> --pick n` (or `--from <a local photo or clip>`) gets that one and writes <to>/<name>.jpg (graded, 16:9
+ * on the focus, 2400 px) and <to>/<name>-soft.jpg (the same blurred about 40 px at 1080p: what frosted glass shows and
+ * the far depth, so the film never blurs a full frame). A clip is written as <name>.mp4 and <name>-soft.mp4 (960 px,
+ * blurred the same: decoding it costs less than blurring a frame). The grade is baked: the look's levels, the warm
+ * drained (reds and yellows desaturated), then saturation, gamma and contrast, then a cool balance (blue into the
+ * shadows and mids): the world sets the plate in with a light wash only.
+ * The same names and searches live in src/fx/world/worlds.ts PLATES (keep the two in step).
+ */
+export const PLATES = {
+  clouds: { what: 'a sea of clouds from above, the horizon high in frame, cool morning light', kind: 'photo', focus: [0.5, 0.35], queries: ['above the clouds', 'sea of clouds aerial', 'clouds from above horizon', 'cloud layer from airplane'], grade: { look: 'natural', warm: -0.92, sat: 0.28, gamma: 1.04, contrast: 0.98, cool: 0.09, split: 222 } },
+  aerial: { what: 'land or coast from high above, soft and cool', kind: 'photo', focus: [0.5, 0.5], queries: ['aerial coastline', 'aerial landscape drone', 'aerial view fields', 'aerial forest fog'], grade: { look: 'natural', warm: -0.6, sat: 0.6, gamma: 1.05, contrast: 0.97, cool: 0.05, split: 215 } },
+  sky: { what: 'a pale blue sky with soft white clouds, looking up', kind: 'photo', focus: [0.5, 0.5], queries: ['blue sky white clouds', 'soft clouds sky', 'pale sky clouds', 'cumulus clouds blue sky'], grade: { look: 'natural', warm: -0.7, sat: 0.7, gamma: 1.06, contrast: 0.95, cool: 0.04, split: 230 } },
+  sea: { what: 'open water to a far horizon, grey-blue', kind: 'photo', focus: [0.5, 0.45], queries: ['calm sea horizon', 'ocean horizon', 'sea surface', 'open water'], grade: { look: 'matte', warm: -0.7, sat: 0.55, gamma: 1.04, contrast: 0.97, cool: 0.06, split: 215 } },
+  nightCity: { what: 'a city at night from above or across water, its lights soft', kind: 'photo', focus: [0.5, 0.55], queries: ['city at night', 'night city skyline', 'city lights night aerial', 'night street lights bokeh'], grade: { look: 'night', warm: -0.85, sat: 0.7, gamma: 1, contrast: 1.04, cool: 0.06, split: 225 } },
+  studio: { what: 'a seamless studio sweep under a softbox, light grey', kind: 'photo', focus: [0.5, 0.5], queries: ['studio backdrop', 'seamless paper backdrop', 'empty studio light', 'grey studio background'], grade: { look: 'matte', warm: -0.9, sat: 0.2, gamma: 1.02, contrast: 0.96, cool: 0.03, split: 230 } },
+  macro: { what: 'a close natural surface: leaves, water drops, moss, in soft light', kind: 'photo', focus: [0.5, 0.5], queries: ['leaf macro', 'water drops macro', 'moss macro', 'fern close up'], grade: { look: 'natural', warm: -0.3, sat: 0.85, gamma: 1.02, contrast: 1, cool: 0.02, split: 200 } },
+};
+/** The soft copy's blur: px at 1080p (scaled to the plate's width). */
+export const PLATE_SOFT = 40;
+/** A plate's name as the CLI takes it: clouds, night-city or nightCity. */
+export const plateName = (s) => { const k = String(s || '').replace(/-([a-z])/g, (_, c) => c.toUpperCase()); return PLATES[k] ? k : null; };
+
+/** The ffmpeg filter of a plate's grade: the look's filter, then the warm drain and the colour scale before the last format. Pure. */
+export function plateFilter(name, { stats = null, crop = null, width = 2400, accent = '#2f7d8c', strength = 1, hueSat = true, video = false } = {}) {
+  const g = PLATES[name].grade;
+  const vf = gradeFilter(g.look, { accent, splitHue: g.split ?? null, stats, crop, width, grain: 0.12, video, strength, hueSat });
+  const extra = [];
+  if (g.warm) extra.push(hueSat ? `huesaturation=saturation=${f3(Math.max(-1, g.warm * strength))}:colors=r+y` : `eq=saturation=${f3(1 + g.warm * 0.3 * strength)}`);
+  const eq = [];
+  if (g.sat !== undefined && g.sat !== 1) eq.push(`saturation=${f3(1 + (g.sat - 1) * strength)}`);
+  if (g.gamma && g.gamma !== 1) eq.push(`gamma=${f3(1 + (g.gamma - 1) * strength)}`);
+  if (g.contrast && g.contrast !== 1) eq.push(`contrast=${f3(1 + (g.contrast - 1) * strength)}`);
+  if (eq.length) extra.push(`eq=${eq.join(':')}`);
+  if (g.cool) {
+    const c = g.cool * strength; // blue into the shadows, less into the mids, a trace into the highlights
+    extra.push(`colorbalance=rs=${f3(-c)}:bs=${f3(c)}:rm=${f3(-c * 0.75)}:bm=${f3(c * 0.6)}:rh=${f3(-c * 0.35)}:bh=${f3(c * 0.25)}`);
+  }
+  const tail = video ? ',format=yuv420p' : ',format=rgb24';
+  return `${vf.endsWith(tail) ? vf.slice(0, -tail.length) : vf}${extra.length ? `,${extra.join(',')}` : ''}${tail}`;
+}
+
+async function cmdPlate(args) {
+  const name = plateName(args._[0]);
+  if (!name) throw new Usage(`plate needs a preset: ${Object.keys(PLATES).join(', ')}`);
+  const P = PLATES[name];
+  const kind = args.kind === 'video' ? 'video' : P.kind;
+  const to = path.resolve(args.to || path.join('public', 'plates'));
+  const saved = path.join('out', 'assets', `plate-${name}${kind === 'video' ? '-video' : ''}.json`);
+  const self = fileURLToPath(import.meta.url);
+  const run = (argv) => spawnSync(process.execPath, [self, ...argv], { stdio: 'inherit' }).status ?? 1;
+  let file = args.from && !/\.json$/i.test(args.from) ? path.resolve(args.from) : null;
+  if (!file && !args.pick) {
+    const query = args._[1] || P.queries[0];
+    console.log(`plate ${name}: ${P.what}\n  searching "${query}" (${kind}); other searches: ${P.queries.filter((q) => q !== query).map((q) => `"${q}"`).join(', ')}`);
+    const code = run(['search', query, '--kind', kind, '--orientation', 'landscape', '--min-width', '1900', '--no-people', '--clean', '--limit', args.limit || '8', '--out', saved]);
+    if (code !== 0) return code;
+    run(['sheet', saved, '--cols', '4', '--cell', '360', '--out', saved.replace(/\.json$/, '.png')]);
+    console.log(`\nLook at the sheet, choose for light and depth (a calm area where type and glass will sit), then:\n  node scripts/assets.mjs plate ${name} --pick <n> --to ${path.relative(process.cwd(), to) || '.'}`);
+    return 0;
+  }
+  if (!file) {
+    const from = args.from || saved;
+    if (!fs.existsSync(from)) throw new Usage(`no saved search ${from}: run plate ${name} first`);
+    fs.mkdirSync(to, { recursive: true });
+    const code = run(['get', `#${String(args.pick).replace(/^#/, '')}`, '--from', from, '--to', to, '--name', `${name}-source`, ...(kind === 'video' ? ['--res', '1080'] : ['--width', '3200'])]);
+    if (code !== 0) return code;
+    file = fs.readdirSync(to).map((f) => path.join(to, f)).find((f) => path.basename(f).startsWith(`${name}-source.`)) ?? null;
+    if (!file) throw new Error(`get wrote no ${name}-source file in ${to}`);
+  }
+  if (!ffmpegOk()) throw new Error('plate needs ffmpeg and ffprobe on the PATH');
+  const p = probeFile(file);
+  if (!p) throw new Error(`${file}: not an image or clip ffprobe can read`);
+  const video = !p.still;
+  const [fx, fy] = args.focus ? String(args.focus).split(',').map(Number) : P.focus;
+  const crop = focusCrop(p.width, p.height, 16 / 9, fx, fy);
+  const width = Math.min(Math.round(num(args, 'width', video ? 1920 : 2400, 640, 3840)), crop.w) & ~1;
+  const accent = args.accent && /^#[0-9a-f]{6}$/i.test(args.accent) ? args.accent : '#2f7d8c';
+  const vf = plateFilter(name, { stats: measure(file), crop, width, accent, strength: num(args, 'strength', 1, 0, 1.5), hueSat: hasHueSat(), video });
+  fs.mkdirSync(to, { recursive: true });
+  const out = path.join(to, `${name}.${video ? 'mp4' : 'jpg'}`);
+  if (video) ff(['-i', file, '-an', '-filter_complex', `[0:v]${vf}[v]`, '-map', '[v]', ...videoEncode({}), '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-movflags', '+faststart', '-y', out], `plate ${name}`);
+  else ff(['-i', file, '-filter_complex', `[0:v]${vf}[v]`, '-map', '[v]', '-frames:v', '1', '-q:v', '2', '-y', out], `plate ${name}`);
+  const inPublic = publicPath(out) !== null;
+  const pub = publicPath(out) ?? `plates/${path.basename(out)}`;
+  console.log(`Plate ${path.relative(process.cwd(), out)} · ${PLATES[name].grade.look}, warm light drained · crop ${crop.w}x${crop.h} at ${crop.x},${crop.y}`);
+  if (!video) {
+    const soft = path.join(to, `${name}-soft.jpg`);
+    const sigma = (PLATE_SOFT * width) / 1920 / 2;
+    ff(['-i', out, '-vf', `gblur=sigma=${f3(sigma)}:steps=3`, '-frames:v', '1', '-q:v', '3', '-y', soft], `plate ${name} soft`);
+    console.log(`      ${path.relative(process.cwd(), soft)} · blurred ${PLATE_SOFT} px at 1080p (frosted glass and the far depth)`);
+    if (!inPublic) console.log(`  copy ${path.basename(out)} and ${path.basename(soft)} into public/plates (they are outside public/), then:`);
+    console.log(`  use  <World kind="${name}" src={staticFile('${pub}')} soft={staticFile('${publicPath(soft) ?? `plates/${path.basename(soft)}`}')}>`);
+  } else {
+    const soft = path.join(to, `${name}-soft.mp4`);
+    const sigma = PLATE_SOFT / 2 / 2; // at 960 px wide: the same blur as the photo's soft copy at 1080p
+    ff(['-i', out, '-an', '-vf', `scale=960:-2,gblur=sigma=${f3(sigma)}:steps=3,format=yuv420p`, ...videoEncode({}), '-movflags', '+faststart', '-y', soft], `plate ${name} soft`);
+    console.log(`      ${path.relative(process.cwd(), soft)} · 960 px, blurred ${PLATE_SOFT} px at 1080p (frosted glass over a clip)`);
+    if (!inPublic) console.log(`  copy ${path.basename(out)} and ${path.basename(soft)} into public/plates (they are outside public/), then:`);
+    console.log(`  use  <World kind="${name}" src={staticFile('${pub}')} soft={staticFile('${publicPath(soft) ?? `plates/${path.basename(soft)}`}')}>`);
+  }
+  if (args['no-check']) return 0;
+  return pictureCheck([{ file: out, video }], args.accent ? accent : null, {});
+}
+
 export const USAGE = `assets.mjs: photographs, footage, textures and art a film may use without credits.
 
   search "<query>" [--kind photo|video|texture|art] [--source all|${Object.keys(SOURCES).join(',')}]
@@ -2161,6 +2271,11 @@ export const USAGE = `assets.mjs: photographs, footage, textures and art a film 
          looked at (the rest run their searches at once); saves them as a results file for sheet and get #n;
          --run searches every line again; --verify reads each pick again at its source; no input lists them all;
          recipe all --verify checks every pick)
+  plate  <${Object.keys(PLATES).join('|')}> ["<query>"] [--kind photo|video] [--to public/plates] [--pick n | --from <file>]
+         [--accent #hex] [--focus x,y] [--width 2400] [--strength 0..1.5] [--limit 8]
+         (the picture a world stands on: searches the preset and saves a sheet; --pick n or --from <photo or clip>
+         writes <name>.jpg graded for the world, warm light drained, 16:9 on the focus, and <name>-soft.jpg blurred
+         ${PLATE_SOFT} px at 1080p for frosted glass and the far depth)
   grade  <files or folders> [--look ${Object.keys(LOOKS).join('|')}] [--strength 0..1.5] [--chroma 0.2..1.5]
          [--accent #hex] [--split-hue deg|#hex] [--focus x,y] [--aspect 16:9|none] [--width 2400] [--grain 0..1]
          [--out dir] [--trim start,seconds] [--speed 1] [--scrub] [--dry-run] [--no-check] [--brand-supplied] [--arc]
@@ -2201,7 +2316,8 @@ export async function main(argv) {
       case 'looks': return cmdLooks();
       case 'licences': case 'licenses': return cmdLicences(args);
       case 'recipe': case 'recipes': return await cmdRecipe(args);
-      default: throw new Usage(`unknown command ${cmd}: search, sheet, get, recipe, grade, check, probe, looks, licences`);
+      case 'plate': case 'plates': return await cmdPlate(args);
+      default: throw new Usage(`unknown command ${cmd}: search, sheet, get, recipe, plate, grade, check, probe, looks, licences`);
     }
   } catch (e) {
     if (e instanceof Usage) { console.error(`${e.message}\n\n${USAGE}`); return 2; }
