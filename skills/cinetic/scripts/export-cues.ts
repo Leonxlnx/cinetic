@@ -15,8 +15,8 @@
  *     events: [{ f, kind, weight, pan, pitch?, apexFrac?, dur?, variant?, action?, id?,
  *                structural?, force?, offset_ms?, salience? }],
  *     look?:     { blur, texture, filmType, oneTake, whiteWorld, palette? }  (palette 'mono': look-audit's colour-mass floor asks for the accent on its beats),
- *     declared?: { seams, stepped, flashes, cameraBlur, colour, end, reveal, springClass, structural,
- *                  fx: [{ id, seams, stepped, flashes, cameraBlur, colour }] },
+ *     declared?: { seams, stepped, flashes, cameraBlur, colour, shots, stages, end, reveal, springClass, structural,
+ *                  fx: [{ id, seams, stepped, flashes, cameraBlur, colour, shots, stages }] },
  *     salience?: { cueName: 'copy' | 'hit' | 'cut' | 'move' | 'life' },
  *     music?:    { bpm, beatS, fps, t0, bars, phraseLen?, downbeats, accents, phrases?, sections?,
  *                  entries, breaks?, stops, end } }
@@ -31,7 +31,7 @@
  * offset_ms (-500..500) overrides the kit role's offset for this one event; salience says what the
  * moment asks of the eye (read-quiet guards copy, hit and cut; life may run during a read).
  * `look`, `declared` and `salience` come from the timeline's optional exports (LOOK, SEAMS, STEPPED,
- * FLASHES, CAMERA_BLUR, COLOUR, END, REVEAL, SPRING_CLASS, STRUCTURAL, SALIENCE) and are written only when
+ * FLASHES, CAMERA_BLUR, COLOUR, SHOTS, STAGES, END, REVEAL, SPRING_CLASS, STRUCTURAL, SALIENCE) and are written only when
  * the timeline has them; `declared.fx` is what the primitives declare about themselves (src/sync.ts
  * `declares()`, each fx's declares(props, film)), which the timeline's declarations must cover
  * (grid-check). `music` is the timeline's MUSIC (src/music.ts, written by track.py grid), passed
@@ -124,10 +124,14 @@ type Decl = {
   flashes: { f: number; frames: number; id: string }[];
   cameraBlur: Range[];
   colour: Range[]; // colour events (a deep field, an accent flood, a colour cut): look-audit pauses its colour ceilings
+  // the depth stage's declared camera moves and the stages that declare them (fx/depth shotDeclares): forensics
+  // camera-wander takes a declared shot as a purposeful move and a move inside a stage outside every shot as a drift
+  shots: (Range & { kind: string })[];
+  stages: Range[];
 };
 const isFrame = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 /** One Declares-shaped object (timeline exports or one fx instance) into plain JSON, collecting errors. */
-const normDecl = (src: Record<string, unknown>, where: string, errors: string[], names = { seams: 'seams', stepped: 'stepped', flashes: 'flashes', cameraBlur: 'cameraBlur', colour: 'colour' }): Decl => {
+const normDecl = (src: Record<string, unknown>, where: string, errors: string[], names = { seams: 'seams', stepped: 'stepped', flashes: 'flashes', cameraBlur: 'cameraBlur', colour: 'colour', shots: 'shots', stages: 'stages' }): Decl => {
   const list = (k: keyof typeof names): Record<string, unknown>[] => {
     const v = src[names[k]];
     if (v === undefined || v === null) return [];
@@ -168,7 +172,12 @@ const normDecl = (src: Record<string, unknown>, where: string, errors: string[],
     if (x.frames !== 1 && x.frames !== 2) errors.push(`${at}: frames must be 1 or 2`);
     return [{ f: x.f, frames: Number(x.frames), id: String(x.id ?? `flash${i}`) }];
   });
-  return { seams, stepped: range('stepped'), flashes, cameraBlur: range('cameraBlur'), colour: range('colour') };
+  const moves = (k: 'shots' | 'stages') => list(k).flatMap((r, i) => {
+    const at = `${where} ${names[k]}[${i}]`;
+    if (!r || !isFrame(r.from) || !isFrame(r.to) || !(r.to > r.from)) { errors.push(`${at}: from and to must be frames, to after from`); return []; }
+    return [{ from: r.from, to: r.to, id: String(r.id ?? `${names[k]}${i}`), ...(k === 'shots' ? { kind: String(r.kind ?? 'move') } : {}) }];
+  });
+  return { seams, stepped: range('stepped'), flashes, cameraBlur: range('cameraBlur'), colour: range('colour'), shots: moves('shots') as Decl['shots'], stages: moves('stages') };
 };
 
 const arg = (name: string, fallback?: string) => {
@@ -204,7 +213,7 @@ async function main() {
   const tl = await load(tlPath);
   const T = tl.default && tl.FPS === undefined ? tl.default : tl;
   const { FPS, BPM, TOTAL, ACT, CUE, COPY, PACE_NAME, PACE, READ } = T;
-  const { LOOK, SEAMS, STEPPED, FLASHES, CAMERA_BLUR, COLOUR, END, REVEAL, SPRING_CLASS, STRUCTURAL, SALIENCE, MUSIC } = T;
+  const { LOOK, SEAMS, STEPPED, FLASHES, CAMERA_BLUR, COLOUR, SHOTS, STAGES, END, REVEAL, SPRING_CLASS, STRUCTURAL, SALIENCE, MUSIC } = T;
   for (const [k, v] of Object.entries({ FPS, BPM, TOTAL })) {
     if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) fail(`${tlPath} must export a positive number ${k}`);
   }
@@ -323,14 +332,14 @@ async function main() {
     }
   }
   const fxRaw: unknown = typeof mod.declares === 'function' ? await mod.declares() : mod.declares;
-  if (fxRaw !== undefined && !Array.isArray(fxRaw)) derr.push(`${syncPath}: declares must return an array of {id?, seams?, stepped?, flashes?, cameraBlur?, colour?}`);
+  if (fxRaw !== undefined && !Array.isArray(fxRaw)) derr.push(`${syncPath}: declares must return an array of {id?, seams?, stepped?, flashes?, cameraBlur?, colour?, shots?, stages?}`);
   const fx = (Array.isArray(fxRaw) ? (fxRaw as Record<string, unknown>[]) : []).map((d, i) => {
     const id = String(d?.id ?? `fx${i}`);
     return { id, ...normDecl(d ?? {}, `${syncPath} declares()[${i}] (${id})`, derr) };
   });
-  const hasDecl = [SEAMS, STEPPED, FLASHES, CAMERA_BLUR, COLOUR, END, REVEAL, SPRING_CLASS, STRUCTURAL].some((v) => v !== undefined) || fx.length > 0;
+  const hasDecl = [SEAMS, STEPPED, FLASHES, CAMERA_BLUR, COLOUR, SHOTS, STAGES, END, REVEAL, SPRING_CLASS, STRUCTURAL].some((v) => v !== undefined) || fx.length > 0;
   if (hasDecl) {
-    const own = normDecl({ SEAMS, STEPPED, FLASHES, CAMERA_BLUR, COLOUR }, 'timeline', derr, { seams: 'SEAMS', stepped: 'STEPPED', flashes: 'FLASHES', cameraBlur: 'CAMERA_BLUR', colour: 'COLOUR' });
+    const own = normDecl({ SEAMS, STEPPED, FLASHES, CAMERA_BLUR, COLOUR, SHOTS, STAGES }, 'timeline', derr, { seams: 'SEAMS', stepped: 'STEPPED', flashes: 'FLASHES', cameraBlur: 'CAMERA_BLUR', colour: 'COLOUR', shots: 'SHOTS', stages: 'STAGES' });
     let end: { from: number; to: number } | null = null;
     if (END !== undefined) {
       const E = END as Record<string, unknown>;
@@ -381,7 +390,7 @@ async function main() {
       `wrote ${relative(process.cwd(), resolve(outPath))}: ${sorted.length} events ` +
         `(${Object.entries(byKind).map(([k, n]) => `${k} ${n}`).join(', ')}), ` +
         `${Object.keys(cue).length} cues, ${copy.length} copy entries, ${(TOTAL / FPS).toFixed(2)} s at ${FPS} fps, ${BPM} BPM` +
-        (extra.declared ? `; declared ${(['seams', 'stepped', 'flashes', 'cameraBlur', 'colour'] as const).map((k) => `${(extra.declared as Decl)[k].length} ${k}`).join(', ')}, ${fx.length} fx` : '') +
+        (extra.declared ? `; declared ${(['seams', 'stepped', 'flashes', 'cameraBlur', 'colour'] as const).map((k) => `${(extra.declared as Decl)[k].length} ${k}`).join(', ')}, ${fx.length} fx${fx.some((x) => x.shots.length) ? ` (${fx.reduce((n, x) => n + x.shots.length, 0)} camera shots)` : ''}` : '') +
         (extra.music ? `; music grid ${(extra.music as { bpm: number }).bpm} BPM from f${(extra.music as { t0: number }).t0}` : ''),
     );
   }
