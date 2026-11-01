@@ -558,6 +558,10 @@ the one saturated ground: a blue stage lit from the top, where white type and gl
   type, a cool ink on `sky`, `studio`, `paleSky`, `nearWhite`); `spec.glass.text` on its glass; `spec.typeShadow` under a
   white line on a bright plate (a soft shadow in the plate's deep tone, never a light halo); `spec.glow` is the colour
   of light there (glowing type, sweeps, bloom).
+- **Glass in a world.** §11 holds: glass where it reads, never the UI style of every panel. In a world it is
+  `fx/light` Glass, which frosts the world's own ground and takes its rim, glint and sweep from the key; on a built
+  field (nothing to frost) a pane is a veil carried by that light. One hero pane or input per shot; the rest of the
+  UI is the opaque card material (§11).
 - **The bans stay.** No orange, amber, beige or cream ground; no purple, violet or indigo (a deep field is navy, never
   violet, unless the brand supplies it, §1); no neon (the electric stage is bright because it is lit, its type and
   glass white, never a full-chroma glow).

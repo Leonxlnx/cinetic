@@ -300,7 +300,7 @@ import { Bloom, Glass, GlowType } from './fx/light';
 | `macro` | a close natural surface: leaves, drops, moss | top left | white | smoked frost |
 | `sky` | a pale sky with soft clouds, looking up | top right | ink | milky |
 | `studio` | a seamless studio sweep under a softbox | top left | ink | milky |
-| `blackField` | near-black under a softbox | above | white | dark glass lit by its rims, glints and sweeps |
+| `blackField` | near-black under a softbox, a fine woven surface where the light falls | above | white | dark glass lit by its rims, glints and sweeps |
 | `electric` | a saturated blue stage, lit from the top | top left | white | a light veil, a deep blue shadow |
 | `deepField` | a deep navy, light rising from the floor | the floor | white or glowing | dark, a tinted rim |
 | `paleSky` | a pale sky built in code, the sun's side bright | top right | ink | milky |
@@ -323,24 +323,25 @@ UI in focus, but the soft copy given as `src` costs nothing: prefer it.
 
 | part | what it is | the props a shot sets | cost per frame |
 |---|---|---|---|
-| `World` | the place: plate or field, haze toward the horizon, the corners falling off; shares its key and ground | `kind`, `src` and `soft` (plates), `push` | one image, two baked overlays |
-| `Glass` | a pane of frosted glass: the world behind it blurred, a veil lighter toward the key, a line of light inside the top edge, the bottom edge's shade, a rim with a glint | `x y w h`, `at` (rises 26 px and clears in 30 f), `sweep` | one clipped copy of the soft plate, gradients |
+| `World` | the place: plate or field, haze toward the horizon, the corners falling off; the black field's woven surface where its key falls; shares its key and ground | `kind`, `src` and `soft` (plates), `push` | one image, two or three baked overlays |
+| `Glass` | a pane of frosted glass: the world behind it blurred, a veil lighter toward the key, a line of light inside the top edge, the bottom edge's shade, a rim with a glint | `x y w h`, `at` (rises 26 px and clears in 30 f), `sweep`, `sweepKind` | one clipped copy of the soft plate, gradients |
 | `RimLight` | the lit edge alone: brightest toward the key, a white-hot glint where it faces the light and its bloom past the edge | `w h` (`x y` in frame px; 0 inside a placed box) | one masked element |
-| `LightSweep` | a light crossing an edge once: a white-hot head, a flare along the edge, a fading tail (54 f, `E.stdInOut`) | `w h at` | one SVG, two sprites, while it runs |
+| `LightSweep` | a light crossing the pane once (54 f, `E.stdInOut`). On a bar or an input (w ≥ 2.5 h) a band: a tilted bar of light catches the top and bottom edges together, two white-hot streaks with a fan of light off each, the face lit along the bar. On a card an edge light: a head running along the rim, a flare, a fading tail, turning the corner | `w h at`, `kind` (`band` or `edge`; the default follows the box) | four sprites (band) or one SVG and two sprites (edge), while it runs |
 | `GlowPool` | a pool of light the place has (under a pane, a screen's spill, a floor), turned on once | `x y r ry at` | one image |
 | `GlowType` | a line that is a light: tinted white-hot letters, a tight glow and a wide one; words ignite in a phrased run | `text role at` | three copies of the line, two blurred |
 | `Bloom` | the bright parts of its children blurred and added | `strength`, `box` (where the light is) | one blurred copy of its box |
-| `Reveal` | the world opening out of a shape: a sparkle on the dark becomes a cloud-edged iris, a pressed button grows into the frame, the camera flies through the mark | `at shape` (+ `box` or `path`) | a clip path while it opens |
+| `Reveal` | the world opening out of a shape: a sparkle on the dark becomes a cloud-edged iris (lobes of different widths, the seed turning a quarter as it opens), a pressed button grows into the frame, the camera flies through the mark | `at shape` (+ `box` or `path`) | a clip path while it opens |
 
 **Recipes** (catalogue style: pick for what the line says; the product's own UI goes inside):
 
 | id | what it is | built with |
 |---|---|---|
-| `glass-input-over-plate` | the product's input as frosted glass over a real sea of clouds; the line above it, the input types, a light crosses its rim when it lands | `World clouds` (one `push`) + `Glass at sweep` |
-| `black-glass` | a dark glass pane on a black field, white type, a light crossing the rim when it lands and again when it sends | `World blackField` + `Bloom box` + `Glass r={40} sweep={[land, send]}` |
+| `glass-input-over-plate` | the product's input as frosted glass over a real sea of clouds; the line above it, the input types, a band of light crosses it when it lands | `World clouds` (one `push`) + `Glass at sweep` |
+| `black-glass` | a dark glass pane on the black field's woven surface, white type; a band of light crosses it when it lands and again when it sends, its top and bottom edges flaring together | `World blackField` + `Bloom box` + `Glass r={40} sweep={[land, send]}` |
 | `electric-card` | one big glass card (1000 px wide or more) on a saturated blue stage: a real thumbnail, a title, rows that complete | `World electric` + `Glass w={1120} h={740}` |
 | `glowing-line` | words that ignite as light on a deep field, then the name ignites | `World deepField` + `GlowType at` |
 | `iris-into-world` | a sparkle on the dark field opens in a cloud-edged iris into the plate; it turns ink and stays as the product's button | `World deepField` + `Reveal shape="scallop" seedAfter={ink}` round `World clouds` |
+| `iris-into-input` | the same open, then the seed hands over to the product's button and the input grows out of it: a white disc arrives under the ink sparkle as the seed fades (the sparkle drawn at the seed's point, turned by `REVEAL.seedTurn * revealState(f, ...).e`, so nothing jumps), then a glass pill widens from the disc and the button rides to its right end, the placeholder fading in last | `Reveal` as above + inside the plate world a disc and sparkle at the frame centre + `Glass` whose `w` grows on `E.stdInOut` over 20 f |
 | `button-opens-world` | the pressed button grows into the frame and becomes the next place | `Reveal shape="button" box={button}` |
 | `through-the-mark` | the camera flies through the product's mark into the world | `Reveal shape="path" path={{ d, w, h, origin }}` |
 
@@ -353,10 +354,14 @@ frosts the world, not other UI: keep panes apart or make the nearer one opaque. 
 1000 px wide or more, an input 1000 px or more with 36 px type. The older `fx/Glass` modes (refract, flute,
 thin-film), `fx/Glow` and `fx/Iris` stay devices; inside a world, use these.
 
-**Cost.** Measured on software GL on a shared CPU (no GPU; a GPU renders several times faster): the five proof shots
-render at about 0.2-0.4 s a frame at half size; at 1080p a glass input over a cloud plate about 1 s, a black glass
-pane with bloom about 0.8 s. No filter animates; every blur radius is fixed; the plate's grade is baked; a soft
-plate replaces live frost.
+**Cost.** Measured on software GL on a shared CPU (no GPU; a GPU renders several times faster), at 1080p: a glass
+input over a cloud plate with its push and a band sweep about 1.0 s a frame, a black glass pane with bloom and a
+band sweep on the woven surface about 0.63 s, an iris opening into a plate about 0.77 s, a glowing line while its
+words ignite about 0.7 s (settled, its blurred copies are cached), a big glass card on the electric stage with its
+edge light about 0.34 s; at half size the proof
+shots take 0.3-0.6 s a frame including the browser's start. No filter animates; every blur radius is fixed; the
+plate's grade is baked; a soft plate replaces live frost; the black field's surface is one image baked once (a CSS
+mask over a tiled background, redrawn under moving UI, cost six times as much).
 
 ## 9. Checks
 
