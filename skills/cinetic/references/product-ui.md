@@ -25,6 +25,7 @@ takes the film context or reads it inside a component.
 12. [A product moment in one camera](#12-a-product-moment-in-one-camera)
 13. [Walkthrough chapters](#13-walkthrough-chapters)
 14. [The pause test](#14-the-pause-test)
+15. [Macro screens: rich content a camera can push into](#15-macro-screens-rich-content-a-camera-can-push-into)
 
 ---
 
@@ -613,3 +614,150 @@ Pause on any frame and check it as a screenshot. Run this on the act contact she
 - No cursor after the product became autonomous; at most one click per 30 f.
 - No card or tile is empty or filled with grey bars (§5).
 - Discrete state (typed text, caret, counters, layout switches) is computed from `fd(f)`, so motion-blur sub-samples never show a double caret or a half-typed letter.
+
+
+---
+
+## 15. Macro screens: rich content a camera can push into
+
+A product shot has to hold up twice: paused (every name, number and date believable, nothing grey or lorem) and pushed
+in 3-4x (the type still crisp, the picture still sharp). `src/kit/screens` is twelve dense screens built for both: one
+component each, few props, the film's own content written from the brief by one script, vector type at real UI sizes,
+pictures fetched at 3x their drawn size, and every element exposed as a focus box a camera can frame on any frame.
+
+### 15.1 The content, written from the brief
+
+```
+node scripts/content.mjs --brief BRIEF.md --fetch     # writes src/content.ts; faces into public/people, pictures into public/thumbs
+node scripts/content.mjs --check                      # the content still adds up after you edit it
+node scripts/logos.mjs get youtube                    # the real marks it names (url.logo, a notice's app)
+```
+
+A fenced block in the brief (or `--name --does --topic --item --price --photos` flags):
+
+````
+```content
+name: Larder
+does: turns a cooking channel into a paid cookbook
+topic: recipes
+thing: cookbook
+items: The Weeknight Pasta Book; 20-Minute Dinners Course; Sunday Baking Guide
+price: 29
+photos: pasta dish, home cooking, fresh bread
+```
+````
+
+The world (creator, assistant, commerce, devtool, finance, team) is guessed from the words when left out. Out comes one
+object, `CONTENT`, whose parts spread straight into the screens, so a film never hand-writes a list, a name, a price or
+a date:
+
+- **People:** a cast of 14 with real faces (open-licence portraits, cropped to the face at 512 px, the licence record
+  in `assets/licences.json`), varied first names, family names from everywhere, handles in the styles people use.
+- **Numbers that add up across screens:** payment rows sum to their header; each of the product's items has one price
+  everywhere it shows; the assistant's answer reads "your last 85 videos and 344 comments" while the profile says 85
+  videos and the comment header counts to 344; one meeting has one time in the notice, the agenda and the answer.
+- **Dates round the film's day** (`--date`, else the brief's, else today; written into `FILM_DATE`) with the right
+  weekdays; ages as feeds print them ("6 hours ago", "34m"); future times after the film's clock.
+- **Pictures:** a grid of real photos for the brief's words (landscape first, keyless sources, no credit needed).
+
+Read the file, keep what is true of the product, change the rest, run `--check`. Offline (no `--fetch`) a person is
+the product's own coloured initial disc and a picture a lit poster, never grey.
+
+### 15.2 The screens
+
+Common props: `tone` (`light` a white card, `dark` a near-black card, `glass` frost), `ground` (the colour behind it:
+its lightness picks the inks; a dark card on a bright ground stays near-black), `accent`, `frame` (the part's own
+clock, default the composition's), `pt` (film px per UI point, default 2 at 1080p), `view` (the camera scale it is
+seen at, for the readable/texture tags), `backdrop` (glass over a photographic plate, §15.4).
+
+| part | what it shows | the props that matter | focus boxes |
+|---|---|---|---|
+| `PromptBar` | the big input pill: plus, the request typed on a human cadence (the newest word in the accent, settling to ink), caret, attachment chip, model chip, mic, send | `text at send attach model size` | bar, text, caret, word, send, plus, mic, model, attach |
+| `UrlScan` | a link typed into a pill with the platform's mark; the button pressed, busy (stepping dots, a light sweep), done | `url logo action busy done at press doneAt` | pill, logo, url, caret, button |
+| `ThumbGrid` | 16:9 thumbnails of real photos with title cards, duration, two-line title, views and age; cells land, are read one by one, one is picked | `items cols reveal scan pick card` | grid, cell{i}, thumb{i}, title{i} |
+| `CommentFeed` | real faces, handle and age, the comment, the action row; a header counting what is read; the feed moving up; a wash on the row that matters | `comments header max scroll highlight` | feed, header, view, row{i}, text{i}, face{i} |
+| `NoticeStack` | notifications with real marks or faces arriving on a stack (or a list), the older ones stepping back | `items at every mode depth` | stack, front, frontText, card{i}, icon{i}, text{i} |
+| `StepCard`, `ProgressPill` | the thing being made and its steps: pending, active (a spinner, its label typing), done (a tick drawn on); a pill counting a percentage | `title sub thumb steps start every` / `label to at dur` | card, thumb, title, step{i}, active |
+| `PriceCards` | plans side by side, the featured one rimmed, features with checks, calls to action | `plans currency reveal pick` | row, card{i}, price{i}, cta{i}, feature{i}_{j} |
+| `ItemList` | rows of products, payments or tasks: picture, face or mark, title, sub, value, tag; a header total counting | `items mode header countAt pick` | list, header, row{i}, value{i} |
+| `DocPage` | a document page: number, title with an accent word, lead, section, paragraphs written on, a table, a figure | `title accentWord lead body table figure write` | page, title, lead, para{i}, table, row{i}, figure |
+| `CodePage` | an editor tab with syntax in two hues of the accent, typed or streamed, a line held in a wash; as wide as its longest line | `code lang file type stream highlight` | editor, file, caret, line{i} |
+| `ChatReply` | the person's ask, the product's mark and name, thinking dots, the answer streaming word by word with items | `ask who text items close at` | thread, ask, who, card, item{i}, close |
+| `ProfileCard` | a channel or account: face, name, seal, handle, counts, the main button pressed, thumbnails with title cards | `name handle photo verified stats action press thumbs` | card, face, name, stats, action, thumb{i} |
+
+```tsx
+import { CONTENT } from './content';
+import { CommentFeed, PromptBar } from './kit/screens';
+
+<PromptBar {...CONTENT.prompt} at={12} send={90} tone="light" ground={C.paper} />
+<CommentFeed {...CONTENT.comments} header={{ ...CONTENT.comments.header, at: 0, dur: 70 }} scroll={{ at: 20 }} highlight={[{ at: 30, index: 2 }]} />
+```
+
+### 15.3 Macro: a camera frames a focus box
+
+Each screen exports its layout, `promptBarLayout(props, frame, { pt, fps })` and so on, returning `{ w, h, focus }`:
+boxes `{ x, y, w, h, px, r }` in the screen's own px, `px` the type size inside. The component draws from the same
+function, so a box is where its element is on that frame: the caret while it types, the newest notification, a feed
+row while the feed moves. `placeFocus(focus, x, y, k)` puts them in the scene; `readScale(box)` is the camera scale at
+which the type inside reaches `TEXT_MIN` (36 px); `fillScale(box, W, H, share)` the scale at which the box fills a
+share of the frame. At the default `pt` a 15 pt body is 30 px in a wide shot (texture) and 90 px at 3x (a macro read).
+Text below the readable size at the scale it is seen at is tagged `data-texture`; pass `view` with the camera scale.
+
+The macro move along the input as it types (one move that starts, travels with its subject and lands):
+
+```tsx
+const L = promptBarLayout(p, f, { pt, fps });
+// the caret, smoothed over the last 8 frames: an operator's lag, the same on every render
+let sx = 0, sw = 0;
+for (let i = 0; i < 8; i++) { const w = 0.72 ** i; sx += promptBarLayout(p, Math.max(0, f - i), { pt, fps }).focus.caret.x * w; sw += w; }
+const ride = { x: sx / sw - 47, y: L.focus.bar.y + L.focus.bar.h / 2 };   // the caret a little right of centre
+const go = prog(f, send - 12, send + 6, E.strongInOut);                   // then travel to the send button, land on the press
+const s = centreOf(L.focus.send);
+const cam = { x: mix(ride.x, s.x - 220, go), y: mix(ride.y, s.y, go), k: mix(3, 2.5, go) };
+// draw: translate(W/2 - k*cam.x, H/2 - k*cam.y) scale(k), transform-origin 0 0, around <PromptBar {...p} />
+```
+
+Send the press 10 frames after the last key: `promptBarLayout(p, 1e9).typed.keys` gives every key's frame.
+
+### 15.4 Skins and material
+
+`light` is the kit's white Card; `dark` the Card at a deep ground of the ground's own hue (black notification cards on
+an electric blue read near-black, never mid-grey); `glass` over a gradient is a tint with a bright rim (a gradient
+behind needs no blur). Glass over a photograph takes `backdrop`: the plate at the screen's own place, preferably its
+soft copy (`node scripts/assets.mjs plate clouds` writes one), so the blur inside the shape stays short; `Frost` blurs
+it inside the pill, lays a thin veil (clear over a mid or dark plate, milky over a bright one), a top sheen and a
+bright rim, and the words take white over a mid plate with the newest word in a light tint of the accent. `skin.solid`
+is the accent as a fill that carries white words (send, busy, call to action); the lighter lift is for accent words on
+dark.
+
+### 15.5 Screen moments
+
+| id | recipe |
+|---|---|
+| `macro-type` | `PromptBar` at 3x, the camera riding the caret (smoothed 8 f), the newest word in the accent settling to ink; travels to the send button and lands on the press, 10 f after the last key (§15.3) |
+| `scan-and-read` | `UrlScan` typed and pressed (busy word, stepping dots, a light sweep across the button), then `ThumbGrid` under it: cells land 3 f@60 apart and are read one by one, a ring passing and a tick staying |
+| `feed-read` | `CommentFeed` header counting from 0 to the total while the feed moves up one comment every 0.7-0.9 s; the wash glides to the request that matters; a close-up on `text{i}` |
+| `notice-stack` | `NoticeStack` cards arriving from above 0.4-0.6 s apart, opaque within the first third of the entrance, the older ones stepping back; a close-up frames `frontText` |
+| `step-build` | `StepCard` steps 0.6-0.8 s apart, each a spinner with its label typing, then a tick; `ProgressPill` counting under the product being made |
+| `ledger` | `ItemList` plain with real faces and products, the header total counting while the rows arrive |
+| `price-pick` | `PriceCards` revealed side by side, the featured plan picked: it lifts with an accent rim, the others step back with their words fading, never into a grey veil |
+| `doc-travel` | `DocPage` written on, the camera travelling down from the title to the table (`title`, `lead`, `table`, `row{i}`) |
+| `answer` | `ChatReply`: the ask bubble, thinking dots, the answer streaming word by word, items with real marks, the closing question |
+
+### 15.6 Rules
+
+- People are real faces (`--fetch`); without photos the product's own coloured initial disc, never grey; the product
+  speaking is its own mark, never a person's initial.
+- Numbers add up: `checkContent()` (or `--check`) after any edit: payments sum to their header, a weekday matches its
+  date, one face is one person, no thumbnail repeats, a table row has its columns.
+- Text is never cut by an edge: a code line longer than its editor fades out; feed rows leave and arrive through soft
+  edges; a stack's new card is opaque before the words behind it could show through.
+- Discrete state (letters typed, counts, a step's state, streamed lines, busy dots) is decided on the whole frame
+  (`fd`), so every motion-blur sub-sample of one output frame agrees.
+- A thumbnail's title card is the creator's own type (heavy condensed capitals, `THUMB_FACE`, Mona Sans from
+  `public/fonts`), never the film's voice; the screens wait for it (`useFace`).
+- One screen, one job in a shot; dense, never crowded; nothing idles up and down; a camera move on a screen starts,
+  travels with its subject and lands; cards face the camera unless a designed 3D move turns them.
+- Cost: a screen is DOM and SVG: about 0.35-0.7 s a frame at 1080p on software GL (no GPU), 1-2 s for the picture-heavy
+  ones (a thumbnail grid, a stack's shadows at 3x) and about 1 s for frost over a plate; on a GPU a fraction of that.
+  Blur only inside a small shape (the plate's soft copy behind a pill), never a full frame.
