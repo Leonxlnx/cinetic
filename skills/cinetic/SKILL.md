@@ -1,6 +1,6 @@
 ---
 name: cinetic
-description: Direct, build and render premium motion films from code - launch films, update films ("vX is out"), product and feature videos, looping feature animations, logo stings, UI walkthroughs, teasers and promo clips. Use this whenever the user wants any video, animation, motion graphic or animated demo made with Remotion, HyperFrames, HTML/GSAP or React, or asks to storyboard, time, score, render, polish or critique one - even if they only say "make a video about X", "animate this feature" or "we need a launch clip". It supplies a simple default path one agent finishes in one to two hours, the whole film first, plain-word copy checked by script, one text voice, seams that flow, devices that differ from the last films, real product UI, current official logos, a licensed track cut to the picture and film-grade finishing.
+description: Direct, build and render premium motion films from code - launch films, update films ("vX is out"), product and feature videos, looping feature animations, logo stings, UI walkthroughs, teasers and promo clips. Use this whenever the user wants any video, animation, motion graphic or animated demo made with Remotion, HyperFrames, HTML/GSAP or React, or asks to storyboard, time, score, render, polish or critique one - even if they only say "make a video about X", "animate this feature" or "we need a launch clip". It supplies a simple default path one agent finishes in one to two hours, the whole film first, plain-word copy checked by script, one type face with rotating voices, seams that flow, devices that differ from the last films, real product UI, current official logos, a licensed track cut to the picture and film-grade finishing.
 license: MIT
 compatibility: Needs Node 22+, ffmpeg 6+ with libx264, Python 3.11+ with numpy, scipy, soundfile, pyloudnorm, opencv-python and librosa (fonttools, brotli and uharfbuzz for outlined logos; pillow for plates), and Chromium or Chrome Headless Shell for rendering; earshot 0.4+ (in its own virtualenv) renders the effects kit and listens to the soundtrack. Works with Remotion 4 (React) or HyperFrames (HTML and GSAP).
 ---
@@ -43,14 +43,13 @@ These are the rules every film is held to, with their numbers. The gates named i
    use; 0.3-1.5 headline words a second; what the product is by 3 s. No text in 15 % of the frames or more; at most two
    text blocks at once outside a product beat; no floating chips, counters or captions beside a statement.
    (`copy-check.py`, `copy-check.py --ui src`.)
-5. **Text with love: one voice, a hierarchy, events.** The plain lines arrive in the film's one text voice (a word
-   build, a blur-in or an ink-in, [copy-and-type.md](references/copy-and-type.md)) at a cap height of 6-9 % of the
-   frame height; one-line statements 80 % or more. Never one device on every line: one type event a film (a giant word
-   at 13-18 % with the product rising behind it, a line an object pushes apart, a decode, a word build that
-   re-centres) and a scale jump between lines. Emphasis is quiet: the key word in the accent on at most two lines, not
-   always the last word; a box, marker, pill, underline or knockout only as the one signature. Every line reads at 3:1
-   or more against what stands behind it, never held up by a grey halo. (`lint-film.mjs` emphasis, `forensics.py`
-   legibility, `grid-check.ts` type-devices.)
+5. **Text with love: one face, voices that rotate, events.** Lines arrive in the film's one face, the voice turning
+   line by line (build, blur-in, ink-in: never two lines in a row alike, [catalogue.md](references/catalogue.md) §1),
+   in three sizes (a statement at 6-9 % cap, the lines a size down, the claim twice that); one-line statements 80 % or
+   more. One type event a film (a giant word with the product rising behind it, a line an object pushes apart, a
+   decode, a build that re-centres). Emphasis is quiet: the key word in the accent on at most two lines, not always the
+   last word; a box, marker, pill, underline or knockout only as the one signature. Every line reads at 3:1 against
+   what stands behind it, never held up by a grey halo. (`lint-film.mjs` emphasis, `forensics.py` legibility.)
 6. **Scene changes that flow.** Every hard cut hides itself: inside a blur that makes both sides unreadable, an anchor
    held within 10 px, or a whip that carries the picture a fifth of the frame in its last 0.2 s, smeared; the kept
    ground alone hides nothing; never a cross-fade of two scenes or a cut torn across two frames; at most 10 % of hard
@@ -69,7 +68,7 @@ These are the rules every film is held to, with their numbers. The gates named i
    lands centred and holds 2-3 s still or on an eased settle (never a flat drift to the last frame) while the music
    rings out, the name once and the one fact under it. The logo is the brand's own or built from the film's last
    element, never a sparkle, a star or a generic glyph (`forensics.py` end-drift, end-centre, audio-end).
-9. **Its own film, never a template.** One world for the whole film, one text voice, two
+9. **Its own film, never a template.** One world for the whole film, one face and its voices, two
    or three moves, two or three seam kinds, one signature and one end-card design, picked from
    [catalogue.md](references/catalogue.md) and declared in `film.json`. The world, the voice, the signature and the
    end card differ from each of the last three films, and the move set shares at most 25 % with each of them; a film
