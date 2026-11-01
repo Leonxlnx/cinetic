@@ -28,8 +28,8 @@ With a sound library (library.py: real recordings whose licence needs no credit,
 action), its sounds for an action stand beside the bank's members, in order of fit (earshot's ears), first where
 the bank is weak, interleaved elsewhere. Every candidate is then matched to the film's track (music_cost): a tail
 longer than the action's share of the beat (BEATS) at the track's tempo costs, a lock or a reveal too short to ring
-costs, a sound whose peak holds it under its role's level over the bed costs (a spiky take is clamped at -1 dBFS and
-buried), a sound masked under the track costs
+costs, a lock, reveal or thud whose peak holds it under its role's level over the bed costs (a spiky take is clamped at
+-1 dBFS and buried), a sound masked under the track costs
 (masked_db: per octave band its power against the track's where the action's events land, played at its role's
 level over the bed, the best band of those where it is heard under MASK_DB; without the bands, a centroid within an
 octave of the track's), and a tonal real effect is tuned to the key by up to a semitone (the rest costs). A bank
@@ -206,6 +206,7 @@ BED_DB = 7.0            # a role's level over the bed when the kit does not say 
 MASK_DB = 3.0           # a sound whose best band stands less than this over the busy track is masked there: it costs
 STAGE_LUFS = -18.0      # the bed's staged level (score.py): a take's level over it is held by its peak (-1 dBFS)
 RING_MIN_S = {'logo-lock': 0.45, 'reveal': 0.3}  # a lock or a reveal rings: a thinner sound reads as a knock, not a resolve
+HEADROOM_ACTIONS = ('logo-lock', 'reveal', 'thud')  # the heroes that sit high over the bed: a spiky take is held under it
 FAMILY_COST = 2.5       # a bank sound whose recipe already plays another action of the film
 RETUNE_MAX = 1.0        # semitones a tonal library sound is moved to the key; the rest of the distance costs
 
@@ -441,7 +442,7 @@ def music_cost(feat, action, music, tuned=False, bed_db=None, bands=None):
             why.append(f'rings {tail:.2f} s, over {BEATS.get(action, 2):g} beat(s) at {float(bpm):.0f} BPM')
     # headroom: a take reaches its level over the bed only when its peak allows it (score.py holds every take at -1 dBFS);
     # a spiky sound (peak far over its loudest 50 ms) on a role that sits high over the bed is held under it and buried
-    if feat.get('l50_lufs') is not None and feat.get('peak_db') is not None:
+    if action in HEADROOM_ACTIONS and feat.get('l50_lufs') is not None and feat.get('peak_db') is not None:
         bd = float(bed_db if bed_db is not None else BED_DB)
         ob = 10 * math.log10(max(10 ** (bd / 10) - 1.0, 1e-6))
         short = (STAGE_LUFS + ob) - (-1.0 - (float(feat['peak_db']) - float(feat['l50_lufs'])))
