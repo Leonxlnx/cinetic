@@ -52,7 +52,12 @@ export type GlassLook = {
   text: string; // type on the glass
 };
 
-/** A static grade over a plate, in film (CSS filters, skipped at 1, and a one-hue wash: nothing animates a filter). The heavy grade is baked into the file. */
+/**
+ * A static grade over a plate, in film: CSS filters (skipped at 1) and a one-hue wash (skipped at tintMix 0). The grade is
+ * baked into the file by `scripts/assets.mjs plate <name> --accent <the film's accent>`, so a world's plate draws with
+ * neither by default: a full-frame filter or a colour blend costs a pass every frame. Set them for a picture that was
+ * not baked (World spec={{ grade: {...} }}). Nothing animates a filter.
+ */
 export type PlateGrade = { saturate: number; brightness: number; contrast: number; tint: string; tintMix: number; tintMode: 'color' | 'soft-light' | 'multiply' | 'screen' };
 
 /** What a plate world's picture is and how to find it (scripts/assets.mjs PLATES holds the same searches). */
@@ -216,7 +221,7 @@ export const worldOf = (kind: WorldKind, o: { accent?: string; hue?: number; ink
         kind,
         base: oklch(0.62, 0.02, h),
         plate: PLATES.clouds,
-        grade: { saturate: 1, brightness: 1, contrast: 1, tint: coolTint(0.62, 0.05), tintMix: 0.12, tintMode: 'color' },
+        grade: { saturate: 1, brightness: 1, contrast: 1, tint: coolTint(0.62, 0.05), tintMix: 0, tintMode: 'color' },
         haze: { color: oklch(0.86, 0.018, h), strength: 0.12, y: 0.2 },
         typeShadow: `0 2px 30px ${rgbaOf(oklch(0.3, 0.03, h), 0.42)}`,
         key: sun(0.8, -0.1),
@@ -228,7 +233,7 @@ export const worldOf = (kind: WorldKind, o: { accent?: string; hue?: number; ink
         kind,
         base: oklch(0.45, 0.03, h),
         plate: PLATES.aerial,
-        grade: { saturate: 1, brightness: 0.96, contrast: 1, tint: coolTint(0.5, 0.05), tintMix: 0.12, tintMode: 'color' },
+        grade: { saturate: 1, brightness: 1, contrast: 1, tint: coolTint(0.5, 0.05), tintMix: 0, tintMode: 'color' },
         haze: { color: oklch(0.8, 0.02, h), strength: 0.14, y: 0.2 },
         typeShadow: `0 2px 30px ${rgbaOf(oklch(0.25, 0.03, h), 0.45)}`,
         key: sun(0.2, -0.2),
@@ -241,7 +246,7 @@ export const worldOf = (kind: WorldKind, o: { accent?: string; hue?: number; ink
         hue: sky,
         base: oklch(0.88, 0.04, sky),
         plate: PLATES.sky,
-        grade: { saturate: 1, brightness: 1, contrast: 1, tint: oklch(0.82, 0.05, sky), tintMix: 0.1, tintMode: 'color' },
+        grade: { saturate: 1, brightness: 1, contrast: 1, tint: oklch(0.82, 0.05, sky), tintMix: 0, tintMode: 'color' },
         haze: { color: oklch(0.97, 0.01, sky), strength: 0.3, y: 0.95 },
         key: sun(0.86, -0.12),
         glass: glassMilky(inkCool, oklch(0.4, 0.05, sky)),
@@ -252,7 +257,7 @@ export const worldOf = (kind: WorldKind, o: { accent?: string; hue?: number; ink
         kind,
         base: oklch(0.5, 0.03, h),
         plate: PLATES.sea,
-        grade: { saturate: 1, brightness: 1, contrast: 1, tint: coolTint(0.55, 0.05), tintMix: 0.12, tintMode: 'color' },
+        grade: { saturate: 1, brightness: 1, contrast: 1, tint: coolTint(0.55, 0.05), tintMix: 0, tintMode: 'color' },
         haze: { color: oklch(0.84, 0.02, h), strength: 0.16, y: 0.45 },
         typeShadow: `0 2px 30px ${rgbaOf(oklch(0.28, 0.03, h), 0.42)}`,
         key: sun(0.5, -0.3),
@@ -264,7 +269,7 @@ export const worldOf = (kind: WorldKind, o: { accent?: string; hue?: number; ink
         kind,
         base: oklch(0.16, 0.03, h),
         plate: PLATES.nightCity,
-        grade: { saturate: 1, brightness: 0.92, contrast: 1, tint: coolTint(0.35, 0.07), tintMix: 0.14, tintMode: 'color' },
+        grade: { saturate: 1, brightness: 1, contrast: 1, tint: coolTint(0.35, 0.07), tintMix: 0, tintMode: 'color' },
         key: { x: 0.5, y: 1.15, color: oklch(0.92, 0.04, h), strength: 0.7 },
         glass: { ...glassOnPlate(wt, oklch(0.16, 0.03, h)), veil: white(0.04), veilTop: white(0.1), rimPeak: 0.7, rimBase: 0.1, hi: 0.25, shade: 0.25 },
         vignette: 0.3,
@@ -274,7 +279,7 @@ export const worldOf = (kind: WorldKind, o: { accent?: string; hue?: number; ink
         kind,
         base: oklch(0.86, 0.004, h),
         plate: PLATES.studio,
-        grade: { saturate: 1, brightness: 1, contrast: 1, tint: coolTint(0.85, 0.02), tintMix: 0.08, tintMode: 'color' },
+        grade: { saturate: 1, brightness: 1, contrast: 1, tint: coolTint(0.85, 0.02), tintMix: 0, tintMode: 'color' },
         key: sun(0.2, -0.3),
         glass: glassMilky(inkCool, oklch(0.35, 0.01, h)),
         vignette: 0.06,
@@ -284,7 +289,7 @@ export const worldOf = (kind: WorldKind, o: { accent?: string; hue?: number; ink
         kind,
         base: oklch(0.35, 0.04, h),
         plate: PLATES.macro,
-        grade: { saturate: 1, brightness: 0.94, contrast: 1, tint: coolTint(0.45, 0.03), tintMix: 0.06, tintMode: 'color' },
+        grade: { saturate: 1, brightness: 1, contrast: 1, tint: coolTint(0.45, 0.03), tintMix: 0, tintMode: 'color' },
         key: sun(0.15, -0.2),
         glass: glassOnPlate(wt, oklch(0.32, 0.03, h)),
         vignette: 0.24,

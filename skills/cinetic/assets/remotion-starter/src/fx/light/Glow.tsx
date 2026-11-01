@@ -20,10 +20,14 @@
  * the threshold), is blurred `radius` px and screen-added at `strength`. Wrap what emits light (glowing type, a lit
  * pane, a screen), not a pale world: everything above the threshold blooms.
  *
- *   <Bloom strength={0.4}>{the glass and its type}</Bloom>
+ *   <Bloom strength={0.4} box={{ x: 460, y: 420, w: 1000, h: 220 }}>{the glass and its type}</Bloom>
+ *
+ * Give `box` (where the light is, frame px) whenever the light sits in one place: only that area and the blur's reach
+ * are copied and blurred, a tenth of the frame for a pane instead of all of it. Under a camera move, give the box in
+ * the coordinates the children are laid out in (the Bloom moves with them).
  *
  * Cost: a pool is one image; GlowType is three copies of one line (two blurred); Bloom is one copy of its children
- * blurred once. Blur radii are fixed per element, never animated; levels change by opacity only.
+ * blurred once (only its box when given one). Blur radii are fixed per element, never animated; levels change by opacity only.
  */
 import React from 'react';
 import { Img, useCurrentFrame } from 'remotion';
@@ -182,6 +186,7 @@ export type BloomProps = {
   strength?: number; // the bloom copy's opacity (default 0.35)
   radius?: number; // its blur, px at 1080p (default 18)
   threshold?: number; // what counts as bright, 0..1 (default 0.62)
+  box?: { x: number; y: number; w: number; h: number }; // where the light is, frame px: only that area (and the blur's reach) is copied and blurred
   children: React.ReactNode;
   style?: React.CSSProperties;
 };
@@ -203,14 +208,22 @@ export const Bloom: React.FC<BloomProps> = (p) => {
   const fill: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' };
   const k = clamp(p.strength ?? GLOW_LIGHT.bloom.strength);
   if (k <= 0) return <div style={{ ...fill, ...p.style }}>{p.children}</div>;
+  const { width: W, height: H } = sizeOf(film);
+  // the copy's window: the whole frame, or the light's box and the blur's reach round it (far fewer pixels to blur)
+  const m = Math.ceil(R * 3);
+  const win = p.box ? { x: Math.floor(p.box.x - m), y: Math.floor(p.box.y - m), w: Math.ceil(p.box.w + 2 * m), h: Math.ceil(p.box.h + 2 * m) } : { x: 0, y: 0, w: W, h: H };
   return (
     <div style={{ ...fill, ...p.style }}>
       {p.children}
       {/* the copy: the bright pass on an inner layer; the blur, the blend and the level on its own composited outer layer
           (translateZ: blurred while painted under a scaled parent, Chromium drew a stray unblurred copy on some frames;
           the radius is fixed per element, never animated, so the promoted layer never holds a stale blur) */}
-      <div data-audit-copy aria-hidden style={{ ...fill, pointerEvents: 'none', transform: 'translateZ(0)', filter: `blur(${R.toFixed(2)}px)`, mixBlendMode: dark ? 'plus-lighter' : 'screen', opacity: k }}>
-        <div style={{ ...fill, filter: `brightness(${bp.b.toFixed(3)}) contrast(${bp.c.toFixed(3)}) saturate(1.2)` }}>{p.children}</div>
+      <div
+        data-audit-copy
+        aria-hidden
+        style={{ position: 'absolute', left: 0, top: 0, width: win.w, height: win.h, overflow: 'hidden', pointerEvents: 'none', transform: `translate(${win.x}px, ${win.y}px) translateZ(0)`, filter: `blur(${R.toFixed(2)}px)`, mixBlendMode: dark ? 'plus-lighter' : 'screen', opacity: k }}
+      >
+        <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `translate(${-win.x}px, ${-win.y}px)`, filter: `brightness(${bp.b.toFixed(3)}) contrast(${bp.c.toFixed(3)}) saturate(1.2)` }}>{p.children}</div>
       </div>
     </div>
   );

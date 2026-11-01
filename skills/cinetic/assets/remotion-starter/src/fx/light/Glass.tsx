@@ -94,7 +94,7 @@ export const Glass: React.FC<GlassProps> = (p) => {
       <div style={{ ...box, overflow: 'hidden', isolation: 'isolate' }}>
         {world ? (
           <div data-audit-copy style={{ position: 'absolute', left: -m, top: -m, width: p.w + 2 * m, height: p.h + 2 * m, overflow: 'hidden', filter: frost }}>
-            <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `translate(${(m - x).toFixed(2)}px, ${(m - y).toFixed(2)}px)` }}>{world.ground({ soft: true })}</div>
+            <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `translate(${(m - x).toFixed(2)}px, ${(m - y).toFixed(2)}px)` }}>{world.ground({ soft: true, bare: true })}</div>
           </div>
         ) : (
           <div style={{ ...box, background: spec.base }} />

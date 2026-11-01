@@ -110,7 +110,7 @@ export const World: React.FC<WorldProps> = (p) => {
   const haze = plate ? hazeUrl(spec) : '';
   const vig = vignetteUrl(spec.vignette);
 
-  const ground = (o: { soft?: boolean } = {}) => {
+  const ground = (o: { soft?: boolean; bare?: boolean } = {}) => {
     const useSoft = !!(o.soft && p.soft && plate);
     return (
       <div data-ground={spec.kind} style={{ ...ABS, overflow: 'hidden', background: spec.base }}>
@@ -123,8 +123,8 @@ export const World: React.FC<WorldProps> = (p) => {
             <Img src={field} style={ABS} />
           </div>
         ) : null}
-        {haze ? <Img src={haze} style={ABS} /> : null}
-        {vig ? <Img src={vig} style={ABS} /> : null}
+        {haze && !o.bare ? <Img src={haze} style={ABS} /> : null}
+        {vig && !o.bare ? <Img src={vig} style={ABS} /> : null}
       </div>
     );
   };

@@ -8,8 +8,11 @@ import type { WorldSpec } from './worlds';
 export type WorldCtx = {
   spec: WorldSpec;
   frame: number; // the world's local frame
-  /** The world's ground as drawn at this frame (full frame, the world's own camera move applied). `soft`: its blurred copy where one exists. */
-  ground: (o?: { soft?: boolean }) => React.ReactNode;
+  /**
+   * The world's ground as drawn at this frame (full frame, the world's own camera move applied). `soft`: its blurred
+   * copy where one exists; `bare`: the plate or field alone, without the haze and the vignette (what glass frosts).
+   */
+  ground: (o?: { soft?: boolean; bare?: boolean }) => React.ReactNode;
   hasSoft: boolean; // a pre-blurred copy of the plate exists, so glass need not blur its own copy
 };
 
