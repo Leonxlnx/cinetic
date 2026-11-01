@@ -24,6 +24,8 @@
  *                  one list there) when the count is under the rows, or over them while fewer than 8 rows show
  *                  (a dense screen shows 8+, else the count is the rows': kit/real.ts dayLog, listView, countLabel)
  *   dense-rows     (warning) a screen, list, feed or log element drawn with rows={n} under 8
+ *   ago-order      (warning) a list of three or more items timed by `ago` ("now", "2m ago", "1h") that does not run
+ *                  newest first: a stack or a feed shows "now" in front and each item older than the one above it
  *   thumb-repeat   a filmstrip or contact row that is one picture again: three or more numbered frames in a row of
  *                  public/ (name-0.jpg, name-1.jpg, ...) that are the same picture at thumbnail size (mean difference
  *                  under 10 of 255 at 8x5 px: a locked-off shot sampled six times), or a list in the source that
@@ -271,6 +273,16 @@ const mad = (a, b) => {
   for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]);
   return s / a.length;
 };
+/** A relative time in minutes ("now" 0, "2m ago" 2, "1 h" 60, "yesterday" 1440, "3d" 4320), or null when it is none. */
+export const agoMinutes = (t) => {
+  const s = String(t).trim().toLowerCase();
+  if (/^(just )?now$/.test(s)) return 0;
+  if (s === 'yesterday') return 1440;
+  const m = /^(\d+(?:\.\d+)?)\s*(s|sec|secs|seconds?|m|min|mins|minutes?|h|hr|hrs|hours?|d|days?|w|wk|wks|weeks?)(?:\s+ago)?$/.exec(s);
+  if (!m) return null;
+  const unit = m[2][0] === 'm' ? 1 : m[2][0] === 'h' ? 60 : m[2][0] === 'd' ? 1440 : m[2][0] === 'w' ? 10080 : 1 / 60;
+  return Number(m[1]) * unit;
+};
 /** Numbered frame sets in public/ (name-0.jpg, name-1.jpg ... in one folder) and their longest run of the same picture. */
 export const thumbRuns = (files) => {
   const groups = new Map();
@@ -467,6 +479,26 @@ export const run = (o) => {
         if (v < HOUSE.minRows && /Screen|List|Feed|Log|Table|Inbox|History|Panel|Card/.test(tag))
           add('dense-rows', 'warn', `<${tag} rows={${v}}> (${at(s, n)}): a product screen shows ${HOUSE.minRows}+ rows, the rest of the log under the fold`, at(s, n));
       }
+    });
+  }
+
+  // 2b. relative times down a list: a stack or a feed shows the newest first ("now" in front), each time older than the
+  // one above it; a list typed oldest first under a stack that reads newest first is the chronology a paused frame shows
+  for (const s of sources) {
+    visit(s.ast, (n) => {
+      if (n.type !== 'ArrayExpression' || n.elements.length < 3) return;
+      const times = n.elements.map((e) => {
+        const o = unwrap(e);
+        const p = o?.type === 'ObjectExpression' ? propsOf(o).find((q) => q.name === 'ago') : null;
+        const t = p ? textOf(p.init) : null;
+        return t && !t.includes('\u0000') ? t : null;
+      });
+      if (times.some((t) => t === null)) return; // every item timed, or the list is no timed stack
+      const mins = times.map(agoMinutes);
+      if (mins.some((m) => m === null)) return;
+      const k = mins.findIndex((m, i) => i > 0 && m < mins[i - 1]);
+      if (k > 0)
+        add('ago-order', 'warn', `a list timed ${times.map((t) => `"${t}"`).join(', ')} (${at(s, n)}) does not run newest first: "${times[k]}" sits under "${times[k - 1]}". A stack or a feed shows "now" in front and each item older than the one above it (a stack times its cards by slot, not by each item's own time)`, at(s, n), times.join(', '));
     });
   }
 

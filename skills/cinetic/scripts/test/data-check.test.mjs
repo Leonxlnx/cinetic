@@ -10,7 +10,8 @@
  *      over a short list, a count under its rows), dense-rows, wave-periodic, wave-synthetic, thumb-repeat (a list that
  *      names one picture three times, fill(), a numbered strip of one picture), photo-repeat, cast-repeat (declared in
  *      cast.json: an error), co-moving (a distance counting while its moving time stays frozen, read through the
- *      script's ui strings per scene, and a literal clock frozen beside a step counter); exit 1, and --json lists them.
+ *      script's ui strings per scene, and a literal clock frozen beside a step counter), ago-order (notices timed
+ *      oldest first); exit 1, and --json lists them.
  *   3. The good film passes with no warning: weekdays from the calendar, this week, counts that are their rows, 8 rows,
  *      waveBars(), distinct strip frames, each picture in at most half the beats, a distance and its time counting from
  *      one progress beside a still summit height. FILM_DATE is read from the source.
@@ -80,6 +81,7 @@ export const APP = {
   rows: [['6:10 PM', 'After the run', '+350 ml'], ['4:15 PM', 'At the desk', '+220 ml'], ['1:30 PM', 'Lunch', '+300 ml'], ['10:05 AM', 'Before the meeting', '+180 ml']],
   inbox: { count: 2, items: [{ who: 'Ana' }, { who: 'Ben' }, { who: 'Cy' }] },
   strip: ['van', 'van', 'van', 'park'],
+  notices: [{ title: 'New order', ago: '12m ago' }, { title: 'Payout sent', ago: 'now' }, { title: 'New review', ago: '3m ago' }],
 };
 export const PICS = { cafe: 'assets/photos/maya-cafe.png', park: 'assets/photos/maya-park.png', desk: 'assets/photos/maya-desk.png', run: 'assets/photos/tom-run.png', van: 'assets/photos/van.png' };
 export const WAVE = Array.from({ length: 88 }, (_, i) => 0.3 + 0.5 * Math.abs(Math.sin(i * 1.37)) + (i % 8 === 0 ? 0.2 : 0));
@@ -140,6 +142,7 @@ export const APP = {
   sipsToday: '9 today',
   rows: [['6:10 PM', 'After the run'], ['5:02 PM', 'Train'], ['4:15 PM', 'Desk'], ['2:48 PM', 'Walk'], ['1:30 PM', 'Lunch'], ['11:40 AM', 'Desk'], ['10:05 AM', 'Meeting'], ['8:55 AM', 'Train'], ['7:20 AM', 'Breakfast']],
   inbox: { unread: '2 new', items: [{ who: 'Ana' }, { who: 'Ben' }, { who: 'Cy' }] },
+  notices: [{ title: 'New order', ago: 'now' }, { title: 'Payout sent', ago: '3m ago' }, { title: 'New review', ago: '1h ago' }],
 };
 export const PICS = { cafe: 'assets/photos/maya-cafe.png', park: 'assets/photos/maya-park.png', desk: 'assets/photos/maya-desk.png', run: 'assets/photos/tom-run.png', van: 'assets/photos/van.png' };
 export const WAVE = waveBars(88, { seed: 'song' });
@@ -182,7 +185,7 @@ try {
   for (const [r, n, what] of [
     ['date-weekday/error', 1, '"Tue 28 Oct" is a Wednesday'], ['date-invalid/error', 1, '"Mon 30 Feb"'], ['week-start/warn', 1, '"Oct 20 – 26" runs Tuesday to Monday'],
     ['week-past/warn', 1, '"Oct 12 – 18" is a past week'], ['date-far/warn', 1, '"Jun 3" is months away'], ['count-list/error', 2, '"14 today" over 4 rows; count 2 over 3 items'],
-    ['dense-rows/warn', 1, '<TodayScreen rows={2}>'], ['wave-periodic/error', 1, '"i % 8"'], ['wave-synthetic/warn', 1, 'sines of the index'],
+    ['dense-rows/warn', 1, '<TodayScreen rows={2}>'], ['ago-order/warn', 1, 'notices timed "12m ago", "now", "3m ago"'], ['wave-periodic/error', 1, '"i % 8"'], ['wave-synthetic/warn', 1, 'sines of the index'],
     ['thumb-repeat/error', ffmpeg ? 3 : 2, 'a list naming "van" three times, fill(), a numbered strip of one picture'], ['photo-repeat/error', 1, 'the cafe picture in 4 of 5 beats'],
     ['cast-repeat/error', 1, 'maya (cast.json) in 4 beats'], ['co-moving/error', 2, 'a distance counting beside a frozen moving time; steps counting beside a frozen clock'],
   ]) result(has(r, n), `bad film: ${r} x${n} (${what})`, rules.join(' '));
@@ -195,6 +198,9 @@ try {
   const co = B?.findings.filter((f) => f.rule === 'co-moving').map((f) => f.message) ?? [];
   result(co.some((m) => /DistanceScene \(pair 2, scene distance\): the distance counts \(4\.8 mi\) while "Moving time" 2:14/.test(m)) && co.some((m) => /Steps: the steps counts/.test(m) && /12:40/.test(m)) && !co.some((m) => /6,312/.test(m)),
     'bad film: co-moving names the counter, the frozen readout and its label (the summit height is a fixed property)', co.join(' | '));
+  result(D.agoMinutes('now') === 0 && D.agoMinutes('2m ago') === 2 && D.agoMinutes('1 h') === 60 && D.agoMinutes('yesterday') === 1440 && D.agoMinutes('3d') === 4320
+    && D.agoMinutes('30s ago') === 0.5 && D.agoMinutes('Tuesday') === null && D.agoMinutes('12:40') === null,
+    'agoMinutes reads now, seconds, minutes, hours, yesterday and days; a weekday or a clock is no relative time');
   result(D.quantityOf('2:14') === 'time' && D.quantityOf('4.8 mi') === 'distance' && D.quantityOf('1,240 ft') === 'elevation' && D.quantityOf('6,312', 'Summit') === 'elevation' && D.quantityOf('38 %') === 'percent' && D.quantityOf('Moving time') === null
     && D.coupled('distance', 'time') && D.coupled('time', 'steps') && !D.coupled('elevation', 'elevation') && !D.coupled('percent', 'size'),
     'quantityOf reads time, distance, climb and percent; coupled pairs a running measure with its clock');
