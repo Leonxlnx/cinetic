@@ -196,11 +196,11 @@ export const LightSweep: React.FC<LightSweepProps> = (p) => {
       <div
         style={{
           position: 'absolute',
-          left: x0 + hp.x - fl,
-          top: y0 + hp.y - hr * 0.42,
+          left: 0,
+          top: 0,
           width: 2 * fl,
           height: hr * 0.84,
-          transform: `rotate(${(hp.n + 90).toFixed(1)}deg)`,
+          transform: `translate(${(x0 + hp.x - fl).toFixed(2)}px, ${(y0 + hp.y - hr * 0.42).toFixed(2)}px) rotate(${(hp.n + 90).toFixed(1)}deg)`,
           background: `radial-gradient(closest-side, ${rgbaOf(color, Hd.flareA * halo)}, ${rgbaOf(color, 0)})`,
           mixBlendMode: blend,
           pointerEvents: 'none',
@@ -209,10 +209,11 @@ export const LightSweep: React.FC<LightSweepProps> = (p) => {
       <div
         style={{
           position: 'absolute',
-          left: x0 + hp.x - hr,
-          top: y0 + hp.y - hr,
+          left: 0,
+          top: 0,
           width: 2 * hr,
           height: 2 * hr,
+          transform: `translate(${(x0 + hp.x - hr).toFixed(2)}px, ${(y0 + hp.y - hr).toFixed(2)}px)`,
           borderRadius: '50%',
           background: `radial-gradient(closest-side, ${rgbaOf('#FFFFFF', 0.95 * halo)}, ${rgbaOf(color, 0.45 * halo)} 22%, ${rgbaOf(color, 0.1 * halo)} 55%, ${rgbaOf(color, 0)})`,
           mixBlendMode: blend,

@@ -162,12 +162,12 @@ export const Reveal: React.FC<RevealProps> = (p) => {
     seedColour && seedK > 0 && shape !== 'button' ? (
       shape === 'path' && p.path ? (
         s.started ? null : (
-          <svg width={size} height={size} viewBox={`0 0 ${p.path.w} ${p.path.h}`} style={{ position: 'absolute', left: s.x - size / 2, top: s.y - size / 2 }}>
+          <svg width={size} height={size} viewBox={`0 0 ${p.path.w} ${p.path.h}`} style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(s.x - size / 2).toFixed(2)}px, ${(s.y - size / 2).toFixed(2)}px)` }}>
             <path d={p.path.d} fill={seedFill} />
           </svg>
         )
       ) : (
-        <svg width={size} height={size} style={{ position: 'absolute', left: s.x - size / 2, top: s.y - size / 2, opacity: seedK }}>
+        <svg width={size} height={size} style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(s.x - size / 2).toFixed(2)}px, ${(s.y - size / 2).toFixed(2)}px)`, opacity: seedK }}>
           <path d={sparklePath(size)} fill={seedFill} />
         </svg>
       )

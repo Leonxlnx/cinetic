@@ -207,8 +207,9 @@ export const Bloom: React.FC<BloomProps> = (p) => {
     <div style={{ ...fill, ...p.style }}>
       {p.children}
       {/* the copy: the bright pass on an inner layer; the blur, the blend and the level on its own composited outer layer
-          (blurred while painted, under a scaled parent, Chromium drew a stray unblurred copy on some frames) */}
-      <div data-audit-copy aria-hidden style={{ ...fill, pointerEvents: 'none', willChange: 'transform', filter: `blur(${R.toFixed(2)}px)`, mixBlendMode: dark ? 'plus-lighter' : 'screen', opacity: k }}>
+          (translateZ: blurred while painted under a scaled parent, Chromium drew a stray unblurred copy on some frames;
+          the radius is fixed per element, never animated, so the promoted layer never holds a stale blur) */}
+      <div data-audit-copy aria-hidden style={{ ...fill, pointerEvents: 'none', transform: 'translateZ(0)', filter: `blur(${R.toFixed(2)}px)`, mixBlendMode: dark ? 'plus-lighter' : 'screen', opacity: k }}>
         <div style={{ ...fill, filter: `brightness(${bp.b.toFixed(3)}) contrast(${bp.c.toFixed(3)}) saturate(1.2)` }}>{p.children}</div>
       </div>
     </div>

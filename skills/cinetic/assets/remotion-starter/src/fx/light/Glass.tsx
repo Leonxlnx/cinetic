@@ -75,6 +75,8 @@ export const Glass: React.FC<GlassProps> = (p) => {
   const y = p.y + st.rise * u;
   const blur = (p.blur ?? (world?.hasSoft ? 0 : g.blur)) * u;
   const m = Math.ceil(blur * 3) + 2;
+  // the frost: only the parts that do something (a filter at identity still costs a layer)
+  const frost = [blur > 0 ? `blur(${blur.toFixed(2)}px)` : '', g.sat !== 1 ? `saturate(${g.sat})` : '', g.brighten !== 1 ? `brightness(${g.brighten})` : ''].filter(Boolean).join(' ') || undefined;
   const box: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: p.w, height: p.h, borderRadius: r };
   const angle = keyAngle({ x, y, w: p.w, h: p.h }, spec.key, W, H);
   // the glare: a soft diagonal band, resting on the key's side of the face; a sweep slides it across
@@ -91,8 +93,8 @@ export const Glass: React.FC<GlassProps> = (p) => {
       {shadow ? <div style={{ ...box, boxShadow: `0 ${S.y * u}px ${S.blur * u}px ${shadow}, 0 ${4 * u}px ${S.near * u}px ${shadow}` }} /> : null}
       <div style={{ ...box, overflow: 'hidden', isolation: 'isolate' }}>
         {world ? (
-          <div data-audit-copy style={{ position: 'absolute', left: -m, top: -m, width: p.w + 2 * m, height: p.h + 2 * m, overflow: 'hidden', filter: `${blur > 0 ? `blur(${blur.toFixed(2)}px) ` : ''}saturate(${g.sat}) brightness(${g.brighten})` }}>
-            <div style={{ position: 'absolute', left: m - x, top: m - y, width: W, height: H }}>{world.ground({ soft: true })}</div>
+          <div data-audit-copy style={{ position: 'absolute', left: -m, top: -m, width: p.w + 2 * m, height: p.h + 2 * m, overflow: 'hidden', filter: frost }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `translate(${(m - x).toFixed(2)}px, ${(m - y).toFixed(2)}px)` }}>{world.ground({ soft: true })}</div>
           </div>
         ) : (
           <div style={{ ...box, background: spec.base }} />
