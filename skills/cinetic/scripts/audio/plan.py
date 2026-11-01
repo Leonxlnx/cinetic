@@ -49,7 +49,10 @@ Step by step:
              music before them inside the same spacing (2 s apart, 3 in any 10 s), after the stop-downs and in
              order of importance (the lock, the reveal, the thud, a seam, a landing ... a touch): 7 dB (8 at
              weight 0.8+), the musical length nearest 0.4 s within 0.22-0.32 s, back on the frame, so the effect
-             lands as a hit the ear marks; the rest play over the bed (never every event: never a click track)
+             lands as a hit the ear marks; the rest play over the bed (never every event: never a click track).
+             An effect within 0.25 s of a seam the timeline declares (declared.seams, not the soft ones: a
+             breath, a focus pull, a dissolve, a fade) keeps its sound when restraint quiets its action: the
+             whole picture changes there
   gains      with a track: bed_db over the bed as played (the median 50 ms K-weighted level of the second
              before the sync point; a stop-down target reads the bed before its own stop-down), plus
              20 log10(weight) within -12..+6 dB, never past a -1 dBFS sample peak; with no bed under a cue
@@ -101,6 +104,11 @@ MOMENT_W = 0.45             # a lighter event is never a moment
 MOMENT_DB = 7.0             # a moment's breath: the music this far down for MOMENT_LEN before the frame
 MOMENT_LEN = (0.22, 0.32)   # s: the breath covers the 200 ms the ear compares the hit with
 END_UNDER_DB = 6.0          # a hit ending: the bed's last downbeat this far under its level, under the lockup's hit
+# the seams the timeline declares (cues.json declared.seams) are where the whole picture changes: an effect within
+# SEAM_NEAR_S of one keeps its sound when restraint quiets its action. Soft seams (a breath, a focus pull, a dissolve, a
+# fade) do not count.
+SOFT_SEAMS = ('breath', 'defocus', 'dissolveUi', 'fadeEnd', 'stepped')
+SEAM_NEAR_S = 0.25
 STOP_MAX_PER_10S, STOP_MIN_GAP_S = 3, 2.0
 STOP_EDGE_DOWN_S, STOP_EDGE_UP_S = 0.040, 0.005
 STOP_ADD_MAX = 18.0         # dB of gain a stop-down may add (over a build that rises into the hit, more than its depth)
@@ -149,11 +157,12 @@ def restraint_target(song, music):
         return RESTRAINT
 
 
-def restrain(rows, events, song, runs_k, target, special):
+def restrain(rows, events, song, runs_k, target, special, keep=None):
     """whole actions thinned while any 10 s window holds more than `target` placed effects (a typing run counts
     once), the lowest restraint rank first, then the action with the most effects in the window; an action with a
-    structural, forced, payoff or lockup event, or one actions.py never silences, stays. Returns the silenced
-    actions [{action, events, window_s}]."""
+    structural, forced, payoff or lockup event, or one actions.py never silences, stays; a member `keep` names (an
+    effect on a declared seam) stays when its action goes quiet. Returns the silenced actions [{action, events,
+    window_s}]."""
     if target is None:
         return []
     out, tried = [], set()
@@ -199,6 +208,8 @@ def restrain(rows, events, song, runs_k, target, special):
         _, _, a, members = min(cand, key=lambda c: (c[0], c[1], c[2]))
         tried.add(a)
         for r in members:
+            if keep is not None and keep(r['cue_t']):
+                continue  # on a seam: the picture changes there, the effect stays
             r.update(status='thinned', why=f'restraint: the music carries {a} (over {target:g} effects in the 10 s from '
                                            f'{a0:.1f} s)')
         out.append(dict(action=a, events=len(members), window_s=round(a0, 2)))
@@ -420,6 +431,12 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
     def special(t):
         return any(m is not None and abs(t - m) <= 3 / fps for m in (payoff_t, lockup_t))
 
+    seams = sorted(float(x['at']) / fps for x in ((cues.get('declared') or {}).get('seams') or [])
+                   if isinstance(x, dict) and x.get('at') is not None and x.get('kind') not in SOFT_SEAMS)
+
+    def on_seam(t):
+        return any(abs(t - x) <= SEAM_NEAR_S for x in seams)
+
     # ---- roles, takes, statuses (time order: Kit.pick never plays one file twice in a row)
     rows = []
     text_run, last_text = 0, -1e9
@@ -511,7 +528,7 @@ def make(cues, song, kit, bed=None, edit=None, draft=False, log=None):
 
     # ---- restraint: with a track, whole actions go quiet while any 10 s is too busy
     target = restraint_target(song, music)
-    hushed = restrain(rows, events, song, runs_k, target, special)
+    hushed = restrain(rows, events, song, runs_k, target, special, keep=on_seam if music else None)
 
     # ---- runs: 3+ of one role within 250 ms of each other, spaced to min_gap_ms
     runs = []
