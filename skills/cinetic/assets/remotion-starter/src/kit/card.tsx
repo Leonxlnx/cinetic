@@ -26,7 +26,8 @@ export const CARD = {
   pad: { sm: 30, md: 44, lg: 60 }, // inner padding by size class
   size: { md: 520, lg: 900 }, // width at which a card is md, lg (under md: sm)
   hairline: 1.25, // px
-  sheen: { light: 0.012, dark: 0.022 }, // OKLCH L from the top edge to the bottom edge
+  sheen: { light: 0.03, dark: 0.03 }, // OKLCH L from the top edge to the bottom edge (a lit face, never a flat slab)
+  edge: { light: 0.42 }, // a light card on a dark ground: its top edge catching the key (an outer line of light)
   lift: { dark: 0.09, darkMin: 0.08 }, // a dark card sits this far over its ground (look-audit card-separation: 8 L*)
   // the type inside a card: the text face (FONT.ui) at film size
   type: {
@@ -89,7 +90,10 @@ export const cardShadow = (inks: CardInks, groundL: number, lift = 0, u = 1, o: 
   if (lift > 0.05) layers.push(`${(0.22 * 60 * lift * u).toFixed(2)}px ${(60 * lift * u).toFixed(2)}px ${(120 * lift * u).toFixed(2)}px ${(-24 * u).toFixed(2)}px ${sh((dark ? 0.35 : 0.12) * lift)}`);
   const hl = o.hairline === false ? [] : [`inset 0 0 0 ${(CARD.hairline * u).toFixed(2)}px ${inks.dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.07)'}`];
   const top = `inset 0 ${(1.2 * u).toFixed(2)}px 0 ${inks.dark ? 'rgba(255, 255, 255, 0.11)' : 'rgba(255, 255, 255, 0.9)'}`;
-  return [...hl, top, ...layers].join(', ');
+  // a light card in a dark world is a lit object: its top edge catches the key (a hairline of light just outside it),
+  // never a white slab with a drop shadow (and never a halo of haze round it)
+  const lit = !inks.dark && dark ? [`0 ${(-1.1 * u).toFixed(2)}px 0 rgba(255, 255, 255, ${CARD.edge.light})`] : [];
+  return [...hl, top, ...lit, ...layers].join(', ');
 };
 
 /** A box-shadow value split into its layers at the top-level commas (an rgba() holds commas of its own). Pure. */
