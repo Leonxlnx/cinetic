@@ -5,9 +5,10 @@
  * link) and writes src/content.ts: one object whose parts spread into the macro screens of the kit (src/kit/screens:
  * <CommentFeed {...CONTENT.comments} />, <PromptBar {...CONTENT.prompt} at={12} />): a cast of people with real faces,
  * comments and notifications with believable names, times and numbers that add up, payments whose rows sum to the
- * header, products and prices, plans, a step list, a document page, a code file, an assistant's answer, a profile and a
- * grid of real pictures. Dates sit round the film's day with the calendar's weekdays. The same brief and seed write the
- * same file.
+ * header, products and prices, plans, a step list, a document page, a code file, an assistant's answer, a profile, a
+ * grid of real pictures, the product's own site (a headline written from what it does, its accent, a lead, cards whose
+ * figures are the other screens' own), the one thing many people asked for, and the covers of what it makes. Dates sit
+ * round the film's day with the calendar's weekdays. The same brief and seed write the same file.
  *
  *   node scripts/content.mjs --brief BRIEF.md [--fetch] [--out src/content.ts] [--date 2026-11-01] [--seed <word>] [--force]
  *   node scripts/content.mjs --name "Pantry" --does "turns a cooking channel into a paid cookbook" --domain creator \
@@ -20,7 +21,8 @@
  *   topic (the plural noun of the product's world: recipes, invoices, trips), thing (what it makes: cookbook, plan),
  *   items (the product's own things, separated by ;), price, currency, url, logo (a mark slug for scripts/logos.mjs),
  *   channel (a handle), prompt (the request typed into the input), photos (search words for the pictures, separated
- *   by ,), people (how many in the cast, default 14), date, seed.
+ *   by ,), people (how many in the cast, default 14), date, seed, headline (the site's headline; default: from
+ *   `does`, "turns a channel into a cookbook" -> "Turn a channel into a cookbook"), accent (its words in the accent).
  * Anything left out is written from the world's own vocabulary with the brief's words in it; read the file, keep what
  * is true of the product and change the rest. A person in a screen is a user of the product, never a named testimonial.
  *
@@ -338,6 +340,53 @@ const WORLDS = {
 };
 const DOMAINS = Object.keys(WORLDS);
 
+// ------------------------------------------------------------------------------------------------ the site, the request, the covers
+// The product's own site in a browser window (its nav, a lead under the headline written from `does`, the cards' titles),
+// the one thing many people asked for (a request pill), and the covers of what it makes (a cover stack).
+const PAGES = {
+  creator: { tld: 'co', glyph: 'play', nav: ['How it works', 'Creators', 'Pricing'], cta: 'Start free', ctaAlt: 'Watch the demo', lead: '{P} reads your videos and comments, then writes the {thing} your viewers keep asking for.', people: ['Creators this week', 'joined'], request: { label: 'Recurring request', text: 'A full {thing} for beginners', countLabel: 'Asked {n}+' }, covers: null },
+  assistant: { tld: 'ai', glyph: 'sparkle', nav: ['Product', 'Use cases', 'Pricing'], cta: 'Try it free', ctaAlt: 'See it work', lead: 'Email, calendar and errands in one place. {P} reads, replies and books, and checks with you first.', people: ['Teams on {P}', 'people'], request: { label: 'Asked most this week', text: 'Can we move the sync?', countLabel: '{n} messages', range: [9, 24] }, covers: [['Your week, planned', 'Plan · {n} tasks'], ['Board meeting prep', 'Brief · 6 pages'], ['Trip to Lisbon', 'Itinerary · 3 days']] },
+  commerce: { tld: 'com', glyph: 'bag', nav: ['Shop', 'Stories', 'Stores'], cta: 'Shop now', ctaAlt: 'Our story', lead: 'Made in small batches, shipped in two days, and loved by people who buy it twice.', people: ['Customers this week', 'orders'], request: { label: 'Most asked by customers', text: 'Is the large size back?', countLabel: '{n} asks', range: [40, 160] }, covers: null },
+  devtool: { tld: 'dev', glyph: 'code', nav: ['Product', 'Docs', 'Pricing', 'Changelog'], cta: 'Start building', ctaAlt: 'Watch the demo', lead: 'Describe it in a sentence. {P} writes the code, the database and the sign-in, then puts it live.', people: ['Builders this week', 'apps'], request: { label: 'Most requested', text: 'Sign in with GitHub', countLabel: '{n} upvotes', range: [120, 480] }, covers: [['Getting started', 'Guide · 12 pages'], ['The API reference', 'Docs · 64 pages'], ['Deploy guide', 'Guide · 9 pages']] },
+  finance: { tld: 'app', glyph: 'receipt', nav: ['Product', 'Customers', 'Pricing'], cta: 'Start free', ctaAlt: 'See how it works', lead: 'Invoices that send themselves, reminders that sound like you, and payments that land on time.', people: ['Freelancers this week', 'invoices'], request: { label: 'Clients asked for', text: 'Pay by card', countLabel: '{n} clients', range: [12, 40] }, covers: [['{Mon} report', 'Report · {n} pages'], ['Tax summary', 'PDF · 4 pages'], ['Client statements', 'PDF · 12 pages']] },
+  team: { tld: 'so', glyph: 'stack', nav: ['Product', 'Templates', 'Pricing'], cta: 'Get started', ctaAlt: 'Book a demo', lead: 'Projects, docs and decisions in one place, so everyone knows what ships and who owns it.', people: ['Teams this week', 'teams'], request: { label: 'Most upvoted', text: 'Dark mode for docs', countLabel: '{n} votes', range: [60, 240] }, covers: [['Launch plan', 'Doc · 8 pages'], ['Brand guide', 'Doc · 24 pages'], ['The Q1 roadmap', 'Board · 18 cards']] },
+};
+
+/** Verbs a product line often joins with "and" ("sends invoices and chases late payments"): turned with the first. */
+const VERBS = new Set(['answers', 'books', 'builds', 'chases', 'checks', 'creates', 'deploys', 'designs', 'drafts', 'edits', 'files', 'finds', 'fixes', 'gets', 'handles', 'helps', 'keeps', 'lets', 'makes', 'manages', 'moves', 'organises', 'organizes', 'pays', 'plans', 'publishes', 'puts', 'reads', 'records', 'replies', 'runs', 'saves', 'schedules', 'sells', 'sends', 'ships', 'shows', 'summarises', 'summarizes', 'syncs', 'tests', 'tracks', 'translates', 'turns', 'writes']);
+/** "turns" -> "turn", "replies" -> "reply", "does" -> "do", "pushes" -> "push" */
+const baseVerb = (w) => (/ies$/i.test(w) ? w.replace(/ies$/i, 'y') : /(ches|shes|sses|xes|zes|oes)$/i.test(w) ? w.replace(/es$/i, '') : /[^s]s$/i.test(w) ? w.replace(/s$/i, '') : w);
+/**
+ * The site's headline from what the product does: "turns a cooking channel into a paid cookbook" -> "Turn a cooking
+ * channel into a paid cookbook"; "an assistant that handles your email" -> "Orrin handles your email". A long line drops
+ * its closing "for ..." clause.
+ */
+export const headlineOf = (name, does) => {
+  let s = String(does ?? '').trim().replace(/[.!]+$/, '');
+  if (!s) return `Meet ${name}`;
+  const rel = /^(?:an?|the)\s+[\w\s-]*?\b(?:that|which|who)\s+(.+)$/i.exec(s);
+  if (rel) s = `${name} ${rel[1]}`;
+  else if (/^(?:an?|the)\b/i.test(s)) return `Meet ${name}`;
+  else {
+    const words = s.split(/\s+/);
+    if (/[^s]s$|ies$|(ches|shes|sses|xes|zes|oes)$/i.test(words[0])) {
+      words[0] = baseVerb(words[0]);
+      for (let i = 1; i < words.length - 1; i++) if (/^(and|or)$/i.test(words[i]) && VERBS.has(words[i + 1].toLowerCase())) words[i + 1] = baseVerb(words[i + 1]);
+    }
+    s = words.join(' ');
+  }
+  if (s.length > 52) s = s.replace(/\s+for\s+[\w\s-]+$/i, '');
+  return cap(s);
+};
+/** The headline's accent: the object of its last "from / into / in / with / for / to / on" (up to three words), else its last words. */
+export const accentOf = (headline) => {
+  const m = /\b(?:from|into|in|with|for|to|on)\s+(?:(?:a|an|the|your|their)\s+)?([^,]+?)\s*$/i.exec(headline);
+  if (m && m[1].split(/\s+/).length <= 3) return m[1];
+  // else its last two words ("late payments"), or the last one when the word before it is a little word ("and tasks")
+  const w = headline.replace(/[,.]/g, '').split(/\s+/);
+  return w.length > 2 && !/^(and|or|a|an|the|your|my|our|their|its|of|to|with|for|in|on|at|by)$/i.test(w[w.length - 2]) ? w.slice(-2).join(' ') : w[w.length - 1] ?? '';
+};
+
 /** A product's line under its name, from what its name says it is (a course has lessons, a book pages), else the world's own. */
 const subFor = (domain, item, subs, i) => {
   if (domain === 'creator') {
@@ -361,7 +410,7 @@ const parseBrief = (file) => {
   const text = block ? block[1] : raw;
   for (const line of text.split(/\r?\n/)) {
     const m = /^\s*[-*]?\s*([a-z]+)\s*:\s*(.+?)\s*$/i.exec(line);
-    if (m && /^(name|does|domain|topic|thing|items|price|currency|url|logo|channel|prompt|photos|people|date|seed|audience)$/i.test(m[1])) out[m[1].toLowerCase()] = m[2];
+    if (m && /^(name|does|domain|topic|thing|items|price|currency|url|logo|channel|prompt|photos|people|date|seed|audience|headline|accent)$/i.test(m[1])) out[m[1].toLowerCase()] = m[2];
   }
   if (!out.name) {
     const h = /^#\s+(.+)$/m.exec(raw);
@@ -376,7 +425,7 @@ const parseBrief = (file) => {
 
 const fromArgs = () => {
   const b = parseBrief(val('--brief'));
-  for (const k of ['name', 'does', 'domain', 'topic', 'thing', 'price', 'currency', 'url', 'logo', 'channel', 'prompt', 'photos', 'people', 'date', 'seed', 'audience']) if (val(`--${k}`)) b[k] = val(`--${k}`);
+  for (const k of ['name', 'does', 'domain', 'topic', 'thing', 'price', 'currency', 'url', 'logo', 'channel', 'prompt', 'photos', 'people', 'date', 'seed', 'audience', 'headline', 'accent']) if (val(`--${k}`)) b[k] = val(`--${k}`);
   const items = vals('--item');
   if (items.length) b.items = items.join(';');
   return b;
@@ -561,6 +610,48 @@ const build = (b, date) => {
   const rc = ctx(1, { count, comments: comTotal, c1: int(60, 140, `${seed}:c1`), c2: int(30, 59, `${seed}:c2`), c3: int(12, 29, `${seed}:c3`), left: int(3, 9, `${seed}:rl`), left2: int(2, 8, `${seed}:rl2`), sold: int(40, 120, `${seed}:rs`), d: int(4, 15, `${seed}:rd`), total: money(Math.round(price * 3.4 / 50) * 50, cur), company: W.companies?.[0], company2: W.companies?.[1], company3: W.companies?.[2], price: money(Math.round(price * 1.2 / 50) * 50, cur), price2: money(Math.round(price * 1.4 / 50) * 50, cur), price3: money(Math.round(price * 0.8 / 50) * 50, cur) });
   const reply = { ask: fill(W.reply.ask, rc), who: { name }, text: fill(W.reply.text, rc), items: W.reply.items.map((t, i) => ({ text: fill(t, rc), glyph: ['checkCircle', 'calendar', 'doc'][i % 3] })), close: fill(W.reply.close, rc) };
 
+  // the site, the request, the covers (their figures are the other screens' own: the sales card is the payments header)
+  const PG = PAGES[domain];
+  const headline = b.headline ?? headlineOf(name, b.does);
+  const joined = int(1200, 24000, `${seed}:joined`);
+  const statOf = {
+    creator: { title: 'Sales today', value: money(payTotal, cur), delta: `+${int(8, 34, `${seed}:sd1`)}% this week` },
+    commerce: { title: 'Sales today', value: money(payTotal, cur), delta: `+${int(6, 28, `${seed}:sd1`)}% this week` },
+    finance: { title: 'Paid this week', value: money(payTotal, cur), delta: `${int(88, 98, `${seed}:sd1`)}% on time` },
+    assistant: { title: 'Hours saved', value: compact(subs), delta: `+${int(6, 19, `${seed}:sd1`)} this week` },
+    devtool: { title: 'Average build', value: `${int(18, 70, `${seed}:secs:1`)} s`, delta: `${int(12, 40, `${seed}:sd1`)}% faster` },
+    team: { title: 'Shipped this week', value: String(int(12, 48, `${seed}:sd1`)), delta: `${int(2, 9, `${seed}:sd2`)} more than last` },
+  }[domain];
+  const newest = notices[notices.length - 1];
+  const site = {
+    url: `${slug}.${PG.tld}`,
+    brand: name,
+    glyph: PG.glyph,
+    nav: PG.nav,
+    signIn: 'Sign in',
+    cta: PG.cta,
+    headline,
+    accentWord: b.accent ?? accentOf(headline),
+    lead: fill(PG.lead, ctx(0)),
+    ctaAlt: PG.ctaAlt,
+    notice: { title: newest.title, body: newest.body, ...(newest.photo ? { photo: newest.photo } : { logo: newest.app, glyph: newest.glyph }) },
+    cards: [
+      { kind: 'people', title: fill(PG.people[0], ctx(0)), value: `${joined.toLocaleString('en-US')} ${PG.people[1]}`, faces: people.slice(6, 10).map((p) => ({ name: p.name, photo: photo(p) })), tag: 'Live' },
+      { kind: 'stat', ...statOf },
+      { kind: 'photo', title: thumbs[0].title, sub: thumbs[0].meta },
+    ],
+  };
+  const rq = PG.request;
+  const rqCount = domain === 'creator' ? int(60, 140, `${seed}:c1`) : int(rq.range[0], rq.range[1], `${seed}:rq`);
+  const request = { label: rq.label, text: fill(rq.text, ctx(0)), people: people.slice(10, 13).map((p) => ({ name: p.name, photo: photo(p) })), count: rqCount, countLabel: rq.countLabel };
+  const cover = {
+    kicker: name,
+    items: (PG.covers ?? itemNames.slice(0, 3).map((it, i) => [it, products[i]?.sub ?? ''])).slice(0, 3).map(([t, sub], i) => {
+      const title = fill(t, ctx(i, { Mon: MOL[d0.m - 1] }));
+      const fig = title.split(/\s+/).find((w) => /\d/.test(w));
+      return { title, ...(fig ? { accentWord: fig } : {}), sub: fill(sub, ctx(i, { n: int(8, 40, `${seed}:cn:${i}`) })) };
+    }),
+  };
   const cast = people.map((p) => ({ name: p.name, first: p.first, handle: p.handle, photo: photo(p) }));
   return {
     meta: { product: name, does: b.does ?? '', domain, date: d0.iso, weekday: WD[d0.wd], now: clock(now), seed, currency: cur },
@@ -570,7 +661,7 @@ const build = (b, date) => {
     notices: { items: notices },
     payments: { items: payRows, header: { title: W.payments, value: payTotal, money: true, currency: cur } },
     products: { items: products },
-    steps, progress, plans, doc, code, reply,
+    steps, progress, plans, doc, code, reply, site, request, cover,
     _cast: people,
     // the pictures' search words: the brief's own, else what the world's grid shows (places for an assistant's bookings,
     // desks for a tool's templates), else the product's topic
@@ -773,6 +864,10 @@ const check = (c) => {
   if (new Set(ph).size !== ph.length) bad.push('one face is two commenters');
   for (const p of c.plans.plans) if (!p.features.length) bad.push(`plan ${p.name} lists no features`);
   if (c.doc.table.rows.some((r) => r.length !== c.doc.table.head.length)) bad.push('a table row has the wrong number of cells');
+  if (c.request && c.request.count < c.request.people.length) bad.push('the request count is smaller than the faces shown');
+  if (c.cover && c.cover.items.some((it) => !it.title)) bad.push('a cover has no title');
+  if (c.site && !c.site.headline) bad.push('the site has no headline');
+  if (c.site && c.site.accentWord && !c.site.headline.toLowerCase().includes(c.site.accentWord.toLowerCase())) bad.push(`the site's accent "${c.site.accentWord}" is not in its headline`);
   // the words on screen: every string value (never a key), a picture path aside
   const values = [];
   const walk = (v) => { if (typeof v === 'string') { if (!v.startsWith('@static:')) values.push(v); } else if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v === 'object') Object.values(v).forEach(walk); };
@@ -795,7 +890,7 @@ const readTs = (file) => {
 const main = async () => {
   if (flag('--domains')) {
     for (const [k, w] of Object.entries(WORLDS)) console.log(`${k.padEnd(10)} ${w.about}\n${''.padEnd(10)} topic "${w.topic}", thing "${w.thing}", link ${w.url.tpl}, mark ${w.logo}`);
-    console.log('\nbrief keys: name, does, domain, topic, thing, items (;), price, currency, url, logo, channel, prompt, photos (,), people, date, seed, audience');
+    console.log('\nbrief keys: name, does, domain, topic, thing, items (;), price, currency, url, logo, channel, prompt, photos (,), people, date, seed, audience, headline, accent');
     return 0;
   }
   if (flag('--check')) {
@@ -834,10 +929,25 @@ const main = async () => {
       c.products.items.forEach((it, i) => { if (thumbSrc(i + 1) && (c.meta.domain === 'creator' || c.meta.domain === 'commerce')) { it.thumb = thumbSrc(i + 1); delete it.glyph; } });
       c.doc.figure = c.meta.domain === 'creator' || c.meta.domain === 'commerce' ? thumbSrc(2) : undefined;
       if (!c.doc.figure) delete c.doc.figure;
+      // the site's hero and its picture card, the covers' photos: from the same set, never one picture twice on a screen;
+      // when a picture did not come down, another one that did takes its place
+      const avail = c.thumbs.map((t) => t.src).filter(Boolean);
+      const take = (prefer, used) => { const want = thumbSrc(prefer); return want && !used.includes(want) ? want : avail.find((s) => !used.includes(s)) ?? avail[0]; };
+      const used = [];
+      if (c.site) {
+        c.site.hero = take(5, used);
+        used.push(c.site.hero);
+        const card = c.site.cards.find((k) => k.kind === 'photo');
+        if (card) card.src = take(0, used);
+      }
+      if (c.cover) {
+        const onCovers = [c.site?.hero].filter(Boolean);
+        c.cover.items.forEach((it, i) => { it.photo = take(i === 0 ? 0 : i + 5, onCovers); onCovers.push(it.photo); });
+      }
     }
     // a face that did not come down: that person shows the product's coloured initial disc
     const drop = (o) => { if (o && typeof o.photo === 'string' && /^@static:people\//.test(o.photo) && !faces.has(o.photo.replace(/^@static:people\/|\.jpg$/g, ''))) delete o.photo; };
-    [c.profile, ...c.people, ...c.comments.comments, ...c.notices.items, ...c.payments.items].forEach(drop);
+    [c.profile, ...c.people, ...c.comments.comments, ...c.notices.items, ...c.payments.items, ...(c.request?.people ?? []), ...(c.site?.cards ?? []).flatMap((k) => k.faces ?? []), c.site?.notice].forEach(drop);
     const recFile = path.join(film, 'assets', 'licences.json');
     fs.mkdirSync(path.dirname(recFile), { recursive: true });
     const prev = fs.existsSync(recFile) ? JSON.parse(fs.readFileSync(recFile, 'utf8')) : [];
@@ -860,7 +970,7 @@ const main = async () => {
     // nothing fetched: no picture paths that do not exist (faces stay as paths only when public/people holds them)
     const pubPeople = path.join(film, 'public', 'people');
     const have = (o) => o && typeof o.photo === 'string' && fs.existsSync(path.join(pubPeople, o.photo.replace(/^@static:people\//, '')));
-    [c.profile, ...c.people, ...c.comments.comments, ...c.notices.items, ...c.payments.items].forEach((o) => { if (o && o.photo && !have(o)) delete o.photo; });
+    [c.profile, ...c.people, ...c.comments.comments, ...c.notices.items, ...c.payments.items, ...(c.request?.people ?? []), ...(c.site?.cards ?? []).flatMap((k) => k.faces ?? []), c.site?.notice].forEach((o) => { if (o && o.photo && !have(o)) delete o.photo; });
   }
   const bad = check(c);
   fs.mkdirSync(path.dirname(out), { recursive: true });
