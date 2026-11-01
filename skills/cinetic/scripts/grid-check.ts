@@ -68,8 +68,9 @@
  *                  and no picture beat carrying a statement for more than a quarter of it (errors); a line beat
  *                  outside 0.5-2.4 s or a picture beat outside 1-3.5 s (warnings). A timeline without a BEAT_PLAN
  *                  is not held to these (the simple launch declares one). The text-then-cards loop: a line alone then
- *                  its picture (T then A) three times or more with no line beat that meets its picture (TA), an error
- *                  in a film with src/launch.ts (a pair's beat fixes it), else a warning
+ *                  its picture (T then A) three times or more with no line beat that meets its picture (TA, or a T
+ *                  beat marked `meets: true`: the line's own device opens into its picture, a porthole parts it), an
+ *                  error in a film with src/launch.ts (a pair's beat fixes it), else a warning
  *   word-total     on-screen words <= --max-words (default: the pace's maxWords, calm 30, crisp 35; a script 50);
  *                  entries with kind: 'ui' (terminal commands, code, URLs, app labels the product
  *                  shows) are counted apart, not budgeted
@@ -915,13 +916,13 @@ async function main() {
 
   // --- beats: a line alone (T), the picture acting (A), a line over a picture (TA), the end, in turn
   const firstLine = film.filter((c) => c.kind !== 'name').reduce((m, c) => Math.min(m, c.in), Infinity);
-  const PLAN = T.BEAT_PLAN as { id?: string; kind?: string; from?: number; to?: number }[] | undefined;
+  const PLAN = T.BEAT_PLAN as { id?: string; kind?: string; from?: number; to?: number; meets?: boolean }[] | undefined;
   if (Array.isArray(PLAN) && PLAN.length) {
     const ok = PLAN.filter((x, i) => {
       const good = x && ['T', 'A', 'TA', 'end'].includes(String(x.kind)) && isNum(x.from) && isNum(x.to) && x.to > x.from;
       if (!good) err('beats', `BEAT_PLAN[${i}] must be {kind: 'T' | 'A' | 'TA' | 'end', from, to} with to > from`);
       return good;
-    }) as { id?: string; kind: string; from: number; to: number }[];
+    }) as { id?: string; kind: string; from: number; to: number; meets?: boolean }[];
     const body = ok.filter((x) => x.kind !== 'end');
     const nT = body.filter((x) => x.kind === 'T').length;
     const nTA = body.filter((x) => x.kind === 'TA').length;
@@ -930,11 +931,13 @@ async function main() {
       else if (nT < 0.15 * body.length) err('beats', `type-only beats are ${Math.round((100 * nT) / body.length)} % of the shots; keep >= 15 %: a line alone, then the picture`);
       if (nTA > 0.4 * ok.length) err('beats', `${nTA} of ${ok.length} beats set a line over a picture (${Math.round((100 * nTA) / ok.length)} %); keep <= 40 %: give the line its own beat, then the picture`);
       // the text-then-cards loop: a line alone, then its picture, again and again, and no line ever built with its picture
+      // (a line whose own device opens into its picture, or that a porthole parts, says so with `meets`: it joins the two)
       let loops = 0;
       for (let i = 1; i < body.length; i++) if (body[i - 1].kind === 'T' && body[i].kind === 'A') loops++;
+      const nMeet = body.filter((x) => x.kind === 'T' && x.meets === true).length;
       // an error where the film can fix it in one word (src/launch.ts: a pair's beat), a warning in a template that cannot yet
       const loopSev = existsSync(resolve(dirname(tlPath), 'launch.ts')) ? err : warn;
-      if (loops >= 3 && nTA === 0)
+      if (loops >= 3 && nTA === 0 && nMeet === 0)
         loopSev('beats', `the beats run a line alone, then its picture, ${loops} times and no line meets its picture (T A T A ...): the text-then-cards loop. Let one line arrive with its picture or over it (a pair's beat 'with' or 'over' in src/launch.ts: the picture enters the line, the product rises behind a giant word, an object parts it) and let one picture carry straight into the next`);
     }
     const lineOn = (a: number, z: number) => film.filter((c) => c.kind !== 'name' && c.in < z && (c.out ?? TOTAL) > a);
