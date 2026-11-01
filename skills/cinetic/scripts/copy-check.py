@@ -26,7 +26,8 @@ Checks (error unless marked):
               revolutionize, beyond, redefine, game-changing, built different and the rest of the list
   metaphor    a figure of speech instead of the thing: superpower, second brain, rocket fuel, on autopilot...
   slogan      slogan shapes: "Meet X", "X, reimagined", "Less X. More Y.", "X meets Y", "made simple",
-              "your way", "like never before", a question, an exclamation, "Plan. Track. Win."
+              "your way", "like never before", a question, an exclamation, "Plan. Track. Win."; (warning) two words of a
+              short line that rhyme ("Launch by lunch.")
   claims      more than one claim in a line: two sentences, a list, two clauses joined by and/but. A short
               list (2-4) of the real marks the film shows is one claim ("Ask ChatGPT, Claude and Gemini."):
               the names in public/logos/logos.json (scripts/logos.mjs), `marks` in the cues, a **Marks:**
@@ -36,6 +37,9 @@ Checks (error unless marked):
   name        no line names the product
   what-it-is  no line says what the product is by 3 s (launch), or no "[Name] [version]" by 3 s (update)
   close       (warning) the film does not end on the name and what to do (a URL, "Out now")
+  brief-claim a line states a fact BRIEF.md never gives: a price or "free", a figure (a number with what it counts),
+              a superlative or a promise ("fastest", "only", "unlimited"); only with a BRIEF.md (--brief FILE, else beside
+              the script, its project root or the working folder)
   placeholder a line or a UI string that marks itself unfinished: lorem ipsum, "Placeholder", "Label text", "Your
               text here", a generic label alone ("Button", "Caption") or a generic noun and a number ("Item 1");
               the lists are scripts/placeholders.json, which lint-film.mjs reads too
@@ -1004,7 +1008,48 @@ def what_kind(text, name):
     return None
 
 
-def check(lines, names=(), ui=(), name=None, fmt=None, allow=(), marks=()):
+RHYME_SUFFIX = ('ing', 'ion', 'ions', 'ed', 'ly', 'es', 'er', 'ers', 'ies', 'est', 'ness', 'ment', 'ments', 'able', 'ive', 'ous',
+                'al', 'ity', 'ful', 'ally', 'ent', 'ant')
+
+
+def rhyme_in(ws, skip=()):
+    """Two words of a short line that rhyme (the same last three or four letters, not a common suffix): a slogan's ring,
+    "Launch by lunch.", never a plain claim. Returns the pair or None."""
+    w = [norm_word(x) for x in ws]
+    w = [x for x in w if len(x) >= 4 and x not in KEY_SKIP and x not in skip]
+    for i in range(len(w)):
+        for j in range(i + 1, len(w)):
+            a, b = w[i], w[j]
+            if a == b or a.endswith(b) or b.endswith(a):
+                continue
+            if a[-3:] == b[-3:] and not any(a.endswith(x) and b.endswith(x) for x in RHYME_SUFFIX):
+                return a, b
+    return None
+
+
+CLAIM_WORDS = ('free', 'unlimited', 'guaranteed', 'fastest', 'cheapest', 'first', 'only', 'best', '#1', 'number one', 'no credit card',
+               'forever', 'instant', 'instantly')
+
+
+def brief_claims(text, brief):
+    """Facts a line states that the brief never gives: a price or "free", a figure (a number with what it counts), a
+    superlative or a promise. Only with a BRIEF.md; the brief's own words (and the product's URL) pass."""
+    if not brief:
+        return []
+    low, b = text.lower(), brief.lower()
+    out = []
+    for w in CLAIM_WORDS:
+        if re.search(r'(?<![\w#])' + re.escape(w) + r'(?!\w)', low) and not re.search(r'(?<![\w#])' + re.escape(w) + r'(?!\w)', b):
+            out.append(w)
+    for m in re.finditer(r'[$€£]?\d+(?:[.,]\d+)?\s*(?:%|x\b|k\b|m\b)?', URL.sub(' ', text)):
+        tok = m.group(0).strip()
+        num = re.sub(r'[^\d.,]', '', tok)
+        if num and num not in b:
+            out.append(tok)
+    return list(dict.fromkeys(out))
+
+
+def check(lines, names=(), ui=(), name=None, fmt=None, allow=(), marks=(), brief=None):
     findings = []
     allow = {a.strip().lower() for a in allow if a.strip()}
 
@@ -1043,6 +1088,14 @@ def check(lines, names=(), ui=(), name=None, fmt=None, allow=(), marks=()):
                 break
         if re.search(r'[?!]', t):
             add('slogan', 'a question or an exclamation: say it as a plain statement', i)
+        if n <= 5 and not (is_name or is_close or is_version):
+            rh = rhyme_in(ws, name_tokens)
+            if rh:
+                add('slogan', f'{rh[0]!r} rhymes with {rh[1]!r}: a rhyming slogan, not a plain claim; say what it does', i, 'warn')
+        bc = brief_claims(t, brief)
+        if bc:
+            add('brief-claim', f'{", ".join(repr(x) for x in bc)}: a claim BRIEF.md does not make (a price, "free", a figure, a superlative); '
+                'say only what the brief gives, or ask', i)
         # more than one claim: two sentences, a dash, a list, two clauses joined by and/but
         body = URL.sub('URL', t)
         body = mark_list(body, marks) or body  # the film's real marks listed: one claim ("the products it works with")
@@ -1138,13 +1191,13 @@ def main(argv):
     if not argv or argv[0] in ('-h', '--help'):
         print(__doc__.strip())
         return 0 if argv else 2
-    a = {'name': None, 'format': None, 'fps': None, 'allow': '', 'marks': '', 'ui': None, 'ocr': None, 'json': False, 'strict': False, 'stdin': False, 'final': False, 'path': None}
+    a = {'name': None, 'format': None, 'fps': None, 'allow': '', 'marks': '', 'ui': None, 'ocr': None, 'json': False, 'strict': False, 'stdin': False, 'final': False, 'path': None, 'brief': None}
     i = 0
     while i < len(argv):
         k = argv[i]
         if k in ('--json', '--strict', '--stdin', '--final'):
             a[k[2:]] = True
-        elif k in ('--name', '--format', '--fps', '--allow', '--marks', '--ui', '--ocr'):
+        elif k in ('--name', '--format', '--fps', '--allow', '--marks', '--ui', '--ocr', '--brief'):
             if i + 1 >= len(argv):
                 print(f'copy-check: {k} needs a value', file=sys.stderr)
                 return 2
@@ -1252,7 +1305,15 @@ def main(argv):
     for l in lines:  # *marks* name the key words; the checks read the clean line
         l['text'], key = key_marks(l['text'])
         marked.append(key)
-    findings, name, stranger = check(lines, names, ui, name, fmt, allow, marks)
+    # the brief the claims are held to: --brief, else BRIEF.md beside the script, its project root or the working folder
+    here = os.path.dirname(os.path.abspath(a['path'])) if a['path'] and not a['stdin'] else os.getcwd()
+    brief = None
+    up = [os.path.join(here, '..', 'BRIEF.md')] if os.path.basename(here) == 'out' else []  # out/cues.json: the project root
+    for bp in ([a['brief']] if a['brief'] else []) + [os.path.join(here, 'BRIEF.md')] + up + ['BRIEF.md']:
+        if bp and os.path.isfile(bp):
+            brief = open(bp, encoding='utf-8').read()
+            break
+    findings, name, stranger = check(lines, names, ui, name, fmt, allow, marks, brief)
     if a['path'] and a['path'].endswith('.json') and not a['stdin']:
         for f, ln in scaffold_markers(a['path']):
             findings.append({'rule': 'scaffold', 'severity': 'error', 'line': None, 'text': '', 'where': f'{f}:{ln}',

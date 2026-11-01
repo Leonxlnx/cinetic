@@ -101,6 +101,21 @@ for rule, at, text in CASES:
     code, rep = run([script(lines)])
     got = [f for f in rep.get('findings', []) if f['rule'] == rule and f.get('line') == at]
     result(code == 1 and bool(got), f'{rule}: "{text}" fails', ', '.join(rules(rep)) or rep.get('error', ''))
+# a rhyming slogan warns; a claim the brief never makes fails, only where a BRIEF.md is given
+lines = list(GOOD)
+lines[1] = 'Launch it by lunch.'
+code, rep = run([script(lines)])
+got = [f for f in rep.get('findings', []) if f['rule'] == 'slogan' and f.get('line') == 2 and f['severity'] == 'warn']
+result(bool(got), 'slogan: "Launch it by lunch." warns (launch / lunch rhyme)', ', '.join(rules(rep)))
+os.makedirs(os.path.join(TMP, 'briefed'), exist_ok=True)
+open(os.path.join(TMP, 'briefed', 'BRIEF.md'), 'w', encoding='utf-8').write('Tessel is a calendar for busy teams. It moves meetings.')
+claimed = GOOD[:4] + ['Tessel is free at tessel.app.']
+code, rep = run([script(claimed, os.path.join('briefed', 's.txt'))])
+got = [f for f in rep.get('findings', []) if f['rule'] == 'brief-claim']
+result(code == 1 and len(got) >= 1 and any("'free'" in f['message'] for f in got), 'brief-claim: "free" (and the "one free hour" line) the brief never says fails beside a BRIEF.md',
+       json.dumps([f['message'][:80] for f in got]))
+code, rep = run([script(claimed)])
+result('brief-claim' not in rules(rep), 'brief-claim: without a BRIEF.md nothing is held to it', ', '.join(rules(rep)))
 late = ['Your week does not fit.', 'Three meetings want one hour.', 'Tessel is a calendar for busy teams.'] + GOOD[1:]
 code, rep = run([script(late)])
 msg = ' '.join(f['message'] for f in rep.get('findings', []) if f['rule'] == 'what-it-is')
