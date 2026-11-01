@@ -184,14 +184,24 @@ if (!bedOnly) {
     if (r.code !== 0) notes.push('audio/kit.json could not be written from the launch preset (kit.py init needs earshot 0.4)');
   }
   const k = readJson('audio/kit.json');
-  const cues = readJson('out/cues.json') || { events: [] };
-  const acts = new Set((cues.events || []).map((e) => e.action).filter(Boolean));
+  // the film's actions as kit.py cast reads them (actions.py: the event's action or an alias, the lockup, the words of
+  // its id, its kind's default), against the actions the kit is cast for; a set already cast once is not cast again
+  // (out/qa/sound-cast.json), so one film keeps its sounds from run to run
+  const [exe, ...pre] = PY.cmd;
+  const q = spawnSync(exe, [...pre, '-c', ['import json, sys', "sys.path.insert(0, 'scripts/audio')", 'import actions as AC',
+    "c = json.load(open('out/cues.json', encoding='utf-8'))", "fps, cue = float(c.get('fps', 60)), c.get('cue') or {}",
+    "print(json.dumps(sorted({a for a in (AC.action_of(e, fps, cue) for e in c.get('events', [])) if a})))"].join('\n')], { encoding: 'utf8', env });
+  let acts = [];
+  try { acts = JSON.parse(String(q.stdout || '').trim().split(/\r?\n/).pop()); } catch { acts = []; }
   const cast = k?.cast?.actions ? new Set(Object.keys(k.cast.actions)) : null;
-  const uncast = cast ? [...acts].filter((a) => !cast.has(a)) : [...acts];
-  if (k && (flag('--recast') || !cast || uncast.length)) {
+  const uncast = cast ? acts.filter((a) => !cast.has(a)) : acts;
+  const castState = readJson('out/qa/sound-cast.json');
+  const tried = JSON.stringify(castState?.actions || null) === JSON.stringify(acts);
+  if (k && (flag('--recast') || !cast || (uncast.length && !tried))) {
     say(`sound: kit cast (${!cast ? 'not cast for this film yet' : flag('--recast') ? '--recast' : `new actions: ${uncast.join(', ')}`})`);
     const r = py('scripts/audio/kit.py', ['cast']);
     if (r.code !== 0) notes.push('kit.py cast did not run (earshot not found, see `python3 scripts/audio/kit.py where`): each kind plays the kit\'s one sound');
+    else { mkdirSync('out/qa', { recursive: true }); writeFileSync('out/qa/sound-cast.json', JSON.stringify({ actions: acts }, null, 1) + '\n'); }
   }
   say(`sound: kit render (${secs()})`);
   const r = py('scripts/audio/kit.py', ['render']);
