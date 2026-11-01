@@ -106,13 +106,20 @@ over 0.4 s windows at 480 wide (camera fit, fastest layer, flat-ground change), 
                the same, on a picture that repeats along the move (stripes, tiles, a list: the
                step is only known modulo its period) or whose moving pixels disagree       warn
                every hard cut (a run of at most 3 cut frames: most pixels change and the flow cannot
-               explain it) carries a device: the ground kept (border colour moves < 30), a blur at
-               the seam (sharpness dips > 0.4 log units below both sides), an anchor held (< 35 % of
-               the frame changes, a text line or shape centre within 10 px at 1080p, or the main
-               line or shape centred on both sides: the centre slot) or motion carried (cos > 0.7,
-               > 3 px per 1/30 s at 1080p out, > 2 in). Bare cuts over 10 % of the hard cuts      fail
+               explain it) hides itself: a blur at the seam that makes both sides unreadable (sharpness
+               dips > 0.9 log units below both settled shots), an anchor held (< 25 % of the frame
+               changes, a text line or shape centre within 10 px at 1080p, or the main line or shape
+               centred on both sides: the centre slot) or motion at whip speed (cos > 0.7 and the
+               picture travelling a fifth of the frame in its last 0.2 s, or 100+ px per 1/30 s at
+               1080p). The kept ground (border colour moves < 30) is reported but hides nothing: the
+               subject is swapped in one frame. A whip under that speed is `slow` (the subject still
+               in frame and readable at the cut). Bare cuts over 10 % of the hard cuts             fail
                (a single bare cut over 10 %, or a film without declared seams: warn; the pixels
-               cannot see a matched shape that the seam plan names)
+               cannot see a matched shape that the seam plan names); a declared scene seam the
+               pixels show bare                                                                 fail
+  ghost-cut    a cut run whose inner frame is a mix of the frames either side (a dissolve collapsed
+               into 1-2 frames, a grey double exposure) or torn (part of the frame already cut, the
+               rest not), a blur at the seam or not                                             fail
                a declared seam whose recipe promises a device it does not carry (velocity: motion,
                match-cut: anchor, blur-through: blur, exit-then-enter: ground or blur ...)        warn
                a declared velocity cut whose exit builds slower than x1.1 a frame (house x1.15-1.35
@@ -129,6 +136,21 @@ over 0.4 s windows at 480 wide (camera fit, fastest layer, flat-ground change), 
                fade to black before the last 2 s, unless a seam declares it (dissolveUi,
                light, fadeEnd)                                                              fail
   end-card     with END declared: the 1.5 s before the lock barely move, or it fades in   warn
+Film checks (with the grammar; read at 240 wide, the ending at 480):
+  empty-frame  0.1 s or more mid-film with nothing crisp on screen (luma edges over 200 on under 0.05 % of
+               the frame: a blurred ground, a dim shape alone; a blur peak of 2 f passes)        warn
+               0.5 s or more (a stall: the next element arrives late)                          fail
+  frozen-hold  nothing changes for over 1 s mid-film (1.5 s while a line is read), outside the end lock;
+               or over 55 % of the body frozen                                               warn
+  end-drift    the last 2 s slide at a flat speed (a line fits the middle band's shift, r2 >= 0.95) and
+               the last 0.5 s still move at half that speed or more: an ending that never lands  warn
+  end-centre   the last frame's lockup (the crisp blobs on its row) sits over 1 % of the width off centre warn
+  world-still  the world's textured corners stay one picture wherever they show and match at both ends
+               of a film of 8 s or more (no cloud, light or camera moving it)                   warn
+  world-murk   the world's outer ring has no highlight (p99.5 luma under 120) on 70 % of the film  warn
+Sound (any mode; --no-audio or --loop skip it):
+  audio        no audio stream, under a second of it, or a silent mix (under -50 dBFS)          fail
+  audio-end    the last 0.25 s sit under 12 dB below the loudest 2 s: the music is cut      warn
 Motion gates (with the grammar): no event starts or ends in one frame and no hold freezes. Mean luma change
 at 160x90, one sample per 1/30 s (landings also at the film's own rate), outside the end lock:
   motion-snap  one-sample changes (>= 2 code values, both neighbours under 35 % of it) that are not cuts:
@@ -1122,7 +1144,15 @@ def blend_spans(hits):
         sp['black'] = bool(float(b.mean()) < 14 and flat(b)) or bool(float(a.mean()) < 14 and flat(a))
         sp['flat'] = bool(flat(a) or flat(b))
         sp['alphas'] = sp['alphas'][:12]
-        if sp['ssim'] < 0.5 or sp['flat']:
+        # a card or a scene fading over a kept world: the whole frames stay alike, the changed region holds two different
+        # pictures (a grey ghost card with the world showing through it)
+        ys, xs = np.nonzero(np.abs(b - a) > 10)
+        sp['ssim_region'] = None
+        if len(xs) and xs.max() - xs.min() >= 32 and ys.max() - ys.min() >= 32:
+            y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+            sp['ssim_region'] = round(ssim_gray(a[y0:y1, x0:x1], b[y0:y1, x0:x1]), 3)
+            sp['region'] = round(float((y1 - y0) * (x1 - x0)) / float(a.size), 3)
+        if sp['ssim'] < 0.5 or sp['flat'] or (sp['ssim_region'] is not None and sp['ssim_region'] < 0.4 and sp.get('region', 0) >= 0.2):
             out.append(sp)
     return out
 
@@ -1363,12 +1393,16 @@ def analyse(args, info):
     M['motion'] = mc
     sc = None if getattr(args, 'no_grammar', False) else SeamScan(fps, W, H)  # the seam checks' reads
     M['seams'] = sc
+    fs = None if getattr(args, 'no_grammar', False) else FilmScan(fps, W, H)  # the film checks' reads
+    M['film'] = fs
     for f, rgb in decode(args.video, info, start, count):
         small = cv2.resize(rgb, (SW, SH), interpolation=cv2.INTER_AREA).astype(np.int16)
         if mc is not None:
             mc.feed(f, motion_luma(small.astype(np.uint8)))
         if sc is not None:
             sc.feed(f, small.astype(np.uint8))
+        if fs is not None:
+            fs.feed(f, small.astype(np.uint8))
         if probe_m is not None or getattr(args, '_dissolve', False):
             g8 = cv2.cvtColor(small.astype(np.uint8), cv2.COLOR_RGB2GRAY) if probe_m is None or (probe_m.w, probe_m.h) == (SW, SH) else \
                 cv2.resize(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY), (probe_m.w, probe_m.h), interpolation=cv2.INTER_AREA)
@@ -2189,6 +2223,10 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
     if sc is not None and sc.f:
         sc.close()
         out['seams'] = seam_check(sc, extra, k_, acts, add, sev, ignored, extra.get('copy_n', 0))
+    # the film: never an empty frame or a long freeze, an ending that lands centred, a world that lives
+    fs = M.get('film')
+    if fs is not None and fs.f:
+        out['film'] = film_check(fs, extra, add, sev, ignored, reading, end_rng)
     return out
 
 
@@ -2580,9 +2618,18 @@ def motion_gates(mc, fps, extra, vf, cuts, freezes, acts, hold_end, declared, ad
 # each side held `hold_s`; flips closer than `flip_merge_s` are one colour event) at most `flips` a film; the most-used
 # seam kind at most `mix` of a film's big changes (counted from `mix_min` changes). A velocity cut builds x`build` a frame over its last `build_f60` frames
 # and the next shot decays over `decay_f60` (f@60).
-SEAM = dict(w=320, aw=480, frac=0.35, mad=25.0, resid=(0.5, 0.6), merge=2, run=3, ground=30.0, blur=0.4, area=0.35,
-            anchor_px=10.0, slot=(0.05, 0.10), cos=0.7, v_out=3.0, v_in=2.0, bare=0.10, bare_n=2, light=150.0, dark=80.0, neutral=0.04,
-            hold_s=0.5, flip_merge_s=1.0, flips=2, mix=0.45, mix_min=5, build=(1.15, 1.35), build_f60=(8, 12), decay_f60=(12, 24))
+# What hides a hard cut (measured on hard cuts: a whip at 32-60 px/f@1080 with the subject still in
+# frame and readable, a blur dip of 0.5, a kept murky ground under a swapped card; and on the cuts they passed: a blur-through
+# dipping 1.0-1.5, a toast arriving over a fifth of the frame): a blur that makes both sides unreadable (dip > `blur`), a
+# move fast enough to smear the subject off frame (>= `hide_v` px per 1/30 s at 1080p, a whip that hides its cut
+# runs 150-190; the optical flow saturates near 70 there, so the picture's travel over its last 0.2 s, read by phase correlation,
+# counts too: `hide_travel` of the frame width), an anchor held (less than `area` of the frame changes, a shape within
+# `anchor_px`, the centre slot). The kept
+# ground alone hides nothing: the subject is swapped in one frame (the ground still counts toward a recipe's promise).
+SEAM = dict(w=320, aw=480, frac=0.35, mad=25.0, resid=(0.5, 0.6), merge=2, run=3, ground=30.0, blur=0.9, area=0.25,
+            anchor_px=10.0, slot=(0.05, 0.10), cos=0.7, v_out=3.0, v_in=2.0, hide_v=100.0, hide_travel=0.2, bare=0.10, bare_n=2, light=150.0, dark=80.0,
+            neutral=0.04, hold_s=0.5, flip_merge_s=1.0, flips=2, mix=0.45, mix_min=5, build=(1.15, 1.35), build_f60=(8, 12), decay_f60=(12, 24),
+            ghost=(0.15, 0.85), ghost_res=0.3)
 # a declared seam's recipe: from its id prefix ('exitEnter:line-2', what fx/Seam declares), else from its kind
 SEAM_RECIPES = {'exitEnter': 'exit-then-enter', 'textSwap': 'text-swap', 'matchCut': 'match-cut', 'velocityCut': 'velocity-cut',
                 'blurThrough': 'blur-through', 'zoomThrough': 'zoom-through', 'sharedElement': 'shared-element'}
@@ -2732,8 +2779,51 @@ class SeamScan:
         area = float((np.abs(pre[1].astype(np.int16) - post[1].astype(np.int16)).max(2) > 40).mean())
         bp, bq = self._anchors(pre[1]), self._anchors(post[1])
         d = min((math.hypot(p[0] - q[0], p[1] - q[1]) for p in bp for q in bq), default=None)
+        # a cut run of two or three frames whose inner frame is a mix of the frames either side: both pictures at once (a
+        # dissolve collapsed into a frame or two, a double exposure), never a designed seam
+        ghost = []
+        if b > a:
+            p0, p1 = pre[2].astype(np.float32), post[2].astype(np.float32)
+            dd = p1 - p0
+            ch = np.abs(dd) > 16
+            if ch.mean() > 0.05:
+                den = float((dd[ch] ** 2).sum())
+                hh, ww = dd.shape
+                for g in range(a, b):
+                    if g not in imgs:
+                        continue
+                    cur = imgs[g][2].astype(np.float32)
+                    e = (cur - p0)[ch]
+                    al = float((e * dd[ch]).sum() / max(den, 1e-6))
+                    res = float(np.abs(e - al * dd[ch]).mean()) / max(1e-6, float(np.abs(dd[ch]).mean()))
+                    if SEAM['ghost'][0] < al < SEAM['ghost'][1] and res < SEAM['ghost_res']:
+                        ghost.append(dict(frame=g, alpha=round(al, 2), residual=round(res, 2)))
+                        continue
+                    # a torn cut: part of the frame already shows the next picture while the rest still shows the last
+                    tiles = []
+                    for ty in range(4):
+                        for tx in range(4):
+                            sl = (slice(ty * hh // 4, (ty + 1) * hh // 4), slice(tx * ww // 4, (tx + 1) * ww // 4))
+                            m = ch[sl]
+                            if m.mean() < 0.3:
+                                continue
+                            d_, e_ = dd[sl][m], (cur - p0)[sl][m]
+                            tiles.append(float((e_ * d_).sum() / max(1e-6, float((d_ * d_).sum()))))
+                    if len(tiles) >= 6:
+                        old = sum(1 for x in tiles if x < SEAM['ghost'][0])
+                        new = sum(1 for x in tiles if x > SEAM['ghost'][1])
+                        if min(old, new) >= 0.2 * len(tiles):
+                            ghost.append(dict(frame=g, alpha=round(al, 2), residual=round(res, 2), torn=True))
+        # how far the outgoing picture travels in its last 0.2 s before the cut (phase correlation reads shifts far past the
+        # optical flow's reach): a whip that hides its cut carries the subject a quarter of the frame or more in that time
+        travel = None
+        back = imgs.get(a - 1 - max(2, int(round(6 * self.fps / 30.0))))
+        if back is not None:
+            p0, p1 = back[2].astype(np.float32), pre[2].astype(np.float32)
+            (dx, dy), _ = cv2.phaseCorrelate(p0, p1, cv2.createHanningWindow((p0.shape[1], p0.shape[0]), cv2.CV_32F))
+            travel = round(float(math.hypot(dx, dy)) / p0.shape[1], 3)
         self.reads[a] = dict(area=round(area, 3), anchor_px=None if d is None else round(d * 1080.0 / self.ah, 1),
-                             slot=bool(self._slot(bp) and self._slot(bq)))
+                             slot=bool(self._slot(bp) and self._slot(bq)), ghost=ghost, travel=travel)
 
 
 def seam_measures(scan):
@@ -2754,8 +2844,12 @@ def seam_measures(scan):
             continue
         r = scan.reads.get(a) or {}
         bg = float(np.abs(scan.bord[pre] - scan.bord[post]).max())
-        # below both sides: the sharper of two different shots is no blur
-        base = min(float(np.median(sharp[max(0, pre - 6):pre + 1])), float(np.median(sharp[post:post + 7])))
+        # below both sides: the sharper of two different shots is no blur. Each side's level is read on its settled shot, past
+        # the 0.2-0.5 s ramp of a blur-through (a level read inside the ramp hides the blur it measures)
+        nb = max(4, int(round(8 * scan.fps / 30.0)))
+        sb, sa = sharp[max(0, pre - 2 * nb):max(0, pre - nb + 2)], sharp[min(n, post + nb - 1):min(n, post + 2 * nb)]
+        base = min(float(np.median(sb if len(sb) >= 3 else sharp[max(0, pre - 6):pre + 1])),
+                   float(np.median(sa if len(sa) >= 3 else sharp[post:post + 7])))
         dip = base - float(sharp[max(0, ia - 2):min(n, ib + 4)].min())
         vo = [vec[f] for f in range(a - 3, a) if vec.get(f) is not None]
         vi = [vec[f] for f in range(b + 1, b + 4) if vec.get(f) is not None]
@@ -2774,12 +2868,17 @@ def seam_measures(scan):
                     else 'slot' if r.get('slot') else None)
         if held:
             dev.append('anchor')
-        if cos > SEAM['cos'] and no > SEAM['v_out'] and ni > SEAM['v_in']:
+        carried = cos > SEAM['cos'] and no > SEAM['v_out'] and ni > SEAM['v_in']
+        fast = no >= SEAM['hide_v'] or (r.get('travel') or 0.0) >= SEAM['hide_travel']
+        if carried and fast:
             dev.append('motion')
+        # bare: nothing hides the swap (the kept ground alone does not); slow: a whip or velocity cut whose subject is still
+        # in frame and readable at the cut (direction carried, speed under hide_v, no blur)
         row = dict(frame=a, to=b, ground_shift=round(bg, 1), blur_dip=round(dip, 2), area=r.get('area'), anchor_px=r.get('anchor_px'),
                    anchor=held, carry=dict(out=round(no, 1), into=round(ni, 1), cos=round(cos, 2)),
-                   luma=[round(scan.luma[pre], 1), round(scan.luma[post], 1)], devices=dev, bare=not dev)
-        if 'motion' in dev:
+                   luma=[round(scan.luma[pre], 1), round(scan.luma[post], 1)], devices=dev, bare=not (set(dev) - {'ground'}),
+                   slow=bool(carried and not fast), travel=r.get('travel'), ghost=r.get('ghost') or [])
+        if carried:
             # the build into the cut (the step's growth a frame at 60 fps over the last 10 f@60) and the decay after it
             nb = max(2, int(round(10 / k60)))
             s0, s1 = sp(a - 1 - nb), sp(a - 1)
@@ -2839,11 +2938,32 @@ def seam_check(scan, extra, k_, acts, add, sev, ignored, copy_n=0):
     bare = [c for c in cuts if c['bare']]
     rep = dict(hard_cuts=len(cuts), bare=len(bare), bare_share=round(len(bare) / len(cuts), 3) if cuts else 0.0, cuts=cuts,
                flips=m['flips'], planned=planned, thresholds=dict(SEAM))
+
+    def why(c):
+        if c.get('slow'):
+            return (f"f{c['frame']} a whip that moves the picture {100 * (c.get('travel') or 0):.0f} % of the frame in its last 0.2 s, the "
+                    'subject still in frame')
+        return f"f{c['frame']} the subject swapped in one frame" + (' on the kept ground' if 'ground' in c['devices'] else '')
     if cuts and len(bare) / len(cuts) > SEAM['bare']:
-        add('carried-cut', gate('fail' if len(bare) >= SEAM['bare_n'] else 'warn'), bare[0]['frame'], f"{len(bare)} of {len(cuts)} hard cuts carry nothing "
-            f"across (the house: at most {SEAM['bare'] * 100:.0f} %; at f{', f'.join(str(c['frame']) for c in bare[:6])}): keep the ground, put "
-            'the cut inside a blur, hold an anchor (the word slot or the shape centre within 10 px) or carry the motion '
-            '(fx/Seam: exitEnter, textSwap, matchCut, velocityCut)', frames=[c['frame'] for c in bare])
+        add('carried-cut', gate('fail' if len(bare) >= SEAM['bare_n'] else 'warn'), bare[0]['frame'], f"{len(bare)} of {len(cuts)} hard cuts hide "
+            f"nothing (the house: at most {SEAM['bare'] * 100:.0f} %; {'; '.join(why(c) for c in bare[:5])}): cut inside a blur that makes "
+            f"both sides unreadable, whip so the picture travels a fifth of the frame or more in its last 0.2 s and the subject smears off frame, hold an anchor (the "
+            'word slot or the shape centre within 10 px) or let the subject leave before the next arrives (fx/Seam: exitEnter, textSwap, '
+            'matchCut, velocityCut); the kept ground alone hides nothing', frames=[c['frame'] for c in bare])
+    # a declared scene seam the pixels show as a bare cut: the plan says it is carried and nothing carries it
+    for c in bare:
+        if c['seam'] and c['seam'] != 'hard-cut' and c['seam'] in SEAM_PROMISE:
+            add('carried-cut', gate('fail'), c['frame'], f"seam f{c['frame']} is declared {c['seam']} but the cut hides nothing ({why(c)}; blur dip "
+                f"{c['blur_dip']:g}, house > {SEAM['blur']:g}): build the recipe so the cut lands inside a real smear, a blur or a match")
+    for c in cuts:
+        if c.get('ghost'):  # a blur does not excuse it: a cross-fade through murk reads as one
+            g = c['ghost'][0]
+            what = (f"part of the frame already shows f{c['to']} while the rest still shows f{c['frame'] - 1} (a cut torn across two frames: the "
+                    'ground or a layer jumps a frame early)') if g.get('torn') else \
+                   (f"a {g['alpha'] * 100:.0f} % mix of f{c['frame'] - 1} and f{c['to']}: a dissolve collapsed into {len(c['ghost'])} frame(s), a grey "
+                    'double exposure')
+            add('ghost-cut', gate('fail'), g['frame'], f"f{g['frame']} shows both pictures at once ({what}): cut every layer on one frame, inside a "
+                'blur or a smear, or let the outgoing subject leave first')
     if len(m['flips']) > SEAM['flips']:
         add('ground-flip', gate('fail'), m['flips'][0]['frame'], f"the ground flips light <-> dark {len(m['flips'])} times (at f"
             f"{', f'.join(str(x['frame']) for x in m['flips'][:6])}; the house: at most {SEAM['flips']} a film, each a declared colour "
@@ -2856,7 +2976,7 @@ def seam_check(scan, extra, k_, acts, add, sev, ignored, copy_n=0):
     lo, hi = SEAM['build']
     for c in cuts:
         cr = c['carry']
-        if c['seam'] != 'velocity-cut' or 'motion' not in c['devices'] or cr.get('build60') is None:
+        if c['seam'] != 'velocity-cut' or cr.get('build60') is None:
             continue
         slow = cr['build60'] < lo - 0.05
         dec = cr.get('decay60')
@@ -2891,6 +3011,268 @@ def seam_line(rep):
     print(f"  seams: {rep['hard_cuts']} hard cut(s), {rep['bare']} bare ({rep['bare_share'] * 100:.0f} %; house <= {SEAM['bare'] * 100:.0f} %), "
           f"{len(rep['flips'])} ground flip(s) (house <= {SEAM['flips']})"
           + (f", plan: {p['top']} {p['top_share'] * 100:.0f} % of {p['changes']} changes (house <= {SEAM['mix'] * 100:.0f} %)" if p else ''))
+
+
+# ------------------------------------------------------------------------------------------
+# the film checks: an empty frame or a stall, a frozen hold, an ending that lands centred, a world that lives, a sound
+# ------------------------------------------------------------------------------------------
+# Read at FILM['w'] wide. Crisp content (type, UI, a sharp mark or object) carries luma edges over FILM['edge'] (Sobel,
+# 0-255); a frame with fewer than FILM['empty'] of them shows nothing to look at (a blurred ground, a dim shape on murk).
+# A good blur-through peaks there for 2 f@30; 4 dead frames before a pop, or a dim mark alone for 13 f, read as
+# stalls. A frozen hold: under FILM['frozen_d'] mean change and FILM['frozen_px'] of the pixels moving 6 levels (a film
+# freezes at most about 1 s mid-film, its end card excepted). The ending: the last FILM['end_s'] s, read in a
+# band across the middle (the lockup's row); the world: its outer ring (highlights) and four corner crops every 0.5 s.
+FILM = dict(w=240, edge=200.0, empty=0.0005, empty_warn_s=0.1, empty_fail_s=0.5, open_s=0.5, close_s=0.25,
+            frozen_d=0.12, frozen_px=0.0005, frozen_s=1.0, frozen_read_s=1.5, frozen_share=0.55,
+            end_s=2.0, drift_px=4.0, drift_r2=0.95, land=0.5, centre=0.01,
+            ring=0.08, murk_hi=120.0, murk_share=0.7, world_db=40.0, world_share=0.5, world_tex=3.0, world_min_s=8.0,
+            audio_db=-50.0, end_drop_db=12.0)
+
+
+class FilmScan:
+    """Per-frame reads for film_check (feed RGB frames of any size, in order): the share of crisp edges, the frame's
+    change, the highlight of the world's outer ring, four corner crops every 0.5 s, and the last FILM['end_s'] + 0.5 s
+    as luma at 480 wide."""
+
+    def __init__(self, fps, w, h):
+        self.fps = fps
+        self.tw = min(480, w) // 2 * 2
+        self.th = max(2, int(round(h * self.tw / w)) // 2 * 2)
+        self.sw = min(FILM['w'], self.tw) // 2 * 2
+        self.sh = max(2, int(round(h * self.sw / w)) // 2 * 2)
+        self.f, self.edge, self.chg, self.npx, self.ring_hi, self.corners = [], [], [], [], [], []
+        self.every = max(1, int(round(fps / 2)))
+        self.prev = None
+        self.tail = deque(maxlen=int(round((FILM['end_s'] + 0.5) * fps)) + 2)
+
+    def feed(self, f, rgb):
+        if rgb.dtype != np.uint8:
+            rgb = np.clip(rgb, 0, 255).astype(np.uint8)
+        big = rgb if (rgb.shape[1], rgb.shape[0]) == (self.tw, self.th) else cv2.resize(rgb, (self.tw, self.th), interpolation=cv2.INTER_AREA)
+        small = cv2.resize(big, (self.sw, self.sh), interpolation=cv2.INTER_AREA)
+        g = cv2.cvtColor(small, cv2.COLOR_RGB2GRAY).astype(np.float32)
+        mag = np.hypot(cv2.Sobel(g, cv2.CV_32F, 1, 0, ksize=3), cv2.Sobel(g, cv2.CV_32F, 0, 1, ksize=3))
+        self.f.append(f)
+        self.edge.append(float((mag > FILM['edge']).mean()))
+        if self.prev is None:
+            self.chg.append(0.0)
+            self.npx.append(0.0)
+        else:
+            d = np.abs(g - self.prev)
+            self.chg.append(float(d.mean()))
+            self.npx.append(float((d > 6).mean()))
+        self.prev = g
+        y = small.astype(np.float32) @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+        rw = max(2, int(round(FILM['ring'] * self.sh)))
+        ring = np.concatenate([y[:rw].ravel(), y[-rw:].ravel(), y[:, :rw].ravel(), y[:, -rw:].ravel()])
+        self.ring_hi.append(float(np.percentile(ring, 99.5)))
+        if (len(self.f) - 1) % self.every == 0:
+            cw, ch = self.sw // 8, self.sh // 8
+            self.corners.append((f, [g[:ch, :cw].copy(), g[:ch, -cw:].copy(), g[-ch:, :cw].copy(), g[-ch:, -cw:].copy()]))
+        self.tail.append((f, cv2.cvtColor(big, cv2.COLOR_RGB2GRAY).astype(np.float32)))
+
+
+def film_ending(scan):
+    """The last FILM['end_s'] s: the shift of the middle band (the lockup's row) of each frame against the last frame
+    (phase correlation, px at 1080p), a line fitted through it (a drift: a flat speed with no landing), and the
+    horizontal centre of the crisp content on the last frame (a lockup off centre)."""
+    fps = scan.fps
+    tail = [x for x in scan.tail if x[0] > scan.f[-1] - FILM['end_s'] * fps]
+    if len(tail) < max(8, int(0.5 * fps)):
+        return None
+    ref = tail[-1][1]
+    H, W = ref.shape
+    k = 1080.0 / H
+    y0, y1, x0, x1 = int(0.30 * H), int(0.70 * H), int(0.15 * W), int(0.85 * W)
+    hann = cv2.createHanningWindow((x1 - x0, y1 - y0), cv2.CV_32F)
+    rows = []
+    for f, g in tail:
+        (dx, dy), resp = cv2.phaseCorrelate(g[y0:y1, x0:x1], ref[y0:y1, x0:x1], hann)
+        rows.append((f, dx * k, dy * k, resp))
+    t = np.array([r[0] for r in rows], np.float64)
+    out = dict(frames=[int(t[0]), int(t[-1])])
+    best = None
+    for ax in (1, 2):
+        v = np.array([r[ax] for r in rows], np.float64)
+        travel = float(np.abs(v).max())
+        if travel < FILM['drift_px']:
+            continue
+        b, a = np.polyfit(t, v, 1)
+        fit = a + b * t
+        r2 = 1.0 - float(((v - fit) ** 2).sum()) / max(1e-9, float(((v - v.mean()) ** 2).sum()))
+        nl = max(4, int(round(0.5 * fps)))
+        bl = float(np.polyfit(t[-nl:], v[-nl:], 1)[0])
+        cand = dict(axis='x' if ax == 1 else 'y', travel=round(travel, 1), speed=round(abs(b), 3), r2=round(r2, 3),
+                    last_speed=round(abs(bl), 3), lands=bool(abs(bl) < FILM['land'] * abs(b)))
+        if best is None or cand['travel'] > best['travel']:
+            best = cand
+    out['move'] = best
+    # the lockup: the crisp content of the middle band merged into blobs (letters into words, the mark beside them); read
+    # only when one blob holds most of it (a crisp ridge or a far pill beside low-contrast type is not a lockup to measure)
+    mag = np.hypot(cv2.Sobel(ref, cv2.CV_32F, 1, 0, ksize=3), cv2.Sobel(ref, cv2.CV_32F, 0, 1, ksize=3))
+    m = np.zeros(mag.shape, np.uint8)
+    m[int(0.30 * H):int(0.70 * H), int(0.03 * W):int(0.97 * W)] = 1
+    m &= (mag > FILM['edge'] * 1.5).astype(np.uint8)
+    tot = int(m.sum())
+    if tot >= 40:
+        nb, lab, st, _ = cv2.connectedComponentsWithStats(cv2.dilate(m, np.ones((9, 41), np.uint8)), connectivity=8)
+        if nb > 1:
+            share = {i: int(m[lab == i].sum()) for i in range(1, nb)}
+            i = max(share, key=share.get)
+            ya, yb = st[i, cv2.CC_STAT_TOP], st[i, cv2.CC_STAT_TOP] + st[i, cv2.CC_STAT_HEIGHT]
+            row = [j for j in share if min(yb, st[j, cv2.CC_STAT_TOP] + st[j, cv2.CC_STAT_HEIGHT]) - max(ya, st[j, cv2.CC_STAT_TOP])
+                   >= 0.5 * min(yb - ya, st[j, cv2.CC_STAT_HEIGHT])]  # the blobs on the lockup's row (the mark, the name, a pill)
+            px = sum(share[j] for j in row)
+            x0b = min(int(st[j, cv2.CC_STAT_LEFT]) for j in row)
+            x1b = max(int(st[j, cv2.CC_STAT_LEFT] + st[j, cv2.CC_STAT_WIDTH]) for j in row)
+            if px >= 0.8 * tot and x1b - x0b < 0.8 * W:
+                cx = (x0b + x1b) / 2.0
+                out['centre'] = dict(offset=round(float(cx - W / 2.0) / W, 4), px=round(float(cx - W / 2.0) * k, 1), width=round((x1b - x0b) / W, 3))
+    return out
+
+
+def film_check(scan, extra, add, sev, ignored, reading=(), end_rng=None):
+    """Empty frames and stalls, frozen holds, the ending (a drift that never lands, a lockup off centre), a world that never
+    changes or has no highlight. Flags go through `add`; returns the report."""
+    fps, n = scan.fps, len(scan.f)
+    if n < 3:
+        return {}
+    F = scan.f
+    first, last = F[0], F[-1]
+    open_n, close_n = int(round(FILM['open_s'] * fps)), int(round(FILM['close_s'] * fps))
+    rep = dict(thresholds=dict(FILM))
+    # 1. the frame is never empty between two scenes
+    empties = []
+    for i, j in runs([e < FILM['empty'] for e in scan.edge]):
+        a, b = F[i], F[j]
+        dur = (b - a + 1) / fps
+        if a < first + open_n or b > last - close_n or ignored(a) or dur < FILM['empty_warn_s'] - 1e-9:
+            continue
+        still = float(np.mean(scan.chg[i:j + 1])) < 2 * FILM['frozen_d']
+        empties.append(dict(frm=a, to=b, s=round(dur, 2), still=still, edges=round(float(np.mean(scan.edge[i:j + 1])), 5)))
+        add('empty-frame', sev('fail' if dur >= FILM['empty_fail_s'] else 'warn'), f'{a}-{b}', f'{b - a + 1} f ({dur:.2f} s) with nothing crisp on '
+            f"screen (crisp edges on {100 * empties[-1]['edges']:.3f} % of the frame: a blurred ground, a dim shape alone"
+            f"{'; still: a stall' if still else ''}): the frame is never empty between two scenes; let the next element arrive while "
+            'the last one leaves, or keep a blur peak to 2 f')
+    rep['empty'] = empties
+    # 2. frozen holds: nothing changes for over a second mid-film (a line being read: 1.5 s)
+    endf = end_rng[0] if end_rng else last + 1 - int(round(2 * fps))
+    frozen = [i > 0 and scan.chg[i] < FILM['frozen_d'] and scan.npx[i] < FILM['frozen_px'] for i in range(n)]
+    holds = []
+    for i, j in runs(frozen):
+        a, b = F[i], min(F[j], endf - 1)
+        if a < first + open_n or a >= endf or ignored(a):
+            continue
+        dur = (b - a + 1) / fps
+        inread = sum(1 for g in range(a, b + 1) if in_ranges(g, reading)) > 0.5 * (b - a + 1)
+        lim = FILM['frozen_read_s'] if inread else FILM['frozen_s']
+        if dur > lim + 1e-9:
+            holds.append(dict(frm=a, to=b, s=round(dur, 2), read=inread))
+            add('frozen-hold', sev('warn'), f'{a}-{b}', f'{b - a + 1} f ({dur:.1f} s) where nothing at all changes'
+                f"{' while a line is read' if inread else ''} (house: {lim:g} s at most mid-film, "
+                'the end card excepted): cut sooner, let the next element arrive, or give the hold a declared move that lands')
+    body = [frozen[i] for i in range(n) if first + open_n <= F[i] < endf]
+    share = sum(body) / max(1, len(body))
+    rep['frozen'] = dict(holds=holds, share=round(share, 3))
+    if len(body) >= 3 * fps and share > FILM['frozen_share']:
+        add('frozen-hold', sev('warn'), f'{first}-{last}', f'{share * 100:.0f} % of the body is frozen (house: {FILM["frozen_share"] * 100:.0f} % at '
+            'most): the picture keeps changing between its holds')
+    # 3. the ending lands: no flat drift, the lockup centred
+    end = film_ending(scan)
+    rep['ending'] = end
+    if end:
+        mv = end.get('move')
+        if mv and mv['r2'] >= FILM['drift_r2'] and not mv['lands']:
+            add('end-drift', sev('warn'), f"{end['frames'][0]}-{end['frames'][1]}", f"the ending slides {mv['travel']:g} px ({mv['axis']}) at a flat "
+                f"{mv['speed'] * fps:.1f} px/s to the last frame and never lands (fit r2 {mv['r2']:.2f}): an aimless drift. Let the lockup "
+                'settle (an eased move that lands, then still) and hold, the music ringing out')
+        c = end.get('centre')
+        if c and abs(c['offset']) > FILM['centre'] and c['width'] < 0.8:
+            add('end-centre', sev('warn'), end['frames'][1], f"the last frame's lockup sits {abs(c['px']):g} px {'right' if c['px'] > 0 else 'left'} of "
+                f"centre (house: within {FILM['centre'] * 100:g} % of the width): the end card lands centred")
+    # 4. the world lives: not one still picture for the whole film, not murk with no highlight
+    hi = np.array(scan.ring_hi)
+    murk = float((hi < FILM['murk_hi']).mean())
+    rep['world'] = dict(murk_share=round(murk, 3), ring_p995=round(float(np.median(hi)), 1))
+    if murk > FILM['murk_share'] and n >= 3 * fps:
+        add('world-murk', sev('warn'), f'{first}-{last}', f"the world has no highlight on {murk * 100:.0f} % of the film (its brightest point "
+            f"{float(np.median(hi)):.0f} of 255 at the median): a murky ground. Give the world its key light: a lit gradient, a glow "
+            'pool, a rim, a plate with a light source (references/lighting.md)')
+    span = (scan.corners[-1][0] - scan.corners[0][0]) / fps if len(scan.corners) > 1 else 0.0
+    if span >= FILM['world_min_s']:
+        still_c, tex_c = 0, 0
+        for kc in range(4):
+            stack = np.stack([c[1][kc] for c in scan.corners])
+            med = np.median(stack, 0)
+            if float(med.std()) < FILM['world_tex']:
+                continue
+            tex_c += 1
+            mse = ((stack - med) ** 2).mean(axis=(1, 2))
+            psnr = 10 * np.log10(255.0 ** 2 / np.maximum(mse, 1e-6))
+            ends = 10 * np.log10(255.0 ** 2 / max(1e-6, float(((stack[0] - stack[-1]) ** 2).mean())))
+            # unchanged wherever it shows (cards may cover it for a while) and the same at both ends of the film
+            if float((psnr >= FILM['world_db']).mean()) >= FILM['world_share'] and ends >= FILM['world_db']:
+                still_c += 1
+        rep['world'].update(textured_corners=tex_c, still_corners=still_c)
+        if tex_c >= 2 and still_c == tex_c:
+            add('world-still', sev('warn'), f'{first}-{last}', f'the world is one still picture for the whole film (its textured corners unchanged '
+                f'wherever they show, the same at both ends of {span:.0f} s): let it live (clouds that move, light that changes between acts, '
+                'the camera entering it, a plate per act) and let it light what sits in it')
+    return rep
+
+
+def audio_check(path, args, fps):
+    """The film's sound: an audio stream that plays (every film is music-led), and an ending that rings out (the music
+    decays 14-60 dB over its last half second). Returns (report, flags)."""
+    if getattr(args, 'no_audio', False) or getattr(args, 'loop', False):
+        return dict(skipped=True), []
+    flags = []
+
+    def flag(check, severity, frame, note):
+        flags.append(dict(check=check, severity=severity, frame=frame, t=round(frame / fps, 3) if isinstance(frame, int) else None, note=note))
+    try:
+        j = json.loads(subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'a', '-show_entries', 'stream=index,codec_name', '-of', 'json',
+                                       path], capture_output=True, text=True, check=True).stdout or '{}')
+    except (FileNotFoundError, subprocess.CalledProcessError, ValueError):
+        return dict(error='ffprobe could not read the audio streams'), []
+    if not j.get('streams'):
+        flag('audio', 'fail', 0, 'the film is silent: no audio stream. Every film is music-led: npm run sound (the licensed track cut to the '
+             'picture, the effects kit, the mix into public/audio/soundtrack.wav), then render again; a silent loop passes --no-audio')
+        return dict(stream=False), flags
+    pcm = subprocess.run(['ffmpeg', '-v', 'error', '-i', path, '-vn', '-ac', '1', '-ar', '16000', '-f', 's16le', '-'], capture_output=True).stdout
+    x = np.frombuffer(pcm, np.int16).astype(np.float32) / 32768.0
+    if x.size < 16000:
+        flag('audio', 'fail', 0, 'the audio stream holds under a second of sound')
+        return dict(stream=True, seconds=round(x.size / 16000.0, 2)), flags
+    db = lambda v: 20.0 * math.log10(max(1e-9, float(np.sqrt(np.mean(v * v)))))  # noqa: E731
+    whole = db(x)
+    w = 800  # 50 ms
+    nw = x.size // w
+    lv = np.array([db(x[i * w:(i + 1) * w]) for i in range(nw)])
+    k2 = 40  # 2 s of 50 ms windows
+    loud = max(db(x[i * w:(i + k2) * w]) for i in range(0, max(1, nw - k2 + 1), 5))
+    end = db(x[-4000:])  # the last 0.25 s
+    rep = dict(stream=True, level_db=round(whole, 1), loudest_2s_db=round(loud, 1), last_quarter_db=round(end, 1),
+               last_50ms_db=round(float(lv[-1]), 1) if nw else None)
+    if whole < FILM['audio_db']:
+        flag('audio', 'fail', 0, f'the soundtrack is silent ({whole:.0f} dBFS over the film): mix the track and the kit (npm run sound) and render again')
+    elif loud - end < FILM['end_drop_db']:
+        last_f = int(round((x.size / 16000.0) * fps)) - 1
+        flag('audio-end', 'warn', last_f, f'the sound stops near full level ({loud - end:.0f} dB under its loudest 2 s in the last 0.25 s; the house '
+             'decays 14-60 dB): the music is cut at the end. Let the track\'s own ending ring out on the lockup (track.py fit --end auto; '
+             'score.py rings the last downbeat out), never a cut')
+    return rep, flags
+
+
+def merge_flags(res, flags):
+    """Add flags made outside a pass (the audio) to a result: counts and verdict."""
+    if not flags:
+        return res
+    res['flags'] = flags + res['flags']
+    res['fails'] = res.get('fails', 0) + sum(1 for x in flags if x['severity'] == 'fail')
+    res['warnings'] = res.get('warnings', 0) + sum(1 for x in flags if x['severity'] == 'warn')
+    res['pass'] = res['fails'] == 0
+    return res
 
 
 # ------------------------------------------------------------------------------------------
@@ -3134,22 +3516,58 @@ def seam_self_test(check):
     ok(len(rep['cuts']) == 1 and 'blur' in rep['cuts'][0]['devices'], 'seams: a cut at the peak of a blur carries the blur',
        json.dumps([(c['frame'], c['blur_dip'], c['devices']) for c in rep['cuts']]))
 
-    # a velocity cut: the exit builds x1.2 a 30 fps frame into the cut, the next shot enters the same way and decays
-    xs, x = [], 0.0
-    for k in range(30):
-        x += 30.0 * 0.83 ** (29 - k)
-        xs.append(x)
-    film = [warp(A, dx=-v / 2.25) for v in xs]
-    x = 0.0
-    for j in range(30):
-        x += 0.7 * 30.0 * 0.86 ** j
-        film.append(warp(B, dx=-x / 2.25))
-    rep, _ = gate(film, seams=[dict(at=30, kind='velocity', id='velocityCut:push')])
+    # a velocity cut: the exit builds x1.2 a 30 fps frame into the cut at whip speed (the picture travels a quarter of the frame in
+    # its last 0.2 s), the next shot enters the same way and decays
+    A6, B6 = texture(3, w, h, scale=6), texture(4, w, h, scale=6, tint=(0.5, 0.6, 0.9))
+
+    def whip(scale):
+        xs, x = [], 0.0
+        for k in range(30):
+            x += 30.0 * 0.83 ** (29 - k)
+            xs.append(x)
+        fr = [warp(A6, dx=-v * scale) for v in xs]
+        x = 0.0
+        for j in range(30):
+            x += 0.7 * 30.0 * 0.86 ** j
+            fr.append(warp(B6, dx=-x * scale))
+        return fr
+    rep, _ = gate(whip(1.0), seams=[dict(at=30, kind='velocity', id='velocityCut:push')])
+    c = (rep['cuts'] or [{}])[0]
+    ok(bool(rep['cuts']) and 'motion' in c['devices'] and not c['bare'] and c['seam'] == 'velocity-cut',
+       'seams: a velocity cut at whip speed (the picture a fifth of the frame or more in its last 0.2 s) carries the motion',
+       json.dumps([c.get('carry'), c.get('travel')]))
+    # the same cut at 0.44x the speed (on a finer picture, where the flow reads every step): its build (a frame at 60 fps) and
+    # decay are measured; the subject is still in frame and readable when it is swapped (a whip that does not hide its cut),
+    # bare on a kept-ground film, and a declared seam the pixels show bare fails
+    A6, B6 = A, B
+    rep, fl = gate(whip(0.44), seams=[dict(at=30, kind='velocity', id='velocityCut:push')])
     c = (rep['cuts'] or [{}])[0]
     cr = c.get('carry', {})
-    ok(bool(rep['cuts']) and 'motion' in c['devices'] and c['seam'] == 'velocity-cut' and cr.get('build60') and 1.05 <= cr['build60'] <= 1.45
-       and cr.get('decay60') and 8 <= cr['decay60'] <= 36,
-       'seams: a velocity cut carries the motion; its build (a frame at 60 fps) and decay are measured', json.dumps(c.get('carry')))
+    ok(bool(rep['cuts']) and cr.get('build60') and 1.05 <= cr['build60'] <= 1.45 and cr.get('decay60') and 8 <= cr['decay60'] <= 36,
+       'seams: a velocity cut\'s build (a frame at 60 fps) and decay are measured', json.dumps(c.get('carry')))
+    ok(bool(rep['cuts']) and c.get('slow') and c.get('bare') and any(x['check'] == 'carried-cut' and x['severity'] == 'fail' and 'declared' in x['note']
+                                                                for x in fl),
+       'seams: a whip whose picture travels a tenth of the frame in its last 0.2 s is slow and bare, and its declared velocity seam fails',
+       json.dumps([c.get('carry'), c.get('travel')]))
+
+    # a card swapped for another card in another place on the same ground: the kept ground alone hides nothing
+    film = [rect(236, 40, 40, 40, 200, 140)] * 30 + [rect(236, 90, 260, 120, 440, 230)] * 30
+    rep, _ = gate(film)
+    c = (rep['cuts'] or [{}])[0]
+    ok(bool(rep['cuts']) and 'ground' in c['devices'] and c['bare'], 'seams: a card swapped for another elsewhere on the kept ground is bare',
+       json.dumps([(x['frame'], x['devices'], x['area']) for x in rep['cuts']]))
+
+    # a cut run whose inner frame mixes both pictures (a dissolve collapsed into a frame) is a ghost; a torn cut (half the
+    # frame already cut) too
+    mix = (0.5 * card(236, 1).astype(np.float32) + 0.5 * card(30, 2).astype(np.float32)).astype(np.uint8)
+    rep, fl = gate([card(236, 1)] * 30 + [mix] + [card(30, 2)] * 30)
+    ok(any(x['check'] == 'ghost-cut' for x in fl), 'seams: a one-frame 50 % mix between two pictures is a ghost cut',
+       json.dumps([(x['frame'], x['to'], x['ghost']) for x in rep['cuts']]))
+    torn = card(30, 2).copy()
+    torn[:, :w // 2] = card(236, 1)[:, :w // 2]
+    rep, fl = gate([card(236, 1)] * 30 + [torn] + [card(30, 2)] * 30)
+    ok(any(x['check'] == 'ghost-cut' and 'torn' in x['note'] for x in fl), 'seams: a frame half cut (the left half still the last picture) is a torn cut',
+       json.dumps([(x['frame'], x['to'], x['ghost']) for x in rep['cuts']]))
 
     # the ground flips four times (fails), a colour flip of three steps 5 frames apart is one event
     film = [ground(236)] * 30 + [ground(28)] * 30 + [ground(236)] * 30 + [ground(28)] * 30 + [ground(236)] * 30
@@ -3176,6 +3594,96 @@ def seam_self_test(check):
     ok(not any(x['check'] == 'seam-mix' for x in fl) and 'exit-then-enter' in rep['plan']['kinds'] and 'text-swap' in rep['plan']['kinds'],
        'seams: a mixed plan with an exit-then-enter and a text-swap passes seam-mix', json.dumps(rep['plan']))
     return bad[0]
+
+
+def film_self_test(check, tmp):
+    """The film checks on synthetic films measured in memory (an empty stall, a frozen hold, an ending that drifts or lands,
+    a still or murky world), and the sound checks on three small muxed clips. Failures are counted by `check`."""
+    fps, w, h = 30, 480, 270
+
+    def scan_of(frames):
+        fs = FilmScan(fps, w, h)
+        for i, fr in enumerate(frames):
+            fs.feed(i, fr)
+        return fs
+
+    def gate(frames, reading=(), end_rng=None):
+        fl = []
+        add = lambda check_, severity, frame, note, **kw: fl.append(dict(check=check_, severity=severity, frame=frame, note=note))  # noqa: E731
+        rep = film_check(scan_of(frames), {}, add, lambda s: s, lambda f: False, reading, end_rng)
+        return rep, fl
+
+    def names(fl):
+        return sorted({(x['check'], x['severity']) for x in fl})
+    ground = np.full((h, w, 3), 24, np.uint8)
+    lit = cv2.GaussianBlur(texture(9, w, h, scale=8, mean=150, amp=60), (0, 0), 1.0)  # a lit world with highlights
+
+    def card(img, x, seed=1):
+        out = img.copy()
+        out[70:200, int(x):int(x) + 220] = texture(seed, 220, 130, scale=2, mean=128, amp=110)
+        return out
+    # a card scene, 20 f with nothing crisp (the ground alone, still), the next card: an empty stall; a 2 f gap passes
+    moving = [card(lit, 60 + 2 * i) for i in range(30)]
+    rep, fl = gate(moving + [cv2.GaussianBlur(lit, (0, 0), 6)] * 20 + [card(lit, 200 + 2 * i, 2) for i in range(30)])
+    check(('empty-frame', 'fail') in names(fl), 'film: 20 f with nothing crisp between two scenes fail empty-frame (a stall)', str(names(fl)))
+    rep, fl = gate(moving + [cv2.GaussianBlur(lit, (0, 0), 6)] * 2 + [card(lit, 200 + 2 * i, 2) for i in range(30)])
+    check(not any(x['check'] == 'empty-frame' for x in fl), 'film: a 2 f blur peak between two scenes passes', str(names(fl)))
+    # 45 f where nothing changes mid-film warn frozen-hold; 25 f pass; inside a reading window 45 f pass
+    tail = [card(lit, 100 + i, 2) for i in range(60)]
+    rep, fl = gate(moving + [moving[-1]] * 45 + tail)
+    check(('frozen-hold', 'warn') in names(fl), 'film: 1.5 s frozen mid-film warns frozen-hold (house 1 s)', str(names(fl)))
+    rep, fl = gate(moving + [moving[-1]] * 25 + tail)
+    check(not any(x['check'] == 'frozen-hold' for x in fl), 'film: 0.8 s frozen passes (holds may be still)', str(names(fl)))
+    rep, fl = gate(moving + [moving[-1]] * 40 + tail, reading=[(30, 75)])
+    check(not any(x['check'] == 'frozen-hold' for x in fl), 'film: 1.3 s frozen while a line is read passes (1.5 s)', str(names(fl)))
+
+    # the ending: a lockup sliding at a flat 0.25 px/f to the last frame warns end-drift; the same slide eased to a stop passes
+    def lockup(dx):
+        img = np.full((h, w, 3), 20, np.uint8)
+        cv2.rectangle(img, (150, 120), (178, 148), (235, 235, 235), -1)
+        for j in range(6):
+            cv2.rectangle(img, (192 + 22 * j, 122), (206 + 22 * j, 146), (240, 240, 240), -1)
+        return warp(img, dx=dx)
+    body = [card(lit, 60 + 2 * i) for i in range(60)]
+    rep, fl = gate(body + [lockup(0.25 * i) for i in range(75)])
+    check(('end-drift', 'warn') in names(fl), 'film: an ending that slides at a flat 7.5 px/s to the last frame warns end-drift', str(rep.get('ending')))
+    rep, fl = gate(body + [lockup(18.0 * (1 - (1 - min(1.0, i / 40.0)) ** 3)) for i in range(75)])
+    check(not any(x['check'] == 'end-drift' for x in fl), 'film: the same move eased to a stop, then still, passes', str(rep.get('ending')))
+    rep, fl = gate(body + [lockup(40.0)] * 75)
+    check(('end-centre', 'warn') in names(fl), 'film: a lockup held 90 px right of centre warns end-centre', str(rep.get('ending')))
+    rep, fl = gate(body + [lockup(7.0)] * 75)
+    check(not any(x['check'] == 'end-centre' for x in fl), 'film: a centred lockup passes end-centre', str(rep.get('ending')))
+
+    # the world: one textured photo for 10 s under changing cards warns world-still; the photo drifting with a camera passes; murk
+    photo = texture(4, w + 200, h, scale=5, mean=140, amp=70)
+    frames = [card(photo[:, :w], 60 + (i % 90)) if (i // 60) % 2 else photo[:, :w].copy() for i in range(300)]
+    rep, fl = gate(frames)
+    check(('world-still', 'warn') in names(fl), 'film: one still photo for 10 s warns world-still', str(rep.get('world')))
+    frames = [card(np.ascontiguousarray(photo[:, int(i * 0.6):int(i * 0.6) + w]), 60 + (i % 90)) if (i // 60) % 2
+              else np.ascontiguousarray(photo[:, int(i * 0.6):int(i * 0.6) + w]) for i in range(300)]
+    rep, fl = gate(frames)
+    check(not any(x['check'] == 'world-still' for x in fl), 'film: the same world crossed by a camera passes', str(rep.get('world')))
+    murk = cv2.GaussianBlur(texture(5, w, h, scale=8, mean=40, amp=30), (0, 0), 6)
+    rep, fl = gate([card(murk, 60 + i) for i in range(120)])
+    check(('world-murk', 'warn') in names(fl), 'film: a dark blurred world with no highlight warns world-murk', str(rep.get('world')))
+
+    # the sound: no audio stream fails; a tone cut at full level warns; the same tone fading out passes
+    class A:
+        no_audio = False
+        loop = False
+    clip = os.path.join(tmp, 'film-a.mp4')
+    write_clip(clip, [ground] * 60, fps)
+    _, fl = audio_check(clip, A, fps)
+    check(any(x['check'] == 'audio' and x['severity'] == 'fail' for x in fl), 'audio: a film with no audio stream fails', str(names(fl)))
+    for name, af, want in (('cut', 'volume=0.5', True), ('ring', 'volume=0.5,afade=t=out:st=1.3:d=0.7', False)):
+        out = os.path.join(tmp, f'film-{name}.mp4')
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', clip, '-f', 'lavfi', '-i', 'sine=frequency=330:duration=2', '-af', af, '-c:v', 'copy',
+                        '-c:a', 'aac', '-shortest', out], capture_output=True)
+        _, fl = audio_check(out, A, fps)
+        got = any(x['check'] == 'audio-end' for x in fl)
+        check(got == want and not any(x['severity'] == 'fail' for x in fl),
+              f"audio: a tone {'cut at full level warns audio-end' if want else 'that fades over its last 0.7 s passes'}", str(names(fl)))
+    return 0
 
 
 def write_clip(path, frames, fps, crf=12):
@@ -3218,7 +3726,7 @@ def self_test():
         write_clip(clip, frames, fps)
         out = os.path.join(tmp, name + '.json')
         r = subprocess.run([sys.executable, os.path.abspath(__file__), clip, '--cues', cue_path, '--json', out, '--no-banding', '--no-smear',
-                            '--no-judder', *more], capture_output=True, text=True)
+                            '--no-judder', '--no-audio', *more], capture_output=True, text=True)
         try:
             return json.load(open(out))
         except (OSError, ValueError):
@@ -3336,7 +3844,9 @@ def self_test():
     tiles = push[:45] + [warp(stripes, dx=-sum(30 * 0.7 * 0.85 ** j for j in range(i)) / 4) for i in range(45)]
     rep = run('tiles', tiles, cues(90, seams=[dict(at=45, kind='velocity', carry='x', dir=-1, id='carry')]))
     car = gram(rep).get('carried', [])
-    check(not flags(rep, 'carried-cut', 'fail') and bool(flags(rep, 'carried-cut', 'warn')) and bool(car) and car[0]['unsure'] and car[0]['period'],
+    # the speed read's own verdicts (the hide rule may still call a 41 px/f push too slow to hide its cut: another read)
+    speed_read = lambda r, s: [x for x in flags(r, 'carried-cut', s) if x['note'].startswith('declared velocity seam')]  # noqa: E731
+    check(not speed_read(rep, 'fail') and bool(speed_read(rep, 'warn')) and bool(car) and car[0]['unsure'] and car[0]['period'],
           'a velocity seam read on a repeating picture warns (the step is known only modulo its period), never fails', json.dumps(car[:1]))
     # type that slides the other way over the incoming shot: its lines are masked out of the flow
     def typed(img, dx):
@@ -3348,7 +3858,7 @@ def self_test():
     over = push[:45] + [typed(warp(B, dx=-sum(30 * 0.7 * 0.85 ** j for j in range(i)) / 4), 3.0 * i) for i in range(45)]
     rep = run('typed', over, cues(90, seams=[dict(at=45, kind='velocity', carry='x', dir=-1, id='carry')]))
     car = gram(rep).get('carried', [])
-    check(bool(car) and car[0]['text'] > 0.3 and not flags(rep, 'carried-cut', 'fail'), 'type sliding the other way over the incoming shot is masked out of the flow', json.dumps(car[:1]))
+    check(bool(car) and car[0]['text'] > 0.3 and not speed_read(rep, 'fail'), 'type sliding the other way over the incoming shot is masked out of the flow', json.dumps(car[:1]))
     rep = run('breath', push[:45] + [np.zeros_like(A)] + [warp(B, dx=-sum(30 * 0.7 * 0.85 ** j for j in range(i)) / 4) for i in range(44)],
               cues(90, seams=[dict(at=45, kind='breath', id='breath')]))
     check(not flags(rep, 'spike', 'fail') and not flags(rep, 'ghost') and not flags(rep, 'hold-into-exit'),
@@ -3425,6 +3935,7 @@ def self_test():
           f"{[x['severity'] for x in flags(rep, 'border')]}")
     bad += motion_self_test(check)
     bad += seam_self_test(check)
+    bad += film_self_test(check, tmp)
     # the same picture at 60 and at 30 fps (every second frame): a pan, a 1.5 s hold drifting 0.004 px a 60 fps frame,
     # a pan; the quiet stretch is found at both rates (its window is 1 s at any rate, not 60 frames)
     P = texture(1, w + 600, h)
@@ -3440,7 +3951,7 @@ def self_test():
         json.dump(dict(fps=r, total=3 * r, acts=dict(a={'from': 0, 'dur': 3 * r}), cue={}, events=[], copy=[], pace='crisp'), open(cp, 'w'))
         out = os.path.join(tmp, f'rate{r}-rep.json')
         subprocess.run([sys.executable, os.path.abspath(__file__), clip, '--cues', cp, '--json', out, '--no-banding', '--no-smear', '--no-judder',
-                        '--no-grammar'], capture_output=True, text=True)
+                        '--no-grammar', '--no-audio'], capture_output=True, text=True)
         try:
             rep = json.load(open(out))
         except (OSError, ValueError):
@@ -3470,7 +3981,8 @@ def grammar_only(args, info, decl):
                           seam_frames=velocity_frames(extra, k_))
     dis_n = max(2, int(round(4 * fps / 60)))
     disq = deque(maxlen=dis_n + 2)
-    M = dict(idx=[], dissolve=[], probe=probe_m, motion=MotionCurves(fps), seams=SeamScan(fps, info['w'], info['h']))
+    M = dict(idx=[], dissolve=[], probe=probe_m, motion=MotionCurves(fps), seams=SeamScan(fps, info['w'], info['h']),
+             film=FilmScan(fps, info['w'], info['h']))
     start = max(0, args.from_frame or 0)
     count = max(1, args.to_frame - start + 1) if args.to_frame is not None else None
     for f, rgb in decode(args.video, info, start, count, size=(pw, ph)):
@@ -3479,6 +3991,7 @@ def grammar_only(args, info, decl):
         probe_m.feed(f, g8)
         M['motion'].feed(f, motion_luma(rgb))
         M['seams'].feed(f, rgb)
+        M['film'].feed(f, rgb)
         disq.append((f, g8.astype(np.float32)))
         if len(disq) == disq.maxlen:
             hit = blend_test([x[1] for x in disq])
@@ -3505,10 +4018,12 @@ def seams_only(args, info, decl):
     cuts, freezes, ignore, acts, moments, reading, cues_fps, extra = decl
     k_ = fps / cues_fps if cues_fps else 1.0
     sc = SeamScan(fps, info['w'], info['h'])
+    fs = FilmScan(fps, info['w'], info['h'])
     start = max(0, args.from_frame or 0)
     count = max(1, args.to_frame - start + 1) if args.to_frame is not None else None
     for f, rgb in decode(args.video, info, start, count, size=(sc.aw, sc.ah)):
         sc.feed(f, rgb)
+        fs.feed(f, rgb)
     if not sc.f:
         die('decoded 0 frames')
     sc.close()
@@ -3518,10 +4033,16 @@ def seams_only(args, info, decl):
         first = frame if isinstance(frame, int) else int(str(frame).split('-')[0])
         flags.append(dict(check=check, severity=severity, frame=frame, t=round(first / fps, 3), note=note, **kw))
 
-    rep = seam_check(sc, extra, k_, acts, add, lambda s: s, lambda f: in_ranges(f, ignore), extra.get('copy_n', 0))
+    ign = lambda f: in_ranges(f, ignore)  # noqa: E731
+    rep = seam_check(sc, extra, k_, acts, add, lambda s: s, ign, extra.get('copy_n', 0))
+    end = extra.get('end')
+    vf = lambda x: int(round(x * k_))  # noqa: E731
+    reading = [(vf(a), vf(b)) for a, b in reading]
+    film = film_check(fs, extra, add, lambda s: s, ign, reading, (vf(end['from']), vf(end['to'])) if end else None)
     fails = sum(1 for x in flags if x['severity'] == 'fail')
     return dict(file=args.video, fps=round(fps, 3), frames=len(sc.f), seams_only=True, fails=fails,
-                warnings=sum(1 for x in flags if x['severity'] == 'warn'), flags=flags, checks=dict(grammar=dict(seams=rep))) | {'pass': fails == 0}
+                warnings=sum(1 for x in flags if x['severity'] == 'warn'), flags=flags,
+                checks=dict(grammar=dict(seams=rep, film=film))) | {'pass': fails == 0}
 
 
 def energy_line(res):
@@ -3552,6 +4073,7 @@ def main():
     ap.add_argument('--from', dest='from_frame', type=int, help='first frame to analyse')
     ap.add_argument('--to', dest='to_frame', type=int, help='last frame to analyse (inclusive)')
     ap.add_argument('--loop', action='store_true', help='check the loop seam (last frame -> frame 0)')
+    ap.add_argument('--no-audio', action='store_true', help='a silent deliverable (a loop, a sting for a muted feed): skip the sound checks')
     ap.add_argument('--against', help='a second render of the same thing; report frames that differ')
     ap.add_argument('--track', action='append', help='x,y,w,h region to phase-track for judder (repeatable)')
     ap.add_argument('--no-judder', action='store_true', help='skip the automatic 3x3 judder patches')
@@ -3626,8 +4148,10 @@ def main():
     # the pace's hold and quiet limits are stated at 60 fps: evaluate() scales those left at None (scaled60)
     extra = decl[7]
     args._dissolve = not args.no_grammar
+    aud, aud_flags = audio_check(args.video, args, info['fps'])
     if args.seams:
-        res = seams_only(args, info, decl)
+        res = merge_flags(seams_only(args, info, decl), aud_flags)
+        res['checks']['audio'] = aud
         if args.json:
             os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
             with open(args.json, 'w') as fh:
@@ -3646,7 +4170,8 @@ def main():
         args._probe = MotionProbe(info['fps'], *probe_size(info), pair_frames=pf, tiles=False, force={x for c in cuts_v for x in (c - 1, c + kk)},
                                   seam_frames=velocity_frames(extra, k_))
     if args.grammar_only:
-        res = grammar_only(args, info, decl)
+        res = merge_flags(grammar_only(args, info, decl), aud_flags)
+        res['checks']['audio'] = aud
         if args.json:
             os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
             with open(args.json, 'w') as fh:
@@ -3659,7 +4184,8 @@ def main():
     M = analyse(args, info)
     M['probe'] = getattr(args, '_probe', None)
     M['smear'] = [] if args.no_smear else smear_scan(args, info)
-    res = evaluate(args, info, M, decl)
+    res = merge_flags(evaluate(args, info, M, decl), aud_flags)
+    res.setdefault('checks', {})['audio'] = aud
 
     if args.curves:
         os.makedirs(os.path.dirname(os.path.abspath(args.curves)), exist_ok=True)
