@@ -67,7 +67,9 @@
  *                  a film, T+A <= 40 % of the beats, the first line on screen by 1 s, every line beat holding a line
  *                  and no picture beat carrying a statement for more than a quarter of it (errors); a line beat
  *                  outside 0.5-2.4 s or a picture beat outside 1-3.5 s (warnings). A timeline without a BEAT_PLAN
- *                  is not held to these (the simple launch declares one)
+ *                  is not held to these (the simple launch declares one). The text-then-cards loop: a line alone then
+ *                  its picture (T then A) three times or more with no line beat that meets its picture (TA), an error
+ *                  in a film with src/launch.ts (a pair's beat fixes it), else a warning
  *   word-total     on-screen words <= --max-words (default: the pace's maxWords, calm 30, crisp 35; a script 50);
  *                  entries with kind: 'ui' (terminal commands, code, URLs, app labels the product
  *                  shows) are counted apart, not budgeted
@@ -155,6 +157,10 @@
  *                  1/30 s (warning)
  *   accent-time    the pace's accent: hold <= 1.2 s, a linear cool <= 28 f@60 (warning)
  *   end-lock       END holds 1-5 s and runs to the end of the body (warning)
+ *   spec           the film runs the length the spec line of BRIEF.md asks for (`1920x1080@30, 20s`): over 10 % longer
+ *                  is an error, 15 % shorter a warning; with a BRIEF.md a launch film runs 15-45 s and an update film 8-20 s, and
+ *                  the lockup holds at most 3.5 s from CUE.lockup to the end of the body (warnings)
+ *   type-devices   with src/launch.ts: three lines or more all landing a starred accent on their last word (warning)
  *   density-plan   with a MOTION registry ([{from, to}], timeline or cues.json `motion`): 1.4-3.6
  *                  starts/s, 1.3-2.7 moves running at once on average, no 1 s without a start
  *                  outside HOLD and END (warnings)
@@ -923,6 +929,13 @@ async function main() {
       if (nT < 2) err('beats', `${nT} type-only beat${nT === 1 ? '' : 's'}: a line alone on a clean ground at least twice a film (T in BEAT_PLAN)`);
       else if (nT < 0.15 * body.length) err('beats', `type-only beats are ${Math.round((100 * nT) / body.length)} % of the shots; keep >= 15 %: a line alone, then the picture`);
       if (nTA > 0.4 * ok.length) err('beats', `${nTA} of ${ok.length} beats set a line over a picture (${Math.round((100 * nTA) / ok.length)} %); keep <= 40 %: give the line its own beat, then the picture`);
+      // the text-then-cards loop: a line alone, then its picture, again and again, and no line ever built with its picture
+      let loops = 0;
+      for (let i = 1; i < body.length; i++) if (body[i - 1].kind === 'T' && body[i].kind === 'A') loops++;
+      // an error where the film can fix it in one word (src/launch.ts: a pair's beat), a warning in a template that cannot yet
+      const loopSev = existsSync(resolve(dirname(tlPath), 'launch.ts')) ? err : warn;
+      if (loops >= 3 && nTA === 0)
+        loopSev('beats', `the beats run a line alone, then its picture, ${loops} times and no line meets its picture (T A T A ...): the text-then-cards loop. Let one line arrive with its picture or over it (a pair's beat 'with' or 'over' in src/launch.ts: the picture enters the line, the product rises behind a giant word, an object parts it) and let one picture carry straight into the next`);
     }
     const lineOn = (a: number, z: number) => film.filter((c) => c.kind !== 'name' && c.in < z && (c.out ?? TOTAL) > a);
     for (const x of body) {
@@ -938,6 +951,41 @@ async function main() {
       if (x.kind === 'A' && (sec < 1 - 1e-9 || sec > 3.5 + beatS / 2 + 1e-9)) warn('beats', `${label} runs ${sec.toFixed(2)} s; a picture beat runs 1-3.5 s`);
     }
     if (firstLine > FPS) err('beats', `the first line arrives at ${(firstLine / FPS).toFixed(2)} s; it is on screen by 1 s`);
+  }
+
+  // --- spec: the length the brief's spec line asks for (`1920x1080@30, 20s, format: launch`), the format's band, the lockup's hold
+  {
+    const briefPath = resolve(dirname(tlPath), '..', 'BRIEF.md');
+    const brief = existsSync(briefPath) ? readFileSync(briefPath, 'utf8') : '';
+    const m = brief.match(/\b\d{3,4}\s*x\s*\d{3,4}\s*@\s*\d+(?:\.\d+)?\s*,\s*(\d+(?:\.\d+)?)\s*s\b/i);
+    const sec = TOTAL / FPS;
+    if (m) {
+      const want = Number(m[1]);
+      if (sec > want * 1.1 + 0.5) err('spec', `the film runs ${sec.toFixed(1)} s; BRIEF.md's spec line asks for ${want} s (at most 10 % over): cut a beat or shorten the holds, never speed the picture up`);
+      else if (sec < want * 0.85 - 0.5) warn('spec', `the film runs ${sec.toFixed(1)} s against BRIEF.md's ${want} s`);
+    }
+    const fmt = String((T.LOOK as { filmType?: string } | undefined)?.filmType ?? (brief.match(/format:\s*([a-z-]+)/i) || [])[1] ?? '').toLowerCase();
+    const BAND: Record<string, [number, number]> = { launch: [15, 45], update: [8, 20] };
+    const band = BAND[fmt];
+    if (brief && band && (sec < band[0] - 0.5 || sec > band[1] + 0.5)) warn('spec', `${fmt === 'update' ? 'an' : 'a'} ${fmt} film runs ${band[0]}-${band[1]} s; this one runs ${sec.toFixed(1)} s`);
+    const lock = CUE && isNum(CUE.lockup) ? (bodyEnd - (CUE.lockup as number)) / FPS : null;
+    if (lock !== null && lock > 3.5) warn('spec', `the lockup holds ${lock.toFixed(1)} s from CUE.lockup to the end of the body; the end card holds 2-3 s (the music rings out under it)`);
+  }
+
+  // --- the type's devices: one device on every line (the key word last, in the accent, three times) reads as a template
+  {
+    const lp = resolve(dirname(tlPath), 'launch.ts');
+    let pairs: { line?: string }[] = [];
+    if (existsSync(lp)) {
+      try {
+        const L = (await import(pathToFileURL(lp).href)) as { LAUNCH?: { pairs?: { line?: string }[] } };
+        pairs = Array.isArray(L.LAUNCH?.pairs) ? L.LAUNCH!.pairs! : [];
+      } catch { pairs = []; }
+    }
+    const said = pairs.map((p) => String(p.line ?? '').trim()).filter(Boolean);
+    const last = said.filter((s) => /\*[^*]+\*[.!?,;:]*$/.test(s)).length;
+    if (said.length >= 3 && last >= 3 && last === said.filter((s) => s.includes('*')).length)
+      warn('type-devices', `${last} lines land their accent on the last word in the same way: one device on every line reads as a template. Vary the lines: one line with no accent, the key word first or alone at giant size, one line built with its picture, one type event (a word pushed apart by an object, a decode, a re-centring build)`);
   }
 
   if (declared) {
