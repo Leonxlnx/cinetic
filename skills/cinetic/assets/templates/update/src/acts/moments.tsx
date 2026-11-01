@@ -4,10 +4,11 @@
 // at 1080p) and shown filling the frame on its beat, its state change landing on the change's hit frame and two details
 // after it (res, res2), so the picture keeps acting for the 1-3.5 s it is shown. The data holds up when paused: one
 // label per state (the button says it, nothing repeats it), the viewer's own tap adds the viewer (`you`), people are
-// real photos or absent (never initials), a week shows its blocks. RecapCard is the same change in a few words for the
-// recap row. Every photo gets one treatment (PHOTO): the same grade, radius and frame.
+// real photos or absent (never initials), a week shows its blocks. Every photo gets one treatment (PHOTO): the same
+// grade, radius and frame. The hero shots (acts/heroes.tsx) set these screens on the depth stage: the press, the before
+// and the after, the week a page travels.
 import React from 'react';
-import { Img, staticFile } from 'remotion';
+import { Img } from 'remotion';
 import { FONT, U } from '../brand/tokens';
 import { CARD as KCARD, cardSize as kitCardSize } from '../kit/card';
 import { Check } from '../kit/parts';
@@ -18,7 +19,8 @@ import { phrase } from '../lib/cadence';
 import { creep } from '../lib/handoff';
 import { measureTracked } from '../lib/measure';
 import { BEAT, type ChangeTimes, f60, FPS } from '../timeline';
-import { type Change, photosOf, recapOf, type Row, type Slot } from '../update';
+import { type Change, type Row, type Slot } from '../update';
+import { pic } from './look';
 
 /** Card house numbers (px at 1080p): padding, the type sizes, row heights (the corner radius is kit/card's, by size: cardRadius). */
 export const CARD = { pad: 64, title: 66, body: 48, meta: 44, row: 100, button: 104 } as const;
@@ -39,6 +41,7 @@ export const cardSize = (c: Change): { w: number; h: number } => {
   if (s.kind === 'tap') return { w: 1160 * U, h: (head + 40 + Math.max(2, (s.rows ?? []).length, s.result?.length ? 2 : 0) * CARD.row + CARD.button + 2 * CARD.pad + 20) * U };
   if (s.kind === 'swap') return { w: 1160 * U, h: (head + 40 + Math.max(s.before.length, s.after.length) * CARD.row + CARD.pad + 10) * U };
   if (s.kind === 'count') return { w: 1320 * U, h: (head + 40 + CHART.h + CARD.pad) * U };
+  if (s.kind !== 'fill') return { w: 1160 * U, h: 700 * U }; // a typed request or a page: drawn by the kit screens
   if (s.layout === 'week') return { w: 1460 * U, h: 820 * U };
   if (s.layout === 'grid') return { w: 1320 * U, h: (head + 40 + Math.ceil(s.items.length / (s.cols ?? 3)) * 300 + CARD.pad) * U };
   return { w: 1100 * U, h: (head + 30 + s.items.length * CARD.row + CARD.pad) * U };
@@ -62,7 +65,7 @@ const rise = (t: number, px = 26): React.CSSProperties => ({ opacity: clamp(t * 
 const Lead: React.FC<{ r: Row; size: number; t: KitTheme; k: number }> = ({ r, size, t }) =>
   r.photo ? (
     <div data-imagery style={{ width: size * U, height: size * U, borderRadius: (size / 2) * U, overflow: 'hidden', flex: 'none', boxShadow: `0 0 0 ${(2 * U).toFixed(2)}px ${t.surface}` }}>
-      <Img src={staticFile(r.photo)} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: PHOTO.filter }} />
+      <Img src={pic(r.photo)} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: PHOTO.filter }} />
     </div>
   ) : null;
 
@@ -115,7 +118,8 @@ const hops = (F: number, T: ChangeTimes) => {
 
 // ------------------------------------------------------------------------------------------------------- tap
 /** The tap's button on its card (card px at film scale, before the state changes): where a pointer aims. */
-const tapWidth = (label: string, w: number, check = false) => Math.max(0.46 * (w / U - 2 * CARD.pad), measureTracked(label, CARD.body * U, 600, -0.01, UI_FACE) / U + 2 * 52 + (check ? 62 : 0));
+const labelW = (label: string) => (typeof document === 'undefined' ? label.length * CARD.body * 0.55 * U : measureTracked(label, CARD.body * U, 600, -0.01, UI_FACE)); // lint-ok: Node only (the sound and the checks plan a camera from it); every render measures
+const tapWidth = (label: string, w: number, check = false) => Math.max(0.46 * (w / U - 2 * CARD.pad), labelW(label) / U + 2 * 52 + (check ? 62 : 0));
 const tapButton = (s: Extract<Change['show'], { kind: 'tap' }>, w: number, h: number) => {
   const bw = tapWidth(s.action, w);
   return { x: (w / U - bw) / 2, y: h / U - CARD.pad - CARD.button, w: bw, h: CARD.button };
@@ -175,7 +179,7 @@ const TapMoment: React.FC<{ c: Change; s: Extract<Change['show'], { kind: 'tap' 
               <div key={k} style={{ ...rise(e, 30), width: rw * U, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 * U }}>
                 {r.photo ? (
                   <div data-imagery style={{ width: av * U, height: av * U, borderRadius: (av / 2) * U, overflow: 'hidden', boxShadow: mine ? `0 0 0 ${(5 * U).toFixed(2)}px ${t.surface}, 0 0 0 ${(9 * U).toFixed(2)}px ${t.accent}` : undefined }}>
-                    <Img src={staticFile(r.photo)} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: PHOTO.filter }} />
+                    <Img src={pic(r.photo)} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: PHOTO.filter }} />
                   </div>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 * U, height: 84 * U, padding: `0 ${26 * U}px 0 ${16 * U}px`, borderRadius: 42 * U, background: mine ? t.accentSoft : t.well }}>
@@ -273,7 +277,7 @@ const FillMoment: React.FC<{ c: Change; s: Extract<Change['show'], { kind: 'fill
           return (
             <div key={k} style={{ ...abs(x, y), width: tw * U, height: 270 * U, ...rise(e, 34) }}>
               <div data-imagery={r.photo ? true : undefined} style={{ width: tw * U, height: 204 * U, borderRadius: PHOTO.r * U, overflow: 'hidden', background: mixColor(t.well, t.text, 0.05), boxShadow: on ? `0 0 0 ${((4 + 6 * glow) * U).toFixed(2)}px ${t.accent}` : undefined }}>
-                {r.photo && <Img src={staticFile(r.photo)} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: PHOTO.filter, transform: `scale(${creep(F, landAt(k), { pctPerSec: 0.025 }, FPS).toFixed(5)})` }} />}
+                {r.photo && <Img src={pic(r.photo)} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: PHOTO.filter, transform: `scale(${creep(F, landAt(k), { pctPerSec: 0.025 }, FPS).toFixed(5)})` }} />}
               </div>
               <div style={{ marginTop: 12 * U, display: 'flex', alignItems: 'center', gap: 10 * U }}>
                 <span data-text={`${c.id}-tile${k}`} style={txt(CARD.meta, on ? 650 : 500, on ? t.accentText : t.text)}>{r.label}</span>
@@ -405,8 +409,7 @@ const CountMoment: React.FC<{ c: Change; s: Extract<Change['show'], { kind: 'cou
 
 /**
  * Where the change lands on its card, in the card's own px (w x h, film scale) once the state has changed: the pressed
- * button, the block, tile or row that landed in the accent, the tag that turned, the last bar. The 'after' shape grows the
- * film's colour field out of this rectangle (acts/World.tsx), so the field is the change itself, spreading.
+ * button, the block, tile or row that landed in the accent, the tag that turned, the last bar (a page's travel lands on it).
  */
 export const changedRect = (c: Change, w: number, h: number): { x: number; y: number; w: number; h: number; r: number } => {
   const s = c.show;
@@ -425,6 +428,7 @@ export const changedRect = (c: Change, w: number, h: number): { x: number; y: nu
     const b = barsOf(s)[barsOf(s).length - 1];
     return px(w / U - CARD.pad - CHART.w + b.x, h / U - CARD.pad - b.h, b.w, b.h, 14);
   }
+  if (s.kind !== 'fill') return px(CARD.pad, CARD.pad, w / U - 2 * CARD.pad, 120, 22); // a kit screen's (typed request, page)
   const items = s.items as { accent?: boolean }[];
   const hit = items.findIndex((x) => x.accent);
   const k = hit >= 0 ? hit : items.length - 1; // the accent item, else the last to land
@@ -461,68 +465,6 @@ export const Moment: React.FC<{ c: Change; T: ChangeTimes; F: number; theme: Kit
   if (s.kind === 'tap') return <TapMoment c={c} s={s} T={T} F={F} t={theme} w={w} h={h} noTip={noTip} />;
   if (s.kind === 'fill') return <FillMoment c={c} s={s} T={T} F={F} t={theme} w={w} h={h} />;
   if (s.kind === 'swap') return <SwapMoment c={c} s={s} T={T} F={F} t={theme} w={w} h={h} />;
-  return <CountMoment c={c} s={s} T={T} F={F} t={theme} w={w} h={h} />;
-};
-
-/** The recap's card: the change in a few words and its own picture, readable at its small size (title, picture, state). */
-export const RecapCard: React.FC<{ c: Change; theme: KitTheme; w: number; h: number; glow?: number }> = ({ c, theme: t, w, h, glow = 0 }) => {
-  const label = recapOf(c);
-  const s = c.show;
-  const fig = s.kind === 'count' && !c.recap; // a bare figure reads large; words go in the pill
-  const room = w / U - 80 - (fig ? 0 : 18 + 48 + 18 + 28); // the pill's check, gaps and padding
-  const base = fig ? 104 : 48;
-  const size = Math.min(base, (base * room) / Math.max(1, measureTracked(label, base * U, fig ? 640 : 600, fig ? -0.03 : -0.01, UI_FACE) / U));
-  const titleSize = Math.min(46, (46 * (w / U - 80)) / Math.max(1, measureTracked(c.title, 46 * U, 600, -0.016, UI_FACE) / U));
-  // the change's own picture between its title and its state, so the row recalls each moment, not three labels: the
-  // chosen photo, the faces the tap added (the viewer's last), or the rows it ended with
-  const top = 34 + titleSize * 1.12 + 22;
-  const bottom = (fig ? 120 : 84) + 38 + 22;
-  const vh = h / U - top - bottom;
-  const inner = w / U - 80;
-  const photo = photosOf(c)[0];
-  const faces = s.kind === 'tap' ? [...(s.result ?? []), ...(s.you ? [s.you] : [])].filter((r) => r.photo) : [];
-  const rows = (s.kind === 'fill' && s.layout === 'list' ? [...s.items].sort((a, b) => Number(!!a.accent) - Number(!!b.accent)).slice(-2) : s.kind === 'swap' ? s.after.slice(0, 2) : []) as Row[];
-  let visual: React.ReactNode = null;
-  if (vh >= 60 && photo) {
-    visual = (
-      <div data-imagery style={{ position: 'absolute', left: 40 * U, top: top * U, width: inner * U, height: vh * U, borderRadius: PHOTO.r * U, overflow: 'hidden' }}>
-        <Img src={staticFile(photo)} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: PHOTO.filter }} />
-      </div>
-    );
-  } else if (vh >= 60 && faces.length) {
-    const d = Math.min(vh, 112);
-    visual = (
-      <div style={{ position: 'absolute', left: 40 * U, top: (top + (vh - d) / 2) * U, display: 'flex' }}>
-        {faces.map((r, k) => (
-          <div key={k} data-imagery style={{ width: d * U, height: d * U, marginLeft: (k ? -d * 0.22 : 0) * U, borderRadius: (d / 2) * U, overflow: 'hidden', boxShadow: `0 0 0 ${(5 * U).toFixed(2)}px ${t.surface}${s.kind === 'tap' && s.you && k === faces.length - 1 ? `, 0 0 0 ${(9 * U).toFixed(2)}px ${t.accent}` : ''}` }}>
-            <Img src={staticFile(r.photo as string)} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: PHOTO.filter }} />
-          </div>
-        ))}
-      </div>
-    );
-  } else if (vh >= 70 && rows.length) {
-    const rh = Math.min(64, vh / rows.length);
-    visual = (
-      <div style={{ position: 'absolute', left: 40 * U, top: (top + (vh - rh * rows.length) / 2) * U, width: inner * U }}>
-        {rows.map((r, k) => (
-          <div key={k} style={{ height: rh * U, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 * U, borderTop: k ? `${Math.max(1, 1.5 * U)}px solid ${t.line}` : undefined }}>
-            <span data-text={`${c.id}-recap-row${k}`} style={{ ...txt(38, r.accent ? 620 : 500, r.accent ? t.accentText : t.text), overflow: 'hidden' }}>{r.label}</span>
-            {r.meta && <span data-text={`${c.id}-recap-meta${k}`} style={txt(36, 450, t.mute)}>{r.meta}</span>}
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return (
-    <>
-      <div style={{ position: 'absolute', left: 40 * U, top: 34 * U, width: w - 80 * U }}>
-        <span data-text={`${c.id}-recap-title`} style={txt(titleSize, 600, t.text, -0.016)}>{c.title}</span>
-      </div>
-      {visual}
-      <div style={{ position: 'absolute', left: 40 * U, bottom: 38 * U, display: 'flex', alignItems: 'center', gap: 18 * U, height: (fig ? 120 : 84) * U, padding: fig ? 0 : `0 ${28 * U}px 0 ${18 * U}px`, borderRadius: 42 * U, background: fig ? 'transparent' : t.accentSoft, boxShadow: fig ? undefined : `0 0 0 ${((6 * glow) * U).toFixed(2)}px ${mixColor(t.surface, t.accent, 0.28)}` }}>
-        {!fig && <Check size={48 * U} fill={t.accent} tick={t.accentInk} />}
-        <span data-text={`${c.id}-recap`} style={txt(size, fig ? 640 : 600, fig ? t.text : t.accentText, fig ? -0.03 : -0.01)}>{label}</span>
-      </div>
-    </>
-  );
+  if (s.kind === 'count') return <CountMoment c={c} s={s} T={T} F={F} t={theme} w={w} h={h} />;
+  return null; // a typed request and a page are kit screens (acts/heroes.tsx: PromptBar, DocPage, BrowserWindow)
 };

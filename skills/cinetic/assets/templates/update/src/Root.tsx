@@ -1,6 +1,6 @@
 import React from 'react';
 import { Composition, Folder, Still } from 'remotion';
-import { THEME } from './acts/World';
+import { WORLD } from './acts/look';
 import { U } from './brand/tokens';
 import { actComponent, Film, FilmProps } from './Film';
 import { everyMetadata, FilmEvery, FilmSub, subMetadata } from './FilmSub';
@@ -14,7 +14,7 @@ import { ACT, FPS, H, TOTAL, W } from './timeline';
 const solo = (Act: React.FC) => {
   const Solo: React.FC<FilmProps> = ({ audit = false, safe }) => (
     <FontGate>
-      <div style={{ position: 'absolute', inset: 0, background: THEME.ground }}>
+      <div style={{ position: 'absolute', inset: 0, background: WORLD.base }}>
         <Act />
         {audit && <Audit safe={safe} />}
       </div>

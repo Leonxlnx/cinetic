@@ -1,68 +1,59 @@
 // The update film's choices, dealt per film. The structure never changes (the name and the version centred, each change
-// a picture and a line, the recap of every change, the version mark built from it); how each part looks does. The seed
-// is the product's name (src/brand/identity.ts: the same name, the same deal, on any machine); SEED re-deals without
-// renaming, PIN fixes a slot by hand. The unnamed scaffold ('[Product]') plays the floor; a named film never replays it.
-// Print what this film plays: the command in template.json deal.print.
+// filmed by a hero shot and said in one line, the 3D mark pulling back into the lockup with the version); how each part
+// looks does. The seed is the product's name (src/brand/identity.ts: the same name, the same deal, on any machine); SEED
+// re-deals without renaming, PIN fixes a slot by hand. The unnamed scaffold ('[Product]') plays the floor; a named film
+// never replays it. When scripts/deck.py dealt a direction in this project (src/dealt.ts) the film stands in its world and
+// takes its hero shots first. Print what this film plays: the command in template.json deal.print.
 // Node-safe (no React, no CSS, nothing from the starter): the timeline, the sound and the tests read it.
 //
-// The camera never floats: it moves only when the story moves (a card arriving, a creative device's own move, the
-// pointer it follows), and a hold is still. Nothing bobs or sways, and no card rests tilted: the cards face the lens.
+// The camera never floats: it moves only inside a hero shot, one move that starts, travels with its subject and lands;
+// a hold is still. Nothing bobs or sways, and no card rests tilted: the perspective comes from where the camera stands.
 //
 //   slot     choices          what each does
-//   ground   nearWhite ...    one of the eleven lit, still families (fx/Grounds FamilyGround) for the whole film, never
-//            (all eleven)     cut; its colour event (FamilyGround event: the accent lobe, the key taking the accent, the
-//                             glow rising, the band flooding, the turn to dark) is the film's one, under the 'after'
-//                             change's field. The deck's direction sets it when deck.py dealt one (src/dealt.ts)
-//   (cards)  light, dark      the cards' material (kit/card Card): light on a light family; on a dark one dealt light or
-//                             dark (a card 8-12 L* over the ground with a rim of light), CARD_TONE
+//   ground   the world        the place the film stands in (fx/world): one for the whole film, never cut, with its key
+//            (twelve)         light that the glass, the rims, the type and the product pick up. Built (no picture):
+//                             nearWhite, paleSky, blackField, deepField, electric. Plates (a real photograph, `node
+//                             scripts/assets.mjs plate <kind>`): clouds, sky, aerial, sea, nightCity, studio, macro;
+//                             until the plate is in public/plates a built world of the same tone stands in
 //   hook     roll             "[Name] [old version]" centred; the changed numerals roll on a drum to the new version
 //            rise             the name, then the version rising out of a mask beside it (the pair centred from frame 0)
 //            badge            the name alone, centred; a dot lands after it and grows into the pill carrying the version
-//   arrive   rise, open       how a card comes in that no creative device brings: it rises into place, or a hairline at
-//                             the centre opens into it
-//   order    (the shapes)     each change is a picture and a line, in its own shape:
-//            show             the picture first (the card arrives and works), then the card folds shut into a bar of
-//                             light and its line rises from it, alone in the middle of the frame
-//            after            the picture first, then the element that changed (the pressed button, the block, the row,
-//                             the last bar) grows into the frame's colour field and the line reads on it (once a film:
-//                             the colour event)
-//            split            the line first, parted round the card, which sits small in the gap between its words; the
-//                             words leave and the card grows out of the gap as the new screen and works
-//            lead             the line first, alone (the card before it folds into the bar it rises from), then the
-//                             picture
+//   arrive   rack             each hero shot opens out of focus and racks sharp (7.5 -> 1.4 px in 9 frames at 30 fps)
+//            whip             each hero shot arrives on a fast move that brakes into its framing, smeared on the fast frames
+//            bloom            each hero shot opens out of a soft bloom of the world's light that settles
+//   order    (the shapes)     each change is a hero shot and a line, in its own shape:
+//            show             the hero shot first; then the shot goes soft and dims (a focus isolate) and the line lands
+//                             centred in front of it
+//            lead             the line first, alone in the world; it leaves and the hero shot arrives
+//            split            the line first, parted round a porthole that opens in its gap with the hero shot inside;
+//                             the words leave and the porthole opens into the frame as the shot plays
 //                             A line never follows a line: once a change opens on its picture, the later ones do too
-//   recap    deal, rise       the carried card lands in the recap row and the others slide out from behind it, or rise
-//   end      stack, fold      the recap's cards pile (or tuck behind the last) and shrink into the mark; the name slides
-//                             out of it and the version lands on the last bar line, apart from the name
-//   (creative)                the film's creative devices (fx/creative), CREATIVE below: the deck's (src/dealt.ts) or
-//                             dealt from the name, each played on the change it shows best (cursor-follow on a tap,
-//                             bubble-swarm on the pings a change ends, split-compare on a before -> after, photo-arc on
-//                             photos, logo-orbit on the products it works with; pixel-assemble, shape-morph, object-turn
-//                             bring any card in), two or more a film
-//   (lines)  voice            every line on one move (mask, fall or crisp) and one whole-line exit (lift or recede);
-//                             the field line is the library's scale-contrast (its key word huge); a line device the deck
-//                             dealt (letter-swing, word-swap) takes a line of its own; every other line's key word is
-//                             set in the accent
+//   end      beside           the mark's solid pulls back into the flat mark; the name slides out beside it, the pair
+//                             re-centred, and the version lands after the name on the last bar line
+//            stack            the same pull-back; the name rises under the mark and the version lands beside the name
+//   (heroes)                  each change's hero shot (HERO_META below): the deck's (src/dealt.ts hero) or dealt from the
+//                             name, each on the change it can film (heroFit), at least two different shots a film
+//   (lines)  voice            every line on one move (mask, fall or crisp) and one whole-line exit (lift or recede)
 import { IDENTITY } from './brand/identity';
 import { DEALT } from './dealt';
 import { RECENT } from './recent';
-import { beforeOf, type Change, photosOf, UPDATE } from './update';
+import { type Change, photosOf, UPDATE } from './update';
 
-export type Shape = 'show' | 'after' | 'split' | 'lead';
+export type Shape = 'show' | 'lead' | 'split';
 /** A shape that opens on its picture (the line comes after it). */
-export const pictureFirst = (s: Shape) => s === 'show' || s === 'after';
+export const pictureFirst = (s: Shape) => s === 'show';
 
 /**
- * Every order of shapes for n changes: one 'after' (the colour event); a line never follows a line, so the shapes that
- * open on their line (split, lead) come only before every shape that opens on its picture; 'lead' never opens the film
- * (the name and the version are its first words) and never twice in a row; 'split' never twice in a row.
+ * Every order of shapes for n changes: a line never follows a line, so the shapes that open on their line (lead, split)
+ * come only before every 'show'; 'lead' never opens the film (the name and the version are its first words), no
+ * line-first shape comes twice in a row, and the porthole (split) plays once a film at most.
  */
 export const ordersFor = (n: number): Shape[][] => {
   const out: Shape[][] = [];
-  const all: Shape[] = ['show', 'after', 'split', 'lead'];
+  const all: Shape[] = ['show', 'lead', 'split'];
   const walk = (seq: Shape[]) => {
     if (seq.length === n) {
-      if (seq.filter((s) => s === 'after').length === 1) out.push(seq);
+      if (seq.filter((s) => s === 'split').length <= 1) out.push(seq); // the porthole once a film at most
       return;
     }
     for (const s of all) {
@@ -70,7 +61,6 @@ export const ordersFor = (n: number): Shape[][] => {
       if (!seq.length && s === 'lead') continue;
       if (last && pictureFirst(last) && !pictureFirst(s)) continue;
       if (last === s && !pictureFirst(s)) continue;
-      if (s === 'after' && seq.includes('after')) continue;
       walk([...seq, s]);
     }
   };
@@ -78,147 +68,43 @@ export const ordersFor = (n: number): Shape[][] => {
   return out;
 };
 
-/** Whether change i's card comes in on its own (after the name, a line or the colour field): a creative device may bring it. */
-export const entranceAt = (order: readonly Shape[], i: number) => (pictureFirst(order[i]) ? i === 0 || pictureFirst(order[i - 1]) : order[i] === 'lead');
-
-// ---- The creative library, as far as this template plays it (the ids, roles and families of fx/creative/meta.ts,
-// written out so this file stays standalone; timeline.ts checks them against the starter's library at load).
-//   entrance  a picture device that brings the card in and ends on it at rest (the card arrives after a line)
-//   scene     a picture device that plays on the card at rest (cursor-follow: the camera rides the pointer to its button)
-//   line      a line device (the field line's scale-contrast; letter-swing and word-swap on a line of their own)
-//   none      a device this template does not play (its part is the carried card's own: zoom-wall, data-sculpture,
-//             colour-flood, dot-button, type-object, type-window, split-around): the next one in the deal takes its place
-export type CreativePlay = 'entrance' | 'scene' | 'line' | 'none';
-export const CREATIVE_PLAYS: Record<string, { family: string; play: CreativePlay }> = {
-  'word-swap': { family: 'type-swap', play: 'line' },
-  'scale-contrast': { family: 'type-scale', play: 'line' },
-  'type-window': { family: 'type-image', play: 'none' },
-  'type-object': { family: 'type-object', play: 'none' },
-  'letter-swing': { family: 'type-swing', play: 'line' },
-  'split-around': { family: 'type-split', play: 'none' },
-  'pixel-assemble': { family: 'system', play: 'entrance' },
-  'shape-morph': { family: 'shape', play: 'entrance' },
-  'object-turn': { family: 'object', play: 'entrance' },
-  'logo-orbit': { family: 'logos', play: 'entrance' },
-  'split-compare': { family: 'compare', play: 'entrance' },
-  'data-sculpture': { family: 'data', play: 'none' },
-  'colour-flood': { family: 'colour', play: 'none' },
-  'zoom-wall': { family: 'scale', play: 'none' },
-  'photo-arc': { family: 'river', play: 'entrance' },
-  'cursor-follow': { family: 'pointer', play: 'scene' },
-  'bubble-swarm': { family: 'swarm', play: 'entrance' },
-  'dot-button': { family: 'point', play: 'none' },
-};
-const CREATIVE_IDS = Object.keys(CREATIVE_PLAYS);
-
-/**
- * How well picture device `id` shows change c (0: it cannot; 1: it brings any card in; 3: it shows this change), with
- * `entrance` whether the change's card comes in on its own there.
- */
-export const creativeFit = (id: string, c: Change, entrance: boolean): number => {
-  const s = c.show;
-  const before = beforeOf(c);
-  switch (id) {
-    case 'cursor-follow':
-      return s.kind === 'tap' ? 3 : 0;
-    case 'split-compare':
-      return entrance && before.length >= 2 && before.length <= 4 ? 3 : 0;
-    case 'bubble-swarm':
-      return entrance && (c.before?.length ?? 0) >= 4 ? 3 : 0;
-    case 'photo-arc':
-      return entrance && photosOf(c).length >= 5 ? 3 : 0;
-    case 'logo-orbit':
-      return entrance && (c.logos?.length ?? 0) >= 3 ? 3 : 0;
-    case 'pixel-assemble':
-    case 'shape-morph':
-    case 'object-turn':
-      return entrance ? 1 : 0;
-    default:
-      return 0;
-  }
-};
-
-/**
- * The film's picture devices, one per change at most, from the deal's order (`order`: the dealt devices first, then the
- * reserve), so each device shows its change: first every dealt device that shows a change outright (fit 3) takes it;
- * then each change still without one takes the first device of the reserve that shows it; then a dealt device that only
- * brings a card in (fit 1) takes a change still without one, else the reserve's. When none of the dealt devices found a
- * change, the first dealt one that can bring a card in takes the place of the reserve entrance the deal's order put last
- * (the deal is the film's own: one of it always plays when it can). Never two devices of one family.
- */
-export const planCreative = (order: readonly string[], shapes: readonly Shape[], changes: readonly Change[], dealt = 3): (string | null)[] => {
-  const n = changes.length;
-  const out: (string | null)[] = Array(n).fill(null);
-  const E = changes.map((_, i) => entranceAt(shapes, i));
-  const pics = order.filter((id) => CREATIVE_PLAYS[id]?.play === 'entrance' || CREATIVE_PLAYS[id]?.play === 'scene');
-  const head = order.slice(0, dealt).filter((id) => pics.includes(id));
-  const rest = pics.filter((id) => !head.includes(id));
-  const fam = (id: string) => CREATIVE_PLAYS[id].family;
-  const free = (id: string) => !out.includes(id) && !out.some((u) => u && fam(u) === fam(id));
-  const fit = (id: string, i: number) => creativeFit(id, changes[i], E[i]);
-  const place = (ids: readonly string[], want: number) => {
-    for (const id of ids) {
-      if (!free(id)) continue;
-      const i = changes.findIndex((_, k) => !out[k] && fit(id, k) >= want);
-      if (i >= 0) out[i] = id;
-    }
-  };
-  place(head, 3);
-  for (let i = 0; i < n; i++) if (!out[i]) out[i] = rest.find((id) => free(id) && fit(id, i) >= 3) ?? null;
-  place(head, 1);
-  place(rest, 1);
-  if (!out.some((id) => id && head.includes(id))) {
-    const id = head.find((d) => CREATIVE_PLAYS[d].play === 'entrance');
-    const slots = out.map((u, i) => (u && CREATIVE_PLAYS[u].play === 'entrance' && id && fit(id, i) >= 1 ? i : -1)).filter((i) => i >= 0);
-    if (id && slots.length) out[slots.reduce((a, b) => (order.indexOf(out[b]!) > order.indexOf(out[a]!) ? b : a))] = id;
-  }
-  return out;
-};
-/** How many changes a creative device can show in an order (a card that comes in on its own, or a tap). */
-const coverage = (order: readonly Shape[]) => UPDATE.changes.filter((c, i) => entranceAt(order, i) || c.show.kind === 'tap').length;
-
-/**
- * The orders this film can play: a change whose line carries another product's mark ("[]") is never split round the card
- * (its gap holds the mark); the film never opens on a split whose card would sit empty in the gap (a fill before it has
- * filled); and at least two changes can take a creative device.
- */
+/** A change whose line carries another product's mark ("[]") is never split round the porthole (its gap holds the mark). */
 const ORDERS = ordersFor(UPDATE.changes.length)
-  .filter((o) => o.every((shape, i) => shape !== 'split' || (!UPDATE.changes[i].words.includes('[]') && (i > 0 || UPDATE.changes[0].show.kind !== 'fill'))))
-  .filter((o) => coverage(o) >= Math.min(2, UPDATE.changes.length))
+  .filter((o) => o.every((shape, i) => shape !== 'split' || !UPDATE.changes[i].words.includes('[]')))
   .map((o) => o.join('-'));
-if (!ORDERS.length) throw new Error('deal.ts: no order of shapes fits these changes (write a change whose card can come in on its own, or a tap)');
+if (!ORDERS.length) throw new Error('deal.ts: no order of shapes fits these changes');
 
-/** The eleven ground families (fx/Grounds GROUND_FAMILIES), written out so this file stays standalone. */
-export const GROUNDS = ['nearWhite', 'lightStudio', 'softSky', 'gradientField', 'whiteBand', 'blackField', 'studio', 'deepPool', 'duskMesh', 'floorGlow', 'lightDark'] as const;
+/** The worlds (fx/world WORLD_DEAL), written out so this file stays standalone (and scripts/deck.py reads them). */
+export const WORLDS = ['nearWhite', 'paleSky', 'blackField', 'deepField', 'electric', 'clouds', 'sky', 'aerial', 'sea', 'nightCity', 'studio', 'macro'] as const;
+/** The worlds that need no picture. */
+export const BUILT_WORLDS: readonly string[] = ['nearWhite', 'paleSky', 'blackField', 'deepField', 'electric'];
 
 export const DEVICES = {
-  ground: [...GROUNDS],
+  ground: ['nearWhite', 'paleSky', 'blackField', 'deepField', 'electric', 'clouds', 'sky', 'aerial', 'sea', 'nightCity', 'studio', 'macro'],
   hook: ['roll', 'rise', 'badge'],
-  arrive: ['rise', 'open'],
+  arrive: ['rack', 'whip', 'bloom'],
   order: ORDERS,
-  recap: ['deal', 'rise'],
-  end: ['stack', 'fold'],
+  end: ['beside', 'stack'],
 } as const;
 
 export type Slot = keyof typeof DEVICES;
-export type Deal = { ground: string; hook: string; arrive: string; order: string; recap: string; end: string };
+export type Deal = { ground: string; hook: string; arrive: string; order: string; end: string };
 
 /**
  * What each composing slot does to the frame, in words (fx/TypeSystem compositionApart): two devices with the same words
- * are one composition. The ground and the cards' tone are palette, not composition, and are left out.
+ * are one composition. The world is the place and its palette, not a composition, and is left out.
  */
 export const COMPOSITION: { [S in Slot]?: Record<string, string> } = {
   hook: { roll: 'the name and the version together from the first frame, the numerals rolling', rise: 'the name, then the version rising beside it', badge: 'the name, then the version in a pill beside it' },
-  arrive: { rise: 'the card rising into place', open: 'a hairline opening into the card' },
+  arrive: { rack: 'each shot racking sharp out of focus', whip: 'each shot arriving on a fast move', bloom: 'each shot opening out of a bloom of light' },
   order: Object.fromEntries(ORDERS.map((o) => [o, o])),
-  recap: { deal: 'the other cards sliding out from behind the last', rise: 'the other cards rising into the row' },
-  end: { stack: 'the cards piling at the centre into the mark', fold: 'the cards folding behind the last into the mark' },
+  end: { beside: 'the name sliding out beside the mark', stack: 'the name rising under the mark' },
 };
 
 /** What the template plays before the product's name is in (its name slot, '[Product]'): a product's deal never replays it. */
-export const FLOOR: Deal = { ground: 'blackField', hook: 'rise', arrive: 'rise', order: ORDERS[0], recap: 'rise', end: 'stack' };
+export const FLOOR: Deal = { ground: 'blackField', hook: 'rise', arrive: 'rack', order: ORDERS[0], end: 'beside' };
 
-/** Choose a slot by hand ({ ground: 'softSky' }); a pinned slot is not dealt. */
+/** Choose a slot by hand ({ ground: 'clouds' }); a pinned slot is not dealt. */
 export const PIN: Partial<Deal> = {};
 /** The deal's seed: null deals from the product's name; any integer re-deals without renaming the product. */
 export const SEED: number | null = null;
@@ -260,11 +146,11 @@ const fresh = (s: Slot): readonly string[] => {
 const isPlaceholder = (name: string) => /^\[.*\]$/.test(name.trim());
 const UNNAMED = SEED === null && isPlaceholder(IDENTITY.name);
 
-/** The deck's ground family (src/dealt.ts deal.ground), when deck.py dealt a direction: the film stands on it. */
+/** The deck's world (src/dealt.ts deal.ground), when deck.py dealt a direction: the film stands in it. */
 const DECK_GROUND: string | undefined = (() => {
   const g = DEALT?.deal?.ground;
   if (!g) return undefined;
-  if (!(GROUNDS as readonly string[]).includes(g)) throw new Error(`deal: src/dealt.ts deals the ground "${g}"; the update template stands on ${GROUNDS.join(', ')} (re-deal with scripts/deck.py)`);
+  if (!(WORLDS as readonly string[]).includes(g)) throw new Error(`deal: src/dealt.ts deals the ground "${g}"; the update template stands in a world: ${WORLDS.join(', ')} (re-deal with scripts/deck.py)`);
   return g;
 })();
 
@@ -297,65 +183,132 @@ for (const [s, v] of Object.entries(PIN)) {
 /** This film's seed and deal: the unnamed scaffold keeps the floor; a named film is dealt from its name (or SEED). */
 export const DEAL_SEED = SEED ?? hashSeed(IDENTITY.name);
 export const DEAL: Deal = UNNAMED ? { ...FLOOR, ...PIN } : dealApart(DEAL_SEED);
-/** The dark ground families (fx/Grounds GROUND_FAMILIES tone 'dark'): only on these are the cards dealt light or dark. */
-export const DARK_GROUNDS: readonly string[] = ['blackField', 'studio', 'deepPool', 'duskMesh', 'floorGlow'];
-export const CARD_TONES = ['light', 'dark'] as const;
-/** The cards' tone (kit/card): light on a light family (and on lightDark, which turns); on a dark one dealt from the seed. */
-export const CARD_TONE: (typeof CARD_TONES)[number] = DARK_GROUNDS.includes(DEAL.ground) && !UNNAMED ? CARD_TONES[Math.floor(rng((DEAL_SEED ^ 0x27d4eb2f) >>> 0)() * 2)] : 'light';
 /** The shape of each change, in film order. */
 export const SHAPES_OF = (d: Deal): Shape[] => d.order.split('-') as Shape[];
 export const SHAPES: Shape[] = SHAPES_OF(DEAL);
 
-// ---- The creative devices (fx/creative): the deck's (src/dealt.ts creative, then its reserve) or a seeded,
-// recency-weighted shuffle of the whole library from the name (a device the last films played comes late: x0.12, 0.3,
-// 0.55, 0.8 for each of the last four films that played it), so every film plays its own.
-const RECENT_WEIGHT = [0.12, 0.3, 0.55, 0.8];
-const recentSets: readonly (readonly string[])[] = (((RECENT as { creative?: unknown }).creative ?? []) as unknown[]).filter((x): x is string[] => Array.isArray(x));
-/** The library in a film's own order: a weighted shuffle (each device's key u^(1/w), largest first) seeded by the name. */
-export const creativeOrder = (name: string, recent: readonly (readonly string[])[] = []): string[] => {
-  const r = rng(hashSeed(`${name.trim().toLowerCase()}#creative`));
-  const w = (id: string) => recent.slice(0, RECENT_WEIGHT.length).reduce((a, s, k) => (s.includes(id) ? a * RECENT_WEIGHT[k] : a), 1);
-  return CREATIVE_IDS.map((id) => ({ id, k: r() ** (1 / w(id)) })).sort((a, b) => b.k - a.k).map((x) => x.id);
-};
-/** What the unnamed scaffold plays (a named film never replays it whole). */
-export const FLOOR_CREATIVE: string[] = ['cursor-follow', 'pixel-assemble', 'letter-swing', 'shape-morph'];
-const DECK_CREATIVE: string[] | null = (() => {
-  const c = DEALT?.creative;
-  if (!c?.length) return null;
-  const all = [...c, ...(DEALT?.reserve ?? [])];
-  const bad = all.filter((x) => !CREATIVE_PLAYS[x]);
-  if (bad.length) throw new Error(`deal: src/dealt.ts names ${bad.join(', ')}, not a creative element of fx/creative/meta.ts (re-deal with scripts/deck.py)`);
-  return [...all, ...CREATIVE_IDS.filter((x) => !all.includes(x))];
-})();
-/** The film's creative order (dealt first, then the reserve), where it came from, and how many of it were dealt. */
-export const CREATIVE = (() => {
-  const order = DECK_CREATIVE ?? (UNNAMED ? [...FLOOR_CREATIVE, ...CREATIVE_IDS.filter((x) => !FLOOR_CREATIVE.includes(x))] : creativeOrder(IDENTITY.name, recentSets));
-  const dealt = DECK_CREATIVE ? DEALT?.creative?.length ?? 3 : 3;
-  return { order, dealt, deal: order.slice(0, dealt), source: DECK_CREATIVE ? 'deck.py' : UNNAMED ? 'the floor (unnamed scaffold)' : `the name "${IDENTITY.name}"` };
-})();
-/** Each change's picture device (null: none fits it there), in film order. */
-export const PICTURE: (string | null)[] = planCreative(CREATIVE.order, SHAPES, UPDATE.changes, CREATIVE.dealt);
+// ---- The hero shots. The shots that carry the film's production value: each a designed 3D or light shot of the
+// product's own screen (its content from src/update.ts and src/content.ts) standing in the film's world, with one sharp
+// plane and a graded blur ladder, one camera move that has a job and lands, glass as a lens on the world, light sized
+// to its source and timed, real content at density and a jump in scale. Keep each entry on one line: scripts/deck.py
+// reads them (it deals the film's set at random with fit into src/dealt.ts `hero`). `role`: picture (a change's shot)
+// or end (the end card's); `needs`: what the film must have for the deck to deal it; `min`: the seconds its beat needs.
+export type HeroRole = 'picture' | 'over' | 'line' | 'end';
+export type HeroMeta = { id: string; role: HeroRole; family: string; needs: readonly string[]; prefer: 'first' | 'middle' | 'proof'; min: number; dark?: boolean; fits: readonly string[]; about: string };
+export const HERO_META = [
+  { id: 'push-press', role: 'picture', family: 'press', needs: ['button'], prefer: 'proof', min: 2.4, fits: ['book', 'pay', 'send', 'join', 'merge', 'publish', 'approve', 'buy', 'order', 'confirm', 'sign', 'submit', 'share', 'invite', 'reserve', 'tap', 'one'], about: 'the change\'s screen; a pointer travels to its button with the camera following it in, landing at macro scale as it presses: a glow the size of the button blooms, the label turns and the camera rises to what the screen answers' },
+  { id: 'macro-type', role: 'picture', family: 'input', needs: [], prefer: 'first', min: 3.0, fits: ['ask', 'type', 'prompt', 'message', 'write', 'compose', 'command', 'search', 'chat', 'reply', 'draft', 'find'], about: 'the product\'s input at macro scale: the camera pushes onto the first characters and rides the caret as the request types, the world soft behind; it travels on to the send button and lands as it is pressed, a glow the size of the button blooming' },
+  { id: 'toast-stack', role: 'picture', family: 'stack', needs: [], prefer: 'proof', min: 2.4, fits: ['notif', 'alert', 'payment', 'paid', 'order', 'sale', 'booking', 'reminder', 'message', 'event', 'invoice', 'inbox', 'join', 'update', 'list'], about: 'the change\'s rows arrive as cards dropping into the front slot and pushing the stack back into depth: the front one sharp, each one further back softer (a graded blur ladder), real names, faces and times; the camera closes in once and lands as the last one drops' },
+  { id: 'fan-focus', role: 'picture', family: 'fan', needs: [], prefer: 'middle', min: 2.6, fits: ['results', 'sources', 'options', 'matches', 'listings', 'comments', 'reviews', 'picks', 'choose', 'compare', 'feedback', 'every', 'all'], about: 'the change\'s rows as cards fanned back in depth, the camera to one side closing on the one that matters while the focus racks to it' },
+  { id: 'carousel', role: 'picture', family: 'media', needs: ['pictures'], prefer: 'middle', min: 2.8, fits: ['photo', 'video', 'image', 'picture', 'gallery', 'listing', 'clip', 'album', 'room', 'place', 'portfolio', 'catalog', 'see'], about: 'a ring of the change\'s real pictures turning in depth; the camera cranes down from above to eye level as the ring slows and lands the chosen one facing the camera, which opens toward the lens; a smear only while it turns fast' },
+  { id: 'photo-develop', role: 'picture', family: 'photo', needs: [], prefer: 'middle', min: 2.6, fits: ['photo', 'picture', 'image', 'scan', 'see', 'look', 'room', 'place', 'preview', 'face', 'camera'], about: 'the change\'s picture develops from a duotone in the world\'s light to full colour while a glass card with what it says rises in front of it and the focus racks to the card; one slow push that hands over to the line' },
+  { id: 'glass-counter', role: 'picture', family: 'figure', needs: [], prefer: 'proof', min: 2.6, fits: ['fast', 'faster', 'speed', 'time', 'hours', 'minutes', 'seconds', 'save', 'saved', 'count', 'more', 'less', 'percent', 'twice'], about: 'the change\'s figure in a slab of glass catching the world\'s key: the camera pushes onto it while it counts, the bars beside it rising, and lands as the figure does; a band of light crosses the glass on the landing' },
+  { id: 'page-fly', role: 'picture', family: 'page', needs: [], prefer: 'middle', min: 2.8, fits: ['page', 'doc', 'document', 'report', 'site', 'website', 'article', 'note', 'notes', 'brief', 'plan', 'summary', 'post', 'week', 'calendar', 'schedule', 'board'], about: 'the change\'s page (a document, its site, a week) flies in lying back in perspective and the camera travels it from the headline to what changed, the far edge soft, a thin light along its near edge' },
+  { id: 'focus-swap', role: 'picture', family: 'swap', needs: [], prefer: 'proof', min: 2.4, fits: ['tidy', 'clean', 'sort', 'fix', 'before', 'after', 'final', 'clear', 'organize', 'merge', 'turn', 'change'], about: 'the screen as it was, sharp; on the change it goes soft and dims as the screen as it is now rises in front of it, the focus racking forward onto it and a light running its edge as it lands' },
+  { id: 'glass-tiles', role: 'picture', family: 'logos', needs: [], prefer: 'middle', min: 2.6, fits: ['works', 'with', 'connect', 'sync', 'import', 'integrat', 'apps', 'tools', 'slack', 'drive'], about: 'the products it works with as official marks in milky glass tiles on an arc in depth: they rise turning to face the camera while it pushes in once and lands after them' },
+  { id: 'logo-3d', role: 'end', family: 'mark', needs: [], prefer: 'proof', min: 1.6, fits: [], about: 'the end card arrives through the brand\'s mark as a solid: an extreme close-up of its bevelled edge already turning, one pull-back that turns it to face the camera and lands it exactly on the flat mark, the name and the version building beside it' },
+] as const satisfies readonly HeroMeta[];
+export type HeroId = (typeof HERO_META)[number]['id'];
+const HMETA = HERO_META as readonly HeroMeta[];
+/** A hero shot's entry. */
+export const heroMeta = (id: string): HeroMeta | undefined => HMETA.find((m) => m.id === id);
+/** The change shots (every hero shot but the end card's). */
+export const PICTURE_HEROES: string[] = HMETA.filter((m) => m.role === 'picture').map((m) => m.id);
 
-/** The line devices this template plays, and each change line's: the field line the scale-contrast (its key word huge;
- * a line carrying a mark keeps the voice), the first of letter-swing / word-swap in the deal's order on the first other
- * line it fits (word-swap needs the change's `swap`; neither takes a line with a mark). */
-export type LineDevice = 'scale-contrast' | 'letter-swing' | 'word-swap';
-export const LINE_DEVICE: (LineDevice | null)[] = (() => {
-  const out: (LineDevice | null)[] = UPDATE.changes.map((c, i) => (SHAPES[i] === 'after' && !c.words.includes('[]') ? 'scale-contrast' : null));
-  const lineIds = CREATIVE.order.filter((id) => id === 'letter-swing' || id === 'word-swap');
-  for (const id of lineIds) {
-    const i = UPDATE.changes.findIndex((c, k) => !out[k] && SHAPES[k] !== 'split' && !c.words.includes('[]') && (id !== 'word-swap' || (c.swap?.length ?? 0) >= 2));
-    if (i >= 0) {
-      out[i] = id as LineDevice;
-      break;
+/**
+ * How well hero shot `id` films change c: 0 it cannot, 1 it can carry it (used when the film needs a second kind of
+ * shot), 2 it shows this change. Each shot films one kind of moment: a tap's button, a typed request, a list's rows, the
+ * pictures, a figure, a page or a week, a before and an after, the products it works with.
+ */
+export const heroFit = (id: string, c: Change): number => {
+  const s = c.show;
+  const photos = photosOf(c).length;
+  switch (id) {
+    case 'push-press':
+      return s.kind === 'tap' ? 2 : s.kind === 'type' ? 1 : 0;
+    case 'macro-type':
+      return s.kind === 'type' ? 2 : 0;
+    case 'toast-stack':
+      return s.kind === 'fill' && s.layout === 'list' ? 2 : s.kind === 'tap' && (s.result ?? []).length + (s.you ? 1 : 0) >= 3 ? 1 : 0;
+    case 'fan-focus':
+      return s.kind === 'fill' && s.layout === 'list' && s.items.length >= 3 ? 2 : s.kind === 'swap' ? 1 : 0;
+    case 'carousel':
+      return photos >= 5 ? 2 : 0;
+    case 'photo-develop':
+      return photos >= 1 ? 2 : 0;
+    case 'glass-counter':
+      return s.kind === 'count' ? 2 : 0;
+    case 'page-fly':
+      return s.kind === 'page' || (s.kind === 'fill' && s.layout === 'week') ? 2 : 0;
+    case 'focus-swap':
+      return s.kind === 'swap' ? 2 : s.kind === 'tap' ? 1 : 0;
+    case 'glass-tiles':
+      return (c.logos?.length ?? 0) >= 3 ? 2 : 0;
+    default:
+      return 0;
+  }
+};
+
+/** What the unnamed scaffold plays first (its changes: a tap, a list, a count). */
+export const FLOOR_HERO: string[] = ['push-press', 'toast-stack', 'glass-counter', 'fan-focus', 'focus-swap', 'macro-type', 'page-fly', 'photo-develop', 'carousel', 'glass-tiles'];
+const RECENT_WEIGHT = [0.12, 0.3, 0.55, 0.8];
+const recentHero: readonly (readonly string[])[] = (((RECENT as { hero?: unknown }).hero ?? []) as unknown[]).filter((x): x is string[] => Array.isArray(x));
+/** The change shots in a film's own order: a weighted shuffle (each shot's key u^(1/w), largest first) seeded by the name, the last films' shots late. */
+export const heroOrder = (name: string, recent: readonly (readonly string[])[] = []): string[] => {
+  const r = rng(hashSeed(`${name.trim().toLowerCase()}#hero`));
+  const w = (id: string) => recent.slice(0, RECENT_WEIGHT.length).reduce((a, s, k) => (s.includes(id) ? a * RECENT_WEIGHT[k] : a), 1);
+  return PICTURE_HEROES.map((id) => ({ id, k: r() ** (1 / w(id)) })).sort((a, b) => b.k - a.k).map((x) => x.id);
+};
+/** The deck's hero shots (src/dealt.ts hero, then heroReserve), checked against HERO_META. */
+const DECK_HERO: string[] | null = (() => {
+  const d = DEALT as { hero?: string[]; heroReserve?: string[] } | null;
+  if (!d?.hero?.length) return null;
+  const all = [...d.hero, ...(d.heroReserve ?? [])];
+  const bad = all.filter((x) => !heroMeta(x));
+  if (bad.length) throw new Error(`deal: src/dealt.ts names ${bad.join(', ')}, not a hero shot of the update template (deal.ts HERO_META; re-deal with scripts/deck.py)`);
+  return [...all.filter((x) => PICTURE_HEROES.includes(x)), ...PICTURE_HEROES.filter((x) => !all.includes(x))];
+})();
+/** The film's hero order (the deck's, else the name's, else the floor's) and where it came from. */
+export const HERO_ORDER: { order: string[]; source: string } = DECK_HERO
+  ? { order: DECK_HERO, source: 'deck.py' }
+  : UNNAMED
+    ? { order: [...FLOOR_HERO], source: 'the floor (unnamed scaffold)' }
+    : { order: heroOrder(IDENTITY.name, recentHero), source: `the name "${IDENTITY.name}"` };
+
+/**
+ * Each change's hero shot, in film order: a change that names one by hand keeps it; every other change takes the first
+ * shot in the film's order that shows it (fit 2) and no other change has taken; then, when every change got the same
+ * kind of shot, the change with a second shot that can carry it (fit 1, else another that shows it) takes that one, so
+ * a film plays at least two different hero shots whenever its changes allow it.
+ */
+export const planHeroes = (order: readonly string[], changes: readonly Change[]): string[] => {
+  const out: (string | null)[] = changes.map((c) => {
+    if (!c.hero) return null;
+    if (!heroMeta(c.hero) || heroMeta(c.hero)!.role !== 'picture') throw new Error(`update.ts: ${c.id} names the hero shot "${c.hero}"; the change shots are ${PICTURE_HEROES.join(', ')}`);
+    if (heroFit(c.hero, c) < 1) throw new Error(`update.ts: ${c.id}'s hero shot "${c.hero}" cannot film a ${c.show.kind} (src/deal.ts heroFit)`);
+    return c.hero;
+  });
+  // the changes with the fewest shots that show them choose first, so a change with one choice is never left without it
+  const opts = changes.map((c) => order.filter((id) => heroFit(id, c) >= 2));
+  const turn = changes.map((_, i) => i).filter((i) => !out[i]).sort((a, b) => opts[a].length - opts[b].length || a - b);
+  for (const i of turn) out[i] = opts[i].find((id) => !out.includes(id)) ?? opts[i][0] ?? order.find((id) => heroFit(id, changes[i]) >= 1) ?? null;
+  for (let i = 0; i < out.length; i++) if (!out[i]) throw new Error(`update.ts: no hero shot can film ${changes[i].id} (a ${changes[i].show.kind}); src/deal.ts heroFit says what each one films`);
+  if (new Set(out).size === 1 && changes.length > 1) {
+    for (let i = changes.length - 1; i >= 0; i--) {
+      if (changes[i].hero) continue;
+      const alt = order.find((id) => id !== out[i] && heroFit(id, changes[i]) >= 1);
+      if (alt) {
+        out[i] = alt;
+        break;
+      }
     }
   }
-  return out;
-})();
-/** Where the deal came from, for the print. */
-export const DEAL_SOURCE = `${SEED !== null ? `SEED ${SEED}` : UNNAMED ? 'the floor (the name slot is still [Product])' : `the name "${IDENTITY.name}"`}${DECK_GROUND ? ', ground from deck.py' : ''}${Object.keys(PIN).length ? `, pinned: ${Object.keys(PIN).join(', ')}` : ''}; creative from ${CREATIVE.source}`;
-/** The creative devices that play, in film order (pictures and lines), for the print and the history. */
-export const PLAYED: string[] = [...new Set([...PICTURE.flatMap((p, i) => [p, LINE_DEVICE[i]]).filter((x): x is string => !!x)])];
+  return out as string[];
+};
+/** Each change's hero shot, in film order. */
+export const HEROES: string[] = planHeroes(HERO_ORDER.order, UPDATE.changes);
+/** The end card's shot: the brand's mark as a solid pulling back into the lockup. */
+export const HERO_END = 'logo-3d';
 
 // ---- The lines' voice: every line arrives on one move and leaves on one whole-line exit, dealt once per film.
 
@@ -385,3 +338,8 @@ export const LINES = (() => {
   const exitVoice: Exit = UNNAMED ? 'lift' : EXITS[Math.floor(r() * EXITS.length)];
   return { voice, exitVoice, move: Object.fromEntries(LINE_IDS.map((id) => [id, voice])) as Record<string, Move>, exit: Object.fromEntries(LINE_IDS.map((id) => [id, exitVoice])) as Record<string, Exit> };
 })();
+
+/** Where the deal came from, for the print. */
+export const DEAL_SOURCE = `${SEED !== null ? `SEED ${SEED}` : UNNAMED ? 'the floor (the name slot is still [Product])' : `the name "${IDENTITY.name}"`}${DECK_GROUND ? ', world from deck.py' : ''}${Object.keys(PIN).length ? `, pinned: ${Object.keys(PIN).join(', ')}` : ''}; hero shots from ${HERO_ORDER.source}`;
+/** The hero shots that play, in film order (the change shots and the end card's), for the print and the film history. */
+export const PLAYED: string[] = [...new Set([...HEROES, HERO_END])];

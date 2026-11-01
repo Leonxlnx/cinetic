@@ -3,8 +3,7 @@ import { AbsoluteFill, getStaticFiles, Html5Audio, Sequence, staticFile } from '
 import { Change } from './acts/Change';
 import { EndCard } from './acts/EndCard';
 import { Hook } from './acts/Hook';
-import { Payoff } from './acts/Payoff';
-import { THEME } from './acts/World';
+import { WORLD } from './acts/look';
 import { Audit } from './lib/Audit';
 import { FontGate } from './lib/FontGate';
 import type { SafeSpec } from './lib/safe';
@@ -16,23 +15,22 @@ export const SOUNDTRACK = 'audio/soundtrack.wav';
 /** audit: draw and log the layout audit; safe: its safe zone (a lib/safe.ts preset or insets; default by aspect). */
 export type FilmProps = { audit?: boolean; safe?: SafeSpec };
 
-/** The act component for an ACT entry: the hook, change1..changeN, the payoff, the end card. */
+/** The act component for an ACT entry: the hook, change1..changeN, the end card. */
 export const actComponent = (name: string): React.FC => {
   if (name === 'hook') return Hook;
-  if (name === 'payoff') return Payoff;
   if (name === 'end') return EndCard;
   const i = Number(name.replace('change', '')) - 1;
   const C: React.FC = () => <Change i={i} />;
   return C;
 };
 
-// The film: one Sequence per act, handing off on exact frames. No camera float: the stage holds still and only the
-// story moves it (a card arriving, reshaping, growing), so a hold is a hold.
+// The film: one Sequence per act, handing off on exact frames, each drawing the one stage (acts/World.tsx: the world and
+// what stands in it at that frame). No camera float: the camera moves only inside a hero shot, so a hold is a hold.
 export const Film: React.FC<FilmProps> = ({ audit = false, safe }) => {
   const hasScore = getStaticFiles().some((s) => s.name === SOUNDTRACK);
   return (
     <FontGate>
-      <AbsoluteFill style={{ background: THEME.ground }}>
+      <AbsoluteFill style={{ background: WORLD.base }}>
         {Object.entries(ACT).map(([name, a], k) => {
           const Act = actComponent(name);
           return (

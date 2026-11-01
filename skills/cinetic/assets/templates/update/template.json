@@ -1,6 +1,6 @@
 {
  "name": "update",
- "about": "A 20-27 s update film (\"vX is out\"): the name and the version centred, then 2-4 changes, each a picture and a line in its own shape (the card working, then its line risen from the bar the card folds into or read on the colour field; or the line first, round the card in its gap or alone), each card brought in by a creative device from fx/creative where one shows the change (cursor-follow on a tap, bubble-swarm on the pings a change ends, split-compare on a before -> after, photo-arc on photos, logo-orbit on the products it works with), the changed UI filling the frame on its beat, a recap of every change, the version mark built from it. The camera moves only with a device (a push onto the pointer, a pull back) and nothing bobs or tilts. The film fills src/update.ts only; every slot deals one of its devices per film (src/deal.ts), the creative devices from the deck (src/dealt.ts) or the name. new-film.sh --format update lays these files over the Remotion starter.",
+ "about": "A 20-27 s update film (\"vX is out\"): the name and the version centred in the film's world, then 2-4 changes, each filmed by a hero shot that fits it (a press at macro scale with the camera following the pointer, a typed request ridden by the camera, notifications stacking in depth with a graded blur ladder, cards fanned in depth with the focus racking to one, a ring of the change's pictures, a picture developing under a glass card, a figure counting in a slab of glass, a page flying in and travelled, a before going soft as the after rises in front, the products it works with as glass tiles) and said in one short centred line (over the shot gone soft, alone before it, or parted round a porthole that opens into it), then the brand's mark as a solid pulling back into the lockup with the version. One world per film (fx/world: a built field or a real photograph, with its key light), shots handed over through focus and light, real content from scripts/content.mjs. The camera moves only inside a shot (one declared move that lands) and nothing bobs or rests tilted. The film fills src/update.ts (and src/content.ts from the brief); every slot is dealt per film (src/deal.ts), the world and the hero shots from the deck (src/dealt.ts) or the name. new-film.sh --format update lays these files over the Remotion starter.",
  "engine": "remotion",
  "pace": "crisp",
  "type_family": "bold",
@@ -8,16 +8,17 @@
  "music": {
   "required": true,
   "slot": "audio/music/",
-  "about": "Every update film is cut to a licensed, human-made, instrumental track (references/music.md): the track carries the film, its biggest entry on the recap and its final hit on the version mark; earshot effects mark the UI (taps, highlights, state changes); never effects only.",
+  "about": "Every update film is cut to a licensed, human-made, instrumental track (references/music.md): the track carries the film, its entry on the mark's arrival and its final hit on the version mark; earshot effects mark what each hero shot does (the press, the keys, the cards landing, the figure landing); never effects only.",
   "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 112-128 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track)",
   "add": "bash scripts/new-film.sh <dir> --format update --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
   "then": [
-   "python3 scripts/audio/track.py fit --end auto  (once update.ts is written: the edit is fitted to the film's bars, the track's entry on the recap's bar, its own ending, else one ringing hit, on the version mark)",
+   "python3 scripts/audio/track.py fit --end auto  (once update.ts is written: the edit is fitted to the film's bars, the track's entry on the mark's bar, its own ending, else one ringing hit, on the version mark)",
    "python3 scripts/audio/track.py check"
   ]
  },
  "copy": [
   "src/update.ts",
+  "src/content.ts",
   "src/deal.ts",
   "src/dealt.ts",
   "src/recent.ts",
@@ -25,19 +26,21 @@
   "src/Film.tsx",
   "src/Root.tsx",
   "src/sync.ts",
+  "src/acts/look.tsx",
   "src/acts/World.tsx",
+  "src/acts/heroes.tsx",
   "src/acts/moments.tsx",
   "src/acts/type.tsx",
   "src/acts/Hook.tsx",
   "src/acts/Change.tsx",
-  "src/acts/Payoff.tsx",
   "src/acts/EndCard.tsx",
   "src/brand/identity.ts",
   "src/brand/logo.ts"
  ],
  "keep_if_present": [
   "src/brand/identity.ts",
-  "src/brand/logo.ts"
+  "src/brand/logo.ts",
+  "src/content.ts"
  ],
  "remove": [
   "src/acts/Act1.tsx",
@@ -48,32 +51,35 @@
   "src/acts/plate.tsx"
  ],
  "next": [
-  "update film: write src/update.ts, the one file the film fills: the version and the one before it, 2-4 changes, each one plain sentence (2-6 words, a result the user sees) with its key words (`key`: set apart by colour, weight or scale), its screen's title and the moment that proves it:",
-  "  tap (an action, the state it changes to, `you`: the viewer the tap adds), fill (a list, grid or week that fills), swap (before -> after) or count (a figure that rises), in the product's own words; people and places are real photos (node scripts/assets.mjs get), never initials;",
-  "  what the creative devices show when the change has it: before (2-4 steps of the old way, or 4-7 pings it ends), photos (5+), logos (3+ products it works with), swap (2-3 words the key word rolls through),",
-  "  the type pairing: npx tsx scripts/type-deal.ts --seed \"<name>\" (fx/TypePairs), unless the brand brings its own face; the deal follows the name: the command in template.json deal.print (PIN a slot, or SEED to re-deal; deck.py --creative deals the devices into src/dealt.ts),",
-  "  look at the end first: npx remotion still src/index.ts Film out/stills/end.png --frame=<TOTAL - 1> --scale=0.5, then a sampled sheet (npx remotion render src/index.ts FilmEvery out/sheet --sequence --image-format=jpeg --props='{\"step\":24}' --scale=0.5) before any full render,",
+  "update film: write the content first: node scripts/content.mjs --brief BRIEF.md --fetch --force (the people with real faces, pictures, the product's screens; read src/content.ts, keep what is true, node scripts/content.mjs --check),",
+  "  then src/update.ts, the one file the film fills: the version and the one before it, 2-4 changes, each one plain sentence (2-6 words, a result the user sees) with its key words (`key`), its screen's title and the moment that proves it:",
+  "  tap (an action, the state it changes to, `you`: the viewer the tap adds), type (a request typed and sent), fill (a list, grid or week that fills), swap (before -> after), count (a figure that rises) or page (a document or its site), in the product's own words; people are src/content.ts faces (CONTENT.people[k].photo), never initials;",
+  "  what the hero shots show when the change has it: photos (5+), logos (3+ products it works with); the deal picks each change's hero shot from the ones that fit (src/deal.ts heroFit), at least two different ones a film;",
+  "  the world: a plate world (clouds, sky, aerial, sea, nightCity, studio, macro) needs its photograph: node scripts/assets.mjs plate <kind>, then --pick <n> --to public/plates --accent '<the accent>' (until then a built world of the same tone stands in);",
+  "  the type pairing: npx tsx scripts/type-deal.ts --seed \"<name>\" (fx/TypePairs), unless the brand brings its own face; the deal follows the name: the command in template.json deal.print (PIN a slot, or SEED to re-deal; deck.py deals the world and the hero shots into src/dealt.ts),",
+  "  look at the end first: npx remotion still src/index.ts Film out/stills/end.png --frame=<TOTAL - 1> --scale=0.5, then a sampled sheet (npx remotion render src/index.ts FilmEvery out/sheet --sequence --image-format=jpeg --props='{\"step\":24}' --scale=0.5), then bash scripts/render.sh Film out/draft.mp4 --draft,",
   "  then the track: track.py fit --end auto cuts it to these bars (template.json music)"
  ],
  "deal": {
   "file": "src/deal.ts",
-  "seed": "the product's name (IDENTITY.name), or SEED in src/deal.ts; PIN chooses a slot by hand",
+  "seed": "the product's name (IDENTITY.name), or SEED in src/deal.ts; PIN chooses a slot by hand; a change's `hero` (with `why`) chooses its shot",
   "scaffold": true,
-  "print": "npx tsx -e \"import { DEAL, DEAL_SOURCE, LINES, CARD_TONE, PICTURE, LINE_DEVICE } from './src/deal'; console.log(DEAL_SOURCE, JSON.stringify(DEAL), 'cards', CARD_TONE, 'voice', LINES.voice, 'exit', LINES.exitVoice, 'pictures', JSON.stringify(PICTURE), 'lines', JSON.stringify(LINE_DEVICE))\""
+  "print": "npx tsx -e \"import { DEAL, DEAL_SOURCE, LINES, HEROES, HERO_END } from './src/deal'; console.log(DEAL_SOURCE, JSON.stringify(DEAL), 'voice', LINES.voice, 'exit', LINES.exitVoice, 'heroes', JSON.stringify(HEROES), 'end', HERO_END)\""
  },
  "slots": {
   "ground": {
-   "nearWhite": "a paper sweep lit from the top left",
-   "lightStudio": "a light grey studio sweep: a top key over a falling floor",
-   "softSky": "a pale sky, deeper at the top",
-   "gradientField": "a pale tinted mesh: two lobes of the field hue from opposite corners",
-   "whiteBand": "white with one lit band of the brand colour across the top",
-   "blackField": "studio black under one soft key from above left",
-   "studio": "a mid slate cyclorama: a broad top key over a slate floor",
-   "deepPool": "a deep field at the accent hue with a glow rising from the bottom edge",
-   "duskMesh": "a deep tinted night: two lobes of the field hue",
-   "floorGlow": "near-black with one glow of the field hue rising from the floor",
-   "lightDark": "a light page that turns to a dark stage once, as the colour field fills the frame"
+   "nearWhite": "a built world: paper lit from the top left, for real photos in cards (ink type)",
+   "paleSky": "a built world: a pale sky, the sun's side bright (ink type)",
+   "blackField": "a built world: near-black under a softbox, a fine woven surface where the light falls; glass lit by its rims (white type)",
+   "deepField": "a built world: a deep night at the accent's hue, light rising from the floor (white type)",
+   "electric": "a built world: a saturated blue stage lit from the top; dark cards on it (white type)",
+   "clouds": "a photograph: a sea of clouds from above, the horizon high (white type, smoked glass)",
+   "sky": "a photograph: a pale sky with soft clouds, looking up (ink type, milky glass)",
+   "aerial": "a photograph: land or coast from high above (white type)",
+   "sea": "a photograph: open water to a far horizon (white type)",
+   "nightCity": "a photograph: a city at night, its lights soft (white type, dark glass)",
+   "studio": "a photograph: a seamless studio sweep under a softbox (ink type)",
+   "macro": "a photograph: a close natural surface, leaves or drops (white type)"
   },
   "hook": {
    "roll": "\"[Name] [old version]\" centred; the changed numerals roll on a drum to the new version once the name is read",
@@ -81,36 +87,35 @@
    "badge": "the name alone, centred; a dot lands after it and grows into the pill that carries the version (the end card keeps the pill)"
   },
   "arrive": {
-   "rise": "a card no creative device brings rises into place, whole within the move's first fifth",
-   "open": "a hairline at the centre grows across and opens down into the card"
+   "rack": "each hero shot opens out of focus and racks sharp (7.5 -> 1.4 px in 9 frames at 30 fps)",
+   "whip": "each hero shot arrives on a fast move that brakes into its framing, smeared on the fast frames",
+   "bloom": "each hero shot opens out of a soft bloom of the world's light that settles"
   },
   "order": {
-   "show": "the picture first (the card comes in and works), then the card folds shut into a bar of light and its line rises from it, alone in the middle",
-   "after": "the picture first, then the element that changed grows into the frame's lit colour field and the line reads on it (once a film: the colour event, the ground taking its own event under it); the field closes into the next card or into the dot its device starts from",
-   "split": "the line first, parted round the card, which sits small in the gap between its words; the words leave and the card grows out of the gap as the new screen and works",
-   "lead": "the line first, alone (the card before it folds into the bar it rises from), then this change's card comes in and works",
-   "rule": "a line never follows a line: once a change opens on its picture, the later ones do too; one picture hands over to the next by the element that changed growing into the next card"
-  },
-  "creative": {
-   "entrance": "pixel-assemble, shape-morph, object-turn (any card), bubble-swarm (before: 4-7 pings; the rows land as they are drawn in), split-compare (before: 2-4 steps, or a swap; the product works beside the old way), photo-arc (photos: 5+), logo-orbit (logos: 3+): they bring a card in after a line",
-   "scene": "cursor-follow (a tap): the camera pushes onto the pointer, rides it to the button, clicks on the hit and pulls back to the card reacting",
-   "line": "scale-contrast on the field line (its key word huge), letter-swing or word-swap (swap: 2-3 words) on a line of its own",
-   "deal": "the deck's devices (src/dealt.ts creative, then its reserve) or the name's: each on the change it shows, two or more a film; a device this template does not play (zoom-wall, data-sculpture, colour-flood, dot-button, type-object, type-window, split-around) passes to the next"
-  },
-  "recap": {
-   "deal": "the carried card lands in the recap row and the other changes slide out from behind it",
-   "rise": "the cards rise into the recap row (always, when the last change ends on its line)"
+   "show": "the hero shot first; then it goes soft and dims (a focus isolate) and the line lands centred in front of it",
+   "lead": "the line first, alone in the world (the shot before goes soft into the world); it leaves and the hero shot arrives",
+   "split": "the line first, parted round a porthole that opens in its gap with the hero shot inside; the words leave and the porthole opens into the frame as the shot plays",
+   "rule": "a line never follows a line: once a change opens on its picture, the later ones do too"
   },
   "end": {
-   "stack": "the recap's cards slide onto each other at the centre and the pile shrinks into the mark; the name comes out of it first letter first, the version lands on the last bar line",
-   "fold": "the other cards tuck behind the last one at the centre, which shrinks into the mark; then the name and the version"
+   "beside": "the mark's solid pulls back into the flat mark; the name slides out beside it, the pair re-centred, and the version lands after the name on the last bar line",
+   "stack": "the same pull-back; the name rises under the mark and the version lands beside the name"
+  },
+  "heroes": {
+   "push-press": "a tap: the camera follows the pointer in to the button at macro scale; a glow the size of the button blooms on the press and the screen answers in frame",
+   "macro-type": "a typed request: the camera pushes onto the first characters, rides the caret, travels on to send and lands on the press",
+   "toast-stack": "a list: its rows drop into the front slot as cards and push the stack back into depth (a graded blur ladder); the camera closes in once",
+   "fan-focus": "a list: its rows as cards fanned back in depth, the camera to one side closing on the one that matters as the focus racks to it",
+   "carousel": "5+ pictures: a ring of them turning in depth; the camera cranes down to eye level as it lands the chosen one, which opens toward the lens",
+   "photo-develop": "a picture: it develops from a duotone in the world's light to full colour while a glass card with what it says rises in front",
+   "glass-counter": "a count: the figure in a slab of glass catching the world's key, counting as the camera pushes onto it, a band of light on its landing",
+   "page-fly": "a page or a week: it lies back in perspective and the camera travels it from the headline to what changed",
+   "focus-swap": "a before and an after (or a tap's): the screen as it was goes soft and dims as the screen as it is now rises in front",
+   "glass-tiles": "3+ products it works with: their official marks as milky glass tiles rising on an arc in depth",
+   "rule": "each change takes the first shot in the film's order that can film it (src/deal.ts heroFit), never one another change took while another fits; at least two different shots a film"
   },
   "lines": {
-   "moves": "every line on one move (mask, fall or crisp) and one whole-line exit (lift or recede), dealt per film: no line travels sideways or leaves word by word; every line's key word is set apart (the accent, or its line device)"
-  },
-  "cards": {
-   "light": "kit/card Card, light, on any ground (standing a little off a light ground)",
-   "dark": "on a dark ground only, dealt: kit/card Card dark, 8-12 L* over the ground (src/deal.ts CARD_TONE)"
+   "moves": "every line on one move (mask, fall or crisp) and one whole-line exit (lift or recede), dealt per film: no line travels sideways or leaves word by word; every line's key word is set apart in the accent"
   }
  }
 }
