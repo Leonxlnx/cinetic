@@ -51,14 +51,25 @@ import { IDENTITY } from './brand/identity';
 //   creative pin a device to this pair (an id from fx/creative/meta.ts)
 // `creative` on the film swaps a dealt device for another, with the reason: { swap: { 'data-sculpture': 'zoom-wall' },
 // reason: 'no real figure yet' } (never to get back to a line-card film: the swap is another creative element).
+//
+// The hero shots (src/deal.ts HERO: three or more dealt by scripts/deck.py with the direction, src/hero draws them) take
+// their beats first: a picture beat, a line held over its own picture (`over`: the shot sets the line in its own
+// composition), a line, or the end card (timeline.ts HERO_PLAN prints where). They fill themselves with the product's
+// own content from src/content.ts (`node scripts/content.mjs --brief BRIEF.md --fetch --force` writes it from the brief:
+// the request typed into the input, the page it makes, the notifications it sets off, the faces, the pictures): read it,
+// keep what is true of the product, change the rest.
+//   hero     pin a hero shot to this pair (an id from deal.ts HERO_META)
+// `heroes` on the film swaps a dealt shot for another, with the reason: { swap: { carousel: 'fan-focus' }, reason: '...' }.
 export type Count = { to: number; from?: number; suffix?: string; prefix?: string; decimals?: number };
 export type Pair = {
   line?: string; scene: string; beat?: 'alone' | 'with' | 'over'; seconds?: number; hits?: number[]; ui?: string[];
   creative?: string; alts?: string[]; logos?: string[]; before?: string[]; count?: Count; word?: string; label?: string; photos?: string[];
+  hero?: string;
 };
 export type Launch = {
   name: string; pairs: Pair[]; close: string; input?: string; seed?: string; pin?: Partial<Record<string, string>>;
   creative?: { swap?: Record<string, string>; reason?: string };
+  heroes?: { swap?: Record<string, string>; reason?: string };
 };
 
 // cinetic:placeholder - the template's stand-in script: write the product's own lines, scenes and strings, then delete this line.
@@ -66,7 +77,7 @@ export const LAUNCH: Launch = {
   name: IDENTITY.name,
   pairs: [
     { line: `${IDENTITY.name} turns notes into *plans*.`, scene: 'input', seconds: 2.8, hits: [0.3, 0.62], ui: ['[the input the product takes]', '[the output it makes]'] },
-    { line: 'Every step finds its place.', scene: 'steps', seconds: 1.8, hits: [0.12, 0.38, 0.62], ui: ['[step one]', '[step two]', '[step three]', '[its place]', '[the next]', '[the last]'] },
+    { line: 'It runs on its own.', scene: 'steps', seconds: 1.8, hits: [0.12, 0.38, 0.62], ui: ['[step one]', '[step two]', '[step three]', '[its place]', '[the next]', '[the last]'] },
     { line: 'You just start.', scene: 'result', seconds: 2.4, hits: [0.35], ui: ['[the result]', '[what it shows]'] },
   ],
   close: '[Where to get it]',

@@ -1,6 +1,6 @@
 // The choices this film is dealt. The structure never changes (lines that meet their pictures alone, with or over them,
 // every change of picture carried, the lockup built from the last picture); how each part looks does: the text voice,
-// the ground family, the seams, the end card and the camera on the picture beats. ONE source: when scripts/deck.py has dealt a direction in this project it writes
+// the world, the seams, the end card, the camera on the picture beats, the hero shots and the creative elements. ONE source: when scripts/deck.py has dealt a direction in this project it writes
 // src/dealt.ts, and the film plays that deal (out/DIRECTION.md section 0 says why each); with none dealt, the seed is
 // the product's name (the same name, the same deal, on any machine) and launch.ts `seed` re-deals. launch.ts `pin`
 // fixes a slot by hand over either. Keep this file free of React and CSS imports: the timeline and the sound import it.
@@ -10,9 +10,14 @@
 //            blur           every line arrives whole out of a 12 px blur, settling from 104 % on a glide (34 f)
 //            ink            every word arrives pale a touch below its place, rises into it and inks to its colour in
 //                           10 f, 6 f apart
-//   ground   (fx/Grounds GROUND_FAMILIES, all eleven) nearWhite, lightStudio, softSky, gradientField, whiteBand,
-//            blackField, studio, deepPool, duskMesh, floorGlow, lightDark: one lit field for the whole film, still, never
-//            cut, in the film's palette (deck.py deals it with the palette's tone); its one colour event is declared
+//   ground   the film's world (fx/world WORLD_DEAL, src/world.tsx draws it): the place the film stands in, with its key
+//            light that glass, rims, type and the product pick up; one for the whole film, never cut, never a bare
+//            gradient. Built worlds: nearWhite (paper lit from the top left, for real photos), paleSky (a pale sky built
+//            in code), blackField (near-black on a woven surface under a soft key: glass lit by its rims), deepField (a
+//            deep night with light rising from the floor), electric (a saturated stage in a blue). Plate worlds (a real
+//            photograph: `node scripts/assets.mjs plate <kind>`, then `--pick <n> --to public/plates`): clouds,
+//            sky, aerial, sea, nightCity, studio, macro; until the plate is in public/plates a built world of the
+//            same tone stands in (src/world.tsx PLATE_FALLBACK)
 //   seamTA   matchCut       line -> picture: played as blurThrough (a line and a picture share no shape to hold across a
 //                           one-frame cut: a match cut there is a hard cut from type to a picture)
 //            velocityCut    the line leaves at speed, the picture arrives on the same speed and settles
@@ -48,7 +53,7 @@ import { RECENT } from './recent';
 
 export const DEVICES = {
   voice: ['build', 'blur', 'ink'],
-  ground: ['nearWhite', 'lightStudio', 'softSky', 'gradientField', 'whiteBand', 'blackField', 'studio', 'deepPool', 'duskMesh', 'floorGlow', 'lightDark'],
+  ground: ['nearWhite', 'paleSky', 'blackField', 'deepField', 'electric', 'clouds', 'sky', 'aerial', 'sea', 'nightCity', 'studio', 'macro'],
   seamTA: ['matchCut', 'velocityCut', 'blurThrough'],
   seamAT: ['recede', 'zoomThrough'],
   seamAA: ['velocityCut', 'matchCut', 'blurThrough'],
@@ -98,7 +103,7 @@ export const dealOf = (name: string): Deal => {
     })) as Deal;
     if (2 * slots.filter((s) => d[s] !== FLOOR[s]).length >= slots.length) return d;
   }
-  return { ...FLOOR, voice: 'blur', ground: 'deepPool', seamTA: 'velocityCut', seamAA: 'matchCut' };
+  return { ...FLOOR, voice: 'blur', ground: 'deepField', seamTA: 'velocityCut', seamAA: 'matchCut' };
 };
 
 const NAME = LAUNCH.seed ?? LAUNCH.name;
@@ -187,7 +192,7 @@ export const creativeOf = (name: string, recent: readonly (readonly string[])[] 
   return { deal: fall, reserve: ALL.filter((x) => !fall.includes(x)) };
 };
 /** What the unnamed scaffold plays (a named film never replays it whole). */
-export const FLOOR_CREATIVE: CreativeId[] = ['type-object', 'pixel-assemble', 'zoom-wall'];
+export const FLOOR_CREATIVE: CreativeId[] = ['scale-contrast', 'letter-swing', 'zoom-wall'];
 const recentSets = ((RECENT as { creative?: readonly (readonly string[])[] }).creative ?? []).filter((x) => Array.isArray(x));
 const dealtCreative = (): CreativeDeal | null => {
   const d = DEALT as { creative?: string[]; reserve?: string[] } | null;
@@ -219,4 +224,103 @@ export const CREATIVE: CreativeDeal & { source: string } = (() => {
 })();
 /** A creative element's entry (fx/creative/meta.ts). */
 export const creativeMeta = (id: string) => metaOf(id);
+
+// ---- The hero shots (src/hero). The shots that carry a film's production value: each a designed 3D or light shot of the
+// product's own content (src/content.ts, written by scripts/content.mjs from the brief) standing in the film's world,
+// with one sharp plane and a graded blur ladder, one camera move that has a job and lands, glass as a lens on the world,
+// light sized to its source and timed, real content in quantity and a scale jump. scripts/deck.py deals at least three
+// at random with fit (the brief's words, the world's tone, the photos, the brand's mark), never the last film's set,
+// into src/dealt.ts `hero` (and `heroReserve`); the unnamed scaffold plays FLOOR_HERO; without a deck deal the name
+// deals them and they take the beats the creative elements leave. timeline.ts HERO_PLAN puts each where its role says:
+//   picture  a picture beat (the pair plays alone: its line, then the shot)
+//   over     a line held over its own picture: the shot sets the line in its composition (one beat, T+A)
+//   line     a line beat: the shot draws the line (the picture follows)
+//   end      the end card: the lockup arrives through it
+// A pair's `hero` (launch.ts) pins one; launch.ts `heroes.swap` trades one for another with a reason. `min`: the seconds
+// the shot's beat needs (line: what it adds to the line's beat); `fits`: words that make it fit the product.
+export type HeroRole = 'picture' | 'over' | 'line' | 'end';
+export type HeroMeta = { id: string; role: HeroRole; family: string; needs: readonly string[]; prefer: 'first' | 'middle' | 'proof'; min: number; dark?: boolean; fits: readonly string[]; about: string };
+export const HERO_META = [
+  { id: 'glass-input', role: 'over', family: 'input', needs: [], prefer: 'first', min: 3.2, fits: ['ask', 'search', 'prompt', 'type', 'message', 'chat', 'assistant', 'agent', 'request', 'describe', 'write', 'find', 'query'], about: 'the line over the world and under it the product\'s input as frosted glass: the camera pushes in once as the request types, a band of light crosses the glass as it lands and again as it sends' },
+  { id: 'macro-type', role: 'picture', family: 'input', needs: [], prefer: 'first', min: 3.0, fits: ['ask', 'type', 'prompt', 'message', 'write', 'compose', 'command', 'search', 'chat', 'reply', 'draft'], about: 'the input at macro scale: the camera pushes onto the first characters and rides the caret as the request types, the world soft behind; a soft pointer clicks send and a glow the size of the button blooms' },
+  { id: 'black-glass', role: 'picture', family: 'input', needs: [], prefer: 'first', min: 2.6, dark: true, fits: ['agent', 'code', 'build', 'command', 'terminal', 'deploy', 'run', 'prompt', 'automate', 'workflow', 'developer'], about: 'the product\'s composer as a frosted pane focusing in out of the dark (a rack from soft to sharp in 9 frames), glints running along its rim, one push that lands, the request typing once it is sharp' },
+  { id: 'page-fly', role: 'picture', family: 'page', needs: [], prefer: 'middle', min: 2.8, fits: ['page', 'doc', 'document', 'report', 'site', 'website', 'article', 'invoice', 'brief', 'proposal', 'contract', 'plan', 'summary', 'post', 'landing', 'resume', 'guide'], about: 'the page the product makes flies in lying back in perspective and the camera travels it from the headline to the table, the far edge soft, a thin light along its near edge' },
+  { id: 'toast-stack', role: 'picture', family: 'stack', needs: [], prefer: 'proof', min: 2.2, fits: ['notif', 'alert', 'payment', 'paid', 'order', 'sale', 'sign', 'booking', 'reminder', 'message', 'event', 'invoice', 'subscri', 'inbox', 'join', 'waitlist'], about: 'what the product sets off arrives as notifications dropping into the front slot and pushing the stack back into depth: the front one sharp, each one further back softer (a graded blur ladder), real names, amounts and times' },
+  { id: 'fan-focus', role: 'picture', family: 'stack', needs: [], prefer: 'middle', min: 2.6, fits: ['results', 'sources', 'options', 'matches', 'candidates', 'listings', 'comments', 'reviews', 'picks', 'choose', 'compare', 'feedback', 'leads'], about: 'many results as cards fanned back in depth, the camera to one side closing on the one that matters while the focus racks to it' },
+  { id: 'rise-behind', role: 'over', family: 'word', needs: [], prefer: 'proof', min: 2.8, fits: ['plan', 'plans', 'pricing', 'price', 'tier', 'option', 'lineup', 'choose', 'compare', 'collection', 'set', 'every'], about: 'the line\'s key word giant in the middle of the frame, glass cards of the product\'s own content rising behind it while the camera pulls back; the focus racks from the word to the cards as the reveal lands' },
+  { id: 'porthole', role: 'line', family: 'word', needs: [], prefer: 'middle', min: 1.0, fits: ['people', 'team', 'creator', 'customer', 'person', 'friend', 'coach', 'client', 'patient', 'student', 'guest', 'host', 'face', 'voice', 'family', 'member'], about: 'once the line is read its words part and a porthole opens in the gap, a real face (or the product) inside, a soft shadow ring round it and a band of light on its rim; the words re-centre round it, then it all goes soft into the next shot' },
+  { id: 'carousel', role: 'picture', family: 'media', needs: ['pictures'], prefer: 'middle', min: 2.8, fits: ['photo', 'video', 'image', 'thumbnail', 'design', 'gallery', 'listing', 'clip', 'reel', 'album', 'channel', 'portfolio', 'catalog', 'shop', 'product'], about: 'a ring of the product\'s real pictures turning in depth; the camera cranes down from above to eye level as the ring slows and lands the chosen one facing the camera, a smear only while it turns fast' },
+  { id: 'push-press', role: 'picture', family: 'press', needs: ['button'], prefer: 'proof', min: 2.0, fits: ['book', 'pay', 'send', 'merge', 'publish', 'approve', 'buy', 'order', 'confirm', 'sign', 'submit', 'launch', 'ship', 'deploy', 'checkout'], about: 'the product\'s screen, then one push into its button at macro scale as a pointer reaches it and presses: a glow the size of the button blooms and the screen answers' },
+  { id: 'logo-3d', role: 'end', family: 'mark', needs: ['mark'], prefer: 'proof', min: 1.6, fits: [], about: 'the end card arrives through the brand\'s mark as a solid: an extreme close-up of its bevelled edge, one pull-back that turns it to face the camera and lands it exactly on the flat lockup' },
+] as const satisfies readonly HeroMeta[];
+export type HeroId = (typeof HERO_META)[number]['id'];
+const HMETA = HERO_META as readonly HeroMeta[];
+/** A hero shot's entry. */
+export const heroMeta = (id: string): HeroMeta | undefined => HMETA.find((m) => m.id === id);
+/** How many hero shots a film is dealt (at least: deck.py may deal one more for a long film). */
+export const HERO_N = 3;
+/** What the unnamed scaffold plays: a glass input over the world, a line parted by a porthole, a notification stack. */
+export const FLOOR_HERO: string[] = ['glass-input', 'porthole', 'toast-stack'];
+/**
+ * The hero shots for a name (the fallback when the deck dealt none): a seeded, recency-weighted shuffle of the shots a
+ * name deal can feed (the ones that need pictures, the brand's mark or the product's button are the deck's to deal: it
+ * knows what the film has), at least one picture shot, one shot of a family and one of each other role at most, never a
+ * recent film's set and one shot shared with the last film at most (two after half the draws).
+ */
+export const heroOf = (name: string, recent: readonly (readonly string[])[] = [], n = HERO_N): { deal: string[]; reserve: string[] } => {
+  const ok = HMETA.filter((m) => !m.needs.length && m.role !== 'end');
+  const last = recent[0] ?? [];
+  const weight = (id: string) => recent.slice(0, RECENT_WEIGHT.length).reduce((w, set, i) => (set.includes(id) ? w * RECENT_WEIGHT[i] : w), 1);
+  for (let salt = 0; salt < 64; salt++) {
+    const r = rng(hash(`${name.trim().toLowerCase()}#hero#${salt}`));
+    const order = ok.map((m) => ({ m, k: r() ** (1 / weight(m.id)) })).sort((a, b) => b.k - a.k).map((x) => x.m);
+    const pick: HeroMeta[] = [];
+    const take = (cond: (m: HeroMeta) => boolean) => {
+      const m = order.find((x) => !pick.includes(x) && !pick.some((p) => p.family === x.family) && !(x.role !== 'picture' && pick.some((p) => p.role === x.role)) && cond(x));
+      if (m) pick.push(m);
+    };
+    take((m) => m.role === 'picture');
+    while (pick.length < n) {
+      const had = pick.length;
+      take(() => true);
+      if (pick.length === had) break;
+    }
+    const ids = pick.map((m) => m.id);
+    const same = (set: readonly string[]) => set.length === ids.length && ids.every((x) => set.includes(x));
+    if (recent.some(same) || ids.filter((x) => last.includes(x)).length > (salt < 32 ? 1 : 2)) continue;
+    return { deal: ids, reserve: order.map((m) => m.id).filter((x) => !ids.includes(x)) };
+  }
+  return { deal: [...FLOOR_HERO], reserve: [] };
+};
+const recentHero = ((RECENT as { hero?: readonly (readonly string[])[] }).hero ?? []).filter((x) => Array.isArray(x));
+const heroSwapped = (h: { deal: string[]; reserve: string[] }) => {
+  const sw = LAUNCH.heroes?.swap ?? {};
+  const keys = Object.keys(sw);
+  if (!keys.length) return h;
+  if (!(LAUNCH.heroes?.reason ?? '').trim()) throw new Error('deal: launch.ts heroes.swap needs a reason (what in the product rules the dealt shot out)');
+  if (keys.length > 1) throw new Error(`deal: launch.ts swaps ${keys.length} hero shots; swap one at most`);
+  if (!keys.every((x) => h.deal.includes(x))) throw new Error(`deal: launch.ts heroes.swap trades ${keys.join(', ')}, which this film was not dealt (${h.deal.join(', ')})`);
+  const deal = h.deal.map((x) => sw[x] ?? x);
+  const bad = deal.filter((x) => !heroMeta(x));
+  if (bad.length) throw new Error(`deal: launch.ts heroes.swap names ${bad.join(', ')}, not a hero shot (deal.ts HERO_META)`);
+  return { deal, reserve: h.reserve.filter((x) => !deal.includes(x)) };
+};
+/**
+ * The film's hero shots in the deal's order, the reserve the timeline draws from when fewer than HERO_N find a beat,
+ * where they came from, and whether they take their beats before the creative elements (`first`: a deck deal and the
+ * scaffold; a name deal fills the beats the creative elements leave). A deck deal without hero shots (an older deal)
+ * plays none: re-deal with deck.py.
+ */
+export const HERO_DEAL: { deal: string[]; reserve: string[]; source: string; first: boolean } = (() => {
+  const d = DEALT as { hero?: string[]; heroReserve?: string[] } | null;
+  if (d) {
+    if (!d.hero?.length) return { deal: [], reserve: [], source: 'none (src/dealt.ts deals no hero shots: re-deal with scripts/deck.py)', first: true };
+    const bad = [...d.hero, ...(d.heroReserve ?? [])].filter((x) => !heroMeta(x));
+    if (bad.length) throw new Error(`deal: src/dealt.ts names ${bad.join(', ')}, not a hero shot of this template (deal.ts HERO_META; re-deal with scripts/deck.py)`);
+    const h = heroSwapped({ deal: [...d.hero], reserve: (d.heroReserve ?? []).filter((x) => !(d.hero as string[]).includes(x)) });
+    return { ...h, source: `deck.py${LAUNCH.heroes?.swap ? `, swapped (${LAUNCH.heroes.reason})` : ''}`, first: true };
+  }
+  if (UNNAMED) return { deal: [...FLOOR_HERO], reserve: [], source: 'the floor (unnamed scaffold)', first: true };
+  return { ...heroSwapped(heroOf(NAME, recentHero)), source: `the name "${NAME}" (the beats the creative elements leave)`, first: false };
+})();
 

@@ -1,10 +1,11 @@
 import React from 'react';
 import { AbsoluteFill, getStaticFiles, Html5Audio, Sequence, staticFile, useCurrentFrame } from 'remotion';
-import { actOf, Ground, PAGE } from './acts/stage';
+import { actOf, PAGE } from './acts/stage';
+import { FilmWorld } from './world';
 import { Audit } from './lib/Audit';
 import { FontGate } from './lib/FontGate';
 import type { SafeSpec } from './lib/safe';
-import { ACT } from './timeline';
+import { ACT, FPS } from './timeline';
 
 /** Written by `npm run audio`. Renders are muted and scripts/render.sh muxes it with ffmpeg. */
 export const SOUNDTRACK = 'audio/soundtrack.wav';
@@ -16,16 +17,16 @@ export type FilmProps = { audit?: boolean; safe?: SafeSpec };
 export const ACTS: Record<string, React.FC> = Object.fromEntries(Object.keys(ACT).map((n) => [n, actOf(n)]));
 export const actComponent = (name: string): React.FC => ACTS[name];
 
-/** One act as the film draws it: the ground, the act over it. No camera float: the camera moves only with a purpose
- * (the stage's push closer, a creative element's own move); a hold may be still. */
+/** One act as the film draws it: inside the film's world (src/world.tsx: its ground under the act, its key light shared
+ * with the glass, rims and sweeps in it). No camera float: the camera moves only with a purpose (a hero shot's one move,
+ * the stage's push closer, a creative element's own move); a hold may be still. */
 export const ActOnStage: React.FC<{ name: string }> = ({ name }) => {
-  const F = useCurrentFrame() + ACT[name].from;
   const Act = actComponent(name);
+  const F = useCurrentFrame() + ACT[name].from;
   return (
-    <>
-      <Ground F={F} />
+    <FilmWorld F={F} fps={FPS}>
       <Act />
-    </>
+    </FilmWorld>
   );
 };
 

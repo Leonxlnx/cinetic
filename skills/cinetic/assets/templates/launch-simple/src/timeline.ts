@@ -6,13 +6,13 @@
 import { holdFor, PACE, readingWindows, wordCount, type PaceName } from './lib/pace';
 import { bar, MUSIC } from './music';
 import { LAUNCH } from './launch';
-import { CREATIVE, DEAL } from './deal';
+import { CREATIVE, DEAL, HERO_DEAL, HERO_N, heroMeta, type HeroMeta, type HeroRole } from './deal';
 import { type CreativeMeta, lineResolve, metaOf } from './fx/creative/meta';
 
 export { PACE } from './lib/pace'; // grid-check checks COPY against the film's own pace numbers
 /** The film-time music grid (src/music.ts): null until track.py grid writes the track's; then b() follows its bars. */
 export { MUSIC } from './music';
-export { CREATIVE, DEAL } from './deal';
+export { CREATIVE, DEAL, HERO_DEAL } from './deal';
 
 export const FPS = 60;
 /**
@@ -109,6 +109,8 @@ const PIC = { min: 1, max: 3.5, house: [2.6, 1.6, 2.2, 3.0] } as const; // a pic
 const SEAM_OUT = 14; // f@60 the outgoing line needs inside its beat for the seam (the longest line exit, blurThrough)
 /** f@60: a line over a picture leaves on its own (it lifts and softens away) while the picture racks into focus. */
 export const LINE_EXIT = 16;
+/** f@60 a line after a hero shot waits for the shot to fall back and go soft before its first word. */
+export const HERO_LATE = 10;
 const LEAD = 0; // f@60 between a line's beat and its first word: the seam brings the line in, its first word on the cue
 /** f@60 a line held over its whole picture (over) is gone before the picture's seam out begins. */
 const OVER_TAIL = 6;
@@ -148,13 +150,85 @@ export type CreativeSlot = { pair: number; id: string; role: 'line' | 'picture' 
 const LAST = P.length - 1;
 const needsMet = (i: number, m: CreativeMeta) =>
   m.needs.every((n) => (n === 'swap' ? (P[i].alts?.length ?? 0) >= 1 : n === 'logos' ? (P[i].logos?.length ?? 0) >= 3 : n === 'count' ? !!P[i].count : n === 'before' ? (P[i].before?.length ?? 0) >= 2 : n === 'photos' ? (P[i].photos?.length ?? 0) >= 5 : true));
-/** The creative elements on the film's pairs, and what each draws. */
-export const CREATIVE_PLAN: CreativeSlot[] = [];
-{
+// ---- The hero plan. The film's hero shots (deal.ts HERO_DEAL, src/hero) carry its production value, so a deck deal and the
+// scaffold place them first: each on the beat its role says (a picture beat, a line held over its own picture, a line, or
+// the end card), where it says the most (`prefer`), then the creative elements take the beats left (a dealt creative
+// element with no beat left is benched, not lost: the next film may play it). A hero picture plays alone (its line,
+// then the shot) and never the last picture unless the end card is a hero shot too (the end card is built from the last
+// picture's element); a line shot never takes the claim; a line held over its picture leaves the film at least two
+// type-only beats. Fewer than HERO_N placed: the reserve fills in. A name deal (no deck) fills the beats the creative
+// elements leave. A pair's `hero` pins one.
+export type HeroSlot = { pair: number; id: string; role: HeroRole };
+type Taken = { line: Set<number>; pic: Set<number> };
+const planHeroes = (taken: Taken): { slots: HeroSlot[]; end: string | null; benched: string[] } => {
+  const pic = new Map<number, HeroMeta>();
+  const over = new Map<number, HeroMeta>();
+  const line = new Map<number, HeroMeta>();
+  let end: string | null = null;
+  const slots: HeroSlot[] = [];
+  const free = (i: number, what: 'line' | 'pic') => !taken[what].has(i) && !over.has(i) && !(what === 'pic' ? pic : line).has(i);
+  // the type-only beats left once pair j is held over its picture: pairs alone by default or by a shot (never fewer later)
+  const typeOnly = (j: number) =>
+    P.filter((p, i) => hasLine(i) && i !== j && !over.has(i) && (p.beat === 'alone' || (p.beat === undefined && (i === 0 || i === LAST || pic.has(i) || line.has(i) || taken.line.has(i) || taken.pic.has(i))))).length;
+  const ok: Record<HeroRole, (i: number) => boolean> = {
+    picture: (i) => free(i, 'pic') && P[i].beat !== 'over' && P[i].beat !== 'with' && (i !== LAST || !!end),
+    over: (i) => hasLine(i) && free(i, 'pic') && free(i, 'line') && (P[i].beat === undefined || P[i].beat === 'over') && (i !== LAST || !!end) && typeOnly(i) >= 2,
+    line: (i) => hasLine(i) && i !== LAST && free(i, 'line') && (P[i].beat === undefined || P[i].beat === 'alone'),
+    end: () => !end,
+  };
+  const mid = LAST / 2;
+  const orderOf = (m: HeroMeta): number[] => {
+    const all = P.map((_, i) => i);
+    if (m.prefer === 'first') return all;
+    if (m.prefer === 'proof') return [...all].reverse();
+    return [...all].sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid) || a - b);
+  };
+  const place = (id: string, at?: number) => {
+    const m = heroMeta(id);
+    if (!m) throw new Error(`timeline: "${id}" is not a hero shot (deal.ts HERO_META lists them)`);
+    if (slots.some((x) => x.id === id) || end === id) return false;
+    if (m.role === 'end') {
+      if (!ok.end(0)) return false;
+      end = id;
+      return true;
+    }
+    const i = (at !== undefined ? [at] : orderOf(m)).find((x) => ok[m.role](x));
+    if (i === undefined) {
+      if (at !== undefined) throw new Error(`timeline: pair ${at + 1} pins the hero shot ${id}, which cannot play there (a picture shot plays alone and never the last picture unless the end card is a hero shot; a shot over its line needs a line and two type-only beats left; a line shot never takes the claim)`);
+      return false;
+    }
+    (m.role === 'picture' ? pic : m.role === 'over' ? over : line).set(i, m);
+    slots.push({ pair: i + 1, id, role: m.role });
+    return true;
+  };
+  // the end card first (a hero end frees the last picture for a shot), then the pins, then the deal by role (pictures and
+  // lines before the shots that hold a line over their picture: those need two type-only beats left), the reserve last
+  const rank: Record<HeroRole, number> = { end: 0, picture: 1, line: 2, over: 3 };
+  for (const id of HERO_DEAL.deal) if (heroMeta(id)?.role === 'end') place(id);
+  P.map((p, i) => ({ id: p.hero, i })).filter((x): x is { id: string; i: number } => !!x.id).sort((a, b) => rank[heroMeta(a.id)?.role ?? 'picture'] - rank[heroMeta(b.id)?.role ?? 'picture']).forEach((x) => place(x.id, x.i));
+  const benched: string[] = [];
+  const byRole = [...HERO_DEAL.deal].sort((a, b) => rank[heroMeta(a)?.role ?? 'picture'] - rank[heroMeta(b)?.role ?? 'picture']);
+  for (const id of byRole) if (heroMeta(id)?.role !== 'end' && !place(id) && !slots.some((x) => x.id === id)) benched.push(id);
+  for (const id of HERO_DEAL.reserve) {
+    if (slots.length + (end ? 1 : 0) >= HERO_N) break;
+    if (heroMeta(id)?.needs.length) continue;
+    if (slots.some((x) => heroMeta(x.id)?.family === heroMeta(id)?.family)) continue;
+    place(id);
+  }
+  slots.sort((a, b) => a.pair - b.pair || (a.role === 'line' ? -1 : 1));
+  return { slots, end, benched };
+};
+const takenBy = (slots: readonly { pair: number; role: string }[]): Taken => ({
+  line: new Set(slots.filter((x) => x.role === 'line' || x.role === 'over').map((x) => x.pair - 1)),
+  pic: new Set(slots.filter((x) => x.role === 'picture' || x.role === 'over').map((x) => x.pair - 1)),
+});
+/** The creative elements on the beats `taken` leaves, `extra` beats already counting as creative (the hero shots'). */
+const planCreative = (taken: Taken, extra: number): CreativeSlot[] => {
+  const plan: CreativeSlot[] = [];
   const line = new Map<number, CreativeMeta>();
   const pic = new Map<number, CreativeMeta>();
-  const lineOk = (i: number, m: CreativeMeta) => hasLine(i) && i !== LAST && !line.has(i) && P[i].beat !== 'over' && P[i].beat !== 'with' && !(m.handover && pic.has(i));
-  const picOk = (i: number, m: CreativeMeta) => !pic.has(i) && P[i].beat !== 'over' && !(i === LAST && m.ends !== 'scene') && !line.get(i)?.handover;
+  const lineOk = (i: number, m: CreativeMeta) => hasLine(i) && i !== LAST && !line.has(i) && !taken.line.has(i) && P[i].beat !== 'over' && P[i].beat !== 'with' && !(m.handover && (pic.has(i) || taken.pic.has(i)));
+  const picOk = (i: number, m: CreativeMeta) => !pic.has(i) && !taken.pic.has(i) && P[i].beat !== 'over' && !(i === LAST && m.ends !== 'scene') && !line.get(i)?.handover;
   const mid = (LAST) / 2;
   const orderOf = (m: CreativeMeta): number[] => {
     const all = P.map((_, i) => i);
@@ -175,30 +249,48 @@ export const CREATIVE_PLAN: CreativeSlot[] = [];
     const cands = (at !== undefined ? [at] : orderOf(m)).filter((i) => ok(i, m));
     const i = [...cands.filter((x) => needsMet(x, m)), ...cands.filter((x) => !needsMet(x, m))][0];
     if (i === undefined) {
-      if (at !== undefined) throw new Error(`timeline: pair ${at + 1} pins ${id}, which cannot play there (a line device takes a line that is not the claim, alone; a picture device never sits under an over line, after a line device that hands over, or on the last pair unless it ends on the product)`);
+      if (at !== undefined) throw new Error(`timeline: pair ${at + 1} pins ${id}, which cannot play there (a line device takes a line that is not the claim, alone; a picture device never sits under an over line, after a line device that hands over, on a hero shot's beat, or on the last pair unless it ends on the product)`);
       return false;
     }
     (m.role === 'line' ? line : pic).set(i, m);
-    CREATIVE_PLAN.push({ pair: i + 1, id, role: m.role });
+    plan.push({ pair: i + 1, id, role: m.role });
     return true;
   };
   P.forEach((p, i) => p.creative && place(p.creative, i));
-  for (const id of CREATIVE.deal) if (!CREATIVE_PLAN.some((c) => c.id === id)) place(id);
-  // at least half the body's beats creative: a pair with a line plays two beats (one when it is held over its picture),
-  // a pair with no line one; each device makes one of them creative
+  for (const id of CREATIVE.deal) if (!plan.some((c) => c.id === id)) place(id);
+  // at least half the body's beats creative (a hero shot counts): a pair with a line plays two beats (one when it is
+  // held over its picture), a pair with no line one; each device makes one of them creative
   const beats = P.reduce((n, p, i) => n + (!hasLine(i) || p.beat === 'over' ? 1 : 2), 0);
   for (const id of CREATIVE.reserve) {
-    if (CREATIVE_PLAN.length >= Math.ceil(CREATIVE_MIN * beats)) break;
+    if (plan.length + extra >= Math.ceil(CREATIVE_MIN * beats)) break;
     const m = metaOf(id);
-    if (!m || CREATIVE_PLAN.some((c) => metaOf(c.id)?.family === m.family) || m.needs.length) continue;
+    if (!m || plan.some((c) => metaOf(c.id)?.family === m.family) || m.needs.length) continue;
     place(id);
   }
-  CREATIVE_PLAN.sort((a, b) => a.pair - b.pair || (a.role === 'line' ? -1 : 1));
-}
+  return plan.sort((a, b) => a.pair - b.pair || (a.role === 'line' ? -1 : 1));
+};
+const NONE: Taken = { line: new Set(), pic: new Set() };
+const HEROES_FIRST = HERO_DEAL.first ? planHeroes(NONE) : null;
+/** The creative elements on the film's pairs, and what each draws. */
+export const CREATIVE_PLAN: CreativeSlot[] = HEROES_FIRST ? planCreative(takenBy(HEROES_FIRST.slots), HEROES_FIRST.slots.length) : planCreative(NONE, 0);
+const HEROES = HEROES_FIRST ?? planHeroes(takenBy(CREATIVE_PLAN));
+/** The hero shots on the film's pairs (role: what each draws). */
+export const HERO_PLAN: HeroSlot[] = HEROES.slots;
+/** The end card's hero shot, if any (the lockup arrives through it). */
+export const HERO_END: string | null = HEROES.end;
+/** Dealt hero shots that found no beat (a short film): the plan print names them. */
+export const HERO_BENCHED: string[] = HEROES.benched;
+/** Dealt creative elements a hero shot took the beat of (they would have played without it): benched, not a fault. */
+export const CREATIVE_BENCHED: string[] = HEROES_FIRST && HERO_PLAN.length ? planCreative(NONE, 0).map((c) => c.id).filter((id) => CREATIVE.deal.includes(id as never) && !CREATIVE_PLAN.some((c) => c.id === id)) : [];
+const heroAt = (role: HeroRole) => P.map((_, i) => heroMeta(HERO_PLAN.find((h) => h.pair === i + 1 && h.role === role)?.id ?? ''));
+/** The hero shot on pair i's picture (0-based), on its line held over its picture, on its line, if any. */
+export const HERO_PIC: (HeroMeta | undefined)[] = heroAt('picture');
+export const HERO_OVER: (HeroMeta | undefined)[] = heroAt('over');
+export const HERO_LINE: (HeroMeta | undefined)[] = heroAt('line');
 /** Dealt creative elements that found no beat (a self-ending picture device with only the last picture free, a line
  * device with no line but the claim): precheck names them, the ship gate fails them; add a pair (a picture-only pair
  * works) or swap the device with a reason. */
-export const CREATIVE_UNPLACED: string[] = CREATIVE.deal.filter((id) => !CREATIVE_PLAN.some((c) => c.id === id));
+export const CREATIVE_UNPLACED: string[] = CREATIVE.deal.filter((id) => !CREATIVE_PLAN.some((c) => c.id === id) && !CREATIVE_BENCHED.includes(id));
 /** The line device of pair i (0-based), if any. */
 export const LINE_DEV: (CreativeMeta | undefined)[] = P.map((_, i) => metaOf(CREATIVE_PLAN.find((c) => c.pair === i + 1 && c.role === 'line')?.id ?? ''));
 /** The picture device of pair i (0-based), if any. */
@@ -224,7 +316,7 @@ export const resolveAt = (i: number): number => {
 };
 /** How each line meets its picture: launch.ts `beat`, else the first line, the claim and every pair a creative element
  * takes alone, the lines between with. */
-export const MODES: Mode[] = P.map((p, i): Mode => (!hasLine(i) ? 'none' : p.beat ?? (i === 0 || i === P.length - 1 || LINE_DEV[i] || PIC_DEV[i] ? 'alone' : 'with')));
+export const MODES: Mode[] = P.map((p, i): Mode => (!hasLine(i) ? 'none' : HERO_OVER[i] ? 'over' : p.beat ?? (i === 0 || i === P.length - 1 || LINE_DEV[i] || PIC_DEV[i] || HERO_PIC[i] || HERO_LINE[i] ? 'alone' : 'with')));
 CREATIVE_PLAN.forEach((c) => {
   if (c.role === 'line' && MODES[c.pair - 1] !== 'alone') throw new Error(`timeline: pair ${c.pair} plays the line device ${c.id}, which draws the line on its own beat: leave its \`beat\` unset (or alone)`);
   if (c.role === 'picture' && MODES[c.pair - 1] === 'over') throw new Error(`timeline: pair ${c.pair} plays the picture device ${c.id} under a line held over it (beat over): a creative picture takes the frame; set beat alone or with`);
@@ -236,20 +328,22 @@ const beatsOf = P.map((p, i) => {
   const mode = MODES[i];
   if (mode === 'none') {
     // a picture-only pair: its picture alone, carried on from the last picture
-    const want = Math.min(PIC.max, Math.max(PIC.min, PIC_DEV[i]?.min ?? 0, p.seconds ?? PIC.house[i % PIC.house.length]));
+    const want = Math.min(PIC.max, Math.max(PIC.min, PIC_DEV[i]?.min ?? 0, HERO_PIC[i]?.min ?? 0, p.seconds ?? PIC.house[i % PIC.house.length]));
     let a = Math.max(2, Math.round(SEC(want) / HALF));
-    while (a * HALF < SEC(Math.max(PIC.min, PIC_DEV[i]?.min ?? 0))) a++;
+    while (a * HALF < SEC(Math.max(PIC.min, PIC_DEV[i]?.min ?? 0, HERO_PIC[i]?.min ?? 0))) a++;
     return { t: 0, a, mode };
   }
   const n = wordCount(plain(p.line ?? ''));
   const dev = LINE_DEV[i];
-  const tail = dev ? (dev.handover ? dev.tail ?? 0 : SEAM_OUT) : mode === 'alone' ? SEAM_OUT : mode === 'over' ? LINE_EXIT + OVER_TAIL : LINE_EXIT;
-  const need = f60(LEAD + resolveAt(i)) + f60(holdFor(n, pace)) + f60(tail);
-  const max = dev ? LINE_DEVICE_MAX : LINE.max;
+  const tail = (dev ? (dev.handover ? dev.tail ?? 0 : SEAM_OUT) : mode === 'alone' ? SEAM_OUT : mode === 'over' ? LINE_EXIT + OVER_TAIL : LINE_EXIT) + (HERO_LINE[i] ? Math.round(60 * HERO_LINE[i].min) : 0);
+  // a line after a hero shot starts HERO_LATE f@60 after the cut (the shot goes soft first): its beat holds that too
+  const late = i > 0 && mode === 'alone' && (HERO_PIC[i - 1] || HERO_OVER[i - 1]) ? HERO_LATE : 0;
+  const need = f60(LEAD + late + resolveAt(i)) + f60(holdFor(n, pace)) + f60(tail);
+  const max = dev || HERO_LINE[i] ? LINE_DEVICE_MAX : LINE.max;
   if (need > SEC(max)) throw new Error(`timeline: "${plain(p.line ?? '')}" needs ${(need / FPS).toFixed(2)} s; a line beat holds at most ${max} s${dev ? ` (${dev.id})` : ''}: shorten it`);
-  const want = Math.min(PIC.max, Math.max(PIC.min, PIC_DEV[i]?.min ?? 0, p.seconds ?? PIC.house[i % PIC.house.length]));
+  const want = Math.min(PIC.max, Math.max(PIC.min, PIC_DEV[i]?.min ?? 0, HERO_PIC[i]?.min ?? 0, HERO_OVER[i]?.min ?? 0, p.seconds ?? PIC.house[i % PIC.house.length]));
   let a = Math.max(2, Math.round(SEC(want) / HALF));
-  while (a * HALF < SEC(PIC.min)) a++;
+  while (a * HALF < SEC(Math.max(PIC.min, HERO_PIC[i]?.min ?? 0, HERO_OVER[i]?.min ?? 0))) a++;
   let t = Math.max(Math.ceil(need / HALF), Math.ceil(SEC(LINE.min) / HALF));
   // over: one beat, the line held over the whole picture (never shorter than the line needs)
   if (mode === 'over') (t = Math.max(t, a)), (a = 0);
@@ -271,7 +365,9 @@ const beatsOf = P.map((p, i) => {
 // is built and read; from the frame all of it is whole the lockup holds 2-3 s (house 2.5) to the end
 const END_HOLD = { min: 2, house: 2.5, max: 3 } as const;
 const END_PRE = { name: 20, slide: 30, read: 54, named: 18 } as const; // f@60: the end's first frame to the name; its slide; the fact after the name; the name readable
-const endWhole = f60(END_PRE.name + END_PRE.read + 22) + Math.ceil(BEAT / 4);
+/** f@60 from the end's first frame to the name: the element lands as the mark in 18 f; a hero end card's mark lands with its move (logo-3d: a 76 f pull-back). */
+export const END_NAME = HERO_END ? 82 : END_PRE.name;
+const endWhole = f60(END_NAME + END_PRE.read + 22) + Math.ceil(BEAT / 4);
 let endBars = 1;
 while (endBars * BAR + TAIL < endWhole + SEC(END_HOLD.min)) endBars++;
 
@@ -336,7 +432,7 @@ P.forEach((p, i) => {
   // same scale-up twice; and never two pictures in a row with a push (every picture sharpening, then scaling up 10-20
   // %, is a template's tic): the one between keeps the wide frame and re-frames on its beats
   const pushed = i > 0 && CUE[`a${i}cut`] !== undefined;
-  if (!over && MODES[i] !== 'with' && !pushed && !PIC_DEV[i] && len * BEAT > SEC(2.2)) {
+  if (!over && MODES[i] !== 'with' && !pushed && !PIC_DEV[i] && !HERO_PIC[i] && len * BEAT > SEC(2.2)) {
     // on a beat that sounds (a track accent or a downbeat within 100 ms; any beat before the track is in), the one
     // nearest the middle that keeps 0.6 s each side and is not the picture's own moment; none: no cut, the push goes on
     const lo = SEC(0.6) / BEAT;
@@ -379,7 +475,7 @@ const onGridUp = (f: number) => {
 // a long end lets the name be read longer before the fact arrives (inside the name's own reading window), so the
 // lockup never holds past 3 s
 const rest = Math.min(f60(72), Math.max(0, ACT.end.dur - endWhole - SEC(END_HOLD.house)));
-CUE.name = onGridUp(ACT.end.from + f60(END_PRE.name)); // the name slides out from behind the mark
+CUE.name = onGridUp(ACT.end.from + f60(END_NAME)); // the name slides out from behind the mark
 CUE.lockup = onGridUp(CUE.name + f60(END_PRE.slide)); // the lockup is whole and centred: the payoff
 CUE.close = onGridUp(CUE.name + f60(END_PRE.read) + rest); // the one fact rises under it, once the name is read
 CUE.last = bt(lastBeat);
@@ -451,6 +547,7 @@ const KIND: Record<SeamRecipe, SeamKind> = { exitEnter: 'breath', textSwap: 'def
 export const SEAM_PLAN: SeamPlan[] = [];
 {
   const list: SeamPlan[] = [];
+  const fixed = new Set<string>(); // seams no kind count may move (out of a hero shot into a line: always the recede)
   const turn: Record<Change, number> = { TA: 0, AT: 0, AA: 0 };
   const deal = { TA: TA_PLAYS[DEAL.seamTA] ?? 'blurThrough', AT: DEAL.seamAT, AA: DEAL.seamAA } as Record<Change, SeamRecipe>;
   const pick = (c: Change) => (turn[c]++ % 2 === 0 ? deal[c] : ALT[c][deal[c]]);
@@ -466,19 +563,24 @@ export const SEAM_PLAN: SeamPlan[] = [];
       // a match cut holds a shape across one frame: into or out of a creative picture (which brings its own entrance)
       // there is no shared shape to hold, so it plays as the blur
       const r0 = pick(cls);
-      const r = cls === 'AA' && r0 === 'matchCut' && (PIC_DEV[i] || PIC_DEV[i - 1]) ? 'blurThrough' : r0;
+      // out of a hero shot into a line the shot falls back (recede): a push through it would fill the frame with the
+      // shot's own surface under the line's first words
+      const heroOut = !!(HERO_PIC[i - 1] || HERO_OVER[i - 1]);
+      const r = cls === 'AT' && heroOut ? 'recede' : cls === 'AA' && r0 === 'matchCut' && (PIC_DEV[i] || PIC_DEV[i - 1] || HERO_PIC[i] || HERO_PIC[i - 1] || HERO_OVER[i] || HERO_OVER[i - 1]) ? 'blurThrough' : r0;
+      if (cls === 'AT' && heroOut) fixed.add(`pic${i}-line${k}`);
       list.push({ recipe: r, at: pr.from, dir: dirOf(r), id: cls === 'AT' ? `pic${i}-line${k}` : `pic${i}-pic${k}`, from: into - 1, to: into, cls });
     }
     if (pr.mode === 'alone') {
       // out of the claim: its colour field sweeps off at speed
       // a line device that hands over: its last frame is the picture's first (no seam to draw, one shot)
-      const r: SeamRecipe = k === P.length ? 'velocityCut' : LINE_DEV[i]?.handover ? 'handover' : pick('TA');
+      const r: SeamRecipe = k === P.length ? 'velocityCut' : LINE_DEV[i]?.handover ? 'handover' : HERO_LINE[i] ? 'blurThrough' : pick('TA');
       list.push({ recipe: r, at: CUE[`ta${k}`], dir: dirOf(r), id: `line${k}-pic${k}`, from: beat(`line${k}`), to: beat(`pic${k}`), cls: 'TA' });
     }
   });
   // into the end (on the act line, so never a cut there): the last picture's element carried into the mark (turning
   // as it goes, for the badge)
-  list.push({ recipe: 'sharedElement', at: ACT.end.from, id: 'into-the-lockup', from: BEAT_PLAN.length - 2, to: BEAT_PLAN.length - 1, cls: 'end' });
+  // (a hero end card: the last picture goes soft and the mark's close-up resolves out of the same blur)
+  list.push({ recipe: HERO_END ? 'blurThrough' : 'sharedElement', at: ACT.end.from, id: 'into-the-lockup', from: BEAT_PLAN.length - 2, to: BEAT_PLAN.length - 1, cls: 'end' });
   // no kind over 45 %: the most used one gives way to another choice of its class where it repeats
   const cap = Math.floor(0.45 * list.length);
   const ACT_LINES = new Set(Object.values(ACT).map((a) => a.from));
@@ -489,7 +591,7 @@ export const SEAM_PLAN: SeamPlan[] = [];
     if (c <= cap) break;
     // the latest seam of the top kind that can take another kind
     // the least used kind its class offers (never the top one; a push through never cuts on an act line)
-    const nextOf = (x: SeamPlan) => (x.cls === 'end' || x.recipe === 'handover' || x.id === `line${P.length}-pic${P.length}` ? undefined : OPTIONS[x.cls].filter((r) => KIND[r] !== top && (r !== 'zoomThrough' || !ACT_LINES.has(x.at))).sort((a, b) => (n.get(KIND[a]) ?? 0) - (n.get(KIND[b]) ?? 0))[0]);
+    const nextOf = (x: SeamPlan) => (x.cls === 'end' || x.recipe === 'handover' || fixed.has(x.id) || x.id === `line${P.length}-pic${P.length}` ? undefined : OPTIONS[x.cls].filter((r) => KIND[r] !== top && (r !== 'zoomThrough' || !ACT_LINES.has(x.at))).sort((a, b) => (n.get(KIND[a]) ?? 0) - (n.get(KIND[b]) ?? 0))[0]);
     const s = [...list].reverse().find((x) => KIND[x.recipe] === top && nextOf(x));
     if (!s) break;
     s.recipe = nextOf(s) as SeamRecipe;
@@ -529,7 +631,9 @@ P.forEach((p, i) => {
   const text = plain(p.line ?? '');
   const into = SEAM_PLAN.find((s) => s.at === PAIRS[i].from && s.cls === 'AT');
   const early = i > 0 && into ? LINE_EARLY[into.recipe] ?? 0 : 0;
-  const inF = CUE[`line${k}`] + (i === 0 ? 0 : f60(LEAD)) - early;
+  // after a hero shot the line waits until the shot has gone soft (its own words never read under the line's first)
+  const late = i > 0 && into && (HERO_PIC[i - 1] || HERO_OVER[i - 1]) ? f60(HERO_LATE) : 0;
+  const inF = CUE[`line${k}`] + (i === 0 ? 0 : f60(LEAD)) - early + late;
   // the blur voice brings a line into focus whole: its hold is read, not a per-word rate
   COPY.push({ id: `line${k}`, text, in: inF, resolved: inF + f60(resolveAt(i)), out: lineOut(i), ...((DEAL.voice === 'blur' && !LINE_DEV[i]) || LINE_DEV[i]?.id === 'scale-contrast' ? { reveal: 'focus' as const } : {}) });
   // the alternatives a word-swap rolls through are on screen too (counted apart, as the product's own words are)
@@ -598,19 +702,14 @@ export const FLASHES: Flash[] = (() => {
 })();
 export const CAMERA_BLUR: CameraBlurRange[] = [];
 /**
- * The ground family's one colour event: the white-with-a-band family floods the claim's beat with the band's colour
- * (the claim, alone, sits on the colour field, as the other families' claim sits on the accent field the scene before
- * it grows: stage.tsx FIELD); the light-then-dark family turns dark at the middle pair and stays.
+ * The film's colour event: a creative element that is one (colour-flood), else the claim's colour field (stage.tsx
+ * FIELD), declared by the stage. The world itself never changes colour: one place, never cut.
  */
-const mid = Math.floor(P.length / 2) + 1;
-const claimAlone = MODES[P.length - 1] === 'alone';
 export const COLOUR: ColourRange[] = CREATIVE_COLOUR
   ? CREATIVE_PLAN.filter((c) => metaOf(c.id)?.colour).map((c) => ({ from: CUE[`a${c.pair}h1`] ?? PAIRS[c.pair - 1].pic, to: PAIRS[c.pair - 1].to, id: c.id }))
-  : DEAL.ground === 'whiteBand' ? [claimAlone ? { from: PAIRS[P.length - 1].from, to: PAIRS[P.length - 1].ta, id: 'band-flood' } : { from: PAIRS[mid - 1].from, to: PAIRS[mid - 1].ta, id: 'band-flood' }]
-  : DEAL.ground === 'lightDark' ? [{ from: PAIRS[mid - 1].from, to: Math.min(TOTAL, PAIRS[mid - 1].from + SEC(2)), id: 'turn-to-dark' }]
   : [];
-/** The frame the light-then-dark family turns dark (never, for the others). */
-export const DARK_FROM = DEAL.ground === 'lightDark' ? PAIRS[mid - 1].from : DEAL.ground === 'blackField' || DEAL.ground === 'deepPool' ? 0 : Infinity;
+/** The frame the film turns dark (the night worlds are dark from the first frame; the others never turn). */
+export const DARK_FROM = DEAL.ground === 'blackField' || DEAL.ground === 'deepField' || DEAL.ground === 'nightCity' ? 0 : Infinity;
 /** The one lock: from the frame the lockup and the fact are whole, they hold to the end, creeping. */
 export const END: EndLock = { from: (COPY.find((c) => c.id === 'close') as Copy).resolved, to: TOTAL };
 export const REVEAL = CUE.lockup;

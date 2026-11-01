@@ -1,12 +1,51 @@
 # launch-simple: the default launch film
 
-Lines and pictures that meet, never a slideshow: the first line alone in the middle of a lit ground, then the product
-doing what it said; the next lines arrive with their pictures (the picture rising in under the line, then racking into
-focus as the line leaves); the claim alone on its colour field, the film's hero line; then a centred lockup built from
-the last picture with the one fact under it. Every change of picture carries something (a camera move across the cut,
-the picture falling back while the next line builds over it, one object flying from one scene into the next), so the
-frame is never empty between two scenes. 15-30 s, one text voice, one ground family, three or four seam kinds.
-`new-film.sh` lays it over the Remotion starter for every launch (`--template none` keeps the starter's own acts).
+A product shown doing its thing in a world, through hero shots: the film stands in one place (a graded photograph or a
+lit field with its key light), and its pictures are designed 3D and light shots of the product's own content, each with
+one sharp plane, one camera move that lands and light sized to its source. Lines are few and centred; the claim is the
+film's hero line; the lockup is built from the last picture with the one fact under it. Every change of picture carries
+something (a camera move across the cut, the picture falling back while the next line builds, a blur), so the frame is
+never empty between two scenes. 15-30 s, one text voice, one world, three or four seam kinds. `new-film.sh` lays it
+over the Remotion starter for every launch (`--template none` keeps the starter's own acts).
+
+## The world (src/world.tsx)
+
+One place for the whole film, dealt with the direction (deal.ts `ground`), never cut: `nearWhite`, `paleSky`,
+`blackField`, `deepField`, `electric` are built (no picture); `clouds`, `sky`, `aerial`, `sea`, `nightCity`, `studio`,
+`macro` are photographs: `node scripts/assets.mjs plate <kind>`, look at the sheet (light, a calm area for the type),
+then `--pick <n> --to public/plates --accent '<accent>'`; until the plate is there a built world of the same tone stands in
+and precheck says so. Its key light is read by everything in it: fx/light Glass frosts exactly this ground, rims face the
+key, sweeps are that light crossing an edge. A photograph is seen sharp for the opening frames, then the lens racks to the
+type and the product and the place stays soft behind them (`FOCUS`; on a dark world under a veil of its own deep tone, so
+the subject is the brightest thing in the frame). A photograph carries the film's colour: the claim stands in it (the
+colour field plays on built worlds only).
+
+## The hero shots (src/hero)
+
+deck.py deals three or more at random with fit (the brief's words, the world's tone, the photos, the brand's mark),
+never the last film's set, into `src/dealt.ts` `hero`; timeline.ts `HERO_PLAN` puts each on the beat its role says, before
+the creative elements take the beats left (a dealt creative element with no beat left is benched, not a fault):
+
+| shot | role | what the viewer sees | fills itself from |
+|---|---|---|---|
+| `glass-input` | over | the line over the world and under it the input as frosted glass; one push in (the near glass grows more than the place) as the request types; a band of light crosses it as it lands and as it sends | `prompt` |
+| `macro-type` | picture | the input at macro scale (x2.6): the push lands on the first key, the camera rides the caret, the world soft behind; a pointer presses send, a glow the size of the button | `prompt` |
+| `black-glass` | picture | the composer as a frosted pane racking in out of the dark (9 f), a light along its rim, one push that lands, the request typing once sharp (best on a dark world) | `prompt` |
+| `page-fly` | picture | the page the product makes flies in lying back and the camera travels it from the headline to the table, the far edge soft, a lit edge | `doc` |
+| `toast-stack` | picture | notifications drop into the front slot and push the stack back into depth: the front one sharp, each further back softer (the lens gives the ladder) | `notices` |
+| `fan-focus` | picture | results as cards fanned in depth, the camera to one side closing on one while the focus racks to it | `comments` |
+| `rise-behind` | over | the line's key word giant, cards of the product's content rising behind it as the camera pulls back, the focus racking from the word to the cards | `plans` |
+| `porthole` | line | the line read, its words part and a porthole opens in the gap with a real face, a shadow ring and a band of light on its rim | `people` |
+| `carousel` | picture | a ring of the film's real pictures turning; the camera cranes down to eye level as it slows and lands the chosen one facing the camera (needs pictures) | `thumbs` |
+| `push-press` | picture | the product's screen read whole, then one push into its button as a pointer presses it: a glow, the screen answers (the scene's `button`) | the scene |
+| `logo-3d` | end | the end card through the brand's mark as a solid: a close-up of its bevels pulls back and lands on the flat lockup (needs the brand's SVG) | `brand/logo.ts` |
+
+Rules every shot keeps: the shot runs on its own clock (its camera through declared fx/depth shots: one move a shot,
+front-loaded, landing, never a drift), cards face the camera (a ring or a page turn only as the shot's designed move),
+smear only on fast frames (the stage draws it from the speed), the line after a shot waits until the shot is soft
+(`HERO_LATE`). A pair's `hero` pins a shot (pins are placed first, by role); launch.ts `heroes.swap` trades one for
+another with a reason. Software GL draws logo-3d flat (the same pull-back); a GPU draws the solid
+(`MARK3D_GL` in acts/stage.tsx). Print the plan with template.json `deal.print`.
 
 ## What you write
 
@@ -85,9 +124,8 @@ frame is never empty between two scenes. 15-30 s, one text voice, one ground fam
 ## Premium by default (simple is not flat)
 
 One dominant thing a frame, and every frame lit and alive:
-- **Ground.** The dealt family's lit field (`fx/Grounds` `FamilyGround`, one of all eleven families, dealt by
-  `scripts/deck.py` with the film's palette): its own key, its fall and its far tone baked dithered, still, never cut,
-  no second plate over it (a linear wash on a lit field reads as a cheap two-stop gradient), at one level all film.
+- **World.** The dealt world (above): one place, its key light, never cut, the type and the product the sharp plane in
+  front of it. No film on a bare gradient.
 - **A world and scale.** The product is a lit object in a lit place: the stage frames each picture on its scene's
   `focus` box from its first frame (`FRAME`: the box scaled up until it stands 62 % of the frame's height, centred; a
   framing, never a move) and stands it on a soft contact shadow under that box (`FLOOR`; `floor: false` for a scene
@@ -192,7 +230,8 @@ because it came first.
 | Slot | Choices |
 |---|---|
 | voice | build (word by word, re-centring), blur (the whole line out of a blur), ink (each word pale, inking in) |
-| ground | all eleven families: nearWhite, lightStudio, softSky, gradientField, whiteBand, blackField, studio, deepPool, duskMesh, floorGlow, lightDark (`references/brand-and-color.md` §9b) |
+| ground (the world) | nearWhite, paleSky, blackField, deepField, electric (built); clouds, sky, aerial, sea, nightCity, studio, macro (photographs: `assets.mjs plate`) |
+| hero | three or more of src/hero (above), with fit, never the last film's set |
 | seamTA | matchCut (plays as blurThrough), velocityCut, blurThrough (line -> picture) |
 | seamAT | recede, zoomThrough (picture -> line: the line builds over the leaving picture, never on an empty ground) |
 | seamAA | velocityCut, matchCut, blurThrough (picture -> picture, into a line that arrives with its picture) |

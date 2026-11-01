@@ -1,7 +1,8 @@
-// The one stage every act draws: the dealt ground family under everything (never cut), the line in the dealt voice
+// The one stage every act draws: the dealt world under everything (src/world.tsx, never cut), the line in the dealt voice
 // (acts/line.tsx), the product's scene (under its line: rising in, soft, then racking into focus), the seams between
 // them (fx/Seam seamState and the recede, drawn by acts/layer.tsx), the film's carried object flying between two
-// pictures, and the centred lockup built from the last picture. An act is a window on this one stage (acts are Sequences: each draws the
+// pictures, the hero shots (src/hero: a picture beat, a line held over its own picture, a line, the end card) and the
+// centred lockup built from the last picture. An act is a window on this one stage (acts are Sequences: each draws the
 // absolute frame), so a seam that crosses an act line is the same picture on both sides. Every element (a line, a
 // scene, the end card) keeps one layer for its whole life, so nothing is re-drawn in a new place for a frame. The
 // product's scenes live in src/product.tsx, the words in src/launch.ts; this file rarely needs an edit.
@@ -16,7 +17,7 @@ import { C, FONT, TYPE, U } from '../brand/tokens';
 import { LogoMark } from '../brand/Mark';
 import * as BRAND_LOGO from '../brand/logo';
 import { LOGO } from '../brand/logo';
-import { familyInks, FamilyGround, type FamilyInks, type GroundFamily } from '../fx/Grounds';
+import type { FamilyInks } from '../fx/Grounds';
 import { bakePlate } from '../fx/Gradients';
 import { type SeamOpts, seamSpan, seamState } from '../fx/Seam';
 import { SpinBlur } from '../fx/Defocus';
@@ -31,17 +32,20 @@ import { LAUNCH } from '../launch';
 import { DEAL, SEED } from '../deal';
 import * as PRODUCT from '../product';
 import { SCENES } from '../product';
-import { ACT, BEAT_PLAN, COLOUR, copy, CREATIVE_COLOUR, CREATIVE_MISSING, CREATIVE_UNPLACED, CUE, DARK_FROM, f60x, FPS, H, keyWords, LINE_DEV, LINE_EXIT, PAIRS, PIC_DEV, PUSH, SEAM_PLAN, TOTAL, W } from '../timeline';
+import { ACT, BEAT_PLAN, COLOUR, copy, CREATIVE_COLOUR, CREATIVE_MISSING, CREATIVE_UNPLACED, CUE, f60x, FPS, H, HERO_END, HERO_LINE, HERO_OVER, HERO_PIC, keyWords, LINE_DEV, LINE_EXIT, PAIRS, PIC_DEV, PUSH, SEAM_PLAN, TOTAL, W } from '../timeline';
+import { HeroLine, HeroOver, HeroPicture } from '../hero/shots';
+import { FilmWorld, inksOfWorld, PLATE_WORLD, WORLD_SPEC } from '../world';
 import { Layer, PromoteCtx } from './layer';
 import { FAM, isClaim, Line, lineLayout, LINE_TYPE, PAIR, Text, trackFor, weightOf } from './line';
 import { safeTrack, wordmarkStyle } from '../fx/TypePairs';
 import { CARD, inkOn, litFace, SceneCtx } from './ui';
 import type { SeamLayer } from '../fx/Seam';
 
-export const FAMILY = DEAL.ground as GroundFamily;
-/** The family's inks at frame F (the light-then-dark family turns once, on a seam). */
-export const inksAt = (F: number): FamilyInks => familyInks(FAMILY, { dark: F >= DARK_FROM });
-/** The background colour under the acts (the ground family's own field). */
+/** The dealt world (deal.ts `ground`, src/world.tsx draws it). */
+export const FAMILY = DEAL.ground;
+/** The world's inks (one world, never cut: the same at every frame). */
+export const inksAt = (_F: number): FamilyInks => inksOfWorld();
+/** The background colour under the acts (the world's base). */
 export const GROUND_AT = (F: number) => inksAt(F).ground;
 
 // No camera float: the camera moves only with a purpose (a move that starts, travels and lands); a hold may be still.
@@ -282,6 +286,18 @@ const Scene: React.FC<{ pair: number; F: number }> = ({ pair, F }) => {
   const band = PAIRS[pair - 1].mode === 'over' ? bandOf(pair) : undefined;
   const carry = carryFrames(pair);
   const beats = Object.keys(CUE).filter((n) => n.startsWith(`a${pair}m`)).map((n) => CUE[n] - c.from);
+  const hero = HERO_PIC[pair - 1];
+  if (hero) {
+    // the hero shot takes the beat with its own camera; the product's scene, framed, is there for the shots that use it
+    const sceneAt = (f: number) => (
+      <Framed def={def}>
+        <Draw f={f} dur={c.dur} hits={hits} beats={beats} inks={inksAt(F)} pair={pair} cut={c.cut} band={band} carry={carry} />
+      </Framed>
+    );
+    const fb = focusBox(def);
+    const btn = def.button?.();
+    return <HeroPicture id={hero.id} f={F - c.from} dur={c.dur} F={F} inks={inksAt(F)} pair={pair} seed={SEED + pair} scene={sceneAt} button={btn ? framed(def, btn) : undefined} focus={fb ? framed(def, fb) : undefined} />;
+  }
   const dev = PIC_DEV[pair - 1];
   if (dev) {
     const p = LAUNCH.pairs[pair - 1];
@@ -546,6 +562,30 @@ const recedeAt = (F: number): SeamLayer | null => {
   return { show: true, x: 0, y: 26 * u * u, scale: 1 - RECEDE.scale * E.stdInOut(u), opacity: o, blur: RECEDE.blur * Math.sqrt(u), smear: 0, ink: 1 };
 };
 
+/**
+ * The end card's hero shot (deal.ts HERO_META logo-3d): the brand's mark as a solid (fx/three Logo3D) opens the end on an
+ * extreme close-up of its bevelled edge and pulls back, turning to face the camera, landing exactly on the flat mark where
+ * it stands alone before the name slides out. It needs the brand's own mark (scripts/brand.py): with the stand-in, the
+ * element becomes the mark as usual (precheck says so). Software GL draws its flat version (the mark pulling back).
+ */
+const MARK3D = HERO_END === 'logo-3d' && !LOGO_STANDIN;
+if (HERO_END === 'logo-3d' && LOGO_STANDIN) timingFail('hero', 'hero: logo-3d was dealt for the end card but the brand has no mark yet (src/brand/logo.ts is the stand-in): run scripts/brand.py with the brand\'s SVG, or swap it in launch.ts heroes.swap with the reason');
+/** f@60 from the end's first frame to the drawn mark: the element lands in 18; the 3D mark's pull-back takes 76. */
+const MARK_LAND = MARK3D ? 76 : 18;
+// fx/three loads three.js: only a film whose end card is the 3D mark needs it, so the part is required where it plays
+// (the bundler takes it in; a Node import of this file never loads three.js)
+declare const require: (id: string) => unknown;
+const logo3D = () => (require('../fx/three') as typeof import('../fx/three')).Logo3D;
+/** The 3D part's GL: 'auto' draws 3D on a hardware GPU and its flat version on software GL ('force' renders 3D anyway, slowly). */
+export const MARK3D_GL: 'auto' | 'force' | 'fallback' = 'auto';
+/** The world's light for the 3D mark: its key's direction and the stage its gloss reflects. */
+const markLight = () => {
+  const k = WORLD_SPEC.key;
+  const azimuth = ((Math.atan2(k.x - 0.5, -(k.y - 0.5)) * 180) / Math.PI + 360) % 360;
+  const stage = WORLD_SPEC.tone === 'light' ? (FAMILY === 'paleSky' || FAMILY === 'sky' || FAMILY === 'clouds' ? 'sky' : 'studio') : FAMILY === 'blackField' ? 'black' : 'night';
+  return { stage, azimuth, elevation: 38 } as const;
+};
+
 /** The centred lockup: the mark, the name sliding out beside it, the one fact under them, held on a slow drift. */
 const EndCard: React.FC<{ F: number }> = ({ F }) => {
   const L = lockLayout();
@@ -553,7 +593,7 @@ const EndCard: React.FC<{ F: number }> = ({ F }) => {
   const fact = copy('close');
   const sway = endSway(F);
   // the element lands as the mark first; the drawn mark takes over once it is whole (opacity, never by mounting)
-  const markOn = F >= ACT.end.from + f60x(18) ? 1 : 0;
+  const markOn = F >= ACT.end.from + f60x(MARK_LAND) ? 1 : 0;
   // the name slides out from behind the mark toward its place, the lockup re-centring as it does (M.lockup)
   const n = prog(F, CUE.name, CUE.lockup, E.glideOut);
   const shiftX = ((1 - n) * (L.gap + L.wName)) / 2; // before the name: the mark alone sits at the centre
@@ -570,6 +610,11 @@ const EndCard: React.FC<{ F: number }> = ({ F }) => {
   );
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: `${W / 2}px ${(L.cy + LOCK.below * U * 0.4).toFixed(1)}px`, transform: `translate3d(${sway.toFixed(3)}px, 0, 0)` }}>
+      {MARK3D && !markOn ? (
+        <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H }}>
+          {React.createElement(logo3D(), { lockup: { x: L.mark.x + (L.gap + L.wName) / 2, y: L.mark.y, size: L.markH }, logo: LOGO, at: 0, dur: MARK_LAND, seed: SEED, light: markLight(), gl: MARK3D_GL })}
+        </div>
+      ) : null}
       <div style={{ position: 'absolute', left: 0, top: 0, width: L.markH, height: L.markH, opacity: markOn, transform: `translate3d(${(L.mark.x + shiftX).toFixed(3)}px, ${L.mark.y.toFixed(3)}px, 0)` }}>
         {markNode}
       </div>
@@ -644,7 +689,7 @@ export const fieldBoxOf = (def?: SceneDef): FieldBox | undefined => {
   return { x: cx - s / 2, y: cy - s / 2, w: s, h: s, radius: s / 2 };
 };
 /** Whether the claim sits on the colour field: every family without an event of its own, the claim alone after a picture. */
-export const FIELD_ON = !CREATIVE_COLOUR && FAMILY !== 'whiteBand' && FAMILY !== 'lightDark' && CLAIM_BEAT > 0 && PAIRS[PAIRS.length - 1].mode === 'alone' && !!fieldDef();
+export const FIELD_ON = !CREATIVE_COLOUR && !PLATE_WORLD && CLAIM_BEAT > 0 && PAIRS[PAIRS.length - 1].mode === 'alone' && !!fieldDef();
 /**
  * The field: the accent (or the element's own colour) lit from its top left corner (a lit field, never a flat slab,
  * never a glow behind the line); the claim in white on it, a key word in the ground's deep tone. `grow`: frames (f@60)
@@ -735,13 +780,26 @@ const itemsOf = (i: number, F: number, o: { lineOnly?: boolean } = {}): Item[] =
   // a picture under its line stands back (with): low and soft until the line leaves, then racking into focus
   const scene: Item = { key: `scene${b.pair}`, z: b.pair * 10 + 1, role: 'scene', node: <Scene pair={b.pair} F={F} />, own: withDepth(undefined, depthOf(b.pair, F), b.pair, F) };
   if (b.kind === 'A') return [scene];
+  // a line held over its own hero shot: the shot sets the line in its composition (one item, the whole beat)
+  const over = HERO_OVER[b.pair - 1];
+  if (over && b.kind === 'TA') {
+    const pr = PAIRS[b.pair - 1];
+    return [{ key: `hero${b.pair}`, z: b.pair * 10 + 1, role: 'scene', node: <HeroOver id={over.id} f={F - pr.from} dur={pr.to - pr.from} F={F} from={pr.from} inks={inksAt(F)} pair={b.pair} seed={SEED + b.pair} line={{ id: b.id, raw: LAUNCH.pairs[b.pair - 1].line ?? '' }} /> }];
+  }
   const inks = inksAt(F);
   const flood = COLOUR.find((c) => c.id === 'band-flood' && F >= c.from && F < c.to);
   const onField = FIELD_ON && i === CLAIM_BEAT && b.kind === 'T';
   const lineInks = onField ? fieldInks(inks) : flood && inks.onField ? { ...inks, type: inks.onField, accent: inks.onField } : inks;
   const exit = lineExitOf(b.pair, F);
   const ldev = LINE_DEV[b.pair - 1];
-  const node = ldev ? <DeviceLine pair={b.pair} F={F} inks={lineInks} /> : <Line id={b.id} raw={LAUNCH.pairs[b.pair - 1].line ?? ''} F={F} inks={lineInks} life={onField ? FIELD.life : 1} />;
+  const hline = HERO_LINE[b.pair - 1];
+  const node = hline ? (
+    <HeroLine id={hline.id} F={F} inks={lineInks} pair={b.pair} seed={SEED + b.pair} line={{ id: b.id, raw: LAUNCH.pairs[b.pair - 1].line ?? '' }} until={b.to} />
+  ) : ldev ? (
+    <DeviceLine pair={b.pair} F={F} inks={lineInks} />
+  ) : (
+    <Line id={b.id} raw={LAUNCH.pairs[b.pair - 1].line ?? ''} F={F} inks={lineInks} life={onField ? FIELD.life : 1} />
+  );
   const line: Item[] = exit && !exit.show ? [] : [{ key: `line${b.pair}`, z: b.pair * 10 + 2, role: 'line', own: exit, node }];
   const field: Item[] = onField ? [{ key: 'field', z: b.pair * 10, role: 'field', node: <FieldPlate /> }] : [];
   return b.kind === 'TA' && !o.lineOnly ? [...field, scene, ...line] : [...field, ...line];
@@ -777,7 +835,7 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
   if (!s) {
     for (const it of itemsOf(i, F)) push(it);
     // the last picture falls back behind the lockup for a second after the element's take-off
-    const r = b.kind === 'end' ? recedeAt(F) : null;
+    const r = b.kind === 'end' && !HERO_END ? recedeAt(F) : null;
     if (r) for (const it of itemsOf(i - 1, F)) push(it, r);
   } else {
     const opts: SeamOpts = { recipe: s.recipe === 'recede' || s.recipe === 'handover' ? 'exitEnter' : s.recipe, at: s.at, dir: s.dir, id: s.id };
@@ -883,18 +941,16 @@ export const keyPlateTopEdge = (deg: number, ky: number = -H * 0.12) => {
 
 
 /**
- * The ground under every act, never cut and still: the dealt family's lit field (one of the eleven families of
- * fx/Grounds, dealt by scripts/deck.py with the film's palette). The film's colour event is the claim's field (drawn by
- * the stage on the claim's beat), not a change of the light.
+ * The ground under every act, never cut and still: the dealt world (src/world.tsx: a photograph graded for the film or
+ * a lit field baked once, with its key light). Film.tsx draws the acts inside it, so glass, rims and sweeps read it;
+ * this draws it alone. The film's colour event is the claim's field (drawn by the stage on the claim's beat).
  */
-export const Ground: React.FC<{ F: number }> = ({ F }) => (
-  // the dealt family's lit field (fx/Grounds FamilyGround: its own key, its fall, its far tone, dithered), still, never
-  // cut; no second plate over it (a linear wash on a lit field reads as a cheap two-stop gradient)
-  <FamilyGround family={FAMILY} frame={F} dark={F >= DARK_FROM} flood={floodAt(F)} seed={SEED} />
-);
+export const Ground: React.FC<{ F: number }> = () => <FilmWorld />;
+// (kept for a family with a band of its own: worlds have none)
+void floodAt;
 
 /** The film's page colour (Film.tsx, Root.tsx). */
-export const PAGE = { ground: familyInks(FAMILY).ground };
+export const PAGE = { ground: WORLD_SPEC.base };
 
 /** One act: a window on the stage (its own composition in Root.tsx). */
 export const actOf = (name: string): React.FC => {

@@ -4,9 +4,12 @@
 // once it is whole (one soft text sound), each picture's own moments (launch.ts hits: the click, the result), the
 // push closer (a soft swell under the camera's move), the seams that move (a whoosh on the speed, never on a
 // cross-blur or a focus pull), a sub drop as the claim arrives, the element becoming the mark and ONE clean hit on the
-// lockup (the drop and the hit each take a stop-down in the mix: two dynamic accents, never a flat bed).
+// lockup (the drop and the hit each take a stop-down in the mix: two dynamic accents, never a flat bed). A hero shot
+// sounds its own moments (src/hero/time.ts heroSounds: the glass landing, send pressed, each notification arriving, the
+// ring landing) on the frames the shot draws them, instead of its pair's hits.
 import { DEAL } from './deal';
-import { ACT, copy, CUE, type Declares, f60, PAIRS, PUSH, type Salience, SEAM_PLAN, TOTAL } from './timeline';
+import { heroSounds } from './hero/time';
+import { ACT, copy, CUE, type Declares, f60, FPS, HERO_END, HERO_LINE, HERO_OVER, HERO_PIC, PAIRS, PUSH, type Salience, SEAM_PLAN, TOTAL } from './timeline';
 import { LAUNCH } from './launch';
 
 export type Kind =
@@ -40,7 +43,16 @@ export default function cues(): SoundEvent[] {
   LAUNCH.pairs.forEach((_, i) => {
     const k = i + 1;
     if (LAUNCH.pairs[i].line?.trim()) ev.push({ f: copy(`line${k}`).resolved, kind: 'text', weight: 0.65, pan: 0, action: 'text', id: `line${k}-whole` });
-    const hits = Object.keys(CUE).filter((n) => n.startsWith(`a${k}h`));
+    // a hero shot's own moments, on the frames it draws them (its pair's hits are the product scene's, not drawn)
+    const pr = PAIRS[i];
+    const shots: [string | undefined, number, number, number][] = [
+      [HERO_PIC[i]?.id, pr.pic, pr.to - pr.pic, 0],
+      [HERO_OVER[i]?.id, pr.from, pr.to - pr.from, LAUNCH.pairs[i].line?.trim() ? copy(`line${k}`).resolved - pr.from : 0],
+      [HERO_LINE[i]?.id, LAUNCH.pairs[i].line?.trim() ? copy(`line${k}`).in : pr.from, pr.ta - (LAUNCH.pairs[i].line?.trim() ? copy(`line${k}`).in : pr.from), LAUNCH.pairs[i].line?.trim() ? copy(`line${k}`).resolved - copy(`line${k}`).in : 0],
+    ];
+    for (const [id, at, dur, whole] of shots) if (id) for (const h of heroSounds(id, dur, FPS, whole)) ev.push({ ...h, f: Math.round(at + h.f), pan: h.pan ?? 0, id: `hero${k}-${h.id}` });
+    const heroPicture = !!HERO_PIC[i] || !!HERO_OVER[i];
+    const hits = heroPicture ? [] : Object.keys(CUE).filter((n) => n.startsWith(`a${k}h`));
     hits.forEach((n, j) => ev.push({ f: CUE[n], kind: j === hits.length - 1 ? 'pop' : 'click', weight: 0.6, pan: (j % 2 ? 0.1 : -0.1), action: j === hits.length - 1 ? 'card-land' : 'press', id: `pic${k}-${n}` }));
     // the push closer: a soft swell under the camera's move (it lands with the push, PUSH.dur f@60 after the cue)
     if (CUE[`a${k}cut`] !== undefined) ev.push({ f: CUE[`a${k}cut`], kind: 'swell', weight: 0.3, pan: 0, dur: f60(PUSH.dur), apexFrac: 0.8, action: 'shape', id: `pic${k}-closer` });
@@ -62,7 +74,8 @@ export default function cues(): SoundEvent[] {
     else if (s.recipe === 'matchCut') ev.push({ f: s.at, kind: 'snap', weight: 0.45, pan: 0, action: 'jump-cut', id: `seam-${s.id}` });
     else if (s.recipe === 'zoomThrough') ev.push({ f: s.at, kind: 'suck', weight: 0.6, pan: 0, dur: f60(30), apexFrac: 0.85, action: 'shape', id: `seam-${s.id}` });
   }
-  if (DEAL.end === 'element') ev.push({ f: ACT.end.from, kind: 'swell', weight: 0.55, pan: 0, dur: f60(30), action: 'shape', id: 'element-becomes-the-mark' });
+  if (HERO_END) for (const h of heroSounds(HERO_END, ACT.end.dur, FPS)) ev.push({ ...h, f: Math.round(ACT.end.from + h.f), pan: 0, id: `end-${h.id}` });
+  else if (DEAL.end === 'element') ev.push({ f: ACT.end.from, kind: 'swell', weight: 0.55, pan: 0, dur: f60(30), action: 'shape', id: 'element-becomes-the-mark' });
   else ev.push({ f: ACT.end.from - f60(12), kind: 'whoosh', weight: 0.5, pan: 0, dur: f60(34), apexFrac: 0.3, action: 'swipe', id: 'the-element-spins-into-the-mark' });
   ev.push({ f: CUE.lockup, kind: 'hit', weight: 1, pan: 0, action: 'logo-lock', id: 'lockup' });
 
