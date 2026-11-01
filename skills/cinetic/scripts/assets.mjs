@@ -2172,9 +2172,18 @@ export const PLATE_SOFT = 40;
 export const plateName = (s) => { const k = String(s || '').replace(/-([a-z])/g, (_, c) => c.toUpperCase()); return PLATES[k] ? k : null; };
 
 /** The ffmpeg filter of a plate's grade: the look's filter, then the warm drain and the colour scale before the last format. Pure. */
-export function plateFilter(name, { stats = null, crop = null, width = 2400, accent = '#2f7d8c', strength = 1, hueSat = true, video = false } = {}) {
+/** The split hue a plate takes from the film's accent: the accent's own when it is a blue or teal (OKLCH 195-266, the
+ * worlds' plate window), else the preset's cool split, so a green, red or yellow brand never tints its sky. Pure. */
+export function plateSplitHue(name, accent = null) {
   const g = PLATES[name].grade;
-  const vf = gradeFilter(g.look, { accent, splitHue: g.split ?? null, stats, crop, width, grain: 0.12, video, strength, hueSat });
+  if (!accent || !/^#[0-9a-f]{6}$/i.test(accent)) return g.split ?? null;
+  const [, C, h] = hexToOklch(accent);
+  return C >= 0.04 && h >= 195 && h < 266 ? h : (g.split ?? null);
+}
+
+export function plateFilter(name, { stats = null, crop = null, width = 2400, accent = '#2f7d8c', filmAccent = null, strength = 1, hueSat = true, video = false } = {}) {
+  const g = PLATES[name].grade;
+  const vf = gradeFilter(g.look, { accent, splitHue: plateSplitHue(name, filmAccent), stats, crop, width, grain: 0.12, video, strength, hueSat });
   const extra = [];
   if (g.warm) extra.push(hueSat ? `huesaturation=saturation=${f3(Math.max(-1, g.warm * strength))}:colors=r+y` : `eq=saturation=${f3(1 + g.warm * 0.3 * strength)}`);
   const eq = [];
@@ -2226,7 +2235,7 @@ async function cmdPlate(args) {
   const crop = focusCrop(p.width, p.height, 16 / 9, fx, fy);
   const width = Math.min(Math.round(num(args, 'width', video ? 1920 : 2400, 640, 3840)), crop.w) & ~1;
   const accent = args.accent && /^#[0-9a-f]{6}$/i.test(args.accent) ? args.accent : '#2f7d8c';
-  const vf = plateFilter(name, { stats: measure(file), crop, width, accent, strength: num(args, 'strength', 1, 0, 1.5), hueSat: hasHueSat(), video });
+  const vf = plateFilter(name, { stats: measure(file), crop, width, accent, filmAccent: args.accent ? accent : null, strength: num(args, 'strength', 1, 0, 1.5), hueSat: hasHueSat(), video });
   fs.mkdirSync(to, { recursive: true });
   const out = path.join(to, `${name}.${video ? 'mp4' : 'jpg'}`);
   if (video) ff(['-i', file, '-an', '-filter_complex', `[0:v]${vf}[v]`, '-map', '[v]', ...videoEncode({}), '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-movflags', '+faststart', '-y', out], `plate ${name}`);
@@ -2272,7 +2281,7 @@ export const USAGE = `assets.mjs: photographs, footage, textures and art a film 
          --run searches every line again; --verify reads each pick again at its source; no input lists them all;
          recipe all --verify checks every pick)
   plate  <${Object.keys(PLATES).join('|')}> ["<query>"] [--kind photo|video] [--to public/plates] [--pick n | --from <file>]
-         [--accent #hex] [--focus x,y] [--width 2400] [--strength 0..1.5] [--limit 8]
+         [--accent #hex: a blue or teal accent tints the split] [--focus x,y] [--width 2400] [--strength 0..1.5] [--limit 8]
          (the picture a world stands on: searches the preset and saves a sheet; --pick n or --from <photo or clip>
          writes <name>.jpg graded for the world, warm light drained, 16:9 on the focus, and <name>-soft.jpg blurred
          ${PLATE_SOFT} px at 1080p for frosted glass and the far depth)

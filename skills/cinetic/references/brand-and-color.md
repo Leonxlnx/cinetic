@@ -534,6 +534,34 @@ vignette on the dark families, computed in float and dithered (±1.5 levels), ba
   breathes behind the words (an aimless move in the ground reads as the frame wandering). look-audit's ground-haze read
   still applies to anything that is not the family's own field, and its banding read checks the bake survived.
 
+### Worlds: a place with its own light (`fx/world`)
+
+A world is a ground family that is a place: a real photograph or clip (`clouds`, `aerial`, `sea`, `nightCity`,
+`macro`, `sky`, `studio`) or a built field (`blackField`, `electric`, `deepField`, `paleSky`, `nearWhite`), each with
+a key light that the glass, the rims, the sweeps and glowing type read (`fx/light`; the parts and recipes are in
+[lighting.md §8](lighting.md)). One world per film, dealt from the film's name (`dealWorld`), never cut. The built
+worlds share the families' rules above: `blackField` and `nearWhite` are those families with a key, `deepField` is
+`deepPool` with its light rising from the floor, `paleSky` is `softSky` with the sun's side bright, and `electric` is
+the one saturated ground: a blue stage lit from the top, where white type and glass cards read as light.
+
+- **Hue windows** (`worlds.ts` `WORLD_HUE`). The accent lends a world its hue only inside that world's window, else
+  the world keeps its cool default: `electric` 228-266 (else a blue 258; a green or teal stage reads as a chroma key),
+  `deepField` and `nightCity` 195-266 (else a navy 252), a plate's tint 195-266 (else a sky's 236: a sky is never
+  green), the near-neutral `blackField`, `nearWhite` and `studio` 140-266 at a chroma too low to read as colour (else 245).
+  A green, red or yellow brand keeps its accent for its marks and one signal; the ground stays cool.
+- **Plates are graded for the film, baked.** `scripts/assets.mjs plate <world> --accent <the film's accent>` drains warm
+  light from the picture (reds and yellows desaturated), sets saturation, gamma and contrast and a cool balance, puts
+  the film's hue in the split, and writes a blurred copy for frosted glass. A warm sunset, a cream sky, an orange
+  sodium street become cool and neutral; the picture never brings a banned colour into the film. In film a baked plate
+  draws with no filter; a picture that was not baked takes a light set-in (World `spec` grade).
+- **Type per world.** `spec.ink` and `spec.mute` are the world's type (white on the dark worlds and on plates with white
+  type, a cool ink on `sky`, `studio`, `paleSky`, `nearWhite`); `spec.glass.text` on its glass; `spec.typeShadow` under a
+  white line on a bright plate (a soft shadow in the plate's deep tone, never a light halo); `spec.glow` is the colour
+  of light there (glowing type, sweeps, bloom).
+- **The bans stay.** No orange, amber, beige or cream ground; no purple, violet or indigo (a deep field is navy, never
+  violet, unless the brand supplies it, §1); no neon (the electric stage is bright because it is lit, its type and
+  glass white, never a full-chroma glow).
+
 ## 10. Palettes that read as generated
 
 Most of these are hard bans (§8 has the numbers); the rest are combinations to avoid when you invent. Use one only if the brand already does (§1).

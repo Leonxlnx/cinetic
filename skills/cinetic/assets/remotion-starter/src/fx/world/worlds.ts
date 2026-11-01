@@ -108,7 +108,7 @@ export const isPlateWorld = (k: WorldKind): k is PlateKind => !(BUILT as readonl
 export const WORLD_HUE = {
   electric: { lo: 228, hi: 266, dflt: 258 },
   deep: { lo: 195, hi: 266, dflt: 252 },
-  plate: { lo: 195, hi: 262, dflt: 236 },
+  plate: { lo: 195, hi: 266, dflt: 236 },
   neutral: { lo: 140, hi: 266, dflt: 245 },
 } as const;
 export type HueWindow = keyof typeof WORLD_HUE;

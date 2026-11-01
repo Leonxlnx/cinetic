@@ -29,7 +29,7 @@ any fps) plus a thin component drawn with transforms, opacity, clip paths and SV
 
 Contents: 1. The key (`fx/KeyLight`) · 2. Lit worlds · 3. Living light (`fx/LightField`) · 4. Light events ·
 5. Glow, spectral light and materials as devices · 6. Baked plates (`dither-gradient.py`) · 7. Product UI in a lit
-place (`lib/light`, `fx/Lit`, `fx/Grounds`) · 8. Checks
+place (`lib/light`, `fx/Lit`, `fx/Grounds`) · 8. A world and light that reads it (`fx/world`, `fx/light`) · 9. Checks
 
 ## 1. The default light of a film: a directional key (`fx/KeyLight`)
 
@@ -263,7 +263,102 @@ whole inside the margins reads as a slide. The multi-object beat in three scaled
 (`references/camera.md` §8): every item in it says what it carries (`carries`: ui, text, mark, icon, photo, data) and
 shows it, a far tile softer and smaller but still a real screen or mark, never a blank card at depth.
 
-## 8. Checks
+## 8. A world, and light that reads it (`fx/world`, `fx/light`)
+
+A film stands in one place, and its light comes from somewhere in that place. `<World>` draws the place (a real
+photograph or clip graded for the film, or a lit field baked once) and shares its key light and its ground with the
+light parts inside it: `Glass` frosts exactly what is behind it, a rim is brightest on the side that faces the key and
+has a glint where the edge meets the light, a sweep is that light crossing the edge, glowing type takes the world's
+light. A gradient behind a card is a backdrop; a world with a key is a place. One world per film, dealt from the
+film's name (`dealWorld(name, { from, avoid })`), never cut inside the film: one `<World>` under the whole film, or
+one per scene of the same kind with the shot's camera inside it.
+
+```tsx
+import { Reveal, World } from './fx/world';
+import { Bloom, Glass, GlowType } from './fx/light';
+
+<World kind="clouds" src={staticFile('plates/clouds.jpg')} soft={staticFile('plates/clouds-soft.jpg')}
+       push={{ from: 0, to: 90, scale: 1.06, y: -18 }}>
+  <Glass x={420} y={520} w={1080} h={112} at={10} sweep={30}>{the input: plus, typed text, send}</Glass>
+</World>
+<World kind="blackField">
+  <Bloom strength={0.4} box={{ x: 460, y: 420, w: 1000, h: 220 }}>
+    <Glass x={460} y={420} w={1000} h={220} r={40} at={0} sweep={[16, 70]}>{the prompt}</Glass>
+  </Bloom>
+</World>
+<World kind="deepField"><GlowType text="Find the right one" role="display" at={12} /></World>
+```
+
+**The worlds** (`worldOf(kind, { accent })` gives each one's colours, key, type and glass for the film):
+
+| kind | the place | its key light | type | glass on it |
+|---|---|---|---|---|
+| `clouds` | a sea of clouds from above, the horizon high | a low sun, top right | white, a soft shadow | frost smoked in the plate's deep tone, white rim |
+| `aerial` | land or coast from high above | top left | white | smoked frost |
+| `sea` | open water to a far horizon | above | white | smoked frost |
+| `nightCity` | a city at night, its lights soft | from below, the street | white | dark smoke |
+| `macro` | a close natural surface: leaves, drops, moss | top left | white | smoked frost |
+| `sky` | a pale sky with soft clouds, looking up | top right | ink | milky |
+| `studio` | a seamless studio sweep under a softbox | top left | ink | milky |
+| `blackField` | near-black under a softbox | above | white | dark glass lit by its rims, glints and sweeps |
+| `electric` | a saturated blue stage, lit from the top | top left | white | a light veil, a deep blue shadow |
+| `deepField` | a deep navy, light rising from the floor | the floor | white or glowing | dark, a tinted rim |
+| `paleSky` | a pale sky built in code, the sun's side bright | top right | ink | milky |
+| `nearWhite` | paper lit from the top left, for real photos in cards | top left | ink | milky |
+
+The first seven are plate worlds (a picture, `src`); the last five are built (no picture: a lit field baked once at
+half size, dithered). The hue windows (`WORLD_HUE`) keep a green, red or yellow accent out of the ground: the
+electric stage takes the accent's hue only when it is a blue, the deep field a blue or teal, a plate's tint a sky's
+blue; anything else gives the world's cool default (brand-and-color.md §9b, worlds).
+
+**Plates.** `node scripts/assets.mjs plate clouds` runs the preset's searches (keyless sources, landscape, no people,
+no text) and saves a contact sheet. Choose for light and for a calm area where the line and the glass will sit, then
+`node scripts/assets.mjs plate clouds --pick 3 --to public/plates --accent '#2F6BFF'` writes `clouds.jpg` (16:9 on
+the preset's focus, warm light drained, cool, the film's hue in the split) and `clouds-soft.jpg` (blurred 40 px at
+1080p: what glass frosts, and the far depth); `--from <file>` grades a picture you already have; a clip gets a 960 px
+`-soft.mp4`. The grade is baked, so in film the plate draws with no filter at all. `depth="far"` blurs a plate behind
+UI in focus, but the soft copy given as `src` costs nothing: prefer it.
+
+**The parts** (each a pure state of the frame, `glassState`, `sweepState`, `igniteState`, `revealState`, `plateMove`):
+
+| part | what it is | the props a shot sets | cost per frame |
+|---|---|---|---|
+| `World` | the place: plate or field, haze toward the horizon, the corners falling off; shares its key and ground | `kind`, `src` and `soft` (plates), `push` | one image, two baked overlays |
+| `Glass` | a pane of frosted glass: the world behind it blurred, a veil lighter toward the key, a line of light inside the top edge, the bottom edge's shade, a rim with a glint | `x y w h`, `at` (rises 26 px and clears in 30 f), `sweep` | one clipped copy of the soft plate, gradients |
+| `RimLight` | the lit edge alone: brightest toward the key, a white-hot glint where it faces the light and its bloom past the edge | `w h` (`x y` in frame px; 0 inside a placed box) | one masked element |
+| `LightSweep` | a light crossing an edge once: a white-hot head, a flare along the edge, a fading tail (54 f, `E.stdInOut`) | `w h at` | one SVG, two sprites, while it runs |
+| `GlowPool` | a pool of light the place has (under a pane, a screen's spill, a floor), turned on once | `x y r ry at` | one image |
+| `GlowType` | a line that is a light: tinted white-hot letters, a tight glow and a wide one; words ignite in a phrased run | `text role at` | three copies of the line, two blurred |
+| `Bloom` | the bright parts of its children blurred and added | `strength`, `box` (where the light is) | one blurred copy of its box |
+| `Reveal` | the world opening out of a shape: a sparkle on the dark becomes a cloud-edged iris, a pressed button grows into the frame, the camera flies through the mark | `at shape` (+ `box` or `path`) | a clip path while it opens |
+
+**Recipes** (catalogue style: pick for what the line says; the product's own UI goes inside):
+
+| id | what it is | built with |
+|---|---|---|
+| `glass-input-over-plate` | the product's input as frosted glass over a real sea of clouds; the line above it, the input types, a light crosses its rim when it lands | `World clouds` (one `push`) + `Glass at sweep` |
+| `black-glass` | a dark glass pane on a black field, white type, a light crossing the rim when it lands and again when it sends | `World blackField` + `Bloom box` + `Glass r={40} sweep={[land, send]}` |
+| `electric-card` | one big glass card (1000 px wide or more) on a saturated blue stage: a real thumbnail, a title, rows that complete | `World electric` + `Glass w={1120} h={740}` |
+| `glowing-line` | words that ignite as light on a deep field, then the name ignites | `World deepField` + `GlowType at` |
+| `iris-into-world` | a sparkle on the dark field opens in a cloud-edged iris into the plate; it turns ink and stays as the product's button | `World deepField` + `Reveal shape="scallop" seedAfter={ink}` round `World clouds` |
+| `button-opens-world` | the pressed button grows into the frame and becomes the next place | `Reveal shape="button" box={button}` |
+| `through-the-mark` | the camera flies through the product's mark into the world | `Reveal shape="path" path={{ d, w, h, origin }}` |
+
+**Rules.** The world holds still: its one move is `push` (it starts, travels, lands and holds) or the shot's own
+camera; no drift, no breathing. A sweep is an event (the pane lands, the input sends), never a loop. A glow pool is a
+light the place has, never behind a line or a lockup. Glowing type and bloom live on dark worlds (`deepField`,
+`blackField`, `nightCity`); on a pale world type is ink and nothing blooms. Bloom wraps only what emits light and gets
+a `box`. Type on glass takes `useWorld()?.spec.glass.text`; a white line on a plate takes `spec.typeShadow`. Glass
+frosts the world, not other UI: keep panes apart or make the nearer one opaque. Content is big: a card on a stage is
+1000 px wide or more, an input 1000 px or more with 36 px type. The older `fx/Glass` modes (refract, flute,
+thin-film), `fx/Glow` and `fx/Iris` stay devices; inside a world, use these.
+
+**Cost.** Measured on software GL on a shared CPU (no GPU; a GPU renders several times faster): the five proof shots
+render at about 0.2-0.4 s a frame at half size; at 1080p a glass input over a cloud plate about 1 s, a black glass
+pane with bloom about 0.8 s. No filter animates; every blur radius is fixed; the plate's grade is baked; a soft
+plate replaces live frost.
+
+## 9. Checks
 
 - A key light, a light field and stepped layers `declare()` what they do on purpose (light seams, stepped ranges);
   Lit, Grounds and DepthStack are continuous and declare nothing (DepthStack a camera-blur range when given one);
