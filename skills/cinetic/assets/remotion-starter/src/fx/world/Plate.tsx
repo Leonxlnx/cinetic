@@ -9,7 +9,9 @@
  *           grade is baked into the file by `scripts/assets.mjs plate`; this one sets the plate into the world.
  *   move    one purposeful camera move: from frame `from` to `to`, scale (a push of 1.04-1.10, log-mixed so its
  *           perceived speed is even) and a shift in px, on E.stdInOut: it starts, travels and lands, then holds.
- *           Never a drift: a plate without a move holds still.
+ *           Never a drift: a plate without a move holds still. A list of moves is a path through the world (each one
+ *           starts, travels and lands; the scales multiply, the shifts add): worldPath() writes one from a film's
+ *           cuts, so the place moves only to carry an entrance or a change of picture, always the same way.
  *
  * Cost: an unblurred plate is one image draw. A blurred one blurs a full frame every frame: prefer the pre-blurred
  * copy `scripts/assets.mjs plate` writes beside the plate (<name>-soft.jpg) and give it as the src at depth 0.
@@ -26,24 +28,48 @@ export const PLATE_DEPTH = { far: 14, mid: 5, near: 0 } as const;
 export type PlateDepth = keyof typeof PLATE_DEPTH | number;
 
 export type PlateMove = { from: number; to: number; scale?: number; x?: number; y?: number; ease?: Ease };
+/** One move or a path of moves (each starts, travels and lands; scales multiply, shifts add). */
+export type PlateMoves = PlateMove | readonly PlateMove[];
 
 export type PlateProps = {
   src: string; // a graded photo or clip (staticFile)
   focus?: [number, number]; // the point that stays put in the frame (shares of the picture), default the centre
   depth?: PlateDepth;
   grade?: PlateGrade | null;
-  move?: PlateMove;
+  move?: PlateMoves;
   frame?: number; // default the current frame
   trimBefore?: number; // a clip: the source frame shown at the plate's frame 0
   playbackRate?: number; // a clip: its speed (1 for anything with people or water)
   style?: React.CSSProperties;
 };
 
-/** The plate's camera at frame f: scale (log-mixed), shift x, y px. Holds before `from` and after `to`. Pure. */
-export const plateMove = (f: number, m?: PlateMove) => {
+/** The plate's camera at frame f: scale (log-mixed), shift x, y px. Holds before `from` and after `to`. A path composes
+ * its moves (scales multiply, shifts add). Pure. */
+export const plateMove = (f: number, m?: PlateMoves): { s: number; x: number; y: number } => {
   if (!m) return { s: 1, x: 0, y: 0 };
-  const t = (m.ease ?? E.stdInOut)(clamp((f - m.from) / Math.max(1, m.to - m.from)));
-  return { s: lmix(1, m.scale ?? 1, t), x: (m.x ?? 0) * t, y: (m.y ?? 0) * t };
+  if (Array.isArray(m)) return (m as readonly PlateMove[]).reduce((acc, one) => {
+    const k = plateMove(f, one);
+    return { s: acc.s * k.s, x: acc.x + k.x, y: acc.y + k.y };
+  }, { s: 1, x: 0, y: 0 });
+  const one = m as PlateMove;
+  const t = (one.ease ?? E.stdInOut)(clamp((f - one.from) / Math.max(1, one.to - one.from)));
+  return { s: lmix(1, one.scale ?? 1, t), x: (one.x ?? 0) * t, y: (one.y ?? 0) * t };
+};
+
+/**
+ * A film's path through its world: the camera enters the place on the first frames (a push of `enter` that lands over
+ * `open` frames, front-loaded) and then moves on with every change of picture: at each cut a push of `step` and a rise
+ * of `rise` px (1080p) that starts `lead` frames before the cut and lands `land` frames after it, so the place carries
+ * the cut (the world moving across it hides it) and every hold between is still. Always the same way, deeper and higher
+ * through the film: never a drift, never here and back. Frames in the film's rate. Pure.
+ */
+export const WORLD_PATH = { enter: 1.07, open: 96, step: 1.035, rise: 14, lead: 10, land: 30 } as const;
+export const worldPath = (cuts: readonly number[], o: Partial<Record<keyof typeof WORLD_PATH, number>> & { fps?: number } = {}): PlateMove[] => {
+  const k = (o.fps ?? 60) / 60;
+  const P = { ...WORLD_PATH, ...o };
+  const moves: PlateMove[] = [{ from: 0, to: Math.round(P.open * k), scale: P.enter, ease: E.glideOut }];
+  for (const c of [...cuts].sort((a, b) => a - b)) moves.push({ from: Math.round(c - P.lead * k), to: Math.round(c + P.land * k), scale: P.step, y: P.rise, ease: E.strongInOut });
+  return moves;
 };
 
 export const isVideo = (src: string) => /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(src);

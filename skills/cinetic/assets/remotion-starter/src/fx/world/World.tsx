@@ -16,7 +16,9 @@
  *                and writes both); soft is its pre-blurred copy, so glass frosts it at no cost
  *   depth        how soft the plate sits: 'near' as shot (default), 'mid', 'far' (behind UI in focus), or px
  *   push         one purposeful camera move on the world ({ from, to, scale: 1.06 }: it starts, travels, lands and
- *                holds); never a drift. The children are not moved: give them their own move
+ *                holds), or a path of them (worldPath(cuts): the camera enters the place, then moves on with every
+ *                change of picture, landing after each cut); never a drift. The children are not moved: give them
+ *                their own move
  *   accent, hue  the world's hue comes from the accent through its window (worlds.ts WORLD_HUE: a blue accent lends
  *                its hue to the electric stage, a blue or teal one to the deep field and the plate tints; any other
  *                accent gives the world's cool default, so a green or red brand never paints its ground)
@@ -34,7 +36,7 @@ import type { Declares } from '../../timeline';
 import { bakePixels, bakePlate } from '../Gradients';
 import { litFieldPixels } from '../Grounds';
 import { WorldContext, type WorldCtx } from './context';
-import { Plate, type PlateDepth, type PlateMove, plateMove } from './Plate';
+import { Plate, type PlateDepth, type PlateMoves, plateMove } from './Plate';
 import { isPlateWorld, type WorldKind, type WorldSpec, worldOf } from './worlds';
 
 export type WorldProps = {
@@ -43,7 +45,7 @@ export type WorldProps = {
   soft?: string;
   focus?: [number, number];
   depth?: PlateDepth;
-  push?: PlateMove;
+  push?: PlateMoves;
   accent?: string;
   hue?: number;
   spec?: Partial<WorldSpec>;
