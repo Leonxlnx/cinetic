@@ -377,8 +377,9 @@ export const Stage3D: React.FC<Stage3DProps> = ({ camera: cam, ground, budget = 
       {drawn.map((d) => {
         const W = (d.w + 2 * d.pad) * d.res;
         const H = (d.h + 2 * d.pad) * d.res;
+        // every offset is a transform (a fractional left / top would snap to whole pixels and misregister the copies)
         const content = (
-          <div style={{ position: 'absolute', left: d.pad * d.res, top: d.pad * d.res, width: d.w * d.res, height: d.h * d.res }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, width: d.w * d.res, height: d.h * d.res, transform: `translate(${d.pad * d.res}px, ${d.pad * d.res}px)` }}>
             <div style={{ position: 'relative', width: d.w, height: d.h, zoom: d.res, ...d.el.props.style }}>{d.el.props.children}</div>
           </div>
         );
@@ -392,8 +393,8 @@ export const Stage3D: React.FC<Stage3DProps> = ({ camera: cam, ground, budget = 
                 const S = Math.ceil(Math.hypot(W, H));
                 return (
                   <div key={k} {...audit} {...smear} style={{ position: 'absolute', inset: 0, opacity: c.opacity, ...mask }}>
-                    <div style={{ position: 'absolute', left: (W - S) / 2, top: (H - S) / 2, width: S, height: S, transform: `rotate(${c.angle.toFixed(2)}deg)`, filter: `url(#${fid(c.along, c.iso)})` }}>
-                      <div style={{ position: 'absolute', left: (S - W) / 2, top: (S - H) / 2, width: W, height: H, transform: `rotate(${(-c.angle).toFixed(2)}deg)` }}>{content}</div>
+                    <div style={{ position: 'absolute', left: 0, top: 0, width: S, height: S, transform: `translate(${(W - S) / 2}px, ${(H - S) / 2}px) rotate(${c.angle.toFixed(2)}deg)`, filter: `url(#${fid(c.along, c.iso)})` }}>
+                      <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `translate(${(S - W) / 2}px, ${(S - H) / 2}px) rotate(${(-c.angle).toFixed(2)}deg)` }}>{content}</div>
                     </div>
                   </div>
                 );

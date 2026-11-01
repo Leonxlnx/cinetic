@@ -27,6 +27,12 @@ every function takes `fps` or reads the film context.
 10. [Choosing a move for a beat](#10-choosing-a-move-for-a-beat)
 11. [Framing, legibility and speed](#11-framing-legibility-and-speed)
 12. [Blur policy](#12-blur-policy)
+13. [The depth stage: a real camera over UI planes (fx/depth)](#13-the-depth-stage-a-real-camera-over-ui-planes-fxdepth)
+
+**Depth comes from a designed 3D shot**, not from a card tilted on a flat ground: a camera with a lens, standing
+somewhere, looking at planes that sit at real depths, with depth of field, making one move that starts, travels with
+its subject and lands. `fx/depth` (§13) is that stage; its scenes (`MacroType`, `PageTravel`, `FanFocus`, `PushIn`,
+`CraneDown`, `RiseScene`) are whole beats with a few props each.
 
 ---
 
@@ -208,8 +214,8 @@ a panel swaying. The stage has no float (`lib/drift`: `stageAt` is still without
 
 - **The gates** (`references/checks.md`): `forensics.py dead-stretch` / `motion-frozen` fail only a stretch over 2.5 s
   where nothing changes at all; `camera-wander` fails a camera that pans or pushes one way and back at slow speed inside
-  a shot (the old float) and warns on a camera that never rests; `lint-film` fails `camera-float`, `idle-bob` and
-  `card-tilt`.
+  a shot (the old float) or drifts one way through a whole shot at a flat, slow speed, and warns on a camera that never
+  rests; `lint-film` fails `camera-float`, `idle-bob`, `card-tilt` and, on the depth stage, `camera-shot` (§13).
 - **A move that ends a shot may run into its exit.** A push or track that carries the cut accelerates over its last
   12-20 f (`intoCut()`): the cut lands on the fastest frame and the speed carries across.
 - **Speed carries through cuts** (`lib/handoff.ts`, `references/motion-tokens.md` §6): `launch()` into the cut,
@@ -274,7 +280,8 @@ The floor against a flat film asks for two depth planes moving at different rate
   into a faux italic.
 - **Limits:** roll ≤ 11°, total visible shear ≤ 7° (for example pitch 42° with roll ≤ 12°).
 - **Real 3D only.** Tilted screenshot cards floating in space are a tell; when the product turns, turn the live
-  product, with its own shadow from the key on its own ground, and land it face-on.
+  product, with its own shadow from the key on its own ground, and land it face-on. For a camera that really stands
+  somewhere (perspective, depth of field, a macro close-up, a travel over a page), use the depth stage (§13).
 - **Chromium caps the raster scale under `perspective`**, so text scaled up in 3D goes soft. Lay the product out at
   shot scale with CSS `zoom: Z` and scale the camera by `scale3d(k/Z, k/Z, 1/Z)`, switching Z only on a whole frame at
   a velocity peak (`references/chromium-rendering.md`).
@@ -349,3 +356,112 @@ A spinning element smears around its centre, not along a line: `SpinBlur` (fx/De
 over half the frame's turn as a running mean (sharp under 1 degree a frame); a mark that spins in
 (`fx/Wordmark` `spinInState()`: from x2.06 and over a turn, the turn settling before the scale, then aside to make
 room while the name slides out) passes its `omega` to it.
+
+## 13. The depth stage: a real camera over UI planes (fx/depth)
+
+The production-value gap between a clean film and a studio film is mostly depth: a real camera with perspective and
+depth of field over UI planes, a macro close-up of the one element that matters, the camera following the action and
+landing. `fx/depth` is that stage, pure in the frame (any frame, any order, Node-safe maths), cheap enough for a
+laptop. Use it for the one or two shots of a film that carry the feature: the rest may be flat and still.
+
+**The model.** Lay the shot out flat on the 1080p design plane as usual; each piece becomes a `<Plane box>` with a
+depth `z` (+ toward the camera). The camera is a director's rig: the point it looks at (`target`), how far it stands
+(`dist`), from which side (`yaw` +: to the target's right; `pitch` +: above, looking down), a rigid `roll`, the lens
+(`lens` mm on the short side: 50 normal, 28-35 strong perspective, 85-100 long and flat), where it is focused and how
+shallow the depth of field is (`aperture`, house 36). The opening camera is 1:1: a plane at z = 0 lands exactly on its
+box, so a flat layout keeps its composition until the camera moves. Each plane is one flat element with its own
+projected `matrix3d` (no `preserve-3d`), drawn in depth order, so filters, masks and opacity never break the 3D.
+
+**Depth of field** follows the lens (thin lens: sigma = aperture x (F / focus distance) x |depth - focus| / depth), so
+a macro framing at 3x is three times as shallow as the 1:1 framing and the world goes soft behind the one element. It
+draws in fixed defocus levels (`lib/defocus`, two copies cross-faded, never an animated radius); a plane whose depth
+varies across it (a page in perspective) gets a defocus that varies along its depth (three masked copies). A rack moves
+the focus in diopters on its own ease while the camera holds or moves.
+
+**Motion blur** is a smear along each plane's screen velocity, a 180-degree shutter (sigma = 0.29 x the distance
+travelled in half a frame), from 120 px/s, capped at 24 px, and nothing on a hold; a push smears outward with the zoom.
+At most 6 planes blur in one frame (`STAGE.budget`; the farthest beyond it keep one fixed level). A plane's own move
+(`move={(f) => ({ y, z, s, opacity })}`, sub-frames included) smears the same way.
+
+### The scenes (one component, a few props)
+
+| Scene | Props that matter | The move (house, f@60) | For |
+|---|---|---|---|
+| `MacroType` | `box`, `text`, `textX`, `font`, `render(typed, { caret, ages })`, `at`, `mag` 3.6 | a push onto the first characters at macro scale (44 f, `E.strongInOut`) as the first keys land, then a follow of the caret (trailing by about 12 f, holding it a little right of centre) that lands when the typing stops | a prompt, a search, a message being written |
+| `PageTravel` | `size`, `from`, `to` (page px), `children` | a travel over the page lying back (camera below, pitch -48, yaw 14, 30 mm) from the headline to the table, closing from x1.25 to x1.55 while the roll unwinds -9 to -4 (160 f, `E.strongInOut`); the page's far edge soft | a document, a plan, a board, a report the product writes |
+| `FanFocus` | `cards`, `size`, `focus` | cards slide forward into a fan in depth (34 f each, 7 f apart, back card first); the camera stands to one side (yaw 30) and closes on card `focus` (84 f) while the focus racks from the front card to it (42 f) | notifications, sources, results: many, then the one |
+| `PushIn` | `box`, `plane`, `front`, `children` | a push into one element at macro scale, landing at yaw 12, pitch 5 (62 f) as it is pressed or changes | the button that matters, a row, a figure |
+| `CraneDown` | `plane`, `children` | the camera swings down from above (pitch 58, x0.72) onto the scene and lands face-on, 1:1 (96 f) | opening on a board, a dashboard, a layout |
+| `RiseScene` | `word`, `wordBox`, `cards`, `cardSize`, `row` | cards rise behind a giant word (460 px, 40 f each, 8 f apart, the middle first) while the camera pulls back from x1.32 to 1:1 (90 f); the lens holds the word, then racks to the row as the reveal lands | pricing, plans, a lineup |
+
+```tsx
+import { MacroType, PageTravel, FanFocus, PushIn, Plane } from '../fx/depth';
+
+<Sequence from={ACT.ask.from} durationInFrames={ACT.ask.dur}>
+  <MacroType box={INPUT} text="Plan my launch week" textX={INPUT.x + 96} font={INPUT_FONT} ground={<Ground />}
+    render={(typed, s) => <Composer text={typed} caret={s.caret} />} />
+</Sequence>
+// src/sync.ts declares(): the render checks read the shots
+{ id: 'ask', ...MacroType.declares({ box: INPUT, text: 'Plan my launch week', textX: INPUT.x + 96, font: INPUT_FONT }, { offset: ACT.ask.from, frames: ACT.ask.dur }) },
+```
+
+### The shot vocabulary (your own camera)
+
+```tsx
+import { camera, push, follow, travel, rack, macro, frame, wide, Stage3D, Plane, checkShots } from '../fx/depth';
+
+const cam = camera([
+  push(0, macro(SEND, { mag: 3.2, yaw: 10 }), { frames: 56 }),     // close on the button
+  rack(60, ROW_CENTRE, { frames: 30 }),                              // the focus moves to the row that changes
+], { base: { yaw: -6 } });                                           // the opening camera: 1:1, a little to the left
+// checkShots(cam) in the Studio console: overlap, back and forth, a crawl, a linear move
+<Stage3D camera={cam} ground={<Ground />}>
+  <Plane box={PANEL} z={-260}><Panel /></Plane>
+  <Plane box={INPUT}><Composer /></Plane>
+</Stage3D>
+```
+
+| Shot | Helper | House f@60 | Easing | Focus | Recipe |
+|---|---|---|---|---|---|
+| push in | `push(at, macro(box) / frame(box))` | 60 | `E.strongInOut` (an arrive token right after a cut: the cut is its start) | lands on the target | closes on the thing that changes; the landing target travels a straight, eased line on screen |
+| pull back | `pull(at, wide())` | 72 | `E.strongInOut` | the target, or rack to what is revealed | reveals the whole; never straight back after a push (hold 1.5 s or more first) |
+| follow | `follow(at, subject, { frames, lag })` | lag 24, ramp 24 | the subject's own motion, bell-smoothed | the subject | rides a caret as text types (`caretOf(typing(...))`), the newest row of a list as it fills (`newestOf(rows, times)`: one glide down, never back up), a cursor on its way to a button (`pathOf(a, b, at, frames)`: draw the cursor with the same function); frame the subject first (it never runs back to catch it) and it lands when the subject stops |
+| travel | `travel(at, point or framing)` | 84 | `E.strongInOut` | the target (a page in perspective: its own varying defocus) | keeps its angle and distance and glides over a plane: a page, a board, a grid; the roll may unwind as it goes |
+| crane | `crane(at, framing)` | 96 | `E.strongInOut` | lands on the read | swings down from above onto the scene, landing face-on |
+| orbit | `orbit(at, { yaw })` | 90 | `E.strongInOut` | the target | swings around the subject sideways, landing on the side that reads |
+| whip | `whip(at, framing)` | 28 | `E.whipBuild` | the next subject | a fast move to the next subject; the smear hides the swap |
+| rack | `rack(at, point or 'target')` | 30 | `E.strongInOut` | travels to the point | the focus moves to what the line is about; runs beside a move or on a hold |
+| macro framing | `macro(box, { mag, anchor })` | - | - | - | frames one element at 2.5-4x (as large as fits 92 % of the width or 62 % of the height): a pill, a button or a row becomes the whole picture |
+
+**Rules.** One move per shot: the next starts once the last has landed. Every move starts, travels and lands (motion
+tokens; never `E.linear`, never a crawl under 12 px/s for over 2 s). Never back the way the last move came within 1.5 s
+(a push then a pull, a pan right then left): carry on, hold, or cut. Between moves the camera holds still: no float, no
+drift, no idle bob. Cards face the camera: the perspective comes from where the camera stands (`wide({ yaw: 24 })`,
+`PageTravel`), never from a `Plane` turned at rest; a turn that lands face-on is the plane's own `move`. Keep roll
+within 8 degrees and inside a move. Keep every plane in front of the lens; give a far world plane `fit` (it keeps its
+box's size and place under the opening camera at any depth). A plane is rasterised at the scale of its closest
+framing (`res` 1-3, auto), so type stays sharp at macro scale: keep the plane as small as its content.
+
+**The gates.** `checkShots(cam)` before anything renders (`shot-overlap`, `shot-reverse`, `shot-drift`, `shot-short`,
+`shot-roll`, `shot-busy`); `lint-film camera-shot` (a Stage3D camera computed from the frame by hand, a shot on
+`E.linear`, overlapping moves, a push straight back into a pull, a camera field on a sine of the frame) and `card-tilt`
+(a `Plane` turned at rest); `forensics.py camera-wander` reads the declared shots (`Scene.declares(...)` or
+`shotDeclares(cam, { offset, frames })` in `src/sync.ts declares()`): a declared shot is a purposeful move, two in a row
+going back and forth fail at any speed, and inside the stage a camera that moves outside its shots is a drift; a flat,
+slow pan through a whole shot is a drift in any film.
+
+**Cost.** One plane is one composited layer; defocus and smear are fixed-level filters on a few of them. On software
+GL at half size a depth shot renders in about 0.7-1.2 s a frame on a laptop CPU (the macro and push shots are the
+cheapest, the page with its varying defocus the dearest); on a GPU it is a small fraction of that. Keep blurred planes
+under the budget, big planes few, and the page's defocus for the one page shot.
+
+### Catalogue rows (moves)
+
+| id | recipe |
+|---|---|
+| `macro-type` | the camera pushes onto an input at 3.6x as the first keys land and follows the caret as the line types, the newest characters in the accent settling to ink, the world soft behind (`MacroType`) |
+| `page-travel` | a travel over a page lying back in perspective, headline to table, the roll unwinding, the far edge soft (`PageTravel`) |
+| `fan-focus` | cards in a fan in depth, the camera to one side closing on one card while the focus racks to it (`FanFocus`) |
+| `push-press` | a push into the button at macro scale as the pointer reaches it and presses; a ring opens on the press (`PushIn`) |
+| `rise-behind` | cards rise behind a giant word while the camera pulls back; the focus racks from the word to the row (`RiseScene`) |
+| `crane-down` | the camera swings down from above onto a board and lands face-on for the read (`CraneDown`) |

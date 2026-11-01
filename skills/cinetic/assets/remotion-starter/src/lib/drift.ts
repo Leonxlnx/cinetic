@@ -1,13 +1,15 @@
 // The camera at rest. A shot's camera is still unless the shot declares a move: no float, no drift, no idle loop
 // keeping the picture "alive". The picture moves when something in it enters, changes state or leaves, or when the
 // camera makes a declared move with a purpose: a push, a pull or a track that starts, travels and lands, eased
-// (StageMove here for a whole act; lib/camera camPath and lib/camera-moves for a shot's own camera). A camera that
-// pans one way and back with no reason reads as aimless, and a card that bobs or a panel that sways while it is held
-// reads as cheap. A hold may be completely still; a creep is at most sub-pixel (CREEP.maxPx60: 0.2 px per 60 fps
-// frame at 1080p, 12 px/s). The gates: forensics.py fails a dead stretch (nothing at all changes for more than
-// DRIFT.dead.s) and an aimless camera (camera-wander: a slow pan that turns back inside a shot); lint-film fails an
-// always-on float (camera-float), an idle loop on a position, scale or turn (idle-bob) and a card tilted at rest
-// (card-tilt).
+// (StageMove here for a whole act; lib/camera camPath and lib/camera-moves for a shot's own camera; fx/depth for a
+// real 3D camera over UI planes: perspective, depth of field, a macro close-up, a follow of a caret, a travel over a
+// page, its shots declared). A camera that pans one way and back with no reason reads as aimless, and a card that
+// bobs or a panel that sways while it is held reads as cheap. A hold may be completely still; a creep is at most
+// sub-pixel (CREEP.maxPx60: 0.2 px per 60 fps frame at 1080p, 12 px/s). The gates: forensics.py fails a dead stretch
+// (nothing at all changes for more than DRIFT.dead.s) and an aimless camera (camera-wander: a slow pan that turns
+// back inside a shot, a flat slow drift through a whole shot, declared shots going back and forth); lint-film fails
+// an always-on float (camera-float), an idle loop on a position, scale or turn (idle-bob), a card tilted at rest
+// (card-tilt) and a depth-stage camera off its declared shots (camera-shot).
 //
 // Every function here is pure in the frame (any frame, any order, sub-frames for motion blur) and works in film px
 // (scaled with the frame: the numbers are at 1080p). fx/Float.tsx puts an act's declared moves on its stage.

@@ -408,15 +408,21 @@ export const checkShots = (path: CameraPath): ShotProblem[] => {
 export type ShotRange = { from: number; to: number; kind: ShotKind; id: string };
 
 /**
- * What a stage's camera declares (src/sync.ts declares()): every shot as a range in film frames (`offset`: the frame
- * the stage's Sequence starts on). forensics camera-wander reads them: inside a declared shot the picture may travel
- * one way and land; outside every shot a camera that moves is a drift; two shots back and forth still fail.
+ * What a stage's camera declares (src/sync.ts declares()): every camera move as a range in film frames (`offset`: the
+ * frame the stage's Sequence starts on; a rack moves the focus, not the picture, and is left out), and the stage
+ * itself when `frames` (its Sequence's length) is given. forensics camera-wander reads them: a declared shot is a
+ * purposeful move; two shots in a row going back and forth still fail, and inside the stage a camera that moves
+ * outside every shot is a drift.
  */
-export const shotDeclares = (path: CameraPath, o: { id?: string; offset?: number } = {}) => {
+export const shotDeclares = (path: CameraPath, o: { id?: string; offset?: number; frames?: number } = {}) => {
   const off = o.offset ?? 0;
   const id = o.id ?? 'stage3d';
-  const shots: ShotRange[] = path.shots.map((s, i) => ({ from: Math.round(off + s.at), to: Math.round(off + s.at + s.frames), kind: s.kind, id: s.id ?? `${id}-${s.kind}-${i}` }));
-  return { id, shots, seams: [], stepped: [], flashes: [], cameraBlur: [] };
+  const shots: ShotRange[] = path.shots
+    .map((s, i) => ({ s, i }))
+    .filter(({ s }) => s.kind !== 'rack')
+    .map(({ s, i }) => ({ from: Math.round(off + s.at), to: Math.round(off + s.at + s.frames), kind: s.kind, id: s.id ?? `${id}-${s.kind}-${i}` }));
+  const stages = o.frames ? [{ from: Math.round(off), to: Math.round(off + o.frames), id }] : [];
+  return { id, shots, stages, seams: [], stepped: [], flashes: [], cameraBlur: [] };
 };
 
 /** The camera's world position at frame f (for overlays and checks). */
@@ -424,3 +430,24 @@ export const camPos = (path: CameraPath, f: number): V3 => basisOf(path(f), path
 
 /** Blend helper for overlays: a point between two world points on an ease. */
 export const along = (a: V3, b: V3, t: number): V3 => lerp3(a, b, clamp(t));
+
+// ---------------------------------------------------------------------------------------------------------------
+// subjects a follow rides (beside caretOf in stacks: the caret as text types)
+// ---------------------------------------------------------------------------------------------------------------
+
+/**
+ * A list as it fills: the centre of the newest row that has appeared by frame f (rows: their boxes on the design
+ * plane, top to bottom; times: the frame each one appears). follow() smooths the steps into one glide down the list.
+ */
+export const newestOf = (rows: readonly Box[], times: readonly number[]) => (f: number): V3 => {
+  let k = 0;
+  for (let i = 0; i < rows.length; i++) if (times[i] <= f) k = i;
+  const r = rows[k];
+  return [r.x + r.w / 2, r.y + r.h / 2, r.z ?? 0];
+};
+
+/**
+ * A point travelling from a to b (a cursor on its way to a button) over `frames` from `at`, on `ease` (house
+ * E.strongInOut): draw the cursor with it and give the same function to follow(), so the camera rides the cursor.
+ */
+export const pathOf = (a: V3, b: V3, at: number, frames: number, ease: Ease = E.strongInOut) => (f: number): V3 => lerp3(a, b, ease(clamp((f - at) / Math.max(1e-6, frames))));
