@@ -43,12 +43,18 @@ figure) open the devices that need them, and photos opens the photo devices only
 (--photos N, else the images counted in the project's public/).
 
 In a template project (its src/deal.ts reads the deck's deal: launch-simple), deck.py never picks for you: run without
---direction, it deals THREE directions, each with what the template would play (the ground family, the type
+--direction, it deals THREE directions, each with what the template would play (its world, its hero shots, the type
 pairing, the creative elements, the end card), into out/OPTIONS.md; hold them against the product and pick the one
 that fits it, with the reason in one line:
   python3 scripts/deck.py --brief "<one line>" --format launch --have ui --direction <id> --why "<why it fits the product>"
 The reason heads out/DIRECTION.md; the sheet deals the film's type pairing (scripts/faces.json pairs, at random, never
-the last two films' pairing) and sets it with scripts/type-deal.ts --pair, and writes src/dealt.ts.
+the last two films' pairing) and sets it with scripts/type-deal.ts --pair, and writes src/dealt.ts. A template whose
+`ground` slot holds worlds (fx/world: launch-simple) takes the world that keeps the direction's ground family's tone and
+light (a photograph first for an imagery-led direction; a plate world needs its picture: assets.mjs plate), and a
+template with hero shots (src/deal.ts HERO_META) gets three or more of them: a seeded, recency-weighted shuffle weighted
+by the brief's words, the world's tone (a dark-glass shot on a night world), the direction and what the film has (a ring
+of pictures with eight pictures or --have photos, the 3D mark with the brand's own SVG), at least one picture shot, one
+of a family, never the last film's set; they go into src/dealt.ts (hero, heroReserve) and the sheet's last sections.
 
   --have      what really exists (comma-separated): ui (the product has an interface to show, built in
               code from the real product), input (it is used by typing or pointing: a text field, a prompt,
@@ -1498,18 +1504,27 @@ def template_preview(d, inp, seed, data, root, history_on, devices, floor):
     """What the template would play for direction `d`: ground family, type pairing, the template's deal, creative."""
     pal = deal_slot(d, 'palette', seed)
     fam = deal_family(data, pal, seed, d['id'], recent_grounds(history_on))
-    sh = {'direction': d, 'ground_family': fam}
+    sh = {'direction': d, 'ground_family': fam, 'name': project_name(root) or ''}
     deal, _ = template_deal(sh, devices, floor, recent_template(history_on)) if devices else ({}, {})
     lib = creative_library(root)
     c = deal_creative(lib, project_name(root), inp.get('brief', ''), inp.get('have', ()), recent_creative(history_on), direction=d,
                       photos=photos_known(inp, root))
     pr = deal_pair(project_name(root) or inp.get('brief', ''), d['id'], recent_pairs(history_on))
     by = {x['id']: x for x in lib}
-    lines = [f'**The template plays.** ground `{(fam or {}).get("id", "?")}` ({(fam or {}).get("what", "")[:90]}); '
-             f'voice `{deal.get("voice", "?")}`, end `{deal.get("end", "?")}`, camera `{deal.get("camera", "?")}`'
+    plays_worlds = deal.get('ground') in WORLD_KINDS
+    lines = [(f'**The template plays.** ' if plays_worlds else f'**The template plays.** ground `{(fam or {}).get("id", "?")}` ({(fam or {}).get("what", "")[:90]}); ')
+             + f'voice `{deal.get("voice", "?")}`, end `{deal.get("end", "?")}`, camera `{deal.get("camera", "?")}`'
              + (f'; type `{pr["id"]}` ({pr.get("voice")} with {pr.get("text")})' if pr else '') + '.']
     if c:
         lines.append('**Creative elements.** ' + '; '.join(f'`{i}` ({by.get(i, {}).get("about", "")[:80]})' for i in c['deal']) + '.')
+    hlib = hero_library(root)
+    world = deal.get('ground') if deal.get('ground') in WORLD_KINDS else None
+    hc = deal_hero(hlib, project_name(root), inp.get('brief', ''), inp.get('have', ()), recent_hero(history_on), direction=d, world=world, root=root) if hlib else None
+    if world:
+        lines.append(f'**World.** `{world}`' + (' (a photograph: assets.mjs plate fetches it)' if world in PLATE_WORLDS else '') + '.')
+    if hc:
+        hby = {h['id']: h for h in hlib}
+        lines.append('**Hero shots.** ' + '; '.join(f'`{i}` ({hby.get(i, {}).get("about", "")[:80]})' for i in hc['deal']) + '.')
     return lines
 
 
@@ -2114,6 +2129,38 @@ SEAM_AA = {'velocity': 'velocityCut', 'whip': 'velocityCut', 'wipe': 'velocityCu
            'hard': 'matchCut', 'zoomThrough': 'matchCut', 'snapZoom': 'matchCut', 'defocus': 'blurThrough',
            'breath': 'blurThrough', 'light': 'blurThrough', 'dissolveUi': 'blurThrough'}
 BADGE_LOCKUPS = ('world-object', 'pull-back', 'light-finds', 'resolve')  # the hero object turns as it becomes the mark
+# The worlds (fx/world) a template's `ground` slot may hold instead of ground families: the place a film stands in, with
+# its key light. Each dealt ground family maps to the worlds that keep its tone and its light (its first fits best); an
+# imagery-led direction leans to the photographic plates. A plate world needs its picture fetched (PLATE_WORLDS).
+WORLD_KINDS = ('nearWhite', 'paleSky', 'blackField', 'deepField', 'electric', 'clouds', 'sky', 'aerial', 'sea', 'nightCity', 'studio', 'macro')
+PLATE_WORLDS = ('clouds', 'sky', 'aerial', 'sea', 'nightCity', 'studio', 'macro')
+DARK_WORLDS = ('blackField', 'deepField', 'nightCity', 'electric', 'clouds', 'aerial', 'sea', 'macro')
+NIGHT_WORLDS = ('blackField', 'deepField', 'nightCity')
+FAMILY_WORLDS = {
+    'nearWhite': ('nearWhite', 'studio', 'paleSky', 'sky'), 'lightStudio': ('studio', 'nearWhite', 'paleSky'),
+    'softSky': ('paleSky', 'sky', 'clouds'), 'gradientField': ('paleSky', 'sky', 'electric'),
+    'whiteBand': ('electric', 'nearWhite', 'paleSky'), 'blackField': ('blackField', 'nightCity', 'deepField'),
+    'studio': ('blackField', 'deepField', 'nightCity'), 'deepPool': ('deepField', 'electric', 'nightCity'),
+    'duskMesh': ('clouds', 'aerial', 'sea'), 'floorGlow': ('deepField', 'blackField', 'nightCity'),
+    'lightDark': ('clouds', 'blackField', 'sea'),
+}
+IMAGERY_WORLDS = ('clouds', 'aerial', 'sea', 'macro', 'sky', 'nightCity')
+
+
+def world_prefs(sh, name=''):
+    """(ranked worlds, why) for a direction: its ground family's worlds (an imagery-led direction's plates first), the top
+    three in a seeded order (the film's name: two films of one direction stand in different places), then the rest."""
+    d = sh['direction']
+    fam = (sh.get('ground_family') or {}).get('id')
+    base = list(FAMILY_WORLDS.get(fam, ()))
+    if is_imagery(d):
+        base = [w for w in IMAGERY_WORLDS if w not in base][:2] + base
+    top = list(dict.fromkeys(base))[:3]
+    rng = random.Random(hashlib.sha256(f"world|{(name or '').strip().lower()}|{d['id']}".encode('utf-8')).hexdigest())
+    rng.shuffle(top)
+    ranked = top + [w for w in base if w not in top] + [w for w in WORLD_KINDS if w not in base]
+    why = f"the world for ground family {fam}" + (' (an imagery-led direction: a photograph first)' if is_imagery(d) else '') if fam else 'no ground family dealt'
+    return ranked, why
 LAND_MOTIONS = ('crane', 'dolly', 'push')  # a camera that travels: each picture takes one push that lands
 
 
@@ -2172,9 +2219,10 @@ def template_deal(sh, devices, floor, recent=None):
         voice = (['blur', 'ink', 'build'], f'type mode {modes[0]} with defocus seams')
     else:
         voice = (['ink', 'blur', 'build'], f'type mode {modes[0]}')
+    worlds = 'clouds' in (devices.get('ground') or ())
     pref = {
         'voice': voice,
-        'ground': ([fam] if fam else [], f'ground family {fam}' if fam else 'no ground family dealt'),
+        'ground': world_prefs(sh, sh.get('name', '')) if worlds else ([fam] if fam else [], f'ground family {fam}' if fam else 'no ground family dealt'),
         'seamTA': (ta, 'seams ' + ', '.join(seams[:4])),
         'seamAT': ((['zoomThrough', 'recede'] if push else ['recede', 'zoomThrough']),
                    'a push seam: the camera goes through the picture' if push else 'no push seam: the picture falls back under the line'),
@@ -2204,17 +2252,167 @@ def template_deal(sh, devices, floor, recent=None):
     return deal, why
 
 
-def dealt_body(direction, deal, creative):
-    """src/dealt.ts: the direction's deal and the film's creative elements (deal.ts reads it first)."""
+def dealt_body(direction, deal, creative, hero=None):
+    """src/dealt.ts: the direction's deal, the film's creative elements and its hero shots (deal.ts reads it first)."""
     obj = {'direction': direction, 'deal': deal}
     if creative:
         obj['creative'] = creative['deal']
         obj['reserve'] = creative['reserve']
+    if hero:
+        obj['hero'] = hero['deal']
+        obj['heroReserve'] = hero['reserve']
     return ('// What the deck dealt for this film (scripts/deck.py writes this file with out/DIRECTION.md): src/deal.ts plays it\n'
             '// instead of a deal of its own, so the sheet and the template never disagree. Re-deal with deck.py (--redraw),\n'
-            '// never by hand; launch.ts `pin` still fixes a slot, launch.ts `creative.swap` trades one creative element (a reason).\n'
-            'export const DEALT: { direction: string; deal: Record<string, string>; creative?: string[]; reserve?: string[] } | null = '
+            '// never by hand; launch.ts `pin` still fixes a slot, launch.ts `creative.swap` trades one creative element and\n'
+            '// `heroes.swap` one hero shot (each with a reason).\n'
+            'export const DEALT: { direction: string; deal: Record<string, string>; creative?: string[]; reserve?: string[]; hero?: string[]; heroReserve?: string[] } | null = '
             + json.dumps(obj, ensure_ascii=False) + ';\n')
+
+
+# ---- the hero shots (a template that plays them: launch-simple src/deal.ts HERO_META) ---------------------------------
+HERO_N = 3
+_HERO_LINE = re.compile(r"\{\s*id:\s*'([a-z0-9-]+)',\s*role:\s*'(picture|over|line|end)',\s*family:\s*'([a-z0-9-]+)',\s*needs:\s*\[([^\]]*)\],\s*prefer:\s*'([a-z]+)',\s*min:\s*([\d.]+),(\s*dark:\s*true,)?\s*fits:\s*\[([^\]]*)\],\s*about:\s*'((?:[^'\\]|\\.)*)'\s*\}")
+HERO_FIT_X = 2.2  # each of the brief's words a shot fits multiplies its weight (up to three)
+HERO_DARK_X = 2.4  # a shot that reads best on a dark world, on a night world (and 0.4 on a light one)
+HERO_TYPE_X = 1.5  # a type-led direction: the shots that set the line
+HERO_PHOTO_X = 2.0  # an imagery-led direction: the ring of pictures
+HERO_PICTURES_MIN = 8  # a ring of pictures needs eight or more
+
+
+def hero_library(root=None):
+    """[{id, role, family, needs, prefer, min, dark, fits, about}] from <root>/src/deal.ts HERO_META, else the skill's
+    launch-simple copy; [] for a template without hero shots."""
+    paths = ([os.path.join(root, 'src', 'deal.ts')] if root else []) + [os.path.join(SKILL, 'assets', 'templates', 'launch-simple', 'src', 'deal.ts')]
+    for path in paths:
+        if os.path.isfile(path):
+            with open(path, encoding='utf-8') as fh:
+                src = fh.read()
+            if 'HERO_META' not in src:
+                return []
+            out = [{'id': m.group(1), 'role': m.group(2), 'family': m.group(3), 'needs': re.findall(r"'([a-z-]+)'", m.group(4)),
+                    'prefer': m.group(5), 'min': float(m.group(6)), 'dark': bool(m.group(7)), 'fits': re.findall(r"'([a-z-]+)'", m.group(8)),
+                    'about': m.group(9).replace("\\'", "'")} for m in _HERO_LINE.finditer(src)]
+            if out:
+                return out
+    return []
+
+
+def recent_hero(history_on):
+    """The hero sets of the last films, newest first (the film history, then the deal history)."""
+    sets = []
+    for f in film_history(history_on):
+        c = (f.get('deal') or {}).get('hero') or (f.get('devices') or {}).get('hero')
+        if isinstance(c, list) and c:
+            sets.append([x for x in c if isinstance(x, str)])
+    for h in read_history(history_on):
+        c = h.get('hero')
+        if isinstance(c, list) and c:
+            sets.append([x for x in c if isinstance(x, str)])
+    seen, out = set(), []
+    for x in sets:
+        k = tuple(sorted(x))
+        if k not in seen:
+            seen.add(k)
+            out.append(x)
+    return out[:4]
+
+
+def brand_mark(root):
+    """Whether the project has the brand's own mark (src/brand/logo.ts written by brand.py, not the template's stand-in)."""
+    path = os.path.join(root or '', 'src', 'brand', 'logo.ts')
+    if not root or not os.path.isfile(path):
+        return False
+    with open(path, encoding='utf-8') as fh:
+        return not re.search(r'LOGO_STANDIN\s*=\s*true', fh.read())
+
+
+def count_thumbs(root):
+    """Pictures the film's content can ring (public/thumbs and the film's own photos)."""
+    pub = os.path.join(root or '', 'public', 'thumbs')
+    n = sum(1 for f in os.listdir(pub) if f.lower().endswith(_IMG)) if root and os.path.isdir(pub) else 0
+    return max(n, count_photos(root) if root else 0)
+
+
+def hero_fit(h, direction=None, brief='', world=None):
+    """How much a hero shot suits the brief, the direction and the world (1 = neutral)."""
+    w = 1.0
+    b = (brief or '').lower()
+    hits = sum(1 for x in h['fits'] if re.search(r'\b' + re.escape(x) + r'\w*', b))
+    w *= HERO_FIT_X ** min(3, hits)
+    if h['dark']:
+        w *= HERO_DARK_X if world in NIGHT_WORLDS else (1.0 if world in DARK_WORLDS else 0.4)
+    if direction:
+        if h['role'] in ('over', 'line') and is_type_led(direction):
+            w *= HERO_TYPE_X
+        if 'pictures' in h['needs'] and is_imagery(direction):
+            w *= HERO_PHOTO_X
+    return w
+
+
+def deal_hero(lib, name, brief, have, recent=(), n=HERO_N, direction=None, world=None, root=None):
+    """{deal, reserve, fits, feeds} or None without a library: a seeded, recency-weighted shuffle of the hero shots the
+    film can feed (a ring of pictures needs eight pictures or --have photos; the 3D mark needs the brand's own mark), each
+    weighted by its fit; at least one picture shot, one of a family, one of each other role at most (the end card's
+    shot comes on top of the three); never a recent film's set, one shot shared with the last film at most (two after
+    half the draws)."""
+    if not lib:
+        return None
+    haves = creative_haves(have, brief)
+    feeds = {'button'}
+    if 'photos' in haves or count_thumbs(root) >= HERO_PICTURES_MIN:
+        feeds.add('pictures')
+    if brand_mark(root):
+        feeds.add('mark')
+    ok = [h for h in lib if all(x in feeds for x in h['needs'])]
+    last = list(recent[0]) if recent else []
+    key = '|'.join([(name or brief or '').strip().lower(), ';'.join(','.join(sorted(x)) for x in recent)] + ([direction['id']] if direction else []) + [world or ''])
+    fit = {h['id']: hero_fit(h, direction, brief, world) for h in ok}
+    for salt in range(64):
+        rng = random.Random(hashlib.sha256(f'{key}#hero#{salt}'.encode('utf-8')).hexdigest())
+        order = sorted(ok, key=lambda h: rng.random() ** (1.0 / (creative_weight(h, recent) * fit[h['id']])), reverse=True)
+        pick = []
+
+        def take(cond):
+            for h in order:
+                if h not in pick and all(p['family'] != h['family'] for p in pick) and not (h['role'] != 'picture' and any(p['role'] == h['role'] for p in pick)) and cond(h):
+                    pick.append(h)
+                    return
+
+        take(lambda h: h['role'] == 'picture')
+        while len([p for p in pick if p['role'] != 'end']) < n:
+            had = len(pick)
+            take(lambda h: h['role'] != 'end')
+            if len(pick) == had:
+                break
+        take(lambda h: h['role'] == 'end')  # the end card's shot when the film can feed it
+        ids = [h['id'] for h in pick]
+        if any(sorted(ids) == sorted(x) for x in recent) or len(set(ids) & set(last)) > (1 if salt < 32 else 2):
+            continue
+        reserve = [h['id'] for h in order if h['id'] not in ids]
+        return {'deal': ids, 'reserve': reserve, 'fits': [i for i in ids if fit.get(i, 1.0) > 1.0], 'feeds': sorted(feeds)}
+    return None
+
+
+def hero_lines(hc, lib, world=None):
+    """The DIRECTION.md section for the dealt world and hero shots."""
+    out = []
+    if world:
+        plate = world in PLATE_WORLDS
+        out += ['', '## The world (dealt)', '',
+                f"`{world}` (fx/world: references/lighting.md §8): one place for the whole film, its key light read by the glass, the rims, "
+                'the type and the product; src/world.tsx draws it.' + (
+                    f" It is a photograph: `node scripts/assets.mjs plate {world}`, look at the sheet, then `node scripts/assets.mjs plate {world} "
+                    "--pick <n> --to public/plates --accent '<the accent>'` (until then a built world of the same tone stands in)." if plate else '')]
+    if hc:
+        by = {h['id']: h for h in lib}
+        out += ['', '## The hero shots (dealt; they take their beats first)', '',
+                'Each is a designed 3D or light shot of the product\'s own content (src/content.ts: `node scripts/content.mjs --brief BRIEF.md '
+                '--fetch --force`, then read it); timeline.ts HERO_PLAN puts each on its beat: `npx tsx -e "import { HERO_PLAN, HERO_END } '
+                "from './src/timeline'; console.log(HERO_PLAN, HERO_END)\"`. Swap one at most, with the reason (launch.ts `heroes.swap`).", '']
+        for i in hc['deal']:
+            h = by.get(i, {})
+            out.append(f"- `{i}` ({h.get('role', '?')}): {h.get('about', '')}")
+    return '\n'.join(out) + ('\n' if out else '')
 
 
 def photos_known(inp, root):
@@ -2291,10 +2489,22 @@ def write_template_deal(sh, outdir):
     if not devices:
         sh.pop('template_deal', None)
         return
+    sh['name'] = project_name(root) or ''
     deal, why = template_deal(sh, devices, floor, recent_template(sh.get('history', True)))
+    sh.pop('name', None)
+    # the hero shots (a template that plays them), weighted by the world just dealt
+    hlib = hero_library(root)
+    inp = sh.get('input') or {}
+    world = deal.get('ground') if deal.get('ground') in WORLD_KINDS else None
+    hc = deal_hero(hlib, project_name(root), inp.get('brief', ''), inp.get('have', ()), recent_hero(sh.get('history', True)), direction=sh.get('direction'), world=world, root=root) if hlib else None
+    if hc:
+        sh['hero'] = hc
+    else:
+        sh.pop('hero', None)
+    sh['world'] = world
     rel = 'src/dealt.ts'
     with open(os.path.join(root, 'src', 'dealt.ts'), 'w', encoding='utf-8', newline='\n') as fh:
-        fh.write(dealt_body(sh['direction']['id'], deal, sh.get('creative')))
+        fh.write(dealt_body(sh['direction']['id'], deal, sh.get('creative'), hc))
     sh['template_deal'] = {'file': rel, 'deal': deal, 'why': why}
     # the type pairing (scripts/faces.json pairs), set in the tokens with type-deal.ts (the template reads it from there)
     if 'type' not in (sh.get('keep') or []):
@@ -2312,7 +2522,7 @@ def deal_creative_only(outdir, brief, have, history_on):
     if not c:
         fail('no creative library found (src/fx/creative/meta.ts in the project or the skill\'s starter)', 1)
     p = os.path.join(root, 'src', 'dealt.ts')
-    direction, deal = '', {}
+    direction, deal, hero = '', {}, None
     if os.path.isfile(p):
         with open(p, encoding='utf-8') as fh:
             m = re.search(r'=\s*(\{.*\})\s*;\s*$', fh.read(), re.S)
@@ -2320,11 +2530,13 @@ def deal_creative_only(outdir, brief, have, history_on):
             try:
                 old = json.loads(m.group(1))
                 direction, deal = old.get('direction', ''), old.get('deal', {})
+                if old.get('hero'):
+                    hero = {'deal': old['hero'], 'reserve': old.get('heroReserve', [])}
             except ValueError:
                 pass
     if os.path.isdir(os.path.join(root, 'src')):
         with open(p, 'w', encoding='utf-8', newline='\n') as fh:
-            fh.write(dealt_body(direction, deal, c))
+            fh.write(dealt_body(direction, deal, c, hero))
     write_history(history_on, {'direction': direction or '(creative only)', 'creative': c['deal']})
     print(f"deck: creative elements {', '.join(c['deal'])}" + (f' (written to {os.path.relpath(p)})' if os.path.isdir(os.path.join(root, 'src')) else ''))
     print(creative_lines(c, lib), end='')
@@ -2338,7 +2550,8 @@ def write_sheet(sh, outdir, data, library):
     with open(os.path.join(outdir, 'direction.json'), 'w', encoding='utf-8', newline='\n') as fh:
         json.dump(sh, fh, indent=1, ensure_ascii=False)
         fh.write('\n')
-    md = render_sheet(sh, data, library) + creative_lines(sh.get('creative'), creative_library(os.path.dirname(os.path.abspath(outdir))))
+    root = os.path.dirname(os.path.abspath(outdir))
+    md = render_sheet(sh, data, library) + creative_lines(sh.get('creative'), creative_library(root)) + hero_lines(sh.get('hero'), hero_library(root), sh.get('world'))
     with open(os.path.join(outdir, 'DIRECTION.md'), 'w', encoding='utf-8', newline='\n') as fh:
         fh.write(md)
     return md
@@ -2593,6 +2806,7 @@ def main():
     write_history(history_on, {'direction': d['id'], 'format': a.format, 'signature': d['signature']['family'], 'lockup': d['lockup']['kind'],
                                **({'ground': sh['ground_family']['id']} if sh.get('ground_family') else {}),
                                **({'creative': sh['creative']['deal']} if sh.get('creative') else {}),
+                               **({'hero': sh['hero']['deal']} if sh.get('hero') else {}),
                                **({'type': sh['type_pair']['id']} if sh.get('type_pair') else {})})
     print(md, end='')
     return 0
