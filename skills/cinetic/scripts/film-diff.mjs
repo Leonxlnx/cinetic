@@ -23,6 +23,10 @@
  *   floor     a template film's deal plays another device than the template's floor (assets/templates/<name>/
  *             floor.json, the template as it ships) in at least half its slots (fail)
  *   declared  ground, voice, signature, end and two or more moves are named (warn per gap)
+ *   type      the type pairing (film.json devices.type, which scripts/type-deal.ts writes) differs from the last
+ *             film's (warn: a re-deal with --mood or --pair changes it)
+ *   creative  the film's creative elements (film.json devices.creative, else src/deal.ts CREATIVE) are not all the
+ *             last film's (warn); --record keeps them, so the next deal (deck.py, deal.ts) plays others
  *
  * Usage (from the film project):
  *   node scripts/film-diff.mjs [<film dir>]              check the film
@@ -92,6 +96,11 @@ function writeHistory(entry, file = HISTORY) {
 
 /** The deal of a project's src/deal.ts (DEAL, FLOOR), through tsx; null without tsx or deal.ts. */
 function tsDeal(dir, name = 'DEAL') {
+  const m = tsDealMany(dir, [name]);
+  return m ? m[name] ?? null : null;
+}
+/** Several exports of src/deal.ts in one tsx run (each run costs seconds): { name: value }, or null. */
+function tsDealMany(dir, names) {
   const deal = path.join(dir, 'src', 'deal.ts');
   if (!fs.existsSync(deal)) return null;
   const up = (from, rel) => {
@@ -103,7 +112,7 @@ function tsDeal(dir, name = 'DEAL') {
   const tsx = up(dir, path.join('node_modules', 'tsx', 'dist', 'cli.mjs')) ?? up(SKILL, path.join('assets', 'remotion-starter', 'node_modules', 'tsx', 'dist', 'cli.mjs'));
   if (!tsx) return null;
   const probe = path.join(os.tmpdir(), `film-diff-${process.pid}.mts`);
-  fs.writeFileSync(probe, `import { pathToFileURL } from 'node:url';\nconst m = await import(pathToFileURL(${JSON.stringify(deal)}).href);\nconsole.log(JSON.stringify(m[${JSON.stringify(name)}] ?? null));\n`);
+  fs.writeFileSync(probe, `import { pathToFileURL } from 'node:url';\nconst m = await import(pathToFileURL(${JSON.stringify(deal)}).href);\nconsole.log(JSON.stringify(Object.fromEntries(${JSON.stringify(names)}.map((n) => [n, m[n] ?? null]))));\n`);
   const r = spawnSync(process.execPath, [tsx, probe], { cwd: dir, encoding: 'utf8', timeout: 120000 });
   fs.rmSync(probe, { force: true });
   try {
@@ -126,7 +135,13 @@ export function filmDevices(dir, { useTsx = true } = {}) {
   out.moves = list(d.moves);
   out.seams = list(d.seams);
   out.camera = norm(d.camera);
-  const deal = useTsx ? tsDeal(dir) : null;
+  out.type = norm(d.type);
+  out.creative = list(d.creative);
+  const got = useTsx ? tsDealMany(dir, ['DEAL', 'CREATIVE']) : null;
+  const deal = got ? got.DEAL : null;
+  // CREATIVE is the ids, or the deal object launch-simple exports ({ deal: [ids], reserve, source })
+  const cr = Array.isArray(got?.CREATIVE) ? got.CREATIVE : Array.isArray(got?.CREATIVE?.deal) ? got.CREATIVE.deal : null;
+  if (!out.creative.length && cr) out.creative = list(cr);
   if (deal && typeof deal === 'object') {
     for (const s of ['voice', 'ground', 'end', 'camera']) if (!out[s] && typeof deal[s] === 'string') out[s] = deal[s];
     if (!out.seams.length) out.seams = [...new Set(['seamTA', 'seamAT'].map((s) => deal[s]).filter((x) => typeof x === 'string'))];
@@ -184,6 +199,10 @@ export function diff(film, history, { allow = [], floor = null, choices = {} } =
   for (const s of SOFT) {
     if (d[s] && !ok.has(s) && recent[0]?.devices?.[s] === d[s]) add('repeat', 'warn', `${s} ${d[s]} is the last film's: a different ${s} reads as a different film`);
   }
+  if (d.type && !ok.has('type') && recent[0]?.devices?.type === d.type) add('type', 'warn', `the type pairing ${d.type} is the last film's: deal another (npx tsx scripts/type-deal.ts --seed "<name>" --mood <m>, or --pair <id>)`);
+  const lastCr = list(recent[0]?.devices?.creative);
+  if ((d.creative ?? []).length && lastCr.length && !ok.has('creative') && d.creative.every((c) => lastCr.includes(c)))
+    add('creative', 'warn', `the creative elements (${d.creative.join(', ')}) are all the last film's: deal again (deck.py) so this film has its own`);
   recent.forEach((h, i) => {
     const j = jaccard(d, h.devices ?? {});
     if (j > JACCARD_MAX + 1e-9) add('overlap', 'error', `the move set shares ${(100 * j).toFixed(0)} % with the film ${i + 1} back${h.name ? ` (${h.name})` : ''} (at most ${100 * JACCARD_MAX} %): trade a move or a seam for another from references/catalogue.md`);
@@ -209,7 +228,7 @@ function main() {
     const h = readHistory();
     if (flag('--json')) console.log(JSON.stringify(h, null, 1));
     else if (!h.length) console.log(`film-diff: no films in ${HISTORY} yet`);
-    else h.forEach((e, i) => console.log(`${i + 1}. ${e.name ?? '(unnamed)'}${e.template ? ` [${e.template}]` : ''}: ${SLOTS.map((s) => `${s} ${e.devices[s] || '-'}`).join(', ')}; moves ${(e.devices.moves ?? []).join(' ') || '-'}; seams ${(e.devices.seams ?? []).join(' ') || '-'}`));
+    else h.forEach((e, i) => console.log(`${i + 1}. ${e.name ?? '(unnamed)'}${e.template ? ` [${e.template}]` : ''}: ${SLOTS.map((s) => `${s} ${e.devices[s] || '-'}`).join(', ')}; moves ${(e.devices.moves ?? []).join(' ') || '-'}; seams ${(e.devices.seams ?? []).join(' ') || '-'}${e.devices.type ? `; type ${e.devices.type}` : ''}${(e.devices.creative ?? []).length ? `; creative ${e.devices.creative.join(' ')}` : ''}`));
     return 0;
   }
   const fl = value('--floor');
@@ -237,7 +256,7 @@ function main() {
   if (flag('--json')) console.log(JSON.stringify({ film: { name, ...film }, history: history.length, findings }, null, 1));
   else {
     const d = film.devices;
-    console.log(`film-diff: ${name}${film.template ? ` [${film.template}]` : ''}: ${SLOTS.map((s) => `${s} ${d[s] || '-'}`).join(', ')}; moves ${d.moves.join(' ') || '-'}; seams ${d.seams.join(' ') || '-'}`);
+    console.log(`film-diff: ${name}${film.template ? ` [${film.template}]` : ''}: ${SLOTS.map((s) => `${s} ${d[s] || '-'}`).join(', ')}; moves ${d.moves.join(' ') || '-'}; seams ${d.seams.join(' ') || '-'}${d.type ? `; type ${d.type}` : ''}${d.creative.length ? `; creative ${d.creative.join(' ')}` : ''}`);
     console.log(`  against ${Math.min(RECENT, history.length)} of the last films${film.template ? ` and the ${film.template} floor` : ''}`);
     for (const f of findings) console.log(`  ${f.severity === 'error' ? 'FAIL' : 'warn'}  ${f.check}: ${f.message}`);
     if (!findings.length) console.log('  pass: nothing repeats');
