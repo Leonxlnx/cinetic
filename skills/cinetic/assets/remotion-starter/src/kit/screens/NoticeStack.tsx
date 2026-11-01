@@ -13,7 +13,11 @@ import type { IconName } from '../icons';
 import type { LogoRef } from '../logos';
 import { Face, fbox, type Focus, focusAttr, Mark, Panel, SCREEN, type ScreenBase, type ScreenLayout, textTag, textW, tx, unionBox, useScreen, wrapText } from './base';
 
-export type NoticeItem = { app?: LogoRef; glyph?: IconName; photo?: string; person?: string; title: string; body: string; ago: string };
+/**
+ * One notification. `own`: the product's own notification ("12 sign-ups this hour", "Reply drafted"), drawn with the
+ * product's mark (the stack's `ownMark`), never a stock glyph in an accent square where the brand belongs.
+ */
+export type NoticeItem = { app?: LogoRef; glyph?: IconName; photo?: string; person?: string; title: string; body: string; ago: string; own?: boolean };
 
 export type NoticeStackProps = ScreenBase & {
   /** in arrival order: the first arrives first */
@@ -26,6 +30,8 @@ export type NoticeStackProps = ScreenBase & {
   /** cards visible behind the front one (stack) */
   depth?: number;
   w?: number;
+  /** the product's own mark at `size` px (brand/Mark LogoMark of brand/logo LOGO): drawn on a tile for an `own` notice */
+  ownMark?: (size: number) => React.ReactNode;
 };
 
 const T = { title: 16, body: 15, ago: 13, icon: 44 } as const;
@@ -90,7 +96,13 @@ export const NoticeStack: React.FC<NoticeStackProps> = (p) => {
           <div key={i} {...focusAttr(`card${i}`)} style={{ position: 'absolute', left: 0, top: 0, width: L.w, height: c.h, transform: `translate(${c.x.toFixed(2)}px, ${c.y.toFixed(2)}px) scale(${c.s.toFixed(4)})`, transformOrigin: '0 0', opacity: c.o, zIndex: i }}>
             <Panel skin={skin} w={L.w} h={c.h} r={r} u={u} lift={0.35} backdrop={p.backdrop}>
               <div style={{ position: 'absolute', left: 14 * pt, top: 16 * pt }}>
-                {n.photo ? <Face skin={skin} size={T.icon * pt} name={n.person ?? n.title} src={n.photo} /> : <Mark skin={skin} size={T.icon * pt} logo={n.app} glyph={n.glyph ?? 'bell'} />}
+                {n.photo ? (
+                  <Face skin={skin} size={T.icon * pt} name={n.person ?? n.title} src={n.photo} />
+                ) : n.own && p.ownMark ? (
+                  <OwnTile skin={skin} size={T.icon * pt}>{p.ownMark(T.icon * pt * 0.64)}</OwnTile>
+                ) : (
+                  <Mark skin={skin} size={T.icon * pt} logo={n.app} glyph={n.glyph ?? 'bell'} />
+                )}
               </div>
               <div {...textTag(`notice-title${i}`, T.title * pt, view)} style={{ position: 'absolute', left: (14 + T.icon + 14) * pt, top: 15 * pt, ...tx(T.title, pt, 620, skin.text) }}>{n.title}</div>
               <div {...textTag(`notice-ago${i}`, T.ago * pt, view)} style={{ position: 'absolute', right: 16 * pt, top: 17 * pt, ...tx(T.ago, pt, 450, skin.faint) }}>{n.ago}</div>
@@ -103,6 +115,13 @@ export const NoticeStack: React.FC<NoticeStackProps> = (p) => {
     </div>
   );
 };
+
+/** The product's own mark as its notification icon: a light tile with a hairline (an app icon), the mark centred on it. */
+const OwnTile: React.FC<{ skin: ReturnType<typeof useScreen>['skin']; size: number; children: React.ReactNode }> = ({ skin, size, children }) => (
+  <div data-icon="own" style={{ width: size, height: size, borderRadius: size * 0.24, flex: 'none', background: skin.dark ? mixColor(skin.face, '#FFFFFF', 0.92) : '#FFFFFF', boxShadow: `inset 0 0 0 ${(size * 0.022).toFixed(2)}px ${mixColor(skin.text, '#FFFFFF', 0.86)}, 0 ${(size * 0.04).toFixed(2)}px ${(size * 0.1).toFixed(2)}px rgba(0, 0, 0, 0.16)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    {children}
+  </div>
+);
 
 /** The width a notice's title and age need (to size a stack to its longest line). */
 export const noticeWidth = (items: NoticeItem[], pt: number) => Math.max(...items.map((n) => textW(n.title, T.title * pt, 620) + textW(n.ago, T.ago * pt, 450) + (14 + T.icon + 14 + 16 + 24) * pt));

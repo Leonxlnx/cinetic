@@ -24,7 +24,7 @@ export type PromptBarProps = ScreenBase & {
   /** characters a second (default 24, a fluent typist), with a human cadence */
   cps?: number;
   seed?: string;
-  /** shown in the faint ink until the first key ("Ask anything", "Message your assistant") */
+  /** shown in the faint ink until the first key ("Ask anything", "Message Orrin") */
   placeholder?: string;
   /** width in px (default 640 points) */
   w?: number;

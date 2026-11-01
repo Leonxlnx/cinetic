@@ -168,7 +168,9 @@ const WORLDS = {
       { name: 'Creator', price: 19, period: '/mo', badge: 'Popular', featured: true, features: ['Unlimited products', 'Your own domain', 'Courses and memberships', 'Comments turned into lessons', 'Payouts every day'], cta: 'Go Creator' },
       { name: 'Studio', price: 49, period: '/mo', features: ['Everything in Creator', 'Three team seats', 'Affiliate links', 'Priority support'], cta: 'Talk to us' },
     ],
-    doc: { title: 'Your {weeks}-week {one} plan', accent: '{weeks}-week', lead: 'Stop guessing. Follow the plan.', section: 'A clear path, week by week', body: ['Each week builds on the last, so you make steady progress without wondering what comes next. The plan stays simple: learn it, repeat it, then add one thing.', 'You never need to decide everything at once. Open the plan, find your week and focus on the next session. Your notes stay in one place, so you can see what changed.'], head: ['Week', 'Focus', 'Your priority'], rows: [['1', 'Foundation', 'Learn the basics'], ['2', 'Build', 'Repeat what works'], ['3', 'Progress', 'Add one new thing'], ['4', 'Range', 'Try a harder one'], ['5', 'Momentum', 'Keep showing up']] },
+    // the page the product makes is the product itself (the creator's own item), written from its items, never a
+    // stock "plan" page
+    doc: { title: '{item}', accent: '{item}', lead: 'Your {n} most asked {topic}, in one {thing}', section: 'Inside the {thing}', body: ['Every {one} your audience asked about, in the order you would teach it, each with the question that asked for it.', 'The questions asked most come first; the rest follow as extras, so the first page is the one people wanted.'], head: ['Part', 'What it covers', 'Asked by'], rows: [['1', '{item}', '{c1} people'], ['2', '{item2}', '{c2} people'], ['3', '{item3}', '{c3} people'], ['4', 'Questions you sent in', '{c4} people']] },
     code: { file: 'course.ts', lang: 'ts' },
     reply: { ask: 'What do my viewers ask for most?', text: 'I read your last {count} videos and {comments} comments. Three requests come up again and again:', items: ['A full {thing} for beginners ({c1} asks)', 'One plan to follow, week by week ({c2} asks)', 'A printable version of every {one} ({c3} asks)'], close: 'Want me to draft the {thing}?' },
   },
@@ -548,7 +550,10 @@ const build = (b, date) => {
     const pr = charm(price * between(0.8, 2.4, `${seed}:np:${i}`));
     const cx = ctx(i + 3, { first: p.first, last: p.last, handle: p.handle, price2: money(charm(price * 2.1), cur), price3: money(charm(price * 0.12 + 40), cur), payout: money(Math.round(price * between(40, 90, `${seed}:po`)) , cur), order: int(1040, 1890, `${seed}:ord:${i}`), secs: int(18, 70, `${seed}:secs:${i}`), company: (W.companies ?? [''])[i % (W.companies?.length || 1)], company2: (W.companies ?? [''])[(i + 1) % (W.companies?.length || 1)], company3: (W.companies ?? [''])[(i + 2) % (W.companies?.length || 1)], ...(domain === 'finance' ? { price: money(pr * 1, cur) } : {}) });
     const age = [34, 12, 4, 0][i] ?? 0;
-    return { app: n.app, glyph: n.glyph, title: fill(n.title, cx), body: fill(n.body, cx), ago: age === 0 ? 'now' : `${age}m ago`, ...(n.app === 'gmail' && /\{first\} \{last\}/.test(n.title) ? { photo: photo(p), person: p.name } : {}) };
+    // the product's own notification (it did the thing: "{P} wrote back ...") carries the product's mark (own), never a
+    // stock glyph or another app's
+    const own = /^\{P\}/.test(n.body) || n.app === 'self';
+    return { ...(own ? { own: true } : { app: n.app }), glyph: n.glyph, title: fill(n.title, cx), body: fill(n.body, cx), ago: age === 0 ? 'now' : `${age}m ago`, ...(n.app === 'gmail' && /\{first\} \{last\}/.test(n.title) ? { photo: photo(p), person: p.name } : {}) };
   });
 
   // payments: rows that sum to the header
@@ -598,7 +603,7 @@ const build = (b, date) => {
   const plans = { plans: W.plans.map((pl) => ({ ...pl, features: pl.features.map((f2) => fill(f2, ctx(0))) })), currency: cur };
 
   // the document
-  const dc = ctx(0);
+  const dc = ctx(0, { c1: int(140, 420, `${seed}:dc1`), c2: int(80, 139, `${seed}:dc2`), c3: int(40, 79, `${seed}:dc3`), c4: int(12, 39, `${seed}:dc4`) });
   const docRows = W.doc.rows.length ? W.doc.rows.map((r) => r.map((c) => fill(c, dc))) : domain === 'finance' ? W.companies.slice(0, 5).map((c, i) => [String(i + 1), c, money(Math.round(price * between(0.4, 2.6, `${seed}:dr:${i}`) / 50) * 50, cur)]) : itemNames.slice(0, 4).map((it, i) => [String(i + 1), it, money(products[i]?.value ? Number(String(products[i].value).replace(/[^0-9.]/g, '')) : price, cur)]);
   const doc = { number: domain === 'creator' ? '01' : undefined, brand: name, title: fill(W.doc.title, dc), accentWord: fill(W.doc.accent, dc), lead: fill(W.doc.lead, dc), section: fill(W.doc.section, dc), body: W.doc.body.map((t) => fill(t, dc)), table: { head: W.doc.head, rows: docRows, numbered: true } };
   if (!doc.number) delete doc.number;
