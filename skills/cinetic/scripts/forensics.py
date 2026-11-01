@@ -148,6 +148,11 @@ Film checks (with the grammar; read at 240 wide, the ending at 480):
   world-still  the world's textured corners stay one picture wherever they show and match at both ends
                of a film of 8 s or more (no cloud, light or camera moving it)                   warn
   world-murk   the world's outer ring has no highlight (p99.5 luma under 120) on 70 % of the film  warn
+  legibility   each line of the cues copy block (and the first name) against what stands behind it: the
+               type is what changes from the frame before it arrives (or after it leaves) to the frame
+               once it is whole, the letters' fill of its polarity, over that ground or the flat backing
+               it arrived on; WCAG ratio under 3:1                                            warn
+               under 2:1 (a grey halo round the letters does not count as a ground)            fail
 Sound (any mode; --no-audio or --loop skip it):
   audio        no audio stream, under a second of it, or a silent mix (under -50 dBFS)          fail
   audio-end    the last 0.25 s sit under 12 dB below the loudest 2 s: the music is cut      warn
@@ -556,6 +561,7 @@ def load_declarations(args):
         extra.update(declared_of(c))
         extra['events'] = c['events']
         extra['copy_n'] = sum(1 for x in c['copy'] if x.get('kind', 'copy') == 'copy')
+        extra['copy'] = [x for x in c['copy'] if x.get('kind', 'copy') in ('copy', 'name') and _num(x.get('in'))]
     return sorted(set(cuts)), sorted(set(freezes)), sorted(set(ignore)), acts, moments, reading, cues_fps, extra
 
 
@@ -1393,7 +1399,7 @@ def analyse(args, info):
     M['motion'] = mc
     sc = None if getattr(args, 'no_grammar', False) else SeamScan(fps, W, H)  # the seam checks' reads
     M['seams'] = sc
-    fs = None if getattr(args, 'no_grammar', False) else FilmScan(fps, W, H)  # the film checks' reads
+    fs = None if getattr(args, 'no_grammar', False) else FilmScan(fps, W, H, keep=getattr(args, '_keep', ()))  # the film checks' reads
     M['film'] = fs
     for f, rgb in decode(args.video, info, start, count):
         small = cv2.resize(rgb, (SW, SH), interpolation=cv2.INTER_AREA).astype(np.int16)
@@ -2226,7 +2232,7 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
     # the film: never an empty frame or a long freeze, an ending that lands centred, a world that lives
     fs = M.get('film')
     if fs is not None and fs.f:
-        out['film'] = film_check(fs, extra, add, sev, ignored, reading, end_rng)
+        out['film'] = film_check(fs, extra, add, sev, ignored, reading, end_rng, legibility_frames(extra, k_))
     return out
 
 
@@ -3026,7 +3032,7 @@ FILM = dict(w=240, edge=200.0, empty=0.0005, empty_warn_s=0.1, empty_fail_s=0.5,
             frozen_d=0.12, frozen_px=0.0005, frozen_s=1.0, frozen_read_s=1.5, frozen_share=0.55,
             end_s=2.0, drift_px=4.0, drift_r2=0.95, land=0.5, centre=0.01,
             ring=0.08, murk_hi=120.0, murk_share=0.7, world_db=40.0, world_share=0.5, world_tex=3.0, world_min_s=8.0,
-            audio_db=-50.0, end_drop_db=12.0)
+            audio_db=-50.0, end_drop_db=12.0, legible=3.0, lost=2.0)
 
 
 class FilmScan:
@@ -3034,7 +3040,7 @@ class FilmScan:
     change, the highlight of the world's outer ring, four corner crops every 0.5 s, and the last FILM['end_s'] + 0.5 s
     as luma at 480 wide."""
 
-    def __init__(self, fps, w, h):
+    def __init__(self, fps, w, h, keep=()):
         self.fps = fps
         self.tw = min(480, w) // 2 * 2
         self.th = max(2, int(round(h * self.tw / w)) // 2 * 2)
@@ -3044,11 +3050,14 @@ class FilmScan:
         self.every = max(1, int(round(fps / 2)))
         self.prev = None
         self.tail = deque(maxlen=int(round((FILM['end_s'] + 0.5) * fps)) + 2)
+        self.keep, self.kept = set(keep), {}  # frames kept whole at 480 wide (the legibility pairs)
 
     def feed(self, f, rgb):
         if rgb.dtype != np.uint8:
             rgb = np.clip(rgb, 0, 255).astype(np.uint8)
         big = rgb if (rgb.shape[1], rgb.shape[0]) == (self.tw, self.th) else cv2.resize(rgb, (self.tw, self.th), interpolation=cv2.INTER_AREA)
+        if f in self.keep:
+            self.kept[f] = big.copy()
         small = cv2.resize(big, (self.sw, self.sh), interpolation=cv2.INTER_AREA)
         g = cv2.cvtColor(small, cv2.COLOR_RGB2GRAY).astype(np.float32)
         mag = np.hypot(cv2.Sobel(g, cv2.CV_32F, 1, 0, ksize=3), cv2.Sobel(g, cv2.CV_32F, 0, 1, ksize=3))
@@ -3131,7 +3140,86 @@ def film_ending(scan):
     return out
 
 
-def film_check(scan, extra, add, sev, ignored, reading=(), end_rng=None):
+def legibility_frames(extra, k_):
+    """The frames the legibility read needs (video frames): for each line and name in the cues copy block, a frame once it
+    is whole and two candidates for its ground: the frame before it arrives and the frame after it leaves."""
+    out, names = [], 0
+    for x in extra.get('copy') or []:
+        if x.get('kind') == 'name':  # the wordmark; a badge or a fact joining the lockup moves the name it joins
+            names += 1
+            if names > 1:
+                continue
+        b = int(round(min(float(x['out']) - 2, float(x['resolved']) + 4) * k_))
+        grounds = [max(0, int(round((float(x['in']) - d) * k_))) for d in (2, 8)] + [int(round((float(x['out']) + 15) * k_))]
+        if b > grounds[0]:
+            out.append((x, grounds, b))
+    return out
+
+
+def legibility(scan, pairs):
+    """The contrast of each line against what stands behind it (WCAG ratio on relative luminance). The type is what
+    changes between a ground frame (before the line arrives or after it leaves, whichever matches the line's frame better
+    away from the type) and the frame with the line whole; of the two polarities, the one whose pixels reach the extreme
+    (white or black fill: the letters, not a soft halo round them), else the larger; their stroke interiors. Its ground is
+    what the ground frame shows under the strokes, or the flat backing it arrived on (a pill, a card: a uniform band of the
+    other polarity round the strokes; a soft halo is not one). The median ratio of type over that ground."""
+    def rel(img):
+        c = img.astype(np.float32) / 255.0
+        c = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+        return c @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+    w3 = np.array([0.2126, 0.7152, 0.0722], np.float32)
+    rows = []
+    for x, grounds, b in pairs:
+        B = scan.kept.get(b)
+        if B is None:
+            continue
+        yb = B.astype(np.float32) @ w3
+        best = None
+        for a in grounds:
+            A = scan.kept.get(a)
+            if A is None:
+                continue
+            ya = A.astype(np.float32) @ w3
+            d = yb - ya
+            ch = np.abs(d) > 30
+            if ch.mean() > 0.12:  # the scene changed, not just the line
+                continue
+            near = cv2.dilate(ch.astype(np.uint8), np.ones((15, 15), np.uint8)).astype(bool)
+            away = float(np.abs(d[~near]).mean())  # the ground itself must not change between the two frames
+            if away <= 12:
+                best = (away, a, A, d)
+                break  # the ground just before the line arrives first; the one after it leaves only when that one changed
+        if best is None or best[0] > 12:
+            continue
+        _, a, A, d = best
+        lit, drk = d > 30, d < -30
+        ext_l = lit.sum() >= 40 and float(np.median(yb[lit])) >= 228
+        ext_d = drk.sum() >= 40 and float(np.median(yb[drk])) <= 30
+        light = ext_l if ext_l != ext_d else lit.sum() >= drk.sum()
+        m0 = lit if light else drk
+        if m0.sum() < 40:
+            continue
+        # the letters' fill: the changed pixels within 40 levels of the brightest (light type) or darkest (dark type) of them,
+        # not the softer changes of the ground around the line
+        tone = float(np.percentile(yb[m0], 95 if light else 5))
+        t8 = (m0 & ((yb >= tone - 40) if light else (yb <= tone + 40))).astype(np.uint8)
+        m = cv2.erode(t8, np.ones((2, 2), np.uint8)).astype(bool)
+        if m.mean() < 0.0008:
+            continue
+        lb_map = rel(B)
+        lt = float(np.median(lb_map[m]))
+        ring = cv2.dilate(t8, np.ones((7, 7), np.uint8)).astype(bool) & ~cv2.dilate(t8, np.ones((4, 4), np.uint8)).astype(bool)
+        other = drk if light else lit
+        backed = ring.sum() >= 20 and float((other & ring).sum()) >= 0.6 * float(ring.sum()) and float(yb[ring].std()) < 20
+        lg = float(np.median(lb_map[ring])) if backed else float(np.median(rel(A)[m]))
+        ratio = (max(lt, lg) + 0.05) / (min(lt, lg) + 0.05)
+        rows.append(dict(id=x.get('id'), text=str(x.get('text'))[:40], frames=[a, b], ratio=round(ratio, 2), type='light' if light else 'dark',
+                         ground=round(float(np.median(yb[ring])) if backed else float(np.median((A.astype(np.float32) @ w3)[m])), 1),
+                         backed=bool(backed)))
+    return rows
+
+
+def film_check(scan, extra, add, sev, ignored, reading=(), end_rng=None, pairs=()):
     """Empty frames and stalls, frozen holds, the ending (a drift that never lands, a lockup off centre), a world that never
     changes or has no highlight. Flags go through `add`; returns the report."""
     fps, n = scan.fps, len(scan.f)
@@ -3198,6 +3286,15 @@ def film_check(scan, extra, add, sev, ignored, reading=(), end_rng=None):
         add('world-murk', sev('warn'), f'{first}-{last}', f"the world has no highlight on {murk * 100:.0f} % of the film (its brightest point "
             f"{float(np.median(hi)):.0f} of 255 at the median): a murky ground. Give the world its key light: a lit gradient, a glow "
             'pool, a rim, a plate with a light source (references/lighting.md)')
+    # 5. every line reads against what stands behind it (large type: 3:1; under 2:1 it is lost)
+    leg = legibility(scan, pairs)
+    rep['legibility'] = leg
+    for r in leg:
+        if r['ratio'] < FILM['legible'] and not ignored(r['frames'][1]):
+            add('legibility', sev('fail' if r['ratio'] < FILM['lost'] else 'warn'), r['frames'][1], f"\"{r['text']}\" reads at {r['ratio']:.2f}:1 "
+                f"against its ground ({r['type']} type over luma {r['ground']:.0f}; house: {FILM['legible']:g}:1 for a line, never under "
+                f"{FILM['lost']:g}): darken or soften the ground behind the line (a lit gradient, the plate's -soft copy, a scrim the world "
+                'motivates), never a grey halo round the letters')
     span = (scan.corners[-1][0] - scan.corners[0][0]) / fps if len(scan.corners) > 1 else 0.0
     if span >= FILM['world_min_s']:
         still_c, tex_c = 0, 0
@@ -3667,6 +3764,24 @@ def film_self_test(check, tmp):
     rep, fl = gate([card(murk, 60 + i) for i in range(120)])
     check(('world-murk', 'warn') in names(fl), 'film: a dark blurred world with no highlight warns world-murk', str(rep.get('world')))
 
+    # legibility: a white line arriving over a bright haze fails (about 1.4:1); the same line over a dark ground passes
+    def lined(g):
+        out = np.full((h, w, 3), g, np.uint8)
+        cv2.putText(out, 'SEE THE VIEW', (90, 150), cv2.FONT_HERSHEY_SIMPLEX, 1.6, (255, 255, 255), 5, cv2.LINE_AA)
+        return out
+    for g, want in ((215, True), (40, False)):
+        frames = [np.full((h, w, 3), g, np.uint8)] * 20 + [lined(g)] * 40 + [np.full((h, w, 3), g, np.uint8)] * 30
+        extra = dict(copy=[{'id': 'l', 'text': 'See the view', 'kind': 'copy', 'in': 20, 'resolved': 24, 'out': 60}])
+        pairs = legibility_frames(extra, 1.0)
+        fs = FilmScan(fps, w, h, keep={f for _, gg, b in pairs for f in (*gg, b)})
+        for i, fr in enumerate(frames):
+            fs.feed(i, fr)
+        fl = []
+        rep = film_check(fs, extra, lambda check_, severity, frame, note, **kw: fl.append(dict(check=check_, severity=severity)),
+                         lambda s: s, lambda f: False, (), None, pairs)
+        got = any(x['check'] == 'legibility' and x['severity'] == 'fail' for x in fl)
+        check(got == want, f"film: a white line over a {'bright haze fails' if want else 'dark ground passes'} legibility", str(rep.get('legibility')))
+
     # the sound: no audio stream fails; a tone cut at full level warns; the same tone fading out passes
     class A:
         no_audio = False
@@ -3982,7 +4097,7 @@ def grammar_only(args, info, decl):
     dis_n = max(2, int(round(4 * fps / 60)))
     disq = deque(maxlen=dis_n + 2)
     M = dict(idx=[], dissolve=[], probe=probe_m, motion=MotionCurves(fps), seams=SeamScan(fps, info['w'], info['h']),
-             film=FilmScan(fps, info['w'], info['h']))
+             film=FilmScan(fps, info['w'], info['h'], keep={f for _, g, b in legibility_frames(extra, k_) for f in (*g, b)}))
     start = max(0, args.from_frame or 0)
     count = max(1, args.to_frame - start + 1) if args.to_frame is not None else None
     for f, rgb in decode(args.video, info, start, count, size=(pw, ph)):
@@ -4018,7 +4133,8 @@ def seams_only(args, info, decl):
     cuts, freezes, ignore, acts, moments, reading, cues_fps, extra = decl
     k_ = fps / cues_fps if cues_fps else 1.0
     sc = SeamScan(fps, info['w'], info['h'])
-    fs = FilmScan(fps, info['w'], info['h'])
+    pairs = legibility_frames(extra, k_)
+    fs = FilmScan(fps, info['w'], info['h'], keep={f for _, g, b in pairs for f in (*g, b)})
     start = max(0, args.from_frame or 0)
     count = max(1, args.to_frame - start + 1) if args.to_frame is not None else None
     for f, rgb in decode(args.video, info, start, count, size=(sc.aw, sc.ah)):
@@ -4038,7 +4154,7 @@ def seams_only(args, info, decl):
     end = extra.get('end')
     vf = lambda x: int(round(x * k_))  # noqa: E731
     reading = [(vf(a), vf(b)) for a, b in reading]
-    film = film_check(fs, extra, add, lambda s: s, ign, reading, (vf(end['from']), vf(end['to'])) if end else None)
+    film = film_check(fs, extra, add, lambda s: s, ign, reading, (vf(end['from']), vf(end['to'])) if end else None, pairs)
     fails = sum(1 for x in flags if x['severity'] == 'fail')
     return dict(file=args.video, fps=round(fps, 3), frames=len(sc.f), seams_only=True, fails=fails,
                 warnings=sum(1 for x in flags if x['severity'] == 'warn'), flags=flags,
@@ -4181,6 +4297,7 @@ def main():
         for x in res['flags'][:30]:
             print(f'  {x["severity"]:4s} {x["check"]:9s} f{x["frame"]}: {x["note"]}')
         sys.exit(0 if res['pass'] else 1)
+    args._keep = {f for _, g, b in legibility_frames(extra, info['fps'] / decl[6] if decl[6] else 1.0) for f in (*g, b)}
     M = analyse(args, info)
     M['probe'] = getattr(args, '_probe', None)
     M['smear'] = [] if args.no_smear else smear_scan(args, info)
