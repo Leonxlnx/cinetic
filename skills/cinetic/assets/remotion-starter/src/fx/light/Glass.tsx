@@ -13,8 +13,11 @@
  *
  *   at      the entrance: it rises 26 px into place and clears in over 30 f (E.glideOut); the frost inside stays
  *           registered to the world while the pane moves, as real glass would
- *   sweep   the frame (or frames) a light crosses it: a streak along the rim (fx/light LightSweep) and a broad glare
- *           sliding across the face. Give it when something happens (the pane lands, the input sends), not on a loop
+ *   sweep   the frame (or frames) a light crosses it (fx/light LightSweep) and its glare slides across the face with
+ *           it. Give it when something happens (the pane lands, the input sends), not on a loop
+ *   sweepKind  band (the default on a bar or input, w >= 2.5 h: a bar of light crosses the pane and lights its top
+ *           and bottom edges at once, the face lit along the bar) or edge (the default on a card: a light runs
+ *           along the rim and turns the corner)
  *   r       corner radius: a pill up to 140 px tall, else 28 px
  *   blur    the frost in px at 1080p (the world's: 26-30 over a photo, 0 over a built field, which is already smooth)
  *
@@ -31,11 +34,11 @@ import { type FilmCtx, sizeOf, uOf, useFilm } from '../../lib/film';
 import type { Declares } from '../../timeline';
 import { useWorld } from '../world/context';
 import { worldOf } from '../world/worlds';
-import { activeSweep, arrival, keyAngle, radiusOf, rgbaOf, type SweepOpts } from './light';
+import { activeSweep, arrival, bandState, gradientAt, keyAngle, radiusOf, rgbaOf, SWEEP, type SweepKind, sweepKindOf, type SweepOpts } from './light';
 import { LightSweep, RimLight } from './Rim';
 
-/** House numbers: px at 1080p, 60 fps frames. */
-export const GLASS_LIGHT = { rise: 26, enter60: 30, shadow: { y: 28, blur: 64, near: 12 }, glare: { angle: 104, width: 15, rest: 0.26 } } as const;
+/** House numbers: px at 1080p, 60 fps frames. `band`: the glare of a band sweep (width % of the face, extra level). */
+export const GLASS_LIGHT = { rise: 26, enter60: 30, shadow: { y: 28, blur: 64, near: 12 }, glare: { angle: 104, width: 15, rest: 0.26, band: { width: 7, gain: 1.3 } } } as const;
 
 export type GlassProps = Omit<SweepOpts, 'at'> & {
   x: number;
@@ -46,6 +49,7 @@ export type GlassProps = Omit<SweepOpts, 'at'> & {
   circle?: boolean;
   at?: number;
   sweep?: number | readonly number[];
+  sweepKind?: SweepKind;
   blur?: number;
   shadow?: boolean; // default: the world's (light worlds cast one)
   frame?: number;
@@ -79,13 +83,18 @@ export const Glass: React.FC<GlassProps> = (p) => {
   const frost = [blur > 0 ? `blur(${blur.toFixed(2)}px)` : '', g.sat !== 1 ? `saturate(${g.sat})` : '', g.brighten !== 1 ? `brightness(${g.brighten})` : ''].filter(Boolean).join(' ') || undefined;
   const box: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: p.w, height: p.h, borderRadius: r };
   const angle = keyAngle({ x, y, w: p.w, h: p.h }, spec.key, W, H);
-  // the glare: a soft diagonal band, resting on the key's side of the face; a sweep slides it across
-  const keySide = Math.cos((angle * Math.PI) / 180) >= 0 ? 1 - GLASS_LIGHT.glare.rest : GLASS_LIGHT.glare.rest;
-  const gc = st.sweep ? -0.25 + 1.5 * st.sweep.t : keySide;
-  const ga = g.spec * (st.sweep ? 1 + 1.6 * st.sweep.level : 1);
-  const gw = GLASS_LIGHT.glare.width;
+  // the glare: a soft diagonal band, resting on the key's side of the face; a sweep slides it across (a band sweep:
+  // along the bar of light itself, leaning with it, narrower and brighter)
+  const kind = sweepKindOf(p.w, p.h, p.sweepKind, p.circle);
+  const GL = GLASS_LIGHT.glare;
+  const keySide = Math.cos((angle * Math.PI) / 180) >= 0 ? 1 - GL.rest : GL.rest;
+  const band = st.sweep && kind === 'band';
+  const gAngle = band ? 90 - SWEEP.band.tilt : GL.angle;
+  const gc = st.sweep ? (band ? gradientAt(p.w, p.h, gAngle, bandState(p.w, p.h, r, st.sweep.e, u).xc) : -0.25 + 1.5 * st.sweep.t) : keySide;
+  const ga = g.spec * (st.sweep ? 1 + (band ? GL.band.gain : 1.6) * st.sweep.level : 1);
+  const gw = band ? GL.band.width : GL.width;
   const pc = (v: number) => `${(v * 100).toFixed(2)}%`;
-  const glare = `linear-gradient(${GLASS_LIGHT.glare.angle}deg, ${rgbaOf(C.white, 0)} ${pc(gc - gw / 100)}, ${rgbaOf(C.white, ga)} ${pc(gc)}, ${rgbaOf(C.white, 0)} ${pc(gc + (gw * 1.2) / 100)})`;
+  const glare = `linear-gradient(${gAngle}deg, ${rgbaOf(C.white, 0)} ${pc(gc - gw / 100)}, ${rgbaOf(C.white, ga)} ${pc(gc)}, ${rgbaOf(C.white, 0)} ${pc(gc + (gw * 1.2) / 100)})`;
   const S = GLASS_LIGHT.shadow;
   const shadow = (p.shadow ?? !!g.shadow) && g.shadow;
   return (
@@ -105,7 +114,7 @@ export const Glass: React.FC<GlassProps> = (p) => {
         <div style={{ ...box, boxShadow: `inset 0 ${-14 * u}px ${30 * u}px ${rgbaOf(C.ink, g.shade)}, inset 0 ${1.2 * u}px 0 ${rgbaOf(C.white, g.hi)}` }} />
       </div>
       <RimLight w={p.w} h={p.h} r={r} circle={p.circle} angle={angle} />
-      {p.sweep !== undefined ? <LightSweep w={p.w} h={p.h} r={r} circle={p.circle} at={p.sweep} dur60={p.dur60} from={p.from} travel={p.travel} ease={p.ease} frame={f} /> : null}
+      {p.sweep !== undefined ? <LightSweep w={p.w} h={p.h} r={r} circle={p.circle} at={p.sweep} kind={kind} dur60={p.dur60} from={p.from} travel={p.travel} ease={p.ease} frame={f} /> : null}
       <div style={{ ...box, color: g.text, ...p.style }}>{p.children}</div>
     </div>
   );

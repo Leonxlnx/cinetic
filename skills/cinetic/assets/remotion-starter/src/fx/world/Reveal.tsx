@@ -11,15 +11,18 @@
  *   <Reveal at={40} shape="button" box={{ x: 1180, y: 520, w: 220, h: 84 }}>...</Reveal>   (the pressed button grows into the frame)
  *   <Reveal at={10} shape="path" path={{ d: MARK_D, w: 64, h: 64, origin: [0.5, 0.55] }}>...</Reveal>  (a zoom through the mark)
  *
- *   shape   scallop (round lobes with cusps, turning a little as it opens: the default) · circle · sparkle (a
+ *   shape   scallop (a cloud's edge: round lobes of different widths with cusps between them, turning a little as
+ *           it opens: the default) · circle · sparkle (a
  *           four-point star that rounds into a circle as it grows) · button (a rounded rect from `box` to the frame)
  *           · path (an SVG path, `path.d` in its own w x h box, scaled up through `origin`, a point inside its solid)
  *   x, y    the origin, frame px (default the frame's centre; button and path take theirs from box and path)
  *   size    the seed's size in px at 1080p (default 64)
  *   dur60   the open in 60 fps frames (default 72: 1.2 s, E.stdInOut: it gathers, opens and lands past the corners)
  *   seed    the seed's colour, drawn before and during the open (default white for scallop, circle and sparkle;
- *           false to draw none, as for a button the shot already draws); `seedAfter` its colour once the world shows
- *           behind it (default the world's... ink on a pale plate: give it), `keep` holds it after the open
+ *           false to draw none, as for a button the shot already draws); it turns a quarter while the world opens
+ *           round it and lands as it started. `seedAfter` its colour once the world shows behind it (ink on a pale
+ *           plate: give it), `keep` holds it after the open (or let it hand over to the product's button: a disc
+ *           drawn under it at the same point as it fades, see lighting.md, iris-into-input)
  *   edge    a band of light riding the iris edge as it opens, 0..1 (default 0.35; 0 for none): three soft strokes, no filter
  *
  * Cost: one clip path on the revealed layer while it opens (none after it lands); the edge is one SVG of three strokes.
@@ -33,7 +36,12 @@ import { type FilmCtx, f60x, fpsOf, sizeOf, uOf, useFilm } from '../../lib/film'
 import type { Declares } from '../../timeline';
 import { farCorner } from '../Iris';
 
-export const REVEAL = { dur60: 72, size: 64, lobes: 11, depth: 0.09, turn: 0.4, edge: 0.35, sparkle: 0.3, zoom: 70, band: [22, 10, 3.5] as const, bandA: [0.1, 0.22, 0.75] as const } as const;
+/**
+ * House numbers. `wobble`: how far a cloud edge strays from a regular scallop (lobes of different widths and reach,
+ * the same every frame); `seedTurn`: the sparkle seed turns a quarter (a four-point star lands as it started) while the
+ * world opens round it.
+ */
+export const REVEAL = { dur60: 72, size: 64, lobes: 11, depth: 0.09, turn: 0.4, wobble: 1, seedTurn: 90, edge: 0.35, sparkle: 0.3, zoom: 70, band: [22, 10, 3.5] as const, bandA: [0.1, 0.22, 0.75] as const } as const;
 
 export type RevealShape = 'scallop' | 'circle' | 'sparkle' | 'button' | 'path';
 export type RevealProps = {
@@ -69,13 +77,28 @@ export const revealState = (f: number, p: Pick<RevealProps, 'at' | 'dur60' | 'ea
   return { t, e, x, y, r0, R: mix(r0 * 0.9, far, e), started: f >= p.at, landed: t >= 1 };
 };
 
-/** A cloud edge: round lobes with cusps between them, turned by `phase` (radians), as points around (x, y). Pure. */
-export const scallopPoints = (x: number, y: number, r: number, phase = 0, lobes: number = REVEAL.lobes, depth: number = REVEAL.depth): Pt[] => {
+/** A lobe's own number 0..1 (a fixed hash of its index: the same cloud every frame and every render). Pure. */
+const lobeHash = (i: number) => {
+  const s = Math.sin((i + 1) * 12.9898) * 43758.5453;
+  return s - Math.floor(s);
+};
+
+/**
+ * A cloud edge: round lobes with cusps between them, turned by `phase` (radians), as points around (x, y). `wobble`
+ * (0 a regular scallop, 1 the house cloud) gives the lobes different widths (a smooth, monotonic warp of the angle)
+ * and different reach (each lobe bulges by its own fixed amount; the cusps stay on the circle, so the edge is
+ * continuous). Pure.
+ */
+export const scallopPoints = (x: number, y: number, r: number, phase = 0, lobes: number = REVEAL.lobes, depth: number = REVEAL.depth, wobble: number = REVEAL.wobble): Pt[] => {
   const n = lobes * 12;
   return Array.from({ length: n }, (_, i) => {
     const th = (i / n) * Math.PI * 2;
-    const k = Math.abs(Math.sin((lobes * (th - phase)) / 2));
-    const rr = r * (1 - depth * (1 - Math.sqrt(k)));
+    const tw = th + wobble * (0.11 * Math.sin(3 * th + 1.3) + 0.06 * Math.sin(5 * th + 0.4));
+    const q = (lobes * (tw - phase)) / 2;
+    const k = Math.sqrt(Math.abs(Math.sin(q)));
+    const lobe = ((Math.floor(q / Math.PI) % lobes) + lobes) % lobes;
+    const bulge = wobble * (lobeHash(lobe) - 0.5) * 0.08;
+    const rr = r * (1 - depth * (1 - k)) * (1 + bulge * k);
     return [x + rr * Math.cos(th), y + rr * Math.sin(th)] as Pt;
   });
 };
@@ -167,7 +190,7 @@ export const Reveal: React.FC<RevealProps> = (p) => {
           </svg>
         )
       ) : (
-        <svg width={size} height={size} style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(s.x - size / 2).toFixed(2)}px, ${(s.y - size / 2).toFixed(2)}px)`, opacity: seedK }}>
+        <svg width={size} height={size} style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(s.x - size / 2).toFixed(2)}px, ${(s.y - size / 2).toFixed(2)}px) rotate(${(REVEAL.seedTurn * s.e).toFixed(2)}deg)`, opacity: seedK }}>
           <path d={sparklePath(size)} fill={seedFill} />
         </svg>
       )

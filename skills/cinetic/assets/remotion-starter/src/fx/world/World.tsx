@@ -23,7 +23,9 @@
  *   spec         overrides of the resolved world: { key: { x, y, ... } } to move the light, { glass: {...} }, { ink }
  *
  * The ground never cuts inside a film: put one World under the whole film (outside the shots' camera) or one per
- * scene of the same kind. A built field is baked at half size and scaled (smooth, dithered, never banding).
+ * scene of the same kind. A built field is baked at half size and scaled (smooth, dithered, never banding); the black
+ * field stands on a fine woven surface seen only where its key falls (one image baked once; spec={{ surface: null }} for a
+ * void), which glass frosts away.
  */
 import React from 'react';
 import { Img, useCurrentFrame } from 'remotion';
@@ -81,6 +83,67 @@ const hazeUrl = (spec: WorldSpec) => {
   );
 };
 
+/** The surface's weave in px at 1080p: a cell of two staggered short threads, each `thread` px soft across, half a cell long. */
+export const SURFACE_CELL = { w: 10, h: 16, thread: 0.9 } as const;
+
+/**
+ * A built world's surface as one full-frame layer, baked once (a mask or a tiled background redrawn under moving UI
+ * costs a software renderer several times the whole frame; one image costs nothing). White threads whose alpha is
+ * the thread's profile (across: a gaussian; along: a sine over half the cell, the second thread offset half a cell
+ * both ways) times the key's light on the surface (an ellipse at (x, y) with radii rx, ry, cosine falloff to its rim)
+ * times `a`. Pure bytes.
+ */
+export const surfacePixels = (sf: NonNullable<WorldSpec['surface']>, W: number, H: number) => {
+  const u = Math.min(W, H) / 1080;
+  const cw = SURFACE_CELL.w * u;
+  const ch = SURFACE_CELL.h * u;
+  const sig = SURFACE_CELL.thread * u;
+  const len = ch / 2;
+  const threads = [
+    [0.25, 0.125],
+    [0.75, 0.625],
+  ] as const;
+  // separable thread profile: across per column, along per row
+  const across = threads.map(([ox]) =>
+    Float32Array.from({ length: W }, (_, x) => {
+      const fr = (((x + 0.5) / cw - ox) % 1 + 1) % 1;
+      const d = Math.min(fr, 1 - fr) * cw;
+      return Math.exp(-((d / sig) ** 2));
+    }),
+  );
+  const along = threads.map(([, oy]) =>
+    Float32Array.from({ length: H }, (_, y) => {
+      const dy = ((((y + 0.5) / ch - oy) % 1 + 1) % 1) * ch;
+      return dy > len ? 0 : Math.sin((Math.PI * dy) / len);
+    }),
+  );
+  const px = new Uint8ClampedArray(W * H * 4);
+  const cx = sf.x * W;
+  const cy = sf.y * H;
+  const rx = Math.max(1, sf.rx * W);
+  const ry = Math.max(1, sf.ry * H);
+  for (let y = 0; y < H; y++) {
+    const ny = (y + 0.5 - cy) / ry;
+    for (let x = 0; x < W; x++) {
+      const nx = (x + 0.5 - cx) / rx;
+      const d = Math.sqrt(nx * nx + ny * ny);
+      if (d >= 1) continue;
+      const lit = 0.5 * (1 + Math.cos(Math.PI * d));
+      const t = Math.max(across[0][x] * along[0][y], across[1][x] * along[1][y]);
+      const a = Math.round(255 * sf.a * lit * t);
+      if (a <= 0) continue;
+      const o = (y * W + x) * 4;
+      px[o] = 255;
+      px[o + 1] = 255;
+      px[o + 2] = 255;
+      px[o + 3] = a;
+    }
+  }
+  return px;
+};
+const surfaceUrl = (sf: NonNullable<WorldSpec['surface']>, W: number, H: number) =>
+  bakePixels(`world-surface|${JSON.stringify(sf)}|${W}|${H}`, W, H, () => surfacePixels(sf, W, H));
+
 /** The corners falling off: black at `v` in the corners, nothing inside the middle 45 %. */
 const vignetteUrl = (v: number) =>
   v > 0
@@ -109,6 +172,7 @@ export const World: React.FC<WorldProps> = (p) => {
   const field = !plate ? fieldUrl(spec, W, H) : '';
   const haze = plate ? hazeUrl(spec) : '';
   const vig = vignetteUrl(spec.vignette);
+  const surface = !plate && spec.surface ? surfaceUrl(spec.surface, W, H) : '';
 
   const ground = (o: { soft?: boolean; bare?: boolean } = {}) => {
     const useSoft = !!(o.soft && p.soft && plate);
@@ -121,6 +185,7 @@ export const World: React.FC<WorldProps> = (p) => {
         ) : field ? (
           <div style={{ ...ABS, transform: `translate(${m.x.toFixed(2)}px, ${m.y.toFixed(2)}px) scale(${m.s.toFixed(5)})` }}>
             <Img src={field} style={ABS} />
+            {surface && !o.bare ? <Img src={surface} style={ABS} /> : null}
           </div>
         ) : null}
         {haze && !o.bare ? <Img src={haze} style={ABS} /> : null}

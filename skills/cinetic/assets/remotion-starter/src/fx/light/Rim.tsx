@@ -9,17 +9,22 @@
  *
  *   <RimLight x={560} y={480} w={800} h={120} />          (r defaults to a pill under 140 px tall, else 28 px)
  *
- * LightSweep: a light running along the same edge: a white-hot head with a soft round glow and a flare along the edge,
- * and a tail that fades. It starts at `at`, crosses the edge on E.stdInOut in `dur60` frames (54 at 60 fps) and is gone:
- * the light passes once, the way a reflection crosses glass when it or the light moves. Never a loop, never a marching
- * border. Give it when something happens (the pane lands, the input sends).
+ * LightSweep: a light crossing the same edge once. Two kinds (`kind`; the default follows the box):
+ *   band  (a bar or an input, w >= 2.5 h) a bar of light crosses the pane left to right and catches its top and its
+ *         bottom edge at once: two white-hot streaks on the edges, the bottom one ahead by the bar's tilt, each
+ *         throwing a fan of light off the edge (the reflection of a light passing over a glass pane)
+ *   edge  (a card) a white-hot head runs along the rim with a flare along the edge and a fading tail, turning the corner
+ * It starts at `at`, crosses on E.stdInOut in `dur60` frames (54 at 60 fps) and is gone: the light passes once, the
+ * way a reflection crosses glass when it or the light moves. Never a loop, never a marching border. Give it when
+ * something happens (the pane lands, the input sends).
  *
- *   <LightSweep x={560} y={480} w={800} h={120} at={42} />   (from 0.82 of the perimeter, travel 0.36: across the top)
+ *   <LightSweep x={560} y={480} w={800} h={120} at={42} />   (a band: an 800 x 120 bar)
+ *   <LightSweep x={560} y={300} w={800} h={520} at={42} />   (an edge light: from 0.82 of the perimeter, travel 0.36)
  *
  * The perimeter is measured from the middle of the top edge, clockwise (0.25 is about the right side on a square).
  * Both are drawn in frame px at (x, y); inside a box that is already placed (fx/light Glass), give x = y = 0.
- * Cost: a rim is one masked element with two gradients (and one gradient for the bloom); a sweep is one small SVG of
- * strokes and two gradient sprites, only while it runs. No filters.
+ * Cost: a rim is one masked element with two gradients (and one gradient for the bloom); an edge sweep is one small
+ * SVG of strokes and two gradient sprites, a band four gradient sprites, only while it runs. No filters.
  */
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
@@ -27,7 +32,7 @@ import { MASK } from '../../brand/tokens';
 import { sizeOf, uOf, useFilm } from '../../lib/film';
 import type { Declares } from '../../timeline';
 import { useWorld } from '../world/context';
-import { activeSweep, edgeToward, keyAngle, perimeterPoint, radiusOf, rgbaOf, roundRectPath, SWEEP, type SweepOpts } from './light';
+import { activeSweep, bandState, edgeToward, keyAngle, perimeterPoint, radiusOf, rgbaOf, roundRectPath, SWEEP, type SweepKind, sweepKindOf, type SweepOpts } from './light';
 
 /** House numbers: px at 1080p, alphas, shares of the box. */
 export const RIM_LIGHT = {
@@ -39,6 +44,9 @@ export const RIM_LIGHT = {
   head: { r: 30, flare: 3.2, flareA: 0.45 },
   tail: [6, 3] as const, // the soft strokes under the streak (x its width) ...
   tailA: [0.07, 0.16] as const, // ... and their alphas
+  // a band's streak: the line (px at 1080p), its white-hot core (share of the streak), the fan of light off the edge
+  // (x the streak's length wide, x its length tall, pushed outward by `out` of its height) and their alphas
+  streak: { line: 2.4, core: 0.36, fanW: 1.8, fanH: 0.32, out: 0.22, lineA: 0.6, fanA: 0.4 },
 } as const;
 
 export type RimLightProps = {
@@ -141,6 +149,7 @@ export type LightSweepProps = Omit<SweepOpts, 'at'> & {
   r?: number;
   circle?: boolean;
   at: number | readonly number[]; // the frame (or frames) a light starts across the edge
+  kind?: SweepKind; // band (default on a bar or input, w >= 2.5 h) or edge (default on a card)
   color?: string; // default the world's light
   width?: number; // the head's line width, px at 1080p
   halo?: number; // the head's glow 0..1 (default 1 on a dark world, 0.6 on a light one)
@@ -165,6 +174,34 @@ export const LightSweep: React.FC<LightSweepProps> = (p) => {
   const x0 = p.x ?? 0;
   const y0 = p.y ?? 0;
   const blend = dark ? 'plus-lighter' : 'screen';
+
+  if (sweepKindOf(p.w, p.h, p.kind, p.circle) === 'band') {
+    // a bar of light crossing the pane: a streak on the top edge and one on the bottom edge, each with its fan of light
+    const b = bandState(p.w, p.h, r, s.e, u);
+    const S = RIM_LIGHT.streak;
+    const lh = (p.width ? p.width * 1.5 : S.line) * u;
+    const fw = b.len * S.fanW;
+    const fh = b.len * S.fanH;
+    const streak = (x: number, y: number, level: number, out: number, key: string) => {
+      const k = halo * level;
+      if (k <= 0.01) return null;
+      const at = (w: number, h: number, dy = 0) => `translate(${(x0 + x - w / 2).toFixed(2)}px, ${(y0 + y - h / 2 + dy).toFixed(2)}px)`;
+      const sprite: React.CSSProperties = { position: 'absolute', left: 0, top: 0, mixBlendMode: blend, pointerEvents: 'none' };
+      return (
+        <React.Fragment key={key}>
+          <div style={{ ...sprite, width: fw, height: fh, transform: at(fw, fh, out * fh * S.out), background: `radial-gradient(closest-side, ${rgbaOf(color, S.fanA * k)}, ${rgbaOf(color, S.fanA * 0.3 * k)} 48%, ${rgbaOf(color, 0)})` }} />
+          <div style={{ ...sprite, width: b.len, height: lh, borderRadius: lh, transform: at(b.len, lh), background: `linear-gradient(90deg, ${rgbaOf(color, 0)}, ${rgbaOf(color, S.lineA * k)} 30%, ${rgbaOf('#FFFFFF', k)} 50%, ${rgbaOf(color, S.lineA * k)} 70%, ${rgbaOf(color, 0)})` }} />
+          <div style={{ ...sprite, width: b.len * S.core, height: lh * 1.6, borderRadius: lh, transform: at(b.len * S.core, lh * 1.6), background: `radial-gradient(closest-side, ${rgbaOf('#FFFFFF', 0.9 * k)}, ${rgbaOf('#FFFFFF', 0)})` }} />
+        </React.Fragment>
+      );
+    };
+    return (
+      <>
+        {streak(b.top, lh * 0.35, b.topLevel, -1, 't')}
+        {streak(b.bottom, p.h - lh * 0.35, b.bottomLevel * 0.8, 1, 'b')}
+      </>
+    );
+  }
   const stroke = (k: number, alpha: number, key: string) =>
     SWEEP.tail.map((len, i) => (
       <path

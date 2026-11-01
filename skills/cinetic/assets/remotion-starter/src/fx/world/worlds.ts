@@ -16,7 +16,7 @@
  *     studio     a seamless studio sweep under a softbox                               ink type, milky glass
  *     macro      a close natural surface: leaves, water drops, moss                     white type, light glass
  *   built worlds (no picture: a lit field baked once and dithered)
- *     blackField  near-black with a soft key from above: glass glows by its rims and sweeps   white type
+ *     blackField  near-black with a soft key from above on a fine woven surface: glass glows by its rims and sweeps   white type
  *     electric    a saturated stage in the accent's hue (a cool 245 otherwise), lit from the top   white type
  *     deepField   a deep night at the accent's hue with a pool of light rising from the floor    white or glowing type
  *     paleSky     a pale sky built in code: the sun's side bright, a deeper sky opposite          ink type
@@ -79,6 +79,12 @@ export type WorldSpec = {
   glass: GlassLook;
   vignette: number; // 0..0.5: the corners' darkening
   typeShadow?: string; // plate worlds with white type: a soft shadow in the plate's deep tone, so a line reads over bright cloud (CSS text-shadow)
+  /**
+   * Built worlds: a fine woven surface the key falls on (staggered short threads in a 10 x 16 px cell at 1080p, baked once as one full-frame layer), seen only where
+   * the light reaches: `a` its strength, the lit ellipse at (x, y) with radii rx, ry (shares of the frame). A black
+   * field with a surface is a lit place; without one it is a void. Glass frosts it away.
+   */
+  surface?: { a: number; x: number; y: number; rx: number; ry: number } | null;
 };
 
 /** The searches and framing of every plate world (scripts/assets.mjs plate <name> runs them). */
@@ -311,6 +317,7 @@ export const worldOf = (kind: WorldKind, o: { accent?: string; hue?: number; ink
         key: { x: 0.5, y: -0.35, color: '#FFFFFF', strength: 0.8 },
         glow: oklch(0.97, 0.004, h),
         glass: { blur: 0, veil: white(0.03), veilTop: white(0.07), rim: '#FFFFFF', rimPeak: 0.85, rimBase: 0.1, hi: 0.2, shade: 0.35, shadow: null, brighten: 1, sat: 1, spec: 0.05, text: wt },
+        surface: { a: 0.14, x: 0.5, y: 0.32, rx: 0.46, ry: 0.6 },
         vignette: 0,
       });
     case 'electric':

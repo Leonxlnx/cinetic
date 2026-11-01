@@ -109,22 +109,66 @@ export const SWEEP = {
   travel: 0.36, // crosses the top edge and turns down the right side
   tail: [0.02, 0.05, 0.1, 0.18] as const, // the streak: a hot head and a tail that fades (lengths, shares of the perimeter)
   tailAlpha: [1, 0.55, 0.28, 0.12] as const,
+  // a band: a bar of light crossing the pane, catching its top and bottom edges at once (two streaks, the bottom one
+  // ahead by the bar's tilt), each a white-hot line on the edge with a fan of light off it
+  band: { tilt: 16, len: 0.2, min: 90, max: 280, aspect: 2.5 },
 } as const;
+
+/** How a light crosses a pane: `edge` runs along the rim and turns the corner; `band` crosses it, lighting top and bottom edges together. */
+export type SweepKind = 'edge' | 'band';
 
 export type SweepOpts = { at: number; dur60?: number; from?: number; travel?: number; ease?: Ease };
 
 /**
  * A light sweeping round a rounded rect at frame f: `pos` the head (share of the perimeter from the top middle,
- * clockwise, 0..1), `level` its brightness 0..1 (it rises, travels and fades: sin^0.6 of the pass), `on` while it runs.
- * The head starts, travels and lands on E.stdInOut (a light that crosses the edge, never a loop).
+ * clockwise, 0..1), `e` the eased progress of the pass, `level` its brightness 0..1 (it rises, travels and fades:
+ * sin^0.6 of the pass), `on` while it runs. The head starts, travels and lands on E.stdInOut (a light that crosses
+ * the edge, never a loop).
  */
 export const sweepState = (f: number, p: SweepOpts, film?: Partial<FilmCtx>) => {
   const dur = f60x(p.dur60 ?? SWEEP.dur60, fpsOf(film));
   const t = (f - p.at) / Math.max(1, dur);
-  if (t <= 0 || t >= 1) return { on: false, pos: 0, level: 0, t: clamp(t) };
+  if (t <= 0 || t >= 1) return { on: false, pos: 0, e: t <= 0 ? 0 : 1, level: 0, t: clamp(t) };
   const e = (p.ease ?? E.stdInOut)(t);
   const pos = (p.from ?? SWEEP.from) + (p.travel ?? SWEEP.travel) * e;
-  return { on: true, pos: pos - Math.floor(pos), level: Math.sin(Math.PI * t) ** 0.6, t };
+  return { on: true, pos: pos - Math.floor(pos), e, level: Math.sin(Math.PI * t) ** 0.6, t };
+};
+
+/** The sweep a pane gets when none is named: a band across a bar or an input (w >= 2.5 h), a light along the rim of a card. Pure. */
+export const sweepKindOf = (w: number, h: number, kind?: SweepKind, circle = false): SweepKind =>
+  kind ?? (!circle && w >= SWEEP.band.aspect * h ? 'band' : 'edge');
+
+/**
+ * A band crossing a w x h pane at eased progress e (0..1, left to right): the bar's centre x at mid-height, the x of
+ * its streak on the top edge and on the bottom edge (the bar is tilted `tilt` degrees, its foot ahead), the streak's
+ * length, and each streak's level 0..1 (it fades in and out where the straight edge turns into the corner `r`). Pure.
+ */
+export const bandState = (w: number, h: number, r: number, e: number, u = 1, tilt: number = SWEEP.band.tilt) => {
+  const B = SWEEP.band;
+  const len = Math.min(B.max * u, Math.max(B.min * u, w * B.len));
+  const lean = (h / 2) * Math.tan((tilt * Math.PI) / 180);
+  const reach = len / 2 + lean;
+  const xc = -reach + (w + 2 * reach) * e;
+  const top = xc - lean;
+  const bottom = xc + lean;
+  const rr = Math.max(0, Math.min(r, w / 2, h / 2));
+  // a streak lives on the straight edge: full between the corners, gone half a length past them
+  const onEdge = (x: number) => {
+    const a = clamp((x - (rr - len * 0.5)) / Math.max(1, len * 0.75));
+    const b = clamp((w - rr + len * 0.5 - x) / Math.max(1, len * 0.75));
+    return Math.min(a, b) ** 1.5;
+  };
+  return { xc, top, bottom, len, lean, topLevel: onEdge(top), bottomLevel: onEdge(bottom) };
+};
+
+/**
+ * A linear-gradient stop position (0..1) for a band of light at x = xc (mid-height) across a w x h box, the gradient at
+ * CSS angle `deg` (0 up, clockwise): where the box's own glare must sit so the face lights with the bar. Pure.
+ */
+export const gradientAt = (w: number, h: number, deg: number, xc: number) => {
+  const a = (deg * Math.PI) / 180;
+  const L = Math.abs(w * Math.sin(a)) + Math.abs(h * Math.cos(a));
+  return 0.5 + ((xc - w / 2) * Math.sin(a)) / Math.max(1, L);
 };
 
 /** The sweep that is running at frame f among several start frames (the latest started), or null. */
