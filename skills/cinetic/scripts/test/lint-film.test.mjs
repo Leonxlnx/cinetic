@@ -54,8 +54,8 @@ const TEXT = ['copy-literal', 'text-spring', 'text-pace', 'typing-rate', 'per-le
 const GRAMMAR = ['ease-family', 'token-drift', 'whip-shape', 'spring-budget', 'spring-range', 'scale-from-zero', 'fade-exit', 'linear-opacity',
   'crossfade', 'shutter', 'blur-on-crisp', 'pure-ink', 'accent-count', 'gradient-shape', 'type-role', 'deprecated-token', 'timeline-constant', 'gpu-cost',
   'card-content', 'small-text', 'giant-watermark', 'giant-once', 'end-card-template', 'clip-text', 'svg-text',
-  'snap-step', 'camera-float', 'idle-bob', 'card-tilt', 'unmount-moving', 'drift-toggle', 'move-queue', 'filler-plate', 'filler-light', 'placeholder-copy', 'bar-text', 'drawn-figure', 'logo-chip', 'ui-accent-bar', 'text-estimate',
-  'emphasis-share', 'emphasis-signature'];
+  'snap-step', 'camera-float', 'camera-shot', 'idle-bob', 'card-tilt', 'unmount-moving', 'drift-toggle', 'move-queue', 'filler-plate', 'filler-light', 'placeholder-copy', 'bar-text', 'drawn-figure', 'logo-chip', 'ui-accent-bar', 'text-estimate',
+  'emphasis-share', 'emphasis-signature', 'tight-tracking'];
 const [PY, ...PY_PRE] = findPython({ quiet: true }) ?? ['python3']; // python3 only to report that none runs
 const py = (args, opts) => spawnSync(PY, [...PY_PRE, ...args], opts);
 

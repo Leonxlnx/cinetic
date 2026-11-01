@@ -25,9 +25,9 @@
  * Exit codes: 0 all pass, 1 a test failed (or the starter is not installed).
  */
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -52,6 +52,22 @@ if (!existsSync(TSX)) {
 }
 
 const url = (p) => pathToFileURL(join(SRC, p)).href;
+/**
+ * A template's src imports starter modules it does not ship (fx/creative/meta, a lib helper): new-film.sh lays the
+ * template over the starter, so here a re-export of the starter's module stands in for each one the copy lacks.
+ */
+const stubStarterImports = (root) => {
+  for (const f of readdirSync(root, { recursive: true }).map((x) => join(root, String(x))).filter((x) => /\.tsx?$/.test(x))) {
+    for (const m of readFileSync(f, 'utf8').matchAll(/\bfrom\s+['"](\.{1,2}\/[^'"]+)['"]/g)) {
+      const base = resolve(dirname(f), m[1]);
+      if (['.ts', '.tsx', '/index.ts', '/index.tsx'].some((e) => existsSync(base + e))) continue;
+      const own = ['.ts', '.tsx'].map((e) => join(SRC, relative(root, base) + e)).find((x) => existsSync(x));
+      if (!own) continue;
+      mkdirSync(dirname(base), { recursive: true });
+      writeFileSync(`${base}.ts`, `export * from '${pathToFileURL(own).href}';\n`);
+    }
+  }
+};
 const TMP = mkdtempSync(join(tmpdir(), 'cinetic-typesys-'));
 // each template's src beside a re-export of the starter's fx/TypeSystem (one module, so a deal's declarations reach the line deal)
 const TPL = ['ui-walkthrough', 'social-ad', 'camera-teaser', 'prompt-run', 'type-explainer', 'update'];
@@ -61,6 +77,7 @@ for (const t of TPL) {
   cpSync(join(TEMPLATES, t, 'src'), d, { recursive: true });
   mkdirSync(join(d, 'fx'), { recursive: true });
   writeFileSync(join(d, 'fx', 'TypeSystem.ts'), `export * from '${url('fx/TypeSystem.ts')}';\n`);
+  stubStarterImports(d);
   tplDirs[t] = d;
 }
 

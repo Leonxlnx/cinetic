@@ -4,7 +4,8 @@
   1. plan_edit with the cuts: a level step of 6 dB or more lands only on a bar that carries a cut; without them the
      same anchors may step mid-shot. The reveal holds the track's entry either way.
   2. end_hold: the tail an ending asks for (its own ring clipped to 1.5-2.5 s, a hit's 1.8 s, a fade's length).
-  3. fit on a launch-simple project (tsx from the starter): the timeline is read at the track's tempo, the edit plays
+  3. fit on a launch-simple project (the timeline and every module it imports, the template's over the starter's; tsx
+     from the starter): the timeline is read at the track's tempo, the edit plays
      exactly the film's bars (BARS read again with the final src/music.ts), the track's entry lands on the bar where
      the end act opens (the lockup's), the ending is a hit and never a fade unless asked, and edit.json records the
      fit (`track.py music` fits again from it).
@@ -17,6 +18,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -89,9 +91,34 @@ root = os.path.join(tmp, 'film')
 os.makedirs(os.path.join(root, 'src', 'brand'))
 os.makedirs(os.path.join(root, 'src', 'lib'))
 os.makedirs(os.path.join(root, 'audio', 'music'))
-for f in ('timeline.ts', 'launch.ts', 'deal.ts', 'dealt.ts', 'recent.ts'):
-    shutil.copy(os.path.join(TPL, f), os.path.join(root, 'src', f))
-shutil.copy(os.path.join(SKILL, 'assets', 'remotion-starter', 'src', 'lib', 'pace.ts'), os.path.join(root, 'src', 'lib', 'pace.ts'))
+STARTER_SRC = os.path.join(SKILL, 'assets', 'remotion-starter', 'src')
+
+
+def copy_imports(entry, skip=('music.ts', os.path.join('brand', 'identity.ts'))):
+    """The timeline and every module it imports, as new-film.sh lays them out: the template's file over the starter's.
+    Walks the relative imports (a list typed here goes stale the day the timeline imports one more module); `skip` are
+    the files the run writes itself (track.py fit writes src/music.ts, the test the brand's name)."""
+    todo, seen = [entry], set()
+    while todo:
+        rel = todo.pop()
+        if rel in seen:
+            continue
+        seen.add(rel)
+        src = next((p for p in (os.path.join(TPL, rel), os.path.join(STARTER_SRC, rel)) if os.path.isfile(p)), None)
+        if src is None or rel in skip:
+            continue
+        os.makedirs(os.path.dirname(os.path.join(root, 'src', rel)), exist_ok=True)
+        shutil.copy(src, os.path.join(root, 'src', rel))
+        text = open(src, encoding='utf-8').read()
+        for spec in re.findall(r"""(?:^|\n)\s*(?:import|export)\b[^'"]*?\bfrom\s+['"](\.{1,2}/[^'"]+)['"]""", text):
+            base = os.path.normpath(os.path.join(os.path.dirname(rel), spec))
+            for cand in (base + '.ts', base + '.tsx', os.path.join(base, 'index.ts'), os.path.join(base, 'index.tsx')):
+                if os.path.isfile(os.path.join(TPL, cand)) or os.path.isfile(os.path.join(STARTER_SRC, cand)) or cand in skip:
+                    todo.append(cand)
+                    break
+
+
+copy_imports('timeline.ts')
 with open(os.path.join(root, 'src', 'brand', 'identity.ts'), 'w', encoding='utf-8') as fh:
     fh.write("export const IDENTITY = { name: 'Lantern', supplied: false } as const;\n")
 with open(os.path.join(root, 'audio', 'music', 'bed.track.json'), 'w', encoding='utf-8') as fh:

@@ -6,9 +6,9 @@
  *                 top corner): at every angle the sway reaches and every height the drift reaches, the edge stays
  *                 above the frame at both sides.
  *   2. claim      the hero word snaps in at x1.6 at most, and the claim is read once it has settled.
- *   3. end card   the lockup's drift starts from rest as the lockup is whole, stands at most END_OFF_MAX px off the
- *                 frame's centre on the hold and passes the centre past the hold's middle; the fact moves with the
- *                 name on one axis (no shear).
+ *   3. end card   the lockup holds still once it is whole (no drift: END_DRIFT 0, endSway 0 on every frame of the
+ *                 hold), then the whole frame settles out over the last END_FADE frames, declared as a fadeEnd seam
+ *                 that starts after the lockup is read; the fact keeps the name's axis (END_PART 1, no shear).
  *   4. seams      a line -> picture change is never a match cut (a line and a picture share no shape: a dealt matchCut
  *                 plays as blurThrough); a picture -> picture match cut only where it was dealt, and a dealt one with
  *                 nothing carried over it is reported (gate issue `carry`) with both scenes named.
@@ -91,7 +91,9 @@ try {
   const kys = [-0.12 * T.H - 0.04 * T.H, -0.12 * T.H, -0.12 * T.H + 0.04 * T.H];
   out.edge = Math.max(...angles.flatMap((a) => kys.map((ky) => { const e = S.keyPlateTopEdge(a, ky); return Math.max(e.left, e.right); })));
   const sway = (f: number) => S.endSway(f);
-  out.end = { last: sway(T.TOTAL - 1), first: sway(T.CUE.lockup), step0: Math.abs(sway(T.CUE.lockup + 1) - sway(T.CUE.lockup)), max: Math.max(...Array.from({ length: T.TOTAL - T.CUE.lockup }, (_, i) => Math.abs(sway(T.CUE.lockup + i)))), offMax: S.END_OFF_MAX, part: S.END_PART };
+  const fade = T.SEAMS.find((s: any) => s.kind === 'fadeEnd');
+  out.end = { moves: Math.max(...Array.from({ length: T.TOTAL - T.CUE.lockup }, (_, i) => Math.abs(sway(T.CUE.lockup + i)))), drift: S.END_DRIFT, part: S.END_PART,
+    fadeAt: fade?.at ?? null, fadeFrom: T.TOTAL - T.f60(T.END_FADE.fade), whole: T.END.from, total: T.TOTAL };
   out.fieldOn = S.FIELD_ON;
   out.field = S.fieldBoxOf({ draw: () => null, focus: { x: 400, y: 200, w: 600, h: 400 } });
   out.smear = [L.smearAxis({ x: 80, y: 0 }), L.smearAxis({ x: 0, y: -60 })];
@@ -120,8 +122,8 @@ try {
     result(a.edge < -40, 'ground: the key plate\'s top edge stays above the frame at every sway angle and drift height', `highest ${a.edge?.toFixed(1)} px`);
     result(a.hero.from <= 1.6 && a.hero.recentre > 0, 'claim: the hero word snaps in at x1.6 at most, into a slot opened before it', JSON.stringify(a.hero));
     const e = a.end;
-    result(e.part === 1 && e.step0 < 0.3 && e.max <= e.offMax + 0.5 && Math.abs(e.last) < Math.abs(e.first),
-      'end card: the drift starts from rest at the lockup, stays within END_OFF_MAX of the centre, ends nearer it than it starts; the fact shares the axis',
+    result(e.drift === 0 && e.moves < 0.01 && e.part === 1 && e.fadeAt === e.fadeFrom && e.fadeAt > e.whole && e.fadeAt < e.total,
+      'end card: the lockup holds still once whole, the frame settles out over the declared fadeEnd after it is read; the fact keeps the axis of the name',
       JSON.stringify(e));
     const ta = a.seams.filter((s) => s[2] === 'TA');
     result(ta.length >= 1 && ta.every((s) => s[0] !== 'matchCut'), 'seams: no line -> picture change is a match cut (the floor deals one; it plays as blurThrough)', JSON.stringify(ta));
