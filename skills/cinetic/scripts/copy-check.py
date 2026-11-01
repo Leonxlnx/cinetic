@@ -414,6 +414,16 @@ def _array(src, name):
     return [a or b for a, b in _STR.findall(m.group(1))] if m else []
 
 
+def _css_value(s):
+    """A CSS or token value, never on-screen words: lowercase hyphenated keywords only ("tabular-nums lining-nums",
+    "ease-in-out"), or a function call ("cubic-bezier(.2, 0, 0, 1)")."""
+    t = s.strip()
+    if re.fullmatch(r'[a-z][a-z0-9-]*\(.*\)', t):
+        return True
+    words = t.split()
+    return bool(words) and all(re.fullmatch(r'[a-z0-9]+(-[a-z0-9]+)+', w) for w in words)
+
+
 def kit_samples(extra=()):
     """The kit's sample strings: (phrases, names), read from the skill's kit/sample.ts and any film copies given."""
     phrases, names = set(LEGACY_KIT), set()
@@ -424,7 +434,7 @@ def kit_samples(extra=()):
             continue
         for a, b in _STR.findall(src):
             s = (a or b).replace("\\'", "'").strip()
-            if '${' in s or not re.search(r'[A-Za-z]', s):
+            if '${' in s or not re.search(r'[A-Za-z]', s) or _css_value(s):
                 continue
             words = s.split()
             if len(words) >= 3 or len(s) >= 18:
@@ -463,6 +473,9 @@ def raw_strings_from_src(root):
             if not f.endswith(('.ts', '.tsx', '.js', '.jsx')) or f.endswith('.d.ts'):
                 continue
             path = os.path.join(d, f)
+            # the design tokens (type-deal.ts writes TYPE_FEATURES and the faces there) hold values, not screen copy
+            if f == 'tokens.ts' and os.path.basename(d) == 'brand':
+                continue
             try:
                 code = _strip_comments(open(path, encoding='utf-8').read())
             except OSError:
@@ -473,7 +486,7 @@ def raw_strings_from_src(root):
                 rel = path
             for m in re.finditer(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`((?:[^`\\$]|\\.)*)`|>([^<>{}\n]+)<", code):
                 t = next(g for g in m.groups() if g is not None).strip()
-                if re.search(r'[A-Za-z]', t):
+                if re.search(r'[A-Za-z]', t) and not _css_value(t):
                     out.append((t, f'{rel}:{code.count(chr(10), 0, m.start()) + 1}'))
     return out
 
