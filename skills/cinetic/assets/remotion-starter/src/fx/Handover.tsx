@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import { type FilmCtx, sizeOf, uOf, useFilm } from '../lib/film';
-import { type BoxAt, type HandoverSpec, type HandoverState, handoverDeclares, handoverState, type HBox, type SceneLayer, shadowColor, withAlpha } from '../lib/handover';
+import { type BoxAt, type HandoverSpec, type HandoverState, handoverDeclares, handoverState, type HBox, ownOpacity, type SceneLayer, shadowColor, withAlpha } from '../lib/handover';
 import type { Declares } from '../timeline';
 import { Defocus, DirBlur } from './Defocus';
 import { type Cam, basisOf, frameOf, project } from './depth/math';
@@ -17,7 +17,7 @@ import { type Cam, basisOf, frameOf, project } from './depth/math';
 // scales: `a` is laid out at the out box's size, `b` at the in box's (each sampled where its scene hands it over), and
 // each rides the box (or, for an iris or a porthole, stays home while the box reveals it). Blur and smear are fixed
 // ladder copies (fx/Defocus), never an animated radius. While it draws the element, the scenes hide their own copy:
-// ownOpacity(f, spec, 'out' | 'in') (lib/handover) is the opacity to draw it at (0 inside the span).
+// useOwnOpacity(spec, 'out' | 'in') (or lib/handover ownOpacity(f, spec, side, film)) is the opacity to draw it at (0 inside the span).
 //
 // `outScene` / `inScene` (optional) are the two scenes, full frame: the camera kinds move them (zoom-into pushes the outgoing
 // scene into the element and opens the next one still growing, pull-out pulls both back about one point, momentum
@@ -73,7 +73,7 @@ const SceneLayerView: React.FC<{ s: SceneLayer; children: React.ReactNode }> = (
 };
 
 /** The element's container at its shape, its content riding inside (never scaled), its rim above. */
-const ElementView: React.FC<{ h: HandoverState; a?: React.ReactNode; b?: React.ReactNode; many?: React.ReactNode[] }> = ({ h, a, b, many }) => {
+const ElementView: React.FC<{ h: HandoverState; a?: React.ReactNode; b?: React.ReactNode; many?: React.ReactNode[]; open?: boolean }> = ({ h, a, b, many, open }) => {
   const film = useFilm();
   const u = uOf(film);
   const el = h.el;
@@ -90,18 +90,21 @@ const ElementView: React.FC<{ h: HandoverState; a?: React.ReactNode; b?: React.R
   let body: React.ReactNode = (
     <div style={FULL}>
       {el.many.map((m, i) => (
-        <div key={`m${i}`} style={{ ...box(m.box, m.r), overflow: 'hidden', background: el.fill, opacity: m.opacity, boxShadow: shadow }}>
+        <div key={`m${i}`} data-handover={`${h.kind}-many`} style={{ ...box(m.box, m.r), overflow: 'hidden', background: el.fill, opacity: m.opacity, boxShadow: shadow }}>
           {many?.[i] !== undefined ? (
             // laid out at its own size, centred on the shrinking box: clipped, never scaled
             <div style={{ position: 'absolute', left: 0, top: 0, width: m.size.w, height: m.size.h, transform: `translate3d(${px((m.box.w - m.size.w) / 2)}, ${px((m.box.h - m.size.h) / 2)}, 0)` }}>{many[i]}</div>
           ) : null}
         </div>
       ))}
-      <div data-handover={h.kind} style={{ ...box(sh, el.r), overflow: 'hidden', background: el.fill, boxShadow: shadow }}>
-        {layer(a, el.content.a, el.content.blurA, el.size.a, el.place.a, 'a')}
-        {layer(b, el.content.b, el.content.blurB, el.size.b, el.place.b, 'b')}
-      </div>
-      {rim}
+      {/* the many collapsing to the point draw the element until the cut; then the one that grows from it */}
+      {el.many.length ? null : (
+        <div data-handover={h.kind} style={{ ...box(sh, el.r), overflow: 'hidden', background: open ? undefined : el.fill, boxShadow: open ? undefined : shadow }}>
+          {layer(a, el.content.a, el.content.blurA, el.size.a, el.place.a, 'a')}
+          {layer(b, el.content.b, el.content.blurB, el.size.b, el.place.b, 'b')}
+        </div>
+      )}
+      {el.many.length ? null : rim}
     </div>
   );
   if (el.blur >= 0.5) body = <Defocus sigma={el.blur}>{body}</Defocus>;
@@ -122,9 +125,17 @@ export const Handover: React.FC<HandoverProps> = (props) => {
       {props.ground}
       {props.outScene !== undefined && h.scenes.out.show ? <SceneLayerView s={h.scenes.out}>{draw(props.outScene, h.scenes.out)}</SceneLayerView> : null}
       {props.inScene !== undefined && h.scenes.in.show ? <SceneLayerView s={h.scenes.in}>{draw(props.inScene, h.scenes.in)}</SceneLayerView> : null}
-      {h.el.show ? <ElementView h={h} a={props.a} b={props.b} many={props.many} /> : null}
+      {/* an iris over a drawn scene is an opening: no face of its own, the next scene shows through it */}
+      {h.el.show ? <ElementView h={h} a={props.a} b={props.b} many={props.many} open={h.kind === 'iris' && props.inScene !== undefined} /> : null}
     </div>
   );
+};
+
+/** The scene's own copy of the element on one side, in a component: the opacity to draw it at on this frame (0 while the handover draws it). */
+export const useOwnOpacity = (spec: HandoverSpec, side: 'out' | 'in', frame?: number) => {
+  const film = useFilm();
+  const now = useCurrentFrame();
+  return ownOpacity(frame ?? now, spec, side, film);
 };
 
 /**

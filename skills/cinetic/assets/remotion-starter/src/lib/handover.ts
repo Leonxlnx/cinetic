@@ -36,15 +36,18 @@ export type { Form, HandoverKind } from './spine';
 export const HANDOVER_LOOK = {
   arc: { share: 0.08, max: 0.06 }, // the arc's height: a share of the travel, at most a share of the frame height
   flyArc: { share: 0.16, max: 0.1 }, // a thrown element rises more
-  fade: { aOut: [0, 0.35], bIn: [0.6, 1] }, // content A out over the first 35 %, B in over the last 40 %
+  fade: { aOut: [0, 0.35], bIn: [0.6, 1] }, // content A out over the first 35 %, B in over the last 40 % (the house morph)
+  cross: { aOut: [0.15, 0.5], bIn: [0.45, 0.8] }, // grow: the contents cross-blur round the middle, never an empty slab in flight
+  swellIn: 0.3, // swell: the new content blooms in over the first 30 % of the settle from 15 % (its first frame is under the blur)
   contentBlur: 10, // a fading content layer's blur at opacity 0 (it sharpens as it arrives)
   shrinkBlur: 16, // the collapse's blur at the cut (12-20)
   shrinkJump: [0.5, 0.86], // the collapse reaches half its log size by the cut, then jumps under the blur (a one-frame snap)
   swell: 0.5, // +40-60 %
   swellBlur: 6,
   press: { depth: 0.88, down: 6, back: 12, drain: 10 }, // the squeeze to 88 % and back (f@60), then the drain
-  pointPx: 10, // converge: the point's size
-  convergeBlur: 8,
+  pointPx: 16, // converge: the point's size
+  convergeBlur: 6,
+  spark: 0.85, // converge: how far the point lights up toward white as the many meet (a spark the next element grows from)
   zoom: { ramp: 8, carry: 1 / 3, decay: 0.85 }, // zoom-into: the push eases on over `ramp` f@60; the next scene keeps a third of the last step
   momentum: { v: 48, build: 1.25, ratio: 0.7, decay: 0.915, residual: 0.5, smear: 9 }, // px per f@60 at 1080p
   blend: 0, // f@60 the scenes' own copies cross with the handover's at either end (0: an exact hand-off)
@@ -467,6 +470,8 @@ export const handoverState = (f: number, spec: HandoverSpec, film?: Partial<Film
     Object.assign(inn, { x: dx * i, y: dy * i, axis, smear: fast(ci.v) && f >= at ? (dx + dy) * ci.v : 0 });
     shape = f < at ? { ...A, x: A.x + out.x, y: A.y + out.y } : { ...B, x: B.x + inn.x, y: B.y + inn.y };
   } else if (kind === 'iris') {
+    // the outgoing scene stays round the opening shape until it covers the frame; the next one shows inside it
+    out.show = f < t1;
     inn.show = f >= t0;
     if (active) inn.clip = { x: shape.x, y: shape.y, w: shape.w, h: shape.h, r: Math.min(shape.w, shape.h) / 2 };
   }
@@ -477,7 +482,9 @@ export const handoverState = (f: number, spec: HandoverSpec, film?: Partial<Film
   const q = G.q;
   const fillA = spec.from.fill ?? spec.to.fill ?? 'transparent';
   const fillB = spec.to.fill ?? spec.from.fill ?? 'transparent';
-  const fill = q <= 0 ? mixOklch(fillA, fillA, 0) : q >= 1 ? mixOklch(fillB, fillB, 0) : mixOklch(fillA, fillB, q);
+  let fill = q <= 0 ? mixOklch(fillA, fillA, 0) : q >= 1 ? mixOklch(fillB, fillB, 0) : mixOklch(fillA, fillB, q);
+  // converge: the point is a spark: the face lights toward white as the many meet and cools into the next element
+  if (kind === 'converge' && active) fill = mixOklch(fill, 'rgba(255, 255, 255, 1)', L.spark * Math.max(0, 1 - Math.abs(u - uc) / Math.max(1e-6, 0.3)));
   const ra = rimOf(spec.from);
   const rb = rimOf(spec.to);
   const rim: Rim = { color: mixOklch(ra.color, rb.color, q), a: mixN(ra.a, rb.a, q), w: mixN(ra.w, rb.w, q) };
@@ -505,7 +512,10 @@ export const handoverState = (f: number, spec: HandoverSpec, film?: Partial<Film
   if (mode === 'fade') {
     let aw: [number, number] = [L.fade.aOut[0], L.fade.aOut[1]];
     let bw: [number, number] = [L.fade.bIn[0], L.fade.bIn[1]];
-    if (kind === 'press-open') {
+    if (kind === 'grow') {
+      aw = [L.cross.aOut[0], L.cross.aOut[1]];
+      bw = [L.cross.bIn[0], L.cross.bIn[1]];
+    } else if (kind === 'press-open') {
       const P = L.press;
       aw = [(P.back / k60 / span), ((P.back + P.drain) / k60 / span)];
       bw = [uc, uc + 0.12 * (1 - uc)];
@@ -518,7 +528,7 @@ export const handoverState = (f: number, spec: HandoverSpec, film?: Partial<Film
     show = ca >= cb ? 'a' : 'b';
   } else if (mode === 'swap') {
     ca = f < at ? 1 : 0;
-    cb = f < at ? 0 : 1;
+    cb = f < at ? 0 : kind === 'swell' ? smooth(((f - at) / span / Math.max(1e-6, 1 - uc)) / L.swellIn + 0.15) : 1;
   } else if (mode === 'keep') {
     ca = 1;
     cb = 0;
@@ -584,8 +594,11 @@ export const handoverState = (f: number, spec: HandoverSpec, film?: Partial<Film
   return { kind, f, t0, t1, at, u, phase, active, swap: at, snap: active && G.snap, draws, el, hide, scenes: { out, in: inn } };
 };
 
-/** The scenes' own copy of the element on one side at frame f: draw it at this opacity (0 while the handover draws it). */
-export const ownOpacity = (f: number, spec: HandoverSpec, side: 'out' | 'in', film?: Partial<FilmCtx>) => handoverState(f, spec, film).hide[side];
+/**
+ * The scenes' own copy of the element on one side at frame f: draw it at this opacity (0 while the handover draws it).
+ * Give it the film (useFilm() in a component; fx/Handover useOwnOpacity does): the house frames are converted at its rate.
+ */
+export const ownOpacity = (f: number, spec: HandoverSpec, side: 'out' | 'in', film: Partial<FilmCtx>) => handoverState(f, spec, film).hide[side];
 
 // ---------------------------------------------------------------------------------------------------- the track and declares
 

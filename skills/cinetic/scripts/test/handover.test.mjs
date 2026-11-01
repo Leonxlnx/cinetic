@@ -226,14 +226,15 @@ for (const k of DRAWN) {
 for (const k of ['shrink', 'swell', 'converge', 'fly']) {
   const o = O[k];
   const span = o.states.filter((s) => s.f >= o.t0 && s.f < o.t1);
-  const flip = span.find((s) => s.ca === 0 && s.cb === 1);
-  result(flip && flip.f === 100 && span.filter((s) => s.f < 100).every((s) => s.ca === 1 && s.cb === 0), `${k}: the content swaps in one frame, on the cut`, `flip at ${flip?.f}`);
+  const flip = span.find((s) => s.ca === 0 && s.cb > 0);
+  const whole = span.find((s) => s.cb === 1);
+  result(flip && flip.f === 100 && span.filter((s) => s.f < 100).every((s) => s.ca === 1 && s.cb === 0) && whole && whole.f <= (k === 'swell' ? 104 : 101), `${k}: the content swaps on the cut (${k === 'swell' ? 'the new one blooming in under the blur' : 'in one frame'})`, `flip at ${flip?.f}, whole at ${whole?.f}`);
 }
 for (const k of ['shrink', 'converge']) {
   const o = O[k];
   const span = o.states.filter((s) => s.f >= o.t0 && s.f < o.t1);
   const maxBlur = Math.max(...span.map((s) => s.blur));
-  result(span.find((s) => s.f === 100).blur === maxBlur && maxBlur >= 8, `${k}: the cut is the most blurred frame (${maxBlur} px)`);
+  result(span.find((s) => s.f === 100).blur === maxBlur && maxBlur >= (k === 'shrink' ? 12 : 5), `${k}: the cut is the most blurred frame (${maxBlur} px)`);
 }
 {
   const span = O.converge.states.filter((s) => s.f >= O.converge.t0 && s.f < O.converge.t1);
@@ -244,7 +245,8 @@ for (const k of ['shrink', 'converge']) {
   result(fly.find((s) => s.f === 100).smear >= 0.9 * fast && fast > 10, `fly: the cut is the fastest frame (${fly.find((s) => s.f === 100).smear} of ${fast} px a frame), drawn with a smear`);
   const grow = O.grow.states.filter((s) => s.f >= O.grow.t0 && s.f < O.grow.t1);
   const g = grow.find((s, i) => i > 0 && s.show2 !== grow[i - 1].show2);
-  result(g && g.ca < 0.1 && g.cb < 0.1, `grow: the contents cross where both are nearly gone (frame ${g?.f}: ${g?.ca} / ${g?.cb})`);
+  const dbl = grow.filter((s) => s.ca > 0.6 && s.cb > 0.6);
+  result(g && g.ca <= 0.5 && g.cb <= 0.5 && !dbl.length, `grow: the contents cross-blur round the middle (frame ${g?.f}: ${g?.ca} / ${g?.cb}), never both at full strength`);
 }
 
 // 7. the camera kinds and the scene kinds
