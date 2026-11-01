@@ -1515,8 +1515,10 @@ def template_preview(d, inp, seed, data, root, history_on, devices, floor):
     lines = [(f'**The template plays.** ' if plays_worlds else f'**The template plays.** ground `{(fam or {}).get("id", "?")}` ({(fam or {}).get("what", "")[:90]}); ')
              + f'voice `{deal.get("voice", "?")}`, end `{deal.get("end", "?")}`, camera `{deal.get("camera", "?")}`'
              + (f'; type `{pr["id"]}` ({pr.get("voice")} with {pr.get("text")})' if pr else '') + '.']
-    if c:
+    if c and template_plays_creative(root):
         lines.append('**Creative elements.** ' + '; '.join(f'`{i}` ({by.get(i, {}).get("about", "")[:80]})' for i in c['deal']) + '.')
+    elif c:
+        lines.append('**Creative elements.** not played (the hero shots of this template carry those beats).')
     hlib = hero_library(root)
     world = deal.get('ground') if deal.get('ground') in WORLD_KINDS else None
     hc = deal_hero(hlib, project_name(root), inp.get('brief', ''), inp.get('have', ()), recent_hero(history_on), direction=d, world=world, root=root) if hlib else None
@@ -2098,6 +2100,21 @@ def deal_creative(lib, name, brief, have, recent=(), n=CREATIVE_N, direction=Non
     return None
 
 
+def template_plays_creative(root):
+    """False when the project's template deals but never plays a creative element (its src/deal.ts imports nothing from
+    fx/creative: the update template's creative beats are its hero shots), else True (launch-simple, the bare starter)."""
+    p = os.path.join(root, 'src', 'deal.ts')
+    if not os.path.isfile(p):
+        return True
+    with open(p, encoding='utf-8') as fh:
+        return bool(re.search(r'''from\s+['"]\./fx/creative/''', fh.read()))
+
+
+CREATIVE_NOT_PLAYED = ('\n## The creative elements: not played\n\nThis template plays no creative element (src/deal.ts imports none '
+                       'from fx/creative): its hero shots carry those beats. The deal goes to the film history only; build '
+                       'nothing for it.\n')
+
+
 def creative_lines(c, lib):
     """The DIRECTION.md section for the dealt creative elements."""
     if not c:
@@ -2588,7 +2605,8 @@ def write_sheet(sh, outdir, data, library):
         json.dump(sh, fh, indent=1, ensure_ascii=False)
         fh.write('\n')
     root = os.path.dirname(os.path.abspath(outdir))
-    md = render_sheet(sh, data, library) + creative_lines(sh.get('creative'), creative_library(root)) + hero_lines(sh.get('hero'), hero_library(root), sh.get('world'))
+    creative = creative_lines(sh.get('creative'), creative_library(root)) if template_plays_creative(root) else (CREATIVE_NOT_PLAYED if sh.get('creative') else '')
+    md = render_sheet(sh, data, library) + creative + hero_lines(sh.get('hero'), hero_library(root), sh.get('world'))
     with open(os.path.join(outdir, 'DIRECTION.md'), 'w', encoding='utf-8', newline='\n') as fh:
         fh.write(md)
     return md

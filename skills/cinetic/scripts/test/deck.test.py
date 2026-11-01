@@ -738,7 +738,7 @@ result(r.returncode == 2 and 'inside the skill folder' in r.stderr and not made,
 proj = tempfile.mkdtemp(dir=TMP)
 os.makedirs(os.path.join(proj, 'src', 'brand'))
 with open(os.path.join(proj, 'src', 'deal.ts'), 'w', encoding='utf-8') as fh:
-    fh.write("import { DEALT } from './dealt';\nexport const DEVICES = {\n  voice: ['build', 'blur', 'ink'],\n  ground: ['nearWhite', 'lightStudio', 'softSky', 'gradientField', 'whiteBand', 'blackField', 'studio', 'deepPool', 'duskMesh', 'floorGlow', 'lightDark'],\n  end: ['element', 'badge'],\n  camera: ['still', 'land'],\n} as const;\nexport const FLOOR = { voice: 'build', ground: 'nearWhite', end: 'element', camera: 'still' };\n")
+    fh.write("import { DEALT } from './dealt';\nimport { metaOf } from './fx/creative/meta';\nexport const DEVICES = {\n  voice: ['build', 'blur', 'ink'],\n  ground: ['nearWhite', 'lightStudio', 'softSky', 'gradientField', 'whiteBand', 'blackField', 'studio', 'deepPool', 'duskMesh', 'floorGlow', 'lightDark'],\n  end: ['element', 'badge'],\n  camera: ['still', 'land'],\n} as const;\nexport const FLOOR = { voice: 'build', ground: 'nearWhite', end: 'element', camera: 'still' };\n")
 with open(os.path.join(proj, 'src', 'brand', 'identity.ts'), 'w', encoding='utf-8') as fh:
     fh.write("export const IDENTITY = { name: 'Tarn', supplied: false } as const;\n")
 pout = os.path.join(proj, 'out')
@@ -756,6 +756,14 @@ md = open(os.path.join(pout, 'DIRECTION.md'), encoding='utf-8').read() if os.pat
 dealt = open(os.path.join(proj, 'src', 'dealt.ts'), encoding='utf-8').read() if os.path.isfile(os.path.join(proj, 'src', 'dealt.ts')) else ''
 result(r.returncode == 0 and f'**Picked** `{opt_ids[0] if opt_ids else ""}`' in md and why in md and '"ground"' in dealt and '**Type.** the `' in md,
        'a template project: the pick deals the sheet, its reason heads DIRECTION.md, the type pairing is dealt', (r.stderr or '')[-160:])
+# a template that plays no creative element (its deal.ts imports none from fx/creative, as the update template's) says so
+nop = tempfile.mkdtemp(dir=TMP)
+os.makedirs(os.path.join(nop, 'src'))
+with open(os.path.join(nop, 'src', 'deal.ts'), 'w', encoding='utf-8') as fh:
+    fh.write("import { DEALT } from './dealt';\nexport const FLOOR = { ground: 'blackField' };\n")
+result(deck.template_plays_creative(proj) and not deck.template_plays_creative(nop) and deck.template_plays_creative(tempfile.mkdtemp(dir=TMP))
+       and '## The creative elements: not played' in deck.CREATIVE_NOT_PLAYED and '## The creative elements (dealt' in md,
+       'a template whose deal.ts plays no fx/creative element gets "not played" for the creative section; launch-simple and the bare starter play them')
 # the eleven ground families are all dealable
 fams = {f['id'] for f in DATA['ground_families']['families']}
 result(fams >= {'nearWhite', 'lightStudio', 'softSky', 'gradientField', 'whiteBand', 'blackField', 'studio', 'deepPool', 'duskMesh', 'floorGlow', 'lightDark'},
