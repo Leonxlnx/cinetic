@@ -833,14 +833,13 @@ const fetchThumbs = async (words, n, dir, seed, cats = null) => {
 // ------------------------------------------------------------------------------------------------ writing
 const toTs = (c, date) => {
   const json = JSON.stringify(c, null, 2).replace(/"@static:([^"]+)"/g, (m, p) => `img('${p}')`);
+  // the picture helper only when a picture uses it: an unused one fails tsc (noUnusedLocals) in a film with no photos
+  const pics = /\bimg\('/.test(json);
   return `// The film's screen content, written by scripts/content.mjs from the brief on ${date} (seed "${c.meta.seed}", world "${c.meta.domain}").
 // Keep what is true of the product and change the rest; then node scripts/content.mjs --check. Spread the parts into the
 // screens of src/kit/screens: <CommentFeed {...CONTENT.comments} />, <PromptBar {...CONTENT.prompt} at={12} />.
-import { staticFile } from 'remotion';
-import type { FilmContent } from './kit/screens';
-
-const img = (p: string) => staticFile(p);
-
+${pics ? "import { staticFile } from 'remotion';\n" : ''}import type { FilmContent } from './kit/screens';
+${pics ? '\nconst img = (p: string) => staticFile(p);\n' : ''}
 export const CONTENT: FilmContent = ${json};
 `;
 };
