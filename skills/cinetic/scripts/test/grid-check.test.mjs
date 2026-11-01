@@ -346,10 +346,12 @@ console.log(JSON.stringify({ text, rest }));
 import { pathToFileURL } from 'node:url';
 const out: Record<string, unknown> = {};
 for (const [key, dir] of JSON.parse(readFileSync(process.argv[2], 'utf8')) as [string, string][]) {
-  const T = await import(pathToFileURL(dir + '/src/timeline.ts').href);
-  const body = T.TOTAL - T.TAIL;
-  const whole = Math.max(T.END.from, ...T.COPY.filter((c: any) => (c.out ?? T.TOTAL) >= body).map((c: any) => c.resolved));
-  out[key] = { fps: T.FPS, total: T.TOTAL, body, whole };
+  try {
+    const T = await import(pathToFileURL(dir + '/src/timeline.ts').href);
+    const body = T.TOTAL - T.TAIL;
+    const whole = Math.max(T.END.from, ...T.COPY.filter((c: any) => (c.out ?? T.TOTAL) >= body).map((c: any) => c.resolved));
+    out[key] = { fps: T.FPS, total: T.TOTAL, body, whole };
+  } catch (e: any) { out[key] = { error: String(e?.message ?? e).split(String.fromCharCode(10))[0].slice(0, 200) }; }
 }
 console.log(JSON.stringify(out));
 `);
@@ -373,12 +375,15 @@ const NAMES = ['Tessel', 'Plinth', 'Northwind', 'Loomly', 'Quarry', 'Brightdesk'
 const out: Record<string, unknown> = {};
 for (const [key, dir] of JSON.parse(readFileSync(process.argv[2], 'utf8')) as [string, string][]) {
   if (!existsSync(dir + '/src/deal.ts')) { out[key] = null; continue; }
-  const D = await import(pathToFileURL(dir + '/src/deal.ts').href);
-  const slots = Object.keys(D.FLOOR);
-  const deals = NAMES.map((n) => D.dealOf(n));
-  out[key] = { slots: slots.length, floorKept: JSON.stringify(D.DEAL) === JSON.stringify(D.FLOOR),
-    minApart: Math.min(...deals.map((d: Record<string, string>) => slots.filter((s) => d[s] !== D.FLOOR[s]).length)),
-    distinct: new Set(deals.map((d: unknown) => JSON.stringify(d))).size };
+  try {
+    const D = await import(pathToFileURL(dir + '/src/deal.ts').href);
+    if (typeof D.dealOf !== 'function' || !D.FLOOR) throw new Error('deal.ts exports no dealOf(name) and FLOOR');
+    const slots = Object.keys(D.FLOOR);
+    const deals = NAMES.map((n) => D.dealOf(n));
+    out[key] = { slots: slots.length, floorKept: JSON.stringify(D.DEAL) === JSON.stringify(D.FLOOR),
+      minApart: Math.min(...deals.map((d: Record<string, string>) => slots.filter((s) => d[s] !== D.FLOOR[s]).length)),
+      distinct: new Set(deals.map((d: unknown) => JSON.stringify(d))).size };
+  } catch (e: any) { out[key] = { error: String(e?.message ?? e).split(String.fromCharCode(10))[0].slice(0, 200) }; }
 }
 console.log(JSON.stringify(out));
 `);
@@ -397,9 +402,9 @@ console.log(JSON.stringify(out));
         console.log(`skip  --template ${h.name} deals no devices (one sequence: its film is told apart from the floor by its direction and the guard)`);
         continue;
       }
-      result(!!d && d.floorKept && 2 * d.minApart >= d.slots && d.distinct >= 6,
+      result(!!d && !d.error && d.floorKept && 2 * d.minApart >= d.slots && d.distinct >= 6,
         `--template ${h.name}: no product's deal replays the template's own (at least half its slots differ from the floor; many sequences)`,
-        d ? `${d.slots} slots, at least ${d.minApart} apart, ${d.distinct} deals of 24 names, scaffold keeps the floor: ${d.floorKept}` : (dp.stderr || dp.stdout).trim().slice(0, 300));
+        d?.error ?? (d ? `${d.slots} slots, at least ${d.minApart} apart, ${d.distinct} deals of 24 names, scaffold keeps the floor: ${d.floorKept}` : (dp.stderr || dp.stdout).trim().slice(0, 300)));
     }
     for (const h of holds) {
       const a = H?.[h.name];
@@ -409,9 +414,9 @@ console.log(JSON.stringify(out));
       // a template may state its own hold (template.json end_hold: [lo, hi] s; the simple launch holds its lockup 2-3 s)
       const band = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', h.name, 'template.json'), 'utf8')).end_hold ?? [1.2, 1.8];
       const [lo, hi] = band;
-      const ok = !!a && !!z && s(a) >= lo - 1e-9 && s(a) <= hi + 1e-9 && s(z) >= lo - 1e-9 && s(z) <= hi + gap + 1e-9 && z.total - Math.ceil(h.endF) >= z.fps;
+      const ok = !!a && !!z && !a.error && !z.error && s(a) >= lo - 1e-9 && s(a) <= hi + 1e-9 && s(z) >= lo - 1e-9 && s(z) <= hi + gap + 1e-9 && z.total - Math.ceil(h.endF) >= z.fps;
       result(ok, `--template ${h.name}: the end card holds ${lo}-${hi} s (a stop ending's gap more at most), the stop's element 1 s or more before the end`,
-        a && z ? `${s(a).toFixed(2)} s; with the stop ${s(z).toFixed(2)} s (gap ${gap.toFixed(2)} s, ${z.total - Math.ceil(h.endF)} f after the element)` : (hp.stderr || hp.stdout).trim().slice(0, 300));
+        a?.error ?? z?.error ?? (a && z ? `${s(a).toFixed(2)} s; with the stop ${s(z).toFixed(2)} s (gap ${gap.toFixed(2)} s, ${z.total - Math.ceil(h.endF)} f after the element)` : (hp.stderr || hp.stdout).trim().slice(0, 300)));
     }
   }
 }
