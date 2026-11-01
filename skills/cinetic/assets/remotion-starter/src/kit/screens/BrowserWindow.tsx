@@ -18,6 +18,7 @@ import type { LogoRef } from '../logos';
 import { caretOn, Face, fbox, type Focus, focusAttr, Icon, Mark, Panel, Picture, SCREEN, type ScreenBase, type ScreenLayout, smallShadow, textTag, textW, tx, unionBox, useScreen, wrapText } from './base';
 import { KIT_FONT } from '../parts';
 import { typedAt } from './typing';
+import { type FormMap, type ScreenForms, screenForms } from './forms';
 
 export type SiteCard =
   | { kind: 'people'; title: string; value: string; faces: { name: string; photo?: string }[]; tag?: string }
@@ -360,3 +361,10 @@ export const BrowserWindow: React.FC<BrowserWindowProps> = (p) => {
     </div>
   );
 };
+
+// ------------------------------------------------------------------------------------------------ forms
+
+/** The spine forms a BrowserWindow draws (kit/screens/forms.ts), part -> [form, focus box]: the window, its headline, the call to action as a button, the address bar as a pill, its picture, a notice, its cards as a list, the buttons, the brand as a chip. */
+export const BROWSER_WINDOW_FORMS = { window: ['window', 'window'], headline: ['word', 'headline'], cta: ['button', 'cta'], address: ['pill', 'address'], picture: ['photo', 'picture'], notice: ['notice', 'notice'], cards: ['list', 'cards'], buttons: ['button', 'buttons'], brand: ['chip', 'brand'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the screen's px), from browserWindowLayout. */
+export const browserWindowForms = (p: BrowserWindowProps, ctx: { pt?: number } = {}): ScreenForms => screenForms((f) => browserWindowLayout(p, f, ctx), BROWSER_WINDOW_FORMS, { pt: ctx.pt });

@@ -14,6 +14,7 @@ import { hasLogo, BrandLogo, type LogoRef } from '../logos';
 import { Caret, caretOn, fbox, type Focus, focusAttr, Icon, Panel, SCREEN, type ScreenBase, type ScreenLayout, smallShadow, sweepX, textTag, textW, tx, useScreen } from './base';
 import { pressAt } from './PromptBar';
 import { typedAt } from './typing';
+import { type FormMap, type ScreenForms, screenForms } from './forms';
 
 export type UrlScanProps = ScreenBase & {
   url: string;
@@ -126,3 +127,10 @@ export const UrlScan: React.FC<UrlScanProps> = (p) => {
     </div>
   );
 };
+
+// ------------------------------------------------------------------------------------------------ forms
+
+/** The spine forms a UrlScan draws (kit/screens/forms.ts), part -> [form, focus box]: the address pill, its button, the caret, the typed address, the site mark as a chip. */
+export const URL_SCAN_FORMS = { pill: ['pill', 'pill'], button: ['button', 'button'], caret: ['word', 'caret'], url: ['word', 'url'], logo: ['chip', 'logo'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the screen's px), from urlScanLayout. */
+export const urlScanForms = (p: UrlScanProps, ctx: { pt?: number; fps?: number } = {}): ScreenForms => screenForms((f) => urlScanLayout(p, f, ctx), URL_SCAN_FORMS, { pt: ctx.pt });

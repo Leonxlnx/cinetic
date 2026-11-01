@@ -12,6 +12,7 @@ import { mixColor, oklch as fromLch, toOklch } from '../../lib/color';
 import { f60x } from '../../lib/film';
 import { Caret, caretOn, fbox, type Focus, focusAttr, Icon, Panel, SCREEN, type ScreenBase, type ScreenLayout, type Skin, textTag, textW, tx, useScreen } from './base';
 import { typedAt } from './typing';
+import { type FormMap, type ScreenForms, screenForms } from './forms';
 
 export type CodeLang = 'ts' | 'js' | 'py' | 'json' | 'sh' | 'css' | 'html' | 'text';
 
@@ -188,3 +189,10 @@ export const CodePage: React.FC<CodePageProps> = (p) => {
     </div>
   );
 };
+
+// ------------------------------------------------------------------------------------------------ forms
+
+/** The spine forms a CodePage draws (kit/screens/forms.ts), part -> [form, focus box]: the editor as a page, the caret, the file tab as a chip. */
+export const CODE_PAGE_FORMS = { page: ['page', 'editor'], caret: ['word', 'caret'], file: ['chip', 'file'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the screen's px), from codePageLayout. */
+export const codePageForms = (p: CodePageProps, ctx: { pt?: number; fps?: number } = {}): ScreenForms => screenForms((f) => codePageLayout(p, f, ctx), CODE_PAGE_FORMS, { pt: ctx.pt });

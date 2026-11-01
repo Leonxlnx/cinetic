@@ -12,6 +12,7 @@ import type { LogoRef } from '../logos';
 import { Face, fbox, type Focus, focusAttr, Icon, Mark, Panel, Picture, SCREEN, type ScreenBase, type ScreenLayout, smallShadow, textTag, textW, tx, useFace, useScreen } from './base';
 import { pressAt } from './PromptBar';
 import { type Thumb, THUMB_FACE, ThumbTitle } from './ThumbGrid';
+import { type FormMap, type ScreenForms, screenForms } from './forms';
 
 export type ProfileCardProps = ScreenBase & {
   name: string;
@@ -110,3 +111,10 @@ export const ProfileCard: React.FC<ProfileCardProps> = (p) => {
     </div>
   );
 };
+
+// ------------------------------------------------------------------------------------------------ forms
+
+/** The spine forms a ProfileCard draws (kit/screens/forms.ts), part -> [form, focus box]: the card, its action button, the face as a chip, the name, the stats as a count. */
+export const PROFILE_CARD_FORMS = { card: ['card', 'card'], button: ['button', 'action'], face: ['chip', 'face'], name: ['word', 'name'], stats: ['count', 'stats'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the screen's px), from profileCardLayout. */
+export const profileCardForms = (p: ProfileCardProps, ctx: { pt?: number } = {}): ScreenForms => screenForms((f) => profileCardLayout(p, f, ctx), PROFILE_CARD_FORMS, { pt: ctx.pt });

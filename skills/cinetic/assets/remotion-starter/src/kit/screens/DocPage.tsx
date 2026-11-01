@@ -11,6 +11,7 @@ import { clamp, E, prog } from '../../lib/anim';
 import { mixColor } from '../../lib/color';
 import { f60x } from '../../lib/film';
 import { fbox, type Focus, focusAttr, Panel, Picture, SCREEN, type ScreenBase, type ScreenLayout, textTag, textW, tx, useScreen, wrapText } from './base';
+import { type FormMap, type ScreenForms, screenForms } from './forms';
 
 export type DocTable = { head: string[]; rows: string[][]; numbered?: boolean };
 
@@ -193,3 +194,10 @@ export const DocPage: React.FC<DocPageProps> = (p) => {
     </div>
   );
 };
+
+// ------------------------------------------------------------------------------------------------ forms
+
+/** The spine forms a DocPage draws (kit/screens/forms.ts), part -> [form, focus box]: the page, its headline, a figure as a photo, a big number as a count, a table as a list, the lead line. */
+export const DOC_PAGE_FORMS = { page: ['page', 'page'], headline: ['word', 'title'], figure: ['photo', 'figure'], number: ['count', 'number'], table: ['list', 'table'], lead: ['word', 'lead'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the screen's px), from docPageLayout. */
+export const docPageForms = (p: DocPageProps, ctx: { pt?: number } = {}): ScreenForms => screenForms((f) => docPageLayout(p, f, ctx), DOC_PAGE_FORMS, { pt: ctx.pt });

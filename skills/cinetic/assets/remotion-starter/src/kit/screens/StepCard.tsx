@@ -13,6 +13,7 @@ import { f60x } from '../../lib/film';
 import type { IconName } from '../icons';
 import type { LogoRef } from '../logos';
 import { fbox, type Focus, focusAttr, Mark, Panel, Picture, SCREEN, type ScreenBase, type ScreenLayout, smallShadow, Spinner, StepMark, textTag, textW, tx, useScreen, wrapText } from './base';
+import { type FormMap, type ScreenForms, screenForms } from './forms';
 
 export type Step = { label: string; /** the frame it is done */ at?: number; meta?: string };
 
@@ -154,3 +155,15 @@ export const ProgressPill: React.FC<ProgressPillProps> = (p) => {
     </div>
   );
 };
+
+// ------------------------------------------------------------------------------------------------ forms
+
+/** The spine forms a StepCard draws (kit/screens/forms.ts), part -> [form, focus box]: the card, its active step row (a notice), its thumbnail as a chip, its title. */
+export const STEP_CARD_FORMS = { card: ['card', 'card'], row: ['notice', 'active'], chip: ['chip', 'thumb'], title: ['word', 'title'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the screen's px), from stepCardLayout. */
+export const stepCardForms = (p: StepCardProps, ctx: { pt?: number; fps?: number } = {}): ScreenForms => screenForms((f) => stepCardLayout(p, f, ctx), STEP_CARD_FORMS, { pt: ctx.pt });
+
+/** The forms a ProgressPill draws: the pill. */
+export const PROGRESS_PILL_FORMS = { pill: ['pill', 'pill'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the pill's px), from progressPillLayout. */
+export const progressPillForms = (p: ProgressPillProps, ctx: { pt?: number } = {}): ScreenForms => screenForms((f) => progressPillLayout(p, f, ctx), PROGRESS_PILL_FORMS, { pt: ctx.pt });

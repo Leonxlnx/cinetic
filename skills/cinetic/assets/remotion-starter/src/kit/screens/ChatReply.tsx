@@ -12,6 +12,7 @@ import { f60x } from '../../lib/film';
 import type { IconName } from '../icons';
 import type { LogoRef } from '../logos';
 import { Face, fbox, type Focus, focusAttr, Icon, Mark, Panel, SCREEN, type ScreenBase, type ScreenLayout, smallShadow, textTag, textW, tx, useScreen, wrapText } from './base';
+import { type FormMap, type ScreenForms, screenForms } from './forms';
 
 export type ChatItem = { text: string; glyph?: IconName; logo?: LogoRef };
 
@@ -149,3 +150,10 @@ export const ChatReply: React.FC<ChatReplyProps> = (p) => {
     </div>
   );
 };
+
+// ------------------------------------------------------------------------------------------------ forms
+
+/** The spine forms a ChatReply draws (kit/screens/forms.ts), part -> [form, focus box]: the thread, the request bubble as a pill, the answer card, who answers as a chip. */
+export const CHAT_REPLY_FORMS = { thread: ['thread', 'thread'], ask: ['pill', 'ask'], card: ['card', 'card'], who: ['chip', 'who'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the screen's px), from chatReplyLayout. */
+export const chatReplyForms = (p: ChatReplyProps, ctx: { pt?: number } = {}): ScreenForms => screenForms((f) => chatReplyLayout(p, f, ctx), CHAT_REPLY_FORMS, { pt: ctx.pt });

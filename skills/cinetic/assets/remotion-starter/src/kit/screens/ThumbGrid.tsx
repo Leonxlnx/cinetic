@@ -11,6 +11,7 @@ import { clamp, E, prog } from '../../lib/anim';
 import { mixColor, oklch as fromLch, toOklch } from '../../lib/color';
 import { f60x } from '../../lib/film';
 import { fbox, type Focus, focusAttr, Icon, Panel, Picture, SCREEN, type ScreenBase, type ScreenLayout, StepMark, textTag, tx, useFace, useScreen, wrapText } from './base';
+import { type FormMap, type ScreenForms, screenForms } from './forms';
 
 export type Thumb = {
   src?: string;
@@ -178,4 +179,14 @@ export const ThumbGrid: React.FC<ThumbGridProps> = (p) => {
       )}
     </div>
   );
+};
+
+// ------------------------------------------------------------------------------------------------ forms
+
+/** The spine forms a ThumbGrid draws (kit/screens/forms.ts), part -> [form, focus box]: the grid as a list, the picked thumbnail as a photo, its cell as a card, its title. */
+export const THUMB_GRID_FORMS = { grid: ['list', 'grid'], thumb: ['photo', 'thumb0'], cell: ['card', 'cell0'], title: ['word', 'title0'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the screen's px), from thumbGridLayout; row, card or cell: the picked cell (pick.index), else the first. */
+export const thumbGridForms = (p: ThumbGridProps, ctx: { pt?: number } = {}): ScreenForms => {
+  const i = p.pick?.index ?? 0;
+  return screenForms((f) => thumbGridLayout(p, f, ctx), { ...THUMB_GRID_FORMS, ...({ thumb: ['photo', `thumb${i}`], cell: ['card', `cell${i}`], title: ['word', `title${i}`] } as const) }, { pt: ctx.pt });
 };

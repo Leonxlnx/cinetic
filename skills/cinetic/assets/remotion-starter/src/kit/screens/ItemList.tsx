@@ -13,6 +13,7 @@ import { f60x } from '../../lib/film';
 import type { IconName } from '../icons';
 import type { LogoRef } from '../logos';
 import { Face, fbox, type Focus, focusAttr, Mark, fmtMoney, Panel, Picture, SCREEN, type ScreenBase, type ScreenLayout, textTag, tx, useScreen } from './base';
+import { type FormMap, type ScreenForms, screenForms } from './forms';
 
 export type Item = { title: string; sub?: string; thumb?: string; photo?: string; person?: string; logo?: LogoRef; glyph?: IconName; value?: string; tag?: string };
 
@@ -125,4 +126,14 @@ export const ItemList: React.FC<ItemListProps> = (p) => {
       </Panel>
     </div>
   );
+};
+
+// ------------------------------------------------------------------------------------------------ forms
+
+/** The spine forms an ItemList draws (kit/screens/forms.ts), part -> [form, focus box]: the list, the picked row as a notice, its value as a count, the header. */
+export const ITEM_LIST_FORMS = { list: ['list', 'list'], row: ['notice', 'row0'], value: ['count', 'value0'], header: ['word', 'header'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the screen's px), from itemListLayout; row, card or cell: the picked row (pick.index), else the first. */
+export const itemListForms = (p: ItemListProps, ctx: { pt?: number } = {}): ScreenForms => {
+  const i = p.pick?.index ?? 0;
+  return screenForms((f) => itemListLayout(p, f, ctx), { ...ITEM_LIST_FORMS, ...({ row: ['notice', `row${i}`], value: ['count', `value${i}`] } as const) }, { pt: ctx.pt });
 };

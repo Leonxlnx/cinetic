@@ -13,6 +13,7 @@ import { E, fd, mix, prog } from '../../lib/anim';
 import { mixColor } from '../../lib/color';
 import { f60x } from '../../lib/film';
 import { compact, Face, fbox, type Focus, focusAttr, Icon, Panel, SCREEN, type ScreenBase, type ScreenLayout, smallShadow, Spinner, textTag, textW, tx, useScreen, wrapText } from './base';
+import { type FormMap, type ScreenForms, screenForms } from './forms';
 
 export type Comment = { name: string; handle?: string; photo?: string; ago: string; text: string; likes?: number; replies?: number };
 
@@ -184,4 +185,14 @@ export const CommentFeed: React.FC<CommentFeedProps> = (p) => {
       )}
     </div>
   );
+};
+
+// ------------------------------------------------------------------------------------------------ forms
+
+/** The spine forms a CommentFeed draws (kit/screens/forms.ts), part -> [form, focus box]: the feed as a list, the highlighted comment as a notice and its words, the header as a pill. */
+export const COMMENT_FEED_FORMS = { feed: ['list', 'feed'], row: ['notice', 'row0'], text: ['word', 'text0'], header: ['pill', 'header'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the screen's px), from commentFeedLayout; row, card or cell: the highlighted comment (highlight), else the first. */
+export const commentFeedForms = (p: CommentFeedProps, ctx: { pt?: number; fps?: number } = {}): ScreenForms => {
+  const i = typeof p.highlight === 'number' ? p.highlight : (p.highlight?.[p.highlight.length - 1]?.index ?? 0);
+  return screenForms((f) => commentFeedLayout(p, f, ctx), { ...COMMENT_FEED_FORMS, ...({ row: ['notice', `row${i}`], text: ['word', `text${i}`] } as const) }, { pt: ctx.pt, probe: Array.isArray(p.highlight) ? (p.highlight[p.highlight.length - 1]?.at ?? 0) : 0 });
 };

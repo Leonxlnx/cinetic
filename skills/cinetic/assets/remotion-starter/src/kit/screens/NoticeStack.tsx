@@ -12,6 +12,7 @@ import { f60x } from '../../lib/film';
 import type { IconName } from '../icons';
 import type { LogoRef } from '../logos';
 import { Face, fbox, type Focus, focusAttr, Mark, Panel, SCREEN, type ScreenBase, type ScreenLayout, textTag, textW, tx, unionBox, useScreen, wrapText } from './base';
+import { type FormMap, type ScreenForms, screenForms } from './forms';
 
 /**
  * One notification. `own`: the product's own notification ("12 sign-ups this hour", "Reply drafted"), drawn with the
@@ -125,3 +126,10 @@ const OwnTile: React.FC<{ skin: ReturnType<typeof useScreen>['skin']; size: numb
 
 /** The width a notice's title and age need (to size a stack to its longest line). */
 export const noticeWidth = (items: NoticeItem[], pt: number) => Math.max(...items.map((n) => textW(n.title, T.title * pt, 620) + textW(n.ago, T.ago * pt, 450) + (14 + T.icon + 14 + 16 + 24) * pt));
+
+// ------------------------------------------------------------------------------------------------ forms
+
+/** The spine forms a NoticeStack draws (kit/screens/forms.ts), part -> [form, focus box]: the front notice, the stack as a list, the front notice's mark and words. */
+export const NOTICE_STACK_FORMS = { notice: ['notice', 'front'], stack: ['list', 'stack'], text: ['word', 'frontText'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the screen's px), from noticeStackLayout. */
+export const noticeStackForms = (p: NoticeStackProps, ctx: { pt?: number; fps?: number } = {}): ScreenForms => screenForms((f) => noticeStackLayout(p, f, ctx), NOTICE_STACK_FORMS, { pt: ctx.pt });

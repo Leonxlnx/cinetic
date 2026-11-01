@@ -13,6 +13,7 @@ import { mixColor, oklch as fromLch, toOklch } from '../../lib/color';
 import { f60x } from '../../lib/film';
 import { fbox, type Focus, focusAttr, Picture, SCREEN, type ScreenBase, type ScreenLayout, textTag, tx, unionBox, useFace, useScreen } from './base';
 import { THUMB_FACE } from './ThumbGrid';
+import { type FormMap, type ScreenForms, screenForms } from './forms';
 
 export type Cover = {
   title: string;
@@ -169,3 +170,10 @@ export const CoverStack: React.FC<CoverStackProps> = (p) => {
     </div>
   );
 };
+
+// ------------------------------------------------------------------------------------------------ forms
+
+/** The spine forms a CoverStack draws (kit/screens/forms.ts), part -> [form, focus box]: the front cover as a card, the stack as a list, the cover's photo and title. */
+export const COVER_STACK_FORMS = { cover: ['card', 'cover'], stack: ['list', 'stack'], photo: ['photo', 'photo'], title: ['word', 'title'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the screen's px), from coverStackLayout. */
+export const coverStackForms = (p: CoverStackProps, ctx: { pt?: number } = {}): ScreenForms => screenForms((f) => coverStackLayout(p, f, ctx), COVER_STACK_FORMS, { pt: ctx.pt });

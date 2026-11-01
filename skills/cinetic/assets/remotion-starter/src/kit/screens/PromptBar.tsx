@@ -14,6 +14,7 @@ import { f60x } from '../../lib/film';
 import type { IconName } from '../icons';
 import { Caret, caretOn, fbox, type Focus, focusAttr, Icon, Panel, Picture, SCREEN, type ScreenBase, type ScreenLayout, smallShadow, textTag, textW, tx, useScreen } from './base';
 import { typedAt, wordInk, wordsOf } from './typing';
+import { type FormMap, type ScreenForms, screenForms } from './forms';
 
 export type PromptAttach = { name: string; meta?: string; src?: string; kind?: 'pdf' | 'doc' | 'image' | 'sheet' | 'code' | 'audio' | 'video' | 'file' };
 
@@ -197,3 +198,10 @@ export const PromptBar: React.FC<PromptBarProps> = (p) => {
     </div>
   );
 };
+
+// ------------------------------------------------------------------------------------------------ forms
+
+/** The spine forms a PromptBar draws (kit/screens/forms.ts), part -> [form, focus box]: the input as a pill, its send button, the caret and the newest word, the plus button, a model or file chip. */
+export const PROMPT_BAR_FORMS = { pill: ['pill', 'bar'], send: ['button', 'send'], caret: ['word', 'caret'], word: ['word', 'word'], plus: ['button', 'plus'], model: ['chip', 'model'], attach: ['chip', 'attach'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the screen's px), from promptBarLayout. */
+export const promptBarForms = (p: PromptBarProps, ctx: { pt?: number; fps?: number } = {}): ScreenForms => screenForms((f) => promptBarLayout(p, f, ctx), PROMPT_BAR_FORMS, { pt: ctx.pt });

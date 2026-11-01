@@ -11,6 +11,7 @@ import { E, fd, prog } from '../../lib/anim';
 import { mixColor } from '../../lib/color';
 import { f60x } from '../../lib/film';
 import { Face, fbox, type Focus, focusAttr, Icon, SCREEN, type ScreenBase, type ScreenLayout, smallShadow, textTag, textW, tx, useScreen } from './base';
+import { type FormMap, type ScreenForms, screenForms } from './forms';
 
 export type RequestPillProps = ScreenBase & {
   /** the words people used, short (2-6 words) */
@@ -119,3 +120,10 @@ export const RequestPill: React.FC<RequestPillProps> = (p) => {
     </div>
   );
 };
+
+// ------------------------------------------------------------------------------------------------ forms
+
+/** The spine forms a RequestPill draws (kit/screens/forms.ts), part -> [form, focus box]: the request as a pill, its faces as a chip, its words, a badge, its label. */
+export const REQUEST_PILL_FORMS = { pill: ['pill', 'pill'], faces: ['chip', 'faces'], text: ['word', 'text'], badge: ['chip', 'badge'], label: ['word', 'label'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the screen's px), from requestPillLayout. */
+export const requestPillForms = (p: RequestPillProps, ctx: { pt?: number } = {}): ScreenForms => screenForms((f) => requestPillLayout(p, f, ctx), REQUEST_PILL_FORMS, { pt: ctx.pt });

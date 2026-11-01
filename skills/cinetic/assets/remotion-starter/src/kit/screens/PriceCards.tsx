@@ -11,6 +11,7 @@ import { E, prog } from '../../lib/anim';
 import { mixColor } from '../../lib/color';
 import { f60x } from '../../lib/film';
 import { fbox, type Focus, focusAttr, Icon, fmtMoney, Panel, SCREEN, type ScreenBase, type ScreenLayout, smallShadow, textTag, textW, tx, useScreen, wrapText } from './base';
+import { type FormMap, type ScreenForms, screenForms } from './forms';
 
 export type Plan = { name: string; price: number | string; period?: string; note?: string; features: string[]; cta?: string; featured?: boolean; badge?: string };
 
@@ -112,4 +113,14 @@ export const PriceCards: React.FC<PriceCardsProps> = (p) => {
       })}
     </div>
   );
+};
+
+// ------------------------------------------------------------------------------------------------ forms
+
+/** The spine forms a PriceCards draws (kit/screens/forms.ts), part -> [form, focus box]: the row of plans as a list, the picked plan as a card, its button and its price as a count. */
+export const PRICE_CARDS_FORMS = { row: ['list', 'row'], card: ['card', 'card0'], cta: ['button', 'cta0'], price: ['count', 'price0'] } as const satisfies FormMap;
+/** Its parts as forms with their box on any frame (the screen's px), from priceCardsLayout; row, card or cell: the picked plan (pick.index), else the first. */
+export const priceCardsForms = (p: PriceCardsProps, ctx: { pt?: number } = {}): ScreenForms => {
+  const i = p.pick?.index ?? 0;
+  return screenForms((f) => priceCardsLayout(p, f, ctx), { ...PRICE_CARDS_FORMS, ...({ card: ['card', `card${i}`], cta: ['button', `cta${i}`], price: ['count', `price${i}`] } as const) }, { pt: ctx.pt });
 };
