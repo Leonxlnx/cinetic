@@ -22,8 +22,8 @@
  *   8. Colour in OKLCH: endpoints exact, a grey takes the other colour's hue (no detour through another hue), alpha
  *      straight; cutCurve is fastest on the cut with the speed matched across it.
  *   9. Declares and the cue export: handoverDeclares gives one seam with the element's box on every frame; through
- *      scripts/export-cues.ts the seam (and the spine's seams) reach out/cues.json with their kinds and ids; the box
- *      track is checked there when export-cues keeps it.
+ *      scripts/export-cues.ts the seam (and the spine's seams) reach out/cues.json with their kinds, ids and the element's
+ *      box track, and the SPINE_PLAN reaches it as `spine`.
  *
  * It runs src through the starter's own tsx (npm install in assets/remotion-starter first).
  * Usage (from the skill root):  node scripts/test/handover.test.mjs [--verbose]
@@ -333,8 +333,10 @@ if (cues?.declared) {
   const fx = (cues.declared.fx ?? []).find((d) => d.id === 'handover-grow');
   const s = fx?.seams?.[0];
   result(!!s && s.at === 100 && s.kind === 'morph' && s.carry === 'shape' && s.id === 'handover:H1-grow:request', 'cues.json carries a handover\'s seam (kind, carry, the handover in its id)', JSON.stringify(s));
-  if (s && Array.isArray(s.track)) result(s.track.length === O.grow.t1 - O.grow.t0 + 1, `cues.json carries the element's box track (${s.track.length} frames)`);
-  else console.log('note  export-cues keeps the seam fields only: the box track waits on export-cues keeping handover / element / forms / span / track (requested in the round notes)');
+  const tr = s?.track ?? [];
+  result(tr.length === O.grow.t1 - O.grow.t0 + 1 && JSON.stringify(tr) === JSON.stringify(O.grow.decl.seams[0].track) && s.handover === 'grow' && s.element === 'request' && s.forms.join('>') === 'pill>page' && s.span.join() === [O.grow.t0, O.grow.t1].join() && s.swap === 100, `cues.json carries the element's box track (${tr.length} frames) with the handover, the element, the forms, the span and the swap`);
+  const sp = cues.spine;
+  result(!!sp && sp.v === 1 && sp.element === 'request' && sp.changes.length === top.length && top.every((x) => x.handover && x.forms?.length === 2 && x.span?.length === 2), 'cues.json carries the SPINE_PLAN as spine, and each spine seam its handover, forms and span');
 }
 
 console.log(failed ? `\n${failed} test(s) failed` : '\nall handover tests passed');

@@ -10,7 +10,7 @@
  *                                  [--out out/cues.json] [--allow-unknown] [--quiet]
  *
  * Output schema:
- *   { fps, bpm, total, pace?, acts: {name: {from, dur}}, cue: {name: frame},
+ *   { fps, bpm, total, width?, height?, pace?, acts: {name: {from, dur}}, cue: {name: frame},
  *     copy: [{ id, text, in, resolved, out, words, kind, chain?, mode?, read: [[from, to], ...] }],
  *     events: [{ f, kind, weight, pan, pitch?, apexFrac?, dur?, variant?, action?, id?,
  *                structural?, force?, offset_ms?, salience? }],
@@ -18,6 +18,7 @@
  *     declared?: { seams, stepped, flashes, cameraBlur, colour, shots, stages, end, reveal, springClass, structural,
  *                  fx: [{ id, seams, stepped, flashes, cameraBlur, colour, shots, stages }] },
  *     salience?: { cueName: 'copy' | 'hit' | 'cut' | 'move' | 'life' },
+ *     spine?:    the timeline's SPINE_PLAN (lib/spine.ts planSpine), as plain data,
  *     music?:    { bpm, beatS, fps, t0, bars, phraseLen?, downbeats, accents, phrases?, sections?,
  *                  entries, breaks?, stops, end } }
  * f is the absolute frame the sound belongs on (fractional allowed), weight 0..2 (1 = normal),
@@ -119,7 +120,9 @@ type Range = { from: number; to: number; id: string };
 type Decl = {
   // v / ratio: a velocity seam's speed in the code (px per frame at 1080p on the cut frame, carriedCut's vCut) and the
   // incoming first step over it (house 0.7); forensics.py carried-cut prints them beside the speed it reads in pixels
-  seams: { at: number; kind: string; carry?: string; dir?: number; signature?: boolean; id?: string; v?: number; ratio?: number }[];
+  // handover, hid, element, forms, span, swap, boundary, act, track: a spine or handover seam (lib/spine spineDeclares, lib/handover
+  // handoverDeclares): which handover carries the change and the element's box [f, x, y, w, h] (composition px) on every frame
+  seams: { at: number; kind: string; carry?: string; dir?: number; signature?: boolean; id?: string; v?: number; ratio?: number; handover?: string; hid?: string; element?: string; forms?: string[]; span?: number[]; swap?: number; boundary?: boolean; act?: number; track?: number[][] }[];
   stepped: (Range & { fps?: number; on?: number })[];
   flashes: { f: number; frames: number; id: string }[];
   cameraBlur: Range[];
@@ -152,6 +155,18 @@ const normDecl = (src: Record<string, unknown>, where: string, errors: string[],
       if (s[k] === undefined) continue;
       if (typeof s[k] !== 'number' || !Number.isFinite(s[k]) || (s[k] as number) <= 0) errors.push(`${at}: ${k} must be a positive number (px per frame at 1080p for v)`);
       else o[k] = s[k] as number;
+    }
+    if (typeof s.handover === 'string') o.handover = s.handover;
+    if (typeof s.hid === 'string') o.hid = s.hid;
+    if (typeof s.element === 'string') o.element = s.element;
+    if (Array.isArray(s.forms) && s.forms.length === 2) o.forms = (s.forms as unknown[]).map(String);
+    if (Array.isArray(s.span) && s.span.length === 2 && (s.span as unknown[]).every(isFrame)) o.span = s.span as number[];
+    if (isFrame(s.swap)) o.swap = s.swap;
+    if (typeof s.boundary === 'boolean') o.boundary = s.boundary;
+    if (isFrame(s.act)) o.act = s.act;
+    if (s.track !== undefined) {
+      if (Array.isArray(s.track) && (s.track as unknown[]).every((x) => Array.isArray(x) && x.length === 5 && x.every(isFrame))) o.track = s.track as number[][];
+      else errors.push(`${at}: track must be [[f, x, y, w, h], ...]`);
     }
     return [o];
   });
@@ -213,7 +228,7 @@ async function main() {
   const tl = await load(tlPath);
   const T = tl.default && tl.FPS === undefined ? tl.default : tl;
   const { FPS, BPM, TOTAL, ACT, CUE, COPY, PACE_NAME, PACE, READ } = T;
-  const { LOOK, SEAMS, STEPPED, FLASHES, CAMERA_BLUR, COLOUR, SHOTS, STAGES, END, REVEAL, SPRING_CLASS, STRUCTURAL, SALIENCE, MUSIC } = T;
+  const { LOOK, SEAMS, STEPPED, FLASHES, CAMERA_BLUR, COLOUR, SHOTS, STAGES, END, REVEAL, SPRING_CLASS, STRUCTURAL, SALIENCE, MUSIC, SPINE_PLAN, W, H } = T;
   for (const [k, v] of Object.entries({ FPS, BPM, TOTAL })) {
     if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) fail(`${tlPath} must export a positive number ${k}`);
   }
@@ -378,7 +393,13 @@ async function main() {
   }
   if (derr.length) fail(`${derr.length} invalid declaration(s):\n  ${derr.join('\n  ')}`);
 
-  const doc = { fps: FPS, bpm: BPM, total: TOTAL, ...(typeof PACE_NAME === 'string' ? { pace: PACE_NAME } : {}), acts, cue, copy: copyOut, events: sorted, ...extra };
+  // the spine (lib/spine planSpine: plain data) and the composition size the box tracks are written in
+  if (SPINE_PLAN !== undefined && SPINE_PLAN !== null) {
+    if (typeof SPINE_PLAN !== 'object' || !Array.isArray((SPINE_PLAN as { changes?: unknown }).changes)) fail('SPINE_PLAN must be a planSpine() plan (lib/spine.ts)');
+    extra.spine = JSON.parse(JSON.stringify(SPINE_PLAN));
+  }
+  const size = typeof W === 'number' && typeof H === 'number' && W > 0 && H > 0 ? { width: W, height: H } : {};
+  const doc = { fps: FPS, bpm: BPM, total: TOTAL, ...size, ...(typeof PACE_NAME === 'string' ? { pace: PACE_NAME } : {}), acts, cue, copy: copyOut, events: sorted, ...extra };
   mkdirSync(dirname(resolve(outPath)), { recursive: true });
   writeFileSync(outPath, JSON.stringify(doc, null, 1) + '\n');
 
