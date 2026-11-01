@@ -347,6 +347,13 @@ export const wordmarkStyle = (pairId: PairId, px: number, family: TypeFamilyName
 const OVERHANG = /[TVWYFPLAfrjyvwk7'"’‘“”.,]/;
 /** The smallest clear gap (em) between the ink of two neighbouring letters in a wordmark or a figure run. */
 export const MIN_INK_GAP = 0.012;
+/**
+ * An r before a letter that starts on a stem (n, m, r, u, i, l, h, b, k, p): the arm of the r reaching for the stem reads
+ * as one letter ("rn" as "m": "Cairnly" seen as "Caimly"), so that pair keeps a wider clear gap (em). The r's overhang
+ * is tucked in by kerning before round letters (ro, re, ra) and stays out of the touch test there.
+ */
+export const RN_GAP = 0.04;
+const rStem = (pair: string) => /^r[nmruilhbkp]$/.test(pair);
 
 /**
  * The ink gaps (em) between neighbouring letters of `text` set at `px` in `font` (a CSS font shorthand without the
@@ -366,7 +373,7 @@ export const inkGaps = (text: string, font: string, px: number, trackEm = 0): { 
   for (let i = 0; i < chars.length - 1; i++) {
     const a = chars[i];
     const b = chars[i + 1];
-    if (/\s/.test(a) || /\s/.test(b) || OVERHANG.test(a) || OVERHANG.test(b)) continue;
+    if (/\s/.test(a) || /\s/.test(b) || ((OVERHANG.test(a) || OVERHANG.test(b)) && !rStem(a + b))) continue;
     const adv = ctx.measureText(a + b).width - ctx.measureText(b).width; // a's kerned advance
     const gap = adv + trackEm * px - ctx.measureText(a).actualBoundingBoxRight - ctx.measureText(b).actualBoundingBoxLeft;
     out.push({ pair: a + b, gap: Math.round((gap / px) * 10000) / 10000 });
@@ -382,6 +389,7 @@ export const inkGaps = (text: string, font: string, px: number, trackEm = 0): { 
 export const safeTrack = (text: string, font: string, px: number, trackEm: number, minGap = MIN_INK_GAP) => {
   const g = inkGaps(text, font, px, trackEm);
   if (!g || !g.length) return trackEm;
-  const worst = Math.min(...g.map((x) => x.gap));
-  return worst >= minGap ? trackEm : Math.round((trackEm + (minGap - worst)) * 10000) / 10000;
+  // the most any pair falls short of its clear gap (an r before a stem needs RN_GAP)
+  const short = Math.max(...g.map((x) => (rStem(x.pair) ? Math.max(minGap, RN_GAP) : minGap) - x.gap));
+  return short <= 0 ? trackEm : Math.round((trackEm + short) * 10000) / 10000;
 };

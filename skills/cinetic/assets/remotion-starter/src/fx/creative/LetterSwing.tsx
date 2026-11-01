@@ -12,12 +12,12 @@ import { buildFrames, keyIndex, recentre, type RowFont, rowOf, widthIn, wordIn, 
 
 /** House numbers (f@60): the stagger between letters, the swing's start angle (deg), the pivot's depth under the
  * baseline (share of the size), the time the swing takes to settle, the first crossing, the damping. */
-export const SWING = { stagger: 3, from: 64, pivot: 0.95, settle: 32, cross: 11, zeta: 0.5, fade: 7 } as const;
+export const SWING = { stagger: 3, from: 64, between: 34, pivot: 0.95, settle: 32, cross: 11, zeta: 0.5, fade: 7 } as const;
 
 export const RECIPE: Recipe = {
   id: 'letter-swing',
   recipe:
-    'The key word\'s letters swing into place on an arc: the line builds word by word (20 f fades, 6 f apart, re-centring) with the key word\'s slot held open; as the last word lands its letters swing up 3 f apart from 64 deg below and to one side (the film\'s seed picks which), each turning about a pivot 0.95 of the size under its own baseline, crossing upright at 11 f, one small overshoot (damped, zeta 0.5) and at exactly zero by 32 f, inking in the accent over 7 f. Held still once landed.',
+    'The key word\'s letters swing into place on an arc: the line builds word by word (20 f fades, 6 f apart, re-centring) with the key word\'s slot held open; as the last word lands its letters swing up 3 f apart from 64 deg below and to the side away from the words beside it (the last word from the right, the first from the left, a word between them from 34 deg), each turning about a pivot 0.95 of the size under its own baseline, crossing upright at 11 f, one small overshoot (damped, zeta 0.5) and at exactly zero by 32 f, inking in the accent over 7 f. Held still once landed.',
   params: { ...SWING },
 };
 
@@ -45,7 +45,13 @@ export const LetterSwing: React.FC<LineProps> = ({ f, words, id, size, weight, t
   const off = recentre(f, row.xs, row.ws, row.space, k);
   const yc = cy ?? H / 2;
   const y = yc - size * 0.53;
-  const side = hash01(seed, 23) < 0.5 ? 1 : -1;
+  // the letters swing up from the side away from the words beside them: the last word from the right, the first from
+  // the left, a word between them on a shorter arc (a letter swinging in from the side of the word before it crosses
+  // that word: "launchp a g e")
+  const last = ki === words.length - 1;
+  const first = ki === 0 && words.length > 1;
+  const side = last ? 1 : first ? -1 : hash01(seed, 23) < 0.5 ? 1 : -1;
+  const from = last || first ? SWING.from : SWING.between;
   const key = words[ki].word;
   const letters = [...key]; // lint-ok: the swinging word
   const t0 = 6 * Math.max(0, words.length - 1) * k;
@@ -64,7 +70,7 @@ export const LetterSwing: React.FC<LineProps> = ({ f, words, id, size, weight, t
           const adv = widthIn(letters.slice(0, j + 1).join(''), F) - widthIn(letters.slice(0, j).join(''), F);
           lx += adv;
           const tl = (f - t0 - j * SWING.stagger * k) / k;
-          const deg = side * swingAngle(tl);
+          const deg = side * swingAngle(tl, from);
           const op = E.snapOut(clamp(tl / SWING.fade));
           if (op <= 0) return null;
           return (
