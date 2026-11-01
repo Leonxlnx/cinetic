@@ -27,6 +27,8 @@
      kit's sample people is a warning; the film's own strings pass. A UI title cut with "..." or "…" and a status line
      that stops mid-phrase are warnings in dev and errors with --final (or CINETIC_GATE=ship); in OCR a line cut in one
      still only stays a warning; a whole line passes.
+  9. The case: with the spine in the cues, the request on screen in one act only fails and its name and number in a
+     later act pass; without the spine, the brief's typed request (`prompt:`) in one act's COPY strings only warns.
 
 Usage (from the skill root):  python3 scripts/test/copy-check.test.py [--verbose]
 Exit codes: 0 all pass, 1 a test failed.
@@ -393,6 +395,29 @@ open(os.path.join(stills, 'half.png'), 'wb').write(png(960, 540))
 open(os.path.join(stills, 'full.png'), 'wb').write(png(1920, 1080))
 small = _cc.ocr_small(stills)
 result(small == [('half.png', 960)] and _cc.ocr_small(os.path.join(stills, 'full.png')) == [], '--ocr: a still under 1600 px wide is named (a screen\'s small strings are unreadable there: ocr-small warns), a full-size one is not', str(small))
+
+# case: one request from the input to the result. With the spine in the cues, the case in one act only fails and in two
+# acts passes; without it, the brief's typed request against COPY's strings per act warns
+spine_lines = [
+    {'id': 'line1', 'text': 'Fernway writes your booking page.', 'in': 0, 'resolved': 30, 'out': 120},
+    {'id': 'line2', 'text': 'It tells you who booked.', 'in': 700, 'resolved': 730, 'out': 820},
+]
+spine_doc = lambda strings: {'fps': 60, 'total': 1200, 'name': 'Fernway', 'acts': {'a': {'from': 0, 'dur': 600}, 'b': {'from': 600, 'dur': 600}},
+                             'copy': spine_lines, 'spine': {'case': {'request': 'A booking page for my Sunday choir rehearsal', 'names': ['Sunday Choir'], 'numbers': ['42']},
+                                                            'acts': [{'from': 0, 'to': 600, 'strings': strings[0]}, {'from': 600, 'to': 1200, 'strings': strings[1]}]}}
+_, once = run(['--stdin'], json.dumps(spine_doc([['A booking page for my Sunday choir rehearsal'], ['Book a seat']])))
+_, twice = run(['--stdin'], json.dumps(spine_doc([['A booking page for my Sunday choir rehearsal'], ['42 booked', 'Sunday Choir']])))
+case_of = lambda rep: [(f['severity'], f['where']) for f in rep.get('findings', []) if f['rule'] == 'case']
+result(case_of(once) == [('error', 'act 1 only')] and case_of(twice) == [],
+       'case: with the spine, the request on screen in one act only fails; its name and number in a later act pass', f'{case_of(once)} / {case_of(twice)}')
+bdir = os.path.join(TMP, 'case-film')
+os.makedirs(os.path.join(bdir, 'out'), exist_ok=True)
+open(os.path.join(bdir, 'BRIEF.md'), 'w', encoding='utf-8').write('# Fernway\n\n```content\nname: Fernway\nprompt: A booking page for my Sunday choir rehearsal\n```\n')
+plain = {k: v for k, v in spine_doc([[], []]).items() if k != 'spine'}
+plain['copy'] = spine_lines + [{'id': 'ui1.1', 'text': 'A booking page for my Sunday choir rehearsal', 'kind': 'ui', 'in': 200, 'resolved': 210, 'out': 500}]
+json.dump(plain, open(os.path.join(bdir, 'out', 'cues.json'), 'w', encoding='utf-8'))
+_, nospine = run([os.path.join(bdir, 'out', 'cues.json')])
+result(case_of(nospine) == [('warn', 'act 1 only')], 'case: without the spine, the brief\'s typed request in one act\'s strings only warns', str(case_of(nospine)))
 
 print(f'copy-check tests: {failed} failed' if failed else 'copy-check tests: all pass')
 sys.exit(1 if failed else 0)

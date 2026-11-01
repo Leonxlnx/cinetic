@@ -23,6 +23,9 @@
  *                sampleWorld() and any sample() call in the film's source (kit-sample), through a named or a namespace
  *                import (import * as K from '../kit': K.sample(), <K.ProjectPanel>), and the parts that reported
  *                kit-empty (or a sample() call, kit-sample) while the modules loaded
+ *   case         with a SPINE_PLAN, every string an act lists as what it shows (its `strings`) is the film's own on-screen word:
+ *                a string of a content module or a COPY entry. A word of the case (the request, its names, its numbers) that
+ *                no scene carries is an error (case); any other listed string, a warning (case-strings)
  *   cast         a person's name set beside CONTENT.people[k].photo is that person's first name in src/content.ts (an error:
  *                "Mei" on Arjun's face), a role ("You") excepted; one face standing for two named people warns
  *   4. fit       every on-screen string measured with the film's own font (its woff2's advance widths, tracking and
@@ -398,6 +401,8 @@ for (const m of mods as any[]) {
     if (m.rel === 'src/timeline.ts') {
       out.copy = (ns.COPY ?? []).map((c: any) => ({ id: c.id, text: c.text, kind: c.kind ?? 'copy' }));
       out.size = { w: ns.W, h: ns.H };
+      const sp: any = ns.SPINE_PLAN;
+      if (sp && typeof sp === 'object') out.spine = { case: sp.case ?? null, acts: (Array.isArray(sp.acts) ? sp.acts : []).map((a: any, i: number) => ({ i, verb: String(a?.verb ?? ''), strings: Array.isArray(a?.strings) ? a.strings.map(String) : Array.isArray(a?.ui) ? a.ui.map(String) : [] })) };
     }
   } catch (e: any) {
     out.imports.push({ file: m.rel, ok: false, ms: Date.now() - t, error: String(e?.message ?? e).split('\\n').slice(0, 3).join(' | ') });
@@ -782,6 +787,25 @@ if (!flag('--no-fit') && probe) {
       if (w > safeW * 1.06) add('fit', 'error', `"${s.text.slice(0, 60)}" is ${Math.round(w)} px at the kit's label size (${Math.round(r.size * u)} px): wider than the safe width (${Math.round(safeW)} px)`, s.where);
       else if (w > safeW * 0.5) add('fit-long', 'warn', `"${s.text.slice(0, 60)}" is ${Math.round(w)} px at the kit's label size: wider than a card's text column (${Math.round(safeW * 0.5)} px); a kit part cuts it with "..." or wraps it: shorten it`, s.where);
     }
+  }
+}
+
+// ------------------------------------------------------------------------------------------------ 5. the case
+// The spine's one case runs from the request to the result: the words each act of SPINE_PLAN lists as what it shows (its
+// strings) are the film's own on-screen words, a string of its content modules or a COPY entry. A word of the case (its
+// request, names, numbers) that no scene carries is an error; any other listed string no scene carries warns.
+if (probe?.spine) {
+  const norm = (x) => String(x).toLowerCase().replace(/[^\p{L}\p{N}$€£%.]+/gu, ' ').trim();
+  const shown = norm([...(probe.strings ?? []).map((x) => x.text), ...(probe.copy ?? []).map((c) => c.text)].join(' | '));
+  const C = probe.spine.case ?? {};
+  const caseWords = new Set([C.request, ...(C.names ?? []), ...(C.numbers ?? [])].filter(Boolean).map(norm));
+  const isCase = (x) => [...caseWords].some((w) => w && (norm(x).includes(w) || w.includes(norm(x))));
+  for (const a of probe.spine.acts ?? []) {
+    const missing = a.strings.filter((x) => norm(x) && !shown.includes(norm(x)));
+    const lost = missing.filter(isCase);
+    const other = missing.filter((x) => !isCase(x));
+    if (lost.length) add('case', 'error', `act ${a.i + 1}${a.verb ? ` (${a.verb})` : ''} lists ${lost.map((x) => `"${x}"`).join(', ')} of the case as what it shows, but no scene or COPY entry carries it: the case's words are the product's own strings, the same in every act (put them in the content the act's scenes draw)`, 'src/timeline.ts SPINE_PLAN');
+    if (other.length) add('case-strings', 'warn', `act ${a.i + 1}${a.verb ? ` (${a.verb})` : ''} lists ${other.map((x) => `"${x}"`).join(', ')} as what it shows, but no scene or COPY entry carries it`, 'src/timeline.ts SPINE_PLAN');
   }
 }
 

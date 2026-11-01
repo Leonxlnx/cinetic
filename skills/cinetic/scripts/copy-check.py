@@ -48,6 +48,10 @@ Checks (error unless marked):
               picture tells it, the line says what the picture cannot, or the pair keeps no line
   quantity    (warning) "every", "each", "all", "always", "automatically": a claim about many or every time, which one
               example on screen never proves: the picture shows three or more at once or the whole lifecycle
+  case        (out/cues.json) one case runs from the request to the result: with the spine (cues `spine`: its case and its
+              acts' strings) the case's request, names or numbers (or two of the request's nouns) on screen in fewer than
+              two acts is an error; without it, the brief's typed request (its content block's `prompt:`) against the
+              strings COPY shows in each act (cues `acts`) is a warning
   scaffold    (out/cues.json) the script is still a template's sample: a content module of the film (src/*.ts: the
               file a template keeps its script and product strings in, the timeline) still carries its
               cinetic:placeholder marker, so its lines are stand-ins (a sample product, a sample domain, a slot), never
@@ -1049,6 +1053,63 @@ def brief_claims(text, brief):
     return list(dict.fromkeys(out))
 
 
+CASE_STOP = {'a', 'an', 'the', 'for', 'my', 'our', 'your', 'to', 'of', 'in', 'on', 'at', 'and', 'with', 'from', 'by', 'is', 'it', 'me',
+             'i', 'we', 'you', 'this', 'that', 'can', 'could', 'please', 'make', 'want', 'new'}
+
+
+def _case_norm(s):
+    return re.sub(r'[^\w$€£%.]+', ' ', str(s).lower()).strip()
+
+
+def brief_request(brief):
+    """The request the brief's content block types (`prompt: ...`): the case a film without a spine follows."""
+    m = re.search(r'^\s*prompt:\s*(.+?)\s*$', brief or '', re.M | re.I)
+    return m.group(1) if m else None
+
+
+def check_case(doc, brief=None):
+    """case: the request made early returns later. With the spine (cues `spine`: its case, its acts and their strings) the
+    case's request, names or numbers (or two of the request's nouns) are on screen in two acts or more, the later one
+    after the first: an error otherwise. Without it, the brief's typed request against the strings COPY puts on screen
+    in each act (cues `acts`): a warning (COPY may not list every string the product shows)."""
+    sp = doc.get('spine') if isinstance(doc.get('spine'), dict) else None
+    case = (sp or {}).get('case') or {}
+    request = str(case.get('request') or '').strip() or (brief_request(brief) if not sp else '')
+    names = [str(x) for x in case.get('names') or [] if str(x).strip()]
+    numbers = [str(x) for x in case.get('numbers') or [] if str(x).strip()]
+    if not request and not names and not numbers:
+        return []
+    fps = doc.get('fps') or 60
+    if sp and isinstance(sp.get('acts'), list) and sp['acts']:
+        acts = [(float(a.get('from', 0)), float(a.get('to', 0)), [str(s) for s in a.get('strings') or []]) for a in sp['acts'] if isinstance(a, dict)]
+    else:
+        acts = sorted(((float(v.get('from', 0)), float(v.get('from', 0)) + float(v.get('dur', 0)), []) for v in (doc.get('acts') or {}).values()
+                       if isinstance(v, dict)), key=lambda x: x[0])
+    if len(acts) < 2:
+        return []
+    copy = [c for c in doc.get('copy') or [] if isinstance(c, dict) and c.get('text')]
+    nouns = list(dict.fromkeys(w for w in _case_norm(request).split() if len(w) >= 3 and w not in CASE_STOP))
+    shows = []
+    for a, b, own in acts:
+        text = _case_norm(' | '.join(own + [c['text'] for c in copy if (c.get('in') or 0) < b and (c.get('out') if c.get('out') is not None else b) > a]))
+        hit = bool(text) and ((request and _case_norm(request) in text) or any(_case_norm(x) in text for x in names + numbers)
+                              or (nouns and sum(1 for w in nouns if re.search(r'(^|\W)' + re.escape(w) + r'(\W|$)', text)) >= min(2, len(nouns))))
+        shows.append(hit)
+    k = [i for i, h in enumerate(shows) if h]
+    if len(k) >= 2:
+        return []
+    where = f'act {k[0] + 1} only' if k else 'no act'
+    what = f'"{request}"' if request else ', '.join(names + numbers)
+    if sp:
+        return [{'rule': 'case', 'severity': 'error', 'line': None, 'text': request, 'where': where,
+                 'message': f'the case {what} is on screen in {where} (of {len(acts)} acts): the request made early is the result shown later. Give the later '
+                            'acts the case\'s own words (the request, its names and numbers) in what the product shows, and list them in each act\'s strings'}]
+    return [{'rule': 'case', 'severity': 'warn', 'line': None, 'text': request, 'where': where,
+             'message': f'the brief\'s request {what} shows in the on-screen strings of {where} (of {len(acts)} acts): one case runs from the request to '
+                        'the result, the same names and numbers in the later acts (declare the strings the product shows as COPY ui entries, '
+                        'or play the template\'s spine)'}]
+
+
 def check(lines, names=(), ui=(), name=None, fmt=None, allow=(), marks=(), brief=None):
     findings = []
     allow = {a.strip().lower() for a in allow if a.strip()}
@@ -1267,7 +1328,7 @@ def main(argv):
             print(f'{f["severity"]:>5}  {f["rule"]}: {f["message"]}')
         print(f'copy-check: {len(errs)} error{"s" * (len(errs) != 1)}, {len(wrn)} warning{"s" * (len(wrn) != 1)}' + ('' if ok else ': write the product\'s real words in its UI'))
         return 0 if ok else 1
-    names, ui, fmt, name, marks = [], [], a['format'], a['name'], []
+    names, ui, fmt, name, marks, doc = [], [], a['format'], a['name'], [], None
     try:
         if a['stdin'] or (a['path'] and a['path'].endswith('.json')):
             doc = json.loads(sys.stdin.read() if a['stdin'] else open(a['path'], encoding='utf-8').read())
@@ -1314,6 +1375,8 @@ def main(argv):
             brief = open(bp, encoding='utf-8').read()
             break
     findings, name, stranger = check(lines, names, ui, name, fmt, allow, marks, brief)
+    if isinstance(doc, dict):
+        findings += check_case(doc, brief)
     if a['path'] and a['path'].endswith('.json') and not a['stdin']:
         for f, ln in scaffold_markers(a['path']):
             findings.append({'rule': 'scaffold', 'severity': 'error', 'line': None, 'text': '', 'where': f'{f}:{ln}',

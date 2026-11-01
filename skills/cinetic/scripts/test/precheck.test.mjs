@@ -18,6 +18,8 @@
  *      imports a stylesheet or a picture still imports (stubbed on a second run).
  *   8. The cast: a person's name beside CONTENT.people[k].photo that is not that person's fails (cast-name), a role
  *      label passes, one face for two named people warns (cast-face).
+ *   9. The case: with a SPINE_PLAN, a word of the case an act lists that no scene or COPY entry carries fails (case), one
+ *      the film shows passes, another unseen listed string warns (case-strings).
  *   7. Frames: the starter renders every act at its first, middle and last frame without an error; a planted runtime
  *      TypeError (a status the film never gave) fails with the act, the frames it throws on and the file:line; a browser
  *      global read while rendering is a warning (frames-env); --no-frames renders nothing.
@@ -129,6 +131,19 @@ export const Act2: React.FC = () => {
   const skipped = run(['--no-frames']);
   result(skipped.code === 0 && skipped.rep.frames === null && !has(skipped.rep, 'frames'), '--no-frames renders no act', JSON.stringify(skipped.rep.frames));
   fs.writeFileSync(ACT2, act2);
+
+  // 9. the case: with a SPINE_PLAN, a word of the case an act lists that no scene or COPY entry carries fails (case); one
+  // the film shows passes; another listed string nobody shows warns (case-strings)
+  const TLS = path.join(film, 'src', 'timeline.ts');
+  const tls = fs.readFileSync(TLS, 'utf8');
+  fs.writeFileSync(TLS, `${tls}\nexport const SPINE_PLAN = { case: { request: 'plinth cuts to music', names: ['Sunday Choir'], numbers: [] }, acts: [
+  { verb: 'cuts', strings: ['plinth cuts'] }, { verb: 'lands', strings: ['Cuts land.', 'Sunday Choir', 'Rehearsal at ten'] }] };\n`);
+  const cased = run(['--no-frames']);
+  fs.writeFileSync(TLS, tls);
+  const caseF = cased.rep.findings.filter((f) => f.rule === 'case' || f.rule === 'case-strings');
+  result(cased.code === 1 && caseF.length === 2 && has(cased.rep, 'case', 'error', /act 2 \(lands\) lists "Sunday Choir"/) && has(cased.rep, 'case-strings', 'warn', /"Rehearsal at ten"/),
+    'case: an act listing a word of the case no scene carries fails, a listed string the film shows passes, another unseen string warns',
+    JSON.stringify(caseF.map((f) => `${f.rule} ${f.severity} ${f.message.slice(0, 90)}`)));
 
   // 2-4. an act with every fault, a content module with long and cut strings
   const ACT = path.join(film, 'src', 'acts', 'Faulty.tsx');
