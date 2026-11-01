@@ -2414,6 +2414,14 @@ def deal_hero(lib, name, brief, have, recent=(), n=HERO_N, direction=None, world
             if len(pick) == had:
                 break
         take(lambda h: h['role'] == 'end')  # the end card's shot when the film can feed it
+        # the story's main act is never skipped: a request typed (an input shot) is followed by what the product makes of
+        # it, so a deal with an input shot carries the page being made (page-fly) in place of its last other picture
+        # (a typed prompt cut straight to a finished card left the product's own work unseen)
+        page = next((h for h in ok if h['family'] == 'page'), None)
+        if page and page not in pick and any(h['family'] == 'input' for h in pick):
+            swap = [h for h in pick if h['role'] == 'picture' and h['family'] not in ('input',)]
+            if swap:
+                pick[pick.index(swap[-1])] = page
         ids = [h['id'] for h in pick]
         if any(sorted(ids) == sorted(x) for x in recent) or len(set(ids) & set(last)) > (1 if salt < 32 else 2):
             continue
