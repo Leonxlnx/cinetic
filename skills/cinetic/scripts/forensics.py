@@ -3,6 +3,7 @@
 
 Usage:
   python3 scripts/forensics.py out/film.mp4 --cues out/cues.json --json out/qa/forensics.json
+  python3 scripts/forensics.py out/draft.mp4 --cues out/cues.json --spine          # the element's track, swaps, the loop
   python3 scripts/forensics.py out/film.mp4 --cuts 600,836-840 --freeze-ok 345-359 --json out/qa/f.json
   python3 scripts/forensics.py out/loop.mp4 --loop --json out/qa/loop.json
   python3 scripts/forensics.py out/a.mp4 --against out/b.mp4        # render twice: nondeterministic frames
@@ -156,6 +157,24 @@ Film checks (with the grammar; read at 240 wide, the ending at 480):
 Sound (any mode; --no-audio or --loop skip it):
   audio        no audio stream, under a second of it, or a silent mix (under -50 dBFS)          fail
   audio-end    the last 0.25 s sit under 12 dB below the loudest 2 s: the music is cut      warn
+Spine (--spine, on the draft with its out/cues.json: the element carried across the scene changes; also inside
+--grammar-only when the cues declare handovers or a spine). Read at 480 wide; boxes in composition px (1920 wide for a
+landscape film, 1080 otherwise; cues `width` or --comp-width):
+  spine-track  along each declared handover's box track (a seam with `track`: [[f, x, y, w, h], ...], lib/handover
+               handoverDeclares), a crisp object stands in the box on every frame: the luma step across the box's edge
+               (an inner band against an outer band, the median along each side) at least 6 levels and twice the film's
+               floor (the same read on boxes of its empty ground); gone for more than 2 frames at 30 fps            fail
+               the declared box jumps more than 8 % of the frame width in one frame (a whip or a speed handover
+               excepted, and a swell's or a shrink's swap frame)                                                       fail
+               the cues declare a spine (spine: seams, a spine block) but no handover carries a track             warn
+  swap         a hard cut (most pixels change and the flow cannot explain it) that changes more than 65 % of the
+               frame with no handover, seam, spine change or --cuts declared within 2 frames: the picture swapped  fail
+  text-then-cards  the pixel loop: a line alone (a statement on screen, no declared element drawn, at most 25 % of the
+               frame's 16 px blocks busy: 4 % of their pixels 20+ levels off a sigma-6 blur, so a soft plate behind the
+               line passes) for 0.4 s, then a picture: over the next 2 s the busy blocks (their upper quartile) rise 8
+               points and 1.5 times over the line's own level, with no declared element drawn in its box from the
+               line's last frame through those 2 s; twice or more                                                 fail
+               once                                                                                                  warn
 Motion gates (with the grammar): no event starts or ends in one frame and no hold freezes. Mean luma change
 at 160x90, one sample per 1/30 s (landings also at the film's own rate), outside the end lock:
   motion-snap  one-sample changes (>= 2 code values, both neighbours under 35 % of it) that are not cuts:
@@ -1401,6 +1420,9 @@ def analyse(args, info):
     M['seams'] = sc
     fs = None if getattr(args, 'no_grammar', False) else FilmScan(fps, W, H, keep=getattr(args, '_keep', ()))  # the film checks' reads
     M['film'] = fs
+    S = getattr(args, '_spine', None)
+    sp = SpineScan(fps, W, H, S['tracks'], seams=sc) if (S and sc is not None) else None  # the spine checks' reads
+    M['spine'] = sp
     for f, rgb in decode(args.video, info, start, count):
         small = cv2.resize(rgb, (SW, SH), interpolation=cv2.INTER_AREA).astype(np.int16)
         if mc is not None:
@@ -1409,6 +1431,8 @@ def analyse(args, info):
             sc.feed(f, small.astype(np.uint8))
         if fs is not None:
             fs.feed(f, small.astype(np.uint8))
+        if sp is not None:
+            sp.feed(f, rgb)
         if probe_m is not None or getattr(args, '_dissolve', False):
             g8 = cv2.cvtColor(small.astype(np.uint8), cv2.COLOR_RGB2GRAY) if probe_m is None or (probe_m.w, probe_m.h) == (SW, SH) else \
                 cv2.resize(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY), (probe_m.w, probe_m.h), interpolation=cv2.INTER_AREA)
@@ -2229,6 +2253,10 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
     if sc is not None and sc.f:
         sc.close()
         out['seams'] = seam_check(sc, extra, k_, acts, add, sev, ignored, extra.get('copy_n', 0))
+    # the spine (a film whose cues declare handovers or a spine): the element in its box, no undeclared swap, no loop
+    sp, S = M.get('spine'), getattr(args, '_spine', None)
+    if sp is not None and sp.n and S:
+        out['spine'] = spine_check(sp, S['declared'], S['copy'], add, sev, ignored, S['spine'])
     # the film: never an empty frame or a long freeze, an ending that lands centred, a world that lives
     fs = M.get('film')
     if fs is not None and fs.f:
@@ -3318,6 +3346,301 @@ def film_check(scan, extra, add, sev, ignored, reading=(), end_rng=None, pairs=(
     return rep
 
 
+# ------------------------------------------------------------------------------------------
+# the spine: the element carried across the scene changes, read on the pixels
+# ------------------------------------------------------------------------------------------
+SPINE_F = dict(
+    w=480,  # analysis width
+    gap_f30=2,  # frames at 30 fps the element may leave its box (a blur peak, the swap frame)
+    jump=0.08,  # share of the frame width the declared box may move in one frame (a whip or a speed handover excepted)
+    swap_area=0.65,  # an undeclared hard cut changing more of the frame than this swaps the picture
+    declared_pad=2,  # frames: a cut this near a declared change is that change
+    present_min=6.0,  # luma levels across the element's edge, at least ...
+    present_k=2.0,  # ... and this many times the film's floor (the same read on boxes of its empty ground)
+    band=0.06, band_px=2,  # the edge bands: this share of the box's short side, at least band_px
+    detail=20, sigma=6, block=16, block_share=0.04,  # detail: a pixel 20+ levels off a sigma-6 blur; a block with 4 %+ of them is busy
+    type_max=0.25,  # a line alone: a statement on screen, no declared element drawn, busy blocks at most this share (a soft plate behind it)
+    rise=(0.08, 1.5),  # a picture after it: busy blocks over the line's own level by 0.08 and 1.5 times
+    type_s=0.4, pic_window_s=2.0,  # the line alone holds 0.4 s; the picture is read over the 2 s after it (its upper quartile)
+    loops=2,  # unjoined type -> picture turns that fail (one warns)
+)
+SPINE_FREE = ('momentum', 'whip', 'velocity')  # handovers that carry speed: their box may jump and blur away
+
+
+def _seam_list(raw):
+    """Every declared seam of a cues file: the timeline's and each primitive's (declared.fx[].seams)."""
+    d = raw.get('declared') if isinstance(raw.get('declared'), dict) else {}
+    out = [s for s in (d.get('seams') or []) if isinstance(s, dict)]
+    for fx in d.get('fx') or []:
+        if isinstance(fx, dict):
+            out += [s for s in (fx.get('seams') or []) if isinstance(s, dict)]
+    return out
+
+
+def spine_inputs(raw, k_, comp_w, video_w, cuts=()):
+    """From a cues file: the handovers that carry a box track (video frames, analysis px), every declared change frame
+    (seams, handovers, the spine's changes and the declared cuts, with their spans) and whether the film plays a spine."""
+    ka = min(SPINE_F['w'], video_w) / float(comp_w)
+    vf = lambda x: int(round(float(x) * k_))  # noqa: E731
+    tracks, declared = [], []
+    for s in _seam_list(raw):
+        if _num(s.get('at')):
+            sp = s.get('span') if isinstance(s.get('span'), (list, tuple)) and len(s.get('span')) == 2 else None
+            declared.append((vf(sp[0]), vf(sp[1])) if sp and all(_num(v) for v in sp) else (vf(s['at']), vf(s['at'])))
+        tr = s.get('track')
+        if not isinstance(tr, list) or not tr:
+            continue
+        kind = str(s.get('handover') or s.get('kind') or '')
+        samples = {}
+        for row in tr:
+            if isinstance(row, (list, tuple)) and len(row) >= 5 and all(_num(v) for v in row[:5]):
+                samples[vf(row[0])] = tuple(float(v) * ka for v in row[1:5])
+        if samples:
+            tracks.append(dict(id=str(s.get('id') or f'handover@{s.get("at")}'), kind=kind, at=vf(s.get('at', min(samples))),
+                               swap=vf(s['swap']) if _num(s.get('swap')) else None, free=kind in SPINE_FREE or str(s.get('kind')) == 'whip', samples=samples))
+    sp = raw.get('spine') if isinstance(raw.get('spine'), dict) else (raw.get('declared') or {}).get('spine') if isinstance(raw.get('declared'), dict) else None
+    for c in (sp or {}).get('changes') or []:
+        if isinstance(c, dict) and _num(c.get('at')):
+            span = c.get('span') if isinstance(c.get('span'), (list, tuple)) and len(c.get('span')) == 2 else None
+            declared.append((vf(span[0]), vf(span[1])) if span and all(_num(v) for v in span) else (vf(c['at']), vf(c['at'])))
+    declared += [(int(a), int(b)) for a, b in cuts]
+    spine = bool(sp) or bool(tracks) or any(str(s.get('id', '')).startswith(('spine:', 'handover:')) for s in _seam_list(raw))
+    return tracks, declared, spine
+
+
+def _edge_step(g, box, band):
+    """The luma step across a box's edge: per side inside the frame, the median along the side of |inner band - outer
+    band|; the second largest side (one side may sit against something of its own colour), or the only one. None when
+    no side can be read (a box that fills the frame: the element is the picture)."""
+    H, W = g.shape
+    x, y, w, h = box
+    x0, y0, x1, y1 = int(round(x)), int(round(y)), int(round(x + w)), int(round(y + h))
+    b = band
+    cx0, cx1, cy0, cy1 = max(x0, 0), min(x1, W), max(y0, 0), min(y1, H)
+    vals = []
+    if cx1 - cx0 >= 3:
+        if y0 - b >= 0 and y0 + b <= H:
+            vals.append(float(np.median(np.abs(g[y0:y0 + b, cx0:cx1].mean(0) - g[y0 - b:y0, cx0:cx1].mean(0)))))
+        if y1 + b <= H and y1 - b >= 0:
+            vals.append(float(np.median(np.abs(g[y1 - b:y1, cx0:cx1].mean(0) - g[y1:y1 + b, cx0:cx1].mean(0)))))
+    if cy1 - cy0 >= 3:
+        if x0 - b >= 0 and x0 + b <= W:
+            vals.append(float(np.median(np.abs(g[cy0:cy1, x0:x0 + b].mean(1) - g[cy0:cy1, x0 - b:x0].mean(1)))))
+        if x1 + b <= W and x1 - b >= 0:
+            vals.append(float(np.median(np.abs(g[cy0:cy1, x1 - b:x1].mean(1) - g[cy0:cy1, x1:x1 + b].mean(1)))))
+    if not vals:
+        return None
+    vals.sort(reverse=True)
+    return vals[1] if len(vals) >= 3 else vals[0]
+
+
+class SpineScan:
+    """Per-frame reads for the spine checks at SPINE_F['w'] wide: the edge step of each declared handover's box on its
+    frames, the floor (the same read on fixed boxes of the frame, the size of the film's median box), the share of the
+    frame off the ground, and the hard cuts (SeamScan) with the area they change. Feed RGB frames of any size."""
+
+    def __init__(self, fps, w, h, tracks, seams=None):
+        self.fps = fps
+        self.aw = min(SPINE_F['w'], w) // 2 * 2
+        self.ah = max(2, int(round(h * self.aw / w)) // 2 * 2)
+        self.tracks = tracks
+        self.seams = seams if seams is not None else SeamScan(fps, w, h)
+        self.own_seams = seams is None
+        self.step = {}  # (track index, frame) -> edge step or None
+        self.floor = []
+        self.busy = {}  # frame -> share of busy blocks (detail)
+        sizes = [(bw, bh) for t in tracks for (_, _, bw, bh) in t['samples'].values() if bw > 2 and bh > 2]
+        self.fb = (float(np.median([s[0] for s in sizes])), float(np.median([s[1] for s in sizes]))) if sizes else (self.aw * 0.2, self.ah * 0.2)
+        self.n = 0
+
+    def feed(self, f, rgb):
+        if self.own_seams:
+            self.seams.feed(f, rgb)
+        small = rgb if (rgb.shape[1], rgb.shape[0]) == (self.aw, self.ah) else cv2.resize(rgb, (self.aw, self.ah), interpolation=cv2.INTER_AREA)
+        g = cv2.cvtColor(small, cv2.COLOR_RGB2GRAY).astype(np.float32)
+        d = np.abs(g - cv2.GaussianBlur(g, (0, 0), SPINE_F['sigma'])) > SPINE_F['detail']
+        B = SPINE_F['block']
+        hb, wb = self.ah // B, self.aw // B
+        if hb and wb:
+            self.busy[f] = float((d[:hb * B, :wb * B].reshape(hb, B, wb, B).mean(axis=(1, 3)) > SPINE_F['block_share']).mean())
+        for i, t in enumerate(self.tracks):
+            box = t['samples'].get(f)
+            if box is None:
+                continue
+            band = max(SPINE_F['band_px'], int(round(SPINE_F['band'] * min(box[2], box[3]))))
+            self.step[(i, f)] = _edge_step(g, box, band) if min(box[2], box[3]) >= 2 * band + 2 else None
+        # the floor: five fixed boxes of the film's median size, every eighth frame
+        if self.n % 8 == 0:
+            bw, bh = min(self.fb[0], self.aw * 0.5), min(self.fb[1], self.ah * 0.5)
+            band = max(SPINE_F['band_px'], int(round(SPINE_F['band'] * min(bw, bh))))
+            for fx, fy in ((0.12, 0.15), (0.62, 0.12), (0.2, 0.62), (0.58, 0.6), (0.4, 0.38)):
+                v = _edge_step(g, (fx * self.aw, fy * self.ah, bw, bh), band)
+                if v is not None:
+                    self.floor.append(v)
+        self.n += 1
+
+    def close(self):
+        if self.own_seams:
+            self.seams.close()
+
+
+def spine_check(scan, declared, copy_windows, add, sev, ignored, spine=True):
+    """The spine checks on a SpineScan: the element in its box on every frame of each declared handover (no gap past
+    SPINE_F['gap_f30'] frames at 30 fps, no jump of the declared box past SPINE_F['jump'] of the width), no undeclared
+    swap of the picture, and the pixel text-then-cards loop. Returns the report."""
+    fps = scan.fps
+    floor = float(np.median(scan.floor)) if scan.floor else 0.0
+    thr = max(SPINE_F['present_min'], SPINE_F['present_k'] * floor)
+    gap_max = max(SPINE_F['gap_f30'], int(round(SPINE_F['gap_f30'] * fps / 30.0)))
+    rep = dict(floor=round(floor, 2), present=round(thr, 2), tracks=[], swaps=[], loops=[])
+    present = {}
+    for i, t in enumerate(scan.tracks):
+        frames = sorted(f for f in t['samples'] if (i, f) in scan.step)
+        if not frames:
+            continue
+        ok = {f: (scan.step[(i, f)] is None or scan.step[(i, f)] >= thr) for f in frames}
+        present[i] = ok
+        gaps, run = [], []
+        for f in frames:
+            if not ok[f] and not ignored(f):
+                run.append(f)
+            else:
+                if len(run) > gap_max:
+                    gaps.append((run[0], run[-1]))
+                run = []
+        if len(run) > gap_max:
+            gaps.append((run[0], run[-1]))
+        jumps = []
+        W = float(scan.aw)
+        for a, b in zip(frames, frames[1:]):
+            if b != a + 1 or t['free'] or ignored(b):
+                continue
+            if t['kind'] in ('swell', 'shrink') and t['swap'] is not None and abs(b - t['swap']) <= 1:
+                continue  # the designed one-frame snap under blur
+            (x0, y0, w0, h0), (x1, y1, w1, h1) = t['samples'][a], t['samples'][b]
+            d = math.hypot((x1 + w1 / 2) - (x0 + w0 / 2), (y1 + h1 / 2) - (y0 + h0 / 2)) / W
+            if d > SPINE_F['jump']:
+                jumps.append((b, round(d, 3)))
+        steps = [scan.step[(i, f)] for f in frames if scan.step[(i, f)] is not None]
+        row = dict(id=t['id'], kind=t['kind'], frames=[frames[0], frames[-1]], present=round(sum(ok.values()) / len(frames), 3),
+                   step_median=round(float(np.median(steps)), 1) if steps else None, gaps=gaps[:6], jumps=jumps[:6])
+        rep['tracks'].append(row)
+        if gaps and not t['free']:
+            a, b = gaps[0]
+            add('spine-track', sev('fail'), f'{a}-{b}', f"the element of {t['id']} leaves its box for {b - a + 1} frames ({(b - a + 1) / fps:.2f} s; at most {gap_max}): "
+                f"nothing crisp stands where the handover says the element is (edge step under {thr:.1f} levels). Draw the element across the cut (fx/Handover), "
+                f"or declare the change as what it is", gaps=len(gaps))
+        if jumps:
+            b, d = jumps[0]
+            add('spine-track', sev('fail'), b, f"the declared box of {t['id']} jumps {d * 100:.0f} % of the frame width in one frame (at most {SPINE_F['jump'] * 100:.0f} %): "
+                'a jump is a cut, not a handover; carry it on a path (a fly, a whip declared as a speed handover)', jumps=len(jumps))
+    if spine and not scan.tracks:
+        add('spine-track', sev('warn'), 0, 'the cues declare a spine but no handover carries a box track (a seam with `track`): the element\'s path cannot be checked; '
+            'declare the handovers through fx/Handover (handoverDeclares) and export the cues again')
+    # swaps: hard cuts that change most of the frame with nothing declared there
+    pad = SPINE_F['declared_pad']
+    near = lambda a, b: any(a - pad <= y and b + pad >= x for x, y in declared)  # noqa: E731
+    for a, b in scan.seams.hard():
+        rd = scan.seams.reads.get(a) or {}
+        area = rd.get('area')
+        if area is None or area <= SPINE_F['swap_area'] or near(a, b) or ignored(a):
+            continue
+        rep['swaps'].append(dict(frame=a, area=area))
+        add('swap', sev('fail'), a, f"a hard cut at {a / fps:.2f} s changes {area * 100:.0f} % of the frame with no handover declared there: the picture is swapped, "
+            'not handed on. Carry the element into the next scene (grow, shrink, swell and swap, fly, zoom into it) and declare it', area=area)
+    # the pixel loop: a line alone (a statement on screen, nothing else carrying detail), then a picture, with no declared
+    # element drawn in its box across the turn. Read relative to the line's own level: a soft plate behind it counts
+    fr = sorted(scan.busy)
+    if fr and copy_windows:
+        on = lambda f: any(a <= f < b for a, b in copy_windows)  # noqa: E731
+        carried = lambda f: any(f in t['samples'] and present.get(i, {}).get(f, False) for i, t in enumerate(scan.tracks))  # noqa: E731
+        tset = set(f for f in fr if on(f) and scan.busy[f] <= SPINE_F['type_max'] and not carried(f))
+        need_t, win = max(1, int(round(SPINE_F['type_s'] * fps))), max(2, int(round(SPINE_F['pic_window_s'] * fps)))
+        f, last = 0, max(fr)
+        while f <= last:
+            if f not in tset:
+                f += 1
+                continue
+            a = f
+            while f + 1 in tset:
+                f += 1
+            b = f
+            f += 1
+            if b - a + 1 < need_t:
+                continue
+            level = float(np.median([scan.busy[g] for g in range(a, b + 1) if g in scan.busy]))
+            after = [scan.busy[g] for g in range(b + 1, b + 1 + win) if g in scan.busy]
+            if len(after) < max(2, int(round(0.5 * fps))):  # half a second of picture at least (the film may end)
+                continue
+            pic = float(np.percentile(after, 75))
+            if pic < max(level + SPINE_F['rise'][0], SPINE_F['rise'][1] * level):
+                continue
+            if any(carried(g) for g in range(b, b + 1 + win)):
+                continue
+            rep['loops'].append(dict(type=[a, b], picture=[b + 1, b + win], level=round(level, 3), picture_level=round(pic, 3)))
+        if rep['loops']:
+            x = rep['loops'][0]
+            n = len(rep['loops'])
+            add('text-then-cards', sev('fail' if n >= SPINE_F['loops'] else 'warn'), x['type'][0],
+                f"{n} turn{'s' if n > 1 else ''} from a line alone to a picture with nothing carried across (first at {x['type'][1] / fps:.2f} s: busy blocks "
+                f"{x['level'] * 100:.0f} % under the line, {x['picture_level'] * 100:.0f} % after it): a line, a card, again. Let the picture grow out of the line's element, "
+                'or put the line inside the product or around the element', loops=n)
+    return rep
+
+
+def spine_frames(extra_raw, k_):
+    """The statements' screen windows (video frames) from the cues copy block: kind copy, not ui strings or the name."""
+    out = []
+    for c in extra_raw.get('copy') or []:
+        if isinstance(c, dict) and _num(c.get('in')) and _num(c.get('out')) and str(c.get('kind', 'copy')) not in ('ui', 'name'):
+            out.append((int(round(float(c['in']) * k_)), int(round(float(c['out']) * k_))))
+    return out
+
+
+def spine_setup(args, info, decl, force=False):
+    """The spine inputs of a run (dict(tracks, declared, spine, copy)), or None when the cues declare no spine and the
+    run did not ask for it (--spine)."""
+    if not args.cues and not force:
+        return None
+    try:
+        raw = json.load(open(args.cues)) if args.cues else {}
+    except (OSError, ValueError):
+        raw = {}
+    cues_fps = decl[6]
+    k_ = info['fps'] / cues_fps if cues_fps else 1.0
+    comp_w = getattr(args, 'comp_width', None) or raw.get('width') or (1920 if info['w'] > info['h'] else 1080)
+    tracks, declared, spine = spine_inputs(raw, k_, float(comp_w), info['w'], decl[0])
+    if not spine and not force:
+        return None
+    return dict(tracks=tracks, declared=declared, spine=spine, copy=spine_frames(raw, k_))
+
+
+def spine_only(args, info, decl):
+    """Only the spine checks (the element's box track, swaps, the pixel loop), on a decode at SPINE_F['w'] wide."""
+    fps = info['fps']
+    cuts, freezes, ignore, acts, moments, reading, cues_fps, extra = decl
+    S = spine_setup(args, info, decl, force=True)
+    tracks, declared, spine = S['tracks'], S['declared'], S['spine']
+    sc = SpineScan(fps, info['w'], info['h'], tracks)
+    start = max(0, args.from_frame or 0)
+    count = max(1, args.to_frame - start + 1) if args.to_frame is not None else None
+    for f, rgb in decode(args.video, info, start, count, size=(sc.seams.aw, sc.seams.ah)):
+        sc.feed(f, rgb)
+    if not sc.n:
+        die('decoded 0 frames')
+    sc.close()
+    flags = []
+
+    def add(check, severity, frame, note, **kw):
+        first = frame if isinstance(frame, int) else int(str(frame).split('-')[0])
+        flags.append(dict(check=check, severity=severity, frame=frame, t=round(first / fps, 3), note=note, **kw))
+
+    rep = spine_check(sc, declared, S['copy'], add, lambda s: s, lambda f: in_ranges(f, ignore), spine)
+    fails = sum(1 for x in flags if x['severity'] == 'fail')
+    return dict(file=args.video, fps=round(fps, 3), frames=sc.n, spine_only=True, fails=fails,
+                warnings=sum(1 for x in flags if x['severity'] == 'warn'), flags=flags, checks=dict(spine=rep)) | {'pass': fails == 0}
+
+
 def audio_check(path, args, fps):
     """The film's sound: an audio stream that plays (every film is music-led), and an ending that rings out (the music
     decays 14-60 dB over its last half second). Returns (report, flags)."""
@@ -3801,6 +4124,90 @@ def film_self_test(check, tmp):
     return 0
 
 
+def spine_self_test(tmp):
+    """The spine checks on synthetic clips (--spine): a card carried along its declared track passes; the card gone from
+    its box for 5 frames, or its declared box jumping a third of the frame in one frame, fails spine-track; an
+    undeclared hard cut that swaps the picture fails swap (declared, it passes); a line alone on an empty frame, then a
+    picture, twice, fails text-then-cards (with an element drawn across the turns, it passes). Returns the failures."""
+    fps, w, h = 30, 480, 270
+    bad = 0
+    yy = np.linspace(0, 1, h, dtype=np.float32)[:, None, None]
+    ground = np.broadcast_to((np.array([38, 42, 50], np.float32) + 30 * yy), (h, w, 3)).astype(np.uint8)
+    card = lambda img, x, y: cv2.rectangle(img, (int(x), int(y)), (int(x) + 60, int(y) + 40), (222, 226, 232), -1)  # noqa: E731
+    ease = lambda t: (lambda u: u * u * (3 - 2 * u))(min(1.0, max(0.0, t)))  # noqa: E731
+
+    def check(ok, what, detail=''):
+        nonlocal bad
+        bad += 0 if ok else 1
+        print(f"{'pass' if ok else 'FAIL'}  forensics self-test: {what}" + (f'  ({detail})' if detail else ''))
+
+    def run(name, frames, seams=(), copy=(), mode='--spine'):
+        clip = os.path.join(tmp, f'spine-{name}.mp4')
+        if not os.path.exists(clip):
+            write_clip(clip, frames, fps)
+        cp = os.path.join(tmp, f'spine-{name}-cues.json')
+        json.dump(dict(fps=fps, total=len(frames), width=w, acts=dict(a={'from': 0, 'dur': len(frames)}), cue={}, events=[],
+                       copy=[dict(id=f'l{i}', text='A line', kind='copy', resolved=a, **{'in': a, 'out': b}) for i, (a, b) in enumerate(copy)],
+                       look=dict(blur='crisp', texture='clean', filmType='launch', oneTake=False, whiteWorld=False),
+                       declared=dict(seams=list(seams), fx=[], end={'from': 0, 'to': 0})), open(cp, 'w'))
+        out = os.path.join(tmp, f'spine-{name}{mode}.json')
+        r = subprocess.run([sys.executable, os.path.abspath(__file__), clip, '--cues', cp, mode, '--json', out, '--no-audio'], capture_output=True, text=True)
+        try:
+            return json.load(open(out))
+        except (OSError, ValueError):
+            print(r.stdout[-400:], r.stderr[-400:])
+            return {'flags': [], 'checks': {}}
+
+    def flags(rep, name, severity=None):
+        return [x for x in rep['flags'] if x['check'] == name and (severity is None or x['severity'] == severity)]
+
+    # a card flying across the frame on frames 10-40, its declared box on every frame
+    xs = {f: 60 + 300 * ease((f - 10) / 30) for f in range(10, 41)}
+    track = [[f, round(x, 1), 110.0, 60.0, 40.0] for f, x in xs.items()]
+    seam = dict(at=25, kind='morph', carry='shape', id='handover:H8-fly:request', handover='fly', span=[10, 40], track=track)
+    pos = lambda f: xs[min(40, max(10, f))]  # noqa: E731
+    clip = [card(ground.copy(), pos(f), 110) for f in range(60)]
+    rep = run('carried', clip, [seam])
+    check(not flags(rep, 'spine-track') and not flags(rep, 'swap'), 'a card carried along its declared box track passes spine-track',
+          json.dumps((rep.get('checks', {}).get('spine') or {}).get('tracks', [])[:1])[:240])
+    gone = [ground.copy() if 20 <= f <= 24 else card(ground.copy(), pos(f), 110) for f in range(60)]
+    rep = run('gap', gone, [seam])
+    check(bool(flags(rep, 'spine-track', 'fail')), 'the card gone from its box for 5 frames fails spine-track', str([x['note'][:80] for x in flags(rep, 'spine-track')]))
+    rep = run('gap', gone, [seam], mode='--grammar-only')
+    check(bool(flags(rep, 'spine-track', 'fail')) and 'spine' in (rep.get('checks', {}).get('grammar') or {}),
+          'with handovers declared in the cues, --grammar-only runs the spine checks too', str([(x['check'], x['note'][:60]) for x in rep['flags'] if 'spine' in x['check']]))
+    jx = {f: (100 if f < 25 else 260) for f in range(10, 41)}
+    jseam = dict(seam, track=[[f, float(x), 110.0, 60.0, 40.0] for f, x in jx.items()])
+    jumped = [card(ground.copy(), jx[min(40, max(10, f))], 110) for f in range(60)]
+    rep = run('jump', jumped, [jseam])
+    check(any('jumps' in x['note'] for x in flags(rep, 'spine-track', 'fail')), 'a declared box jumping a third of the frame in one frame fails spine-track',
+          str([x['note'][:80] for x in flags(rep, 'spine-track')]))
+    # a swap: one picture, then another, cut in one frame, nothing declared there
+    A, B = texture(1, w, h, mean=70), texture(2, w, h, mean=190)
+    swapped = [A] * 30 + [B] * 30
+    rep = run('swap', swapped)
+    check(bool(flags(rep, 'swap', 'fail')), 'an undeclared hard cut that changes most of the frame fails swap', str([x['note'][:80] for x in flags(rep, 'swap')]))
+    rep = run('swap-declared', swapped, [dict(at=30, kind='hard', id='spine:cut:request:card>page')])
+    check(not flags(rep, 'swap'), 'the same cut declared (a spine section break) is no swap')
+    # the pixel loop: a line alone on the ground, then a picture, twice; then the same with an element drawn across the turns
+    def line(img):
+        cv2.putText(img, 'A line on its own', (120, 142), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (235, 235, 235), 2, cv2.LINE_AA)
+        return img
+    P = texture(3, w, h, mean=120)
+    loop = [line(ground.copy()) for _ in range(20)] + [P.copy() for _ in range(20)] + [line(ground.copy()) for _ in range(20)] + [P.copy() for _ in range(20)]
+    cuts = [dict(at=20, kind='hard', id='cut-a'), dict(at=40, kind='hard', id='cut-b'), dict(at=60, kind='hard', id='cut-c')]
+    rep = run('loop', loop, cuts, copy=[(0, 20), (40, 60)])
+    check(bool(flags(rep, 'text-then-cards', 'fail')), 'a line alone, then a picture, twice, with nothing carried across fails text-then-cards',
+          str([x['note'][:90] for x in flags(rep, 'text-then-cards')]))
+    held = [card(f_, 200, 180) for f_ in loop]
+    stays = [dict(at=20, kind='morph', carry='shape', id='handover:H9-stay:a', handover='stay', span=[14, 26], track=[[f, 200.0, 180.0, 60.0, 40.0] for f in range(14, 27)]),
+             dict(at=60, kind='morph', carry='shape', id='handover:H9-stay:b', handover='stay', span=[54, 66], track=[[f, 200.0, 180.0, 60.0, 40.0] for f in range(54, 67)])]
+    rep = run('loop-carried', held, stays + [cuts[1]], copy=[(0, 20), (40, 60)])
+    check(not flags(rep, 'text-then-cards') and not flags(rep, 'spine-track'), 'the same turns with the element drawn in its box across them pass',
+          str([(x['check'], x['note'][:80]) for x in rep['flags']]))
+    return bad
+
+
 def write_clip(path, frames, fps, crf=12):
     """Encode RGB frames (an iterable of HxWx3 uint8) to an H.264 file at `fps`."""
     frames = iter(frames)
@@ -3816,12 +4223,17 @@ def write_clip(path, frames, fps, crf=12):
         raise RuntimeError(f'ffmpeg could not write {path}')
 
 
-def self_test():
+def self_test(part='all'):
     """Synthetic clips with known motion: each grammar check must fire where it should and stay
-    quiet where it should not. Returns the exit code."""
+    quiet where it should not. Returns the exit code. part 'spine': only the spine checks."""
     import shutil
     import tempfile
     tmp = tempfile.mkdtemp(prefix='cinetic-forensics-')
+    if part == 'spine':
+        bad = spine_self_test(tmp)
+        shutil.rmtree(tmp, ignore_errors=True)
+        print('forensics self-test (spine): ' + ('all pass' if not bad else f'{bad} failed'))
+        return 1 if bad else 0
     fps, w, h = 30, 480, 270
     bad = 0
     count = [0]
@@ -4051,6 +4463,7 @@ def self_test():
     bad += motion_self_test(check)
     bad += seam_self_test(check)
     bad += film_self_test(check, tmp)
+    bad += spine_self_test(tmp)
     # the same picture at 60 and at 30 fps (every second frame): a pan, a 1.5 s hold drifting 0.004 px a 60 fps frame,
     # a pan; the quiet stretch is found at both rates (its window is 1 s at any rate, not 60 frames)
     P = texture(1, w + 600, h)
@@ -4098,6 +4511,8 @@ def grammar_only(args, info, decl):
     disq = deque(maxlen=dis_n + 2)
     M = dict(idx=[], dissolve=[], probe=probe_m, motion=MotionCurves(fps), seams=SeamScan(fps, info['w'], info['h']),
              film=FilmScan(fps, info['w'], info['h'], keep={f for _, g, b in legibility_frames(extra, k_) for f in (*g, b)}))
+    S = getattr(args, '_spine', None)
+    M['spine'] = SpineScan(fps, info['w'], info['h'], S['tracks'], seams=M['seams']) if S else None
     start = max(0, args.from_frame or 0)
     count = max(1, args.to_frame - start + 1) if args.to_frame is not None else None
     for f, rgb in decode(args.video, info, start, count, size=(pw, ph)):
@@ -4107,6 +4522,8 @@ def grammar_only(args, info, decl):
         M['motion'].feed(f, motion_luma(rgb))
         M['seams'].feed(f, rgb)
         M['film'].feed(f, rgb)
+        if M['spine'] is not None:
+            M['spine'].feed(f, rgb)
         disq.append((f, g8.astype(np.float32)))
         if len(disq) == disq.maxlen:
             hit = blend_test([x[1] for x in disq])
@@ -4179,7 +4596,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0],
                                  formatter_class=argparse.RawDescriptionHelpFormatter, epilog=__doc__)
     ap.add_argument('video', nargs='?')
-    ap.add_argument('--self-test', action='store_true', help='run the grammar checks on synthetic clips made in code, then exit')
+    ap.add_argument('--self-test', nargs='?', const='all', choices=['all', 'spine'],
+                    help='run the checks on synthetic clips made in code, then exit (spine: only the spine checks)')
     ap.add_argument('--json', help='write the report here (e.g. out/qa/forensics.json)')
     ap.add_argument('--cues', help='out/cues.json: act seams, cue moments, a "qa" block, events of kind "cut"')
     ap.add_argument('--declare', help='JSON with cuts / freezes / ignore')
@@ -4206,6 +4624,10 @@ def main():
     ap.add_argument('--grammar-only', action='store_true', help='run only the grammar checks, on a small decode (fast; implies --grammar)')
     ap.add_argument('--seams', action='store_true', help='run only the seam checks (carried-cut devices, ground-flip, seam-mix) on a 320-wide '
                     'decode (fast; implies --grammar)')
+    ap.add_argument('--spine', action='store_true', help="run only the spine checks (the element in each declared handover's box, undeclared "
+                    'swaps, the pixel text-then-cards loop) on a 480-wide decode')
+    ap.add_argument('--comp-width', type=int, help='composition width of the box tracks in the cues (default: the cues width, else 1920 for a '
+                    'landscape film, 1080 otherwise)')
     g = ap.add_argument_group('thresholds (defaults are proven starting points; see references/review-loop.md)')
     g.add_argument('--spike-min', type=float, default=1.0)
     g.add_argument('--spike-ratio', type=float, default=2.5)
@@ -4248,7 +4670,7 @@ def main():
         die(f'the measurements need opencv (optical flow, edges), which {sys.executable} does not have: {CV2_INSTALL}, '
             'or run it with a Python that has it (PYTHON=<python> node scripts/py.mjs scripts/forensics.py ...)')
     if args.self_test:
-        sys.exit(self_test())
+        sys.exit(self_test(args.self_test))
     if not args.video:
         ap.error('a video is required (or --self-test)')
     if args.banding_sheet is None and args.json and not args.no_banding:
@@ -4265,6 +4687,20 @@ def main():
     extra = decl[7]
     args._dissolve = not args.no_grammar
     aud, aud_flags = audio_check(args.video, args, info['fps'])
+    args._spine = spine_setup(args, info, decl)  # the spine checks join the grammar when the cues declare a spine
+    if args.spine:
+        res = merge_flags(spine_only(args, info, decl), aud_flags)
+        res['checks']['audio'] = aud
+        if args.json:
+            os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
+            with open(args.json, 'w') as fh:
+                json.dump(res, fh, indent=1, default=lambda o: o.item() if hasattr(o, 'item') else str(o))
+        sp = res['checks']['spine']
+        print(f'forensics (spine): {args.video}  {res["frames"]} frames  {"PASS" if res["pass"] else "FAIL"}  ({res["fails"]} fail, {res["warnings"]} warn)  '
+              f'{len(sp["tracks"])} handover track(s), {len(sp["swaps"])} swap(s), {len(sp["loops"])} type -> picture turn(s); edge floor {sp["floor"]}')
+        for x in res['flags'][:30]:
+            print(f'  {x["severity"]:4s} {x["check"]:9s} f{x["frame"]}: {x["note"]}')
+        sys.exit(0 if res['pass'] else 1)
     if args.seams:
         res = merge_flags(seams_only(args, info, decl), aud_flags)
         res['checks']['audio'] = aud
