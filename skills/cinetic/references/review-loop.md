@@ -25,13 +25,16 @@ One round on the draft, then the master, on the time plan in SKILL.md (a whole d
 budget, the final started by 70 %, never a cut film).
 
 1. **Render the draft** (`bash scripts/render.sh Film out/draft.mp4 --draft`: the whole film at half size, a fast
-   encode, the current sound, `out/qa/draft-sheet.png`). The ending was already looked at as stills
-   (`node scripts/frames.mjs end`).
-2. **The fast gates**, each seconds to a minute on a 30 s film: `copy-check.py --ui src`, `grid-check.ts`,
-   `lint-film.mjs src`, `layout-audit.sh Film --copy --scale 0.5` (placement, overlaps, kit icons, stand-ins),
-   `forensics.py out/draft.mp4 --cues out/cues.json --grammar-only` (the motion and seam gates on a small decode;
-   `--seams` alone in seconds), `logos.mjs check` when the film shows other products' marks, `film-diff.mjs`
-   (`references/checks.md` §1 lists them in order). A gate that costs more than 5 minutes on a 30 s film is advisory.
+   encode, the sound under it, `out/qa/draft-sheet.png`). The ending was already looked at as stills
+   (`node scripts/frames.mjs end`). A draft with no sound (`out/qa/SILENT`) is a picture test, never the film: the
+   track is picked and fitted before the picture is timed, and `npm run sound` mixes the kit before the review.
+2. **The fast gates**, each seconds to a minute on a 30 s film: `npm run gates` (`forensics.py out/draft.mp4 --cues
+   out/cues.json --grammar-only`: the sound, cuts that hide themselves, ghost and torn cuts, empty frames and stalls,
+   frozen holds, legibility, the ending, the world; `copy-check.py --ui src`; `logos.mjs check`), `grid-check.ts`
+   (the text-then-cards loop, the brief's length), `lint-film.mjs src`, `precheck.mjs` (the cast), `layout-audit.sh
+   Film --cues --scale 0.5` (placement, overlaps, text cut by the frame in the product beats, kit icons, stand-ins),
+   `film-diff.mjs` (`references/checks.md` §1 lists them in order). A gate that costs more than 5 minutes on a 30 s
+   film is advisory.
 3. **One contact sheet, cut from the draft**: `node scripts/frames.mjs sheet --from out/draft.mp4` (16 labelled tiles;
    `--frames A-B --every N` for one act, `grab --from out/draft.mp4 <frames>` for full frames). No per-frame stills.
 4. **The director pass** (`assets/critics/director.md`): the picture beats read with the words ignored first (what
@@ -39,6 +42,15 @@ budget, the final started by 70 %, never a cut film).
    emphasis, seams that flow, clean UI, current marks and a centred end card built from the last element, its own film
    against the last three, plain words, less text, the picture telling it, colour, premium rather than merely clean,
    and the time left. Run it as a subagent with the filled template, or yourself with the sheet open before the code.
+   The tells a blind reviewer finds first, each with its frames: the product's main act skipped (a cut from the request
+   to a finished result) or its output bare (no picture of the brief's subjects); data that contradicts itself when
+   paused (the newest card in front showing the oldest time, a count and a total that cannot both be true); a name on
+   someone else's face, one face for two people; the same type device on every line (one size, one build, the accent
+   on the last word each time); type that does not read against its ground; a cut that swaps the subject while it is
+   still sharp in frame, a cross-fade of two scenes; an empty or stalled frame; a frozen hold over a second; the end
+   card drifting off centre to the last frame; a world that is one still photograph or murk; a shot without the
+   habits of standard 10 (a sharp plane and its falloff, a camera move that lands, light from a source, a real
+   material, real content in quantity); the music cut at the end.
 5. **Fix** in order of impact per minute: every P0, then the P1s the time allows, then the draft again (only the parts
    whose source changed re-render).
 6. **A second round only when a gate fails or a P0 was fixed**; otherwise go to the master. Stop after three rounds.

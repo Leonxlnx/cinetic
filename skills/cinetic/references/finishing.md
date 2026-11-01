@@ -23,7 +23,7 @@ Remotion always renders the picture muted; ffmpeg attaches the sound; two script
 
 | Mode | Command | What happens | Relative cost |
 |---|---|---|---|
-| Draft | `bash scripts/render.sh Film out/draft.mp4 --draft` | the whole film early: half size, CRF 23 on x264 superfast, JPEG frames, parts of up to 450 f, the current soundtrack (silent until one exists), then `out/qa/draft-sheet.png` (16 tiles cut from the video) | ~0.3× |
+| Draft | `bash scripts/render.sh Film out/draft.mp4 --draft` | the whole film early: half size, CRF 23 on x264 superfast, JPEG frames, parts of up to 450 f, the current soundtrack (with a track picked and no mix yet, the track alone through `sound.mjs --bed-only`; silent only with no track, said at the end and marked `out/qa/SILENT`), then `out/qa/draft-sheet.png` (16 tiles cut from the video) | ~0.3× |
 | Preview | `bash scripts/render.sh Film out/preview.mp4 --preview` | CRF 20, x264 veryfast, BT.709 tags, full size | 1× |
 | Sharp master | `bash scripts/render.sh Film out/film.mp4` | CRF 14, x264 slow, BT.709 tags, lossless PNG frames (`--jpeg` for a film with no soft grounds); parts of up to 240 f from a kept bundle, each starting on a cut where one falls in its last half, joined with `-c copy` (a stopped run resumes; `--max-min 9` under a job limit, exit 75 = rerun) | ~1.5× |
 | Draft as delivery | `bash scripts/render.sh Film out/film.mp4 --from-draft out/draft.mp4` | the whole draft scaled to the composition's size (lanczos, CRF 16), BT.709 tags, the soundtrack muxed: the delivery when the final cannot finish in the time left | seconds |
@@ -285,7 +285,7 @@ ffmpeg -i picture.mp4 -ss <offset> -i public/audio/soundtrack.wav -map 0:v:0 -ma
   -af apad -c:a aac -b:a 320k -ar 48000 -ac 2 -t <frames/fps> -movflags +faststart out/film.mp4
 ```
 
-- `-af apad -t` makes the audio exactly as long as the picture: padded with silence if the WAV is short, trimmed if it is long. `-shortest` alone would cut the *picture* when the WAV is short.
+- `-af apad -t` makes the audio exactly as long as the picture: padded with silence if the WAV is short, trimmed if it is long. `-shortest` alone would cut the *picture* when the WAV is short. A trim cuts the music's ring-out: the picture is timed on the track's bars (`src/music.ts`, written before the timeline) so the film ends where the music decays; a draft rendered before the track was fitted is stale (`forensics.py` audio-end warns when the last 0.25 s sit under 12 dB below the loudest 2 s).
 - `-ss <offset>` takes the audio from the matching point for excerpt and per-act renders (`render.sh` sets it from `--frames` or `--audio-offset`).
 - **Check after the encode.** AAC raises peaks by 0.5–1 dB (a WAV at −1.41 dBTP measured −0.5 dBTP after encoding), so `check-sync.py` measures true peak on the decoded MP4 (4× oversampled) and cross-correlates the decoded audio with the WAV at 12%, 45% and 85% of the film. The gates are ≤ 48 samples of lag (1 ms) and ≤ −1 dBTP. The mastering chain that keeps the peak there lives in `references/sound.md`.
 - `+faststart` puts the index at the front so web players start before the download finishes.
@@ -340,7 +340,7 @@ are not delivered. The top level holds only deliverables, because a client opens
 |---|---|---|
 | Size, fps, frame count | `probe.py --spec 1920x1080@60 --frames N` (or `--dur s`) | exact size and fps; ±1 frame |
 | Pixel format and tags | `probe.py` | `yuv420p`; `bt709/bt709/bt709/tv` |
-| Audio stream | `probe.py` (`--audio none` for silent loops) | AAC, 48 kHz, stereo, length within one frame plus one AAC frame of the picture |
+| Audio stream | `probe.py` (`--audio none` for silent loops); `forensics.py` audio on the draft and the master | AAC, 48 kHz, stereo, length within one frame plus one AAC frame of the picture; never a film with no sound (`--from-draft` refuses a silent draft) |
 | Sync | `check-sync.py film.mp4 soundtrack.wav` | ≤ 48 samples at every sample point, correlation ≥ 0.5 |
 | True peak | `check-sync.py` | ≤ −1 dBTP after decode |
 | Loudness (optional) | `probe.py --lufs <target> --tp-max -1` or `check-sync.py --lufs <target>`; `av-audit.py` reads the target from `audio/score.json` | the film's target ± 1 LUFS integrated: `master.lufs`, −14 by default, −16 for a calm brand or a sting (`references/sound.md`) |

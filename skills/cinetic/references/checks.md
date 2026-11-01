@@ -19,13 +19,14 @@ python3 scripts/copy-check.py TREATMENT.md                    # the script, befo
 node scripts/film-diff.mjs                                    # film.json: the picks differ from the last three films
 npx tsx scripts/grid-check.ts src/timeline.ts                 # after every timeline edit (beats, seams, the grid)
 node scripts/lint-film.mjs src [--strict]                     # every build step
-node scripts/precheck.mjs [--ship]                            # before every still or render: imports, frames, timing, kit, fit
+node scripts/precheck.mjs [--ship]                            # before every still or render: imports, frames, timing, kit, the cast, fit
 python3 scripts/copy-check.py --ui src                        # the product's UI strings: real words, no slot, no sample
 npm run cues                                                  # out/cues.json (declarations, copy, events)
 node scripts/frames.mjs end                                   # the ending as stills, early: the lockup must read
-bash scripts/render.sh Film out/draft.mp4 --draft --max-min 9   # the whole film, half size; rerun until exit 0
-bash scripts/layout-audit.sh Film --copy --scale 0.5          # placement, overlaps, kit icons, stand-ins
-python3 scripts/forensics.py out/draft.mp4 --cues out/cues.json --grammar-only     # motion and seam gates, small decode
+bash scripts/render.sh Film out/draft.mp4 --draft --max-min 9   # the whole film, half size, the track under it; rerun until exit 0
+npm run gates                                                 # forensics --grammar-only on the draft, the UI strings, the marks
+bash scripts/layout-audit.sh Film --cues --scale 0.5          # placement, overlaps, text cut by the frame in the product beats
+python3 scripts/forensics.py out/draft.mp4 --cues out/cues.json --grammar-only     # motion, seam, film and sound gates, small decode
 python3 scripts/forensics.py out/draft.mp4 --cues out/cues.json --seams            # the seam checks alone, seconds
 node scripts/logos.mjs check                                  # a film that shows other products' marks
 node scripts/frames.mjs sheet --from out/draft.mp4            # the contact sheet for the director pass (16 tiles, seconds)
@@ -81,6 +82,8 @@ Run it on `TREATMENT.md` at Step 1b, before any picture work, and again on `out/
 | `vague` | fancy or vague words a customer would not say (unleash, reimagine, seamless, effortless, elevate, supercharge, next-level, the future of, magic, journey, unlock, empower, revolutionize, beyond, redefine, game-changing, built different, ...) | error |
 | `metaphor` | a figure of speech instead of the thing (a superpower, a second brain, rocket fuel, on autopilot, a copilot) | error |
 | `slogan` | "Meet X", "X, reimagined", "Less X. More Y.", "X meets Y", "made simple", "your way", a question, an exclamation | error |
+| `slogan` (rhyme) | two words of a short line rhyme ("Launch by lunch."), common suffixes left out | warning |
+| `brief-claim` | a line states a fact `BRIEF.md` never gives: a price or "free", a figure, a superlative or a promise ("fastest", "only", "unlimited"); only with a brief (`--brief`, else beside the script, the project root of `out/cues.json`, the working folder) | error |
 | `claims` | two sentences, a list, or two clauses joined by and/but in one line; a short list (2-4) of the real marks the film shows is one claim ("Ask ChatGPT, Claude and Gemini.": the names in `public/logos/logos.json`, `marks` in the cues, a `**Marks:**` line in `TREATMENT.md` or `--marks`), when the rest of the line has a verb | error |
 | `verb` | no verb (an abstract noun alone: "Total control.") | error |
 | `together` | two lines on screen at once outside a declared swap | error |
@@ -114,6 +117,9 @@ Reads `timeline.ts` (a HyperFrames project: `timeline.js`) and checks it against
 | `declares-cover` | every step, flash, camera-blur need and seam that a primitive declares is covered by the timeline's declarations |
 | `event-gap`, `density-plan` | a stretch past 72 f without an event or a reading hold (48 f in crisp) is a warning (a hold may rest, still); past 150 f@60 (2.5 s, `--max-rest`) it fails; starts per second and concurrency in band |
 | `stagger-shape`, `accent-time`, `end-lock`, `exit-length` | irregular staggers in the house range; the accent transient on type; the end lock held; exits long enough to read as moves |
+| `beats` (loop) | a line alone then its picture (T then A) three times or more with no line beat that meets its picture (TA): the text-then-cards loop; an error with `src/launch.ts` (a pair's beat `with` or `over` fixes it), else a warning |
+| `spec` | the film's length against the spec line of `BRIEF.md` (over 10 % longer: an error; 15 % shorter: a warning); with a brief, the format's band (launch 15-45 s, update 8-20 s) and the lockup's hold from `CUE.lockup` (over 3.5 s) warn |
+| `type-devices` (warn) | with `src/launch.ts`: three lines or more all landing a starred accent on their last word (one device on every line) |
 | `script` | the film's words are a script: every line (an entry, a build chain joined, a replace fragment; not ui strings, `kind: 'name'` or the end card) holds 2–7 words (over 7 an error, a single word a warning, called a keyword); more than half the lines a single word warns as a keyword pile; then `copy-check.py` reads every entry as a stranger would and its errors are script errors (vague or fancy words, metaphors, slogan shapes, no verb, two claims in a line, no name, nothing that says what the product is by 3 s; an update film: the name and the version by 3 s, from `LOOK.filmType`; `--no-copy` skips it); two lines on screen together after the first one's read is an error unless the later one declares `swap: '<id>'`; a sentence set on two lines warns. A film whose lines are mostly sentences reads at the script's budget: 50 words, 2.4 words a second in any 5 s, 1.6 over the body, text on up to 85 % (`references/copy-and-type.md` §1–2b) |
 | text flow | `fragment` (chain parts), `copy-lines`, `copy-concurrent`, `read-first`, `reveal-rate`, `chain-gap`, `chain-beat`, `word-rate`, `word-total`, `text-hold`, `text-share` (`references/copy-and-type.md`) |
 | `read-quiet` (calm) | nothing that asks for the eye starts while a line is read. Only cues whose `SALIENCE` is `copy`, `hit` or `cut` are guarded (missing = `hit`); `life` (creep, light, drift, carried decay) and `move` (camera moves away from the text) run freely and count toward density |
@@ -274,6 +280,14 @@ cues file that carries the declarations:
 | carried-cut | the same, but the picture repeats along the move (stripes, tiles, a list) or its moving pixels disagree on the direction: the read is not trusted | warn |
 | dissolve-detect | ≥ 4 f@60 that are a rising mix of two different images, or a fade to black before the last 2 s, unless declared (`dissolveUi`, `light`, `fadeEnd`) | fail |
 | end-card | with `END` declared: nothing assembles in the 1.5 s before the lock, or the card fades in | warn |
+| carried-cut (hide) | a hard cut that nothing hides: no blur that makes both sides unreadable (dip > 0.9 against the settled shots), no anchor (under 25 % of the frame changing, a shape within 10 px, the centre slot), no whip carrying the picture a fifth of the frame in its last 0.2 s (`slow` when the direction carries but the speed does not); the kept ground alone hides nothing; over 10 % of the cuts, or a declared scene seam the pixels show bare | fail |
+| ghost-cut | a 2-3 frame cut run whose inner frame mixes both pictures (a collapsed dissolve, a grey double exposure) or is torn (part of the frame already cut) | fail |
+| empty-frame | 0.1 s or more mid-film with nothing crisp on screen (luma edges over 200 on under 0.05 % of the frame); 0.5 s or more is a stall | warn; fail |
+| frozen-hold | nothing changes for over 1 s mid-film (1.5 s while a line is read), or over 55 % of the body frozen | warn |
+| end-drift, end-centre | the last 2 s slide at a flat speed to the last frame and never land; the last frame's lockup over 1 % of the width off centre | warn |
+| world-still, world-murk | the world's textured corners stay one picture all film; its outer ring has no highlight (p99.5 under 120) on 70 % of it | warn |
+| legibility | a line of the cues copy (and the first name) under 3:1 against what stands behind it (the frame before it arrives, or the flat backing it arrived on) | warn; under 2:1, fail |
+| audio, audio-end | no audio stream or a silent mix (any mode; `--no-audio` for a silent loop); the last 0.25 s under 12 dB below the loudest 2 s: the music is cut | fail; warn |
 | motion-snap | more than 0.6 one-frame changes per 3 s outside a declared snap (a change of 2+ values with both neighbours under 35 % of it, not a declared cut), or more than one declared snap device | fail |
 | motion-frozen | 75 f@30 (2.5 s) in a row where the mean change is under 0.05 and fewer than 8 px change by 4+ values (a dead stretch), after the first 0.5 s and outside the end lock and declared freezes; a still hold shorter than that passes | fail |
 | motion-decay | moves fall from their peak to 20 % of their speed in a median under 3.5 f@30 (3+ moves) | fail |

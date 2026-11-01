@@ -512,6 +512,7 @@ You cannot listen, so measure what a listener hears:
 | A melody of effects | tuned roles in a run | the tuned budget thins them; use untuned roles for runs |
 | The join clicks or chops | a cut mid-note or off the attack | `track.py check` names it; re-edit on other bars |
 | Ending clicks or cuts off, or the music stops dead | no tail, an event inside the end fade, a bed stopped on a bar line, a tail shorter than the ending | `track.py edit --end own` (or `fade`, `hit`); the tail holds `MUSIC.end.hold`; move late events before the fade |
+| The film is silent, or its music stops at full level on the last frame | no track picked, or the picture timed before the track was fitted (the mux trims the ring-out to the picture) | pick and fit the track before the timeline (`music.mjs pick`, `get`, `npm run sound`, then the draft again: render.sh plays the track alone under a draft until the mix exists); `forensics.py` audio fails a silent film and audio-end warns on a cut ending |
 | Peaks over −1 dBTP after encode | ceiling raised, or effects added after the master | keep ceiling 0.77; re-run `score.py` after every change |
 | A kit sound starts before its move | a whoosh take with a long build on a short move | `score.py` fades the lead-in to start at most 2 f before the move |
 | Sound late after mux | Remotion's AAC priming | render `--muted`, mux with ffmpeg (`render.sh` does) |
