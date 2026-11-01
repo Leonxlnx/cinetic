@@ -606,6 +606,11 @@ if [[ $JOIN_ONLY -eq 0 && $FASTPATH -eq 1 && " ${EXTRA[*]-} " != *" --gl"* ]]; t
   else GL=${CINETIC_GL:-$(node "$SCRIPT_DIR/frames.mjs" gl --bundle "$B" --comp "$COMP" --quiet 2>/dev/null || true)}; fi
   if [[ -n "$GL" ]]; then RARGS+=(--gl="$GL"); GL_AUTO=1; step "GL backend: $GL (scripts/frames.mjs gl; CINETIC_GL or -- --gl=X overrides)"; fi
 fi
+# a film with a WebGL hero shot (fx/three) draws its flat 2D twin on software GL: say so, so a review of this render
+# does not judge the 3D shot by its fallback (the master wants a hardware backend: --gl=angle where the machine has one)
+if [[ ( "$GL" == swangle || " ${EXTRA[*]-} " == *"--gl=swangle"* ) ]] && grep -rqs --include=*.ts --include=*.tsx "fx/three" src; then
+  echo "render.sh: note: the film uses fx/three and this render runs on software GL: its 3D shots draw their flat 2D fallback here" >&2
+fi
 # rrender ARGS: `remotion render ARGS`; when the picked backend fails on the GPU path (the browser or its GPU process
 # died, a lost GL context, a hung frame), the call runs once more on swangle (software GL, slower, always draws) and
 # the rest of the run stays on it. An error in the film's own code fails the same way on every backend: no retry.

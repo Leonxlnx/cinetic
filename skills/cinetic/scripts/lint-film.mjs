@@ -1469,6 +1469,11 @@ for (const file of files) {
       report(i, 'italic', 'error', 'skew on type is a faux italic (a hard ban); move it to a shape, or drop it');
     else report(i, 'italic', 'warn', 'skew: fine on a shape (a smear on a whip); on an element that holds text it is a faux italic, a hard ban');
   });
+  // tracking so tight the letters touch: at a wordmark's or a line's size an r and an n merge ("Cairnly" reads "Caimly")
+  each(/letter-?[sS]pacing\s*:\s*['"`]?\s*(-\d*\.?\d+)\s*em/g, (m, i) => {
+    if (Number(m[1]) < -0.05)
+      report(i, 'tight-tracking', 'warn', `letterSpacing ${m[1]}em: the letters touch (an r and an n read as an m); giant type holds -0.05em at the tightest, lines and names -0.02em`);
+  });
   const serifMsg = (what) => `${what} is a serif face: a hard ban when you invent the look (one clean sans, references/brand-and-color.md §2). The user's own brand face? Mark it // cinetic:brand-supplied <what> and record it in BRIEF.md`;
   each(/@fontsource(?:-variable)?\/([\w-]+)|@remotion\/google-fonts\/([\w-]+)/g, (m, i) => {
     if (isSerifFamily(m[1] ?? m[2])) report(i, 'serif', 'error', serifMsg(m[0]));
