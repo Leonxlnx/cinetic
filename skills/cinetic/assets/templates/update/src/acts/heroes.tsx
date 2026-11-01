@@ -444,8 +444,8 @@ const counterPlan = (t: ChangeTimes) => {
   const c = UPDATE.changes[t.i];
   const L = localOf(t);
   const slab = centred(1240 * U, 600 * U, 10);
-  // the figure and its note under it: what the push lands on
-  const fig: Box = { x: slab.x + 50 * U, y: slab.y + 130 * U, w: 700 * U, h: 360 * U };
+  // the label, the figure and its note under it: what the push lands on (no word cut by the frame's edge)
+  const fig: Box = { x: slab.x + 44 * U, y: slab.y + 30 * U, w: 720 * U, h: 470 * U };
   const cam = camera([push(L.go, frame(fig, { fill: 0.86, yaw: 5, pitch: -2, anchor: [0.48, 0.52] }), { frames: Math.max(f60(40), L.hit - L.go), film: FILM, id: 'counter-push' })], {
     film: FILM,
     base: opening(frame(slab, { fill: 0.84, yaw: -7, pitch: -4 })),
@@ -564,7 +564,7 @@ const FocusSwap: React.FC<HeroProps> = ({ t, f }) => {
   return (
     <Stage3D camera={P.cam} frame={f}>
       {worldPlane(world?.ground)}
-      <Plane id="before" box={a} move={() => ({ z: -300 * dim, y: -60 * dim })}>
+      <Plane id="before" box={a} move={() => ({ z: -300 * dim, y: -60 * dim, opacity: 1 - 0.45 * dim })}>
         <ScreenCard c={c} t={t} F={before} w={w} h={h} />
         <div style={{ position: 'absolute', inset: 0, borderRadius: 30 * U, background: DARK ? '#000000' : GROUND, opacity: 0.5 * dim }} />
       </Plane>
