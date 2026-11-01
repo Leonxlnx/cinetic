@@ -5,7 +5,8 @@
  *   1. The phrase guard knows its own patterns: each catches its example and lets the house wording
  *      that looks like it pass (one spring class per film, a loudness target per film, references/).
  *   2. No public file ties a number to an outside source: every tracked or untracked (not ignored)
- *      text file of the repository and the _drafts folders are scanned with generic phrases (claims
+ *      text file of the repository (a licence's own verbatim text, OFL.txt or LICENSE.txt, aside) and the
+ *      _drafts folders are scanned with generic phrases (claims
  *      of outside research, counts of other people's work, generated music) and, case-sensitive,
  *      technique ids (T plus two digits). Numbers are house defaults and normal ranges.
  *   3. No audio in git (wav, mp3, flac, ogg, m4a, aac, aif, aiff, opus), no images outside the asset
@@ -93,8 +94,10 @@ const PENDING = new Set([]);
 
 const TEXT_EXT = /\.(md|mdx|txt|ts|tsx|js|jsx|mjs|cjs|json|py|sh|html|htm|css|ya?ml|toml|cfg|ini)$/i;
 const SELF = relative(REPO, fileURLToPath(import.meta.url)).split('\\').join('/');
+// a licence's own text travels verbatim with what it licenses (the fonts' OFL.txt names the uses it grants): not ours to word
+const LICENCE_TEXT = /(^|\/)(OFL|LICEN[CS]E|NOTICE|COPYING)(\.(txt|md))?$/i;
 const scope = (only ? only.map((f) => relative(REPO, resolve(f)).split('\\').join('/')) : [...new Set([...listed, ...drafts])])
-  .filter((f) => TEXT_EXT.test(f) && f !== SELF);
+  .filter((f) => TEXT_EXT.test(f) && f !== SELF && !LICENCE_TEXT.test(f));
 const hits = [];
 for (const f of scope) {
   const abs = join(REPO, f);
