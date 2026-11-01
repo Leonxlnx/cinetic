@@ -1,7 +1,8 @@
 # Catalogue: what a film is made of, one pick per slot
 
-A film is two or three dealt creative elements (§0), one text voice, two or three moves, two or three seam kinds, one
-ground family, one end-card design and one signature, picked from the menus below for what the line says and what the product does. Pick them in the plan step
+A film is one world, three or more dealt hero shots (§0b), two or three dealt creative elements (§0), one text voice,
+two or three moves, two or three seam kinds, one end-card design and one signature, picked from the menus below for what
+the line says and what the product does. Pick them in the plan step
 (before any act is built), write the ids into `film.json` `devices`, and run `node scripts/film-diff.mjs`: the ground,
 the voice, the signature and the end card differ from each of the last three films, and the move set (voice,
 signature, logo design, moves, seam kinds) shares at most 25 % with each of them. `film.json` `recent` lists what the
@@ -60,6 +61,40 @@ hands over (type-window, type-object, split-around) owns its picture's first fra
 picture. `logos` and `count` are real: the products it really works with, the product's own figure; `before` items
 are the product's real old way (the steps it removes, the questions it ends), never filler.
 
+## 0b. Hero shots (three or more a film, dealt)
+
+The shots that carry a film's production value: each a designed 3D or light shot of the product's own content
+(`src/content.ts`, written by `node scripts/content.mjs --brief BRIEF.md --fetch --force`) standing in the film's world.
+`deck.py` deals at least three at random with fit (the brief's words, the world's tone, the photos, the brand's mark),
+never the last film's set, into `src/dealt.ts` `hero`; launch-simple's `HERO_PLAN` puts each on the beat its role says
+before the creative elements take the beats left (a pair's `hero` pins one; `heroes.swap` trades one with a reason).
+Every shot keeps the habits: one sharp plane with a graded blur ladder behind it, one camera move with a job
+(front-loaded, landing, through declared fx/depth shots), light sized to its source and timed, real content in quantity,
+a scale jump, smear only on fast frames, cards facing the camera. Numbers f@60, px@1080 (`src/hero/time.ts` times them).
+
+| id | role | recipe | content |
+|---|---|---|---|
+| `glass-input` | over | the line centred over the world and 64 px under it the input as frosted glass (136 tall, 1120-1400 wide, fx/light `Glass`): it rises 26 px into place as the line builds (from 12), a band of light crosses it as it lands (42) and again as it sends; the request types once the line is read (12-30 characters a second, the newest word in the accent settling to ink); one push in on `E.glideOut` over the shot (the type and the glass x1.075, the world x1.035: the near things grow more); a glow 2.4x the send button's radius blooms on send | `prompt` |
+| `macro-type` | picture | the bar sized to its request (fx/depth): opens on the whole bar, a push to x2.6 lands on the caret as the first keys land (44), then a follow of the caret (lag 24) that lands as the typing stops, the world soft behind (its soft copy); a pointer glides in (20) and presses send, a glow 1.35x the button | `prompt` |
+| `black-glass` | picture | the composer as a frosted pane (1180 x 272, radius 40): its defocus clears 7.5 -> 0 px in 10 f (half in the first 3), a light runs along its rim (from 16), one push x0.94 -> 1.06 that lands by 72 % of the beat, the request typing once sharp, a band on send; a label above it in the mute | `prompt` |
+| `page-fly` | picture | the page flies in from 1500 px deep and 420 low (30 f, `E.glideOut`), lying back (pitch -44, yaw 15 by the seed's side), and the camera travels it from the headline to the table (x1.18 -> 1.5, the roll unwinding -8 -> -3), the far edge soft (a defocus that varies across the page), a lit edge toward the key | `doc` |
+| `toast-stack` | picture | five notifications arriving front-loaded over 62 % of the beat: each drops into the front slot (16 f, `E.snapOut`) and pushes the others one slot up (0.62 card) and 240 back (18 f): the lens makes the ladder (front sharp, each further back softer); the camera a little below and to one side, one push x1.22 that lands; light cards on every world | `notices` |
+| `fan-focus` | picture | five cards fanned back in depth (fx/depth `FanFocus`), already entering on the cut, the camera to one side (the seed's) closing on the third as the focus racks to it (from 24 % of the beat) | `comments` |
+| `rise-behind` | over | the line's key word giant (cap up to 22 % of the frame) in front, the rest of the line small above it, three cards (500 x 600) rising 460 px behind it from the middle out (40 f each, 8 apart) while the camera pulls back x1.3 -> 1; the focus racks from the word to the cards as the reveal lands | `plans` |
+| `porthole` | line | the line built in the film's voice; 8 f after it is read its words part (one row before its key word, two rows apart) and a porthole opens in the gap over 26 f (diameter 2.9x the type size, a real face inside), a shadow ring and the key's light on its rim; the words re-centre round it; it goes soft into the next shot (a blur seam) | `people` |
+| `carousel` | picture | 8-16 of the film's real pictures (380 x 500) on a ring turning to a stop (300 deg, `E.settleOut`, the seed's way) while the camera cranes from 58 deg above to eye level (x2.05 closer) and lands the chosen one facing the camera; the far side turns away, a smear only while it turns fast (needs three pictures or more) | `thumbs` |
+| `push-press` | picture | the product's screen read whole for 30 % of the beat, then one push (38 %, x2.1, landing at yaw 12) into the scene's `button` as a pointer arrives and presses; a glow the size of the button blooms and the screen answers on its hit | the scene |
+| `logo-3d` | end | the brand's mark extruded and bevelled (fx/three `Logo3D`): the end opens on its close-up through a blur seam and one pull-back (76 f) turns it to face the camera and lands it on the flat mark, the name sliding out after it (needs the brand's SVG; software GL draws the same move flat) | `brand/logo.ts` |
+
+The world (one a film, launch-simple's `ground` slot, `src/world.tsx`): `nearWhite`, `paleSky`, `blackField`, `deepField`,
+`electric` (built); `clouds`, `sky`, `aerial`, `sea`, `nightCity`, `studio`, `macro` (photographs: `node scripts/assets.mjs
+plate <kind>`, then `--pick <n> --to public/plates --accent '<accent>'`). A photograph is sharp for the opening frames,
+then racks soft behind the type and the product (a veil of its deep tone on a dark world); the claim stands in it.
+Recipes for a shot of your own in a world: [lighting.md §8](lighting.md#8-a-world-and-light-that-reads-it-fxworld-fxlight)
+(`glass-input-over-plate`, `black-glass`, `electric-card`, `glowing-line`, `iris-into-world`, `iris-into-input`,
+`button-opens-world`, `through-the-mark`); 3D hero objects: [three.md](three.md) (`logo-3d`, `glass-tiles`,
+`glass-dome`, `hero-object`); depth scenes: [camera.md §13](camera.md#13-the-depth-stage-a-real-camera-over-ui-planes-fxdepth).
+
 ## 1. Text voice (one a film)
 
 One entry animation carries every line of the film, half of them at the very least; at most one contrasting entry
@@ -109,6 +144,12 @@ film's one signature, on one line.
 | `counter` | a number counts on each event, 0.25 s steps (`fx/Roll`) |
 | `tint-flip` | an element or the ground switches colour on a beat (a declared colour event) |
 | `light-sweep` | a 70 px specular streak glides along an edge (`fx/Rim` `KeyRim`, `fx/Exposure` `LightSweep`) |
+| `macro-type` | the camera pushes onto an input at 2.5-4x as the first keys land and follows the caret as the line types (fx/depth `MacroType`) |
+| `page-travel` | a travel over a page lying back in perspective, headline to table, the roll unwinding, the far edge soft (`PageTravel`) |
+| `fan-focus` | cards in a fan in depth, the camera to one side closing on one card while the focus racks to it (`FanFocus`) |
+| `push-press` | a push into the button at macro scale as the pointer reaches it and presses (`PushIn`) |
+| `rise-behind` | cards rise behind a giant word while the camera pulls back; the focus racks from the word to the row (`RiseScene`) |
+| `crane-down` | the camera swings down from above onto a board and lands face-on for the read (`CraneDown`) |
 
 **Signatures (one a film, the shot people remember):** a paper collage in stop motion; a zoom out from one tile to the
 whole wall; an avatar that grows and pushes the words apart; letters swinging on an arc one by one; a dot that grows
@@ -142,7 +183,8 @@ mix in seconds.
 
 ## 4. Ground family (one a film)
 
-One field and its light for the whole film, never cut; one declared colour event at most. `fx/Grounds`
+launch-simple stands its films in a world instead (§0b). One field and its light for the whole film, never cut; one
+declared colour event at most. `fx/Grounds`
 `<FamilyGround family>` draws it, `palette.py --family <id>` writes its tokens ([brand-and-color.md §9b](brand-and-color.md)).
 With a colour field, at least one line sits on it (white or ink-black type, 4.5:1 once settled).
 

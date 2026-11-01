@@ -34,7 +34,7 @@ stop`) adds the gap to its one element and 1 s rings out after it.
 
 | Template | Length | Use it when | Shape |
 |---|---|---|---|
-| `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing, line by line | a line alone in the middle of a clean ground, the product doing what it said, the next line, the product again, the centred lockup built from the last picture; the direction you pick from the deck's three sets the voice, the ground family, the seams, the end card, the camera, the type pairing and the creative elements (`deck.py --direction <id> --why` writes `src/dealt.ts`, the one deal the film plays; with no direction dealt, the name deals them), never the last films' (`src/recent.ts`) |
+| `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing, line by line | a world (a graded photograph or a lit field with its key light), a few centred lines, the product's own content in hero shots (a glass input over the world, the input at macro scale, a page travelled, a notification stack, a porthole parting the line, the 3D mark into the lockup ...), the creative elements on the beats left, the centred lockup; the direction you pick from the deck's three sets the world, the hero shots, the voice, the seams, the end card, the camera, the type pairing and the creative elements (`deck.py --direction <id> --why` writes `src/dealt.ts`), never the last films' (`src/recent.ts`) |
 | none (the starter, `--template none`) | 15-45 s | a launch film whose idea is its own device | the dealt direction's skeleton |
 | `update` | 20-27 s | "vX is out": 2-4 changes to show | the name and the version centred; each change a picture and a line in its own shape (the card working, then its line from the bar the card folds into or on the colour field; or the line first, round the card in its gap or alone), each card brought in or played by the creative device that shows that change (cursor-follow on a tap, bubble-swarm on the pings it ends, split-compare on a before -> after, photo-arc on photos), kit cards filling the frame on one of the eleven lit grounds, the recap with each change's picture, the mark, the wordmark and the version; the deck's devices (`src/dealt.ts`) or the name's |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
@@ -61,8 +61,15 @@ picture as the product's real screen); the template's `README.md` walks through 
   `--direction <id> --why "<one line>"`. It maps the direction onto the template's slots (voice, ground, seams, end
   card, camera), deals the creative elements and the type pairing, and writes `src/dealt.ts`, which `src/deal.ts` plays;
   DIRECTION.md opens on your reason and section 0 prints the same deal (`pin` in `src/launch.ts` fixes a slot).
-- **Ground.** The dealt family's lit field (one of all eleven in `fx/Grounds`), still, never cut, nothing laid over it,
-  and the film's one colour event from the claim.
+- **A world.** One place for the whole film (`src/world.tsx`, dealt as `ground`): built (`nearWhite`, `paleSky`,
+  `blackField`, `deepField`, `electric`) or a photograph (`clouds`, `sky`, `aerial`, `sea`, `nightCity`, `studio`, `macro`:
+  `node scripts/assets.mjs plate <kind>`, then `--pick <n> --to public/plates`), its key light read by the glass, rims and
+  type, sharp as the film opens and soft behind the type and the product after; never a bare gradient.
+- **Hero shots.** Three or more dealt with the direction ([catalogue.md](catalogue.md) §0b: `glass-input`, `macro-type`,
+  `black-glass`, `page-fly`, `toast-stack`, `fan-focus`, `rise-behind`, `porthole`, `carousel`, `push-press`, `logo-3d`),
+  placed first by role (`HERO_PLAN`), each filled from `src/content.ts` (`node scripts/content.mjs --brief BRIEF.md
+  --fetch --force`), each with one sharp plane, one camera move that lands and light sized to its source; a pair's `hero`
+  pins one. The creative elements take the beats left.
 - **A world and scale.** Each picture framed on its `focus` box from its first frame until the subject stands 62 % of
   the frame's height (`FRAME`), on a contact shadow (`FLOOR`): never a small card in an empty field (look-audit
   `small-subject`).

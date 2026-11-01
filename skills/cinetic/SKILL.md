@@ -13,12 +13,11 @@ timeline file, and nothing is finished until it is rendered, measured and review
 - **Engines.** Remotion 4.0.529 (React, frame-driven) is the default and carries every rich primitive. HyperFrames
   0.8.79 (HTML plus a paused GSAP timeline) mirrors the tokens and the timeline contract for HTML projects
   ([hyperframes-engine.md](references/hyperframes-engine.md)).
-- **Paths.** `scripts/render.sh` and the rest work from the skill root and inside a film project (`new-film.sh` copies them in).
-  Every script prints `--help` except the internal helpers `brand-svg.ts` and `hf-preflight.cjs`.
+- **Paths.** Scripts work from the skill root and in a film project (`new-film.sh` copies them in); each prints `--help` but the helpers `brand-svg.ts` and `hf-preflight.cjs`.
 - **Brand.** A supplied brand (logo, colours, fonts, screenshots, tone) wins over the house taste
   ([brand-kits.md](references/brand-kits.md)); record any banned look it brings in `BRIEF.md`.
-- **Python.** Commands say `python3`: one interpreter with `scripts/requirements.txt` runs them all.
-  `node scripts/frames.mjs python` names the one here that has them; set `PYTHON` to it once.
+- **Python.** Commands say `python3`: `node scripts/frames.mjs python` names the interpreter that has
+  `scripts/requirements.txt`; set `PYTHON` to it once.
 
 ## The standard
 
@@ -64,18 +63,18 @@ These are the rules every film is held to, with their numbers. The gates named i
    film's last element (the last picture's element becomes the mark, the last word the wordmark, the badge spins in),
    held 2-3 s on a creep, the name once and the one fact under it. The logo is the brand's own or built from the film's
    last element, never a sparkle, a star or a generic glyph.
-9. **Its own film, never a template.** One lit ground family for the whole film (`FamilyGround`), one text voice, two
+9. **Its own film, never a template.** One world for the whole film, one text voice, two
    or three moves, two or three seam kinds, one signature and one end-card design, picked from
-   [catalogue.md](references/catalogue.md) and declared in `film.json`. The ground, the voice, the signature and the
+   [catalogue.md](references/catalogue.md) and declared in `film.json`. The world, the voice, the signature and the
    end card differ from each of the last three films, and the move set shares at most 25 % with each of them; a film
-   made from a template plays another device than its floor in half its slots or more. (`film-diff.mjs`; `deck.py` and
-   the template deals leave the last films' choices out.)
-10. **Premium, not just clean.** Depth and motivated light on the ground and the product (one key light, a rim, a
-    contact shadow, depth from the light and the planes), the hero type large, the one signature move landing. The
-    camera is still unless a shot declares a move that starts, travels and lands (no float, no drift, no panning back
-    and forth); held UI never bobs or sways; cards face the camera (a 3D turn lands face-on); a hold may be still while
-    the product changes in it (only 2.5 s where nothing changes is dead). A flat field with small type and a still card
-    fails even when every gate passes.
+   made from a template plays another device than its floor in half its slots or more. (`film-diff.mjs`; the deals
+   leave the last films' choices out.)
+10. **Premium, not just clean: every shot keeps the habits.** One sharp plane and a graded blur ladder behind it; one
+    camera move with a job, front-loaded, landing (else still: no float, drift, bob or panning back); a world in one
+    colour family with its key light; glass as a lens on it; light sized to its source and timed (a band as the pane
+    lands, a glow the size of the button); a hero object in a real material; the product's real content in quantity; a
+    scale jump (macro to wide, a giant word); smear only on fast moves; transitions made of focus and light. Cards face
+    the camera (a 3D turn is a designed move). A flat field with small type and a still card fails.
 11. **Simple and finished.** The path below, one review round, on the time plan; a gate that costs more than 5 minutes
     on a 30 s film is advisory. A film is delivered whole, with its ending: never a cut film.
 
@@ -94,10 +93,10 @@ When you invent the look, none of these appear (`lint-film.mjs` checks the code,
 - **Pictures:** a person, place or product drawn in SVG where a photo belongs; grey cards standing in for pictures;
   stock gestures (handshakes, pointing at screens); low-resolution or mixed-grade pictures.
 - **Sound:** generated music; a film with no music; ducking the music under effects; copyrighted audio in any repository.
-- **Credits:** no music or imagery credit in the picture; licence records stay private with the project.
+- **Credits:** none in the picture; licence records stay private with the project.
 
-Light and glow from a source, spectral accents, dithered gradients and glass are allowed inside a device that does a
-job, with one dominant accent over the film's ground family ([lighting.md](references/lighting.md)).
+Light from a source, spectral accents, dithered gradients and glass are allowed where they do a job, with one dominant
+accent over the film's world ([lighting.md](references/lighting.md)).
 
 ## The time plan
 
@@ -112,7 +111,7 @@ film exists early, and every later look is cut from it:
 - **70 %:** the final starts: `bash scripts/render.sh Film out/film.mp4 --max-min 9` (parts that resume: rerun until
   exit 0). If it cannot finish in the time left, deliver the draft scaled up (`--from-draft out/draft.mp4`).
 
-Never per-frame still loops: a still call costs 20-60 s on a busy machine, a cut from the draft seconds.
+Never per-frame still loops: a cut from the draft costs seconds.
 
 ## The simple path
 
@@ -130,19 +129,22 @@ A launch gets `launch-simple`; `--format update` the update film; other shapes a
 deals the type pairing from the name (`type-deal.ts`); cards are the kit's `Card`, logo rows `LogoRow`.
 
 **2. Direction and script.** `python3 scripts/deck.py --brief "<one line>" --format launch [--have ui,photos]
-[--brand brand/brand.json]` deals a direction from the brief and the history into `out/DIRECTION.md` (`--options
-3`: three). Copy [TREATMENT.md](assets/TREATMENT.md) to the project and write
+[--brand brand/brand.json]` deals three directions into `out/OPTIONS.md`; pick the one that fits the product with
+`--direction <id> --why "<one line>"`. Copy [TREATMENT.md](assets/TREATMENT.md) to the project and write
 the idea sentence (it fails with a competitor's name in it) and the script: line 1 says what the product is ("[Name]
 turns [input] into [output]."), then one concrete thing it does a line, then the claim: 3-4 lines at any length, the
 pictures between carry the rest. `python3 scripts/copy-check.py TREATMENT.md` passes before any picture work
 ([copy-and-type.md](references/copy-and-type.md)).
 
-**3. Creative elements and picks.** It also deals two or three creative elements at random (`src/dealt.ts`):
-devices from `src/fx/creative`, each a whole beat with the product inside. launch-simple plays them on half its beats
-or more (`CREATIVE_PLAN`); give each its needs on its pair (`alts`, `logos`, `before`, `count`), swap one at most,
-with a reason. The deal sets voice, ground, seams, end card and camera (`src/deal.ts`); other templates pick from
-[catalogue.md](references/catalogue.md) (§0) into `film.json` `devices`, then `node scripts/film-diff.mjs`. The beat
-plan in `TREATMENT.md` names each picture beat's visible change.
+**3. World, hero shots, creative elements.** The deal (`src/dealt.ts`) holds the film's **world** (one place with its
+key light, never cut; a photograph needs `node scripts/assets.mjs plate <kind>`, then `--pick <n> --to public/plates
+--accent '<accent>'`), three or more **hero shots** (designed 3D and light shots: a glass input over the world, the input
+at macro scale, a page travelled, a notification stack, a porthole parting the line, the 3D mark into the lockup ...;
+[catalogue.md](references/catalogue.md) §0b) and two or three **creative elements** (`src/fx/creative`). The shots fill
+themselves from `src/content.ts`: `node scripts/content.mjs --brief BRIEF.md --fetch --force`, then keep what is true.
+launch-simple places the shots first (`HERO_PLAN`; a pair's `hero` pins one), the elements take the beats left; swap
+one of each at most, with a reason. Other templates pick from the catalogue into `film.json` `devices`, then `node
+scripts/film-diff.mjs`.
 
 **4. Music.** The track is chosen before the timeline and the picture is cut to it
 ([music.md](references/music.md)): `node scripts/music.mjs pick --mood "<words>" --length <s>` (the curated library;
@@ -156,15 +158,14 @@ picture, the strings that picture shows, the one fact for the end card) and `src
 product's real screen built in code with the kit, the first one showing the core action, the last one with its hero
 element). The kit shows only the film's own content (a part given nothing draws a dashed box and fails precheck;
 [product-ui.md](references/product-ui.md)). Real people, places and objects are real photos or clips with a studio
-finish, never drawn (`node scripts/assets.mjs recipe "<product>"`, then `search`, `sheet`, `get`, `grade`;
-[imagery.md](references/imagery.md)). Other products' marks: `node scripts/logos.mjs get <name> --film .`. Before a look:
+finish, never drawn (`node scripts/assets.mjs recipe "<product>"`; [imagery.md](references/imagery.md)). Other products' marks: `node scripts/logos.mjs get <name> --film .`. Before a look:
 `node scripts/precheck.mjs` (seconds: imports, every act at three frames, timing, empty kit parts, text fit). Look
 with `node scripts/frames.mjs end` (the ending, first) and `still <frames>` (several in one call); then the draft.
 
 **6. Draft, sound and check.** `npm run check` (tsc, `lint-film.mjs`, `grid-check.ts`) clean, then the whole draft:
 `bash scripts/render.sh Film out/draft.mp4 --draft --max-min 9` (rerun until exit 0; silent until the soundtrack
-exists). `npm run cues`; the effects kit cast for this film's actions (`kit.py init --preset launch` unless `--music`
-did it, then `python3 scripts/audio/kit.py cast`, `npm run kit`, `kit.py check`), `npm run audio`, the draft again.
+exists). `npm run sound` (cues, the kit cast and rendered for this film's actions, plan and mix in one command; no
+setting; its last line says PASS, FAIL or PARTIAL), the draft again.
 The fast gates: `python3 scripts/copy-check.py --ui src`, `bash scripts/layout-audit.sh Film --copy --scale 0.5`,
 `python3 scripts/forensics.py out/draft.mp4 --cues out/cues.json --grammar-only` (and `--seams`), `node
 scripts/logos.mjs check` ([checks.md](references/checks.md) §1).
@@ -194,7 +195,7 @@ with the format's variants (it runs `credits.py`: credits go into `CREDITS.md`, 
 | Logo sting | 3-8 s | `--template none` | the name and at most one line | MP4, ProRes 4444 alphas, poster |
 
 Recipes per format in [formats.md](references/formats.md); update films in [update-films.md](references/update-films.md).
-Films render at 30 fps by default (a move over 25 px a frame at 1080p is smeared; `--fps 60` for fast camera travel);
+Films render at 30 fps (a move over 25 px a frame is smeared; `--fps 60` for fast camera travel);
 a loop's last frame flows into frame 0 (`forensics.py --loop`, `render.sh --loop`).
 
 ## Craft essentials
@@ -233,22 +234,22 @@ camera films with shutter samples on fast frames); never upscale a final ([finis
 | picking the voice, moves, seams, ground, end card, marks | [catalogue.md](references/catalogue.md) |
 | the script, one line at a time, type roles and sizes | [copy-and-type.md](references/copy-and-type.md) |
 | the idea, the inventory, the direction deck, story shapes | [concept-and-story.md](references/concept-and-story.md) |
-| the beat grammar and timings per format, social variants | [formats.md](references/formats.md) |
+| beat grammar and timings per format | [formats.md](references/formats.md) |
 | a template other than launch-simple, and how a film differs from it | [templates.md](references/templates.md) |
 | colour, ground families, marks and lockups | [brand-and-color.md](references/brand-and-color.md) |
 | a supplied brand kit; a clip to feel like | [brand-kits.md](references/brand-kits.md), [clip-match.md](references/clip-match.md) |
 | the track: licences, analysis, the edit, cutting to music | [music.md](references/music.md) |
 | real photos and footage, the core action, the studio finish | [imagery.md](references/imagery.md) |
-| the product's UI, the kit, cards, cursor, data | [product-ui.md](references/product-ui.md) |
+| the product's UI, the kit, the macro screens, data | [product-ui.md](references/product-ui.md) |
 | the timeline, declarations, density, holds | [timing-grid.md](references/timing-grid.md) |
 | curves, springs, carry, creep; the camera; the seams | [motion-tokens.md](references/motion-tokens.md), [camera.md](references/camera.md), [transitions.md](references/transitions.md) |
-| the key light, living light, glow and plates | [lighting.md](references/lighting.md) |
-| every device with timing and build (search it, never read it whole) | [devices/INDEX.md](references/devices/INDEX.md) |
+| the world, the key light, glass, glow and plates; 3D hero objects | [lighting.md](references/lighting.md), [three.md](references/three.md) |
+| every device with timing and build (search it) | [devices/INDEX.md](references/devices/INDEX.md) |
 | the effects kit, cues, placement, levels, mastering | [sound.md](references/sound.md) |
 | render paths, blur, banding, encoding, deliverables | [finishing.md](references/finishing.md) |
 | every gate script and its rules | [checks.md](references/checks.md) |
 | the review round, and the long review when asked | [review-loop.md](references/review-loop.md), [assets/critics/](assets/critics/) |
-| cheap-looking tells and the mistakes of code films | [taste-and-slop.md](references/taste-and-slop.md), [craft-rules.md](references/craft-rules.md) |
+| cheap-looking tells, mistakes of code films | [taste-and-slop.md](references/taste-and-slop.md), [craft-rules.md](references/craft-rules.md) |
 | a whole film from idea to master, with its mistakes | [worked-example.md](references/worked-example.md) |
 | update films; Remotion; HyperFrames; render artifacts | [update-films.md](references/update-films.md), [remotion-engine.md](references/remotion-engine.md), [hyperframes-engine.md](references/hyperframes-engine.md), [chromium-rendering.md](references/chromium-rendering.md) |
 
@@ -257,22 +258,23 @@ camera films with shutter samples on fast frames); never upscale a final ([finis
 | Need | Tool |
 |---|---|
 | a project from the starter and a template; a brand kit, a clip, a track | `scripts/new-film.sh` |
-| one dealt art direction (or three to choose from); the sheet; a redraw | `scripts/deck.py` |
+| three dealt directions (world, hero shots, elements); the sheet | `scripts/deck.py` |
 | the film's devices against the last three films and its template; the history | `scripts/film-diff.mjs` (`--record`, `--history`) |
 | is the script clear; are the UI strings real words; OCR of held stills | `scripts/copy-check.py` (`--ui src`, `--final`, `--ocr`) |
 | the grid, the beats, the script, the seams, the declarations | `scripts/grid-check.ts` |
 | static bans, tokens, placeholders, emphasis | `scripts/lint-film.mjs` |
-| imports, every act rendered at three frames, timing asserts, empty kit parts, text fit, in seconds | `scripts/precheck.mjs` |
+| imports, three frames an act, timing, empty kit parts, text fit, in seconds | `scripts/precheck.mjs` |
 | stills, the ending, sheets from the bundle or the draft; which Python | `scripts/frames.mjs` (`still`, `end`, `sheet`, `grab`, `python`) |
 | placement, safe area, overlaps, covered text, kit icons, stand-ins | `scripts/layout-audit.sh` |
 | pixel QA: pops, holds, seams, ground flips, motion gates | `scripts/forensics.py` (`--grammar-only`, `--seams`, `--loop`) |
 | the draft, masters in parts, the blur pass, the draft as delivery | `scripts/render.sh` (`--draft`, `--from-draft`) |
 | spec, A/V lag, frame sync and true-peak gates | `scripts/probe.py`, `scripts/check-sync.py` |
 | poster, GIF, WebM, alpha, variants, credits | `scripts/deliver.sh` |
-| footage of the core action, photos, grading | `scripts/assets.mjs` (`recipe`, `search`, `sheet`, `get`, `grade`, `check`) |
+| footage, photos, the world's plates | `scripts/assets.mjs` (`recipe`, `plate`, `search`, `get`, `grade`) |
+| the film's screen content from the brief | `scripts/content.mjs` |
 | other products' official marks, current and verified | `scripts/logos.mjs` (`get`, `check`) |
 | the track: find, download with its licence; analyse, edit, grid | `scripts/music.mjs`; `scripts/audio/track.py` |
 | the effects kit, its plan, the mix, the listening pass, credits | `scripts/audio/kit.py`, `plan.py`, `score.py`, `listen.py`, `credits.py` |
 | a supplied kit; a palette or a ground family's tokens; a font | `scripts/brand.py`; `scripts/palette.py` (`--family`, `--recipe`); `scripts/add-font.mjs`, `scripts/font-match.mjs` |
-| advisory reads: the floors against a flat film, the house grammar, on-screen speed, data realism | `scripts/look-audit.py`, `scripts/grammar-score.mjs`, `scripts/measure-speed.py`, `scripts/data-check.mjs` |
+| advisory reads: flat-film floors, grammar, speed, data | `scripts/look-audit.py`, `scripts/grammar-score.mjs`, `scripts/measure-speed.py`, `scripts/data-check.mjs` |
 | a clip's grammar and the guard against copying it; the detail pass; device draws | `scripts/like.py`; `scripts/detail-pair.py`; `scripts/pick.py` |
