@@ -102,8 +102,15 @@
  *                     lib/drift breathe) driving a translate, rotate or scale, or a lit panel's sway given as
  *                     an object (fx/Lit, kit devices): UI moves only when it enters, changes state or leaves
  *   card-tilt         a card tilted at rest (errors): a constant tilt={{ x, y }} or tilt: { x, y } (outside an
- *                     entry's from), a constant rotateX(..deg) / rotateY(..deg), a depth item's constant rot:
- *                     cards face the camera; a 3D turn is a declared object move (animated, landing face-on)
+ *                     entry's from), a constant rotateX(..deg) / rotateY(..deg), a depth item's constant rot, a
+ *                     depth-stage Plane's constant rot={{ x, y, z }}: cards face the camera; a 3D turn is a
+ *                     declared object move (animated, landing face-on); on the depth stage the camera's angle
+ *                     gives the perspective
+ *   camera-shot       the depth stage's camera off its declared shots (errors; files importing fx/depth): a
+ *                     Stage3D camera={{ ... }} computed from the frame by hand, a shot on E.linear, a move that
+ *                     starts before the last one lands, a push straight back into a pull (or the reverse) within
+ *                     90 f@60, a camera field (yaw, pitch, roll, dist, lens, fov, target) on a sine of the frame.
+ *                     A declared camera([push(...), travel(...)]) passes: each shot starts, travels and lands
  *   drift-toggle      an old sway switched on a condition (`sway={c && {...}}`, `sway={c ? {...} : false}`): its
  *                     offset is not zero on that frame, so the layer jumps; better, drop the sway (idle-bob)
  *   unmount-moving    a layer unmounted (`F < X &&`, `F >= A && F < X &&`, a <Sequence> end) while a tween
@@ -2266,6 +2273,88 @@ for (const file of files) {
       each(/\{[^{}]*\bplane\s*:\s*['"](?:far|mid|near)['"][^{}]*\}/g, (m, i) => {
         const r = m[0].match(/\brot\s*:\s*(-?[\d.]+)\s*[,}]/);
         if (r && lit(r[1])) report(i + m[0].indexOf(r[0]), 'card-tilt', 'error', `a depth item rolled ${r[1]} degrees at rest: ${tiltMsg}`);
+      });
+      // a plane on the depth stage (fx/depth Plane) given a constant turn: the camera gives the perspective
+      each(/\brot\s*=\s*\{\{([^{}]*)\}\}/g, (m, i) => {
+        const tag = /<([A-Z][\w.]*)\b[^<]*$/.exec(code.slice(Math.max(0, i - 3000), i));
+        if (!tag || tag[1] !== 'Plane') return;
+        const turned = [...m[1].matchAll(/\b([xyz])\s*:\s*(-?[\d.]+)/g)].filter((v) => lit(v[2]));
+        if (turned.length)
+          report(i, 'card-tilt', 'error', `a Plane turned ${turned.map((v) => `${v[1]} ${v[2]}`).join(', ')} degrees at rest: ${tiltMsg}. On the depth stage the camera gives the perspective: stand it to one side (wide({ yaw: 24 })) or pitch it over the plane (PageTravel); a turn that lands face-on is the plane's own move`);
+      });
+    }
+
+    // camera-shot: the depth stage's camera (fx/depth) moves only through declared shots, each one move that starts,
+    // travels and lands: never a camera built from the frame by hand, a shot on E.linear, a move that starts before the
+    // last one has landed, a move straight back the way the last one went, or a camera field on a loop
+    if (isScript && !house && /from\s+['"][^'"]*\/depth(?:\/[\w.]*)?['"]/.test(code)) {
+      const how = 'the depth stage\'s camera moves only through declared shots (fx/depth camera([push(...), follow(...), travel(...)]), or a scene: MacroType, PageTravel, FanFocus, PushIn, CraneDown, RiseScene), each one move that starts, travels and lands';
+      const FRAME_TERM = /\b(f|F|frame|absFrame|time|sec|seconds|useCurrentFrame|interpolate|spring|spr)\b/;
+      const closeAt = (k, open, close) => {
+        let depth = 1;
+        let j = k;
+        for (; j < code.length && depth; j++) depth += code[j] === open ? 1 : code[j] === close ? -1 : 0;
+        return j - 1;
+      };
+      // a camera built from the frame by hand: <Stage3D camera={{ ...a field computed from the frame... }}>
+      each(/\bcamera\s*=\s*\{\{/g, (m, i) => {
+        const tag = /<([A-Z][\w.]*)\b[^<]*$/.exec(code.slice(Math.max(0, i - 3000), i));
+        if (!tag || tag[1] !== 'Stage3D') return;
+        const body = code.slice(i + m[0].length, closeAt(i + m[0].length, '{', '}'));
+        if (FRAME_TERM.test(body))
+          report(i, 'camera-shot', 'error', `a Stage3D camera computed from the frame by hand: ${how}. A still camera given as numbers is fine`);
+      });
+      // a shot on E.linear: no start, no landing (a drift)
+      each(/(?<![\w$.])(push|pull|travel|crane|orbit|whip)\s*\(/g, (m, i) => {
+        const k = i + m[0].length;
+        const args = code.slice(k, closeAt(k, '(', ')'));
+        if (/\bease\s*:\s*E\.linear\b/.test(args))
+          report(i, 'camera-shot', 'error', `a ${m[1]} on E.linear has no start and no landing (a drift): ${how}; camera moves ease from rest to rest (E.strongInOut, an arrive token after a cut, E.whipBuild)`);
+      });
+      // a camera([...]) whose moves overlap or come straight back (numbers written in the call)
+      const HOUSE60 = { push: 60, pull: 72, travel: 84, crane: 96, orbit: 90, whip: 28 };
+      const num = (s) => (s !== undefined && /^\s*-?[\d.]+\s*$/.test(s) ? Number(s) : null);
+      each(/(?<![\w$.])camera\s*\(\s*\[/g, (m, i) => {
+        const k = i + m[0].length;
+        const arr = code.slice(k, closeAt(k, '[', ']'));
+        const moves = [];
+        let depth = 0;
+        for (let j = 0; j < arr.length; j++) {
+          const ch = arr[j];
+          if (ch === '(' || ch === '[' || ch === '{') depth++;
+          else if (ch === ')' || ch === ']' || ch === '}') depth--;
+          if (depth !== 0) continue;
+          const call = /^(push|pull|travel|crane|orbit|whip|follow)\s*\(/.exec(arr.slice(j));
+          if (!call || /[\w$.]/.test(arr[j - 1] ?? '')) continue;
+          const a0 = j + call[0].length;
+          let d2 = 1;
+          let e = a0;
+          for (; e < arr.length && d2; e++) d2 += '([{'.includes(arr[e]) ? 1 : ')]}'.includes(arr[e]) ? -1 : 0;
+          const args = arr.slice(a0, e - 1);
+          const first = args.split(',')[0];
+          const fr = args.match(/\bframes\s*:\s*([\d.]+)\b/);
+          const at = num(first);
+          const len = fr ? Number(fr[1]) : call[1] in HOUSE60 ? (HOUSE60[call[1]] * filmFps) / 60 : null;
+          if (at !== null && len !== null) moves.push({ kind: call[1], at, end: at + len, index: k + j });
+          j = e - 1;
+        }
+        moves.sort((p, q) => p.at - q.at);
+        for (let n = 1; n < moves.length; n++) {
+          const a = moves[n - 1];
+          const b = moves[n];
+          if (b.at < a.end - 1e-6)
+            report(b.index, 'camera-shot', 'error', `the ${b.kind} at ${b.at} starts before the ${a.kind} at ${a.at} has landed (${a.end}): one move per shot; start it once the last one lands, or make them one move`);
+          else if (((a.kind === 'push' && b.kind === 'pull') || (a.kind === 'pull' && b.kind === 'push')) && ((b.at - a.end) * 60) / filmFps < 90)
+            report(b.index, 'camera-shot', 'error', `a ${b.kind} ${Math.round(((b.at - a.end) * 60) / filmFps)} f@60 after a ${a.kind} lands goes straight back the way it came: back and forth reads as aimless; carry on in one direction, hold for 1.5 s or more, or cut`);
+        }
+      });
+      // a camera field on a loop (a sine or cosine of the frame): the old float
+      each(/Math\.(sin|cos)\s*\(/g, (m, i) => {
+        const k = i + m[0].length;
+        if (!FRAME_TERM.test(code.slice(k, closeAt(k, '(', ')')))) return;
+        const a = Math.max(code.lastIndexOf(';', i), code.lastIndexOf('\n', i), code.lastIndexOf(',', i), code.lastIndexOf('{', i));
+        if (/\b(yaw|pitch|roll|dist|lens|fov|target|focus)\s*:\s*$/.test(code.slice(a + 1, i)) || /\b(yaw|pitch|roll|dist|lens|fov)\s*:[^,}\n]*$/.test(code.slice(a + 1, i)))
+          report(i, 'camera-shot', 'error', `a camera field on a loop (a sine or cosine of the frame) is the old float: ${how}; a hold may be completely still`);
       });
     }
 

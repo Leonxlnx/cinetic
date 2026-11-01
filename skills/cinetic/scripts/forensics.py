@@ -83,10 +83,16 @@ over 0.4 s windows at 480 wide (camera fit, fastest layer, flat-ground change), 
                (most of the picture moving together: two runs of opposite sign on one axis, each 0.4 s or
                longer, both slow: under 60 px/s
                or 4 %/s at their peak, 1 s or less apart): the old float / drift. A designed move
-               starts, travels and lands; a reversal device moves fast. Per shot that wanders  warn
+               starts, travels and lands; a reversal device moves fast. A drift: one way through 85 %
+               of a shot of 2 s or longer at a flat speed (no start, no landing) between a creep (15
+               px/s, 1.5 %/s) and 60 px/s or 4 %/s. Per shot that wanders or drifts           warn
                in two shots or more                                                         fail
+               Declared camera shots (cues declared.fx[].shots / stages, fx/depth shotDeclares): a shot
+               is a purposeful move (its frames never count as an idle camera); two in a row whose
+               picture travels opposite ways within 1.5 s go back and forth at any speed       fail
+               and inside a declared stage the camera moves only inside its shots (a drift)  warn
                and a camera that never rests: faster than a sub-pixel creep (15 px/s, 1.5 %/s) on more
-               than 90 % of the body (3 s or longer)                                         warn
+               than 90 % of the body outside declared shots (3 s or longer)                  warn
   static-share the share of the body standing still (camera, layers and ground)            info
   motion-energy  the share of the picture's structure moving 15 px/s or more (the old life gate) info
   still-cut    the share of cuts from a still frame to a still frame                        info
@@ -553,6 +559,9 @@ def declared_of(c):
                 stepped=[r for r in items('stepped') if _num(r.get('from')) and _num(r.get('to'))],
                 flashes=[x for x in items('flashes') if _num(x.get('f'))],
                 camera_blur=[r for r in items('cameraBlur', 'camera_blur') if _num(r.get('from')) and _num(r.get('to'))],
+                # the depth stage's declared camera shots and the stages that declare them (fx/depth shotDeclares)
+                shots=[r for r in items('shots') if _num(r.get('from')) and _num(r.get('to')) and r['to'] > r['from']],
+                stages=[r for r in items('stages') if _num(r.get('from')) and _num(r.get('to')) and r['to'] > r['from']],
                 end=end, reveal=d.get('reveal'))
 
 
@@ -807,7 +816,15 @@ ENERGY = dict(px=15.0, low=0.3, warn_s=1.5, fail_s=2.0, share=0.25, rest_s=0.25)
 # `min` (px/s at 1080p; %/s for the push) with one sign for `run_s` or longer; two runs of opposite sign at most
 # `gap_s` apart, both peaking under `slow` (px/s; `slow_pct` %/s), are a wander. A camera that moves faster than a
 # sub-pixel creep (`busy_px` px/s or `busy_pct` %/s) on more than `busy` of the body (3 s or longer) never rests.
-WANDER = dict(min=6.0, min_pct=0.5, run_s=0.4, gap_s=1.0, slow=60.0, slow_pct=4.0, busy=0.9, busy_s=3.0, busy_px=15.0, busy_pct=1.5, whole=0.7)  # whole: the share of the structure that must move (the camera, not one element)
+WANDER = dict(min=6.0, min_pct=0.5, run_s=0.4, gap_s=1.0, slow=60.0, slow_pct=4.0, busy=0.9, busy_s=3.0, busy_px=15.0, busy_pct=1.5, whole=0.7,  # whole: the share of the structure that must move (the camera, not one element)
+              # a drift: one run, one way, over `drift_share` of a shot of `drift_s` or longer, at a flat speed (its 10th
+              # percentile at least `drift_flat` of its peak: no start, no landing) between a creep (busy_px, busy_pct)
+              # and `slow`; an eased move starts and lands, so its speed is never flat
+              drift_s=2.0, drift_share=0.85, drift_flat=0.5,
+              # declared shots (fx/depth shotDeclares): two in a row whose picture travels opposite ways (cosine under
+              # `shots_cos`, each over `shots_px` px, a zoom of 1 % counted as `zoom_px` px) within `shots_gap_s` go back
+              # and forth at any speed; inside a declared stage the camera moves only inside its shots (pad `pad_s`)
+              shots_cos=-0.3, shots_px=40.0, zoom_px=9.6, shots_gap_s=1.5, pad_s=0.2)
 # carried-cut: the house band, a direction read needs this coherence, a repeat reaching this autocorrelation makes the
 # step ambiguous, and the read's spread widens the ratio band by at most this much
 CARRY = dict(cos=0.7, ratio=(0.4, 1.4), coherence=0.5, period_ac=0.5, spread_max=0.5)
@@ -1124,35 +1141,45 @@ def window_at(win, f, wstride):
     return None
 
 
-def camera_wander(frames, state, breaks, fps, P=WANDER):
+def camera_wander(frames, state, breaks, fps, P=WANDER, shots=(), stages=()):
     """An aimless camera over the body frames (state: frame -> its window, with cam_vec px/s and cam_k %/s): inside one
     shot (a break ends it), per axis (x, y, push), runs of one sign at least P['min'] fast for P['run_s'] or longer;
     two runs of opposite sign at most P['gap_s'] apart, both peaking under P['slow'] (px/s) or P['slow_pct'] (%/s), are a
-    wander (one event per shot). Also the share of the body where the camera moves (a camera that never rests)."""
-    shots, cur, prev = [], [], None
+    wander (one event per shot, kind 'reverse'). One run over P['drift_share'] of a shot of P['drift_s'] or longer at a
+    flat speed (its 10th percentile at least P['drift_flat'] of its peak) between a creep and P['slow'] is a drift (no
+    start, no landing; kind 'drift'). Declared camera shots (video frames, fx/depth shotDeclares): two in a row whose
+    picture travels opposite ways within P['shots_gap_s'] go back and forth at any speed (kind 'shots-reverse'); inside
+    a declared stage the camera moves only inside its shots (kind 'outside'). Also the share of the body where the
+    camera moves outside the declared shots (a camera that never rests)."""
+    pad = int(round(P['pad_s'] * fps))
+    shot_rng = sorted(((int(s['from']), int(s['to']), s) for s in shots), key=lambda r: (r[0], r[1]))
+    in_shot = lambda f: any(a - pad <= f <= b + pad for a, b, _ in shot_rng)  # noqa: E731
+    cuts_, cur, prev = [], [], None
     for f in frames:
         w = state.get(f)
         if prev is not None and (f != prev + 1 or f in breaks):
             if cur:
-                shots.append(cur)
+                cuts_.append(cur)
             cur = []
         if w is not None:
             cur.append((f, w))
         prev = f
     if cur:
-        shots.append(cur)
+        cuts_.append(cur)
     events, moving, measured = [], 0, 0
     need, gap = max(2, int(round(P['run_s'] * fps))), int(round(P['gap_s'] * fps))
-    for shot in shots:
+    moves = lambda w: w.get('cam_pxs', 0) >= P['busy_px'] or abs(w.get('cam_k', 0)) >= P['busy_pct']  # noqa: E731
+    for shot in cuts_:
         for f, w in shot:
             measured += 1
-            moving += int(w.get('cam_pxs', 0) >= P['busy_px'] or abs(w.get('cam_k', 0)) >= P['busy_pct'])
+            moving += int(moves(w) and not in_shot(f))
         cam = [(w.get('cam_vec', [0, 0]), w.get('cam_k', 0.0)) if w.get('moving_share', 0.0) >= P['whole'] else ([0, 0], 0.0) for _, w in shot]
-        axes = (('pans', 'x', [c[0][0] for c in cam], P['min'], P['slow'], 'px/s'),
-                ('pans', 'y', [c[0][1] for c in cam], P['min'], P['slow'], 'px/s'),
-                ('pushes', 'push', [c[1] for c in cam], P['min_pct'], P['slow_pct'], '%/s'))
+        axes = (('pans', 'x', [c[0][0] for c in cam], P['min'], P['slow'], 'px/s', P['busy_px']),
+                ('pans', 'y', [c[0][1] for c in cam], P['min'], P['slow'], 'px/s', P['busy_px']),
+                ('pushes', 'push', [c[1] for c in cam], P['min_pct'], P['slow_pct'], '%/s', P['busy_pct']))
         hit = None
-        for what, axis, v, lo, slow, unit in axes:
+        drift = None
+        for what, axis, v, lo, slow, unit, creep in axes:
             runs_, start = [], None
             for i, x in enumerate(v + [0.0]):
                 sg = 1 if x >= lo else -1 if x <= -lo else 0
@@ -1165,15 +1192,65 @@ def camera_wander(frames, state, breaks, fps, P=WANDER):
                     start = (i, sg)
             for r1, r2 in zip(runs_, runs_[1:]):
                 if r1[2] != r2[2] and r2[0] - r1[1] <= gap and max(r1[3], r2[3]) < slow:
-                    hit = dict(**{'from': shot[r1[0]][0], 'to': shot[r2[1]][0]}, axis=axis, what=what,
-                               first=f'{r1[3]:.0f} {unit} {"+" if r1[2] > 0 else "-"}', second=f'{r2[3]:.0f} {unit} {"+" if r2[2] > 0 else "-"}')
+                    sign1 = '+' if r1[2] > 0 else '-'
+                    sign2 = '+' if r2[2] > 0 else '-'
+                    hit = dict(**{'from': shot[r1[0]][0], 'to': shot[r2[1]][0]}, axis=axis, what=what, kind='reverse',
+                               first=f'{r1[3]:.0f} {unit} {sign1}', second=f'{r2[3]:.0f} {unit} {sign2}')
                     break
             if hit:
                 break
+            if drift is None and len(v) >= P['drift_s'] * fps:
+                for a, b, s_, peak in runs_:
+                    sp = sorted(abs(y) for y in v[a:b + 1])
+                    p10 = sp[int(0.1 * (len(sp) - 1))]
+                    if b - a + 1 >= P['drift_share'] * len(v) and creep <= p10 and p10 >= P['drift_flat'] * peak and peak < slow:
+                        sign = '+' if s_ > 0 else '-'
+                        drift = dict(**{'from': shot[a][0], 'to': shot[b][0]}, axis=axis, what=what, kind='drift',
+                                     first=f'{p10:.0f}-{peak:.0f} {unit} {sign}', second='')
+                        break
         if hit:
             events.append(hit)
+        elif drift:
+            events.append(drift)
+    # declared shots: the net picture travel of each (px at 1080p; a zoom of 1 % counts zoom_px), two in a row opposite
+    nets = []
+    for a, b, s in shot_rng:
+        vx = vy = vk = 0.0
+        for f in range(a, b + 1):
+            w = state.get(f)
+            if w is None or w.get('moving_share', 0.0) < P['whole']:
+                continue
+            cv = w.get('cam_vec', [0, 0])
+            vx += cv[0] / fps
+            vy += cv[1] / fps
+            vk += w.get('cam_k', 0.0) / fps * P['zoom_px']
+        nets.append((a, b, s, (vx, vy, vk)))
+    for (a1, b1, s1, u), (a2, b2, s2, v) in zip(nets, nets[1:]):
+        nu, nv = math.sqrt(sum(x * x for x in u)), math.sqrt(sum(x * x for x in v))
+        if nu < P['shots_px'] or nv < P['shots_px'] or a2 - b1 > P['shots_gap_s'] * fps:
+            continue
+        cos = sum(x * y for x, y in zip(u, v)) / (nu * nv)
+        if cos < P['shots_cos']:
+            name1 = f"{s1.get('kind', 'shot')} {s1.get('id', '')}".strip()
+            name2 = f"{s2.get('kind', 'shot')} {s2.get('id', '')}".strip()
+            events.append(dict(**{'from': a1, 'to': b2}, axis='shots', what='goes', kind='shots-reverse', first=name1, second=name2))
+    # inside a declared stage, a camera that moves outside every declared shot drifts
+    for st in stages:
+        run = []
+        for f in list(range(int(st['from']), int(st['to']) + 1)) + [None]:
+            w = state.get(f) if f is not None else None
+            mv = (f is not None and w is not None and f not in breaks and not in_shot(f)
+                  and w.get('moving_share', 0.0) >= P['whole'] and moves(w))
+            if mv:
+                run.append(f)
+                continue
+            if len(run) >= need:
+                events.append(dict(**{'from': run[0], 'to': run[-1]}, axis='stage', what='moves', kind='outside',
+                                   first=str(st.get('id', 'stage')), second=''))
+                break
+            run = []
     share = moving / max(1, measured)
-    return dict(events=events, moving_share=round(share, 3), shots=len(shots),
+    return dict(events=events, moving_share=round(share, 3), shots=len(cuts_), declared=len(shot_rng),
                 busy=bool(measured >= P['busy_s'] * fps and share > P['busy']))
 
 
@@ -1994,15 +2071,26 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
                     'of a hold turn into the exit (speed growing about x1.11-1.16 a frame), and the cut falls on the fastest frame')
         breaks = set(cuts_all) | {f for f, p in probe_m.pair.items() if p.get('cut')}
         out['energy'] = energy_runs(body, state, breaks, fps)  # info: a still hold passes (dead-stretch fails only nothing changing)
-        out['wander'] = wd = camera_wander(body, state, breaks, fps)
+        d_shots = [dict(r, **{'from': vf(r['from']), 'to': vf(r['to'])}) for r in extra.get('shots', [])]
+        d_stages = [dict(r, **{'from': vf(r['from']), 'to': vf(r['to'])}) for r in extra.get('stages', [])]
+        out['wander'] = wd = camera_wander(body, state, breaks, fps, shots=d_shots, stages=d_stages)
+        fix = ('Hold the camera still, or give the shot one declared move that starts, travels and lands (fx/depth camera([push(...), '
+               'travel(...)]), lib/drift stageMove, lib/camera camPath)')
         for e in wd['events']:
-            add('camera-wander', sev('fail' if len(wd['events']) >= 2 else 'warn'), f"{e['from']}-{e['to']}",
-                f"the camera {e['what']} one way and back inside one shot ({e['axis']}: {e['first']} then {e['second']}, both slow): an "
-                'aimless float. Hold the camera still, or give the shot one declared move that starts, travels and lands (lib/drift '
-                'stageMove, lib/camera camPath)')
+            if e['kind'] == 'shots-reverse':  # declared shots straight back the way they came: back and forth at any speed
+                add('camera-wander', sev('fail'), f"{e['from']}-{e['to']}", f"two declared camera shots go back and forth ({e['first']}, then "
+                    f"{e['second']} the opposite way within {WANDER['shots_gap_s']:g} s): carry on in one direction, hold 1.5 s or more, or cut")
+                continue
+            msg = {
+                'reverse': f"the camera {e['what']} one way and back inside one shot ({e['axis']}: {e['first']} then {e['second']}, both slow): an aimless float. ",
+                'drift': f"the camera {e['what']} one way through the whole shot at a flat, slow speed ({e['axis']}: {e['first']}), never starting or "
+                         'landing: a drift. ',
+                'outside': f"the camera moves inside the declared stage {e['first']} outside every declared shot: a drift. ",
+            }[e['kind']]
+            add('camera-wander', sev('fail' if len(wd['events']) >= 2 else 'warn'), f"{e['from']}-{e['to']}", msg + fix)
         if wd['busy']:
-            add('camera-wander', sev('warn'), f'{f0}-{last}', f"the camera moves on {wd['moving_share'] * 100:.0f} % of the body and never "
-                'rests: an always-on drift. Let it rest between declared moves (holds may be still)')
+            add('camera-wander', sev('warn'), f'{f0}-{last}', f"the camera moves on {wd['moving_share'] * 100:.0f} % of the body outside "
+                'declared shots and never rests: an always-on drift. Let it rest between declared moves (holds may be still)')
         car = []
         decay = 0.97 ** (60 / fps)
         for s in extra.get('seams', []):
@@ -3108,11 +3196,11 @@ def self_test():
     bad = 0
     count = [0]
 
-    def cues(n, seams=(), stepped=(), end=None, look=True, flashes=()):
+    def cues(n, seams=(), stepped=(), end=None, look=True, flashes=(), fx=()):
         c = dict(fps=fps, total=n, acts=dict(a={'from': 0, 'dur': n}), cue={}, events=[], copy=[])
         if look:
             c['look'] = dict(blur='crisp', texture='clean', filmType='launch', oneTake=False, whiteWorld=False)
-            c['declared'] = dict(seams=list(seams), stepped=list(stepped), flashes=list(flashes), cameraBlur=[], end=end or {'from': 0, 'to': 0})
+            c['declared'] = dict(seams=list(seams), stepped=list(stepped), flashes=list(flashes), cameraBlur=[], end=end or {'from': 0, 'to': 0}, fx=list(fx))
         count[0] += 1
         path = os.path.join(tmp, f'cues{count[0]}.json')
         json.dump(c, open(path, 'w'))
@@ -3161,6 +3249,33 @@ def self_test():
     trk = [warp(A, dx=-160 / 4 * (lambda t: t * t * (3 - 2 * t))(min(1.0, i / 48))) for i in range(110)]
     rep = run('track', trk, cues(110))
     check(not flags(rep, 'camera-wander') and not flags(rep, 'dead-stretch'), 'a declared track that starts, travels and lands, then a still hold, passes', json.dumps(gram(rep).get('wander', {})))
+    # an aimless pan: one way through the whole shot at a flat 36 px/s (at 1080p), never starting or landing
+    rep = run('slowpan', [warp(A, dx=-36 / 4 * i / fps) for i in range(n)], cues(n))
+    check(any('drift' in x['note'] for x in flags(rep, 'camera-wander')), 'a flat 36 px/s pan through the whole shot (no start, no landing) is a drift (camera-wander)',
+          json.dumps(gram(rep).get('wander', {}))[:300])
+    # the depth stage's declared shots (fx/depth shotDeclares): eased moves from rest to rest
+    ease = lambda t: (lambda u: u * u * (3 - 2 * u))(min(1.0, max(0.0, t)))  # noqa: E731
+    k_at = lambda i, a, b, k0, k1: k0 + (k1 - k0) * ease((i - a) / (b - a))  # noqa: E731
+    stage = [{'id': 'stage3d', 'shots': [], 'stages': [{'from': 0, 'to': 100, 'id': 'stage3d'}]}]
+    # a declared push, a hold, then a declared pull straight back: back and forth at any speed
+    pp = [warp(A, k=k_at(i, 6, 36, 1.0, 1.25) if i < 46 else k_at(i, 46, 76, 1.25, 1.0)) for i in range(100)]
+    fx_pp = [{'id': 'stage3d', 'shots': [{'from': 6, 'to': 36, 'kind': 'push', 'id': 'in'}, {'from': 46, 'to': 76, 'kind': 'pull', 'id': 'out'}]}]
+    rep = run('shots-back', pp, cues(100, fx=fx_pp))
+    check(bool(flags(rep, 'camera-wander', 'fail')), 'a declared push, then a declared pull straight back 0.3 s after it lands, goes back and forth (camera-wander fails)',
+          json.dumps(gram(rep).get('wander', {}))[:300])
+    # a declared push, a hold, then a declared travel on: purposeful moves, each landing; the stage is otherwise still
+    po = [warp(A, k=k_at(i, 6, 36, 1.0, 1.25), dx=0 if i < 46 else -160 / 4 * ease((i - 46) / 30)) for i in range(100)]
+    fx_po = [{'id': 'stage3d', 'shots': [{'from': 6, 'to': 36, 'kind': 'push', 'id': 'in'}, {'from': 46, 'to': 76, 'kind': 'travel', 'id': 'on'}],
+              'stages': stage[0]['stages']}]
+    rep = run('shots-on', po, cues(100, fx=fx_po))
+    check(not flags(rep, 'camera-wander'), 'a declared push, a hold, then a declared travel on (each starting and landing) passes camera-wander',
+          json.dumps(gram(rep).get('wander', {}))[:300])
+    # inside a declared stage, an eased pan that no shot declares: a drift outside the shots
+    od = [warp(A, k=k_at(i, 6, 36, 1.0, 1.25), dx=0 if i < 50 else -160 / 4 * ease((i - 50) / 40)) for i in range(100)]
+    fx_od = [{'id': 'stage3d', 'shots': [{'from': 6, 'to': 36, 'kind': 'push', 'id': 'in'}], 'stages': stage[0]['stages']}]
+    rep = run('shots-outside', od, cues(100, fx=fx_od))
+    check(any('outside every declared shot' in x['note'] for x in flags(rep, 'camera-wander')), 'inside a declared stage, a pan no shot declares is a drift (camera-wander)',
+          json.dumps(gram(rep).get('wander', {}))[:300])
 
     def blob(i):  # a still card with one small chip sliding across it: one small thing moves
         out = A.copy()
