@@ -100,7 +100,13 @@ and draw no copy of it of their own (one slid off with a whip and jumped at each
 Recipes for a shot of your own in a world: [lighting.md §8](lighting.md#8-a-world-and-light-that-reads-it-fxworld-fxlight)
 (`glass-input-over-plate`, `black-glass`, `electric-card`, `glowing-line`, `iris-into-world`, `iris-into-input`,
 `button-opens-world`, `through-the-mark`); 3D hero objects: [three.md](three.md) (`logo-3d`, `glass-tiles`,
-`glass-dome`, `hero-object`); depth scenes: [camera.md §13](camera.md#13-the-depth-stage-a-real-camera-over-ui-planes-fxdepth).
+`glass-dome`, `hero-object`); depth scenes: [camera.md §13](camera.md#13-the-depth-stage-a-real-camera-over-ui-planes-fxdepth);
+the product's own screen moments, what a dense screen does while a camera frames it (src/kit/screens):
+[product-ui.md §15.5](product-ui.md#155-screen-moments) (`macro-type` a request typed at macro scale, `scan-and-read`
+a link scanned and its results read, `feed-read` a feed read down to the one request, `crowd-to-one` that request in
+the many's words, `notice-stack` notifications stacking, `step-build` a job done in steps, `making` the thing being made
+as covers, `ledger` a list that adds up, `price-pick` a plan picked, `doc-travel` a page written and travelled,
+`answer` an assistant answering, `site-build` the product's site typed and built).
 
 ## 1. Text voice (rotating)
 

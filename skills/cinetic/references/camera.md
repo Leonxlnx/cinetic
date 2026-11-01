@@ -362,7 +362,8 @@ room while the name slides out) passes its `omega` to it.
 The production-value gap between a clean film and a studio film is mostly depth: a real camera with perspective and
 depth of field over UI planes, a macro close-up of the one element that matters, the camera following the action and
 landing. `fx/depth` is that stage, pure in the frame (any frame, any order, Node-safe maths), cheap enough for a
-laptop. Use it for the one or two shots of a film that carry the feature: the rest may be flat and still.
+laptop. Use it for the one or two shots of a film that carry the feature: the rest may be flat and still. A real 3D
+object in the shot (the extruded mark, glass tiles, a dome, one hero object) is `fx/three`: [three.md](three.md).
 
 **The model.** Lay the shot out flat on the 1080p design plane as usual; each piece becomes a `<Plane box>` with a
 depth `z` (+ toward the camera). The camera is a director's rig: the point it looks at (`target`), how far it stands
