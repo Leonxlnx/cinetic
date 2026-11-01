@@ -224,7 +224,6 @@ const deskScene = (w: number, screen: THREE.Texture | null, mirror: number): Bui
   const dd = w * 0.46;
   const dh = w * 0.34;
   const top = w * 0.04;
-  const white = clay('#E6E8EB', 0.42);
   const wood = phys('#A8937F', { roughness: 0.5, clearcoat: 0.25, clearcoatRoughness: 0.35, sheen: 0.2, sheenRoughness: 0.6, sheenColor: new THREE.Color(1, 1, 1) });
   const board = new THREE.Mesh(slabGeometry(w, dd, top, w * 0.03, 0.35), wood);
   board.rotation.x = -Math.PI / 2;

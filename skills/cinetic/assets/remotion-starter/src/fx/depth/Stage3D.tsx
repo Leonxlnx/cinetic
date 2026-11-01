@@ -110,7 +110,7 @@ const flatten = (children: React.ReactNode, s: StageInfo, out: React.ReactElemen
 };
 
 /** A plane's pose at frame f (its props plus its own move), fitted to the opening camera when asked. */
-export const poseOf = (p: PlaneProps, f: number, base: Cam, fr: Frame): { pose: Pose; opacity: number } => {
+export const poseOf = (p: PlaneProps, f: number, base: Cam, _fr: Frame): { pose: Pose; opacity: number } => {
   const d = p.move ? p.move(f) : {};
   let pose: Pose = {
     x: p.box.x + (d.x ?? 0),

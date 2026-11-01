@@ -17,7 +17,7 @@ import { E, rand } from '../../lib/anim';
 import { draws3D, type GlMode } from './gl';
 import type { Light3D } from './light';
 import { canvasTex, disposeAll, fitUv, markSolid, roundedRect, slabGeometry } from './geo';
-import { type Backdrop, clamp01, deg, filmLit, lerp, planeDistance, Stage3D, useSampler, useTextures } from './stage';
+import { type Backdrop, clamp01, deg, filmLit, planeDistance, Stage3D, useSampler, useTextures } from './stage';
 
 export type HeroKind = 'phone' | 'card' | 'coin' | 'parcel' | 'leaf';
 export type HeroMove = 'turn' | 'rise' | 'drop' | 'flip' | 'hold';
