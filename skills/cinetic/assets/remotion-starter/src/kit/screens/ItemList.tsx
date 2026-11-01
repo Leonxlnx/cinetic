@@ -28,11 +28,15 @@ export type ItemListProps = ScreenBase & {
   pick?: { at: number; index: number };
 };
 
-const T = { title: 16, sub: 13, value: 17, lead: 44, row: 66 } as const;
+/** UI points by mode: floating product cards are chunky (a big picture, a bold title, a price that reads first); a
+ *  ledger on one card is denser. */
+const SIZES = { cards: { title: 18, sub: 14, value: 19, lead: 52, row: 80 }, plain: { title: 16, sub: 13, value: 17, lead: 44, row: 66 } } as const;
+const sizesOf = (p: Pick<ItemListProps, 'mode'>) => SIZES[p.mode === 'plain' ? 'plain' : 'cards'];
 
 /** The list's size and focus boxes: list, header, row{i}, value{i}. */
 export const itemListLayout = (p: ItemListProps, _f = 0, ctx: { pt?: number } = {}): ScreenLayout => {
   const pt = ctx.pt ?? SCREEN.pt;
+  const T = sizesOf(p);
   const W = p.w ?? 520 * pt;
   const cards = p.mode !== 'plain';
   const pad = cards ? 0 : 10 * pt;
@@ -43,7 +47,7 @@ export const itemListLayout = (p: ItemListProps, _f = 0, ctx: { pt?: number } = 
   let y = pad + headH;
   p.items.forEach((_, i) => {
     focus[`row${i}`] = fbox(pad, y, W - 2 * pad, rowH, T.title * pt, cards ? SCREEN.radius.row * pt : 12 * pt);
-    focus[`value${i}`] = fbox(W - pad - 120 * pt, y + rowH / 2 - 12 * pt, 104 * pt, 24 * pt, T.value * pt);
+    focus[`value${i}`] = fbox(W - pad - 120 * pt, y + rowH / 2 - T.value * pt * 0.7, 104 * pt, T.value * pt * 1.4, T.value * pt);
     y += rowH + gap;
   });
   const H = y - gap + pad;
@@ -57,6 +61,7 @@ export const ItemList: React.FC<ItemListProps> = (p) => {
   const { f, fps, pt, u, view, skin } = useScreen(p);
   const L = itemListLayout(p, f, { pt });
   const { focus } = L;
+  const T = sizesOf(p);
   const cards = p.mode !== 'plain';
   const every = p.reveal?.every ?? f60x(5, fps);
   const pick = p.pick ? prog(f, p.pick.at, p.pick.at + f60x(26, fps), E.snapOut) : 0;
@@ -76,7 +81,7 @@ export const ItemList: React.FC<ItemListProps> = (p) => {
           {it.thumb ? <Picture src={it.thumb} w={lead} h={lead} r={10 * pt} /> : it.photo || it.person ? <Face skin={skin} size={lead} name={it.person ?? it.title} src={it.photo} /> : <Mark skin={skin} size={lead} logo={it.logo} glyph={it.glyph ?? 'package'} solid={false} />}
         </div>
         <div style={{ position: 'absolute', left: rowPad + lead + 14 * pt, top: 0, height: b.h, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2 * pt }}>
-          <span {...textTag(`item${i}`, T.title * pt, view)} style={tx(T.title, pt, 580, skin.text, { lead: 1.25 })}>{it.title}</span>
+          <span {...textTag(`item${i}`, T.title * pt, view)} style={tx(T.title, pt, cards ? 600 : 580, skin.text, { lead: 1.25 })}>{it.title}</span>
           {it.sub && <span {...textTag(`item-sub${i}`, T.sub * pt, view)} style={tx(T.sub, pt, 450, skin.mute, { lead: 1.25 })}>{it.sub}</span>}
         </div>
         <div style={{ position: 'absolute', right: rowPad + 4 * pt, top: 0, height: b.h, display: 'flex', alignItems: 'center', gap: 10 * pt }}>
@@ -85,7 +90,7 @@ export const ItemList: React.FC<ItemListProps> = (p) => {
               {it.tag}
             </span>
           )}
-          {it.value && <span {...focusAttr(`value${i}`)} {...textTag(`value${i}`, T.value * pt, view)} style={tx(T.value, pt, 620, skin.text, { track: -0.01 })}>{it.value}</span>}
+          {it.value && <span {...focusAttr(`value${i}`)} {...textTag(`value${i}`, T.value * pt, view)} style={tx(T.value, pt, cards ? 640 : 620, skin.text, { track: -0.01 })}>{it.value}</span>}
         </div>
         {!cards && i < p.items.length - 1 && <div style={{ position: 'absolute', left: rowPad + lead + 14 * pt, right: rowPad, bottom: 0, height: Math.max(1, 0.6 * pt), background: skin.line, opacity: 0.8 }} />}
       </>
