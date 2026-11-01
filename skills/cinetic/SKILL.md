@@ -188,7 +188,7 @@ with the format's variants (it runs `credits.py`: credits go into `CREDITS.md`, 
 | Format | Length | Template | Script | Deliverables |
 |---|---|---|---|---|
 | Launch film | 15-30 s (to 45) | `launch-simple` | what it is, 2-5 things it does, the close | 16:9 master, 9:16 and 1:1 variants, poster |
-| Update film ("vX is out") | 8-20 s | `update` | "[Name] [version]", one line per change, the close | master, poster, 9:16 |
+| Update film ("vX is out") | 21-33 s | `update` | name + version, a hero shot and a line per change, the 3D mark | master, poster, 9:16 |
 | Product or feature video | 8-30 s | `launch-simple` or `ui-walkthrough` | 3-6 lines | master, poster |
 | UI walkthrough | 20-90 s | `ui-walkthrough` | what it is, one line per step | master, SRT captions |
 | Feature loop | 4-15 s, whole bars | `--template none` | 1-2 lines, reads muted | MP4, WebM, GIF, seamless seam |

@@ -2,50 +2,51 @@
 
 Launch films and update films are the two first-class formats of cinetic. A launch film tells a product's story with
 one signature shot. An update film says that a new version exists and shows what changed: the name and the version,
-then each change as a picture of the product doing the new thing and one short centred line that says the result, a
-recap, and the version mark. The update template (`assets/templates/update`) builds all of it from one file; this page
-is its shape, what you write, what it deals and how to look at it early.
+then each change filmed by a **hero shot** of the product doing the new thing, with one short centred line that says
+the result, and the brand's mark pulling back into the lockup with the version. The update template
+(`assets/templates/update`) builds all of it from one file and the film's content; this page is its shape, what you
+write, what it deals and how to look at it early.
 
-Contents: 1. The shape · 2. Start · 3. Writing the changes · 4. The creative devices · 5. Picture rules · 6. Sound ·
-7. Timing · 8. Look early, render in parts · 9. Gates and traps
+Contents: 1. The shape · 2. Start · 3. Writing the changes · 4. The hero shots · 5. The world and the picture rules ·
+6. Sound · 7. Timing · 8. Look early, render in parts · 9. Gates and traps
 
 ## 1. The shape
 
 | Beat | What happens | Length |
 |---|---|---|
-| Name and version | the product's name and the version, centred, as one pair from frame 0 (`roll`: the old numerals roll to the new; `rise`: the version rises beside the name; `badge`: a dot lands and grows into the pill carrying it) | 1 bar |
-| Change × 2-4 | a picture and a line: the product's card comes in (its creative device, section 4), works on its beat (a tap and the state it changes to, a list, grid or week that fills, a before -> after, a figure that rises) and holds its result; the line says that result in 2-6 words | 2-3.5 bars each, on half bars |
-| Recap | every change's card in one row, each with its own picture (the chosen photo, the faces the tap added, the rows it ended with) | 1 bar |
-| End card | the cards pile into the mark, the name comes out of it first letter first, the version lands on the last bar line apart from the name; held to the end | 1 bar and the tail (1.5 s or the track's ring-out) |
+| Name and version | the product's name and the version, centred in the film's world, as one pair from frame 0 (`roll`: the old numerals roll to the new; `rise`: the version rises beside the name; `badge`: a dot lands and grows into the pill carrying it) | 1 bar |
+| Change × 2-4 | a hero shot of the change (section 4) arriving on the film's optics, playing its one camera move and its moment, holding its result; and its line, 2-6 words, centred | 2-3 bars each, on half bars |
+| End card | the mark as a solid, close up and turning, pulls back and lands on the flat mark; the name slides out of it; the version lands on the last bar line; held to the end | 1.5 bars and the tail (1.5 s or the track's ring-out) |
 
-Each change takes its own shape (`src/deal.ts` order):
+Each change takes its own shape (`src/deal.ts` SHAPES):
 
-- `show`: the picture first, then the card folds shut into a bar of light and its line rises from it, alone in the
-  middle of the frame.
-- `after` (once a film): the picture first, then the element that changed (the pressed button, the block, the row,
-  the bar) grows into the frame's lit colour field and the line reads on it, its key word huge (scale-contrast); under
-  the field the ground takes its own colour event and settles after it. The field closes into the next card, or into
-  the dot the next card's device starts from.
-- `split`: the line first, parted round the card, which sits small in the gap between its words; the words leave and
-  the card grows out of the gap as the new screen and works.
-- `lead`: the line first, alone (the card before it folds into the bar it rises from), then the picture.
+- `show`: the hero shot first; then it goes soft, dims into the world's deep tone and is pushed through a little (a
+  focus isolate) while the line lands centred in front of it.
+- `lead`: the line first, alone in the world (the shot before goes soft into the world), then the hero shot.
+- `split` (once a film at most): the line first, parted round a porthole that opens in its gap with the shot inside (a
+  shot of pictures shows its chosen picture there); the words leave and the porthole opens into the frame as the shot
+  plays.
 
-A line never follows a line: once a change opens on its picture, the later ones do too. A picture hands over to the
-next by a carried element (the element that changed grows into the next card), never two screens crossing at size.
-Never "text on top, picture below": the line and the card take turns in the middle of the frame.
+A line never follows a line: once a change opens on its picture, the later ones do too. Shots hand over through
+optics, never a hard cut: each arrives on the film's `arrive` (racking sharp out of focus, a whip that brakes into the
+shot, or a bloom of the world's light that settles; a four-change film alternates two of them) while the shot before
+leaves under it, soft. Never "text on top, picture below": the line and the shot take turns in the middle of the
+frame.
 
 ## 2. Start
 
 ```bash
 bash scripts/new-film.sh <dir> --format update --name "<Product>" [--brand <kit>] [--music <file> --record <licence.json>]
 cd <dir>
-npx tsx scripts/type-deal.ts --seed "<Product>"        # the type pairing (fx/TypePairs), unless the brand has a face
-python3 scripts/deck.py --creative --have photos,ui     # optional: the deck deals the creative devices (src/dealt.ts)
+node scripts/content.mjs --brief BRIEF.md --fetch --force   # the people with real faces, pictures, the product's screens
+npx tsx scripts/type-deal.ts --seed "<Product>"             # the type pairing (new-film.sh deals one from the name)
+python3 scripts/deck.py --brief "..." --format update        # optional: deal a direction (the world, the hero shots)
 ```
 
-Then write `src/update.ts` (section 3), replace the brand placeholders (palette, mark), and print the deal (template.json
-`deal.print`): the ground family, the hook, the shapes, the recap and end, the cards' tone, each change's picture
-device (`PICTURE`) and line device (`LINE_DEVICE`). `PIN` fixes a slot, `SEED` re-deals.
+Then write `src/update.ts` (section 3), replace the brand placeholders (the palette in `src/brand/tokens.ts`, the mark's
+SVG with named parts in `src/brand/logo.ts`), fetch the world's photograph when the deal is a plate world (section 5),
+and print the deal (template.json `deal.print`): the world, the hook, the arrival, the shapes, the end, each change's
+hero shot and the lines' voice. `PIN` fixes a slot, `SEED` re-deals.
 
 ## 3. Writing the changes
 
@@ -53,102 +54,112 @@ device (`PICTURE`) and line device (`LINE_DEVICE`). `PIN` fixes a slot, `SEED` r
 
 | field | what it is |
 |---|---|
-| `words` | one plain sentence of 2-6 words, the result the user sees ("Book a desk in one tap"), never a feature name |
-| `key` | the words set apart: the accent, or the line device's emphasis (every line names one) |
+| `words` | one plain sentence of 2-6 words, the result the user sees ("Join group hikes in one tap"), never a feature name |
+| `key` | the words set apart in the accent |
 | `title`, `sub` | the screen's own header, in the product's words |
-| `show` | `tap` (rows, `action`, `done`, `result`, and `you`: the viewer the tap adds), `fill` (`list`, `grid` of photos or `week`, the `accent` item landing last), `swap` (before, after, a tag), `count` (from, to, unit, bars) |
-| `recap` | the few words its recap card shows |
-| `before` | the old way, when the change has one: 2-4 hand steps (split-compare) or 4-7 pings and questions it ends (bubble-swarm) |
-| `photos` | 5 or more pictures the change is about (photo-arc; a grid of 5+ photos gives its own) |
-| `logos` | 3 or more products it works with (logo-orbit), official marks in the film's ink |
-| `swap` | 2-3 words the key word rolls through before the real one (word-swap) |
+| `show` | `tap` (rows, `action`, `done`, `result`, and `you`: the viewer the tap adds), `type` (the request typed and sent), `fill` (`list`, `grid` of photos or `week`, the `accent` item landing last), `swap` (before, after, a tag), `count` (from, to, unit, bars), `page` (`doc` or `site` from src/content.ts, its heading) |
+| `photos` | 5 or more pictures the change is about (a grid of photos gives its own) |
+| `logos` | 3 or more products it works with: their official marks (`node scripts/logos.mjs get <name> --film .`) |
+| `hero`, `why` | a hero shot chosen by hand, and what in the change rules the dealt one out |
 | `logo`, `logoName` | a change that names another product: "[]" in `words` where its mark sits |
 
-- **People are real photos or absent**, never initials on a disc: a row's `photo`, the tap's `result` and `you`.
-  Places and things the change is about are photos too (`node scripts/assets.mjs get`).
-- **The data holds up when paused.** One label per state (the button says "Booked"; nothing repeats it); the viewer's
-  own action changes what the screen holds (two people, then you); a count on the screen matches what is on it, and
-  a number the tap would change is either changed or not shown; a week shows its blocks.
-- **Test it muted:** would a stranger say what changed in the same words? If a change cannot be shown as a state
-  change (a fix, a speed-up), show its consequence: the waiting that no longer happens, the number that changed.
+- **People are real faces or absent**, never initials: `CONTENT.people[k].photo` from `src/content.ts`. Places and
+  things the change is about are photos too (`node scripts/assets.mjs search`, then `get`).
+- **The data holds up when paused.** One label per state (the button says "Joined"; nothing repeats it); the viewer's
+  own action changes what the screen holds (three people, then you); a count on the screen matches what is on it.
+- **Test it muted:** would a stranger say what changed in the same words? If a change cannot be shown as a state change
+  (a fix, a speed-up), show its consequence: the number that changed (a count), the waiting that no longer happens.
 
-A whole update (Nook 2.5, three changes, about 25 s): "See every room before you go" (a grid of six photographed
-rooms fills), "Book a desk in one tap" (the pointer presses Book desk, it turns to Booked and you join the two already
-there), "Every answer in one note" (`before`: five questions people kept asking; the morning note's rows land as the
-questions are drawn in).
+A whole update (Cairnly 3.2, a trail app, three changes, about 27 s): "See the view before you climb" (six trail
+photographs: a ring of them, the porthole holding the chosen view), "Trail reports arrive as they happen" (four reports
+with hikers' faces: cards fanned in depth, the camera closing on the one that matters), "Join group hikes in one tap"
+(the pointer presses Join hike, it turns to Joined and you join the three already going).
 
-## 4. The creative devices
+## 4. The hero shots
 
-The template plays the library's devices (`fx/creative`, `references/catalogue.md` §0) on the change beats, each on the
-change it shows, two or more a film:
+Each change is filmed by one hero shot (`src/acts/heroes.tsx`; `src/deal.ts` HERO_META, one line each, which deck.py
+reads): a designed 3D or light shot of the product's own screen standing in the film's world. Each change takes the
+first shot in the film's order (the deck's `hero`, else a seeded, recency-weighted shuffle from the name) that can film
+it (`heroFit`), never one another change took while another fits; a film plays at least two different ones.
 
-| the change has | device | on screen |
+| the change | hero shot | on screen |
 |---|---|---|
-| a tap | cursor-follow | the camera pushes onto the pointer resting on the card, rides it to the button, clicks on the hit and pulls back to the card reacting |
-| `before`: 4-7 pings | bubble-swarm | the pings pop round the frame, faster and faster; the screen arrives and draws them in as its rows land |
-| `before`: 2-4 steps, or a swap | split-compare | the old way waiting on its spinners beside the product working, then the product takes the frame |
-| `photos`: 5+ | photo-arc | the photos stream through in one level row and slow; the chosen one (the first) opens into the screen |
-| `logos`: 3+ | logo-orbit | the products it works with orbit, then collapse into the screen |
-| any card coming in after a line | pixel-assemble, shape-morph, object-turn | tiles assemble it, a dot morphs into its frame, or it turns to face the lens and lands |
-| the field line | scale-contrast | its key word huge, the rest small above and under it |
-| a line of its own | letter-swing, word-swap (`swap`) | the key word's letters swing into place; the key word rolls through its alternatives |
+| a tap | `push-press` | the change's screen; a chunky pointer travels to its button with the camera following it in (a follow that lands framing the screen's answer, the header above the frame's edge); the press blooms a glow the size of the button and the result lands in frame |
+| a typed request | `macro-type` | the input at macro scale (frosted glass over a photograph): a push onto the first characters, a follow of the caret as it types on a human cadence, a travel to send that lands on the press, a glow the size of the button |
+| a list | `toast-stack` | the rows drop into the front slot as cards and push the stack back into depth: the front one sharp, each one further back softer (the lens's graded blur ladder), real faces and times; one push that lands as the last drops |
+| a list | `fan-focus` | the rows as cards fanned back in depth (fx/depth FanFocus): the camera to one side closes on the card that matters while the focus racks to it |
+| 5+ pictures | `carousel` | a ring of the pictures turning in depth; the camera cranes down from above to eye level as the ring slows and lands the chosen one facing the camera; it opens toward the lens as the focus follows; a smear only while it turns fast |
+| a picture | `photo-develop` | the picture develops from a duotone in the world's light to full colour while a glass card with what it says rises in front of it and the focus racks to the card; one push that hands over to the line |
+| a count | `glass-counter` | the figure in a slab of glass that frosts the world, counting as the camera pushes onto it with the bars rising; it lands with the figure; a band of light crosses the glass |
+| a page or a week | `page-fly` | the page (the document or the site from src/content.ts, or the week) lies back in perspective and the camera travels it from the headline to what changed (fx/depth PageTravel), the far edge soft, a light along its near edge |
+| a before and an after | `focus-swap` | the screen as it was goes soft, dims and falls back as the screen as it is now rises in front, the focus racking forward onto it and a light running its edge |
+| 3+ products | `glass-tiles` | their official marks as milky glass tiles rising on an arc in depth (fx/three GlassTiles: 3D on a GPU, its flat version on software GL) |
 
-The deck's devices play first (`src/dealt.ts` creative, then its reserve; without a deck the name deals a
-recency-weighted shuffle of the whole library, so the next film plays others): each dealt device takes a change it
-shows outright, then the reserve fills the changes still bare, then a dealt device that only brings a card in takes
-what is left (one dealt device always plays when it can). zoom-wall, data-sculpture, colour-flood, dot-button,
-type-object, type-window and split-around pass to the next device in the deal (the carried card already plays their
-part). To get a device, give the change what it shows: `before` for the swarm or the split, `photos` for the arc.
+Every shot carries the house habits: one focal plane and a graded falloff; one camera move with a job that lands
+(declared shots only, so `checkShots`, lint-film `camera-shot` and forensics `camera-wander` read them: `src/sync.ts`
+declares each shot's camera); the world behind it, soft and parallaxed; glass as a lens on the world; light sized to
+its source and timed (a press, a landing); real content at density; a jump in scale; a smear only on fast moves.
 
-## 5. Picture rules
+Each hero shot is the change's product moment: the product used, its parts arriving on their beats and its state
+changing on the hit. For a screen you build yourself the flat version is the starter's `ProductMoment`
+(kit/moment.tsx), timed by `momentPlan`; set it on a `Plane` of the depth stage and give it one of the shot moves.
 
-- **A lit place.** One of the eleven lit, still ground families (fx/Grounds FamilyGround: nearWhite, lightStudio,
-  softSky, gradientField, whiteBand, blackField, studio, deepPool, duskMesh, floorGlow, lightDark), never cut; its colour
-  event once, under the colour field (lightDark turns dark there). The deck's direction sets it when one was dealt.
-- **The changed UI fills the frame on its beat:** the card at two thirds of the frame's height (up to 86 %), or
-  cursor-follow's close-up. Never a small card parked in half an empty frame.
-- **Cards are kit/card `Card`**: light (standing a little off a light ground), or dealt dark on a dark ground (8-12 L*
-  over it), facing the lens, never translucent, never a hand-drawn grey box.
-- **Type from the pairing**: the voice and the text face type-deal wrote; every line centred, one move and one exit a
-  film, its key word set apart; the end card's name in the pairing's wordmark weight, tracked so no two letters touch
-  (fx/TypePairs `wordmarkStyle`, `safeTrack`), the version apart from it by a real gap, lighter, in the accent.
-- **The camera moves only with a device** (the push onto the pointer, the pull back, a turn that lands); every hold is
-  still; nothing bobs or breathes; no card rests tilted.
+The end card is a hero shot too (`logo-3d`): the mark as an extruded solid in a gloss finish lit by the world's light,
+an extreme close-up already turning, one pull-back that turns it to face the camera and lands it exactly on the flat
+mark (97.5 f@60, thirteen 16ths at 120 BPM). On software GL it draws its flat twin unless `MARK_3D.gl` is 'force'.
+
+## 5. The world and the picture rules
+
+- **One world for the whole film** (fx/world, `references/lighting.md` §8), dealt as the `ground` slot (or the deck's
+  world): a built field (nearWhite, paleSky, blackField, deepField, electric) or a photograph (clouds, sky, aerial, sea,
+  nightCity, studio, macro). A photograph needs its plate: `node scripts/assets.mjs plate <kind>` saves a sheet; pick
+  one for its light and a calm area where the line will sit (a horizon, layered hills, a soft sky; never a busy texture
+  that fills the frame), then `--pick <n> --to public/plates --accent '<the accent>'`. The picture check wants 30 %
+  neutral pixels: `assets.mjs grade <plate> --chroma 0.7` when it reads as one colour wash. Until the plate is in, a
+  built world of the same tone stands in.
+- **The product's surfaces follow the world:** light cards over a pale world or a photograph, dark ones on a night world
+  or the electric stage; the hero input or pane is glass that frosts the world (fx/light Glass, kit Frost with the soft
+  plate as its backdrop).
+- **The changed UI fills the frame on its beat:** every hero shot lands with its subject 55-90 % of the frame.
+- **Type from the pairing:** every line centred, one move and one exit a film, its key word in the accent; on a
+  photograph the lines carry the world's soft type shadow; the end card's name in the pairing's wordmark weight, the
+  version apart from it, lighter, in the accent (or in the pill the badge hook made).
+- **The camera moves only inside a hero shot** (one declared move that lands) and in the mark's pull-back; every hold
+  is still; nothing bobs or breathes; no card rests tilted.
 
 ## 6. Sound
 
 An update film is cut to a licensed, human-made, instrumental track (`references/music.md`): `node scripts/music.mjs
 search --mood "<the film's mood words>" --bpm 112-128 --length <s>`, `sheet --measure`, `get '#n' --to audio/music`,
-then `python3 scripts/audio/track.py fit --end auto` once `update.ts` is written (its entry on the recap's bar, its
-final hit on the version mark). `src/sync.ts` places the effects on the picture's own frames: every tap, landing,
-state change and line, each device's own beats (the pings popping and being drawn in, the row of photos landing, the
-divider, the push and the pull), the field's swell, the card's moves as quiet air, the lockup's hit (`npm run cues`,
-then the kit and the mix: `references/sound.md`).
+then `python3 scripts/audio/track.py fit --end auto` once `update.ts` is written (its entry on the mark's arrival, its
+final hit on the version mark). `src/sync.ts` places the effects on each hero shot's own beats: the press and the
+answer, the keys and the send, each card dropping, the ring landing, the picture developing, the figure counting and
+landing, the page landing, the after rising; one soft text sound per line; the arrivals and camera moves as quiet air.
 
 ## 7. Timing
 
-Every change takes whole half bars (two bars at least), the last one squaring the changes to a bar line so the recap
-and the version mark land on bar lines: the card's arrival (a device as long as its own steps, 0.9-2.5 s), the
-moment's action, the result held (1.6 s when the picture ends the change, 1.05 s when its line follows), the line at
-the pace; the slack goes to the result while the picture beat is under 3.6 s, then to the line. What comes next starts
-as a line leaves. At 120 BPM: two changes about 20 s, three about 25 s, four about 30 s (keep four for a real need).
+Every change takes whole half bars (two bars at least); the last one squares the film so the lockup lands on a bar
+line: the shot's arrival (0.3-0.6 s), its action (a press about 1.4 s, a typed request its own cadence, a stack 0.4 s a
+card, a ring's crane about 1.9 s, a page's travel about 2.3 s), its result held (1.0 s when the line follows over it,
+1.2 s when the shot ends the change), the line at the pace. At 120 BPM: two changes about 21 s, three about 27 s, four
+about 33 s (keep four for a real need).
 
 ## 8. Look early, render in parts
 
-A render that runs out of time loses the ending, the lockup and the logo. So:
+A render that runs out of time loses the ending. So:
 
-1. The end card first: `npx remotion still src/index.ts Film out/stills/end.png --frame=<TOTAL - 1> --scale=0.5`.
-2. A sampled sheet of the whole film: `npx remotion render src/index.ts FilmEvery out/sheet --sequence
-   --image-format=jpeg --props='{"step":24}' --scale=0.5` (about 30 frames in under two minutes), tiled into one
-   contact sheet; judge it against section 5 and fix before any full render.
-3. The film in two or three parts (`npx remotion render src/index.ts Film out/part-a.mp4 --frames=0-389 --scale=0.5`,
-   then the rest), joined with ffmpeg's concat demuxer, then `scripts/render.sh` for the master.
+1. The end card first: `node scripts/frames.mjs end`.
+2. Each hero shot as stills: `node scripts/frames.mjs sheet --frames <its h0>-<its hit + 30> --every 6` (the frames:
+   `npx tsx -e "import { TIMES } from './src/timeline'; console.log(TIMES)"`). Judge: is the subject sharp and the rest
+   on a ladder, does the move land, does the world hold, is anything cut by the frame's edge.
+3. The whole film as a draft: `bash scripts/render.sh Film out/draft.mp4 --draft` (half size, parts it resumes), then
+   `node scripts/frames.mjs sheet --from out/draft.mp4 --every 36` and one sheet per act at `--every 6`.
 
 ## 9. Gates and traps
 
 - `npm run check` (tsc, lint-film, grid-check) and the ship gate apply as for any film; `grammar-score.mjs --format
-  update` reads the update band. grid-check warns that inner changes start off a bar line (half bars, on purpose).
-- Traps: no name in the first 3 s; a feature list in text, or a keyword per change instead of a sentence; a change
-  with no `before` or `photos` when it has them (its device cannot show it); initials instead of faces; a label
-  repeated on one card; a count that the viewer's action should change and does not; the version shown twice as the
-  same still; a music bed added after the cut; rendering the whole film before looking at the end card.
+  update` reads the update band. grid-check warns that a shot beat over 3.5 s runs long: let the slack go to the line.
+- Traps: no name in the first 3 s; a feature list in text; a change with `photos` or a grid shown as a list (its hero
+  shot cannot show the pictures); initials instead of faces; a label repeated on one card; a count the viewer's action
+  should change and does not; a plate world left on its stand-in; a busy plate behind the lines; a music bed added
+  after the cut; rendering the whole film before looking at the end card.
