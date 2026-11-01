@@ -138,7 +138,8 @@ const PLATE_KINDS = new Set(['clouds', 'sky', 'aerial', 'sea', 'nightCity', 'stu
 export const FIRST_WORD = PLATE_KINDS.has(DEAL.ground) ? Math.round(OPEN_RACK.at + OPEN_RACK.rack * OPEN_RACK.read) : 0;
 
 export type BeatKind = 'T' | 'TA' | 'A' | 'end';
-export type BeatPlan = { id: string; kind: BeatKind; from: number; to: number; pair: number };
+/** `meets`: a line beat whose line joins its picture on its own (a type device opening into it, a porthole parting it). */
+export type BeatPlan = { id: string; kind: BeatKind; from: number; to: number; pair: number; meets?: true };
 export type Mode = 'alone' | 'with' | 'over' | 'none';
 
 const P = LAUNCH.pairs;
@@ -245,12 +246,20 @@ const takenBy = (slots: readonly { pair: number; role: string }[]): Taken => ({
   pic: new Set(slots.filter((x) => x.role === 'picture' || x.role === 'over').map((x) => x.pair - 1)),
 });
 /** The creative elements on the beats `taken` leaves, `extra` beats already counting as creative (the hero shots'). */
-const planCreative = (taken: Taken, extra: number): CreativeSlot[] => {
+const planCreative = (taken: Taken, extra: number): CreativeSlot[] & { benched: string[] } => {
   const plan: CreativeSlot[] = [];
   const line = new Map<number, CreativeMeta>();
   const pic = new Map<number, CreativeMeta>();
+  const benched: string[] = [];
   const lineOk = (i: number, m: CreativeMeta) => hasLine(i) && i !== LAST && !line.has(i) && !taken.line.has(i) && P[i].beat !== 'over' && P[i].beat !== 'with' && !(m.handover && (pic.has(i) || taken.pic.has(i)));
   const picOk = (i: number, m: CreativeMeta) => !pic.has(i) && !taken.pic.has(i) && P[i].beat !== 'over' && !(i === LAST && m.ends !== 'scene') && !line.get(i)?.handover;
+  // one line meets its picture (grid-check's text-then-cards loop): unless the script sets a with or over beat, a hero
+  // shot holds a line over its picture or parts it, or a device that opens the line into its picture is placed, the last
+  // middle pair that could play its line with its picture keeps it free of a device that would leave the line alone (a
+  // line device that keeps its own beat, a picture device); a dealt device that loses its beat to it is benched, not lost
+  const joins = () => P.some((p, i) => hasLine(i) && (p.beat === 'with' || p.beat === 'over')) || taken.line.size > 0 || [...line.values()].some((m) => m.handover);
+  const free = (i: number) => i > 0 && i < LAST && hasLine(i) && P[i].beat === undefined && !line.has(i) && !pic.has(i) && !taken.line.has(i);
+  const keepsJoin = (i: number, m: CreativeMeta) => (m.role === 'line' && !!m.handover) || joins() || !free(i) || P.some((_, j) => j !== i && free(j));
   const mid = (LAST) / 2;
   const orderOf = (m: CreativeMeta): number[] => {
     const all = P.map((_, i) => i);
@@ -269,9 +278,11 @@ const planCreative = (taken: Taken, extra: number): CreativeSlot[] => {
     const ok = m.role === 'line' ? lineOk : picOk;
     // the pairs it may take, those whose script already gives it what it needs first
     const cands = (at !== undefined ? [at] : orderOf(m)).filter((i) => ok(i, m));
-    const i = [...cands.filter((x) => needsMet(x, m)), ...cands.filter((x) => !needsMet(x, m))][0];
+    const kept = at !== undefined ? cands : cands.filter((x) => keepsJoin(x, m));
+    const i = [...kept.filter((x) => needsMet(x, m)), ...kept.filter((x) => !needsMet(x, m))][0];
     if (i === undefined) {
       if (at !== undefined) throw new Error(`timeline: pair ${at + 1} pins ${id}, which cannot play there (a line device takes a line that is not the claim, alone; a picture device never sits under an over line, after a line device that hands over, on a hero shot's beat, or on the last pair unless it ends on the product)`);
+      if (cands.length) benched.push(id);
       return false;
     }
     (m.role === 'line' ? line : pic).set(i, m);
@@ -289,12 +300,13 @@ const planCreative = (taken: Taken, extra: number): CreativeSlot[] => {
     if (!m || plan.some((c) => metaOf(c.id)?.family === m.family) || m.needs.length) continue;
     place(id);
   }
-  return plan.sort((a, b) => a.pair - b.pair || (a.role === 'line' ? -1 : 1));
+  return Object.assign(plan.sort((a, b) => a.pair - b.pair || (a.role === 'line' ? -1 : 1)), { benched });
 };
 const NONE: Taken = { line: new Set(), pic: new Set() };
 const HEROES_FIRST = HERO_DEAL.first ? planHeroes(NONE) : null;
+const PLANNED = HEROES_FIRST ? planCreative(takenBy(HEROES_FIRST.slots), HEROES_FIRST.slots.length) : planCreative(NONE, 0);
 /** The creative elements on the film's pairs, and what each draws. */
-export const CREATIVE_PLAN: CreativeSlot[] = HEROES_FIRST ? planCreative(takenBy(HEROES_FIRST.slots), HEROES_FIRST.slots.length) : planCreative(NONE, 0);
+export const CREATIVE_PLAN: CreativeSlot[] = [...PLANNED];
 const HEROES = HEROES_FIRST ?? planHeroes(takenBy(CREATIVE_PLAN));
 /** The hero shots on the film's pairs (role: what each draws). */
 export const HERO_PLAN: HeroSlot[] = HEROES.slots;
@@ -302,8 +314,12 @@ export const HERO_PLAN: HeroSlot[] = HEROES.slots;
 export const HERO_END: string | null = HEROES.end;
 /** Dealt hero shots that found no beat (a short film): the plan print names them. */
 export const HERO_BENCHED: string[] = HEROES.benched;
-/** Dealt creative elements a hero shot took the beat of (they would have played without it): benched, not a fault. */
-export const CREATIVE_BENCHED: string[] = HEROES_FIRST && HERO_PLAN.length ? planCreative(NONE, 0).map((c) => c.id).filter((id) => CREATIVE.deal.includes(id as never) && !CREATIVE_PLAN.some((c) => c.id === id)) : [];
+/** Dealt creative elements a hero shot took the beat of (they would have played without it), or that left the one line
+ * meeting its picture its beat: benched, not a fault. */
+export const CREATIVE_BENCHED: string[] = [...new Set([
+  ...(HEROES_FIRST && HERO_PLAN.length ? planCreative(NONE, 0).map((c) => c.id) : []),
+  ...PLANNED.benched,
+])].filter((id) => CREATIVE.deal.includes(id as never) && !CREATIVE_PLAN.some((c) => c.id === id));
 const heroAt = (role: HeroRole) => P.map((_, i) => heroMeta(HERO_PLAN.find((h) => h.pair === i + 1 && h.role === role)?.id ?? ''));
 /** The hero shot on pair i's picture (0-based), on its line held over its picture, on its line, if any. */
 export const HERO_PIC: (HeroMeta | undefined)[] = heroAt('picture');
@@ -363,9 +379,12 @@ const beatsOf = P.map((p, i) => {
   const tail = (dev ? (dev.handover ? dev.tail ?? 0 : SEAM_OUT) : mode === 'alone' ? SEAM_OUT : mode === 'over' ? LINE_EXIT + OVER_TAIL : LINE_EXIT) + (HERO_LINE[i] ? Math.round(60 * HERO_LINE[i].min) : 0);
   // a line after a hero shot starts HERO_LATE f@60 after the cut (the shot goes soft first): its beat holds that too
   const late = i > 0 && mode === 'alone' && (HERO_PIC[i - 1] || HERO_OVER[i - 1]) ? HERO_LATE : 0;
-  const need = f60(LEAD + late + resolveAt(i)) + f60(holdFor(n, pace)) + f60(tail);
+  // the first line on a photograph starts after the opening rack (FIRST_WORD): its beat holds the wait too (the world's
+  // moment, not the line's, so the line's own limit below leaves it out)
+  const wait = i === 0 ? Math.max(0, FIRST_WORD - LEAD) : 0;
+  const need = f60(LEAD + late + wait + resolveAt(i)) + f60(holdFor(n, pace)) + f60(tail);
   const max = dev || HERO_LINE[i] ? LINE_DEVICE_MAX : LINE.max;
-  if (need > SEC(max)) throw new Error(`timeline: "${plain(p.line ?? '')}" needs ${(need / FPS).toFixed(2)} s; a line beat holds at most ${max} s${dev ? ` (${dev.id})` : ''}: shorten it`);
+  if (need - f60(wait) > SEC(max)) throw new Error(`timeline: "${plain(p.line ?? '')}" needs ${((need - f60(wait)) / FPS).toFixed(2)} s; a line beat holds at most ${max} s${dev ? ` (${dev.id})` : ''}: shorten it`);
   const want = Math.min(PIC.max, Math.max(PIC.min, PIC_DEV[i]?.min ?? 0, HERO_PIC[i]?.min ?? 0, HERO_OVER[i]?.min ?? 0, p.seconds ?? PIC.house[i % PIC.house.length]));
   let a = Math.max(2, Math.round(SEC(want) / HALF));
   while (a * HALF < SEC(Math.max(PIC.min, HERO_PIC[i]?.min ?? 0, HERO_OVER[i]?.min ?? 0))) a++;
@@ -523,7 +542,10 @@ P.forEach((_, i) => {
   const pr = PAIRS[i];
   if (pr.mode === 'over') return void BEAT_PLAN.push({ id: `line${k}`, kind: 'TA', from: pr.from, to: pr.to, pair: k });
   if (pr.mode === 'none') return void BEAT_PLAN.push({ id: `pic${k}`, kind: 'A', from: pr.from, to: pr.to, pair: k });
-  BEAT_PLAN.push({ id: `line${k}`, kind: pr.mode === 'with' ? 'TA' : 'T', from: pr.from, to: pr.ta, pair: k });
+  // a line its own device opens into the picture (type-window, type-object, split-around) or a porthole parts is no
+  // text-then-cards beat even alone: grid-check's loop rule reads `meets`
+  const meets = pr.mode === 'alone' && (LINE_DEV[i]?.handover || HERO_LINE[i]) ? { meets: true as const } : {};
+  BEAT_PLAN.push({ id: `line${k}`, kind: pr.mode === 'with' ? 'TA' : 'T', from: pr.from, to: pr.ta, pair: k, ...meets });
   BEAT_PLAN.push({ id: `pic${k}`, kind: 'A', from: pr.ta, to: pr.to, pair: k });
 });
 BEAT_PLAN.push({ id: 'end', kind: 'end', from: ACT.end.from, to: TOTAL, pair: 0 });
