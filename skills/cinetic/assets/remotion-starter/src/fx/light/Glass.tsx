@@ -38,7 +38,7 @@ import { activeSweep, arrival, bandState, gradientAt, keyAngle, radiusOf, rgbaOf
 import { LightSweep, RimLight } from './Rim';
 
 /** House numbers: px at 1080p, 60 fps frames. `band`: the glare of a band sweep (width % of the face, extra level). */
-export const GLASS_LIGHT = { rise: 26, enter60: 30, shadow: { y: 28, blur: 64, near: 12 }, glare: { angle: 104, width: 15, rest: 0.26, band: { width: 7, gain: 1.3 } } } as const;
+export const GLASS_LIGHT = { rise: 26, enter60: 30, shadow: { y: 28, blur: 64, near: 12 }, glare: { angle: 104, width: 15, rest: 0.26, band: { width: 7, gain: 0.6 } } } as const;
 
 export type GlassProps = Omit<SweepOpts, 'at'> & {
   x: number;
