@@ -4,15 +4,26 @@
 # Usage:
 #   bash scripts/render.sh <Comp> <out.mp4> [--preview | --blur] [options] [-- extra remotion args]
 #
+#   bash scripts/render.sh Film out/draft.mp4 --draft          # the whole film, early: half size, fast, the current sound
 #   bash scripts/render.sh Film out/preview.mp4 --preview      # fast check render (CRF 20, veryfast)
 #   bash scripts/render.sh Film out/film.mp4                   # sharp master (CRF 14, x264 slow)
 #   bash scripts/render.sh Film out/film.mp4 --blur            # motion-blurred master
 #   bash scripts/render.sh Film out/act3.mp4 --blur --frames 600-839   # one act, for a splice
 #   bash scripts/render.sh Film out/film.mp4 --max-min 8               # under a job limit: rerun until exit 0
+#   bash scripts/render.sh Film out/film.mp4 --from-draft out/draft.mp4  # out of time: the whole draft, scaled up
 #
 # Modes:
 #   (default)  sharp master: CRF 14, BT.709 tagged (--color-space=bt709), rendered in parts from a
-#              pre-built bundle and joined losslessly (see Parts below).
+#              pre-built bundle and joined losslessly (see Parts below). Its frames go through lossless PNG
+#              (soft lit grounds band through JPEG intermediates; --jpeg for a faster master of a film without them).
+#   --draft    the WHOLE film early, to look at and to fall back on: half size (-- --scale=S for another),
+#              CRF 23 on x264 superfast, JPEG frames, parts of up to 450 frames (fewer browser starts), no blur
+#              samples, the current soundtrack muxed when there is one (silent until npm run audio writes it), and
+#              out/qa/draft-sheet.png (16 tiles cut from the video by ffmpeg). Look at the film through the draft
+#              (frames.mjs sheet --from / grab --from), not through per-frame stills.
+#   --from-draft DRAFT  the delivery when the final cannot finish in the time left: the whole draft scaled up to the
+#              composition's size (lanczos, CRF 16), BT.709 tagged, the soundtrack muxed. A run never delivers a cut
+#              film: a complete draft beats a final that stops halfway.
 #   --preview  same pipeline, CRF 20 on x264 veryfast (about 3x faster to encode). Same tags as the
 #              master, so colour and banding judgements carry over.
 #   --blur     true motion blur, as the film declares it (--policy): sharp render -> measure-speed.py
@@ -85,8 +96,10 @@
 # --max-min stopped it with parts left (rerun the same command to continue).
 #
 # Options:
-#   --audio FILE        soundtrack (default public/audio/soundtrack.wav)
+#   --audio FILE        soundtrack (default public/audio/soundtrack.wav). Missing: a --draft or --preview renders
+#                       silent (said once); a master stops before any frame and names the commands that write it
 #   --no-audio          silent deliverable (loops): no mux, no sync check, probe expects no audio
+#   --jpeg              a master through JPEG q95 frames instead of PNG (faster; only for a film with no soft grounds)
 #   --loop              a seamless loop: every pass renders lossless PNG intermediates, because JPEG
 #                       noise is smoothed by x264 between neighbours but not between the last frame
 #                       and the first, which pushes the loop seam over its gate; check the seam with
@@ -149,7 +162,10 @@
 #                       always (deliver.sh and later runs leave them; a run without --keep clears the mark)
 #   -- ARGS             passed to every `remotion render` call (e.g. -- --image-format=png --scale=0.5)
 #
-# Needs: node/npx with @remotion/cli, ffmpeg >= 6, python3 with numpy scipy soundfile opencv.
+# Needs: node/npx with @remotion/cli, ffmpeg >= 6, and for the gates Python with numpy scipy soundfile (opencv for
+# --blur): $PYTHON when set, else the interpreter scripts/py.mjs picks, else one `node scripts/frames.mjs python` finds
+# that imports them (it says which; set PYTHON to it). Without one, the film still renders and muxes; the sync and
+# spec gates are skipped with a warning (a --blur master needs it).
 # Run it from the project root (the folder holding src/index.ts); the other scripts are found
 # next to this one.
 set -euo pipefail
@@ -162,12 +178,14 @@ PYCMD=()
 if [[ -n "${PYTHON:-}" ]]; then PYCMD=("$PYTHON")
 else read -r -a PYCMD <<< "$(node "$SCRIPT_DIR/py.mjs" --which 2>/dev/null || echo python3)"; fi
 python3() { "${PYCMD[@]}" "$@"; }
+HAVE_PY=1
 usage() { sed -n '2,/^set -euo/p' "${BASH_SOURCE[0]}" | sed '$d' | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 die() { echo "render.sh: $*" >&2; exit 1; }
-T0=$(date +%s)
-step() { echo "[render $(( $(date +%s) - T0 ))s] $*" >&2; }
+# bash's own clock (SECONDS): every $(date) is a process, and a process costs seconds on a busy machine
+SECONDS=0
+step() { echo "[render ${SECONDS}s] $*" >&2; }
 
-COMP=""; OUT=""; MODE=master; AUDIO=public/audio/soundtrack.wav; NOAUDIO=0; AOFF=""; BUILD_AUDIO=0; POLICY=auto
+COMP=""; OUT=""; MODE=master; JPEG=0; FROM_DRAFT=""; CHUNK_SET=0; AUDIO=public/audio/soundtrack.wav; NOAUDIO=0; AOFF=""; BUILD_AUDIO=0; POLICY=auto
 ENTRY=src/index.ts; SUB=""; FRAMES=""; CRF=""; CONC=""; SAMPLES=out/samples.json; SAMPLES_FROM=""
 SPEC=""; NOCHECK=0; KEEP=0; CLEAN=0; MS_ARGS=(); EXTRA=(); BUDGET=""; TENBIT=0; LOOP=0; ACCEPT_FAST=""; ACCEPT_CUT=""
 CHUNK=240; MAXMIN=0; ONLY_PART=""; PARTS=""; PREBUILT=""; SINGLE=0; REDO=""; JOIN_ONLY=0
@@ -177,6 +195,9 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) usage 0 ;;
     --preview) MODE=preview ;;
+    --draft) MODE=draft ;;
+    --jpeg) JPEG=1 ;;
+    --from-draft) FROM_DRAFT=${2:?--from-draft needs the draft video}; shift ;;
     --blur) MODE=blur ;;
     --master) MODE=master ;;
     --audio) AUDIO=${2:?--audio needs a file}; shift ;;
@@ -190,7 +211,7 @@ while [[ $# -gt 0 ]]; do
     --entry) ENTRY=${2:?}; shift ;;
     --sub) SUB=${2:?}; shift ;;
     --frames) FRAMES=${2:?}; shift ;;
-    --chunk-frames) CHUNK=${2:?--chunk-frames needs a number}; shift ;;
+    --chunk-frames) CHUNK=${2:?--chunk-frames needs a number}; CHUNK_SET=1; shift ;;
     --max-min) MAXMIN=${2:?--max-min needs minutes}; shift ;;
     --part) ONLY_PART=${2:?--part needs an index}; shift ;;
     --redo) [[ "${2:-}" =~ ^[0-9]+-[0-9]+$ ]] || die "--redo wants A-B, the film frames the edit changes"; REDO="$REDO $2"; shift ;;
@@ -227,10 +248,17 @@ case "$POLICY" in auto|crisp|camera) ;; *) die "--policy is auto, crisp or camer
 COMP=${POS[0]}; OUT=${POS[1]}
 [[ "$CHUNK" =~ ^[0-9]+$ ]] || die "--chunk-frames wants a whole number of frames"
 [[ "$MAXMIN" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "--max-min wants minutes"
+# the limit in seconds, once; over_limit N: the next part of N frames (at the last part's pace per frame, plus 15 %)
+# would end past it
+MAXSEC=$(( ${MAXMIN%%.*} * 60 )); [[ "$MAXMIN" == *.* ]] && MAXSEC=$(awk -v m="$MAXMIN" 'BEGIN { printf "%d", m * 60 }')
+LAST_S=0; LAST_N=0
+over_limit() { local est=$LAST_S; (( LAST_N > 0 && ${1:-0} > 0 )) && est=$(( LAST_S * $1 / LAST_N )); (( 100 * SECONDS + 115 * est > 100 * MAXSEC )); }
 [[ -z "$ONLY_PART" || "$ONLY_PART" =~ ^[0-9]+$ ]] || die "--part wants a 0-based index"
 [[ -z "$WORKER" || "$WORKER" == gpu || "$WORKER" == cpu ]] || die "--worker takes gpu or cpu"
-[[ -z "$WORKER" || ( $MODE != blur && $SINGLE -eq 0 && -z "$ONLY_PART" && $JOIN_ONLY -eq 0 ) ]] || die "--worker renders the parts of a preview or a master (not --blur, --single, --part or --join-only)"
+[[ -z "$WORKER" || ( $MODE != blur && $SINGLE -eq 0 && -z "$ONLY_PART" && $JOIN_ONLY -eq 0 ) ]] || die "--worker renders the parts of a draft, a preview or a master (not --blur, --single, --part or --join-only)"
 [[ -z "$CPU_CONC" || "$CPU_CONC" =~ ^[0-9]+$ ]] || die "--cpu-concurrency wants a number"
+# a draft: parts of up to 450 frames (each part pays a browser start; its quality steps do not matter in a draft)
+[[ $MODE == draft && $CHUNK_SET -eq 0 ]] && CHUNK=450
 [[ "$CHUNK" -eq 0 ]] && SINGLE=1
 [[ $JOIN_ONLY -eq 0 || ( $MODE != blur && $SINGLE -eq 0 && -z "$ONLY_PART" ) ]] || die "--join-only joins the parts of a preview or a master (not --blur, --single or --part)"
 
@@ -261,14 +289,73 @@ if [[ $CLEAN -eq 1 ]]; then  # every gate has passed: the kept bundle and parts 
   echo "render.sh: removed the bundle and the parts in $P" >&2
   exit 0
 fi
+if [[ -n "$FROM_DRAFT" ]]; then
+  # The delivery when the final cannot finish: the whole draft at the composition's size. The size comes from the
+  # composition list a render or a sheet cached (out/render/*/compositions.txt, out/.bundle/*/.compositions.txt), else
+  # twice the draft's (a draft renders at half size); --spec WxH@fps says it outright.
+  [[ -f "$FROM_DRAFT" ]] || die "--from-draft $FROM_DRAFT not found (render the draft first: bash scripts/render.sh $COMP out/draft.mp4 --draft)"
+  for tool in ffmpeg ffprobe; do command -v "$tool" >/dev/null || die "$tool not found on PATH"; done
+  mkdir -p "$(dirname "$OUT")" out/qa
+  OUT_ABS=$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")
+  read -r DW DH DFPS <<< "$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate -of csv=p=0 "$FROM_DRAFT" | awk -F, '{ split($3, r, "/"); printf "%s %s %g", $1, $2, r[1] / (r[2] ? r[2] : 1) }')"
+  TW=""; TH=""
+  if [[ "$SPEC" =~ ^([0-9]+)x([0-9]+) ]]; then TW=${BASH_REMATCH[1]}; TH=${BASH_REMATCH[2]}
+  else
+    LISTF=$(ls -t out/render/*/compositions.txt out/.bundle/*/.compositions.txt 2>/dev/null | head -1 || true)
+    if [[ -n "$LISTF" ]]; then read -r TW TH <<< "$(awk -v id="$COMP" '$1 == id && $3 ~ /^[0-9]+x[0-9]+$/ { split($3, s, "x"); print s[1], s[2]; exit }' "$LISTF")"; fi
+    [[ -n "$TW" ]] || { TW=$((DW * 2)); TH=$((DH * 2)); }
+  fi
+  step "--from-draft: $FROM_DRAFT (${DW}x${DH}) scaled to ${TW}x${TH} as the delivery (the whole film; the final did not finish)"
+  AIN=(); AMAP=(-map 0:a:0?)
+  if [[ $NOAUDIO -eq 0 && -f "$AUDIO" ]]; then AIN=(-i "$AUDIO"); AMAP=(-map 1:a:0); fi
+  DDUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$FROM_DRAFT")
+  ACODEC=(-c:a aac -b:a 320k -ar 48000 -ac 2)
+  [[ $NOAUDIO -eq 1 ]] && { AMAP=(); ACODEC=(-an); }
+  ffmpeg -v error -y -i "$FROM_DRAFT" ${AIN[@]+"${AIN[@]}"} -map 0:v:0 ${AMAP[@]+"${AMAP[@]}"} \
+    -vf "scale=${TW}:${TH}:flags=lanczos,format=yuv420p" -c:v libx264 -crf "${CRF:-16}" -preset medium \
+    -color_primaries bt709 -color_trc bt709 -colorspace bt709 -color_range tv ${ACODEC[@]+"${ACODEC[@]}"} -t "$DDUR" -movflags +faststart "$OUT_ABS" \
+    || die "ffmpeg could not scale the draft"
+  if [[ $NOCHECK -eq 0 ]] && python3 -c "import numpy" >/dev/null 2>&1; then
+    PARGS=(--spec "${TW}x${TH}@${DFPS%.000}" --json "out/qa/probe-$(basename "${OUT%.*}").json" --no-loudness)
+    [[ $NOAUDIO -eq 1 || ( ${#AIN[@]} -eq 0 && -z "$(ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 "$FROM_DRAFT")" ) ]] && PARGS+=(--audio none)
+    python3 "$SCRIPT_DIR/probe.py" "$OUT_ABS" "${PARGS[@]}" >/dev/null || echo "render.sh: warning: probe.py flagged the scaled draft (out/qa/probe-*.json)" >&2
+  fi
+  step "done: $OUT is the whole film from the draft, scaled up (render the final again when there is time: the parts kept in out/render resume)"
+  exit 0
+fi
 for tool in npx ffmpeg ffprobe; do command -v "$tool" >/dev/null || die "$tool not found on PATH"; done
 # the Python modules this run needs, checked before a minute of bundling (the Store alias and an
 # interpreter without numpy both fail here, not after the frames)
 PYMODS=numpy
 [[ $NOCHECK -eq 0 && $NOAUDIO -eq 0 || $BUILD_AUDIO -eq 1 ]] && PYMODS="$PYMODS, scipy, soundfile"
 [[ $MODE == blur ]] && PYMODS="$PYMODS, cv2"
-python3 -c "import $PYMODS" >/dev/null 2>&1 \
-  || die "Python (${PYCMD[*]}) cannot import $PYMODS: install scripts/requirements.txt into it (node scripts/py.mjs --check prints the pip line), or set PYTHON to the interpreter of an environment that has them"
+# The modules are checked beside the frames (one Python start with scipy costs 10-30 s on a busy machine), and settled
+# before the gates; a --blur master, --build-audio and --redo need Python before any frame, so they settle now.
+PYCHECK_FILE="${TMPDIR:-/tmp}/cinetic-pycheck.$$"
+PYCHECK_PID=""
+py_check() { if python3 -c "import $PYMODS" >/dev/null 2>&1; then echo ok > "$PYCHECK_FILE"; else echo miss > "$PYCHECK_FILE"; fi; }
+py_settle() {
+  if [[ -n "$PYCHECK_PID" ]]; then wait "$PYCHECK_PID" 2>/dev/null || true; PYCHECK_PID=""; fi
+  [[ -f "$PYCHECK_FILE" ]] || return 0
+  local got; got=$(< "$PYCHECK_FILE"); rm -f "$PYCHECK_FILE"
+  [[ "$got" == ok ]] && return 0
+  # the pick misses a module: another interpreter on this machine may have them all (frames.mjs python asks each
+  # once and caches the answer); else the frames still render and the gates that need Python are skipped
+  local ALT=""
+  if [[ -z "${PYTHON:-}" ]]; then ALT=$(node "$SCRIPT_DIR/frames.mjs" python --need "${PYMODS//, /,}" --print 2>/dev/null || true); fi
+  if [[ -n "$ALT" ]]; then
+    read -r -a PYCMD <<< "${ALT//\"/}"
+    [[ "$ALT" == *\"* ]] && PYCMD=("${ALT//\"/}")
+    echo "render.sh: ${PYTHON:-the default Python} misses one of $PYMODS; using $ALT, which has them (export PYTHON=$ALT to skip this search)" >&2
+  elif [[ $MODE == blur ]]; then
+    die "no Python here imports $PYMODS (a --blur master needs them): node scripts/frames.mjs python says what each interpreter misses and the pip line"
+  else
+    HAVE_PY=0
+    echo "render.sh: warning: no Python here imports $PYMODS: the film renders and muxes, but the sync and spec gates are skipped (node scripts/frames.mjs python says what to install or which interpreter to set as PYTHON)" >&2
+  fi
+}
+if [[ $MODE == blur || $BUILD_AUDIO -eq 1 || -n "$REDO" ]]; then py_check; py_settle
+else py_check & PYCHECK_PID=$!; fi
 mkdir -p "$(dirname "$OUT")" out/qa
 OUT_ABS=$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")
 NAME=$(basename "${OUT%.*}")
@@ -307,7 +394,15 @@ if [[ $BUILD_AUDIO -eq 1 && $NOAUDIO -eq 0 ]]; then
     python3 "$SCRIPT_DIR/audio/score.py" --cues out/cues.json --score audio/score.json --out "$AUDIO" --stems out/stems --json out/qa/score.json >&2
   fi
 fi
-if [[ $NOAUDIO -eq 0 ]]; then
+if [[ $NOAUDIO -eq 0 && ! -f "$AUDIO" && -z "$FROM_DRAFT" ]]; then
+  if [[ $MODE == draft || $MODE == preview ]]; then
+    echo "render.sh: no soundtrack at $AUDIO yet: this $MODE is silent (npm run cues && npm run kit && npm run audio write it; --build-audio does it first)" >&2
+    NOAUDIO=1
+  else
+    die "soundtrack $AUDIO not found: write it first (npm run cues && npm run kit && npm run audio, or rerun with --build-audio), pass --audio FILE, or --no-audio for a silent film"
+  fi
+fi
+if [[ $NOAUDIO -eq 0 && -z "$FROM_DRAFT" ]]; then
   [[ -f "$AUDIO" ]] || die "soundtrack $AUDIO not found (build it, pass --audio FILE, or --no-audio for a silent film)"
   newer=$(find src -type f -newer "$AUDIO" 2>/dev/null | head -1 || true)
   [[ -z "$newer" ]] || echo "render.sh: warning: $newer is newer than $AUDIO; if timing changed, rerun cues + audio (or pass --build-audio)" >&2
@@ -317,6 +412,10 @@ WORK=$(mktemp -d "${TMPDIR:-/tmp}/cinetic-render.XXXXXX")
 if [[ $KEEP -eq 1 ]]; then echo "render.sh: keeping work files in $WORK" >&2; else trap 'rm -rf "$WORK"' EXIT; fi
 
 touch "$WORK/.bundled"
+# public/ as the frames see it: every folder but public/audio (the soundtrack is muxed by ffmpeg; Remotion renders
+# muted), so writing a new mix never rebuilds the bundle or drops a rendered part
+PUBDIRS=()
+for d in public/*/; do [[ -d "$d" && "$d" != public/audio/ ]] && PUBDIRS+=("${d%/}"); done
 # the parts route keeps its bundle and parts in a folder of the project, so a stopped run resumes
 CHUNKED=0; [[ $MODE != blur && $SINGLE -eq 0 ]] && CHUNKED=1
 PARTS=${PARTS:-out/render/$NAME}
@@ -345,7 +444,7 @@ if [[ $JOIN_ONLY -eq 1 ]]; then
   [[ -d "$PARTS" ]] || die "--join-only: no parts folder $PARTS (render.sh writes it; --parts DIR names another)"
   B=""
   if [[ -f "$PARTS/bundle.key" ]]; then
-    now=$(node "$SCRIPT_DIR/render-key.cjs" --entry "$ENTRY" --comp "$COMP" public 2>/dev/null || true)
+    now=$(node "$SCRIPT_DIR/render-key.cjs" --entry "$ENTRY" --comp "$COMP" ${PUBDIRS[@]+"${PUBDIRS[@]}"} 2>/dev/null || true)
     [[ -z "$now" || "$now" == "$(cat "$PARTS/bundle.key")" ]] || echo "render.sh: warning: the source of $COMP changed since these parts' bundle was built; the joined film shows it as it was" >&2
   fi
   step "--join-only: joining the parts in $PARTS (no bundle, no Remotion)"
@@ -355,7 +454,7 @@ elif [[ -n "$PREBUILT" ]]; then
   step "pre-built bundle: $B"
 elif [[ $CHUNKED -eq 1 ]]; then
   # the source's fingerprint: what the composition can depend on (scripts/render-key.cjs) and public/ (path, size)
-  SRC_KEY=$(node "$SCRIPT_DIR/render-key.cjs" --entry "$ENTRY" --comp "$COMP" --manifest "$PARTS/manifest.new.json" public) || die "could not fingerprint the source of $COMP"
+  SRC_KEY=$(node "$SCRIPT_DIR/render-key.cjs" --entry "$ENTRY" --comp "$COMP" --manifest "$PARTS/manifest.new.json" ${PUBDIRS[@]+"${PUBDIRS[@]}"}) || die "could not fingerprint the source of $COMP"
   if [[ -f "$PARTS/bundle/index.html" && "$(cat "$PARTS/bundle.key" 2>/dev/null)" == "$SRC_KEY" ]]; then
     step "reusing the bundle in $PARTS (the source of $COMP and public/ unchanged since it was built)"
     [[ -z "$REDO" ]] || step "--redo$REDO has nothing to do: the source is the one the bundle was built from"
@@ -458,9 +557,9 @@ if [[ -n "$FRAMES" ]]; then
   RANGE=(--frames="$FROM-$TO")
 fi
 N=$((TO - FROM + 1))
-DUR=$(python3 -c "print(f'{$N/$FPS:.3f}')")
+DUR=$(awk -v n="$N" -v f="$FPS" 'BEGIN { printf "%.3f", n / f }')
 AOFF=${AOFF:-$FROM}
-AOFF_S=$(python3 -c "print(f'{$AOFF/$FPS:.6f}')")
+AOFF_S=$(awk -v n="$AOFF" -v f="$FPS" 'BEGIN { printf "%.6f", n / f }')
 # Remotion refuses a concurrency above the cores it sees (the lower of nproc, which honours OMP_NUM_THREADS,
 # and node's availableParallelism): clamp to them here, not after a failed render
 clamp_conc() {
@@ -472,15 +571,22 @@ clamp_conc() {
   fi
   return 0
 }
+# a draft renders at half size unless -- --scale=S says otherwise (the probe expects the scaled size)
+if [[ $MODE == draft && -z "$SCALE" ]]; then SCALE=0.5; EXTRA+=(--scale=0.5)
+  OUTSIZE=$(node -e 'const [w, h] = process.argv[1].split("x").map(Number); const side = (d) => { while (Math.round(d * 0.5) % 2) d--; return Math.round(d * 0.5); }; console.log(`${side(w)}x${side(h)}`)' "$SIZE"); fi
 RARGS=(--muted --log=error)
+# a master's frames go through lossless PNG: lit grounds band through JPEG q95 (plateaus over a tenth of a pale frame)
+if [[ $MODE == master && $JPEG -eq 0 && " ${EXTRA[*]-} " != *" --image-format"* ]]; then RARGS+=(--image-format=png); fi
 [[ -n "$CONC" ]] && clamp_conc render.sh && RARGS+=(--concurrency="$CONC")
 [[ $LOOP == 1 ]] && RARGS+=(--image-format=png)
 RARGS+=(${EXTRA[@]+"${EXTRA[@]}"})
 # The GL backend: a --gl passed after -- wins, then CINETIC_GL, then the one scripts/frames.mjs measured fastest among
-# the backends that draw the same pixels as software GL here (probed once per machine, cached in out/.bundle/gl.json)
+# the backends that draw the same pixels as software GL here (probed once per machine, cached in out/.bundle/gl.json and ~/.cinetic/gl.json)
 GL=""; GL_AUTO=0
 if [[ $JOIN_ONLY -eq 0 && $FASTPATH -eq 1 && " ${EXTRA[*]-} " != *" --gl"* ]]; then
-  GL=${CINETIC_GL:-$(node "$SCRIPT_DIR/frames.mjs" gl --bundle "$B" --comp "$COMP" --quiet 2>/dev/null || true)}
+  # a draft takes the machine's cached pick (or the config's backend) and never waits for the probe; a master probes once
+  if [[ $MODE == draft ]]; then GL=${CINETIC_GL:-$(node "$SCRIPT_DIR/frames.mjs" gl --cached 2>/dev/null || true)}
+  else GL=${CINETIC_GL:-$(node "$SCRIPT_DIR/frames.mjs" gl --bundle "$B" --comp "$COMP" --quiet 2>/dev/null || true)}; fi
   if [[ -n "$GL" ]]; then RARGS+=(--gl="$GL"); GL_AUTO=1; step "GL backend: $GL (scripts/frames.mjs gl; CINETIC_GL or -- --gl=X overrides)"; fi
 fi
 # rrender ARGS: `remotion render ARGS`; when the picked backend fails on the GPU path (the browser or its GPU process
@@ -561,8 +667,9 @@ PY
 }
 
 case "$MODE" in
-  preview|master)
-    if [[ $MODE == preview ]]; then Q=(--crf="${CRF:-20}" --x264-preset=veryfast); else Q=(--crf="${CRF:-14}" --x264-preset=slow); fi
+  draft|preview|master)
+    if [[ $MODE == draft ]]; then Q=(--crf="${CRF:-23}" --x264-preset=superfast)
+    elif [[ $MODE == preview ]]; then Q=(--crf="${CRF:-20}" --x264-preset=veryfast); else Q=(--crf="${CRF:-14}" --x264-preset=slow); fi
     if [[ $CHUNKED -eq 0 ]]; then
       step "rendering $COMP ($MODE)"
       rrender "$B" "$COMP" "$PIC" ${RANGE[@]+"${RANGE[@]}"} ${Q[@]+"${Q[@]}"} --pixel-format=yuv420p --color-space=bt709 ${RARGS[@]+"${RARGS[@]}"} \
@@ -596,11 +703,24 @@ for (;;) {
 console.log(out.join(" "));' "$FROM" "$TO" "$CHUNK" "$PARTS")" || die "could not lay out the parts"
       NP=${#STARTS[@]}
       [[ -z "$ONLY_PART" || "$ONLY_PART" -lt "$NP" ]] || die "--part $ONLY_PART: this range has $NP part(s), 0-$((NP - 1))"
-      part_end() { if (( $1 + 1 < NP )); then echo $(( STARTS[$1 + 1] - 1 )); else echo "$TO"; fi; }
-      part_file() { echo "$PARTS/part-$(printf %06d "${STARTS[$1]}")-$(printf %06d "$(part_end "$1")").mp4"; }
-      LAST_S=0; left=0; MISSING=""
+      PEND=(); PFILE=()
+      for ((k = 0; k < NP; k++)); do
+        if (( k + 1 < NP )); then PEND[k]=$(( STARTS[k + 1] - 1 )); else PEND[k]=$TO; fi
+        _a=000000${STARTS[k]}; _b=000000${PEND[k]}; PFILE[k]="$PARTS/part-${_a: -6}-${_b: -6}.mp4"  # zero-padded without a process (bash 3.2 too)
+      done
+      part_end() { echo "${PEND[$1]}"; }
+      part_file() { echo "${PFILE[$1]}"; }
+      LAST_S=0; LAST_N=0; left=0; MISSING=""
       step "$N frames in $NP part(s) of <= $CHUNK in $PARTS$([[ "$MAXMIN" != 0 ]] && echo ", stopping before ${MAXMIN} min")"
-      part_done() { local f a b; f=$(part_file "$1"); a=${STARTS[$1]}; b=$(part_end "$1"); [[ -f "$f" && "$(frames_of "$f")" -eq $((b - a + 1)) ]] && part_current "$f"; }
+      # a part found whole is remembered for the rest of the run: each check is an ffprobe over the part, and on a busy
+      # machine every process costs seconds (an indexed array: bash 3.2 has no associative ones)
+      PART_OK=()
+      part_done() {
+        local f a b
+        [[ "${PART_OK[$1]:-}" == 1 ]] && return 0
+        f=${PFILE[$1]}; a=${STARTS[$1]}; b=${PEND[$1]}
+        [[ -f "$f" && "$(frames_of "$f")" -eq $((b - a + 1)) ]] && part_current "$f" && PART_OK[$1]=1
+      }
       # a claim: an atomic folder beside the parts holding the claiming worker's pid; a claim whose worker is gone is cleared
       claim() { mkdir "$PARTS/.claim-$1" 2>/dev/null && echo "$2" > "$PARTS/.claim-$1/pid"; }
       unclaim() { rm -f "$PARTS/.claim-$1/pid"; rmdir "$PARTS/.claim-$1" 2>/dev/null || true; }
@@ -613,12 +733,14 @@ console.log(out.join(" "));' "$FROM" "$TO" "$CHUNK" "$PARTS")" || die "could not
       # CPU, at its own concurrency); the same bundle, encode and tags, so the parts join as one stream
       CARGS=()
       for x in ${RARGS[@]+"${RARGS[@]}"}; do [[ "$x" == --gl=* || "$x" == --concurrency=* ]] || CARGS+=("$x"); done
+      # half the cores, and never above the ones Remotion sees (nproc, which OMP_NUM_THREADS lowers: it refuses more)
       CC=${CPU_CONC:-$(node -e "const o=require('os');console.log(Math.max(1,Math.floor((o.availableParallelism?o.availableParallelism():o.cpus().length)/2)))")}
+      _np=$(nproc 2>/dev/null || echo "$CC"); [[ "$_np" =~ ^[0-9]+$ ]] && (( CC > _np )) && CC=$_np
       CARGS+=(--gl=swangle --concurrency="$CC")
       render_part() {
         local k=$1 path=$2 a b f t1 rc msg
-        a=${STARTS[$k]}; b=$(part_end "$k"); f=$(part_file "$k")
-        t1=$(date +%s)
+        a=${STARTS[$k]}; b=${PEND[$k]}; f=${PFILE[$k]}
+        t1=$SECONDS
         step "part $((k + 1))/$NP: frames $a-$b$([[ $path == cpu ]] && echo ' (software GL, CPU)')"
         rm -f "$f.tmp.mp4"
         if [[ $path == cpu ]]; then
@@ -640,7 +762,7 @@ console.log(out.join(" "));' "$FROM" "$TO" "$CHUNK" "$PARTS")" || die "could not
           step "part $((k + 1)): $msg"
           rm -f "${f%.mp4}.old.mp4"
         fi
-        LAST_S=$(( $(date +%s) - t1 ))
+        LAST_S=$(( SECONDS - t1 )); LAST_N=$(( b - a + 1 ))
         return 0
       }
       # the software-GL worker: from the last part backward, a part at a time, each claimed first; it stops at a part
@@ -650,7 +772,7 @@ console.log(out.join(" "));' "$FROM" "$TO" "$CHUNK" "$PARTS")" || die "could not
         for ((k = NP - 1; k >= 0; k--)); do
           [[ -n "$ONLY_PART" && "$k" -ne "$ONLY_PART" ]] && continue
           part_done "$k" && continue
-          if [[ "$MAXMIN" != 0 ]] && node -e "const [e,l,m]=process.argv.slice(1).map(Number);process.exit(e + 1.15 * l > m * 60 ? 0 : 1)" "$(( $(date +%s) - T0 ))" "$LAST_S" "$MAXMIN"; then break; fi
+          if [[ "$MAXMIN" != 0 ]] && over_limit $(( PEND[k] - STARTS[k] + 1 )); then break; fi
           claim "$k" "$me" || { [[ -n "$WORKER" ]] && continue || break; }
           render_part "$k" cpu || { unclaim "$k"; break; }
           unclaim "$k"
@@ -672,7 +794,7 @@ console.log(out.join(" "));' "$FROM" "$TO" "$CHUNK" "$PARTS")" || die "could not
           [[ -n "$ONLY_PART" && "$k" -ne "$ONLY_PART" ]] && continue
           part_done "$k" && continue
           # under a time limit: start a part only if it fits, judged by the last part's pace
-          if [[ "$MAXMIN" != 0 ]] && node -e "const [e,l,m]=process.argv.slice(1).map(Number);process.exit(e + 1.15 * l > m * 60 ? 0 : 1)" "$(( $(date +%s) - T0 ))" "$LAST_S" "$MAXMIN"; then
+          if [[ "$MAXMIN" != 0 ]] && over_limit $(( PEND[k] - STARTS[k] + 1 )); then
             left=$((left + 1)); continue
           fi
           claim "$k" "$$" || continue  # the software-GL worker has it
@@ -694,7 +816,7 @@ console.log(out.join(" "));' "$FROM" "$TO" "$CHUNK" "$PARTS")" || die "could not
           for ((k = 0; k < NP; k++)); do
             [[ -n "$ONLY_PART" && "$k" -ne "$ONLY_PART" ]] && continue
             part_done "$k" && continue
-            if [[ "$MAXMIN" != 0 ]] && node -e "const [e,l,m]=process.argv.slice(1).map(Number);process.exit(e + 1.15 * l > m * 60 ? 0 : 1)" "$(( $(date +%s) - T0 ))" "$LAST_S" "$MAXMIN"; then
+            if [[ "$MAXMIN" != 0 ]] && over_limit $(( PEND[k] - STARTS[k] + 1 )); then
               left=$((left + 1)); continue
             fi
             claim "$k" "$$" || continue
@@ -717,12 +839,14 @@ console.log(out.join(" "));' "$FROM" "$TO" "$CHUNK" "$PARTS")" || die "could not
         if ! claim join "$$"; then step "every part is there; the other worker joins"; exit 0; fi
         trap 'if [[ $KEEP -ne 1 ]]; then rm -rf "$WORK"; fi; unclaim join' EXIT
       fi
-      if [[ $left -eq 0 ]]; then left=0; for ((k = 0; k < NP; k++)); do [[ -n "$ONLY_PART" && "$k" -ne "$ONLY_PART" ]] && continue; part_done "$k" || left=$((left + 1)); done; fi
+      # the parts left, counted once more here (a part skipped by both loops was counted twice)
+      left=0; for ((k = 0; k < NP; k++)); do [[ -n "$ONLY_PART" && "$k" -ne "$ONLY_PART" ]] && continue; part_done "$k" || left=$((left + 1)); done
       [[ -z "$MISSING" ]] || die "--join-only: missing or out-of-date part(s) in $PARTS:$MISSING render each with the same command and --part K (or rerun without --join-only)"
       if [[ -f "$KEPT_LIST" && -z "$(find "$PARTS" -maxdepth 1 -name '*.old.mp4' 2>/dev/null | head -1)" ]]; then rm -f "$KEPT_LIST"; fi
       if [[ -n "$ONLY_PART" ]]; then step "part $ONLY_PART done: $(part_file "$ONLY_PART")"; exit 0; fi
       if [[ $left -gt 0 ]]; then
         step "stopped before the ${MAXMIN}-minute limit: $left of $NP part(s) left in $PARTS; rerun the same command to continue"
+        [[ $MODE == master && -f out/draft.mp4 ]] && step "out of time for the rest? deliver the whole draft instead of a cut film: bash scripts/render.sh $COMP $OUT --from-draft out/draft.mp4"
         exit 75
       fi
       step "joining $NP part(s) (stream copy) with BT.709 tags"
@@ -847,6 +971,8 @@ PY
 fi
 
 STATUS=0
+py_settle
+[[ $HAVE_PY -eq 0 && $NOCHECK -eq 0 ]] && { echo "render.sh: warning: the sync and spec gates were skipped (no Python with numpy, scipy and soundfile)" >&2; NOCHECK=1; }
 if [[ $NOCHECK -eq 0 ]]; then
   if [[ $NOAUDIO -eq 0 ]]; then
     step "check-sync"
@@ -859,7 +985,7 @@ if [[ $NOCHECK -eq 0 ]]; then
   python3 "$SCRIPT_DIR/probe.py" "$OUT_ABS" ${PARGS[@]+"${PARGS[@]}"} >/dev/null || STATUS=1
 fi
 
-SIZE_MB=$(python3 -c 'import os, sys; print(f"{os.path.getsize(sys.argv[1]) / 1e6:.1f}")' "$OUT_ABS")
+SIZE_MB=$(node -e 'console.log((require("fs").statSync(process.argv[1]).size / 1e6).toFixed(1))' "$OUT_ABS")
 changed=$(find src -type f -newer "$WORK/.bundled" 2>/dev/null | head -3 | tr '\n' ' ' || true)
 [[ -z "$changed" ]] || echo "render.sh: warning: src/ changed while this rendered ($changed); $OUT shows the source as it was when bundled" >&2
 if [[ $MODE == blur && -f "$SAMPLES" ]]; then
@@ -870,6 +996,11 @@ if [[ ${CHUNKED:-0} -eq 1 && -z "$PREBUILT" ]]; then
   # the parts stay until every gate has passed (the film's gates run after this): a late gate costs no re-render
   if [[ $KEEP -eq 1 ]]; then touch "$PARTS/.keep"; else rm -f "$PARTS/.keep"; fi
   [[ $STATUS -eq 0 ]] && step "the bundle and the parts stay in $PARTS until every gate has passed: deliver.sh cleans them, or rerun with --clean$([[ $KEEP -eq 1 ]] && echo ' (--keep: they stay)')"
+fi
+if [[ $MODE == draft ]]; then
+  # the draft's contact sheet, cut from the video by ffmpeg (seconds): the first look at the whole film
+  node "$SCRIPT_DIR/frames.mjs" sheet --from "$OUT_ABS" --out out/qa/draft-sheet.png --quiet >/dev/null 2>&1 \
+    && step "out/qa/draft-sheet.png: 16 tiles over the whole draft (one act: node scripts/frames.mjs sheet --from $OUT --frames A-B)"
 fi
 if [[ $STATUS -eq 0 ]]; then
   step "done: $OUT (${SIZE_MB} MB, ${DUR}s, $MODE)"
