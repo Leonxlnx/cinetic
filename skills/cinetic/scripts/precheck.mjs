@@ -23,6 +23,8 @@
  *                sampleWorld() and any sample() call in the film's source (kit-sample), through a named or a namespace
  *                import (import * as K from '../kit': K.sample(), <K.ProjectPanel>), and the parts that reported
  *                kit-empty (or a sample() call, kit-sample) while the modules loaded
+ *   cast         a person's name set beside CONTENT.people[k].photo is that person's first name in src/content.ts (an error:
+ *                "Mei" on Arjun's face), a role ("You") excepted; one face standing for two named people warns
  *   4. fit       every on-screen string measured with the film's own font (its woff2's advance widths, tracking and
  *                weight): each COPY line at its type role (line, display for the name, ui) against the safe width (in a
  *                film whose acts size lines to the width with fitSize: the size it gets, a warning under 75 % of its
@@ -210,6 +212,53 @@ for (const file of filmFiles) {
       if (attrs.includes('...')) continue; // spread props: cannot tell
       const missing = needs.filter((n) => !n.split('|').some((x) => attrs.includes(x)));
       if (missing.length) add('kit-empty', 'error', `<${name}> without ${missing.join(', ')}: it draws an empty state (data-kit-empty), never sample content; pass the film's own`, where);
+    }
+  }
+}
+
+// ------------------------------------------------------------------------------------------------ 3b. the cast (static)
+// A face carries one name: a person's name set beside CONTENT.people[k].photo is that person's first name (never "Mei" on
+// the face src/content.ts gives to Arjun), and one face never stands for two named people in one film.
+{
+  const contentTs = path.join(SRC, 'content.ts');
+  const people = [];
+  if (fs.existsSync(contentTs)) {
+    const ct = fs.readFileSync(contentTs, 'utf8');
+    const at = ct.search(/["']?people["']?\s*:\s*\[/);
+    if (at >= 0) {
+      let depth = 0, end = ct.length;
+      for (let i = ct.indexOf('[', at); i < ct.length; i++) {
+        if (ct[i] === '[') depth++;
+        else if (ct[i] === ']' && --depth === 0) { end = i; break; }
+      }
+      for (const m of ct.slice(at, end).matchAll(/["']?name["']?\s*:\s*["']([^"']+)["']/g)) people.push(m[1]);
+    }
+  }
+  const ROLE = new Set(['You', 'Me', 'Us', 'Team', 'Everyone', 'Guest', 'Admin', 'Owner', 'Host', 'Support', 'Bot']); // a role, not a name
+  const personLike = (s) => /^[A-Z][a-z]+(?: [A-Z][a-z]*\.?)?$/.test(s.trim()) && !ROLE.has(s.trim().split(/\s+/)[0]);
+  const faces = new Map(); // k -> Map(label -> where)
+  if (people.length) {
+    for (const f of filmFiles) {
+      if (path.resolve(f) === path.resolve(contentTs)) continue;
+      const src = stripComments(fs.readFileSync(f, 'utf8'));
+      const pat = /\{([^{}]*?)\bCONTENT\.people\[(\d+)\]\.photo([^{}]*?)\}/g;
+      for (const m of src.matchAll(pat)) {
+        const k = Number(m[2]);
+        const body = m[1] + m[3];
+        const lm = body.match(/\b(?:label|name|who|author|by|first)\s*:\s*['"]([^'"]+)['"]/);
+        if (!lm || !personLike(lm[1]) || k >= people.length) continue;
+        const label = lm[1].trim();
+        const where = `${rel(f)}:${lineOf(src, m.index)}`;
+        const first = people[k].split(/\s+/)[0];
+        if (label.split(/\s+/)[0] !== first)
+          add('cast-name', 'error', `"${label}" is set on the face of ${people[k]} (CONTENT.people[${k}]): a face carries its own name; use the person whose first name is ${label.split(/\s+/)[0]}, or name this one ${first}`, where);
+        if (!faces.has(k)) faces.set(k, new Map());
+        faces.get(k).set(label, where);
+      }
+    }
+    for (const [k, labels] of faces) {
+      if (labels.size > 1)
+        add('cast-face', 'warn', `the face of ${people[k]} (CONTENT.people[${k}]) stands for ${[...labels.keys()].map((x) => `"${x}"`).join(' and ')}: one face, one person; give each their own (a varied cast)`, [...labels.values()][0]);
     }
   }
 }

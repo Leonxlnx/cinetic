@@ -16,6 +16,8 @@
  *      stdout (--json parses); --quiet leaves the progress out.
  *   6. --json carries the findings; the run stays under 60 s here (30 s is the budget on a quiet machine); an act that
  *      imports a stylesheet or a picture still imports (stubbed on a second run).
+ *   8. The cast: a person's name beside CONTENT.people[k].photo that is not that person's fails (cast-name), a role
+ *      label passes, one face for two named people warns (cast-face).
  *   7. Frames: the starter renders every act at its first, middle and last frame without an error; a planted runtime
  *      TypeError (a status the film never gave) fails with the act, the frames it throws on and the file:line; a browser
  *      global read while rendering is a warning (frames-env); --no-frames renders nothing.
@@ -65,6 +67,31 @@ try {
   fs.cpSync(path.join(STARTER, 'src'), path.join(film, 'src'), { recursive: true });
   fs.symlinkSync(path.join(STARTER, 'node_modules'), path.join(film, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   fs.copyFileSync(path.join(STARTER, 'tsconfig.json'), path.join(film, 'tsconfig.json'));
+
+  // the cast (static, a film of its own): a person's name set beside CONTENT.people[k].photo is that person's first name;
+  // a role label ("You") is not a name; one face standing for two named people warns
+  const castFilm = path.join(TMP, 'cast');
+  fs.mkdirSync(path.join(castFilm, 'src'), { recursive: true });
+  fs.writeFileSync(path.join(castFilm, 'src', 'content.ts'), `export const CONTENT = { "people": [
+  { "name": "Sofia Mercer", "photo": 'people/p07.jpg' },
+  { "name": "Arjun Chen", "photo": 'people/p35.jpg' },
+] };\n`);
+  fs.writeFileSync(path.join(castFilm, 'src', 'cast.ts'), `import { CONTENT } from './content';
+export const ROW = [
+  { label: 'Mei', photo: CONTENT.people[1].photo },
+  { label: 'Sofia', photo: CONTENT.people[0].photo },
+  { label: 'You', photo: CONTENT.people[0].photo },
+  { label: 'Sofia', photo: CONTENT.people[0].photo },
+];
+export const OTHER = [{ name: 'Arjun', photo: CONTENT.people[1].photo }];\n`);
+  const cast = spawnSync(process.execPath, [PRE, castFilm, '--json', '--no-import'], { encoding: 'utf8' });
+  let castRep = { findings: [] };
+  try { castRep = JSON.parse(cast.stdout); } catch { /* reported below */ }
+  const castNames = castRep.findings.filter((f) => f.rule === 'cast-name');
+  result(castNames.length === 1 && /"Mei" is set on the face of Arjun Chen/.test(castNames[0].message) && cast.status === 1,
+    'cast-name: "Mei" on the face content.ts gives Arjun fails; Sofia on her own face and the role "You" pass', JSON.stringify(castRep.findings).slice(0, 300));
+  result(castRep.findings.some((f) => f.rule === 'cast-face' && /Arjun Chen/.test(f.message)), 'cast-face: one face standing for "Mei" and "Arjun" warns',
+    JSON.stringify(castRep.findings).slice(0, 300));
 
   // 1. the starter as shipped
   const clean = run();
