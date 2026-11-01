@@ -13,7 +13,8 @@
  *   3. Filtering (licence, size, shape, near-duplicates), interleaving, search options (keyed sources only with
  *      their key), the colour filter's scoring.
  *   4. The private licence record: where it lives (outside public/), what an entry holds, replacement.
- *   5. Contact-sheet geometry, the focus crop, the grade's filter chain (natural keeps the picture's colour,
+ *   5. Contact-sheet geometry, the focus crop, the source a plate --pick grades (the newest of its slugged stem), the
+ *      grade's filter chain (natural keeps the picture's colour,
  *      night puts the median at 0.18, --strength 0 is the picture), the picture check (banned colours, the
  *      saturated floor, the set's match, steady text), file-type sniffing, key redaction. With ffmpeg on the
  *      PATH, real pixels: a vivid picture keeps its colour through natural; a daylight one reads as night.
@@ -315,6 +316,22 @@ ok(A.NO_CREDIT.every((id) => A.LICENCES[id].seen?.quote && /^https:/.test(A.LICE
   eq(A.focusCrop(3000, 3000, 16 / 9, 0.9, 0.5), { x: 0, y: 656, w: 3000, h: 1688 }, 'focus crop: square source, width-bound');
   const z = A.focusCrop(4000, 2250, 16 / 9, 0.8, 0.2, 2);
   ok(z.w === 2000 && z.h === 1124 && z.x === 2000 && z.y === 0, 'focus crop: x2 zoom toward the focus, clamped', JSON.stringify(z));
+}
+{
+  // plate --pick grades the source get just wrote: get slugs --name (nightCity -> nightcity-source) and keeps an earlier
+  // pick of another picture beside the new one (sky-source.jpg, then sky-source-2.jpg)
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'cinetic-plate-'));
+  const put = (f, s) => { fs.writeFileSync(path.join(d, f), 'x'); fs.utimesSync(path.join(d, f), s, s); };
+  put('nightcity-source.jpg', 1000);
+  put('sky-source.jpg', 1000);
+  put('sky-source-2.jpg', 2000);
+  put('sky.jpg', 3000);
+  put('sky-soft.jpg', 3000);
+  const base = (f) => (f ? path.basename(f) : null);
+  ok(base(A.plateSource(d, 'nightCity')) === 'nightcity-source.jpg', 'plate --pick: a camel-case preset finds the source get saved in lower case', base(A.plateSource(d, 'nightCity')));
+  ok(base(A.plateSource(d, 'sky')) === 'sky-source-2.jpg', 'plate --pick: a second pick grades the new source, never the earlier one', base(A.plateSource(d, 'sky')));
+  ok(A.plateSource(d, 'clouds') === null, 'plate --pick: no source of that preset, none found');
+  fs.rmSync(d, { recursive: true, force: true });
 }
 {
   throws(() => A.gradeFilter('sepia'), /unknown look/, 'grade: unknown look is a usage error');

@@ -2199,6 +2199,18 @@ export function plateFilter(name, { stats = null, crop = null, width = 2400, acc
   return `${vf.endsWith(tail) ? vf.slice(0, -tail.length) : vf}${extra.length ? `,${extra.join(',')}` : ''}${tail}`;
 }
 
+/**
+ * The source `plate <name> --pick` just fetched into `dir`: get names it from `--name <name>-source` as a slug (lower
+ * case: nightCity -> nightcity-source.jpg) and keeps an earlier pick of another picture beside it (sky-source-2.jpg), so
+ * the newest file of that stem is the pick to grade, never the first one found.
+ */
+export function plateSource(dir, name) {
+  const stem = slug(`${name}-source`, 6);
+  const re = new RegExp(`^${stem}(?:-\\d+)?\\.(?:jpe?g|png|webp|avif|gif|mp4|webm|mov)$`, 'i');
+  const found = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => re.test(f)).map((f) => path.join(dir, f)) : [];
+  return found.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)[0] ?? null;
+}
+
 async function cmdPlate(args) {
   const name = plateName(args._[0]);
   if (!name) throw new Usage(`plate needs a preset: ${Object.keys(PLATES).join(', ')}`);
@@ -2224,8 +2236,8 @@ async function cmdPlate(args) {
     fs.mkdirSync(to, { recursive: true });
     const code = run(['get', `#${String(args.pick).replace(/^#/, '')}`, '--from', from, '--to', to, '--name', `${name}-source`, ...(kind === 'video' ? ['--res', '1080'] : ['--width', '3200'])]);
     if (code !== 0) return code;
-    file = fs.readdirSync(to).map((f) => path.join(to, f)).find((f) => path.basename(f).startsWith(`${name}-source.`)) ?? null;
-    if (!file) throw new Error(`get wrote no ${name}-source file in ${to}`);
+    file = plateSource(to, name);
+    if (!file) throw new Error(`get wrote no ${slug(`${name}-source`, 6)} file in ${to}`);
   }
   if (!ffmpegOk()) throw new Error('plate needs ffmpeg and ffprobe on the PATH');
   const p = probeFile(file);
