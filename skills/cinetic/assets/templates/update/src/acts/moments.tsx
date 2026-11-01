@@ -145,10 +145,8 @@ const TapMoment: React.FC<{ c: Change; s: Extract<Change['show'], { kind: 'tap' 
   const tipO = noTip ? 0 : prog(F, T.go, T.go + f60(10), E.glideOut) * (1 - prog(F, T.hit + f60(8), T.hit + f60(22), E.softIn));
   const ring = noTip ? 0 : prog(F, T.hit, T.hit + f60(26), E.glideOut);
   const glow = 0.5 * hitPulse(F - T.res2, 3, 14);
-  const hop = hops(F, T);
   const rowsOut = prog(F, T.hit, T.hit + f60(9), E.buildIn); // the rows are gone before the result lands: never two layers of words at once
   const RES_ON = phrase(Math.max(1, result.length), f60(6), { shape: 'settle', seed: `${c.id}-result` }).onsets;
-  const faces = result.length > 0 && result.every((r) => r.photo);
   const gap = 30;
   const rw = Math.min(250, (inner - gap * (result.length - 1)) / Math.max(1, result.length));
   const av = Math.min(150, rw - 20);
@@ -161,15 +159,8 @@ const TapMoment: React.FC<{ c: Change; s: Extract<Change['show'], { kind: 'tap' 
           {rows.map((r, k) => <RowLine key={k} r={r} w={inner} t={t} k={k} id={`${c.id}-row${k}`} />)}
         </div>
       )}
-      {faces && done > 0 && hop.k >= 0 && (() => {
-        // the one speaking (or the one just added): a ring that slides from face to face and lands
-        const cx = (j: number) => rx0 + j * (rw + gap) + rw / 2;
-        const k1 = hop.k % result.length;
-        const k0 = hop.k > 0 ? (hop.k - 1) % result.length : k1;
-        const x = mix(cx(k0), cx(k1), hop.p);
-        const R = av / 2 + 10;
-        return <div style={{ ...abs(x - R, head + 34 + av / 2 - R), width: 2 * R * U, height: 2 * R * U, borderRadius: R * U, boxShadow: `inset 0 0 0 ${(5 * U).toFixed(2)}px ${t.accent}`, opacity: hop.k > 0 ? 1 : hop.p }} />;
-      })()}
+      {/* (no ring sliding from face to face: an element with no job that crossed the faces as it moved; the viewer's
+          own entry, the one the tap added, carries its ring) */}
       {result.length > 0 && done > 0 && (
         <div style={{ ...abs(rx0, head + 34), display: 'flex', gap: gap * U }}>
           {result.map((r, k) => {
@@ -192,9 +183,9 @@ const TapMoment: React.FC<{ c: Change; s: Extract<Change['show'], { kind: 'tap' 
           })}
         </div>
       )}
-      <div style={{ ...abs(bx, by), width: bw * U, height: CARD.button * U, borderRadius: (CARD.button / 2) * U, background: mixColor(mixColor(t.accent, t.accentDeep, 0.35 * press), t.accentSoft, done), display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 * U, transform: `scale(${(1 - 0.04 * press).toFixed(4)})`, boxShadow: `0 0 0 ${(10 * glow * U).toFixed(2)}px ${mixColor(t.surface, t.accent, 0.25)}` }}>
-        {done > 0 && <div style={{ opacity: done }}><Check size={44 * U} fill={t.accent} tick={t.accentInk} /></div>}
-        <span data-text={`${c.id}-action`} style={txt(CARD.body, 600, mixColor(t.accentInk, t.accentText, done), -0.01)}>{done > 0.5 ? s.done : s.action}</span>
+      <div style={{ ...abs(bx, by), width: bw * U, height: CARD.button * U, borderRadius: (CARD.button / 2) * U, background: mixColor(t.accent, t.accentDeep, 0.35 * press + 0.18 * done), display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 * U, transform: `scale(${(1 - 0.04 * press).toFixed(4)})`, boxShadow: `0 0 0 ${(10 * glow * U).toFixed(2)}px ${mixColor(t.surface, t.accent, 0.25)}` }}>
+        {done > 0 && <div style={{ opacity: done }}><Check size={44 * U} fill={t.accentInk} tick={t.accent} /></div>}
+        <span data-text={`${c.id}-action`} style={txt(CARD.body, 600, t.accentInk, -0.01)}>{done > 0.5 ? s.done : s.action}</span>
       </div>
       {tipO > 0.01 && (
         <div style={{ position: 'absolute', left: (tx - 34) * U, top: (ty - 34) * U, width: 68 * U, height: 68 * U, borderRadius: 34 * U, background: 'rgba(255, 255, 255, 0.55)', boxShadow: `0 ${4 * U}px ${14 * U}px rgba(0,0,0,0.18), inset 0 0 0 ${2 * U}px rgba(255,255,255,0.95)`, opacity: tipO, transform: `scale(${(1 - 0.18 * press).toFixed(4)})` }} />

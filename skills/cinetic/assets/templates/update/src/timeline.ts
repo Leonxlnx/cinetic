@@ -148,10 +148,11 @@ const HOOK_BEATS = 4;
 /** When the name and the version leave: a beat before the first change, so its line or shot starts as they lift. */
 const HOOK_OUT = bt(HOOK_BEATS - 0.75);
 /**
- * The beats a change's act is whole in: half bars on the film's own grid; whole bars once a track is in (every act
- * then starts on one of its downbeats).
+ * The beats a change's act is whole in: whole bars, on the film's own grid as with a track (every act starts on a
+ * downbeat), so the plan the track is cut to is the plan the film plays (half bars without a track gave the edit fewer
+ * bars than the film then needed once the track was in).
  */
-const QUANTUM = MUSIC ? 4 : 2;
+const QUANTUM = 4;
 /**
  * The end card's beats: the mark's pull-back, the name, the version landing on the bar line after them: a bar and a
  * half on the film's own grid (the end opens on a half bar), two bars on a track (it opens on a downbeat).
@@ -162,7 +163,9 @@ const END_BEATS = MUSIC ? 8 : 6;
  * when its line follows over it), a hero beat up to `picture` s before the slack goes to the line, a line on screen up to
  * `line` s.
  */
-const SHOW = { result: 1.2, resultThen: 1.0, picture: 3.6, line: 2.4 } as const;
+// (an update film runs 8-20 s: a result held still for 1.2-1.8 s mid-film reads as a freeze, and a long hold belongs to
+// the end card; the slack a bar leaves goes to the line's read before it goes to a still result)
+const SHOW = { result: 0.8, resultThen: 0.7, picture: 3.0, line: 2.0 } as const;
 /** The first 16th of the grid at or after frame f. */
 const g16 = (f: number) => {
   let q = Math.max(0, Math.floor((f / BEAT) * 4) / 4 - 0.25);
@@ -225,7 +228,9 @@ const planAll = (lastMin: number) => {
       recB += toRes;
       let left = slack - toRes;
       const lineRoom = Math.max(0, (SHOW.line * FPS - R) / BEAT);
-      const toLine = Math.floor(Math.min(left, lineRoom) * 4) / 4;
+      // what is left after the line's read: half more to the line, half to the result (never all of it to a result
+      // held still mid-film)
+      const toLine = Math.floor((Math.min(left, lineRoom) + Math.max(0, left - lineRoom) * 0.5) * 4) / 4;
       left -= toLine;
       recB += Math.floor(left * 4) / 4;
       const t1 = tail(recB);

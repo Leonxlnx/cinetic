@@ -1,16 +1,18 @@
 # The update template
 
-A 20-28 s update film ("vX is out", 2-4 changes) laid over the Remotion starter by
+A 15-25 s update film ("vX is out", 2-4 changes; two changes for an 8-20 s spec) laid over the Remotion starter by
 `bash scripts/new-film.sh <dir> --format update` (template.json lists the files it copies and the starter acts it
 removes). The film fills `src/update.ts` (and `src/content.ts`, written from the brief by `scripts/content.mjs`);
 everything else is dealt from the product's name, or from the deck (`src/dealt.ts`).
 
-**The shape.** One world for the whole film (fx/world: a photograph or a built field, with its key light). The name
+**The shape.** One world for the whole film (fx/world: a photograph or a built field, with its key light), which the
+film travels through (`PATH`: it enters the place and moves on with every shot that arrives, landing after it; no shot
+draws a copy of it of its own). The name
 and the version, centred, as one pair from the first frame. Then each change is filmed by a **hero shot** and said in
 one short centred line, in its own shape (`src/deal.ts` SHAPES):
 
-- `show`: the hero shot first; then it goes soft, dims and is pushed through a little (a focus isolate) and the line
-  lands centred in front of it.
+- `show`: the hero shot first; then it falls back into the world (soft, smaller, darkening, gone 22 f@60 after) as the
+  line lands centred on the world, on its pool.
 - `lead`: the line first, alone in the world (the shot before goes soft into the world), then the hero shot.
 - `split` (once a film): the line first, parted round a porthole that opens in its gap with the shot (or the shot's
   chosen picture) inside; the words leave and the porthole opens into the frame as the shot plays.
@@ -41,9 +43,12 @@ move that starts, travels with its subject and lands, the world behind it soft a
 frosts the world, light sized to its source and timed, real content (faces, names, figures, pictures) and a jump in
 scale; a short-shutter smear only on fast moves. A change names its own shot with `hero` (and `why`).
 
-**The rules it keeps.** The camera never floats: it moves only inside a hero shot or in the mark's pull-back, and every
-hold is still. Nothing bobs or breathes; no card rests tilted (the perspective is the camera's). Lines are centred,
-2-6 words, never over a sharp shot. People are real faces from `src/content.ts`, never initials. The world never cuts.
+**The rules it keeps.** The camera never floats: it moves only inside a hero shot, on the world's path or in the
+mark's pull-back, and every hold is still. Nothing bobs or breathes; no card rests tilted (every shot's framing is square
+at rest; the toast stack on an 85 mm lens). Lines are centred, 2-6 words, never over a sharp shot; their moves rotate and
+they take three sizes. A shot leaving falls back and darkens under the next, never a sharp double exposure. People are
+real faces from `src/content.ts` with the names they were cast with (one face, one person), never initials. The world
+never cuts.
 
 **The deal** (`src/deal.ts`, seeded by the name; `PIN` a slot or `SEED` to re-deal; the last three films' choices are
 left out through `src/recent.ts`): the world (`ground`: nearWhite, paleSky, blackField, deepField, electric, or a
@@ -67,8 +72,8 @@ template.json `deal.print`.
 
 **Look early, render in parts.** `node scripts/frames.mjs end` (the lockup), then `node scripts/frames.mjs sheet
 --frames <a change's frames> --every 6` per hero shot, then `bash scripts/render.sh Film out/draft.mp4 --draft` and
-`frames.mjs sheet --from out/draft.mp4`. On software GL the 3D mark draws its flat twin (`MARK_3D` in
-`src/acts/World.tsx`: 'auto'); a hardware GPU draws it in 3D.
+`frames.mjs sheet --from out/draft.mp4`. On software GL the 3D mark draws its CSS-3D twin (`MARK_3D` in
+`src/acts/World.tsx`: 'auto', fx/three SolidMark: an extruded solid in CSS 3D); a hardware GPU draws it in WebGL 3D.
 
 **Music.** Cut to a licensed, human-made, instrumental track (template.json `music`); `track.py fit --end auto` puts its
 entry on the mark's bar and its final hit on the version mark. `src/sync.ts` places the effects on each hero shot's own

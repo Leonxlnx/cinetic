@@ -131,6 +131,24 @@ const need = (ok: boolean, msg: string) => {
 need(UPDATE.changes.length >= 2 && UPDATE.changes.length <= 4, `an update film shows 2-4 changes (it has ${UPDATE.changes.length})`);
 need(!!UPDATE.version.trim() && !!UPDATE.from.trim(), 'give the version and the version before it');
 need(new Set(UPDATE.changes.map((c) => c.id)).size === UPDATE.changes.length, 'every change needs its own id');
+// a face is a person: one photo carries one name through the film (the name content.ts cast with it: its people come
+// with their names), never one stock face as two people (a named member in one change and the author of a report in
+// another): a varied cast gives each its own face
+{
+  const named = new Map<string, Set<string>>();
+  const other = new Map<string, string>();
+  for (const c of UPDATE.changes) {
+    const s = c.show;
+    const people = (s.kind === 'tap' ? [...(s.result ?? [])] : []) as Row[];
+    const rest = (s.kind === 'tap' ? s.rows ?? [] : s.kind === 'swap' ? [...s.before, ...s.after] : s.kind === 'fill' && s.layout !== 'week' ? s.items : []) as Row[];
+    for (const r of people) if (r.photo && /people\//.test(r.photo)) named.set(r.photo, new Set([...(named.get(r.photo) ?? []), r.label.trim()]));
+    for (const r of rest) if (r.photo && /people\//.test(r.photo) && !other.has(r.photo)) other.set(r.photo, r.label);
+  }
+  for (const [photo, names] of named) {
+    need(names.size <= 1, `${photo} is ${[...names].join(' and ')}: one face is one person (take people from src/content.ts people, each with the name it was cast with)`);
+    need(!other.has(photo), `${photo} is ${[...names][0]} and also posts "${other.get(photo)}": give the row its own face (a varied cast, src/content.ts people)`);
+  }
+}
 for (const c of UPDATE.changes) {
   const n = words(spokenChange(c));
   need(n >= 2 && n <= 6, `"${spokenChange(c)}" is ${n} words; a change is one short sentence of 2-6 words`);

@@ -45,18 +45,14 @@ const at3 = (b: { x: number; y: number; w: number; h: number }, z = 0): V3 => [b
 
 // ------------------------------------------------------------------------------------------------ shared parts
 /**
- * The world as the far plane of a shot: its soft copy (a photograph's pre-blurred plate, a built field as it is), far
- * behind the product, so a push into the product moves it less (parallax) and the product stands in its place.
+ * The world behind a shot: none of its own. The film's one world (acts/World.tsx Place, drawn once under every act and
+ * moving only on the film's path) is the ground every shot stands in; a shot that drew its own far copy of it showed
+ * that copy jumping at every change of shot (each camera parallaxed it differently) and sliding off with the shot.
  */
-const worldPlane = (ground: ((o?: { soft?: boolean; bare?: boolean }) => React.ReactNode) | undefined) =>
-  ground ? (
-    <Plane id="world" box={{ x: -0.12 * W, y: -0.12 * H, w: 1.24 * W, h: 1.24 * H }} z={-1800} fit dof={false} smear={false} res={1}>
-      {ground({ soft: true })}
-    </Plane>
-  ) : null;
+const worldPlane = (_ground: unknown): React.ReactNode => null;
 
 /** A glow the size of its source, turned on at a moment and fading (a press, a landing): light as an event. */
-const Bloom1: React.FC<{ x: number; y: number; r: number; a: number }> = ({ x, y, r, a }) =>
+const Bloom1: React.FC<{ x: number; y: number; r: number; a: number; light?: boolean }> = ({ x, y, r, a, light }) =>
   a > 0.004 ? (
     <div
       style={{
@@ -67,8 +63,8 @@ const Bloom1: React.FC<{ x: number; y: number; r: number; a: number }> = ({ x, y
         height: 2 * r,
         borderRadius: r,
         background: `radial-gradient(closest-side, ${mixColor(ACCENT, '#FFFFFF', 0.3)} 0%, ${ACCENT}99 38%, ${ACCENT}00 100%)`,
-        opacity: clamp(a * (DARK ? 0.95 : 0.7)),
-        mixBlendMode: DARK ? 'plus-lighter' : 'normal',
+        opacity: clamp(a * (DARK && !light ? 0.95 : 0.55)),
+        mixBlendMode: DARK && !light ? 'plus-lighter' : 'normal',
         pointerEvents: 'none',
       }}
     />
@@ -138,8 +134,8 @@ const pressPlan = (t: ChangeTimes) => {
     return [mix(p[0], ac[0], k), mix(p[1], ac[1], k), 0];
   };
   const cam = camera(
-    [follow(L.go, subject, { frames: Math.max(f60(30), L.hit - L.go), lag: f60(14), to: { dist: focalPx(FR, 50) / mag, yaw: -5, pitch: 3 }, film: FILM, id: 'press-follow' })],
-    { film: FILM, base: opening(frame(box, { fill: 0.8, yaw: -9, pitch: 5 })) },
+    [follow(L.go, subject, { frames: Math.max(f60(30), L.hit - L.go), lag: f60(14), to: { dist: focalPx(FR, 50) / mag, yaw: 0, pitch: 0, roll: 0 }, film: FILM, id: 'press-follow' })],
+    { film: FILM, base: opening(frame(box, { fill: 0.8, yaw: 0, pitch: 0 })) },
   );
   return { c, w, h, box, b, glide, cam, L };
 };
@@ -155,7 +151,11 @@ const PushPress: React.FC<HeroProps> = ({ t, f }) => {
       {worldPlane(world?.ground)}
       <Plane id="card" box={box}>
         <ScreenCard c={c} t={t} F={F} w={w} h={h} />
-        <Bloom1 x={b.x + b.w / 2} y={b.y + b.h / 2} r={0.5 * b.w} a={hitPulse(f - L.hit, 3, 16)} />
+        {/* the press's light falls on the card: clipped to it, in normal blend (added light vanishes on a white card and
+            glows on the dark ground past its edge, the accent leaking under the card) */}
+        <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, overflow: 'hidden', borderRadius: 36 * U }}>
+          <Bloom1 x={b.x + b.w / 2} y={b.y + b.h / 2} r={0.42 * b.w} a={hitPulse(f - L.hit, 3, 16)} light />
+        </div>
         <LightSweep x={0} y={0} w={w} h={h} at={t.hin} kind="edge" frame={F} />
       </Plane>
       <Plane id="pointer" box={{ x: 0, y: 0, w: 72 * PTR, h: 92 * PTR }} z={24} move={(g) => ({ x: P.glide(g)[0] - 4 * PTR, y: P.glide(g)[1] - 3 * PTR })} opacity={po}>
@@ -214,11 +214,11 @@ const typePlan = (t: ChangeTimes) => {
   const tf = Math.max(f60(12), lastKey + f60(4) - (L.go + f60(2)));
   const cam = camera(
     [
-      push(Math.max(0, L.go - f60(28)), (from, fr) => ({ ...macro({ x: box.x + text0.x, y: box.y + text0.y, w: Math.max(text0.w, 200), h: text0.h }, { mag, yaw: -3, anchor: [0.04, 0.5] })(from, fr) }), { frames: f60(30), film: FILM, id: 'type-push' }),
+      push(Math.max(0, L.go - f60(28)), (from, fr) => ({ ...macro({ x: box.x + text0.x, y: box.y + text0.y, w: Math.max(text0.w, 200), h: text0.h }, { mag, yaw: 0, anchor: [0.04, 0.5] })(from, fr) }), { frames: f60(30), film: FILM, id: 'type-push' }),
       follow(L.go + f60(2), caret, { frames: tf, lag: f60(14), film: FILM, id: 'type-follow' }),
       travel(L.go + f60(2) + tf + f60(2), { target: [box.x + send.x + send.w / 2 - lead * 0.6, box.y + send.y + send.h / 2, 0] }, { frames: Math.max(f60(12), L.hit - (L.go + f60(4) + tf) - 1), film: FILM, id: 'type-send' }),
     ],
-    { film: FILM, base: opening(frame(box, { fill: 0.84, yaw: -6, pitch: 3 })) },
+    { film: FILM, base: opening(frame(box, { fill: 0.84, yaw: 0, pitch: 0 })) },
   );
   return { box, cam, send, L };
 };
@@ -251,6 +251,16 @@ const SLOTS = [
   { cy: 0.81, z: -560 },
   { cy: 0.88, z: -710 },
 ];
+/** The stack's lens (mm): long, so the cards stay square to the frame wherever they sit in it. */
+const STACK_LENS = 85;
+/** The time a card shows by its slot (0 the front, the newest): the content's own times newest first when they run in
+ * order, else the house ladder; paused, the times always run the right way. */
+const STACK_AGO = ['now', '1m', '3m', '6m', '9m', '12m'];
+const agoOf = (agos: string[], k: number) => {
+  const mins = agos.map((a) => (/^now$/i.test(a.trim()) ? 0 : Number((/(\d+)/.exec(a) ?? [])[1] ?? NaN)));
+  const newestFirst = mins.every((m, i) => Number.isFinite(m) && (i === 0 || m <= mins[i - 1]));
+  return newestFirst && agos.length ? [...agos].reverse()[Math.min(k, agos.length - 1)] : STACK_AGO[Math.min(k, STACK_AGO.length - 1)];
+};
 /** The stack's UI scale (film px per UI point): its cards read at a glance, 70 % of the frame wide. */
 const STACK_PT = 2.55 * U;
 const slotAt = (s: number) => {
@@ -269,9 +279,11 @@ const stackPlan = (t: ChangeTimes) => {
   const cw = 520 * STACK_PT;
   const lay = noticeStackLayout({ items: [items[0]], w: cw, pt: STACK_PT }, 1e6, { fps: FPS, pt: STACK_PT });
   const ch = lay.cards[0]?.h ?? lay.h;
-  const cam = camera([push(L.go, { target: [W / 2, 0.42 * H, -120], dist: focalPx(FR, 50) / 1.08 }, { frames: Math.max(f60(30), L.hit - L.go + f60(6)), film: FILM, id: 'stack-push' })], {
+  // square to the stack on a long lens (85 mm): a card off the axis of a wide lens keystones into a card that reads
+  // tilted at rest; the push is straight in and lands square on the front card
+  const cam = camera([push(L.go, { target: [W / 2, 0.4 * H, -120], dist: focalPx(FR, STACK_LENS) / 1.1, yaw: 0, pitch: 0, roll: 0 }, { frames: Math.max(f60(30), L.hit - L.go + f60(6)), film: FILM, id: 'stack-push' })], {
     film: FILM,
-    base: { target: [W / 2, 0.47 * H, -200], dist: focalPx(FR, 50) / 0.94, pitch: 4 },
+    base: { target: [W / 2, 0.46 * H, -200], lens: STACK_LENS, dist: focalPx(FR, STACK_LENS) / 0.94, yaw: 0, pitch: 0, roll: 0 },
   });
   return { c, items, arrive, cw, ch, cam, L };
 };
@@ -303,7 +315,7 @@ const ToastStack: React.FC<HeroProps> = ({ t, f }) => {
           }}
           opacity={f >= arrive[k] ? 1 : 0}
         >
-          <NoticeStack items={[it]} at={-100} w={cw} pt={STACK_PT} tone={SCREEN_TONE} ground={GROUND} frame={f} />
+          <NoticeStack items={[{ ...it, ago: agoOf(items.map((x) => x.ago ?? ''), Math.max(0, Math.round(slotOf(k, f)))) }]} at={-100} w={cw} pt={STACK_PT} tone={SCREEN_TONE} ground={GROUND} frame={f} />
           {k === items.length - 1 && <LightSweep x={0} y={0} w={cw} h={ch} at={t.h0 + arrive[k] + f60(12)} kind="edge" frame={F} />}
         </Plane>
       ))}
@@ -387,8 +399,8 @@ const developPlan = (t: ChangeTimes) => {
   const photo = centred(1120 * U, 720 * U, -30);
   const card: Box = { x: photo.x - 90 * U, y: photo.y + photo.h - 170 * U, w: 560 * U, h: 228 * U, z: 190 } as Box;
   const cam = camera(
-    [push(Math.max(0, L.go - f60(6)), frame({ x: card.x - 30 * U, y: photo.y + 60 * U, w: photo.w * 0.86, h: card.y + card.h + 36 * U - (photo.y + 60 * U) }, { fill: 0.97, yaw: 6, pitch: 2 }), { frames: Math.max(f60(40), L.hit + f60(10) - L.go), film: FILM, id: 'develop-push' }), rack(L.go + f60(18), at3(card, 190), { frames: f60(30), film: FILM, id: 'develop-rack' })],
-    { film: FILM, base: opening(frame(photo, { fill: 0.86, yaw: -4, pitch: 2 })) },
+    [push(Math.max(0, L.go - f60(6)), frame({ x: card.x - 30 * U, y: photo.y + 60 * U, w: photo.w * 0.86, h: card.y + card.h + 36 * U - (photo.y + 60 * U) }, { fill: 0.97, yaw: 0, pitch: 0 }), { frames: Math.max(f60(40), L.hit + f60(10) - L.go), film: FILM, id: 'develop-push' }), rack(L.go + f60(18), at3(card, 190), { frames: f60(30), film: FILM, id: 'develop-rack' })],
+    { film: FILM, base: opening(frame(photo, { fill: 0.86, yaw: 0, pitch: 0 })) },
   );
   const row = rowsOf(c).find((r) => r.accent) ?? rowsOf(c)[0];
   return { c, photos, L, photo, card, cam, row };
@@ -446,9 +458,9 @@ const counterPlan = (t: ChangeTimes) => {
   const slab = centred(1240 * U, 600 * U, 10);
   // the label, the figure and its note under it: what the push lands on (no word cut by the frame's edge)
   const fig: Box = { x: slab.x + 44 * U, y: slab.y + 30 * U, w: 720 * U, h: 470 * U };
-  const cam = camera([push(L.go, frame(fig, { fill: 0.86, yaw: 5, pitch: -2, anchor: [0.48, 0.52] }), { frames: Math.max(f60(40), L.hit - L.go), film: FILM, id: 'counter-push' })], {
+  const cam = camera([push(L.go, frame(fig, { fill: 0.86, yaw: 0, pitch: 0, anchor: [0.48, 0.52] }), { frames: Math.max(f60(40), L.hit - L.go), film: FILM, id: 'counter-push' })], {
     film: FILM,
-    base: opening(frame(slab, { fill: 0.84, yaw: -7, pitch: -4 })),
+    base: opening(frame(slab, { fill: 0.84, yaw: 0, pitch: 0 })),
   });
   return { c, L, slab, fig, cam };
 };
@@ -547,9 +559,9 @@ const swapPlan = (t: ChangeTimes) => {
   const L = localOf(t);
   const a = centred(w, h, -20);
   const bb = centred(w, h, 30);
-  const cam = camera([push(L.hit - f60(24), frame({ ...bb, z: 210 } as Box, { fill: 0.82, yaw: 4, pitch: 3 }), { frames: f60(48), film: FILM, id: 'swap-push' }), rack(L.hit - f60(22), at3(bb, 210), { frames: f60(30), film: FILM, id: 'swap-rack' })], {
+  const cam = camera([push(L.hit - f60(24), frame({ ...bb, z: 210 } as Box, { fill: 0.82, yaw: 0, pitch: 0 }), { frames: f60(48), film: FILM, id: 'swap-push' }), rack(L.hit - f60(22), at3(bb, 210), { frames: f60(30), film: FILM, id: 'swap-rack' })], {
     film: FILM,
-    base: opening(frame(a, { fill: 0.78, yaw: -6, pitch: 3 })),
+    base: opening(frame(a, { fill: 0.78, yaw: 0, pitch: 0 })),
   });
   return { c, w, h, a, bb, cam, L };
 };

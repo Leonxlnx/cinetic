@@ -24,8 +24,8 @@ import { LOGO } from '../brand/logo';
 import { C, FONT, TYPE, TYPE_FAMILY, typeStyle, U } from '../brand/tokens';
 import { DEAL, HEROES, LINES } from '../deal';
 import { Bloom } from '../fx/light';
-import { draws3D, type GlMode, Logo3D, logoPose } from '../fx/three';
-import { World as Place } from '../fx/world';
+import { type GlMode, Logo3D } from '../fx/three';
+import { World as Place, worldPath } from '../fx/world';
 import { FACE_SET, PAIR_IDS, PAIRS, type PairId, safeTrack, wordmarkStyle } from '../fx/TypePairs';
 import { hasLogo } from '../kit';
 import type { InlineRef } from '../kit/inline';
@@ -36,7 +36,7 @@ import { measureTracked } from '../lib/measure';
 import { ACT, ARRIVALS, ARRIVE60, CLOSE, copy, EXIT_F, f60, FPS, H, HOOK, N, ROLL, TIMES, type ChangeTimes, W } from '../timeline';
 import { type Change, photosOf, spokenChange, UPDATE } from '../update';
 import { heroFocus, HeroShot } from './heroes';
-import { ACCENT, DARK, INK, LIGHT3D, MUTE, NIGHT, pic, PICTURE, THEME, WORLD, warnStandIn, worldDrawn } from './look';
+import { ACCENT, DARK, INK, LIGHT3D, MUTE, NIGHT, pic, PICTURE, PLATE, THEME, WORLD, warnStandIn, worldDrawn } from './look';
 import { gapLine, HeroLine, MarkLine } from './type';
 
 export { THEME } from './look';
@@ -63,7 +63,22 @@ const wordmarkAt = (size: number): React.CSSProperties => {
 };
 
 // ---------------------------------------------------------------------------------------------- the lines
-/** A change line's size: the line role's, smaller only when the line (with its gap) would pass 62 % of the frame width. */
+/**
+ * Three sizes across the change lines (a hierarchy, never every line the same white line at one size): change i's line
+ * is set at LINE_SCALE[i] x the line role's size, the biggest the one that carries the release; smaller only when the line
+ * (with its gap) would pass 62 % of the frame width.
+ */
+export const LINE_SCALE = [1.3, 1.0, 1.55, 1.15] as const;
+/** The line's ground on a photograph: a soft pool of the place's deep tone behind the words (TYPE_POOL in launch-simple's
+ * acts/line.tsx: the same numbers); a text-shadow halo round each letter only muddies them. */
+const POOL = { a: 0.42, w: 1.6, h: 3.0 } as const;
+const LinePool: React.FC<{ w: number; size: number; a: number }> = ({ w, size, a }) => {
+  if (!PLATE || DARK === false || a <= 0.004) return null;
+  const deep = mixColor(WORLD.base, '#000000', 0.4);
+  const pw = w * POOL.w + size * 2;
+  const ph = size * 1.2 * POOL.h;
+  return <div data-pool="" style={{ position: 'absolute', left: W / 2 - pw / 2, top: H / 2 - ph / 2, width: pw, height: ph, borderRadius: '50%', background: `radial-gradient(closest-side, ${deep} 0%, ${deep} 38%, transparent 100%)`, opacity: POOL.a * a }} />;
+};
 const lineSize = (text: string, extra = 0, k = 1) => {
   const base = TYPE.line.size * U * k;
   const w = measureTracked(text.replace('[]', 'MM'), base, TYPE.line.weight, TYPE.line.track, FONT.text) + extra;
@@ -98,6 +113,10 @@ const splitAt = (c: Change, size: number): [string, string] => {
 };
 /** The picture a porthole holds before it opens: a shot of pictures shows its chosen one (the view itself), else none. */
 const PORT_PHOTO = (i: number): string | null => (['carousel', 'photo-develop'].includes(HEROES[i]) ? photosOf(UPDATE.changes[i])[0] ?? null : null);
+/** The porthole's picture handing over to the shot as it opens: never a cross-dissolve of two sharp pictures (a muddy
+ * double exposure) but a blur-through: the picture goes soft to `blur` px over the last part of the opening, the shot
+ * arrives out of the same blur and sharpens (f@60). */
+const PORT_HAND = { blur: 36, from: 0.55, in: 16 } as const;
 /** The porthole: its diameter as a share of the split line's size, and the line set a little larger round it. */
 const PORT = { d: 3.3, k: 1.15 } as const;
 /** A value measured from the real face: built on first use, inside a render (FontGate has loaded the fonts by then). */
@@ -125,12 +144,19 @@ const ChangeLine: React.FC<{ t: ChangeTimes; F: number }> = ({ t, F }) => {
   const c = copy(`change${t.i + 1}`);
   if (F < c.in || F >= c.out + EXIT_F) return null;
   const split = SPLIT()[t.i];
-  const size = split ? split.size : lineSize(ch.words);
+  const size = split ? split.size : lineSize(ch.words, 0, LINE_SCALE[t.i % LINE_SCALE.length]);
   const id = `change${t.i + 1}`;
   const p = { id, at: c.in, frame: F, move: LINES.move[id], role: 'line' as const, size, x: W / 2, y: H / 2, color: INK, accent: ACCENT, mute: MUTE };
   const node = split ? <HeroLine {...p} text={split.text} /> : ch.words.includes('[]') ? <MarkLine {...p} text={ch.words} objects={[objectOf(ch)]} ground={DARK ? 'dark' : 'light'} theme={THEME} /> : <HeroLine {...p} text={spokenChange(ch)} />;
   const box = { x: W * 0.12, y: H / 2 - size * 1.2, w: W * 0.76, h: size * 2.4 };
-  return <div style={{ position: 'absolute', inset: 0, textShadow: WORLD.typeShadow, ...exitStyle(F, c.out, size) }}>{NIGHT ? <Bloom strength={0.28} radius={16} box={box}>{node}</Bloom> : node}</div>;
+  const textW = measureTracked(spokenChange(ch), size, TYPE.line.weight, TYPE.line.track, FONT.text);
+  const poolA = E.softOut(clamp((F - c.in) / f60(10)));
+  return (
+    <div style={{ position: 'absolute', inset: 0, ...exitStyle(F, c.out, size) }}>
+      <LinePool w={textW} size={size} a={poolA} />
+      {NIGHT ? <Bloom strength={0.28} radius={16} box={box}>{node}</Bloom> : node}
+    </div>
+  );
 };
 
 // ---------------------------------------------------------------------------------------------- the hero shots' optics
@@ -142,6 +168,14 @@ const leaveOf = (i: number): [number, number] => {
   if (next.iris) return [next.gap![0], next.gap![0] + f60(12)];
   return [next.h0, next.hin + f60(6)];
 };
+/**
+ * The focus isolate under a 'show' line: the shot falls back into the world as the line lands (soft to `blur` px, to
+ * `push` of its size, darkened to `dim` on a dark world) and is gone `out` f@60 after it: the line stands on the world
+ * with its pool, never on a full-frame veil over a dimmed card (a muddy slate ground with the card's ghost in it).
+ */
+const ISO = { blur: 26, push: 0.84, dim: 0.22, out: 22 } as const;
+/** A shot leaving: how soft it goes (px), how much it falls back (scale) and, on a dark world, how dark before it goes. */
+const LEAVE = { blur: 26, scale: 0.12, dim: 0.18, whip: 0.55 } as const;
 /** The smear of a whip arrival, at fixed levels (px, horizontal). */
 const SMEAR = [0, 4, 8, 14, 22] as const;
 const smearLevel = (s: number) => SMEAR.reduce((b, l) => (Math.abs(l - s) < Math.abs(b - s) ? l : b), 0);
@@ -154,13 +188,13 @@ const ShotLayer: React.FC<{ t: ChangeTimes; F: number }> = ({ t, F }) => {
   const f = Math.max(0, F - t.h0);
   let blur = 0;
   let bright = 1;
-  let veil = 0;
   let glow = 0;
   let tx = 0;
   let smear = 0;
   let push = 1;
   let clip: string | undefined;
   let ring: React.ReactNode = null;
+  let isoFade = 0;
   if (!t.iris && F < t.hin) {
     const p = clamp((F - t.h0) / Math.max(1, t.hin - t.h0));
     if (ARRIVALS[t.i] === 'whip') {
@@ -198,19 +232,24 @@ const ShotLayer: React.FC<{ t: ChangeTimes; F: number }> = ({ t, F }) => {
           <div style={{ position: 'absolute', left: 0, top: 0, width: 2 * r, height: 2 * r, transform: `translate(${(cx - r).toFixed(2)}px, ${(cy - r).toFixed(2)}px)`, borderRadius: r, pointerEvents: 'none', opacity: clamp(o * 2) * (1 - q), boxShadow: `0 0 ${(70 * U).toFixed(1)}px ${DARK ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.12)'}, inset 0 0 0 ${(1.5 * U).toFixed(2)}px rgba(255,255,255,${DARK ? 0.35 : 0.8})`, background: `radial-gradient(circle at 72% 78%, transparent ${(r * 0.8).toFixed(1)}px, ${mixColor(ACCENT, '#FFFFFF', 0.45)}55 ${(r * 0.96).toFixed(1)}px, transparent ${r.toFixed(1)}px)` }} />
         );
       }
-      // a shot of pictures shows its chosen picture in the porthole, giving way to the shot as the porthole opens
+      // a shot of pictures shows its chosen picture in the porthole, handing over to the shot through a blur as it opens
       const photo = PORT_PHOTO(t.i);
-      const po = photo ? 1 - prog(F, t.iris[0] + 0.45 * (t.iris[1] - t.iris[0]), t.iris[1], E.stdInOut) : 0;
+      const span = t.iris[1] - t.iris[0];
+      const photoBlur = photo ? PORT_HAND.blur * prog(F, t.iris[0] + PORT_HAND.from * span, t.iris[1], E.buildIn) : 0;
+      const po = photo ? 1 - prog(F, t.iris[1] - f60(4), t.iris[1] + f60(6), E.stdInOut) : 0;
+      const shotBlur = photo && F >= t.iris[0] + PORT_HAND.from * span ? PORT_HAND.blur * (1 - prog(F, t.iris[1] - f60(2), t.iris[1] + f60(PORT_HAND.in), E.glideOut)) : 0;
+      const shotLevel = shotBlur > 0.4 ? defocusLevel(shotBlur) : 0;
+      const photoLevel = photoBlur > 0.4 ? defocusLevel(photoBlur) : 0;
       return (
         <>
-          <div style={{ position: 'absolute', inset: 0, clipPath: clip, transform: `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px)` }}>
+          <div style={{ position: 'absolute', inset: 0, clipPath: clip, transform: `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px)`, filter: shotLevel > 0 ? `blur(${shotLevel}px)` : undefined }}>
             <Freeze frame={f}>
               <HeroShot t={t} f={f} />
             </Freeze>
           </div>
           {photo && po > 0 && (
             <div style={{ position: 'absolute', inset: 0, clipPath: `circle(${r.toFixed(2)}px at ${cx.toFixed(2)}px ${cy.toFixed(2)}px)`, opacity: po }}>
-              <Img src={pic(photo)} style={{ position: 'absolute', left: 0, top: 0, width: 2.3 * r, height: 2.3 * r, transform: `translate(${(cx - 1.15 * r).toFixed(2)}px, ${(cy - 1.15 * r).toFixed(2)}px)`, objectFit: 'cover', filter: PICTURE.filter }} />
+              <Img src={pic(photo)} style={{ position: 'absolute', left: 0, top: 0, width: 2.3 * r, height: 2.3 * r, transform: `translate(${(cx - 1.15 * r).toFixed(2)}px, ${(cy - 1.15 * r).toFixed(2)}px)`, objectFit: 'cover', filter: [PICTURE.filter, photoLevel > 0 ? `blur(${photoLevel}px)` : ''].filter(Boolean).join(' ') || undefined }} />
             </div>
           )}
           {ring}
@@ -222,19 +261,32 @@ const ShotLayer: React.FC<{ t: ChangeTimes; F: number }> = ({ t, F }) => {
     // the focus isolate: the shot goes soft (to about 6 px), the camera pushes through it a little (x1.06, landing with
     // the blur) and it dims (a dark world) or pales into the world (a light one)
     const p = prog(F, t.iso[0], t.iso[1], E.stdInOut);
-    blur = Math.max(blur, mix(1.2, 12, p) * (p > 0 ? 1 : 0));
-    push = mix(1, 1.06, E.strongInOut(prog(F, t.iso[0], t.iso[1] + f60(8), E.linear)));
-    // a dark world: the shot sinks into the world's own deep tone (never a grey veil); a pale one pales into it
-    if (DARK) {
-      bright = 1 - 0.18 * p;
-      veil = 0.72 * p;
-    } else veil = 0.66 * p;
+    blur = Math.max(blur, mix(1.2, ISO.blur, p) * (p > 0 ? 1 : 0));
+    push = mix(1, ISO.push, E.strongInOut(prog(F, t.iso[0], t.iso[1] + f60(8), E.linear)));
+    // a dark world: the shot sinks deep into the world's own tone, a faint shape behind the line (a card left at a
+    // quarter of its light under the words is a muddy slate ground); a pale world: it pales into it
+    if (DARK) bright = 1 - (1 - ISO.dim) * p;
+    isoFade = E.stdInOut(prog(F, t.iso[0] + f60(4), t.iso[1] + f60(ISO.out), E.linear));
   }
-  let opacity = 1;
+  let opacity = 1 - isoFade;
   if (F >= leave[0]) {
-    const q = prog(F, leave[0], leave[1], E.stdInOut);
-    opacity = 1 - q;
-    blur = Math.max(blur, 6 * q);
+    // it falls back into the world: soft and smaller at once, darkening into a dark world (never a translucent card
+    // with the next one showing through it), gone by the end of its span
+    const q = prog(F, leave[0], leave[1], E.linear);
+    const e = E.glideOut(clamp(q / 0.6));
+    blur = Math.max(blur, LEAVE.blur * Math.sqrt(q));
+    push *= 1 - LEAVE.scale * E.stdInOut(q);
+    // the next shot whips in: this one whips out ahead of it the same way, smeared (one move carried across the
+    // change, never the new card sliding over the old one still standing sharp)
+    const next = TIMES[t.i + 1];
+    if (next && !next.clear && !next.iris && ARRIVALS[next.i] === 'whip') {
+      const b = E.buildIn(q);
+      tx -= LEAVE.whip * W * b;
+      const db = E.buildIn(clamp(q + 0.03)) - E.buildIn(clamp(q - 0.03));
+      smear = Math.max(smear, smearLevel(Math.min(22, (db / 0.06) * LEAVE.whip * W * 0.012)));
+    }
+    if (DARK) bright = Math.min(bright, 1 - (1 - LEAVE.dim) * e);
+    opacity = Math.min(opacity, 1 - E.stdInOut(clamp((q - (DARK ? 0.3 : 0)) / (DARK ? 0.7 : 1))));
   }
   const level = blur > 0.4 ? defocusLevel(blur) : 0;
   const filter = [level > 0 ? `blur(${level}px)` : '', bright !== 1 ? `brightness(${bright.toFixed(3)})` : '', smear > 0 ? `url(#whip-${smear})` : ''].filter(Boolean).join(' ') || undefined;
@@ -252,7 +304,6 @@ const ShotLayer: React.FC<{ t: ChangeTimes; F: number }> = ({ t, F }) => {
           <HeroShot t={t} f={f} />
         </Freeze>
       </div>
-      {veil > 0 && <div style={{ position: 'absolute', inset: 0, background: DARK ? mixColor(WORLD.base, '#000000', 0.35) : WORLD.base, opacity: veil * opacity }} />}
       {glow > 0 && <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 70% 60% at 50% 45%, ${WORLD.glow} 0%, transparent 100%)`, opacity: glow * 0.9, mixBlendMode: 'screen' }} />}
     </>
   );
@@ -321,7 +372,8 @@ const Badge: React.FC<{ p: number; size: number; id: string }> = ({ p, size, id 
 const Hook: React.FC<{ F: number }> = ({ F }) => {
   if (F >= HOOK.out + EXIT_F) return null;
   const size = NAME.size;
-  const nameW = measureTracked(UPDATE.name, size, TYPE.display.weight, TYPE.display.track, FONT.text);
+  const hw = wordmarkAt(size);
+  const nameW = measureTracked(UPDATE.name, size, Number(hw.fontWeight) || TYPE.display.weight, parseFloat(String(hw.letterSpacing)) || 0, String(hw.fontFamily));
   const verW = (s: string) => measureTracked(s, size, TYPE.display.weight, TYPE.display.track, FONT.text, { tabular: true });
   const roll = DEAL.hook === 'roll';
   const badge = DEAL.hook === 'badge';
@@ -335,10 +387,11 @@ const Hook: React.FC<{ F: number }> = ({ F }) => {
   const y = H / 2 - (size * 1.18) / 2;
   const flash = roll ? hitPulse(F - (HOOK.roll + f60(ROLL)), 2, 14) : 0;
   const pair = (
-    <div style={{ position: 'absolute', inset: 0, textShadow: WORLD.typeShadow, ...exitStyle(F, HOOK.out, size, 'recede') }}>
+    <div style={{ position: 'absolute', inset: 0, ...exitStyle(F, HOOK.out, size, 'recede') }}>
+      <LinePool w={groupW} size={size} a={nameIn} />
       <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${left.toFixed(2)}px, ${y.toFixed(2)}px)` }}>
         <MaskUp p={nameIn} size={size}>
-          <span data-text="hook-name" style={{ ...typeStyle('display', size), color: INK, lineHeight: `${size * 1.18}px`, whiteSpace: 'pre', display: 'block' }}>{UPDATE.name}</span>
+          <span data-text="hook-name" style={{ ...wordmarkAt(size), color: INK, lineHeight: `${size * 1.18}px`, whiteSpace: 'pre', display: 'block' }}>{UPDATE.name}</span>
         </MaskUp>
       </div>
       {vIn > 0 && (
@@ -380,7 +433,9 @@ const EndCard: React.FC<{ F: number }> = ({ F }) => {
   if (F < CLOSE.markIn - f60(4)) return null;
   const fe = F - CLOSE.markIn;
   const stack = DEAL.end === 'stack';
-  const badge = DEAL.hook === 'badge';
+  // the version lands as the accent numerals beside the name: never the hook's pill growing a second time (one plain
+  // lockup shown twice is time spent on nothing new)
+  const badge = false;
   const size = NAME.size * (stack ? 0.86 : 0.9);
   const wm = wordmarkAt(size);
   const nameWeight = Number(wm.fontWeight) || TYPE.display.weight;
@@ -409,22 +464,15 @@ const EndCard: React.FC<{ F: number }> = ({ F }) => {
   const lockup = { x: W / 2 - MARK / 2, y: H / 2 - MARK / 2, size: MARK };
   const flat = F >= CLOSE.markFlat;
   let markNode: React.ReactNode;
+  // the pull-back: the solid on a GPU, its CSS-3D twin on software GL (fx/three Logo3D draws either), landing on the
+  // flat mark where the name slides out of it
   if (flat) markNode = <FlatAt x={markX} y={markY} pulse={pulse} />;
-  else if (draws3D(MARK_3D.gl))
+  else
     markNode = (
       <Freeze frame={Math.max(0, fe)}>
         <Logo3D lockup={lockup} logo={MARK_LOGO} at={0} dur={durF} light={LIGHT3D} gl={MARK_3D.gl} samples={MARK_3D.samples} seed={UPDATE.name} />
       </Freeze>
     );
-  else {
-    // the flat twin of the pull-back (software GL): the mark pulling back on the same curve, turning to face the camera
-    const st = logoPose(clamp(fe / Math.max(1, CLOSE.markFlat - CLOSE.markIn)));
-    markNode = (
-      <div style={{ position: 'absolute', inset: 0, transform: `rotate(${(st.roll * 0.6).toFixed(3)}deg)`, transformOrigin: '50% 50%' }}>
-        <FlatAt x={lockup.x} y={lockup.y} s={Math.min(st.scale, 3.2)} />
-      </div>
-    );
-  }
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       <div style={{ position: 'absolute', inset: 0, filter: level > 0 ? `blur(${level}px)` : undefined }}>{markNode}</div>
@@ -449,13 +497,24 @@ const EndCard: React.FC<{ F: number }> = ({ F }) => {
 };
 
 // ---------------------------------------------------------------------------------------------- the stage
+/**
+ * The film's path through its world (fx/world worldPath): the camera enters the place on the opening frames and moves on
+ * with every change of picture (a shot arriving, a line clearing the shot before, the end card's mark), landing just
+ * after it; every hold between is still and every move goes the same way. The world is a place the film travels
+ * through, never one still photograph under every scene.
+ */
+const PATH_CUTS = (() => {
+  const raw = [...TIMES.flatMap((t) => [t.clear?.[0], t.gap ? t.gap[0] : t.h0]), CLOSE.markIn].filter((x): x is number => typeof x === 'number').sort((a, b) => a - b);
+  return raw.filter((x, k) => k === 0 || x - raw[k - 1] > f60(40));
+})();
+const PATH = worldPath(PATH_CUTS, { fps: FPS });
 export const Stage: React.FC<{ from: number }> = ({ from }) => {
   const F = useCurrentFrame() + from;
   const d = worldDrawn();
   warnStandIn();
   return (
     <AbsoluteFill style={{ background: WORLD.base, overflow: 'hidden' }}>
-      <Place kind={d.kind} src={d.src} soft={d.soft} frame={F}>
+      <Place kind={d.kind} src={d.src} soft={d.soft} frame={F} push={PATH}>
         <Hook F={F} />
         {TIMES.map((t) => (
           <ShotLayer key={t.i} t={t} F={F} />

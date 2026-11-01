@@ -21,6 +21,9 @@ import { UPDATE } from '../update';
 
 /** The film's one emphasis kind: accent (colour alone) by default; weight, scale, swell, outline or sweep when the direction asks. */
 export const EMPH_KIND: EmphasisName = 'accent';
+/** The share of the change lines that take the emphasis: about one in three (the accent word on every line is a tic, not
+ * emphasis: one line in the film carries it, the others stand on their size and their move). */
+export const EMPH_SHARE = 0.34;
 /** The film's signature, if it has one: a box, marker or underline on ONE line ({ id: 'change2', device: 'under' }). */
 export const EMPH_SIGNATURE: { id: string; device: EmphasisName } | undefined = undefined;
 /** The change lines the acts set another way than the voice: a change written with "[]" carries its object inside the line (acts/World MarkLine). */
@@ -36,7 +39,7 @@ export const SYSTEMS: Record<string, HeadlineSystem> = filmSystems(IDS, DEAL_SEE
  * voice that name a `key` first, so a line in the voice is never one size, weight and colour throughout; the name and
  * the version take none.
  */
-export const EMPH: Record<string, EmphasisName | false> = filmEmphasis([...IDS, 'wordmark', 'version'], { kind: EMPH_KIND, keyed: IDS.filter((_, i) => UPDATE.changes[i]?.key), none: ['wordmark', 'version'], signature: EMPH_SIGNATURE, share: 0.7 });
+export const EMPH: Record<string, EmphasisName | false> = filmEmphasis([...IDS, 'wordmark', 'version'], { kind: EMPH_KIND, keyed: IDS.filter((_, i) => UPDATE.changes[i]?.key), none: ['wordmark', 'version'], signature: EMPH_SIGNATURE, share: EMPH_SHARE });
 /** The film's systems and emphasis, checked: one voice on half the lines or more; one kind on up to 70 % of the lines. */
 export const HEADLINE_CHECK = checkSystems(IDS.map((id) => SYSTEMS[id]), 'plain');
 export const EMPHASIS_CHECK = checkFilmEmphasis(EMPH, ['wordmark', 'version']);

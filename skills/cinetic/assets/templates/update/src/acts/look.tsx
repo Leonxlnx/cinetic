@@ -17,6 +17,9 @@ import type { ScreenTone } from '../kit/screens';
 import { kitTheme, type KitTheme } from '../kit';
 import { cardInks } from '../kit/card';
 import { mixColor, toOklch } from '../lib/color';
+import { timingFail } from '../lib/continuity';
+import { CONTENT } from '../content';
+import { UPDATE } from '../update';
 
 /** The dealt world. */
 export const WORLD_KIND = DEAL.ground as WorldKind;
@@ -42,6 +45,14 @@ let warned = false;
 export const warnStandIn = () => {
   if (warned || typeof document === 'undefined') return;
   warned = true;
+  // a face is a person: a change's people carry the names content.ts cast with their faces (precheck reports it)
+  const cast = new Map((CONTENT.people as { name: string; first?: string; photo?: string }[]).filter((p) => p.photo).map((p) => [p.photo as string, p]));
+  const named = UPDATE.changes.flatMap((c) => (c.show.kind === 'tap' ? c.show.result ?? [] : []).filter((r) => r.photo).map((r) => [r.photo as string, r.label.trim()] as const));
+  for (const [photo, label] of named) {
+    const p = cast.get(photo);
+    const want = p ? p.first ?? p.name.split(' ')[0] : '';
+    if (p && label !== want && label !== p.name) timingFail('cast', `cast: ${photo} was cast as ${p.name} (src/content.ts people) but a change labels it "${label}": label it "${want}" (never another name on that face)`);
+  }
   const d = worldDrawn();
   if (d.standIn) console.warn(`update: the dealt world "${WORLD_KIND}" is a photograph and public/${platePath(WORLD_KIND)} is missing (a ${d.kind} stands in): node scripts/assets.mjs plate ${WORLD_KIND}, then --pick <n> --to public/plates --accent '${C.accent}'`);
 };

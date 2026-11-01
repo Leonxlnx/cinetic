@@ -68,10 +68,16 @@ export const ordersFor = (n: number): Shape[][] => {
   return out;
 };
 
-/** A change whose line carries another product's mark ("[]") is never split round the porthole (its gap holds the mark). */
-const ORDERS = ordersFor(UPDATE.changes.length)
+/**
+ * A change whose line carries another product's mark ("[]") is never split round the porthole (its gap holds the mark).
+ * Every film plays the porthole once where a change can take it: one line meets its picture (the line parted round the
+ * shot), never only a line alone, then its picture, change after change (grid-check `beats`: the text-then-cards loop).
+ */
+const FITTING = ordersFor(UPDATE.changes.length)
   .filter((o) => o.every((shape, i) => shape !== 'split' || !UPDATE.changes[i].words.includes('[]')))
   .map((o) => o.join('-'));
+const SPLIT_ORDERS = FITTING.filter((o) => o.split('-').includes('split'));
+const ORDERS = SPLIT_ORDERS.length ? SPLIT_ORDERS : FITTING;
 if (!ORDERS.length) throw new Error('deal.ts: no order of shapes fits these changes');
 
 /** The worlds (fx/world WORLD_DEAL), written out so this file stays standalone (and scripts/deck.py reads them). */
@@ -336,7 +342,11 @@ export const LINES = (() => {
   const moves = pool.length ? pool : MOVES;
   const voice: Move = UNNAMED ? 'mask' : moves[Math.floor(r() * moves.length)];
   const exitVoice: Exit = UNNAMED ? 'lift' : EXITS[Math.floor(r() * EXITS.length)];
-  return { voice, exitVoice, move: Object.fromEntries(LINE_IDS.map((id) => [id, voice])) as Record<string, Move>, exit: Object.fromEntries(LINE_IDS.map((id) => [id, exitVoice])) as Record<string, Exit> };
+  // headline systems rotate: the dealt move is the first change line's and each line after takes the next move in turn,
+  // so no two lines in a row arrive the same way (every line on one move, one size and one accent word is the template
+  // look); the face stays the film's one pairing
+  const v0 = MOVES.indexOf(voice);
+  return { voice, exitVoice, move: Object.fromEntries(LINE_IDS.map((id, i) => [id, MOVES[(v0 + i) % MOVES.length]])) as Record<string, Move>, exit: Object.fromEntries(LINE_IDS.map((id) => [id, exitVoice])) as Record<string, Exit> };
 })();
 
 /** Where the deal came from, for the print. */
