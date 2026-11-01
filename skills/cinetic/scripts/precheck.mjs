@@ -43,7 +43,7 @@
  *   --no-frames   import the modules but render no act
  *   --frames N    frames rendered per act, spread from its first to its last (default 3: first, middle, last)
  *   --no-fit      skip the text measure
- *   --font FILE   measure with this .woff2 (default: the film's FONT.text face in src/brand/fonts or node_modules)
+ *   --font FILE   measure with this .woff2 (default: the film's FONT.text face in src/brand/fonts, public/fonts (the dealt pairings) or node_modules)
  * Exit codes: 0 no errors, 1 errors (or, with --ship, warnings that the gate fails), 2 bad arguments or no project.
  */
 import { spawn } from 'node:child_process';
@@ -662,7 +662,7 @@ const fontFile = () => {
   if (opt('--font')) return path.resolve(opt('--font'));
   const fam = (probe?.tokens?.font ?? '"Inter Variable"').match(/["']?([^"',]+)["']?/)?.[1]?.trim() ?? 'Inter Variable';
   const slug = fam.replace(/\s+variable$/i, '').trim().toLowerCase().replace(/\s+/g, '-');
-  const dirs = [path.join(SRC, 'brand', 'fonts', slug), path.join(ROOT, 'node_modules', '@fontsource-variable', slug, 'files'), findUp(ROOT, path.join('node_modules', '@fontsource-variable', slug, 'files'))].filter(Boolean);
+  const dirs = [path.join(SRC, 'brand', 'fonts', slug), path.join(ROOT, 'public', 'fonts', slug), path.join(ROOT, 'node_modules', '@fontsource-variable', slug, 'files'), findUp(ROOT, path.join('node_modules', '@fontsource-variable', slug, 'files'))].filter(Boolean);
   for (const d of dirs) {
     if (!fs.existsSync(d)) continue;
     const files = fs.readdirSync(d).filter((f) => f.endsWith('.woff2') && /latin-(wght|opsz|standard)?-?normal/.test(f) && !/latin-ext/.test(f));
@@ -680,7 +680,7 @@ if (!flag('--no-fit') && probe) {
   } catch (e) {
     add('fit', 'warn', `the film's font (${ff}) could not be read: ${e.message}; the fit check was skipped`);
   }
-  if (!ff) add('fit', 'warn', "the film's font file was not found (src/brand/fonts or node_modules/@fontsource-variable): the fit check was skipped (--font FILE)");
+  if (!ff) add('fit', 'warn', "the film's font file was not found (src/brand/fonts, public/fonts or node_modules/@fontsource-variable): the fit check was skipped (--font FILE)");
   if (font) {
     const width = measurer(font);
     const W = probe.size?.w ?? 1920;
