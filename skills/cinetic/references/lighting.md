@@ -363,6 +363,18 @@ shots take 0.3-0.6 s a frame including the browser's start. No filter animates; 
 plate's grade is baked; a soft plate replaces live frost; the black field's surface is one image baked once (a CSS
 mask over a tiled background, redrawn under moving UI, cost six times as much).
 
+### Light on the right surface
+
+- A glow on a press falls on what was pressed: added light (plus-lighter) shows only where the surface under it is dark,
+  so on a white card in a dark world it vanishes on the card and glows on the world past its edge (a glow behind the
+  card). Light a press on a light surface with the accent in normal blend, clip it to the card, and size it to the button
+  (0.8x its longest side); launch-simple's `Bloom1 on="any"` does both when the shot does not know the surface.
+- A light card in a dark world is lit by the world: kit/card gives it a 3 L* vertical sheen and its top edge catching the
+  key (`CARD.edge`: a hairline of light just outside it); never a halo of haze round it.
+- Type on a photograph stands on a soft pool of the place's own deep tone (`TYPE_POOL`: 0.42 at its middle, 1.6x the
+  line's width, 3x its height, fading in with the first word): a line over a bright band of cloud or haze reads at 3:1
+  or better; a text-shadow halo round each letter only muddies them.
+
 ## 9. Checks
 
 - A key light, a light field and stepped layers `declare()` what they do on purpose (light seams, stepped ranges);

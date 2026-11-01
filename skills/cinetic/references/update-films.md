@@ -106,7 +106,28 @@ changing on the hit. For a screen you build yourself the flat version is the sta
 
 The end card is a hero shot too (`logo-3d`): the mark as an extruded solid in a gloss finish lit by the world's light,
 an extreme close-up already turning, one pull-back that turns it to face the camera and lands it exactly on the flat
-mark (97.5 f@60, thirteen 16ths at 120 BPM). On software GL it draws its flat twin unless `MARK_3D.gl` is 'force'.
+mark (97.5 f@60, thirteen 16ths at 120 BPM). On software GL it draws its CSS-3D solid (fx/three `SolidMark`: the mark's
+face over slices of its silhouette receding in depth, a light gradient from the key, a soft shadow) unless `MARK_3D.gl`
+is 'force'. The version lands as the accent numerals beside the name: the hook's pill never grows a second time.
+
+**The update's own standard.** One still photograph under every scene, cards at rest tilted by a wide lens, hard cuts
+between shots and a muddy ghost behind the last line are the faults it guards against; the template keeps:
+- the world on the film's path (`acts/World.tsx` `PATH`, fx/world `worldPath`): it enters the place and moves on with every
+  shot that arrives, landing after it; no shot draws its own copy of the world (it jumped at every change);
+- cards square to the camera at rest (no resting yaw, pitch or roll in any shot's framing), the toast stack on an 85 mm
+  lens with its times by slot (newest first, "now" in front);
+- a shot leaving falls back (26 px soft, x0.88) and darkens into a dark world before it goes, whipping out ahead of a whip
+  arrival; the porthole hands its picture to the shot through a 36 px blur (never a cross-dissolve of two sharp pictures);
+- the 'show' line: the shot falls back into the world as the line lands and is gone 22 f@60 later; the line stands on the
+  world with its pool (never a full-frame veil over a dimmed card);
+- the change lines rotate their move (`LINES.move`), take three sizes (`LINE_SCALE`), the accent on one in three
+  (`EMPH_SHARE`); the name is a wordmark in the hook too (`wordmarkAt`, an r before a stem 0.04 em clear);
+- a tap's done state stays a solid button in the accent; no ring travels between the faces; the press's glow is clipped
+  to the card;
+- a face is a person: one photo carries one name through the film, the name content.ts cast with it (update.ts and
+  precheck `cast` report it);
+- the result held 0.8 s, the slack to the line's read before a still result; whole bars on the film's own grid as with a
+  track. Two changes run about 17 s; three about 25 s at 120 BPM, so an 8-20 s update shows two.
 
 ## 5. The world and the picture rules
 

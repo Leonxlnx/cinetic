@@ -63,13 +63,17 @@ picture as the product's real screen); the template's `README.md` walks through 
   DIRECTION.md opens on your reason and section 0 prints the same deal (`pin` in `src/launch.ts` fixes a slot).
 - **A world.** One place for the whole film (`src/world.tsx`, dealt as `ground`): built (`nearWhite`, `paleSky`,
   `blackField`, `deepField`, `electric`) or a photograph (`clouds`, `sky`, `aerial`, `sea`, `nightCity`, `studio`, `macro`:
-  `node scripts/assets.mjs plate <kind>`, then `--pick <n> --to public/plates`), its key light read by the glass, rims and
-  type, sharp as the film opens and soft behind the type and the product after; never a bare gradient.
+  `node scripts/assets.mjs plate <kind>`, then `--pick <n> --to public/plates`), a photograph only of what the brief is
+  about (deck.py `WORLD_SUBJECTS`), its key light read by the glass, rims and type, sharp as the film opens and soft
+  behind the type and the product after; the film travels through it (`worldPath`: it enters the place, then moves on
+  with every change of picture, landing after the cut, still between); never a bare gradient, never one still photograph
+  under every scene.
 - **Hero shots.** Three or more dealt with the direction ([catalogue.md](catalogue.md) §0b: `glass-input`, `macro-type`,
   `black-glass`, `page-fly`, `toast-stack`, `fan-focus`, `rise-behind`, `porthole`, `carousel`, `push-press`, `logo-3d`),
   placed first by role (`HERO_PLAN`), each filled from `src/content.ts` (`node scripts/content.mjs --brief BRIEF.md
-  --fetch --force`), each with one sharp plane, one camera move that lands and light sized to its source; a pair's `hero`
-  pins one. The creative elements take the beats left.
+  --fetch --force`), each with one sharp plane, one camera move that lands and light sized to its source, the camera
+  square to its cards at rest; a hero picture between the first line and the claim arrives with its line (`with`), never
+  line, card, line, card; a pair's `hero` pins one. The creative elements take the beats left.
 - **A world and scale.** Each picture framed on its `focus` box from its first frame until the subject stands 62 % of
   the frame's height (`FRAME`), on a contact shadow (`FLOOR`): never a small card in an empty field (look-audit
   `small-subject`).
@@ -78,9 +82,14 @@ picture as the product's real screen); the template's `README.md` walks through 
   receiving it; with no clip that fits, a code-built fallback plays.
 - **The product as a lit object.** The kit's `Phone` or `Laptop`, or a `Card` in the kit's one material
   (`kit/card.tsx`: a vertical sheen lit from above, a hairline, a top highlight, two shadows), facing the camera.
-- **Type.** The dealt pairing's weights and tracking; one key word a line set apart in its emphasis weight (the starred
-  one in the accent); statements at a 7.4 % cap height, the claim (the last line) at 11.2 %, never under 6 %; the
-  wordmark in the pairing's wordmark style, its tracking kept clear of touching letters.
+- **Type.** The dealt pairing's weights and tracking; the voices rotate line by line (build, blur, ink); the starred
+  word in the accent, no automatic emphasis on the other lines; three sizes (line 1 at a 6.6 % cap height, the lines
+  between at 5 %, the claim at 11.8 %); on a photograph a soft pool of its deep tone behind each line; the wordmark in
+  the pairing's wordmark style, its tracking kept clear of touching letters (an r before a stem keeps 0.04 em: "rn" never
+  reads as "m").
+- **Seams and the end.** Whips that hide the cut (the outgoing picture 0.75 of the frame gone by the cut, smeared), blurs
+  that dim both shots at the cut, a picture darkening into a dark world as it falls back (never a translucent card);
+  the lockup laid out by the mark's ink, held still once whole, the frame settling out over the last 0.6 s.
 - **One signature** from [catalogue.md](catalogue.md), built in its scene and named in `SIGNATURE` (`src/product.tsx`),
   and the end mark: the brand's SVG (`scripts/brand.py`), or the stand-in the template builds from the film's own element
   until then (lint flags its marker), never a sparkle, a star or an AI glyph.
@@ -96,10 +105,14 @@ change takes the first in the film's order that can film it, at least two differ
 centred line in its own shape: `show` (the shot, then it goes soft and dims under the line), `lead` (the line alone,
 then the shot) or `split` (once: the line parted round a porthole that opens into the shot). Shots arrive on the film's
 optics (`arrive`: rack, whip or bloom) and leave soft under the next; a line never follows a line. `end` is the mark as
-a solid pulling back onto the flat mark (fx/three Logo3D; its flat twin on software GL), the name sliding out beside it
-or under it (`end`: beside or stack) and the version landing on the last bar line. Every shot has one declared camera
-move that lands (`src/sync.ts` declares them), a graded blur ladder, the world soft behind it and real content from
-`src/content.ts`. Acts on half bars at 120 BPM (two changes about 21 s, three about 27 s). The deal (`src/deal.ts`,
+a solid pulling back onto the flat mark (fx/three Logo3D; a CSS-3D solid on software GL), the name sliding out beside
+it or under it (`end`: beside or stack) and the version landing as accent numerals on the last bar line (never the hook's
+pill a second time). Every shot has one declared camera move that lands, square to its cards at rest (`src/sync.ts`
+declares them), a graded blur ladder and real content from `src/content.ts`; the shots stand in the film's one world,
+which moves only on the film's path (`worldPath`), and a shot leaving falls back soft and dark under the next (whipped
+out ahead of a whip arrival), never a sharp double exposure. The change lines rotate their move and take three sizes,
+the accent on one line in three. Acts in whole bars at 120 BPM (two changes about 17 s, three about 25 s: an 8-20 s
+update shows two changes, or three on a faster track). The deal (`src/deal.ts`,
 template.json "slots"): ground, hook, arrive, order, end, the hero shots (the deck's `src/dealt.ts`, else the name's)
 and the lines' voice. Slots: `src/content.ts` (`scripts/content.mjs --brief BRIEF.md --fetch --force`) and
 `src/update.ts` (the version, the one before it, the changes: `words`, `key`, the screen and its moment `tap` / `type`

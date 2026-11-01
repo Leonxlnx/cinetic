@@ -455,6 +455,21 @@ GL at half size a depth shot renders in about 0.7-1.2 s a frame on a laptop CPU 
 cheapest, the page with its varying defocus the dearest); on a GPU it is a small fraction of that. Keep blurred planes
 under the budget, big planes few, and the page's defocus for the one page shot.
 
+### Square at rest, a long lens for cards, the world's path
+
+- Cards face the camera at rest: no shot frames its cards with a resting yaw, pitch or roll (a landing at yaw 12 or a
+  stack seen from below and to one side reads as the tilted-card look the user named); a turn is a designed 3D move that
+  starts, travels and lands square.
+- A stack or a list of cards in depth goes on a long lens (85 mm): under a 50 mm lens a card off the axis keystones and
+  reads tilted though it is square; depth then comes from the blur ladder and the scale steps, not from keystone.
+- The world moves with the film, never on its own: fx/world `worldPath(cuts)` gives it one path, the camera entering the
+  place on the opening (x1.07, landing) and moving on at every change of picture (x1.035 and a 14 px rise, starting
+  10 f@60 before the cut and landing 30 f@60 after it), always the same way: the place carries each cut, the holds
+  between are still. A shot never draws its own copy of the world (a far plane of it jumped at every change of shot).
+- A whip between two full-frame pictures travels: fx/Seam velocityCut `travel` (0.75 of the frame by the cut on t^2.2,
+  about 260 px a frame and a 38 px smear on the cut frame at 30 fps), every whip of a film the same way; the house launch
+  (x1.25 a frame into 48 px/f@60) moves a picture only about 270 px at 30 fps and leaves the cut in sight.
+
 ### Catalogue rows (moves)
 
 | id | recipe |

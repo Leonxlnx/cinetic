@@ -75,33 +75,44 @@ a scale jump, smear only on fast frames, cards facing the camera. Numbers f@60, 
 | id | role | recipe | content |
 |---|---|---|---|
 | `glass-input` | over | the line centred over the world and 64 px under it the input as frosted glass (136 tall, 1120-1400 wide, fx/light `Glass`): it rises 26 px into place as the line builds (from 12), a band of light crosses it as it lands (42) and again as it sends; the request types once the line is read (12-30 characters a second, the newest word in the accent settling to ink); one push in on `E.glideOut` over the shot (the type and the glass x1.075, the world x1.035: the near things grow more); a glow 2.4x the send button's radius blooms on send | `prompt` |
-| `macro-type` | picture | the bar sized to its request (fx/depth): opens on the whole bar, a push to x2.6 lands on the caret as the first keys land (44), then a follow of the caret (lag 24) that lands as the typing stops, the world soft behind (its soft copy); a pointer glides in (20) and presses send, a glow 1.35x the button | `prompt` |
+| `macro-type` | picture | the bar sized to its request (fx/depth): opens on the whole bar, a push to x2.2 lands on the caret as the first keys land (44), a follow of the caret (lag 24) while it types, then a pull back to the whole bar (34) so the request is read whole and sharp for 20 f or more before send (never only seen cut by the frame); a pointer glides in (20) and presses send, a glow 1.35x the button on the button | `prompt` |
 | `black-glass` | picture | the composer as a frosted pane (1180 x 272, radius 40): its defocus clears 7.5 -> 0 px in 10 f (half in the first 3), a light runs along its rim (from 16), one push x0.94 -> 1.06 that lands by 72 % of the beat, the request typing once sharp, a band on send; a label above it in the mute | `prompt` |
 | `page-fly` | picture | the page flies in from 1500 px deep and 420 low (30 f, `E.glideOut`), lying back (pitch -44, yaw 15 by the seed's side), and the camera travels it from the headline to the table (x1.18 -> 1.5, the roll unwinding -8 -> -3), the far edge soft (a defocus that varies across the page), a lit edge toward the key | `doc` |
-| `toast-stack` | picture | five notifications arriving front-loaded over 62 % of the beat: each drops into the front slot (16 f, `E.snapOut`) and pushes the others one slot up (0.62 card) and 240 back (18 f): the lens makes the ladder (front sharp, each further back softer); the camera a little below and to one side, one push x1.22 that lands; light cards on every world | `notices` |
+| `toast-stack` | picture | five notifications arriving front-loaded over 62 % of the beat: each drops into the front slot (16 f, `E.snapOut`) and pushes the others one slot up (0.34 card) and 260 back (18 f): the lens makes the ladder (front sharp, each further back softer); the stack square and centred, the camera square in front of it on an 85 mm lens (a card off the axis of a wide lens keystones into a card that reads tilted at rest), one straight push x1.16 that lands; each card's time by its slot, newest first ("now" in front), so the times hold when paused; the product's own notice (`own`) wears the product's mark | `notices` |
 | `fan-focus` | picture | five cards fanned back in depth (fx/depth `FanFocus`), already entering on the cut, the camera to one side (the seed's) closing on the third as the focus racks to it (from 24 % of the beat) | `comments` |
 | `rise-behind` | over | the line's key word giant (cap up to 22 % of the frame) in front, the rest of the line small above it, three cards (500 x 600) rising 460 px behind it from the middle out (40 f each, 8 apart) while the camera pulls back x1.3 -> 1; the focus racks from the word to the cards as the reveal lands | `plans` |
 | `porthole` | line | the line built in the film's voice; 8 f after it is read its words part (one row before its key word, two rows apart) and a porthole opens in the gap over 26 f (diameter 2.9x the type size, a real face inside), a shadow ring and the key's light on its rim; the words re-centre round it; it goes soft into the next shot (a blur seam) | `people` |
 | `carousel` | picture | 8-16 of the film's real pictures (380 x 500) on a ring turning to a stop (300 deg, `E.settleOut`, the seed's way) while the camera cranes from 58 deg above to eye level (x2.05 closer) and lands the chosen one facing the camera; the far side turns away, a smear only while it turns fast (needs three pictures or more) | `thumbs` |
-| `push-press` | picture | the product's screen read whole for 30 % of the beat, then one push (38 %, x2.1, landing at yaw 12) into the scene's `button` as a pointer arrives and presses; a glow the size of the button blooms and the screen answers on its hit | the scene |
-| `logo-3d` | end | the brand's mark extruded and bevelled (fx/three `Logo3D`): the end opens on its close-up through a blur seam and one pull-back (76 f) turns it to face the camera and lands it on the flat mark, the name sliding out after it (needs the brand's SVG; software GL draws the same move flat) | `brand/logo.ts` |
+| `push-press` | picture | the product's screen read whole for 30 % of the beat, then one push (38 %, x2.1) into the scene's `button` as a pointer arrives and presses; a glow 0.8x the button blooms on the button (an accent halo in normal blend with a small core of added light: added light alone vanishes on a white card and glows on the world past its edge) and the screen answers on its hit | the scene |
+| `logo-3d` | end | the brand's mark extruded and bevelled (fx/three `Logo3D`): the end opens on its close-up through a blur seam (48 px, both shots dimmed to 0.55 at the cut) and one pull-back turns it to face the camera and lands it on the flat mark 8 f before the name slides out (never a small mark waiting alone), the mark in its own colours; on software GL the same move as a CSS-3D solid (`SolidMark`: the face over slices of its silhouette receding in depth, darker toward the back, a light gradient from the key, a soft shadow), an object either way, never a flat logo shrinking | `brand/logo.ts` |
 
 The world (one a film, launch-simple's `ground` slot, `src/world.tsx`): `nearWhite`, `paleSky`, `blackField`, `deepField`,
 `electric` (built); `clouds`, `sky`, `aerial`, `sea`, `nightCity`, `studio`, `macro` (photographs: `node scripts/assets.mjs
-plate <kind>`, then `--pick <n> --to public/plates --accent '<accent>'`). A photograph is sharp for the opening frames,
-then racks soft behind the type and the product (a veil of its deep tone on a dark world); the claim stands in it.
+plate <kind>`, then `--pick <n> --to public/plates --accent '<accent>'`). A photograph is a place that belongs to the
+subject (deck.py ranks a plate first only when the brief names what it shows, `WORLD_SUBJECTS`, else below the built
+worlds: never a stock city under a ceramics class). It is sharp for the opening frames, then racks soft behind the type
+(the first line waits for the rack: never white words over a sharp bright picture), under a light veil (0.16); every line
+on it stands on a soft pool of its deep tone (`TYPE_POOL`), never a text-shadow halo. The film travels through it
+(fx/world `worldPath`): the camera enters the place on the opening (a push x1.07 that lands) and moves on with every
+change of picture (x1.035 and a 14 px rise, starting 10 f before the cut, landing 30 f after it), always the same way,
+still between: the place carries the cut and is never one still photograph under every scene. The shots stand in it
+and draw no copy of it of their own (one slid off with a whip and jumped at each change).
 Recipes for a shot of your own in a world: [lighting.md §8](lighting.md#8-a-world-and-light-that-reads-it-fxworld-fxlight)
 (`glass-input-over-plate`, `black-glass`, `electric-card`, `glowing-line`, `iris-into-world`, `iris-into-input`,
 `button-opens-world`, `through-the-mark`); 3D hero objects: [three.md](three.md) (`logo-3d`, `glass-tiles`,
 `glass-dome`, `hero-object`); depth scenes: [camera.md §13](camera.md#13-the-depth-stage-a-real-camera-over-ui-planes-fxdepth).
 
-## 1. Text voice (one a film)
+## 1. Text voice (rotating)
 
-One entry animation carries every line of the film, half of them at the very least; at most one contrasting entry
-per 30 s, for the hero line only. Lines are centred, in the middle band, one line (85 % or more of them), cap height
-6-9 % of the frame height (bigger for the claim), sentence case, one family. Emphasis: the key word in the accent
-colour on at most 60 % of the lines (`fx/TypeEmphasis` `filmEmphasis`); no box, marker or underline unless it is the
-film's one signature, on one line.
+Headline systems rotate: the dealt voice opens the film and each line after it takes the next voice in turn (build ->
+blur -> ink), so no two lines in a row arrive the same way, in the film's one face; at most one contrasting entry per
+30 s, for the hero line only. Three sizes, never every line one size: the statement (6.6 % cap), the lines between it and
+the claim a size down (5 %), the claim more than twice their cap (11.8 %); the update film's change lines at 1.3 / 1 /
+1.55 / 1.15 x the line size. Lines are centred, in the middle band, one line (85 % or more of them), sentence case.
+Emphasis: the key word in the accent on about one line in three (`fx/TypeEmphasis` `filmEmphasis`, share 0.34; no
+automatic heavier last word on the other lines: one highlighted last word on every line is the template look); no box,
+marker or underline unless it is the film's one signature, on one line. On a photograph every line stands on a soft
+pool of the place's deep tone.
 
 | id | recipe | build |
 |---|---|---|
@@ -167,8 +178,9 @@ exit-then-enter, text-swap or match-cut. Full recipes in frames: [transitions.md
 | `exitEnter` | line to line on a kept ground | exit 12-18 f accelerating away, 0-6 f of moving ground, enter 14-24 f |
 | `textSwap` | inside a scene | the slot and cap height stay; a blur swap (out to 12 px in 8 f, in over 12-14 f), a push-up or an ink-in |
 | `matchCut` | line to picture, picture to picture | one anchor (the word slot, a shape's centre) within 10 px across a one-frame cut |
-| `blurThrough` | anywhere | out 12-16 f to 24-40 px of blur, the cut inside it, in 10-16 f |
-| `velocityCut` | picture to picture | speed builds x1.15-1.35 a frame over the last 8-12 f, the next shot enters moving the same way and decays 12-24 f |
+| `blurThrough` | anywhere | out 12-16 f to 24-40 px of blur, the cut inside it, in 10-16 f; between two pictures that differ (a white card into a dark mark) 48 px with both shots dimmed to 0.55 on the cut frame (`peak`, `dim`) |
+| `velocityCut` | picture to picture | speed builds x1.15-1.35 a frame over the last 8-12 f, the next shot enters moving the same way and decays 12-24 f; between two full-frame pictures a whip (`travel`: the outgoing travels 0.75 of the frame over its last 24 f on t^2.2, mostly gone and smeared at about 260 px a frame on the cut frame at 30 fps), every whip of a film the same way |
+| `recede` | picture to line | the picture falls back (x0.86, 36 px soft) as the line builds; on a dark world it darkens into the world first (brightness 0.14 by a third of the recede) and goes only once dark, never a translucent card with the world through it |
 | `sharedElement` | into the end card, into the product | one element belongs to both shots and is never cut; the surroundings out 10-14 f, in 8-16 f |
 | `zoomThrough` | picture to line, into the end | an exponential push x1.04-1.10 a frame into the element that becomes the next frame |
 | `card-expand` | into a product screen | the card's rectangle animates to the frame over 24-36 f, its content cross-blurring at 40-60 % |
@@ -202,7 +214,10 @@ The bans stay: no orange, amber, cream or sand, no purple or violet, no neon, un
 
 ## 5. End card (one design a film)
 
-Centred, built from the film's last element, held 2-3 s on a creep, the name once, the one fact under it. The ten
+Centred, built from the film's last element, landed and then held still 2-3 s (no drift: a lockup sliding 0.25 px a
+frame to the end is an aimless move), the name once, the one fact under it, then the whole frame settles out into the
+world's deep tone over the last 0.6 s with the music's ring-out. A drawn mark is laid out by its ink: its ink 1.3x the
+name's cap height, 0.44 cap from the name, in its own colours (only its near-black parts take the world's ink). The ten
 designs with their builds are in [devices/logo-and-end-card.md](devices/logo-and-end-card.md#ten-end-card-designs-recipes);
 their ids for `film.json` `end` and `logo`:
 
@@ -228,7 +243,9 @@ Never a mark pill on every line, never a known product named in text alone where
 
 ## 7. Cards
 
-One radius a film (house 23 px at 1080, range 16-34), a soft shadow or a 1 px border (not both on every card), inner
+A card is a lit object: a vertical sheen (3 L* top to bottom), an inner top highlight and, on a dark world, its top edge
+catching the key (a hairline of light just outside it; kit/card `CARD.edge`), never a white slab with a drop shadow and
+never a halo of haze round it. One radius a film (house 23 px at 1080, range 16-34), a soft shadow or a 1 px border (not both on every card), inner
 padding about 2.4 times the cap height of the text inside (never under 0.8), left edges of stacked rows within 4 px,
 no accent bar down a card's side, no text touching an asset. A glass card: a 2 px rim and no shadow. A vertical line
 beside text only as a step rail between steps.

@@ -135,7 +135,13 @@ most moves, a wide lens on a close-up wants 16 or more, a hold needs 4.
 ## Without WebGL: the 2D fallback
 
 `gl="auto"` (default) draws 3D on a hardware GPU and the clean 2D version otherwise: software GL or no WebGL at all never
-fails and never draws a black frame. Logo3D: the flat mark pulling back to the lockup; GlassTiles: flat frosted tiles
+fails and never draws a black frame. Logo3D: the same move as a CSS-3D solid (`SolidMark`, `SOLID2D`): the mark's face
+over 6-30 slices of its own silhouette receding along its depth (a slice per 2.4 px), each darker toward the back (the
+side walls, 0.38-0.62 toward black), turned by the pose in a real CSS perspective, a light gradient across the face from
+the key's side masked by the mark, a soft shadow under it; the depth presses to nothing and the light fades as it lands,
+so the last frame is the flat lockup. While the machine renders on software GL this is the film's mark: an extruded
+object, never a big flat logo shrinking (a flat logo clamped big and then shrinking read as a stall, then a pop).
+GlassTiles: flat frosted tiles
 in the same layout and arrival; GlassDome: a flat dome on its platform with the screen and tiles; HeroObject: the
 object's flat silhouette with the same move. `gl="force"` renders 3D on software GL too (slow: for a check at half
 size); `gl="fallback"` always draws 2D.

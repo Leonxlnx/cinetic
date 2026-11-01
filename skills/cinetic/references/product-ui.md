@@ -614,6 +614,14 @@ Pause on any frame and check it as a screenshot. Run this on the act contact she
 - No cursor after the product became autonomous; at most one click per 30 f.
 - No card or tile is empty or filled with grey bars (§5).
 - Discrete state (typed text, caret, counters, layout switches) is computed from `fd(f)`, so motion-blur sub-samples never show a double caret or a half-typed letter.
+- Times run the right way: in a stack the newest card is in front and says "now", each older one an older time (the
+  hero shots set a card's time by its slot, so a content list in any order still pauses right); a summary ("12 sign-ups
+  this hour") arrives after the events it sums and agrees with every counter in the film: one figure a film, read from
+  one place in `src/content.ts`, never a toast saying 12 and a counter running 96 to 128 seconds later.
+- The product's own notification wears the product's mark (`NoticeItem.own`, drawn through the stack's `ownMark`;
+  content.mjs marks a notice the product itself sent), never a stock glyph in an accent square where the brand belongs.
+- A face is a person: one photo, one name through the film, the name content.ts cast with it (a man's photo under a
+  woman's name, or one face as a member and as the author of a report, fails update.ts and precheck `cast`).
 
 
 ---
