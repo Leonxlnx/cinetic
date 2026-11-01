@@ -13,7 +13,7 @@ import { Img, useCurrentFrame, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import type { Logo } from '../../brand/Mark';
 import { E, rand } from '../../lib/anim';
-import { canvasTex, contactTex, disposeAll, fitUv, markSolid, roundedRect, slabGeometry } from './geo';
+import { canvasTex, contactTex, disposeAll, fitUv, markSolid, roundedRect, slabGeometry, thinGlass } from './geo';
 import { draws3D, type GlMode } from './gl';
 import { makeTile, TILES } from './GlassTiles';
 import { heroSolid, type HeroKind } from './HeroObject';
@@ -22,16 +22,17 @@ import { type Backdrop, clamp01, deg, filmLit, lerp, planeDistance, Stage3D, use
 
 /**
  * House numbers (f@60, px@1080, degrees; lengths as shares of the dome's radius R): the dome's diameter; the move;
- * the platform (radius, thickness, the bowl's depth); the rest view (looks down 8 deg on the platform); the moves
+ * the platform (radius, thickness, the bowl's depth); the rest view (the eye just above the platform: it looks down
+ * 1.5 deg at a point 0.1 R above the platform, so the platform reads as a thick disc); the moves
  * (orbit arc, push start distance, dive magnification); the lens (aperture as a share of the focus distance); the
  * tiles' ring (radius, tile size).
  */
-export const DOME = { size: 860, dur: 150, base: 1.18, baseH: 0.21, bowl: 0.4, pitch: 8, orbit: 32, push: 1.5, dive: 4.2, aperture: 0.016, ring: 1.45, tile: 0.34 };
+export const DOME = { size: 1080, dur: 150, base: 1.16, baseH: 0.24, bowl: 0.42, pitch: 1.5, aim: 0.1, orbit: 32, push: 1.5, dive: 4.2, aperture: 0.012, ring: 1.3, tile: 0.3 };
 
 export const RECIPE = {
   id: 'glass-dome',
   recipe:
-    'A small world under a thin glass dome (clear centre, bright rims, a soap-film sheen) on a white platform with a grey bowl, floating over the film\'s plate; inside: a desk with a laptop showing the product\'s screen, the mark on a plinth, or a hero object; official icons as frosted tiles around it in depth. One camera move that lands (150 f): push (in from x1.5 and low, settleOut), orbit (a 32 deg arc landing face-on, strongInOut; the highlights travel over the glass) or dive (from the whole dome into a x4.2 macro of the inside, through the glass, shallow focus). Nothing else moves.',
+    'A small world under a thin glass dome (clear centre, bright rims, a soap-film sheen) on a thick white platform with a grey bowl, floating over the film\'s plate, big in frame (1080 px across) with the eye just above the platform; inside: a wooden desk with a laptop showing the product\'s screen, the mark on a plinth, or a hero object; official icons as milky glass tiles around it at mid height in depth. One camera move that lands (150 f): push (in from x1.5 and lower, settleOut), orbit (a 32 deg arc landing face-on, strongInOut; the highlights travel over the glass) or dive (from the whole dome into a x4.2 macro of the inside, through the glass, shallow focus). Nothing else moves.',
   params: { ...DOME },
 };
 
@@ -69,26 +70,6 @@ type Built = { group: THREE.Group; dispose: () => void };
 const clay = (color: string, rough = 0.55) => filmLit(new THREE.MeshPhysicalMaterial({ color: new THREE.Color(color), roughness: rough, sheen: 0.35, sheenRoughness: 0.6, sheenColor: new THREE.Color(1, 1, 1) }), color);
 const phys = (color: string, p: THREE.MeshPhysicalMaterialParameters) => filmLit(new THREE.MeshPhysicalMaterial({ color: new THREE.Color(color), ...p }), color);
 
-const GLASS_FS_END = /* glsl */ `
-  {
-    // thin glass: the reflection (three's specular, already Fresnel-weighted) is added in full; the background behind is
-    // dimmed only by the Fresnel share it reflects (blending: ONE, ONE_MINUS_SRC_ALPHA)
-    float nv = clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);
-    float fr = uGlassBase + (1.0 - uGlassBase) * pow(1.0 - nv, 5.0);
-    gl_FragColor = vec4(cineticGlassTone(gl_FragColor.rgb), fr);
-  }
-}
-`;
-const GLASS_TONE = /* glsl */ `
-uniform float uGlassBase;
-vec3 cineticGlassTone(vec3 c) {
-  float peak = max(c.r, max(c.g, c.b));
-  if (peak <= 0.8) return c;
-  float np = 1.0 - 0.04 / (peak - 0.6);
-  return c * (np / peak);
-}
-`;
-
 /**
  * A soap film's thickness over a dome (the sphere's v: 1 at the top, 0 at the base): thin at the crown, thicker toward
  * the rim, with slow swirls, so the sheen breaks into soft rainbow bands instead of one tint. Deterministic.
@@ -111,38 +92,6 @@ export const filmTex = () =>
     }
     g.putImageData(img, 0, 0);
   });
-
-/** A thin glass shell material: reflections in full, the background through it barely dimmed (see GLASS_FS_END). */
-export const thinGlass = (side: THREE.Side, sheen = 1, film?: THREE.Texture) => {
-  const m = new THREE.MeshPhysicalMaterial({
-    color: 0x000000,
-    roughness: 0.035,
-    metalness: 0,
-    ior: 1.8,
-    envMapIntensity: 1.6,
-    specularIntensity: 1,
-    iridescence: sheen,
-    iridescenceIOR: 1.3,
-    iridescenceThicknessRange: [140, 680],
-    iridescenceThicknessMap: film ?? null,
-    transparent: true,
-    depthWrite: false,
-    side,
-  });
-  m.blending = THREE.CustomBlending;
-  m.blendEquation = THREE.AddEquation;
-  m.blendSrc = THREE.OneFactor;
-  m.blendDst = THREE.OneMinusSrcAlphaFactor;
-  m.blendSrcAlpha = THREE.OneFactor;
-  m.blendDstAlpha = THREE.OneMinusSrcAlphaFactor;
-  const u = { uGlassBase: { value: 0.025 } };
-  m.onBeforeCompile = (sh) => {
-    sh.uniforms.uGlassBase = u.uGlassBase;
-    sh.fragmentShader = sh.fragmentShader.replace('void main() {', `${GLASS_TONE}\nvoid main() {`).replace(/\}\s*$/, GLASS_FS_END);
-  };
-  m.customProgramCacheKey = () => 'cinetic-thin-glass';
-  return m;
-};
 
 /** The platform: a thick white disc with a fully rounded rim, a grey bowl beneath (top surface at y = 0). */
 const platform = (R: number): Built => {
@@ -188,8 +137,9 @@ const dome = (R: number): Built => {
   const geo = new THREE.SphereGeometry(R, 96, 48, 0, Math.PI * 2, 0, Math.PI / 2);
   const film = filmTex();
   film.colorSpace = THREE.NoColorSpace; // data, not colour
-  const back = new THREE.Mesh(geo, thinGlass(THREE.BackSide, 0.8, film));
-  const front = new THREE.Mesh(geo, thinGlass(THREE.FrontSide, 1, film));
+  // the far wall reflects less (it would draw the light stage's strips as arcs inside); the sheen stays a soft film
+  const back = new THREE.Mesh(geo, thinGlass(THREE.BackSide, 0.35, film, 0.9));
+  const front = new THREE.Mesh(geo, thinGlass(THREE.FrontSide, 0.6, film, 1.2));
   back.renderOrder = 5;
   front.renderOrder = 6;
   group.add(back, front);
@@ -275,13 +225,14 @@ const deskScene = (w: number, screen: THREE.Texture | null, mirror: number): Bui
   const dh = w * 0.34;
   const top = w * 0.04;
   const white = clay('#E6E8EB', 0.42);
-  const board = new THREE.Mesh(slabGeometry(w, dd, top, w * 0.03, 0.35), white);
+  const wood = phys('#A8937F', { roughness: 0.5, clearcoat: 0.25, clearcoatRoughness: 0.35, sheen: 0.2, sheenRoughness: 0.6, sheenColor: new THREE.Color(1, 1, 1) });
+  const board = new THREE.Mesh(slabGeometry(w, dd, top, w * 0.03, 0.35), wood);
   board.rotation.x = -Math.PI / 2;
   board.position.y = dh - top / 2;
   group.add(board);
-  const leg = new THREE.CylinderGeometry(w * 0.02, w * 0.017, dh - top, 16);
+  const leg = new THREE.BoxGeometry(w * 0.045, dh - top, w * 0.045);
   for (const [lx, lz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-    const m = new THREE.Mesh(leg, white);
+    const m = new THREE.Mesh(leg, wood);
     m.position.set(lx * (w / 2 - w * 0.05), (dh - top) / 2, lz * (dd / 2 - w * 0.05));
     group.add(m);
   }
@@ -289,10 +240,10 @@ const deskScene = (w: number, screen: THREE.Texture | null, mirror: number): Bui
   shadow.rotation.x = -Math.PI / 2;
   shadow.position.y = 0.6;
   group.add(shadow);
-  const lw = w * 0.52;
+  const lw = w * 0.62;
   const lap = laptopSolid(lw, screen);
   lap.group.position.set(0, dh, -dd * 0.06);
-  lap.group.rotation.y = deg(-12 * mirror);
+  lap.group.rotation.y = deg(-8 * mirror);
   group.add(lap.group);
   // a small plant at the far end of the desk: a white pot, a few long leaves
   const plant = new THREE.Group();
@@ -349,7 +300,7 @@ type Pose = { pos: THREE.Vector3; target: THREE.Vector3 };
 
 /** The camera at progress p of the move (world px-units; the dome's base centre at the origin). */
 export const domePose = (move: DomeMove, p: number, R: number, Dr: number, offset: { x: number; y: number }, inside: THREE.Vector3, mirror: number): Pose => {
-  const rest = new THREE.Vector3(offset.x, offset.y + R * 0.22, 0);
+  const rest = new THREE.Vector3(offset.x, offset.y + R * DOME.aim, 0);
   let yaw = 0;
   let pitch = DOME.pitch;
   let dist = Dr;
@@ -357,12 +308,12 @@ export const domePose = (move: DomeMove, p: number, R: number, Dr: number, offse
   if (move === 'push') {
     const e = E.settleOut(clamp01(p));
     dist = Dr * lerp(DOME.push, 1, e);
-    pitch = lerp(DOME.pitch - 6, DOME.pitch, e);
+    pitch = lerp(DOME.pitch - 3, DOME.pitch, e);
     yaw = mirror * lerp(9, 0, e);
   } else if (move === 'orbit') {
     const e = E.strongInOut(clamp01(p));
     yaw = mirror * DOME.orbit * (1 - e);
-    pitch = lerp(DOME.pitch + 7, DOME.pitch, e);
+    pitch = lerp(DOME.pitch + 6, DOME.pitch, e);
     dist = Dr * lerp(1.1, 1, e);
   } else if (move === 'dive') {
     const e = E.strongInOut(clamp01(p));
@@ -378,11 +329,15 @@ export const domePose = (move: DomeMove, p: number, R: number, Dr: number, offse
 /** Where n tiles float around a dome of radius R (world px-units, y up). */
 export const domeTilePlaces = (n: number, R: number, seed: number | string = 0) =>
   Array.from({ length: n }, (_, i) => {
-    // around the ring, starting at the sides, never straight in front of the centre
-    const a = deg(90 + (i * 360) / Math.max(1, n) + 14 * (rand(`dome-tiles:${seed}:${i}`) - 0.5));
-    const fwd = Math.cos(a) > 0.92 ? 0.7 : 1;
-    const r = R * DOME.ring * fwd;
-    return new THREE.Vector3(Math.sin(a) * r, R * (i % 2 === 0 ? 0.42 : 0.66) + R * 0.06 * (rand(`dome-tiles:${seed}:y${i}`) - 0.5), Math.cos(a) * r);
+    // both sides of the dome, from the front quarter (near the camera, soft in the lens) round to the back (seen beside and
+    // through the glass); never in front of what is inside, never straight behind it
+    const side = i % 2 === 0 ? 1 : -1;
+    const m = side > 0 ? Math.ceil(n / 2) : Math.floor(n / 2);
+    const u = m <= 1 ? 0.35 : Math.floor(i / 2) / (m - 1);
+    const a = deg((side > 0 ? 48 + 92 * u : 312 - 92 * u) + 10 * (rand(`dome-tiles:${seed}:${i}`) - 0.5));
+    const r = R * DOME.ring;
+    const high = (Math.floor(i / 2) + (side > 0 ? 0 : 1)) % 2 === 1; // heights alternate along each side and across them
+    return new THREE.Vector3(Math.sin(a) * r, R * (high ? 0.54 : 0.4) + R * 0.05 * (rand(`dome-tiles:${seed}:y${i}`) - 0.5), Math.cos(a) * r);
   });
 
 type SceneProps = { inside: DomeInside; screen: THREE.Texture | null; mark?: Logo; icons: (THREE.Texture | null)[]; move: DomeMove; at: number; durF: number; R: number; x: number; y: number; W: number; H: number; mirror: number; seed: string };
@@ -394,7 +349,7 @@ const DomeScene: React.FC<SceneProps> = ({ inside, screen, mark, icons, move, at
     const parts: Built[] = [platform(R), dome(R)];
     let focus = new THREE.Vector3(0, R * 0.3, 0);
     if (inside === 'laptop') {
-      const d = deskScene(R * 1.18, screen, mirror);
+      const d = deskScene(R * 1.0, screen, mirror);
       parts.push(d);
       focus = d.focus;
     } else if (inside === 'mark' && mark) {
@@ -437,18 +392,20 @@ const DomeScene: React.FC<SceneProps> = ({ inside, screen, mark, icons, move, at
     }
     const focus = pose.pos.distanceTo(pose.target);
     const moving = move !== 'hold' && p > 0 && p < 1;
-    return { aperture: DOME.aperture * focus, focus, still: !moving && DOME.aperture === 0, moving, samples: move === 'dive' && p > 0.4 ? 24 : 16 };
+    return { aperture: DOME.aperture * focus, focus, still: !moving && DOME.aperture === 0, moving, samples: move === 'dive' && p > 0.4 ? 16 : 12 };
   });
   return <primitive object={world.root} />;
 };
 
 /** The flat drawing (no WebGL): the platform, the dome's outline and sheen, the screen inside, the tiles around. */
-const FlatDome: React.FC<{ inside: DomeInside; screen?: string; icons: string[]; R: number; x: number; y: number; seed: string }> = ({ inside, screen, icons, R, x, y, seed }) => {
+const FlatDome: React.FC<{ inside: DomeInside; screen?: string; icons: string[]; R: number; x: number; y: number; seed: string }> = ({ inside, screen, icons, R, x, y: cy, seed }) => {
   const rb = R * DOME.base;
   const h = R * DOME.baseH;
   const places = domeTilePlaces(icons.length, R, seed);
   const ts = R * DOME.tile;
-  const k = Math.sin(deg(DOME.pitch));
+  // the platform's top where the 3D rest view puts it (the camera aims a little above it), its top seen from the eye's height
+  const y = cy + R * DOME.aim;
+  const k = Math.sin(deg(DOME.pitch + 2.5));
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       {places

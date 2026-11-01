@@ -12,7 +12,7 @@ import React, { useEffect, useMemo } from 'react';
 import { Img, useCurrentFrame, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import { E, rand } from '../../lib/anim';
-import { slabGeometry } from './geo';
+import { roundedRect, slabGeometry, thinGlass } from './geo';
 import { draws3D, type GlMode } from './gl';
 import type { Light3D } from './light';
 import { type Backdrop, clamp01, deg, filmLit, lerp, planeDistance, Stage3D, useSampler, useTextures } from './stage';
@@ -20,14 +20,15 @@ import { type Backdrop, clamp01, deg, filmLit, lerp, planeDistance, Stage3D, use
 /**
  * House numbers (f@60, px@1080): tile size; depth, corner radius and icon size as shares of the size; frost (0 clear
  * .. 1 milky); the arrival (stagger between tiles, each tile's flight, how far below and behind it starts, its turn);
- * the camera (push from x1.1 of the plane distance, the shot's length) and the lens (aperture as a share of focus).
+ * the camera (push from x1.3 of the plane distance, the shot's length) and the lens (aperture as a share of focus);
+ * the row's width (share of the frame) and how far its outer tiles come toward the camera (px).
  */
-export const TILES = { size: 210, depth: 0.26, radius: 0.25, icon: 0.56, frost: 0.45, stagger: 6, arrive: 48, back: 560, turn: 34, push: 1.3, dur: 150, aperture: 0.022, spread: 0.7 };
+export const TILES = { size: 290, depth: 0.42, radius: 0.27, icon: 0.6, frost: 0.6, stagger: 6, arrive: 48, back: 560, turn: 34, push: 1.3, dur: 150, aperture: 0.018, spread: 0.72, arc: 420 };
 
 export const RECIPE = {
   id: 'glass-tiles',
   recipe:
-    'Official icons crisp on thick frosted glass tiles (radius 25 %, depth 26 %, a thin-film sheen on the bevels), set in depth across the frame; arrive: they rise from below and behind, turning 34 deg to face the camera, outward from the centre 6 f apart (48 f each, glideOut) while the camera pushes in from x1.3 and lands after them (150 f, stdInOut); pass: the camera tracks past them and lands on the chosen tile as the focus pulls to it. Faces the camera at rest; no bob.',
+    'Official icons crisp in thick milky glass tiles (290 px, fully rounded edges, depth 42 %, rainbow fringes and bright rims on the bevels), on an arc opening toward the camera: the middle tiles sharp at the lockup plane, the outer ones nearer, bigger and soft, framing them; arrive: they rise from below and behind, turning 34 deg to face the camera, outward from the centre 6 f apart (48 f each, glideOut) while the camera pushes in from x1.3 and lands after them (150 f, stdInOut); pass: the camera tracks past them and lands on the chosen tile as the focus pulls to it. Faces the camera at rest; no bob.',
   params: { ...TILES },
 };
 
@@ -42,13 +43,13 @@ export type GlassTilesProps = {
   /** Length of the shot's move, f@60 (default 150). */
   dur?: number;
   move?: TileMove;
-  /** 'row' (a shelf curving away from a near centre tile) or 'flank' (tiles both sides of an empty centre for a line or a product). */
+  /** 'row' (an arc opening toward the camera: the middle tiles sharp, the outer ones nearer and soft) or 'flank' (tiles both sides of an empty centre for a line or a product). */
   layout?: TileLayout;
   /** Or place each tile yourself (px from the centre, y up, z toward the camera). */
   places?: TilePlace[];
-  /** Tile size in px at the frame's plane (default 150). */
+  /** Tile size in px at the frame's plane (default 290). */
   size?: number;
-  /** 0 clear .. 1 milky (default 0.45). */
+  /** 0 clear .. 1 milky (default 0.6). */
   frost?: number;
   /** The tile the shot lands on and focuses (default the middle one). */
   focus?: number;
@@ -64,19 +65,20 @@ export const tileGlass = (size: number, frost: number) =>
   filmLit(
     new THREE.MeshPhysicalMaterial({
       color: new THREE.Color(1, 1, 1),
-      // frost: a rougher surface blurs what is behind, and a share of milky white scatter keeps the tile light on dark plates
-      roughness: 0.1 + 0.3 * frost,
-      transmission: 1 - 0.3 * frost,
-      envMapIntensity: 1.5,
+      // frost: a rougher surface blurs what is behind it, and the milky share (diffuse white lit by the key and the light
+      // stage) keeps the tile bright on any plate; the clearcoat stays sharp, so the rims and highlights stay crisp
+      roughness: 0.06 + 0.36 * frost,
+      transmission: 1 - 0.5 * frost,
+      envMapIntensity: 2,
       thickness: size * TILES.depth,
       ior: 1.45,
-      iridescence: 0.4,
-      iridescenceIOR: 1.35,
-      iridescenceThicknessRange: [180, 560],
+      iridescence: 1,
+      iridescenceIOR: 1.3,
+      iridescenceThicknessRange: [220, 620],
       clearcoat: 1,
-      clearcoatRoughness: 0.05,
+      clearcoatRoughness: 0.04,
       specularIntensity: 1,
-      dispersion: 0.35,
+      dispersion: 0.45,
     }),
     '#FFFFFF',
   );
@@ -87,7 +89,8 @@ export type Tile = { group: THREE.Group; dispose: () => void };
 export const makeTile = (size: number, tex: THREE.Texture | null, frost: number = TILES.frost): Tile => {
   const group = new THREE.Group();
   const d = size * TILES.depth;
-  const geo = slabGeometry(size, size, d, size * TILES.radius);
+  // edges rounded all the way through (a soap-bar block): the bevels catch the light stage as bright rims
+  const geo = slabGeometry(size, size, d, size * TILES.radius, 0.5);
   const glass = tileGlass(size, frost);
   const body = new THREE.Mesh(geo, glass);
   group.add(body);
@@ -99,11 +102,19 @@ export const makeTile = (size: number, tex: THREE.Texture | null, frost: number 
     icon.renderOrder = 2;
     group.add(icon);
   }
+  // the face's glass over the icon: the light stage's reflections pass over the icon as the tile turns
+  const face = size * (1 - 2 * Math.min(TILES.depth * 0.5, TILES.radius * 0.95));
+  const cover = new THREE.Mesh(new THREE.ShapeGeometry(roundedRect(face, face, size * TILES.radius * 0.5), 6), thinGlass(THREE.FrontSide, 0.3));
+  cover.position.z = d / 2 + 1.2;
+  cover.renderOrder = 3;
+  group.add(cover);
   return {
     group,
     dispose: () => {
       geo.dispose();
       glass.dispose();
+      cover.geometry.dispose();
+      (cover.material as THREE.Material).dispose();
       if (icon) {
         icon.geometry.dispose();
         (icon.material as THREE.Material).dispose();
@@ -126,8 +137,10 @@ export const tilePlaces = (n: number, W: number, H: number, layout: TileLayout =
       const v = m === 1 ? 0.5 : k / (m - 1);
       return { x: side * W * lerp(0.2, spread / 2 + 0.06, v), y: H * (0.06 * Math.sin(v * 3.1 + side) + 0.03 * jit(i)), z: (k % 2 === 0 ? 120 : -160) + 30 * jit(i + 9) };
     }
-    // a shelf curving away from a near centre tile
-    return { x: c * W * spread, y: H * (0.035 * (i % 2 === 0 ? 1 : -1) + 0.02 * jit(i)), z: 240 - 1700 * c * c + 30 * jit(i + 5) };
+    // an arc opening toward the camera: the middle tiles at the lockup plane (sharp), the outer ones nearer and wider
+    // (bigger, soft in the lens: a foreground that frames the middle)
+    const v = 2 * c; // -1 .. 1
+    return { x: c * W * spread, y: H * (0.04 * (i % 2 === 0 ? -1 : 1) + 0.02 * jit(i)), z: TILES.arc * v * v + 30 * jit(i + 5) };
   });
 };
 

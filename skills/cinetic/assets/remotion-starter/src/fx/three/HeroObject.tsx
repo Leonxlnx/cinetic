@@ -29,7 +29,8 @@ export const HERO = {
   rise: { pitch: -24, yaw: 22, y: 0.66 },
   drop: { y: 0.72, bounce: 0.035 },
   flip: { turns: 1.5, lift: 60 },
-  size: { phone: 620, card: 560, coin: 360, parcel: 440, leaf: 520 },
+  size: { phone: 760, card: 720, coin: 440, parcel: 520, leaf: 600 },
+  sweep: 40,
 };
 
 export const RECIPE = {
@@ -325,7 +326,8 @@ const HeroScene: React.FC<{ kind: HeroKind; size: number; color?: string; screen
     built.group.rotation.set(deg(st.pitch), deg(st.yaw), deg(st.roll), 'YXZ');
     const focus = D - st.z;
     // one object: its own depth is too shallow for a lens blur to show; at rest it needs only edge samples
-    return { aperture: 0, focus, still: !st.moving, moving: st.moving };
+    const p = clamp01((t - at) / durF);
+    return { aperture: 0, focus, still: !st.moving, moving: st.moving, sweep: HERO.sweep * mirror * (1 - E.settleOut(p)) };
   });
   return (
     <>

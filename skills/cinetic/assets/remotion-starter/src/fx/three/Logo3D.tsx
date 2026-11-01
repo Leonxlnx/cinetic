@@ -30,10 +30,10 @@ export const LOGO3D = {
   pitch: 17,
   roll: -8,
   focus: [-0.24, -0.2] as [number, number],
-  depth: 22,
+  depth: 28,
   bevel: 2.4,
-  aperture: 0.05,
-  sweep: 80,
+  aperture: 0.022,
+  sweep: 120,
   flatten: [0.6, 0.97] as [number, number],
   flat: [0.82, 1] as [number, number],
 };
@@ -41,7 +41,7 @@ export const LOGO3D = {
 export const RECIPE = {
   id: 'logo-3d',
   recipe:
-    'The mark as a solid: an extreme close-up (7x the lockup, turned 62 deg and already turning, a corner of the mark filling the frame, shallow focus) turns as a highlight travels over its bevels, then one strongInOut pull-back (96 f) turns it to face the camera, presses its depth flat (60-97 %) and settles its colour to the flat fill (82-100 %): it lands exactly on the 2D lockup and the swap to the flat mark is invisible.',
+    'The mark as a solid (28 deep in its 100 box, bevelled): an extreme close-up (7x the lockup, turned 62 deg and already turning, a corner of the mark filling the frame, the near edge sharp and the far ones soft) turns as a highlight line travels 120 deg over its bevels, then one strongInOut pull-back (96 f) turns it to face the camera, presses its depth flat (60-97 %) and settles its colour to the flat fill (82-100 %): it lands exactly on the 2D lockup and the swap to the flat mark is invisible.',
   params: { ...LOGO3D },
 };
 
@@ -57,7 +57,7 @@ export type Logo3DProps = {
   /** Length of the move, f@60 (default 96). */
   dur?: number;
   finish?: Finish;
-  /** Extrusion depth and bevel, mark units of the 100 box (defaults 22 and 2.4; keep the bevel under half the thinnest stroke). */
+  /** Extrusion depth and bevel, mark units of the 100 box (defaults 28 and 2.4; keep the bevel under half the thinnest stroke). */
   depth?: number;
   bevel?: number;
   /** The close-up: size (x the lockup), turn (deg) and the point of the mark that fills the frame. */

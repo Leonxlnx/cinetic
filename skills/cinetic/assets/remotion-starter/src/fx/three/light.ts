@@ -1,7 +1,8 @@
 // The film's world light for fx/three: one key (the same azimuth and elevation as lib/light FILM_LIGHT, so a 3D hero
 // object, a lit panel and the ground all agree on where the light comes from) plus a light stage the glossy surfaces
 // reflect: a procedural environment of a sky/ground gradient and softboxes, built once per light and never fetched.
-// Stages: 'studio' (a big key softbox, a rim strip behind, a soft top: product light on any ground), 'sky' (a bright
+// Stages: 'studio' (a key softbox, bands overhead and on the key's side that glossy bevels read as lines, a big top
+// light behind that top faces catch, a rim strip, a soft front fill: product light on any ground), 'sky' (a bright
 // pale dome with a small sun: a cloud or daylight plate), 'night' (deep blue with cool strips: a navy field with a light
 // pool), 'black' (near black with two thin strips: glass and marks on a black field, crisp rim lines).
 // Conventions: azimuth 0 top, 90 right, 180 below, 270 left (where the key comes FROM on the frame); elevation degrees
@@ -35,10 +36,13 @@ export const STAGES: Record<LightStage, StageDef> = {
   studio: {
     sky: '#DCE1E8', ground: '#2A2D32', horizon: 0.55, key: 2.4, env: 1,
     panels: [
-      { az: 0, el: 0, w: 46, h: 34, i: 5.5, rel: true, ke: true }, // key softbox
-      { az: 180, el: -18, w: 10, h: 70, i: 4.5, rel: true }, // rim strip behind, opposite the key
-      { az: 0, el: 82, w: 70, h: 40, i: 1.4 }, // soft top
-      { az: 95, el: 6, w: 34, h: 8, i: 1.2, rel: true }, // low kicker
+      { az: 0, el: 0, w: 34, h: 46, i: 7, rel: true, ke: true }, // key softbox
+      { az: 0, el: 10, w: 120, h: 14, i: 16 }, // a band overhead: a line along every top bevel
+      { az: 0, el: -42, w: 120, h: 50, i: 2.6 }, // a big top light behind: top faces read light at grazing angles
+      { az: 0, el: 0, w: 14, h: 90, i: 14, rel: true }, // a tall strip on the key's side: lines along the bevels facing it
+      { az: 180, el: -18, w: 12, h: 80, i: 9, rel: true }, // rim strip behind, opposite the key
+      { az: 0, el: 80, w: 70, h: 40, i: 1 }, // soft front fill (behind the camera)
+      { az: 95, el: 6, w: 34, h: 10, i: 1.2, rel: true }, // low kicker
     ],
   },
   sky: {

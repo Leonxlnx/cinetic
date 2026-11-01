@@ -482,7 +482,7 @@ export const Stage3D: React.FC<StageProps> = ({ frame, light, backdrop, samples,
   const keyLight = useMemo(() => {
     const k = new THREE.DirectionalLight(L.key, L.keyIntensity);
     k.castShadow = shadows;
-    k.shadow.mapSize.set(2048, 2048);
+    k.shadow.mapSize.set(1024, 1024);
     const c = k.shadow.camera;
     c.left = -shadowBox;
     c.right = shadowBox;

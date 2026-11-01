@@ -92,7 +92,7 @@ export const disposeAll = (root: THREE.Object3D) => () =>
 export type Finish = 'gloss' | 'satin' | 'metal' | 'glass';
 
 export const FINISH: Record<Finish, THREE.MeshPhysicalMaterialParameters> = {
-  gloss: { roughness: 0.2, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05, specularIntensity: 1 },
+  gloss: { roughness: 0.2, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05, specularIntensity: 1, ior: 1.7 },
   satin: { roughness: 0.42, metalness: 0, clearcoat: 0.35, clearcoatRoughness: 0.28, specularIntensity: 0.8 },
   metal: { roughness: 0.26, metalness: 1, clearcoat: 0.2, clearcoatRoughness: 0.1 },
   glass: { roughness: 0.05, metalness: 0, transmission: 1, ior: 1.5, dispersion: 0.25, clearcoat: 0, specularIntensity: 1 },
@@ -180,4 +180,56 @@ export const markSolid = (logo: Logo, depth: number, bevel: number, finish: Fini
         (m.material as THREE.Material).dispose();
       }),
   };
+};
+
+const GLASS_FS_END = /* glsl */ `
+  {
+    // thin glass: the reflection (three's specular, already Fresnel-weighted) is added in full; the background behind is
+    // dimmed only by the Fresnel share it reflects (blending: ONE, ONE_MINUS_SRC_ALPHA)
+    float nv = clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);
+    float fr = uGlassBase + (1.0 - uGlassBase) * pow(1.0 - nv, 5.0);
+    gl_FragColor = vec4(cineticGlassTone(gl_FragColor.rgb), fr);
+  }
+}
+`;
+const GLASS_TONE = /* glsl */ `
+uniform float uGlassBase;
+vec3 cineticGlassTone(vec3 c) {
+  float peak = max(c.r, max(c.g, c.b));
+  if (peak <= 0.8) return c;
+  float np = 1.0 - 0.04 / (peak - 0.6);
+  return c * (np / peak);
+}
+`;
+
+/** A thin glass shell material: reflections in full, the background through it barely dimmed (see GLASS_FS_END). */
+export const thinGlass = (side: THREE.Side, sheen = 1, film?: THREE.Texture, env = 1.6) => {
+  const m = new THREE.MeshPhysicalMaterial({
+    color: 0x000000,
+    roughness: 0.035,
+    metalness: 0,
+    ior: 1.8,
+    envMapIntensity: env,
+    specularIntensity: 1,
+    iridescence: sheen,
+    iridescenceIOR: 1.3,
+    iridescenceThicknessRange: [140, 680],
+    iridescenceThicknessMap: film ?? null,
+    transparent: true,
+    depthWrite: false,
+    side,
+  });
+  m.blending = THREE.CustomBlending;
+  m.blendEquation = THREE.AddEquation;
+  m.blendSrc = THREE.OneFactor;
+  m.blendDst = THREE.OneMinusSrcAlphaFactor;
+  m.blendSrcAlpha = THREE.OneFactor;
+  m.blendDstAlpha = THREE.OneMinusSrcAlphaFactor;
+  const u = { uGlassBase: { value: 0.025 } };
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uGlassBase = u.uGlassBase;
+    sh.fragmentShader = sh.fragmentShader.replace('void main() {', `${GLASS_TONE}\nvoid main() {`).replace(/\}\s*$/, GLASS_FS_END);
+  };
+  m.customProgramCacheKey = () => 'cinetic-thin-glass';
+  return m;
 };
