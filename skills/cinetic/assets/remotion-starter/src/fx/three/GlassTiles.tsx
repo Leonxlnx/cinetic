@@ -12,7 +12,7 @@ import React, { useEffect, useMemo } from 'react';
 import { Img, useCurrentFrame, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import { E, rand } from '../../lib/anim';
-import { roundedRect, slabGeometry, thinGlass } from './geo';
+import { slabGeometry } from './geo';
 import { draws3D, type GlMode } from './gl';
 import type { Light3D } from './light';
 import { type Backdrop, clamp01, deg, filmLit, lerp, planeDistance, Stage3D, useSampler, useTextures } from './stage';
@@ -23,12 +23,12 @@ import { type Backdrop, clamp01, deg, filmLit, lerp, planeDistance, Stage3D, use
  * the camera (push from x1.3 of the plane distance, the shot's length) and the lens (aperture as a share of focus);
  * the row's width (share of the frame) and how far its outer tiles come toward the camera (px).
  */
-export const TILES = { size: 290, depth: 0.42, radius: 0.27, icon: 0.6, frost: 0.6, stagger: 6, arrive: 48, back: 560, turn: 34, push: 1.3, dur: 150, aperture: 0.018, spread: 0.72, arc: 420 };
+export const TILES = { size: 330, depth: 0.42, radius: 0.27, icon: 0.6, frost: 0.5, stagger: 6, arrive: 48, back: 560, turn: 34, push: 1.3, dur: 150, aperture: 0.018, spread: 0.78, arc: 360 };
 
 export const RECIPE = {
   id: 'glass-tiles',
   recipe:
-    'Official icons crisp in thick milky glass tiles (290 px, fully rounded edges, depth 42 %, rainbow fringes and bright rims on the bevels), on an arc opening toward the camera: the middle tiles sharp at the lockup plane, the outer ones nearer, bigger and soft, framing them; arrive: they rise from below and behind, turning 34 deg to face the camera, outward from the centre 6 f apart (48 f each, glideOut) while the camera pushes in from x1.3 and lands after them (150 f, stdInOut); pass: the camera tracks past them and lands on the chosen tile as the focus pulls to it. Faces the camera at rest; no bob.',
+    'Official icons crisp in thick milky glass tiles (330 px, fully rounded edges, depth 42 %, rainbow fringes and bright rims on the bevels), on an arc opening toward the camera: the middle tiles sharp at the lockup plane, the outer ones nearer, bigger and soft, framing them; arrive: they rise from below and behind, turning 34 deg to face the camera, outward from the centre 6 f apart (48 f each, glideOut) while the camera pushes in from x1.3 and lands after them (150 f, stdInOut); pass: the camera tracks past them and lands on the chosen tile as the focus pulls to it. Faces the camera at rest; no bob.',
   params: { ...TILES },
 };
 
@@ -47,9 +47,9 @@ export type GlassTilesProps = {
   layout?: TileLayout;
   /** Or place each tile yourself (px from the centre, y up, z toward the camera). */
   places?: TilePlace[];
-  /** Tile size in px at the frame's plane (default 290). */
+  /** Tile size in px at the frame's plane (default 330). */
   size?: number;
-  /** 0 clear .. 1 milky (default 0.6). */
+  /** 0 clear .. 1 milky (default 0.5). */
   frost?: number;
   /** The tile the shot lands on and focuses (default the middle one). */
   focus?: number;
@@ -102,19 +102,12 @@ export const makeTile = (size: number, tex: THREE.Texture | null, frost: number 
     icon.renderOrder = 2;
     group.add(icon);
   }
-  // the face's glass over the icon: the light stage's reflections pass over the icon as the tile turns
-  const face = size * (1 - 2 * Math.min(TILES.depth * 0.5, TILES.radius * 0.95));
-  const cover = new THREE.Mesh(new THREE.ShapeGeometry(roundedRect(face, face, size * TILES.radius * 0.5), 6), thinGlass(THREE.FrontSide, 0.3));
-  cover.position.z = d / 2 + 1.2;
-  cover.renderOrder = 3;
-  group.add(cover);
+  // (no glass drawn over the icon: its reflection would lift the icon's blacks; official colours stay exact)
   return {
     group,
     dispose: () => {
       geo.dispose();
       glass.dispose();
-      cover.geometry.dispose();
-      (cover.material as THREE.Material).dispose();
       if (icon) {
         icon.geometry.dispose();
         (icon.material as THREE.Material).dispose();

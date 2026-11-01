@@ -11,7 +11,7 @@ import React, { useEffect, useMemo } from 'react';
 import { Img, useCurrentFrame, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { type Logo } from '../../brand/Mark';
+import { type Logo, LogoMark } from '../../brand/Mark';
 import { C } from '../../brand/tokens';
 import { E, rand } from '../../lib/anim';
 import { draws3D, type GlMode } from './gl';
@@ -337,14 +337,26 @@ const HeroScene: React.FC<{ kind: HeroKind; size: number; color?: string; screen
   );
 };
 
-const FlatHero: React.FC<{ kind: HeroKind; size: number; color: string; screen?: string; move: HeroMove; at: number; durF: number; cx: number; cy: number; W: number; H: number; mirror: number; frame: number }> = ({ kind, size, color, screen, move, at, durF, cx, cy, W, H, mirror, frame }) => {
+const shade = (c: string, l: number) => `#${new THREE.Color(c).offsetHSL(0, 0, l).getHexString()}`;
+
+const FlatHero: React.FC<{ kind: HeroKind; size: number; color: string; screen?: string; mark?: Logo; move: HeroMove; at: number; durF: number; cx: number; cy: number; W: number; H: number; mirror: number; frame: number }> = ({ kind, size, color, screen, mark, move, at, durF, cx, cy, W, H, mirror, frame }) => {
   const st = heroPose(move, frame - at, durF, W, H, mirror);
   const dims: Record<HeroKind, [number, number, number]> = { phone: [size * 0.486, size, size * 0.08], card: [size, size * 0.63, size * 0.045], coin: [size, size, size / 2], parcel: [size, size * 0.64, size * 0.02], leaf: [size * 0.46, size, size * 0.23] };
   const [w, h, r] = dims[kind];
   const s = Math.max(0.2, 1 + st.z / 1600);
+  // the object's own light, flat: a lit gradient from the key's side, its details drawn on it
+  const bg =
+    kind === 'card' ? `linear-gradient(135deg, ${shade(color, 0.07)}, ${color} 48%, ${shade(color, -0.08)})`
+    : kind === 'coin' ? `radial-gradient(circle at 34% 28%, ${shade(color, 0.1)}, ${color} 52%, ${shade(color, -0.14)})`
+    : kind === 'parcel' ? `linear-gradient(90deg, transparent 41%, ${shade(color, 0.07)} 41%, ${shade(color, 0.07)} 59%, transparent 59%), linear-gradient(160deg, ${shade(color, 0.04)}, ${shade(color, -0.05)})`
+    : kind === 'phone' ? shade(color, -0.02)
+    : `linear-gradient(160deg, ${shade(color, 0.06)}, ${shade(color, -0.06)})`;
   return (
-    <div style={{ position: 'absolute', left: cx - w / 2, top: cy - h / 2, width: w, height: h, borderRadius: kind === 'leaf' ? `${w / 2}px ${w / 2}px ${w / 2}px ${w / 2}px / ${h * 0.6}px ${h * 0.6}px ${h * 0.4}px ${h * 0.4}px` : r, background: color, overflow: 'hidden', transform: `translate(${st.x}px, ${-st.y}px) scale(${s}) rotate(${st.roll}deg)`, boxShadow: `0 ${h * 0.05}px ${h * 0.12}px rgba(0,0,0,0.18)` }}>
+    <div style={{ position: 'absolute', left: cx - w / 2, top: cy - h / 2, width: w, height: h, borderRadius: kind === 'leaf' ? `${w / 2}px ${w / 2}px ${w / 2}px ${w / 2}px / ${h * 0.6}px ${h * 0.6}px ${h * 0.4}px ${h * 0.4}px` : r, background: bg, overflow: 'hidden', transform: `translate(${st.x}px, ${-st.y}px) scale(${s}) rotate(${st.roll}deg)`, boxShadow: `0 ${h * 0.05}px ${h * 0.12}px rgba(0,0,0,0.18), inset 0 0 0 ${Math.max(1, w * 0.003)}px rgba(255,255,255,0.14)` }}>
       {kind === 'phone' && screen ? <Img src={screen} style={{ position: 'absolute', inset: w * 0.035, width: w * 0.93, height: h - w * 0.07, objectFit: 'cover', borderRadius: r * 0.8 }} /> : null}
+      {kind === 'card' ? <div style={{ position: 'absolute', left: w * 0.13, top: h * 0.37, width: w * 0.14, height: w * 0.11, borderRadius: w * 0.018, background: 'linear-gradient(135deg, #D8D5CC, #B9B6AD)' }} /> : null}
+      {kind === 'card' && mark ? <div style={{ position: 'absolute', left: w * 0.84 - w * 0.08, top: h * 0.8 - w * 0.08, filter: 'brightness(0) invert(1)' }}><LogoMark logo={mark} size={w * 0.16} /></div> : null}
+      {kind === 'coin' && mark ? <div style={{ position: 'absolute', left: w / 2 - w * 0.26, top: h / 2 - w * 0.26, filter: 'brightness(0)', opacity: 0.22 }}><LogoMark logo={mark} size={w * 0.52} /></div> : null}
     </div>
   );
 };
@@ -360,7 +372,7 @@ export const HeroObject: React.FC<HeroObjectProps> = ({ kind, at = 0, dur, move 
   const tex = useTextures([three && kind === 'phone' ? screen : undefined], 1600);
   const cx = x ?? W / 2;
   const cy = y ?? H / 2;
-  if (!three) return <FlatHero kind={kind} size={sz} color={color ?? KIND_COLOR[kind]} screen={screen} move={move} at={at} durF={durF} cx={cx} cy={cy} W={W} H={H} mirror={mirror} frame={frame} />;
+  if (!three) return <FlatHero kind={kind} size={sz} color={color ?? KIND_COLOR[kind]} screen={screen} mark={mark} move={move} at={at} durF={durF} cx={cx} cy={cy} W={W} H={H} mirror={mirror} frame={frame} />;
   if (!tex) return null;
   return (
     <Stage3D frame={frame} light={light} backdrop={backdrop} samples={samples} shadows={ground === 'shadow'} shadowBox={Math.max(400, sz)}>

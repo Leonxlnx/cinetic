@@ -21,7 +21,8 @@ export type { Finish } from './geo';
  * House numbers (f@60, px@1080, degrees, mark units of the 100 box): the move's length; the close-up's size (x the
  * lockup), turn and the point of the mark that fills the frame (fractions of the mark's box from its centre); the
  * extrusion and bevel; the lens (aperture as a share of the focus distance); how far the light stage turns; where the
- * depth presses flat and the colour settles to the flat fill (shares of the move).
+ * depth presses flat and the colour settles to the flat fill (shares of the move); the lens's field of view (a wider
+ * lens than the stage's default: the turned close-up in stronger perspective).
  */
 export const LOGO3D = {
   dur: 96,
@@ -36,6 +37,7 @@ export const LOGO3D = {
   sweep: 120,
   flatten: [0.6, 0.97] as [number, number],
   flat: [0.82, 1] as [number, number],
+  fov: 40,
 };
 
 export const RECIPE = {
@@ -100,7 +102,7 @@ const LogoScene: React.FC<{ logo: Logo; lockup: Lockup; o: PoseOpts; finish: Fin
   const built = useMemo(() => markSolid(logo, depth, bevel, finish), [logo, depth, bevel, finish]);
   useEffect(() => () => built.dispose(), [built]);
   const k = lockup.size / 100;
-  const D = planeDistance(H);
+  const D = planeDistance(H, o.fov);
   // the lockup's centre on screen (px, y down) and the close-up's: the focus point of the mark at the frame's centre
   const bw = built.box.max.x - built.box.min.x;
   const bh = built.box.max.y - built.box.min.y;
@@ -151,10 +153,10 @@ export const Logo3D: React.FC<Logo3DProps> = ({ lockup, logo, at = 0, dur = LOGO
   if (!draws3D(gl)) {
     // the 2D move: the flat mark pulling back to the lockup on the same curve
     const st = logoPose(clamp01(p), o);
-    return <FlatMark logo={lg} lockup={lockup} scale={Math.min(st.scale, 3)} opacity={0.35 + 0.65 * E.softOut(clamp01(p * 3))} />;
+    return <FlatMark logo={lg} lockup={lockup} scale={Math.min(st.scale, 2.6)} />;
   }
   return (
-    <Stage3D frame={frame} light={light} backdrop={backdrop} samples={samples}>
+    <Stage3D frame={frame} light={light} backdrop={backdrop} samples={samples} fov={o.fov}>
       <LogoScene logo={lg} lockup={lockup} o={o} finish={finish} depth={depth} bevel={bevel} at={at} durF={durF} W={W} H={H} />
     </Stage3D>
   );

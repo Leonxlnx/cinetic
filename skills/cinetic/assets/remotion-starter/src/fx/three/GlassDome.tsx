@@ -119,7 +119,7 @@ const platform = (R: number): Built => {
     const a = (i / 28) * (Math.PI / 2);
     bowl.push(new THREE.Vector2(Math.max(0.001, br * Math.sin(a)), -h - bd * Math.cos(a) + 0.5));
   }
-  const under = new THREE.Mesh(new THREE.LatheGeometry(bowl, 128), clay('#9EA4AC', 0.5));
+  const under = new THREE.Mesh(new THREE.LatheGeometry(bowl, 128), clay('#7E8690', 0.5));
   under.material.side = THREE.DoubleSide;
   group.add(under);
   // the seat the glass stands in: a soft ring
@@ -333,11 +333,12 @@ export const domeTilePlaces = (n: number, R: number, seed: number | string = 0) 
     // through the glass); never in front of what is inside, never straight behind it
     const side = i % 2 === 0 ? 1 : -1;
     const m = side > 0 ? Math.ceil(n / 2) : Math.floor(n / 2);
-    const u = m <= 1 ? 0.35 : Math.floor(i / 2) / (m - 1);
-    const a = deg((side > 0 ? 48 + 92 * u : 312 - 92 * u) + 10 * (rand(`dome-tiles:${seed}:${i}`) - 0.5));
+    const u = m <= 1 ? 0.5 : Math.floor(i / 2) / (m - 1);
+    // 26 deg (in front, over the dome's edge on screen) round to 150 deg (behind); the side one highest: none hides another
+    const a = deg((side > 0 ? 26 + 124 * u : 334 - 124 * u) + 6 * (rand(`dome-tiles:${seed}:${i}`) - 0.5));
     const r = R * DOME.ring;
-    const high = (Math.floor(i / 2) + (side > 0 ? 0 : 1)) % 2 === 1; // heights alternate along each side and across them
-    return new THREE.Vector3(Math.sin(a) * r, R * (high ? 0.54 : 0.4) + R * 0.05 * (rand(`dome-tiles:${seed}:y${i}`) - 0.5), Math.cos(a) * r);
+    const h = 0.4 + 0.3 * Math.sin(Math.PI * u) - 0.06 * u + (side > 0 ? 0 : 0.05);
+    return new THREE.Vector3(Math.sin(a) * r, R * h + R * 0.04 * (rand(`dome-tiles:${seed}:y${i}`) - 0.5), Math.cos(a) * r);
   });
 
 type SceneProps = { inside: DomeInside; screen: THREE.Texture | null; mark?: Logo; icons: (THREE.Texture | null)[]; move: DomeMove; at: number; durF: number; R: number; x: number; y: number; W: number; H: number; mirror: number; seed: string };
@@ -398,7 +399,9 @@ const DomeScene: React.FC<SceneProps> = ({ inside, screen, mark, icons, move, at
 };
 
 /** The flat drawing (no WebGL): the platform, the dome's outline and sheen, the screen inside, the tiles around. */
-const FlatDome: React.FC<{ inside: DomeInside; screen?: string; icons: string[]; R: number; x: number; y: number; seed: string }> = ({ inside, screen, icons, R, x, y: cy, seed }) => {
+const FlatDome: React.FC<{ inside: DomeInside; screen?: string; icons: string[]; R: number; x: number; y: number; H: number; seed: string }> = ({ inside, screen, icons, R, x, y: cy, H, seed }) => {
+  const Dr = planeDistance(H);
+  const persp = (z: number) => Dr / Math.max(1, Dr - z);
   const rb = R * DOME.base;
   const h = R * DOME.baseH;
   const places = domeTilePlaces(icons.length, R, seed);
@@ -412,7 +415,7 @@ const FlatDome: React.FC<{ inside: DomeInside; screen?: string; icons: string[];
         .map((p, i) => ({ p, i }))
         .filter(({ p }) => p.z < 0)
         .map(({ p, i }) => (
-          <FlatTile key={i} src={icons[i]} x={x + p.x * 0.96} y={y - p.y * 0.96 - R * 0.22} s={ts * 0.92} dim />
+          <FlatTile key={i} src={icons[i]} x={x + p.x * persp(p.z)} y={y - p.y * persp(p.z)} s={ts * persp(p.z)} dim />
         ))}
       <div style={{ position: 'absolute', left: x - rb * 0.9, top: y + h * 0.5, width: rb * 1.8, height: R * DOME.bowl * 1.4, borderRadius: '0 0 50% 50% / 0 0 100% 100%', background: 'linear-gradient(180deg, #A9AEB5, #C9CDD3 70%, #DADDE1)' }} />
       <div style={{ position: 'absolute', left: x - rb, top: y - rb * k, width: rb * 2, height: rb * k * 2 + h, borderRadius: `${rb}px / ${rb * k + h / 2}px`, background: 'linear-gradient(180deg, #FFFFFF, #F1F2F4 46%, #DCDFE3)', boxShadow: '0 1px 0 rgba(255,255,255,0.9) inset' }} />
@@ -426,7 +429,7 @@ const FlatDome: React.FC<{ inside: DomeInside; screen?: string; icons: string[];
         .map((p, i) => ({ p, i }))
         .filter(({ p }) => p.z >= 0)
         .map(({ p, i }) => (
-          <FlatTile key={i} src={icons[i]} x={x + p.x * 1.04} y={y - p.y * 1.04 - R * 0.22} s={ts * 1.08} />
+          <FlatTile key={i} src={icons[i]} x={x + p.x * persp(p.z)} y={y - p.y * persp(p.z)} s={ts * persp(p.z)} />
         ))}
     </div>
   );
@@ -451,7 +454,7 @@ export const GlassDome: React.FC<GlassDomeProps> = ({ inside = 'laptop', screen,
   const usesScreen = inside === 'laptop' || inside === 'phone';
   const scr = useTextures([three && usesScreen ? screen : undefined], 1600);
   const tiles = useTextures(three ? icons : [], 512, true);
-  if (!three) return <FlatDome inside={inside} screen={screen} icons={icons} R={R} x={cx} y={cy} seed={String(seed)} />;
+  if (!three) return <FlatDome inside={inside} screen={screen} icons={icons} R={R} x={cx} y={cy} H={H} seed={String(seed)} />;
   if (!scr || !tiles) return null;
   return (
     <Stage3D frame={frame} light={light ?? { stage: 'sky' }} backdrop={backdrop} samples={samples} shadows shadowBox={R * 1.4}>

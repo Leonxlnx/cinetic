@@ -38,7 +38,7 @@ export const STAGES: Record<LightStage, StageDef> = {
     panels: [
       { az: 0, el: 0, w: 34, h: 46, i: 7, rel: true, ke: true }, // key softbox
       { az: 0, el: 10, w: 120, h: 14, i: 16 }, // a band overhead: a line along every top bevel
-      { az: 0, el: -42, w: 120, h: 50, i: 2.6 }, // a big top light behind: top faces read light at grazing angles
+      { az: 0, el: -42, w: 120, h: 50, i: 1.7 }, // a big top light behind: top faces read light at grazing angles
       { az: 0, el: 0, w: 14, h: 90, i: 14, rel: true }, // a tall strip on the key's side: lines along the bevels facing it
       { az: 180, el: -18, w: 12, h: 80, i: 9, rel: true }, // rim strip behind, opposite the key
       { az: 0, el: 80, w: 70, h: 40, i: 1 }, // soft front fill (behind the camera)
