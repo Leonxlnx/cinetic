@@ -11,7 +11,7 @@
 // A phone or a laptop is a lit object (device.tsx: body, rim, glass and glare, contact shadow, reflection), never an outline.
 // The data a paused frame is checked against (real.ts): dates from the film's own day, counts that are their rows,
 // waveforms from the track, thumbnails from distinct moments, a cast that varies across beats (scripts/data-check.mjs).
-// Macro screens (screens/, imported from './kit/screens'): twelve dense product screens built for a camera that pushes
+// Macro screens (screens/, imported from './kit/screens'): fifteen dense product screens built for a camera that pushes
 // in 3-4x, each exposing its focus boxes, fed by src/content.ts that scripts/content.mjs writes from the brief
 // (references/product-ui.md §15).
 export * from './avatars';

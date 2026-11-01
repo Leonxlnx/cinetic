@@ -5,9 +5,11 @@
 // round the film's day with the calendar's weekdays, numbers that add up. checkContent() asserts that it still does after
 // an edit; call it in the film's data module or a test.
 import { day, fmtDay } from '../real';
+import type { Site } from './BrowserWindow';
 import type { ChatItem } from './ChatReply';
 import type { CodeLang } from './CodePage';
 import type { Comment } from './CommentFeed';
+import type { Cover } from './CoverStack';
 import type { DocTable } from './DocPage';
 import type { Item } from './ItemList';
 import type { NoticeItem } from './NoticeStack';
@@ -36,6 +38,12 @@ export type FilmContent = {
   doc: { number?: string; brand: string; title: string; accentWord?: string; lead: string; section: string; body: string[]; table: DocTable; figure?: string };
   code: { code: string; file: string; lang: CodeLang; tabs: string[] };
   reply: { ask: string; who: { name: string; photo?: string }; text: string; items: ChatItem[]; close: string };
+  /** the product's own site, or the app it built (BrowserWindow) */
+  site?: Site;
+  /** the one thing many asked for, found in what they wrote (RequestPill); count agrees with the answer's figures */
+  request?: { label: string; text: string; people: { name: string; photo?: string }[]; count: number; countLabel?: string };
+  /** the thing being made, as covers: the product's items, the first in front (CoverStack) */
+  cover?: { items: Cover[]; kicker?: string };
 };
 
 const num = (s: string | undefined) => Number(String(s ?? '').replace(/[^0-9.-]/g, '')) || 0;
@@ -59,5 +67,8 @@ export const checkContent = (c: FilmContent): string[] => {
   if (new Set(thumbs).size !== thumbs.length) bad.push('a thumbnail repeats');
   for (const p of c.plans.plans) if (!p.features.length) bad.push(`plan ${p.name} lists no features`);
   if (c.doc.table.rows.some((r) => r.length !== c.doc.table.head.length)) bad.push('a table row has the wrong number of cells');
+  if (c.request && c.request.count < c.request.people.length) bad.push('the request count is smaller than the faces shown');
+  if (c.cover && c.cover.items.some((it) => !it.title)) bad.push('a cover has no title');
+  if (c.site && !c.site.headline) bad.push('the site has no headline');
   return bad;
 };

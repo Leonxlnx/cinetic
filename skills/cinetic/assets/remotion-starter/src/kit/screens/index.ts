@@ -15,4 +15,7 @@ export * from './DocPage';
 export * from './CodePage';
 export * from './ChatReply';
 export * from './ProfileCard';
+export * from './RequestPill';
+export * from './CoverStack';
+export * from './BrowserWindow';
 export * from './content';
