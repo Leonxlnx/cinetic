@@ -18,7 +18,9 @@ import { Defocus, DirBlur } from './Defocus';
 //   matchCut       one anchor holds its screen point across a one-frame cut: the outgoing shot pushes in about it on a
 //                  build, the incoming shot opens one step on and goes on growing into its rest, decaying x0.87 a frame
 //   velocityCut    the exit's speed builds x1.25 a frame into the cut (the last 8-12 f carry the move), the next shot
-//                  enters at 0.7 of it the same way and decays x0.915 a frame (about 20 f) to a creep; smeared above 9 px/f
+//                  enters at 0.7 of it the same way and decays x0.915 a frame (about 20 f) to a creep; smeared above 9 px/f.
+//                  With `travel` it is a whip that hides the cut between two full-frame pictures: the exit travels that
+//                  far (0.75 of the frame) over its last 24 f on t^2.2, mostly gone and smeared on the cut frame
 //   blurThrough    out 14 f: blur 0 -> 32 px (quad-in) while shrinking away; cut at the peak; in 13 f from 32 px, still
 //                  moving at 0.65 of the outgoing speed and settling
 //   zoomThrough    an exponential push (x1.07 a frame, eased on over 8 f) into the element that becomes the next frame;
@@ -38,7 +40,7 @@ export const SEAM = {
   exitEnter: { exit: 15, gap: 3, enter: 20, travel: 16, rise: 20, blur: 11 },
   textSwap: { out: 8, overlap: 3, in: 13, blur: 12, push: 18, pitch: 120, rest: 0.4, ink: 16 },
   matchCut: { build: 10, push: 0.06, decay: 0.87 },
-  velocityCut: { v: 48, build: 1.25, ratio: 0.7, decay: 0.915, residual: 0.5, home: 24, smear: 9 },
+  velocityCut: { v: 48, build: 1.25, ratio: 0.7, decay: 0.915, residual: 0.5, home: 24, smear: 9, whip: 24, power: 2.2 },
   blurThrough: { out: 14, in: 13, blur: 32, shrink: 0.04, keep: 0.65, decay: 0.88 },
   zoomThrough: { rate: 1.07, push: 22, ramp: 8, carry: 1 / 3, decay: 0.85 },
   sharedElement: { out: 12, in: 12, move: 30, blur: 8 },
@@ -53,6 +55,22 @@ export type SeamOpts = {
   variant?: 'blur' | 'push' | 'ink'; // textSwap (house 'blur')
   pitch?: number; // textSwap push: the line pitch, px at 1080p (house 120)
   v?: number; // velocityCut: the speed on the cut frame, px per f@60 at 1080p (house 48)
+  /**
+   * velocityCut as a whip that hides its cut: the outgoing shot travels `travel` px (1080p) along its axis over the last
+   * SEAM.velocityCut.whip f@60 before the cut on an accelerating curve (t^power), so on the cut frame it is mostly out of
+   * frame and smeared at its full speed (0.75 of a 1920 frame at 30 fps: about 260 px a frame, a 38 px smear); its cut
+   * speed is that curve's last step and the incoming shot opens at `ratio` of it. Without it the house launch runs
+   * (x1.25 a frame over 8-12 f@60 into 48 px/f@60: about 270 px of travel at 30 fps, too little to hide a cut between two
+   * full-frame pictures).
+   */
+  travel?: number;
+  /**
+   * blurThrough between two pictures that differ (a white card into a dark mark): the blur at the cut (px at 1080p,
+   * house 32) and how far both shots dim into it (the opacity on the cut frame, house 1: none). A 48 px peak with a dip to
+   * 0.55 turns the cut into light passing, never a frame where one sharp-edged picture swaps for another.
+   */
+  peak?: number;
+  dim?: number;
   anchor?: { x: number; y: number }; // matchCut, zoomThrough, blurThrough: the shared point, film px (house: the frame centre)
   fromBox?: SeamBox; // sharedElement: the element's box in the outgoing layout (film px)
   toBox?: SeamBox; // ... and in the incoming one
@@ -60,8 +78,10 @@ export type SeamOpts = {
 };
 
 /** One shot's state: offset (px at 1080p), scale about the anchor, opacity, blur (px at 1080p), smear (the signed step
- * along the travel, px per film frame at 1080p, for a directional blur) and ink (0 pale -> 1 its colour, textSwap ink). */
-export type SeamLayer = { show: boolean; x: number; y: number; scale: number; opacity: number; blur: number; smear: number; ink: number };
+ * along the travel, px per film frame at 1080p, for a directional blur), ink (0 pale -> 1 its colour, textSwap ink) and
+ * dim (a brightness multiplier, 1 or unset: none): a light card leaving a dark world darkens into it, never a translucent
+ * ghost with the world showing through it. */
+export type SeamLayer = { show: boolean; x: number; y: number; scale: number; opacity: number; blur: number; smear: number; ink: number; dim?: number };
 export type SeamState = { out: SeamLayer; in: SeamLayer; element: number; box?: SeamBox };
 
 const VEC: Record<SeamDir, [number, number]> = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] };
@@ -74,7 +94,7 @@ export const seamSpan = (p: SeamOpts, film?: Partial<FilmCtx>): [number, number]
     exitEnter: [-(SEAM.exitEnter.exit + SEAM.exitEnter.gap), SEAM.exitEnter.enter],
     textSwap: [-(SEAM.textSwap.out - SEAM.textSwap.overlap), p.variant === 'push' ? SEAM.textSwap.push : p.variant === 'ink' ? SEAM.textSwap.ink : SEAM.textSwap.in],
     matchCut: [-SEAM.matchCut.build, 20],
-    velocityCut: [-12, SEAM.velocityCut.home],
+    velocityCut: [p.travel ? -SEAM.velocityCut.whip : -12, SEAM.velocityCut.home],
     blurThrough: [-SEAM.blurThrough.out, SEAM.blurThrough.in],
     zoomThrough: [-SEAM.zoomThrough.push, 28],
     sharedElement: [-SEAM.sharedElement.out, SEAM.sharedElement.move - SEAM.sharedElement.out],
@@ -141,13 +161,24 @@ export const seamState = (f: number, p: SeamOpts, film?: Partial<FilmCtx>): Seam
     }
     case 'velocityCut': {
       const H = SEAM.velocityCut;
-      const vCut = (p.v ?? H.v) * k60; // px per film frame
       const cut = p.at - 1; // the outgoing shot's last (fastest) frame
-      const lo = launch(f, cut, { vCut, ratio: H.build, fps });
-      const total = -launch(cut - 4000, cut, { vCut, ratio: H.build, fps }).x; // the whole outgoing travel
-      const o = lo.x + total;
       const sg = dx + dy; // +1 or -1 along the travel's axis
-      Object.assign(out, { x: dx * o, y: dy * o, smear: Math.abs(lo.v) * k60 > H.smear && before ? sg * lo.v : 0 });
+      let vCut: number; // px per film frame
+      if (p.travel) {
+        // the whip: o(t) = travel * ((t + T) / T)^power over the last T f@60, its step into the cut frame the cut speed
+        const T = H.whip;
+        const at60 = (g: number) => clamp(((g - cut) * k60 + T) / T);
+        const o = p.travel * at60(f) ** H.power;
+        const step = p.travel * (at60(f) ** H.power - at60(f - 1) ** H.power);
+        vCut = p.travel * (1 - at60(cut - 1) ** H.power);
+        Object.assign(out, { x: dx * o, y: dy * o, smear: step * k60 > H.smear && before ? sg * step : 0 });
+      } else {
+        vCut = (p.v ?? H.v) * k60;
+        const lo = launch(f, cut, { vCut, ratio: H.build, fps });
+        const total = -launch(cut - 4000, cut, { vCut, ratio: H.build, fps }).x; // the whole outgoing travel
+        const o = lo.x + total;
+        Object.assign(out, { x: dx * o, y: dy * o, smear: Math.abs(lo.v) * k60 > H.smear && before ? sg * lo.v : 0 });
+      }
       const opts = { v0: H.ratio * vCut, decay: H.decay, fast: { share: 0, decay: 0.4 }, residual: H.residual, fps };
       const ci = carry(f, cut, opts);
       const home = carry(p.at + H.home / k60, cut, opts).x; // home `home` f@60 after the seam frame, creeping on after
@@ -157,11 +188,17 @@ export const seamState = (f: number, p: SeamOpts, film?: Partial<FilmCtx>): Seam
     }
     case 'blurThrough': {
       const H = SEAM.blurThrough;
+      const peak = p.peak ?? H.blur;
+      const dim = clamp(p.dim ?? 1);
       const u = clamp((t + H.out) / H.out);
-      out.blur = H.blur * u * u;
+      out.blur = peak * u * u;
       out.scale = 1 - H.shrink * u * u;
       const g = E.snapOut(clamp(t / H.in));
-      inn.blur = H.blur * (1 - g);
+      inn.blur = peak * (1 - g);
+      if (dim < 1) {
+        out.opacity = 1 - (1 - dim) * u * u;
+        inn.opacity = 1 - (1 - dim) * (1 - g);
+      }
       // still shrinking at `keep` of the outgoing speed, decaying to rest: scale 1 + A d^n
       const last = H.shrink * (1 - ((H.out - k60) / H.out) ** 2); // the outgoing last step (per film frame)
       const d = H.decay ** k60;
@@ -222,7 +259,10 @@ export const seamDeclares = (p?: Partial<SeamOpts>, film?: Partial<FilmCtx>): De
   if (c) s.carry = c;
   if (p.recipe === 'velocityCut' || p.recipe === 'exitEnter') s.dir = sign;
   if (p.recipe === 'velocityCut') {
-    s.v = Math.round(((p.v ?? SEAM.velocityCut.v) * 60) / fps * 100) / 100;
+    const H = SEAM.velocityCut;
+    // a whip's cut speed is its curve's last step (px per film frame), the house cut's v converted
+    const whipCut = p.travel ? p.travel * (1 - (1 - 60 / fps / H.whip) ** H.power) : 0;
+    s.v = Math.round((p.travel ? whipCut : ((p.v ?? H.v) * 60) / fps) * 100) / 100;
     s.ratio = SEAM.velocityCut.ratio;
   }
   const seams: SeamDecl[] = [s];
