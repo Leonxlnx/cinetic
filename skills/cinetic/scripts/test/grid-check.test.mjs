@@ -14,7 +14,8 @@
  *      spine-beats (a line, a card, a cut, again) fails the carry, bare, lines, case, end, checklist and
  *      text-then-cards rules; spine-long (40 s) holds the carry family as warnings; spine-shape fails the plan's
  *      shape; spine-timeline is read by the default run. A template film with no SPINE_PLAN warns, a film that plays
- *      the spine (src/spine.ts) without one fails, and so does --part spine.
+ *      the spine (src/spine.ts) without one fails, and so does --part spine. The starter's planSpine() output is read
+ *      as it is: a planned spine that flows passes clean, a planned beat film fails.
  *   2. The HyperFrames starter: grid-check reads its timeline.js (FILM, with the pace from
  *      motion.js) and passes it as calm with no finding, at its own 120 BPM and at 100 BPM; the
  *      accent's fall always lands on CUE.hit (DUR.fall comes from the grid); chain() in replace
@@ -134,6 +135,44 @@ if (runs('fixtures')) {
   result(plain.code === 0 && !plain.d.length && tmpl.code === 0 && tmpl.d.join() === 'warn' && played.code === 1 && played.d.join() === 'error' && part.code === 1 && part.d.join() === 'error',
     'spine-declared: silent without a template, a warning in a template film with no SPINE_PLAN, an error beside src/spine.ts and with --part spine',
     JSON.stringify({ plain, tmpl, played, part }));
+  // the starter's planSpine() output is what grid-check reads: a spine that flows passes clean, a beat film fails
+  const LIBSPINE = join(STARTER, 'src', 'lib', 'spine.ts');
+  if (!existsSync(LIBSPINE)) console.log('skip  planned spines: no src/lib/spine.ts in the starter');
+  else {
+    const gen = join(TMP, 'plan-spines.mts');
+    writeFileSync(gen, `import { writeFileSync } from 'node:fs';
+import { planSpine } from ${JSON.stringify(new URL(`file:///${LIBSPINE.replace(/\\/g, '/')}`).href)};
+const b = (bar, beat = 0) => Math.round(((bar - 1) * 4 + beat) * 30);
+const flow = { sentence: 'Fernway turns one sentence into a booking page that fills itself.', element: 'request',
+  case: { request: 'A booking page for my Sunday choir rehearsal', names: ['Sunday Choir'], numbers: ['42'] },
+  acts: [
+    { verb: 'asks', scenes: ['word', 'pill'], line: { text: 'Fernway writes your booking page.', becomes: 'pill' }, strings: ['A booking page for my Sunday choir rehearsal'], devices: [{ id: 'macro-type' }] },
+    { verb: 'writes', scenes: ['page'], strings: ['Sunday Choir', 'Book a seat'] },
+    { verb: 'publishes', scenes: ['button', 'pill'], line: { text: 'Live at fernway.page/choir', place: 'inside' }, strings: ['Live at fernway.page/choir'] },
+    { verb: 'fills', scenes: ['notice', 'count', 'mark'], line: { text: 'It tells you who booked.', place: 'around' }, strings: ['42 booked', 'Sunday Choir'] },
+  ], claim: { text: 'Your page fills itself.', join: { in: 'element' } } };
+const beats = { sentence: 'Ledger plans your lessons.', element: 'card', case: { request: 'Plan my week of lessons' },
+  acts: [
+    { verb: 'asks', scenes: ['pill'], line: { text: 'Ledger plans your lessons.' }, strings: ['Plan my week of lessons'] },
+    { verb: 'shows', scenes: [{ form: 'card', via: 'cut' }, { form: 'photo', via: 'cut' }], line: { text: 'It fills your week.', place: 'alone' } },
+    { verb: 'reminds', scenes: [{ form: 'notice', via: 'cut' }], line: { text: 'It reminds your class.', place: 'alone' } },
+    { verb: 'ends', scenes: [{ form: 'mark', via: 'cut' }] },
+  ] };
+for (const [name, s] of [['flow', flow], ['beats', beats]]) writeFileSync(${JSON.stringify(TMP.replace(/\\/g, '/'))} + '/planned-' + name + '.ts', 'export const FPS = 60;\\nexport const SPINE_PLAN = ' + JSON.stringify(planSpine(s, { fps: 60, b, bars: 10 })) + ';\\n');
+`);
+    const g = spawnSync(process.execPath, [...strip, '--no-warnings', gen], { encoding: 'utf8' });
+    if (g.status !== 0) result(false, 'planned spines: planSpine() runs on two spines', (g.stderr || '').trim().split('\n').slice(-2).join(' | '));
+    else {
+      const chk = (name) => run(process.execPath, [...strip, '--no-warnings', GRID, join(TMP, `planned-${name}.ts`), '--part', 'spine', '--json']);
+      const flow = chk('flow');
+      const beats = chk('beats');
+      const errs = new Set((beats.findings ?? []).filter((x) => x.severity === 'error').map((x) => x.check));
+      const want = ['spine-carry', 'spine-bare', 'spine-lines', 'text-then-cards', 'spine-case', 'spine-end'];
+      result(flow.code === 0 && !(flow.findings ?? []).length && beats.code === 1 && want.every((k) => errs.has(k)),
+        'planned spines (lib/spine planSpine): one that flows passes --part spine clean, a beat film fails carry, bare, lines, text-then-cards, case and end',
+        flow.error ?? beats.error ?? `flow ${flow.code} ${why(flow)}; beats ${beats.code} [${[...errs].join(', ')}]`);
+    }
+  }
 }
 
 // 2. the HyperFrames starter (plain node: timeline.js and motion.js are classic scripts)

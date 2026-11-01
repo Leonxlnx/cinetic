@@ -34,10 +34,10 @@ export const SPINE_PLAN = {
     { text: 'Your page fills itself.', place: 'alone', from: 1300, to: 1400, in: 'E' },
   ],
   devices: [
-    { id: 'macro-type', act: 1, verb: 'types', form: 'pill' },
-    { id: 'page-fly', act: 2, verb: 'writes', form: 'page' },
-    { id: 'push-press', act: 3, verb: 'presses', form: 'button' },
-    { id: 'toast-stack', act: 4, verb: 'fills', form: 'notice' },
+    { id: 'macro-type', act: 0, verb: 'types', form: 'pill' },
+    { id: 'page-fly', act: 1, verb: 'writes', form: 'page' },
+    { id: 'push-press', act: 2, verb: 'presses', form: 'button' },
+    { id: 'toast-stack', act: 3, verb: 'fills', form: 'notice' },
   ],
   end: { kind: 'converge', at: 1290 },
 };

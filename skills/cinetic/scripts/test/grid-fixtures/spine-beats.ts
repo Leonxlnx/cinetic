@@ -32,10 +32,10 @@ export const SPINE_PLAN = {
     { text: 'Teach more, plan less.', place: 'alone', from: 900, to: 1050 },
   ],
   devices: [
-    { id: 'macro-type', act: 1, verb: 'types', form: 'pill' },
-    { id: 'carousel', act: 2, verb: 'shows pictures', form: 'card' },
-    { id: 'toast-stack', act: 3, verb: 'fills', form: 'notice' },
-    { id: 'logo-sting', act: 4, verb: 'ends', form: 'mark' },
+    { id: 'macro-type', act: 0, verb: 'types', form: 'pill' },
+    { id: 'carousel', act: 1, verb: 'shows pictures', form: 'card' },
+    { id: 'toast-stack', act: 2, verb: 'fills', form: 'notice' },
+    { id: 'logo-sting', act: 3, verb: 'ends', form: 'mark' },
   ],
   end: { kind: 'entry', at: 1050 },
 };
