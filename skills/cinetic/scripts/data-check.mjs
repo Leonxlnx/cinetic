@@ -43,6 +43,10 @@
  *                  children and value/text/label props), their text from literals and from the script's own strings
  *                  (`ui(pair, k)` / `.ui[k]` of the pairs whose scene draws it); a readout labelled as a fixed property
  *                  (Total, Goal, Summit, Next, Avg ...) may stay still
+ *   case-number    a string naming one of the case's names (the spine's `case: { request, names, numbers }`, src/spine.ts)
+ *                  shows a price or a share of the kind the case's numbers hold but another value ("Saturday Ceramics $15"
+ *                  while the case says $12): one figure per case, the same in every act
+ *   case-name      (warning) a string one or two letters off a case name ("Saturday Ceramic"): the same name, spelled the same
  *   wave-periodic  a waveform, spectrum or level generator built from the bar index with a modulo ("i % 8": a tall
  *                  bar every eighth bar); (warning) wave-synthetic: one made only of sines of the index. Draw the
  *                  track's own peaks (`peaks` below, kit/real.ts peaksBars) or waveBars() noise
@@ -674,7 +678,91 @@ export const run = (o) => {
   // 6. counters that measure one activity move together (distance counting up while the moving time stays frozen)
   coMoving(sources, { visit, unwrap, nameOf, isFn, at, add });
 
+  // 7. the case's names and numbers agree: one request followed through the film shows the same name and the same figures
+  caseAgrees(sources, { visit, unwrap, propsOf, textOf, at, add, isSource });
+
   return { ok: !findings.some((f) => f.severity === 'error') && !(o.strict && findings.length), src: rel(src), filmDate, dateFrom, files: files.length, pictures: pics.length, beats: allBeats.size, images, findings };
+};
+
+// ------------------------------------------------------------------------------------------------ the case
+/** Edit distance between two short strings (insertions, deletions, substitutions). */
+const editDistance = (a, b) => {
+  const m = a.length, n = b.length;
+  if (Math.abs(m - n) > 3) return 99;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[n];
+};
+/** Money and shares in a text: [{kind: '$' | '€' | '£' | '%', value}] ("$37", "€ 12.50", "40 %"). */
+export const figuresIn = (text) => {
+  const out = [];
+  for (const m of String(text).matchAll(/([$€£])\s?(\d+(?:[.,]\d+)?)/g)) out.push({ kind: m[1], value: Number(m[2].replace(',', '.')), raw: m[0] });
+  for (const m of String(text).matchAll(/(\d+(?:[.,]\d+)?)\s?%/g)) out.push({ kind: '%', value: Number(m[1].replace(',', '.')), raw: m[0] });
+  return out;
+};
+/**
+ * case-number (error): a string naming one of the case's names (SPINE_PLAN / src/spine.ts `case: { request, names, numbers }`)
+ * shows a price or a share of the same kind as the case's numbers but another value ("Saturday Ceramics $15" while the case
+ * says $12). case-name (warning): a string one or two letters off a case name ("Saturday Ceramic"): the same name, spelled
+ * the same, in every act.
+ */
+const caseAgrees = (sources, h) => {
+  let C = null;
+  let caseNode = null;
+  for (const s of sources) {
+    h.visit(s.ast, (n) => {
+      if (C || n.type !== 'ObjectExpression') return;
+      const p = h.propsOf(n).find((x) => x.name === 'case' && x.init?.type === 'ObjectExpression');
+      if (!p) return;
+      const q = h.propsOf(p.init);
+      const str = (k) => { const v = q.find((x) => x.name === k)?.init; return v ? h.textOf(v) : null; };
+      const list = (k) => { const v = q.find((x) => x.name === k)?.init; return v?.type === 'ArrayExpression' ? v.elements.map((e) => (e ? h.textOf(h.unwrap(e)) : null)).filter(Boolean) : []; };
+      const request = str('request');
+      if (!request && !list('names').length) return;
+      C = { request, names: list('names'), numbers: list('numbers'), where: h.at(s, p.node) };
+      caseNode = p.init;
+      return false;
+    });
+    if (C) break;
+  }
+  if (!C || (!C.names.length && !C.numbers.length)) return;
+  const norm = (x) => String(x).toLowerCase().replace(/\s+/g, ' ').trim();
+  const names = C.names.map(norm).filter((x) => x.length >= 3);
+  // a name as whole words ("Sunday Choir" is not inside "Sunday Choirs")
+  const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const word = new Map(names.map((x) => [x, new RegExp(`(^|[^\\p{L}\\p{N}])${esc(x)}($|[^\\p{L}\\p{N}])`, 'u')]));
+  const figs = C.numbers.flatMap(figuresIn);
+  const seenName = new Set();
+  for (const s of sources) {
+    h.visit(s.ast, (n, stack) => {
+      if (n === caseNode || n.type === 'TSImportType' || h.isSource(n, stack)) return false;
+      const t = h.textOf(n);
+      if (!t) return;
+      const low = norm(t);
+      const named = names.filter((x) => word.get(x).test(low));
+      if (named.length && figs.length) {
+        for (const f of figuresIn(t)) {
+          const same = figs.filter((g) => g.kind === f.kind);
+          if (same.length && !same.some((g) => Math.abs(g.value - f.value) < 1e-9))
+            h.add('case-number', 'error', `"${t.slice(0, 60)}" shows ${f.raw} beside the case's ${C.names.find((x) => word.get(norm(x))?.test(low))}; the case says ${same.map((g) => g.raw).join(' or ')} (${C.where}): the same figure in every act`, h.at(s, n), t);
+        }
+      }
+      if (!named.length && low.length <= 60) {
+        for (const x of names) {
+          if (x.length < 6 || seenName.has(`${low}|${x}`)) continue;
+          const d = editDistance(low, x);
+          if (d >= 1 && d <= 2) {
+            seenName.add(`${low}|${x}`);
+            h.add('case-name', 'warn', `"${t}" is ${d} letter${d > 1 ? 's' : ''} off the case's name "${C.names.find((y) => norm(y) === x)}" (${C.where}): the same name, spelled the same, in every act`, h.at(s, n), t);
+          }
+        }
+      }
+    });
+  }
 };
 
 // ------------------------------------------------------------------------------------------------ co-moving counters

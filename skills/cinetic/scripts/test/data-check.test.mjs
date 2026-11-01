@@ -17,6 +17,8 @@
  *      one progress beside a still summit height. FILM_DATE is read from the source.
  *   4. peaks: a track of silence, a loud tone and a soft tone gives bars near 0, 1 and the soft level.
  *   5. Exit 2 on a missing source folder or an unknown option; --help answers.
+ *   6. The case: a price beside the case's name that is not the case's fails (case-number), a name one letter off warns
+ *      (case-name), the case's own name and price pass.
  * The pictures and the track are written here (tiny PNGs, a WAV); the image and peaks parts need ffmpeg on the PATH.
  * Usage (from the skill root):  node scripts/test/data-check.test.mjs [--verbose]
  * Exit codes: 0 all pass, 1 a test failed.
@@ -234,6 +236,18 @@ try {
     result(pk.status === 0 && p.length === 30 && Math.max(...p) === 1 && p.slice(0, 9).every((v) => v < 0.02) && p.slice(11, 19).every((v) => v > 0.95) && p.slice(21).every((v) => v > 0.15 && v < 0.25),
       'peaks: silence near 0, the loud tone 1, the soft tone at its level', p.map((v) => v.toFixed(2)).join(' '));
   } else console.log('skip  peaks and the numbered strip: ffmpeg is not on the PATH');
+
+  // 6. the case: its names and numbers agree. A price beside the case's name that is not the case's fails (case-number), a
+  // name one letter off warns (case-name); the case's own name and price pass
+  const CASE = path.join(TMP, 'case');
+  write(CASE, 'src/spine.ts', `export const SPINE = { sentence: 'Fernway books the class.', element: 'request',
+  case: { request: 'A booking page for my Sunday choir rehearsal', names: ['Sunday Choir'], numbers: ['$12'] }, acts: [] };\n`);
+  write(CASE, 'src/content.ts', `export const FILM_DATE = '2026-10-29';
+export const ROWS = ['Sunday Choir · $12 a seat', 'Sunday Choir · $15 a seat', 'Sunday Choirs', 'Book a seat'];\n`);
+  const cs = D.run({ src: path.join(CASE, 'src'), noImages: true, today: '2026-10-29' });
+  const csF = cs.findings.filter((f) => f.rule.startsWith('case-')).map((f) => `${f.rule}/${f.severity}/${f.text}`);
+  result(JSON.stringify(csF) === JSON.stringify(['case-number/error/Sunday Choir · $15 a seat', 'case-name/warn/Sunday Choirs']) && !cs.ok,
+    'case: a price beside the case\'s name that is not the case\'s fails (case-number), a name one letter off warns (case-name), the case\'s own pass', JSON.stringify(csF));
 
   // 5. arguments
   result(cli(['nowhere'], TMP).status === 2 && cli(['src', '--bogus'], GOOD).status === 2, 'exit 2 on a missing source folder or an unknown option');
