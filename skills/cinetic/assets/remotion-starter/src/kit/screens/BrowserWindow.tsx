@@ -9,6 +9,7 @@
 //   <BrowserWindow {...CONTENT.site} type={{ at: 0 }} />   // the address typed, the page loads and builds
 import React from 'react';
 import { C } from '../../brand/tokens';
+import { rgbaOf } from '../../fx/Lit';
 import { clamp, E, prog } from '../../lib/anim';
 import { mixColor } from '../../lib/color';
 import { f60x } from '../../lib/film';
@@ -56,9 +57,6 @@ export type BrowserWindowProps = ScreenBase &
     type?: { at: number; cps?: number };
     /** the page's sections arrive from `at`, `every` frames apart (default 5 f@60) */
     build?: { at: number; every?: number };
-    /** glass: blur what is behind the window live (costly at this size); default off: a tint and a rim, which is all a
-     *  gradient or a soft plate behind needs; a photograph behind takes `backdrop` (its soft copy) instead */
-    frost?: boolean;
   };
 
 const T = { url: 12.5, brand: 16, nav: 13, cta: 13, lead: 15, btn: 14, cardTitle: 12, cardValue: 17, figure: 26, small: 11, noticeT: 13, noticeB: 12 } as const;
@@ -196,7 +194,7 @@ export const BrowserWindow: React.FC<BrowserWindowProps> = (p) => {
   const btnInk = skin.accentInk;
   return (
     <div data-ui data-screen="browser-window" style={{ position: 'relative', width: L.w, height: L.h, ...p.style }}>
-      <Panel skin={skin} w={L.w} h={L.h} r={SCREEN.radius.panel * pt} u={u} lift={0.5} backdrop={p.backdrop} focus="window" style={p.frost ? undefined : { backdropFilter: 'none', WebkitBackdropFilter: 'none' }}>
+      <Panel skin={skin} w={L.w} h={L.h} r={SCREEN.radius.panel * pt} u={u} lift={0.5} backdrop={p.backdrop} focus="window">
         {focus.chrome && (
           <div {...focusAttr('chrome')} style={{ position: 'absolute', left: 0, top: 0, width: L.w, height: L.chromeH, borderBottom: `${Math.max(1, 0.6 * pt).toFixed(2)}px solid ${line}`, background: dark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.015)' }}>
             <div style={{ position: 'absolute', left: 16 * pt, top: (L.chromeH - 11 * pt) / 2, display: 'flex', gap: 7 * pt }}>
@@ -216,7 +214,7 @@ export const BrowserWindow: React.FC<BrowserWindowProps> = (p) => {
                 {typed && !typed.done && <span style={{ display: 'inline-block', width: 1.5 * pt, height: 15 * pt, background: skin.accent, opacity: caretOn(typed.since, fps) }} />}
               </div>
             )}
-            {loading && <div style={{ position: 'absolute', left: 0, bottom: -1 * pt, height: 2 * pt, width: L.w * load, background: skin.accent, opacity: 1 - prog(f, start, start + f60x(8, fps), E.linear), boxShadow: `0 0 ${(6 * pt).toFixed(1)}px ${skin.accent}` }} />}
+            {loading && <div style={{ position: 'absolute', left: 0, bottom: -1 * pt, height: 2 * pt, width: L.w * load, background: skin.accent, opacity: 1 - prog(f, start, start + f60x(8, fps), E.linear) }} />}
           </div>
         )}
         {/* nav */}
@@ -275,7 +273,7 @@ export const BrowserWindow: React.FC<BrowserWindowProps> = (p) => {
           </div>
         )}
         {p.notice && focus.notice && (
-          <div {...focusAttr('notice')} style={{ position: 'absolute', left: focus.notice.x, top: focus.notice.y, width: focus.notice.w, height: focus.notice.h, borderRadius: 14 * pt, background: dark ? 'rgba(22, 24, 28, 0.86)' : 'rgba(255, 255, 255, 0.92)', boxShadow: `0 ${(10 * pt).toFixed(1)}px ${(26 * pt).toFixed(1)}px ${(-8 * pt).toFixed(1)}px rgba(0, 0, 0, ${dark ? 0.6 : 0.22}), inset 0 0 0 ${Math.max(1, 0.6 * pt).toFixed(2)}px ${dark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.9)'}`, display: 'flex', alignItems: 'center', gap: 10 * pt, padding: `0 ${12 * pt}px`, boxSizing: 'border-box', ...rise(sec('notice')) }}>
+          <div {...focusAttr('notice')} style={{ position: 'absolute', left: focus.notice.x, top: focus.notice.y, width: focus.notice.w, height: focus.notice.h, borderRadius: 14 * pt, background: dark ? rgbaOf(C.ink2, 0.86) : 'rgba(255, 255, 255, 0.92)', boxShadow: `0 ${(10 * pt).toFixed(1)}px ${(26 * pt).toFixed(1)}px ${(-8 * pt).toFixed(1)}px rgba(0, 0, 0, ${dark ? 0.6 : 0.22}), inset 0 0 0 ${Math.max(1, 0.6 * pt).toFixed(2)}px ${dark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.9)'}`, display: 'flex', alignItems: 'center', gap: 10 * pt, padding: `0 ${12 * pt}px`, boxSizing: 'border-box', ...rise(sec('notice')) }}>
             {p.notice.photo ? <Face skin={skin} size={34 * pt} name={p.notice.title} src={p.notice.photo} /> : <Mark skin={skin} size={34 * pt} logo={p.notice.logo} glyph={p.notice.glyph ?? 'bell'} />}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 * pt, minWidth: 0 }}>
               <span {...textTag('notice-title', T.noticeT * pt, view)} style={tx(T.noticeT, pt, 620, dark ? C.white : C.ink)}>{p.notice.title}</span>
@@ -320,7 +318,7 @@ export const BrowserWindow: React.FC<BrowserWindowProps> = (p) => {
                       <div style={{ position: 'absolute', left: pad, top: 50 * pt, height: 34 * pt, width: b.w - 2 * pad }}>
                         {c.faces.slice(0, 4).map((q2, j) => (
                           <div key={q2.name} style={{ position: 'absolute', left: j * 23 * pt, top: 0, zIndex: 5 - j }}>
-                            <Face skin={skin} size={34 * pt} name={q2.name} src={q2.photo} ring={dark ? 'rgba(30, 32, 36, 1)' : C.white} />
+                            <Face skin={skin} size={34 * pt} name={q2.name} src={q2.photo} ring={dark ? C.ink2 : C.white} />
                           </div>
                         ))}
                       </div>
@@ -331,6 +329,7 @@ export const BrowserWindow: React.FC<BrowserWindowProps> = (p) => {
                     <svg width={64 * pt} height={64 * pt} viewBox="0 0 64 64" style={{ position: 'absolute', left: (b.w - 64 * pt) / 2, top: 44 * pt }}>
                       <circle cx="32" cy="32" r="27" fill="none" stroke={dark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.07)'} strokeWidth="5" />
                       <circle cx="32" cy="32" r="27" fill="none" stroke={skin.accent} strokeWidth="5" strokeLinecap="round" strokeDasharray={`${(2 * Math.PI * 27 * c.p * q).toFixed(2)} 999`} transform="rotate(-90 32 32)" />
+                      {/* lint-ok: SVG user units in a 64-unit box drawn 64 pt wide: the figure reads at 15 pt (30 px at 1080p) */}
                       <text x="32" y="37" textAnchor="middle" fill={cardInk} style={{ fontFamily: KIT_FONT, fontSize: 15, fontWeight: 640 }}>{c.value}</text>
                     </svg>
                   ) : (

@@ -1,9 +1,9 @@
 // UrlScan: a link pasted or typed into a pill and scanned. The platform's mark (or a globe), the URL typed with its caret,
-// and an action button inset at the right ("Scan my channel ->"); pressed on `press`, the button fills with the accent and
-// says it is busy ("Analyzing" with stepping dots and a light sweep crossing it), and on `doneAt` it lands on a tick and
+// and an action button inset at the right ("Read my channel ->"); pressed on `press`, the button fills with the accent and
+// says it is busy ("Reading" with stepping dots and a light sweep crossing it), and on `doneAt` it lands on a tick and
 // the done word. The button's width glides between its words (it never jumps), right edge fixed.
 //
-//   <UrlScan url="youtube.com/@MuscleMateYT" logo="youtube" action="Scan my channel" busy="Analyzing" at={6} press={58} doneAt={150} tone="dark" />
+//   <UrlScan url="youtube.com/@crumbclub" logo="youtube" action="Read my channel" busy="Reading" at={6} press={58} doneAt={150} tone="dark" />
 import React from 'react';
 import { C } from '../../brand/tokens';
 import { clamp, E, fd, mix, prog } from '../../lib/anim';
@@ -23,9 +23,9 @@ export type UrlScanProps = ScreenBase & {
   logo?: LogoRef;
   glyph?: IconName;
   placeholder?: string;
-  /** the button's word before it is pressed ("Scan my channel") */
+  /** the button's word before it is pressed ("Read my channel") */
   action: string;
-  /** while it works ("Analyzing") */
+  /** while it works ("Reading") */
   busy?: string;
   /** when it is done ("Ready") */
   done?: string;
@@ -104,6 +104,7 @@ export const UrlScan: React.FC<UrlScanProps> = (p) => {
         </div>
         <div {...focusAttr('button')} style={{ position: 'absolute', left: b.x, top: b.y, width: b.w, height: b.h, transform: `scale(${(1 - 0.06 * press.q).toFixed(4)})` }}>
           <div style={{ position: 'absolute', inset: 0, borderRadius: b.h / 2, overflow: 'hidden', background: `linear-gradient(180deg, ${mixColor(face, C.white, 0.18)} 0%, ${face} 100%)`, boxShadow: smallShadow(skin, u, 1.4) }}>
+            {/* lint-ok: the busy shine is a shape crossing the button face, no text in it */}
             {ph.state === 'busy' && <div style={{ position: 'absolute', top: 0, bottom: 0, left: sweepX(f, fps, b.w, 1.3), width: b.w * 0.35, background: 'linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.28) 50%, rgba(255, 255, 255, 0) 100%)', transform: 'skewX(-18deg)' }} />}
           </div>
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 * pt, opacity: clamp(labelO) }}>

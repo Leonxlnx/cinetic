@@ -1,8 +1,8 @@
 // ProfileCard: a channel, a shop or a person as the platform shows them: the face or the mark big, the name with its
-// verified seal, the handle, the counts ("27K subscribers · 92 videos"), the main button (pressed on `press`, its word
+// verified seal, the handle, the counts ("48K subscribers · 210 videos"), the main button (pressed on `press`, its word
 // swapping to `done`), and a row of their real pictures along the foot of the card. Every part is a focus box.
 //
-//   <ProfileCard name="Muscle Mate" handle="@MuscleMateYT" photo={...} verified stats={['27K subscribers', '92 videos']} action="Subscribe" thumbs={CONTENT.thumbs.slice(0, 3)} />
+//   <ProfileCard name="Crumb Club" handle="@crumbclub" photo={...} verified stats={['48K subscribers', '210 videos']} action="Subscribe" thumbs={CONTENT.thumbs.slice(0, 3)} />
 import React from 'react';
 import { C } from '../../brand/tokens';
 import { E, prog } from '../../lib/anim';

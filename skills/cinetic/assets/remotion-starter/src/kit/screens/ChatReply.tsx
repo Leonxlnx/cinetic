@@ -3,6 +3,7 @@
 // of things with their marks or glyphs, and a closing question. Every list row is a focus box.
 //
 //   <ChatReply ask="Which invoices are late?" who={{ name: 'Tally', photo: ... }} text="Two, both from March ..." items={[...]} close="Shall I send the reminders?" at={20} />
+//   <ChatReply {...CONTENT.reply} at={20} />
 import React from 'react';
 import { C } from '../../brand/tokens';
 import { clamp, E, prog } from '../../lib/anim';
@@ -115,6 +116,7 @@ export const ChatReply: React.FC<ChatReplyProps> = (p) => {
         <Panel skin={skin} w={dots ? 86 * pt : L.cardW} h={dots ? 46 * pt : focus.card.h} y={L.cardY} r={20 * pt} u={u} lift={0.3} backdrop={p.backdrop} focus="card">
           {dots ? (
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 * pt }}>
+              {/* lint-ok: the reply's typing indicator, three dots pulsing in turn: the product's own state */}
               {[0, 1, 2].map((i) => (
                 <div key={i} style={{ width: 8 * pt, height: 8 * pt, borderRadius: '50%', background: skin.mute, opacity: 0.3 + 0.7 * Math.max(0, Math.sin(((f / fps) * 2 * Math.PI) / 0.9 - i * 0.9)) }} />
               ))}

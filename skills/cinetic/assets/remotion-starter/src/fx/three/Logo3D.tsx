@@ -11,6 +11,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
 import { type Logo, LogoMark, logoParts, SAMPLE_MARK_SVG } from '../../brand/Mark';
+import { C } from '../../brand/tokens';
 import { clamp, E, rand } from '../../lib/anim';
 import { mixColor } from '../../lib/color';
 import { type Finish, markSolid } from './geo';
@@ -175,7 +176,8 @@ export const SolidMark: React.FC<{ logo: Logo; lockup: Lockup; p: number; o: Pos
   const sideOf = (fill: string, k: number) => mixColor(fill, '#000000', SOLID2D.side[0] + (SOLID2D.side[1] - SOLID2D.side[0]) * (k / Math.max(1, n)));
   const fillOf = (k: number) => (part: { fill: string; items: { fill: string }[] }) => {
     const f = part.items.find((it) => it.fill && it.fill !== 'none')?.fill ?? part.fill ?? '#000000';
-    return sideOf(/^#[0-9a-f]{6}$/i.test(f) ? f : '#444444', k);
+    // a fill the mixer reads (#rgb, #rrggbb, rgb()); anything else (a gradient, currentColor) walls in a mid grey of the inks
+    return sideOf(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(f) || /^rgba?\(/i.test(f) ? f : mixColor(C.ink, C.white, 0.27), k);
   };
   const face = size * s;
   const left = cx - (((box.x + box.w / 2) * face) / 100);
@@ -186,9 +188,9 @@ export const SolidMark: React.FC<{ logo: Logo; lockup: Lockup; p: number; o: Pos
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, pointerEvents: 'none' }}>
       {shadowA > 0.004 ? (
-        <div style={{ position: 'absolute', left: cx - face * 0.42, top: cy + (box.h / 200) * face * 0.92, width: face * 0.84, height: face * 0.16, borderRadius: '50%', background: `radial-gradient(closest-side, rgba(0, 0, 0, ${shadowA.toFixed(3)}), rgba(0, 0, 0, 0))` }} />
+        <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(cx - face * 0.42).toFixed(2)}px, ${(cy + (box.h / 200) * face * 0.92).toFixed(2)}px)`, width: face * 0.84, height: face * 0.16, borderRadius: '50%', background: `radial-gradient(closest-side, rgba(0, 0, 0, ${shadowA.toFixed(3)}), rgba(0, 0, 0, 0))` }} />
       ) : null}
-      <div style={{ position: 'absolute', left, top, width: face, height: face, transformStyle: 'preserve-3d', transformOrigin: origin, transform: turn }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, width: face, height: face, transformStyle: 'preserve-3d', transformOrigin: origin, transform: `translate(${left.toFixed(2)}px, ${top.toFixed(2)}px) ${turn}` }}>
         {Array.from({ length: n }, (_, i) => n - i).map((k) => (
           <div key={k} style={{ position: 'absolute', inset: 0, transform: `translateZ(${(-(depthPx * k) / n).toFixed(2)}px)` }}>
             <LogoMark logo={logo} size={face} fill={fillOf(k)} />

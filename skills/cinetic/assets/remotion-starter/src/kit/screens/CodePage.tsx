@@ -174,7 +174,7 @@ export const CodePage: React.FC<CodePageProps> = (p) => {
               {visible && (
                 <div {...focusAttr(`line${i}`)} {...textTag(`code${i}`, T.code * pt, view)} style={{ position: 'absolute', left: gutter + 14 * pt, top: top + r * rh, width: L.w - gutter - 28 * pt, overflow: 'hidden', ...(text.length * ADV * T.code * pt > L.w - gutter - 28 * pt ? { WebkitMaskImage: edge, maskImage: edge } : null), ...code, opacity: streamIn, transform: `translateX(${((1 - streamIn) * 10 * pt).toFixed(2)}px)` }}>
                   {tokenize(text, lang).map((k, j) => (
-                    <span key={j} style={{ color: ink[k.k], fontStyle: k.k === 'com' ? 'italic' : 'normal' }}>
+                    <span key={j} style={{ color: ink[k.k] }}>
                       {k.s}
                     </span>
                   ))}

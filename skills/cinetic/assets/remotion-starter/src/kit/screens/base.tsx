@@ -14,8 +14,9 @@
 // Every element also carries data-focus="<name>" for audits. Place a screen's boxes in a scene with placeFocus().
 //
 // Skin. `tone`: 'light' (a white card), 'dark' (a card 8-12 L* over a dark ground, a rim of light) or 'glass' (frost: with a
-// `backdrop`, the kit's Card blurs its own copy of the picture behind; without, a CSS backdrop blur with a bright rim, the
-// glass prompt over a cloud plate). Colours come from cardInks (kit/card.tsx) and the accent; no hex literal here.
+// `backdrop`, the screen blurs its own copy of the picture behind (Frost); without one, a tint and a bright rim, never a
+// live backdrop blur (a hard ban that re-blurs the frame on every render); inside a World, fx/light Glass frosts the
+// world's own ground). Colours come from cardInks (kit/card.tsx) and the accent; no hex literal here.
 // Pure functions of their props and the frame; transforms and opacity only.
 import React, { useEffect, useState } from 'react';
 import { Img, useCurrentFrame, useDelayRender } from 'remotion';
@@ -247,9 +248,10 @@ export const fmtMoney = (v: number, cur = '$', cents?: boolean) => {
 // ------------------------------------------------------------------------------------------------ surfaces
 
 /**
- * A screen's surface: the kit's Card for light, dark and glass with a backdrop (the material: an opaque face, a quiet
- * sheen, a hairline, the top highlight, two shadows); glass without a backdrop is frost (a CSS backdrop blur, a white tint,
- * a bright rim and a soft drop), the glass prompt over a plate. Positioned at (x, y), w x h, corners r.
+ * A screen's surface: the kit's Card for light and dark (the material: an opaque face, a quiet sheen, a hairline, the top
+ * highlight, two shadows); glass with a backdrop is Frost (the backdrop blurred inside the shape); glass without one is a
+ * white tint, a bright rim and a soft drop, which is all a gradient or a soft plate behind needs (a sharp photograph
+ * behind takes its soft copy as `backdrop`). No live backdrop blur. Positioned at (x, y), w x h, corners r.
  */
 export const Panel: React.FC<{ skin: Skin; w: number; h: number; r: number; x?: number; y?: number; lift?: number; u?: number; backdrop?: React.ReactNode; focus?: string; children?: React.ReactNode; style?: React.CSSProperties; flat?: boolean }> = ({ skin, w, h, r, x = 0, y = 0, lift = 0, u = 1, backdrop, focus, children, style, flat }) => {
   if (skin.tone === 'glass' && backdrop) return <Frost skin={skin} w={w} h={h} r={r} x={x} y={y} u={u} backdrop={backdrop} focus={focus} style={style} flat={flat}>{children}</Frost>;
@@ -275,8 +277,6 @@ export const Panel: React.FC<{ skin: Skin; w: number; h: number; r: number; x?: 
         borderRadius: r,
         transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`,
         background: `linear-gradient(180deg, ${dark ? `rgba(255, 255, 255, ${skin.groundL >= 0.45 ? 0.26 : 0.1})` : 'rgba(255, 255, 255, 0.72)'} 0%, ${skin.fill} 100%)`,
-        backdropFilter: `blur(${(26 * u).toFixed(1)}px) saturate(1.45)`,
-        WebkitBackdropFilter: `blur(${(26 * u).toFixed(1)}px) saturate(1.45)`,
         boxShadow: [
           `inset 0 0 0 ${(1.4 * u).toFixed(2)}px ${dark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.85)'}`,
           `inset 0 ${(1.5 * u).toFixed(2)}px 0 ${dark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.95)'}`,

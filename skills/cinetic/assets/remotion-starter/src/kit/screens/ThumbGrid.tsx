@@ -80,12 +80,12 @@ export const thumbGridLayout = (p: ThumbGridProps, _f = 0, ctx: { pt?: number } 
  * The face a thumbnail's title card is set in: a heavy condensed grotesque (Mona Sans, bundled in public/fonts), the
  * creator's own thumbnail type, never the film's voice. `load` is the shorthand useFace() waits for.
  */
-export const THUMB_FACE = { family: '"Mona Sans Variable", "Inter Variable", system-ui, sans-serif', weight: 900, stretch: '75%', skew: -7, load: '900 16px "Mona Sans Variable"' } as const;
+export const THUMB_FACE = { family: '"Mona Sans Variable", "Inter Variable", system-ui, sans-serif', weight: 900, stretch: '75%', load: '900 16px "Mona Sans Variable"' } as const;
 
 /**
- * A thumbnail's title card: two or three words in heavy condensed capitals, leaning forward, white over a hard drop and
- * a soft halo, the last line in a light tint of the accent; sized so its longest line spans about 80 % of the
- * picture, set in the upper half where creators put it.
+ * A thumbnail's title card: two or three words in heavy condensed capitals, upright (a lean on type is a faux italic),
+ * white over a hard drop and a soft halo, the last line in a light tint of the accent; sized so its longest line spans
+ * about 80 % of the picture, set in the upper half where creators put it.
  */
 export const ThumbTitle: React.FC<{ text: string; w: number; h: number; accent: string }> = ({ text, w, h, accent }) => {
   const words = text.toUpperCase().split(/\s+/).filter(Boolean);
@@ -97,7 +97,7 @@ export const ThumbTitle: React.FC<{ text: string; w: number; h: number; accent: 
   const px = Math.min(h * (lines.length > 1 ? 0.3 : 0.4), (w * 0.8) / Math.max(3, longest * 0.5));
   const tint = mixColor(accent, C.white, 0.45);
   return (
-    <div style={{ position: 'absolute', left: w * 0.05, right: w * 0.05, top: h * 0.1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: px * 0.02, transform: `skewX(${THUMB_FACE.skew}deg)` }}>
+    <div style={{ position: 'absolute', left: w * 0.05, right: w * 0.05, top: h * 0.1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: px * 0.02 }}>
       {lines.map((ln, li) => (
         <span key={li} style={{ fontFamily: THUMB_FACE.family, fontSize: px, fontWeight: THUMB_FACE.weight, fontStretch: THUMB_FACE.stretch, letterSpacing: '-0.01em', lineHeight: 0.92, whiteSpace: 'pre', color: li === lines.length - 1 && lines.length > 1 ? tint : C.white, textShadow: `${(px * 0.035).toFixed(1)}px ${(px * 0.06).toFixed(1)}px 0 rgba(0, 0, 0, 0.62), 0 0 ${(px * 0.35).toFixed(1)}px rgba(0, 0, 0, 0.5)` }}>
           {ln}

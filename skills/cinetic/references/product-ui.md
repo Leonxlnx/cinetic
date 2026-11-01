@@ -787,5 +787,5 @@ dark.
 - Cost: a screen is DOM and SVG: about 0.75 s a frame on average at 1080p on software GL (no GPU, one tab), measured
   over sixteen wide and macro shots, up to 1-2 s for the picture-heavy ones (a thumbnail grid, a stack's shadows at
   3x, frost over a plate); the site window, the request and the covers about 0.9 s; on a GPU a fraction of that. Blur
-  only inside a small shape (the plate's soft copy behind a pill), never a full frame: the glass site window is a tint
-  and a rim unless `frost` is set, and a photograph behind it goes in as `backdrop`.
+  only inside a small shape (the plate's soft copy behind a pill), never a full frame: glass with no `backdrop` is a
+  tint and a rim (never a live backdrop blur: a hard ban), and a photograph behind it goes in as `backdrop`.

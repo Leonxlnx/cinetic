@@ -3,7 +3,7 @@
 // done (a disc whose tick draws on) at its own frame. ProgressPill: one live line on the accent ("Creating your product ·
 // 52%"): a spinner and a number counting on linearly, still counting when the shot cuts.
 //
-//   <StepCard title="The Dumbbell-Only 8-Week Program" sub="Training guide · 56 workouts" thumb={...} steps={[{ label: 'Branding and voice defined', at: 30 }, ...]} />
+//   <StepCard title="The Weeknight Bread Handbook" sub="Ebook · 64 pages" thumb={...} steps={[{ label: 'Recipes put in order', at: 30 }, ...]} />
 //   <ProgressPill label="Creating your product · {n}%" to={52} at={0} dur={90} />
 import React from 'react';
 import { C } from '../../brand/tokens';

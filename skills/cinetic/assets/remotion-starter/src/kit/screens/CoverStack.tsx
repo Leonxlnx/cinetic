@@ -4,7 +4,7 @@
 // front). With `at` the covers land one after the other, the front one last. Covers face the camera: depth comes from the
 // stack and the camera, never from a tilt at rest. Put a ProgressPill under it for the making.
 //
-//   <CoverStack items={[{ title: 'The Dumbbell-Only 8-Week Program', accentWord: '8-Week', sub: 'Training guide · 56 workouts', photo: ... }, ...]} kicker="Muscle Mate" at={0} />
+//   <CoverStack items={[{ title: 'The Weeknight Bread Handbook', accentWord: 'Bread', sub: 'Ebook · 64 pages', photo: ... }, ...]} kicker="Crumb Club" at={0} />
 //   <CoverStack {...CONTENT.cover} at={10} />
 import React from 'react';
 import { C } from '../../brand/tokens';

@@ -1,10 +1,10 @@
 // DocPage: a real document page: an optional big number and the product's name at the top, a heavy title with one word in
-// the accent, an italic lead, a section label, paragraphs set like print (12.5 pt, 1.5 leading) and a table whose header
+// the accent, a lead in the quieter ink, a section label, paragraphs set like print (12.5 pt, 1.5 leading) and a table whose header
 // row is the accent, the first column numbered. `write` writes the paragraphs on word by word and drops the table rows in
 // after them (a document the product is generating). Made for a camera travelling over the page in perspective: the
 // title, every paragraph and every table row is a focus box.
 //
-//   <DocPage number="01" title="Your 8-week program" accentWord="8-week" lead="Stop guessing. Start with a plan." body={[...]} table={{ head: [...], rows: [...] }} />
+//   <DocPage number="01" title="Launch plan" accentWord="plan" lead="Everything we ship on Friday, and who owns it." body={[...]} table={{ head: [...], rows: [...] }} />
 import React from 'react';
 import { C } from '../../brand/tokens';
 import { clamp, E, prog } from '../../lib/anim';
@@ -122,7 +122,7 @@ export const DocPage: React.FC<DocPageProps> = (p) => {
       <Panel skin={skin} w={L.w} h={L.h} r={6 * pt} u={u} lift={0.5} backdrop={p.backdrop} focus="page">
         {p.brand && <div {...textTag('doc-brand', T.brand * pt, view)} style={{ position: 'absolute', left: pad, top: pad, ...tx(T.brand, pt, 750, skin.mute, { track: 0.16 }) }}>{p.brand.toUpperCase()}</div>}
         {p.number && focus.number && <div {...focusAttr('number')} {...textTag('doc-number', T.number * pt, view)} style={{ position: 'absolute', left: focus.number.x, top: focus.number.y, ...tx(T.number, pt, 850, accent, { track: -0.04, lead: 0.95 }) }}>{p.number}</div>}
-        <div {...focusAttr('title')} {...textTag('doc-title', T.title * pt, view)} style={{ position: 'absolute', left: focus.title.x, top: focus.title.y, ...tx(T.title, pt, 800, ink, { track: -0.03, lead: 0.98 }), fontStyle: 'italic' }}>
+        <div {...focusAttr('title')} {...textTag('doc-title', T.title * pt, view)} style={{ position: 'absolute', left: focus.title.x, top: focus.title.y, ...tx(T.title, pt, 800, ink, { track: -0.03, lead: 0.98 }) }}>
           {titleWords.map((ws, li) => (
             <div key={li}>
               {ws.map((w, k) => (
@@ -139,7 +139,7 @@ export const DocPage: React.FC<DocPageProps> = (p) => {
             <Picture src={p.figure} w={focus.figure.w} h={focus.figure.h} r={10 * pt} />
           </div>
         )}
-        {p.lead && focus.lead && <div {...focusAttr('lead')} {...textTag('doc-lead', T.lead * pt, view)} style={{ position: 'absolute', left: focus.lead.x, top: focus.lead.y, ...tx(T.lead, pt, 450, skin.mute), fontStyle: 'italic' }}>{p.lead}</div>}
+        {p.lead && focus.lead && <div {...focusAttr('lead')} {...textTag('doc-lead', T.lead * pt, view)} style={{ position: 'absolute', left: focus.lead.x, top: focus.lead.y, ...tx(T.lead, pt, 450, skin.mute) }}>{p.lead}</div>}
         {p.section && focus.section && <div {...textTag('doc-section', T.eyebrow * pt, view)} style={{ position: 'absolute', left: focus.section.x, top: focus.section.y, ...tx(T.eyebrow, pt, 750, accent, { track: 0.14 }) }}>{p.section.toUpperCase()}</div>}
         {L.paras.map((lines, i) => {
           const b = focus[`para${i}`];

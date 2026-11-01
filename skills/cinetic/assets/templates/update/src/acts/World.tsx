@@ -77,7 +77,7 @@ const LinePool: React.FC<{ w: number; size: number; a: number }> = ({ w, size, a
   const deep = mixColor(WORLD.base, '#000000', 0.4);
   const pw = w * POOL.w + size * 2;
   const ph = size * 1.2 * POOL.h;
-  return <div data-pool="" style={{ position: 'absolute', left: W / 2 - pw / 2, top: H / 2 - ph / 2, width: pw, height: ph, borderRadius: '50%', background: `radial-gradient(closest-side, ${deep} 0%, ${deep} 38%, transparent 100%)`, opacity: POOL.a * a }} />;
+  return <div data-pool="" style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(W / 2 - pw / 2).toFixed(2)}px, ${(H / 2 - ph / 2).toFixed(2)}px)`, width: pw, height: ph, borderRadius: '50%', background: `radial-gradient(closest-side, ${deep} 0%, ${deep} 38%, transparent 100%)`, opacity: POOL.a * a }} />;
 };
 const lineSize = (text: string, extra = 0, k = 1) => {
   const base = TYPE.line.size * U * k;

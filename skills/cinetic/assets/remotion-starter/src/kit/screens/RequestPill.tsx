@@ -1,9 +1,9 @@
-// RequestPill: what many people asked for, found in what they wrote: a small label over it ("Recurring request"), then a
+// RequestPill: what many people asked for, found in what they wrote: a small label over it ("Asked most"), then a
 // pill on the accent holding the faces of a few who asked (photos, or the platform's coloured initial discs), the request
-// in their words, and a badge counting how many asked ("Asked 714+"). The pill opens from the faces to its full width,
+// in their words, and a badge counting how many asked ("Asked 612+"). The pill opens from the faces to its full width,
 // the words arrive as it opens, the badge counts on. The turn from reading a crowd to the one thing it wants.
 //
-//   <RequestPill label="Recurring request" text="A dumbbell-only plan" people={CONTENT.people.slice(1, 4)} count={714} at={0} />
+//   <RequestPill label="Asked most" text="A weeknight bread course" people={CONTENT.people.slice(1, 4)} count={612} at={0} />
 //   <RequestPill {...CONTENT.request} at={20} />
 import React from 'react';
 import { C } from '../../brand/tokens';
@@ -72,8 +72,8 @@ export const RequestPill: React.FC<RequestPillProps> = (p) => {
   const solid = p.solid !== false;
   const bg = solid ? skin.solid : skin.face;
   const ink = solid ? skin.accentInk : skin.text;
-  // the pill opens from its faces to its full width (a mask growing, expo out), the words arriving as it opens
-  const open = prog(f, at + f60x(6, fps), at + f60x(30, fps), E.out);
+  // the pill opens from its faces to its full width (a mask growing on the arrival curve), the words arriving as it opens
+  const open = prog(f, at + f60x(6, fps), at + f60x(30, fps), E.snapOut);
   const minW = Math.min(L.w, focus.faces.w + 12 * pt);
   // it appears where the faces will be (a quick pop), then opens
   const pop = prog(f, at, at + f60x(12, fps), E.snapOut);
