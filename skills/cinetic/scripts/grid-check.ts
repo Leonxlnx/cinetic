@@ -71,9 +71,11 @@
  *   word-total     on-screen words <= --max-words (default: the pace's maxWords, calm 30, crisp 35; a script 50);
  *                  entries with kind: 'ui' (terminal commands, code, URLs, app labels the product
  *                  shows) are counted apart, not budgeted
- *   event-gap      no stretch without an event (cue, copy change, act change, or a cues.json event
+ *   event-gap      a stretch without an event (cue, copy change, act change, or a cues.json event
  *                  with --cues) longer than --max-gap frames (default: the pace's maxGap, calm 72 f,
- *                  crisp 48 f), tail excluded. A line's words arriving through its reveal are events,
+ *                  crisp 48 f) is a warning, tail excluded: a hold may rest, still, with nothing planted
+ *                  in it. It fails past --max-rest (default 150 f at 60 fps, 2.5 s), where the film
+ *                  reads frozen (forensics motion-frozen). A line's words arriving through its reveal are events,
  *                  and a reading window counts as alive: a hold being read
  *                  needs a slow drift, not a tick planted in it. The windows are the timeline's
  *                  READ (src/lib/pace.ts readingWindows(): from `resolved` for at most readMax, calm
@@ -258,7 +260,7 @@ if (has('-h') || has('--help')) {
   console.log(readFileSync(new URL(import.meta.url), 'utf8').split('*/')[0].replace(/^\/\*\*?/, '').replace(/^ \* ?/gm, ''));
   process.exit(0);
 }
-const valued = new Set(['--max-words', '--max-gap', '--cues', '--pace', '--onsets', '--lead']);
+const valued = new Set(['--max-words', '--max-gap', '--max-rest', '--cues', '--pace', '--onsets', '--lead']);
 const positional = argv.filter((a, i) => !a.startsWith('--') && !valued.has(argv[i - 1]));
 const tlPath = resolve(positional[0] ?? (!existsSync('src/timeline.ts') && existsSync('timeline.js') ? 'timeline.js' : 'src/timeline.ts'));
 const json = has('--json');
@@ -361,6 +363,8 @@ async function main() {
 
   const s = FPS / 60; // the 60 fps rules, scaled to this film
   const maxGap = Number(val('--max-gap') ?? Math.round(P.maxGap * s));
+  // a hold may rest (still, nothing planted in it); only past 2.5 s with nothing new does the film read frozen
+  const maxRest = Math.max(maxGap, Number(val('--max-rest') ?? Math.round(150 * s)));
   const BEAT = (60 / BPM) * FPS;
   const BAR = BEAT * 4;
   const S16 = BEAT / 4;
@@ -851,7 +855,9 @@ async function main() {
     longestGap = Math.max(longestGap, Math.min(gap, live));
     if (gap > maxGap && live > maxGap) {
       const near = cueFrames.filter((c) => c.f === ev[i - 1] || c.f === ev[i]).map((c) => c.name);
-      err('event-gap', `${live} f without an event or a line being read between f${ev[i - 1]} and f${ev[i]}${near.length ? ` (${near.join(', ')})` : ''}; add the beat that keeps it alive (a move, a peak, a drift under a read) or --max-gap`);
+      const where = `between f${ev[i - 1]} and f${ev[i]}${near.length ? ` (${near.join(', ')})` : ''}`;
+      if (live > maxRest) err('event-gap', `${live} f without an event or a line being read ${where}: past ${maxRest} f the film reads frozen; give the stretch its next beat (the product acting, a line, a cut), or --max-rest`);
+      else warn('event-gap', `${live} f without an event or a line being read ${where}: a hold may rest still (no planted tick, no drift); make sure it is a hold you meant (a read, the product's result, the lockup)`);
     }
   }
 
