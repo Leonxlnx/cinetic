@@ -12,9 +12,9 @@ import { useCurrentFrame } from 'remotion';
 import { type GroundSpec, LitGround } from './Grounds';
 import { useFilm } from '../lib/film';
 import { bleedFor, type FloatOpts, stageAt, type StageMove } from '../lib/drift';
-import { FloatCtx, T } from './Depth';
+import { FloatCtx, T } from './FloatDepth';
 
-export { Depth, useFloat } from './Depth';
+export { Depth, useFloat } from './FloatDepth';
 
 /**
  * One act on its stage camera. `from`: the act's first absolute frame (its Sequence's from), so declared moves are in

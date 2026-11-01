@@ -4,7 +4,7 @@ import { clamp, E, type Ease, mix } from '../lib/anim';
 import { type FilmCtx, f60x, fpsOf, sizeOf, uOf, useFilm } from '../lib/film';
 import { FILM_LIGHT, type FilmLight, faceLight, faceShift, keyLocal, type Tilt } from '../lib/light';
 import type { Declares } from '../timeline';
-import { useFloat } from './Depth';
+import { useFloat } from './FloatDepth';
 import { shadowTone } from './KeyLight';
 
 /**

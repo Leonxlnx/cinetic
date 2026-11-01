@@ -1,5 +1,6 @@
 // The stage camera's context and the planes under it (fx/Float.tsx puts each act on its stage): split out so
-// fx/Grounds can hold a ground still on screen under a declared move without importing the stage.
+// fx/Grounds can hold a ground still on screen under a declared move without importing the stage. Named apart from
+// the fx/depth folder (the 3D stage): on a case-blind disk a file fx/Depth.tsx would answer `import '../fx/depth'`.
 import React, { createContext, useContext } from 'react';
 import { useFilm } from '../lib/film';
 import { bleedFor, type FloatOpts, type FloatState, planeOf } from '../lib/drift';

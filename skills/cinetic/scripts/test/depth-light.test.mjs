@@ -22,15 +22,17 @@
  *      shape brighter than its kind's gain), drift 6-30 px/s that never stops and loops, the camera at the background
  *      weight 0.25, soft sprites (no hard edge), groundRuns() / dealGrounds() (no ground on more than 2 consecutive
  *      shots), croppedByEdge() / cropCheck(), layerShot() at 0.25 / 0.6 / 1.
+ *   6. The starter's src has no folder sharing its name with a file beside it in another case (fx/depth/ and a
+ *      fx/Depth.tsx): on a case-blind disk an import of the folder would load the file.
  *
  * It runs src through the starter's own tsx (npm install in assets/remotion-starter first).
  * Usage (from the skill root):  node scripts/test/depth-light.test.mjs [--verbose]
  * Exit codes: 0 all pass, 1 a test failed (or the starter is not installed).
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -321,6 +323,22 @@ const none = (d) => !d.stepped.length && !d.flashes.length && !d.cameraBlur.leng
   const [bg, mid, fg] = G.layers;
   result(close(bg.sx, 1060) && close(mid.sx, 1200) && close(fg.sx, 1360) && close(Math.log(bg.k) / Math.log(2), 0.25, 1e-9), 'layerShot: bg 0.25, mid 0.6, fg 1.0 of the camera', `${bg.sx} ${mid.sx} ${fg.sx}`);
   result(none(G.declares), 'Grounds: continuous light, declares nothing');
+}
+
+// 6. on a case-blind disk (Windows, macOS) `import '../fx/depth'` must reach the folder's index, never a file beside it
+// whose name differs only in case (a fx/Depth.tsx once answered it and tsc failed every film that followed the docs)
+{
+  const clashes = [];
+  const walk = (dir) => {
+    const names = readdirSync(dir, { withFileTypes: true });
+    const files = new Set(names.filter((e) => e.isFile()).map((e) => e.name.replace(/\.(tsx?|jsx?|mjs|cjs)$/, '').toLowerCase()));
+    for (const e of names.filter((x) => x.isDirectory())) {
+      if (files.has(e.name.toLowerCase())) clashes.push(`${relative(SRC, join(dir, e.name))}/ and a file of that name`);
+      walk(join(dir, e.name));
+    }
+  };
+  walk(SRC);
+  result(!clashes.length, "no folder of the starter's src shares its name with a file beside it (case-blind imports resolve to one module)", clashes.join('; '));
 }
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }

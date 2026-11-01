@@ -8,7 +8,7 @@ import { type FilmCtx, fpsOf, sizeOf, uOf, useFilm } from '../lib/film';
 import { FILM_LIGHT, type FilmLight, keyDir } from '../lib/light';
 import type { Declares } from '../timeline';
 import { shadowTone } from './KeyLight';
-import { Depth } from './Depth';
+import { Depth } from './FloatDepth';
 import { bakePixels, bakePlate } from './Gradients';
 import { Wash, WASH } from './Washes';
 import { hash01, srgbOf } from './plates';
