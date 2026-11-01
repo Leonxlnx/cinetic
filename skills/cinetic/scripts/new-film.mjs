@@ -225,6 +225,7 @@ function stage1() {
   if (exists(rt) && hist.length) {
     const R = {};
     const creative = [];
+    const hero = [];
     const text = fs.readFileSync(rt, 'utf8');
     // the slots this template remembers: the names its RECENT type declares (Record<"voice" | "ground" | ...>)
     const typed = /Record<([^,>]+),/.exec(text);
@@ -234,9 +235,13 @@ function stage1() {
       for (const k of keys) if (typeof pick[k] === 'string' && pick[k]) (R[k] = R[k] || []).push(pick[k]);
       const cr = (h.devices && h.devices.creative) || (h.deal && h.deal.creative);
       if (Array.isArray(cr) && cr.length) creative.push(cr.filter((x) => typeof x === 'string'));
+      const hr = (h.devices && h.devices.hero) || (h.deal && h.deal.hero);
+      if (Array.isArray(hr) && hr.length) hero.push(hr.filter((x) => typeof x === 'string'));
     }
-    // the creative sets ride beside the typed slots (deal.ts reads RECENT.creative through a cast)
-    const value = creative.length ? `Object.assign(${JSON.stringify(R)}, { creative: ${JSON.stringify(creative)} })` : JSON.stringify(R);
+    // the creative sets and the hero shots ride beside the typed slots (deal.ts reads RECENT.creative and RECENT.hero
+    // through a cast), newest first, so the template's own deal weighs the last films' shots down
+    const extra = { ...(creative.length ? { creative } : {}), ...(hero.length ? { hero } : {}) };
+    const value = Object.keys(extra).length ? `Object.assign(${JSON.stringify(R)}, ${JSON.stringify(extra)})` : JSON.stringify(R);
     fs.writeFileSync(rt, text.replace(/= \{\};\s*$/, `= ${value};\n`));
   }
   if (hist.length) say(`new-film: the last ${hist.length} film(s) in the history: ${hist.map((h) => h.name || '?').join(', ')} (film.json recent; their ground, voice, signature and end card are taken)`);

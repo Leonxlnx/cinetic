@@ -27,6 +27,8 @@
  *             film's (warn: a re-deal with --mood or --pair changes it)
  *   creative  the film's creative elements (film.json devices.creative, else src/deal.ts CREATIVE) are not all the
  *             last film's (warn); --record keeps them, so the next deal (deck.py, deal.ts) plays others
+ *   hero      the hero shots (film.json devices.hero, else src/deal.ts HERO_DEAL.deal or the update film's PLAYED) are not
+ *             all the last film's (warn); --record keeps them, so deck.py's next deal weighs them down
  *
  * Usage (from the film project):
  *   node scripts/film-diff.mjs [<film dir>]              check the film
@@ -137,11 +139,16 @@ export function filmDevices(dir, { useTsx = true } = {}) {
   out.camera = norm(d.camera);
   out.type = norm(d.type);
   out.creative = list(d.creative);
-  const got = useTsx ? tsDealMany(dir, ['DEAL', 'CREATIVE']) : null;
+  out.hero = list(d.hero);
+  const got = useTsx ? tsDealMany(dir, ['DEAL', 'CREATIVE', 'HERO_DEAL', 'PLAYED']) : null;
   const deal = got ? got.DEAL : null;
   // CREATIVE is the ids, or the deal object launch-simple exports ({ deal: [ids], reserve, source })
   const cr = Array.isArray(got?.CREATIVE) ? got.CREATIVE : Array.isArray(got?.CREATIVE?.deal) ? got.CREATIVE.deal : null;
   if (!out.creative.length && cr) out.creative = list(cr);
+  // the hero shots the film played (launch-simple HERO_DEAL.deal, the update film's PLAYED): recorded, so the next deals
+  // (deck.py recent_hero, the templates' recent.ts) weigh them down and every film shoots its own
+  const hr = Array.isArray(got?.HERO_DEAL?.deal) ? got.HERO_DEAL.deal : Array.isArray(got?.PLAYED) ? got.PLAYED : null;
+  if (!out.hero.length && hr) out.hero = list(hr);
   if (deal && typeof deal === 'object') {
     for (const s of ['voice', 'ground', 'end', 'camera']) if (!out[s] && typeof deal[s] === 'string') out[s] = deal[s];
     if (!out.seams.length) out.seams = [...new Set(['seamTA', 'seamAT'].map((s) => deal[s]).filter((x) => typeof x === 'string'))];
@@ -200,6 +207,9 @@ export function diff(film, history, { allow = [], floor = null, choices = {} } =
     if (d[s] && !ok.has(s) && recent[0]?.devices?.[s] === d[s]) add('repeat', 'warn', `${s} ${d[s]} is the last film's: a different ${s} reads as a different film`);
   }
   if (d.type && !ok.has('type') && recent[0]?.devices?.type === d.type) add('type', 'warn', `the type pairing ${d.type} is the last film's: deal another (npx tsx scripts/type-deal.ts --seed "<name>" --mood <m>, or --pair <id>)`);
+  const lastHero = list(recent[0]?.devices?.hero);
+  if ((d.hero ?? []).length && lastHero.length && !ok.has('hero') && d.hero.every((c) => lastHero.includes(c)))
+    add('hero', 'warn', `the hero shots (${d.hero.join(', ')}) are all the last film's: deal again (deck.py) so this film shoots its own`);
   const lastCr = list(recent[0]?.devices?.creative);
   if ((d.creative ?? []).length && lastCr.length && !ok.has('creative') && d.creative.every((c) => lastCr.includes(c)))
     add('creative', 'warn', `the creative elements (${d.creative.join(', ')}) are all the last film's: deal again (deck.py) so this film has its own`);
@@ -228,7 +238,7 @@ function main() {
     const h = readHistory();
     if (flag('--json')) console.log(JSON.stringify(h, null, 1));
     else if (!h.length) console.log(`film-diff: no films in ${HISTORY} yet`);
-    else h.forEach((e, i) => console.log(`${i + 1}. ${e.name ?? '(unnamed)'}${e.template ? ` [${e.template}]` : ''}: ${SLOTS.map((s) => `${s} ${e.devices[s] || '-'}`).join(', ')}; moves ${(e.devices.moves ?? []).join(' ') || '-'}; seams ${(e.devices.seams ?? []).join(' ') || '-'}${e.devices.type ? `; type ${e.devices.type}` : ''}${(e.devices.creative ?? []).length ? `; creative ${e.devices.creative.join(' ')}` : ''}`));
+    else h.forEach((e, i) => console.log(`${i + 1}. ${e.name ?? '(unnamed)'}${e.template ? ` [${e.template}]` : ''}: ${SLOTS.map((s) => `${s} ${e.devices[s] || '-'}`).join(', ')}; moves ${(e.devices.moves ?? []).join(' ') || '-'}; seams ${(e.devices.seams ?? []).join(' ') || '-'}${e.devices.type ? `; type ${e.devices.type}` : ''}${(e.devices.creative ?? []).length ? `; creative ${e.devices.creative.join(' ')}` : ''}${(e.devices.hero ?? []).length ? `; hero ${e.devices.hero.join(' ')}` : ''}`));
     return 0;
   }
   const fl = value('--floor');
@@ -256,7 +266,7 @@ function main() {
   if (flag('--json')) console.log(JSON.stringify({ film: { name, ...film }, history: history.length, findings }, null, 1));
   else {
     const d = film.devices;
-    console.log(`film-diff: ${name}${film.template ? ` [${film.template}]` : ''}: ${SLOTS.map((s) => `${s} ${d[s] || '-'}`).join(', ')}; moves ${d.moves.join(' ') || '-'}; seams ${d.seams.join(' ') || '-'}${d.type ? `; type ${d.type}` : ''}${d.creative.length ? `; creative ${d.creative.join(' ')}` : ''}`);
+    console.log(`film-diff: ${name}${film.template ? ` [${film.template}]` : ''}: ${SLOTS.map((s) => `${s} ${d[s] || '-'}`).join(', ')}; moves ${d.moves.join(' ') || '-'}; seams ${d.seams.join(' ') || '-'}${d.type ? `; type ${d.type}` : ''}${d.creative.length ? `; creative ${d.creative.join(' ')}` : ''}${(d.hero ?? []).length ? `; hero ${d.hero.join(' ')}` : ''}`);
     console.log(`  against ${Math.min(RECENT, history.length)} of the last films${film.template ? ` and the ${film.template} floor` : ''}`);
     for (const f of findings) console.log(`  ${f.severity === 'error' ? 'FAIL' : 'warn'}  ${f.check}: ${f.message}`);
     if (!findings.length) console.log('  pass: nothing repeats');
