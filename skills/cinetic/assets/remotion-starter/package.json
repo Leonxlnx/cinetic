@@ -17,6 +17,8 @@
     "listen": "node scripts/py.mjs scripts/audio/listen.py",
     "render": "bash scripts/render.sh Film out/film.mp4 --blur --audio public/audio/soundtrack.wav",
     "render:preview": "bash scripts/render.sh Film out/preview.mp4 --preview --audio public/audio/soundtrack.wav",
+    "render:draft": "bash scripts/render.sh Film out/draft.mp4 --draft --max-min 9",
+    "gates": "node scripts/py.mjs scripts/forensics.py out/draft.mp4 --cues out/cues.json --grammar-only --json out/qa/forensics-draft.json; node scripts/py.mjs scripts/copy-check.py --ui src; node scripts/logos.mjs check",
     "qa": "mkdir -p out/qa && node scripts/py.mjs scripts/probe.py out/film.mp4 --spec 1920x1080@60 && node scripts/py.mjs scripts/forensics.py out/film.mp4 --cues out/cues.json --json out/qa/forensics.json && node scripts/py.mjs scripts/av-audit.py out/film.mp4 --cues out/cues.json --stems out/stems --json out/qa/av.json && node scripts/py.mjs scripts/sheet.py out/film.mp4 --out out/qa/sheet.png"
   },
   "dependencies": {

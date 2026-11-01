@@ -262,5 +262,10 @@ console.log(`sound: ${tag}  public/audio/soundtrack.wav  ${line}  (${secs()})`);
 for (const n of notes) console.log(`  note: ${n}`);
 if (kitNote) console.log(`  ${kitNote}`);
 if (tag === 'FAIL') console.log('  the soundtrack is written for a preview; fix the FAIL lines above (references/sound.md §10-11), then npm run sound again');
-else console.log('  next: bash scripts/render.sh Film out/preview.mp4 --preview --audio public/audio/soundtrack.wav');
+else {
+  // the draft again, with the sound under it: when the track's grid (src/music.ts) is newer than the draft, the picture now
+  // follows the track's bars and the old draft's timing (and its ending under the ring-out) is stale
+  const stale = existsSync('out/draft.mp4') && existsSync('src/music.ts') && statSync('src/music.ts').mtimeMs > statSync('out/draft.mp4').mtimeMs;
+  console.log(`  next: bash scripts/render.sh Film out/draft.mp4 --draft --max-min 9${stale ? ' (src/music.ts is newer than out/draft.mp4: the picture follows the track\'s bars now, the old draft is stale)' : ''}`);
+}
 process.exit(tag === 'FAIL' ? 1 : 0);

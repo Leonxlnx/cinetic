@@ -18,7 +18,8 @@
 #              (soft lit grounds band through JPEG intermediates; --jpeg for a faster master of a film without them).
 #   --draft    the WHOLE film early, to look at and to fall back on: half size (-- --scale=S for another),
 #              CRF 23 on x264 superfast, JPEG frames, parts of up to 450 frames (fewer browser starts), no blur
-#              samples, the current soundtrack muxed when there is one (silent until npm run audio writes it), and
+#              samples, the current soundtrack muxed when there is one (with a track picked and no mix yet, the track
+#              alone: sound.mjs --bed-only; silent only with no track at all, said at the end and marked out/qa/SILENT), and
 #              out/qa/draft-sheet.png (16 tiles cut from the video by ffmpeg). Look at the film through the draft
 #              (frames.mjs sheet --from / grab --from), not through per-frame stills.
 #   --from-draft DRAFT  the delivery when the final cannot finish in the time left: the whole draft scaled up to the
@@ -96,8 +97,10 @@
 # --max-min stopped it with parts left (rerun the same command to continue).
 #
 # Options:
-#   --audio FILE        soundtrack (default public/audio/soundtrack.wav). Missing: a --draft or --preview renders
-#                       silent (said once); a master stops before any frame and names the commands that write it
+#   --audio FILE        soundtrack (default public/audio/soundtrack.wav). Missing: a --draft or --preview plays the
+#                       picked track alone (sound.mjs --bed-only), else renders silent (said, and out/qa/SILENT); a
+#                       master stops before any frame and names the commands that write it; --from-draft never delivers
+#                       a silent film
 #   --no-audio          silent deliverable (loops): no mux, no sync check, probe expects no audio
 #   --jpeg              a master through JPEG q95 frames instead of PNG (faster; only for a film with no soft grounds)
 #   --loop              a seamless loop: every pass renders lossless PNG intermediates, because JPEG
@@ -308,6 +311,10 @@ if [[ -n "$FROM_DRAFT" ]]; then
   step "--from-draft: $FROM_DRAFT (${DW}x${DH}) scaled to ${TW}x${TH} as the delivery (the whole film; the final did not finish)"
   AIN=(); AMAP=(-map 0:a:0?)
   if [[ $NOAUDIO -eq 0 && -f "$AUDIO" ]]; then AIN=(-i "$AUDIO"); AMAP=(-map 1:a:0); fi
+  # a delivery is never silent: a draft with no sound and no soundtrack to mux stops here (--no-audio for a silent loop)
+  if [[ $NOAUDIO -eq 0 && ${#AIN[@]} -eq 0 && -z "$(ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 "$FROM_DRAFT")" ]]; then
+    die "--from-draft: $FROM_DRAFT has no sound and there is no $AUDIO to mux: a delivery is never silent (npm run sound, then rerun; --no-audio only for a silent loop)"
+  fi
   DDUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$FROM_DRAFT")
   ACODEC=(-c:a aac -b:a 320k -ar 48000 -ac 2)
   [[ $NOAUDIO -eq 1 ]] && { AMAP=(); ACODEC=(-an); }
@@ -394,10 +401,20 @@ if [[ $BUILD_AUDIO -eq 1 && $NOAUDIO -eq 0 ]]; then
     python3 "$SCRIPT_DIR/audio/score.py" --cues out/cues.json --score audio/score.json --out "$AUDIO" --stems out/stems --json out/qa/score.json >&2
   fi
 fi
+SILENT=0
 if [[ $NOAUDIO -eq 0 && ! -f "$AUDIO" && -z "$FROM_DRAFT" ]]; then
   if [[ $MODE == draft || $MODE == preview ]]; then
-    echo "render.sh: no soundtrack at $AUDIO yet: this $MODE is silent (npm run cues && npm run kit && npm run audio write it; --build-audio does it first)" >&2
-    NOAUDIO=1
+    # a film is never looked at silent once its track is picked: the edited track alone (sound.mjs --bed-only: no cues or
+    # kit needed) plays under the draft until npm run sound mixes the effects in
+    TRACK=$(ls audio/music/*.{mp3,wav,m4a,flac,ogg,aac} 2>/dev/null | grep -v -- '-edit\.' | head -1 || true)
+    if [[ -n "$TRACK" && -f scripts/sound.mjs && "$AUDIO" == public/audio/soundtrack.wav ]]; then
+      step "no soundtrack yet: the track alone under this $MODE (node scripts/sound.mjs --bed-only; npm run sound mixes the effects in)"
+      node scripts/sound.mjs --bed-only --quiet >&2 || echo "render.sh: the bed could not be cut (above)" >&2
+    fi
+    if [[ ! -f "$AUDIO" ]]; then
+      echo "render.sh: no soundtrack at $AUDIO and no track in audio/music: this $MODE is SILENT. Every film is music-led: pick the track now (node scripts/music.mjs pick --mood \"<words>\" --length <s>, then get '#n' --to audio/music), then npm run sound" >&2
+      NOAUDIO=1; SILENT=1
+    fi
   else
     die "soundtrack $AUDIO not found: write it first (npm run cues && npm run kit && npm run audio, or rerun with --build-audio), pass --audio FILE, or --no-audio for a silent film"
   fi
@@ -1001,6 +1018,13 @@ if [[ $MODE == draft ]]; then
   # the draft's contact sheet, cut from the video by ffmpeg (seconds): the first look at the whole film
   node "$SCRIPT_DIR/frames.mjs" sheet --from "$OUT_ABS" --out out/qa/draft-sheet.png --quiet >/dev/null 2>&1 \
     && step "out/qa/draft-sheet.png: 16 tiles over the whole draft (one act: node scripts/frames.mjs sheet --from $OUT --frames A-B)"
+fi
+if [[ $SILENT -eq 1 ]]; then
+  # said again at the end, where it is read: a silent draft is a picture test, never a film (out/qa/SILENT marks it)
+  echo "render.sh: SILENT: $OUT has no sound (no track picked). The film is not done until the track and the kit play under it: node scripts/music.mjs pick, get, npm run sound, then the draft again" >&2
+  : > out/qa/SILENT
+else
+  rm -f out/qa/SILENT
 fi
 if [[ $STATUS -eq 0 ]]; then
   step "done: $OUT (${SIZE_MB} MB, ${DUR}s, $MODE)"

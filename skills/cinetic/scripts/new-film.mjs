@@ -467,10 +467,11 @@ async function stage2() {
   node scripts/precheck.mjs # seconds: every act imports, timing asserts, empty kit parts, text that does not fit
   node scripts/frames.mjs end                   # the ending (lockup) as stills, early: out/stills/end-*.png
   node scripts/frames.mjs still <a CUE frame>   # half-size stills in out/stills/ - look at them
-  bash scripts/render.sh Film out/draft.mp4 --draft --max-min 9   # the WHOLE film, early (rerun until exit 0): half size, the current
-                            # sound (silent until npm run audio), and out/qa/draft-sheet.png (16 tiles) from it
+  bash scripts/render.sh Film out/draft.mp4 --draft --max-min 9   # the WHOLE film, early (rerun until exit 0): half size, the
+                            # picked track under it (never silent once a track is picked), out/qa/draft-sheet.png (16 tiles)
   node scripts/frames.mjs sheet --from out/draft.mp4 --frames <act range>   # review frames from the draft video
-  npm run cues && npm run kit && npm run audio  # the soundtrack; then the draft again, then the final:
+  npm run sound             # the whole soundtrack in one command (the track on the bars, the kit, the mix): PASS, FAIL
+                            # or PARTIAL; then the draft again and npm run gates (forensics, UI strings, marks); then:
   bash scripts/render.sh Film out/film.mp4 --max-min 9   # resumable parts: rerun until exit 0
                             # (npm run studio is for a person at the screen: an agent never starts it)`);
   } else {
