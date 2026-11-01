@@ -166,6 +166,51 @@
  *                  starts/s, 1.3-2.7 moves running at once on average, no 1 s without a start
  *                  outside HOLD and END (warnings)
  *
+ * The spine (the timeline's SPINE_PLAN; --part spine runs these alone and needs nothing else from the timeline). A film
+ * is one action played as 3-5 acts, one case carried from the request to the result, and one element whose form changes
+ * act to act and carries the scene changes. A beat film (a line, a card, a cut, again) passes the beat rules above and
+ * fails here. Shares are of all declared scene changes; a film over 35 s holds the carry family (spine-carry, spine-bare,
+ * spine-momentum, the element share of text-then-cards) as warnings:
+ *   spine-declared no SPINE_PLAN with --part spine, in a timeline that imports the spine or beside src/spine.ts (a film
+ *                  from launch-simple or update without one: a warning); acts outside 3-5 (an update 3-4); no element
+ *                  named; an unknown handover kind or line place (errors); the first act outside 20-32 % of the film (an
+ *                  update's hook 10-32 %) or the last outside 12-31 % (warnings)
+ *   spine-carry    the element carries under half the scene changes, or under 60 % of those inside acts (errors);
+ *                  under 65 % / 75 % (warnings)
+ *   spine-bare     a bare change (nothing carried: no element, anchor, ground, speed or optics) inside an act, or more
+ *                  than one bare act boundary (errors); a bare boundary off the downbeat (warning). The cut to black after
+ *                  the end card (`final: true`) is no join
+ *   spine-momentum speed-only joins (motion, with nothing but optics or the ground beside it) over 30 % of the changes
+ *                  (error), over 20 % (warning)
+ *   spine-boundary an act boundary held only by the ground or optics: no element, anchor, speed or world step (warning)
+ *   spine-lines    more than one group of alone lines in the middle acts (error); under half the lines inside the product
+ *                  or around the element, more than one `over` line (warnings)
+ *   spine-case     no case, or its request (its names, numbers or two of its nouns) on screen in fewer than two acts
+ *                  (error); a name or number of the case never on screen (warning)
+ *   spine-end      the lockup arrives after a bare cut or empty frames (error); a lockup not grown from the element's
+ *                  last form and not entering on the claim's kept ground (warning)
+ *   checklist      a device with no verb, or not drawing its act's form; more devices than acts + 1; two signatures;
+ *                  devices in adjacent acts with no element handover between them (errors); fewer than 3 handover kinds,
+ *                  one kind over 60 % of them (warnings)
+ *   text-then-cards  an alone line in a middle act that is an island (no element, anchor or speed carries it in or out),
+ *                  three alone lines or more while the element carries under half the changes (errors); an island in the
+ *                  first or last act (warning)
+ * SPINE_PLAN (frames at the plan's `fps`, else the timeline's FPS):
+ *   { fps?, total?, format?: 'launch' | 'update', sentence?, element: 'request',
+ *     case: { request, names?: [], numbers?: [], who?, result? },
+ *     acts: [{ id?, verb, form: 'pill' | ['page', 'button'], from, to | dur, world?: 'enter' | 'closer' | 'light' | 'turn'
+ *              | 'pull-back' | 'keep', ui?: [strings on screen], case?: true }],
+ *     changes | handovers: [{ at, kind, carry?: 'EAGMO' letters, whip?, downbeat?, final? }],
+ *     lines: [{ text, place: 'alone' | 'inside' | 'around' | 'over', from, to, in?, out? }],
+ *     devices?: [{ id, act: 1-based index | act id, verb?, form?, signature? }],
+ *     end?: { kind, at? } }
+ *   A change's kind is a handover (grow, shrink, swell, press, iris, zoom, pull, fly, stay, word, part, converge, surface:
+ *   the element carries; momentum: speed; or H1-H14) or a join that is not the element (anchor, ground, world, optics,
+ *   cut); `carry` adds channels (E element, A anchor, G ground, M motion, O optics). A line's `in` / `out` take the same
+ *   letters or kinds (else the change at its first or last frame). An act boundary with no change declared is bare.
+ *   end.kind: a handover kind (the mark grown from the last form), 'entry' (the mark's own entry on the kept ground),
+ *   'none' (the film ends inside the action), 'cut' or 'empty'.
+ *
  * The pace: --pace calm|crisp, else the timeline's PACE_NAME, else crisp (a timeline written before
  * paces existed). The numbers come from the timeline's exported PACE (src/lib/pace.ts) when it has
  * one, so a retuned token moves the checks with the picture; otherwise from the copy below.
@@ -173,7 +218,8 @@
  * Usage:
  *   npx tsx scripts/grid-check.ts [src/timeline.ts | timeline.js] [--pace calm|crisp] [--strict]
  *                                 [--json] [--max-words N] [--max-gap N] [--cues out/cues.json]
- *                                 [--onsets onsets.json] [--lead -3,1]
+ *                                 [--onsets onsets.json] [--lead -3,1] [--part spine]
+ *   --part spine  only the spine rules, on the timeline's SPINE_PLAN (any module that exports one).
  *   Without a path: src/timeline.ts, else timeline.js. Node 22.18+ runs it without tsx too, when
  *   the timeline has no extensionless imports (a HyperFrames timeline.js):
  *   node scripts/grid-check.ts timeline.js
@@ -267,11 +313,12 @@ if (has('-h') || has('--help')) {
   console.log(readFileSync(new URL(import.meta.url), 'utf8').split('*/')[0].replace(/^\/\*\*?/, '').replace(/^ \* ?/gm, ''));
   process.exit(0);
 }
-const valued = new Set(['--max-words', '--max-gap', '--max-rest', '--cues', '--pace', '--onsets', '--lead']);
+const valued = new Set(['--max-words', '--max-gap', '--max-rest', '--cues', '--pace', '--onsets', '--lead', '--part']);
 const positional = argv.filter((a, i) => !a.startsWith('--') && !valued.has(argv[i - 1]));
 const tlPath = resolve(positional[0] ?? (!existsSync('src/timeline.ts') && existsSync('timeline.js') ? 'timeline.js' : 'src/timeline.ts'));
 const json = has('--json');
 const strict = has('--strict');
+const part = val('--part') ?? 'all';
 
 const die = (msg: string): never => {
   if (json) console.log(JSON.stringify({ tool: 'grid-check', pass: false, fatal: msg }));
@@ -343,6 +390,368 @@ async function loadTimeline(path: string): Promise<Record<string, unknown>> {
   return T;
 }
 
+// ---------------------------------------------------------------------------------------------------- the spine
+/**
+ * The spine's house numbers. A film is one action played as acts; one element carries most of its scene changes and
+ * one case runs from the request to the result. The carry family is judged as written up to `longFilm` seconds; a
+ * longer film may lean on speed and section cuts more, so there it warns.
+ */
+const SPINE = {
+  acts: { launch: [3, 5], update: [3, 4] } as Record<string, [number, number]>,
+  first: { launch: [0.2, 0.32], update: [0.1, 0.32] } as Record<string, [number, number]>,
+  last: [0.12, 0.31] as [number, number],
+  carry: { fail: 0.5, warn: 0.65 },
+  within: { fail: 0.6, warn: 0.75 },
+  momentum: { fail: 0.3, warn: 0.2 },
+  placed: 0.5, // under this share of the lines inside the product or around the element warns
+  over: 1, // more `over` lines than this warns
+  aloneMany: 3, // this many alone lines or more ...
+  aloneCarry: 0.5, // ... while the element carries under this share of the changes: text then cards
+  kinds: 3, // fewer handover kinds warns
+  kindShare: 0.6, // one kind over this share of the handovers warns
+  longFilm: 35, // seconds
+  tol: 0.05, // seconds: a change this near an act's start is that act's boundary; a line's edge meets a change as near
+};
+/** Handover kinds that carry the element (the form table's H1-H13); momentum (H14) carries speed only. */
+const SPINE_ELEMENT = ['grow', 'shrink', 'swell', 'press', 'iris', 'zoom', 'pull', 'fly', 'stay', 'word', 'part', 'converge', 'surface'];
+const SPINE_KIND: Record<string, string> = {
+  grow: 'grow', expand: 'grow', cardexpand: 'grow', develop: 'grow', resolve: 'grow',
+  shrink: 'shrink', collapse: 'shrink',
+  swell: 'swell', swellswap: 'swell',
+  press: 'press', pressopen: 'press',
+  iris: 'iris',
+  zoom: 'zoom', zoominto: 'zoom', dive: 'zoom', screenfill: 'zoom', punchin: 'zoom',
+  pull: 'pull', pullout: 'pull', pullback: 'pull',
+  fly: 'fly', flight: 'fly',
+  stay: 'stay', isolate: 'stay',
+  word: 'word', wordswap: 'word', letterswap: 'word',
+  part: 'part', slottake: 'part',
+  converge: 'converge', implode: 'converge', gather: 'converge',
+  surface: 'surface', samesurface: 'surface', travel: 'surface',
+  momentum: 'momentum', velocity: 'momentum', velocitycut: 'momentum', speed: 'momentum', whip: 'momentum',
+  anchor: 'anchor', slot: 'anchor', textswap: 'anchor', centre: 'anchor', center: 'anchor',
+  ground: 'ground',
+  world: 'world', worldstep: 'world',
+  optics: 'optics', blur: 'optics', flash: 'optics', wipe: 'optics', fade: 'optics', dissolve: 'optics', defocus: 'optics', light: 'optics',
+  cut: 'cut', hard: 'cut', bare: 'cut', none: 'cut',
+};
+const SPINE_H = [...SPINE_ELEMENT, 'momentum']; // H1..H14 in order
+const SPINE_PLACES = ['alone', 'inside', 'around', 'over'];
+const SPINE_KEEP = new Set(['', 'keep', 'hold', 'same', 'none', 'kept']);
+const SPINE_STOP = new Set(['a', 'an', 'the', 'for', 'my', 'our', 'your', 'to', 'of', 'in', 'on', 'at', 'and', 'with', 'from', 'by', 'is', 'it', 'me', 'i', 'we', 'you', 'this', 'that', 'can', 'could', 'please', 'make', 'want', 'new']);
+type SpineChange = { at: number; kind: string; ch: Set<string>; whip: boolean; downbeat: boolean | null; final: boolean; boundary: number; act: number; synthetic: boolean };
+type SpineAct = { i: number; id: string; verb: string; forms: string[]; from: number; to: number; step: boolean; strings: string[]; flag: boolean | null };
+type SpineLine = { text: string; place: string; from: number; to: number; act: number; inJ: boolean; outJ: boolean };
+
+/** A kind's canonical name ('' when unknown): handover names, their aliases, H1..H14, the joins that are not the element. */
+const spineKind = (k: unknown): string => {
+  const s = String(k ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const h = /^h(\d{1,2})$/.exec(s);
+  if (h) return SPINE_H[Number(h[1]) - 1] ?? '';
+  return SPINE_KIND[s] ?? '';
+};
+/** The channels a kind carries: E element, M motion, A anchor, G ground, O optics; a world step and a cut carry none. */
+const kindChannels = (kind: string): string => (SPINE_ELEMENT.includes(kind) ? 'E' : ({ momentum: 'M', anchor: 'A', ground: 'G', optics: 'O' } as Record<string, string>)[kind] ?? '');
+/** `carry` as channel letters: 'EAG', ['element', 'anchor'], or a kind. */
+const carryChannels = (v: unknown): string => {
+  if (v === undefined || v === null || v === false) return '';
+  if (v === true) return 'E';
+  if (Array.isArray(v)) return v.map(carryChannels).join('');
+  const s = String(v).trim();
+  if (/^[EAGMO]*$/.test(s)) return s;
+  const word: Record<string, string> = { element: 'E', anchor: 'A', ground: 'G', motion: 'M', speed: 'M', optics: 'O' };
+  return word[s.toLowerCase()] ?? kindChannels(spineKind(s));
+};
+const joinedBy = (ch: string) => /[EAM]/.test(ch);
+const pctOf = (a: number, n: number) => Math.round((1000 * a) / Math.max(1, n)) / 10;
+
+/**
+ * The spine rules on a SPINE_PLAN. `ctx.fps` and `ctx.total` come from the plan or the timeline; `ctx.downbeats` (film
+ * frames) lets a bare act boundary be checked against the music; `ctx.format` launch or update. Returns findings and a
+ * summary for the report.
+ */
+function spineFindings(raw: unknown, ctx: { fps: number; total: number; format: string; downbeats: number[] | null }): { findings: Finding[]; summary: Record<string, unknown> } {
+  const out: Finding[] = [];
+  const err = (check: string, message: string) => out.push({ check, severity: 'error', message });
+  const warn = (check: string, message: string) => out.push({ check, severity: 'warn', message });
+  const P = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const fps = isNum(P.fps) && P.fps > 0 ? P.fps : ctx.fps;
+  const format = String(P.format ?? ctx.format ?? 'launch').toLowerCase() === 'update' ? 'update' : 'launch';
+  const sec = (f: number) => `${(f / fps).toFixed(2)} s`;
+  const tol = Math.max(1, Math.round(SPINE.tol * fps));
+  const list = (k: string[]): Record<string, unknown>[] => {
+    for (const key of k) if (Array.isArray(P[key])) return (P[key] as unknown[]).filter((x) => x && typeof x === 'object') as Record<string, unknown>[];
+    return [];
+  };
+  // --- acts
+  const actsIn = list(['acts']);
+  const acts: SpineAct[] = actsIn
+    .map((a, i) => {
+      const from = Number(a.from);
+      const to = isNum(a.to) ? (a.to as number) : isNum(a.dur) ? from + (a.dur as number) : NaN;
+      const forms = (Array.isArray(a.form) ? a.form : Array.isArray(a.forms) ? a.forms : [a.form]).filter((x) => x !== undefined && x !== null && x !== '').map((x) => String(x).toLowerCase());
+      const strings = (['ui', 'strings', 'words'].map((k) => a[k]).find(Array.isArray) as unknown[] | undefined) ?? [];
+      return { i, id: String(a.id ?? a.verb ?? `act${i + 1}`), verb: String(a.verb ?? ''), forms, from, to, step: !SPINE_KEEP.has(String(a.world ?? '').toLowerCase()), strings: strings.map(String), flag: typeof a.case === 'boolean' ? (a.case as boolean) : null };
+    })
+    .sort((a, b) => a.from - b.from);
+  acts.forEach((a, i) => {
+    a.i = i;
+    if (!isNum(a.to)) a.to = acts[i + 1]?.from ?? (isNum(P.total) ? (P.total as number) : ctx.total);
+  });
+  const total = isNum(P.total) && (P.total as number) > 0 ? (P.total as number) : Math.max(ctx.total || 0, ...acts.map((a) => a.to).filter(isNum));
+  const seconds = total / fps;
+  const long = seconds > SPINE.longFilm;
+  const carryErr = long ? warn : err; // the carry family past 35 s
+  const longNote = long ? ` (a film over ${SPINE.longFilm} s: a warning)` : '';
+  const actAt = (f: number) => {
+    let k = 0;
+    for (const a of acts) if (f >= a.from - 1e-6) k = a.i;
+    return k;
+  };
+  const bad = acts.filter((a) => !isNum(a.from) || !isNum(a.to) || !(a.to > a.from));
+  if (bad.length) err('spine-declared', `acts need frames: ${bad.map((a) => a.id).join(', ')} (from, then to or dur)`);
+  const [aMin, aMax] = SPINE.acts[format];
+  if (acts.length < aMin || acts.length > aMax)
+    err('spine-declared', `${acts.length} act${acts.length === 1 ? '' : 's'}: ${format === 'update' ? 'an update plays a hook and 2-3 changes, 3-4 acts' : 'a film is one action in 3-5 acts, one verb each'}`);
+  if (!String(P.element ?? '').trim()) err('spine-declared', 'no element named (SPINE_PLAN.element): one element carries the film, its form changing act to act');
+  if (acts.length >= 2 && total > 0 && !bad.length) {
+    const first = (acts[0].to - acts[0].from) / total;
+    const last = (acts[acts.length - 1].to - acts[acts.length - 1].from) / total;
+    const [f0, f1] = SPINE.first[format];
+    if (first < f0 - 1e-9 || first > f1 + 1e-9) warn('spine-declared', `the first act runs ${pctOf(first, 1)} % of the film; ${format === 'update' ? 'the hook' : 'the first act (the promise and the request)'} runs ${Math.round(100 * f0)}-${Math.round(100 * f1)} %`);
+    if (last < SPINE.last[0] - 1e-9 || last > SPINE.last[1] + 1e-9) warn('spine-declared', `the last act runs ${pctOf(last, 1)} % of the film; the last act (the result and the claim) runs ${Math.round(100 * SPINE.last[0])}-${Math.round(100 * SPINE.last[1])} %`);
+  }
+  // --- scene changes
+  const unknownKinds = new Set<string>();
+  const changes: SpineChange[] = list(['changes', 'handovers']).flatMap((c) => {
+    const at = Number(c.at ?? c.f ?? c.from);
+    if (!isNum(at)) return [];
+    const kind = spineKind(c.kind);
+    if (c.kind !== undefined && !kind) unknownKinds.add(String(c.kind));
+    const ch = new Set((kindChannels(kind) + carryChannels(c.carry)).split('').filter(Boolean));
+    const whip = c.whip === true || /whip/i.test(String(c.kind ?? ''));
+    return [{ at, kind: kind || (ch.size ? '' : 'cut'), ch, whip, downbeat: typeof c.downbeat === 'boolean' ? (c.downbeat as boolean) : null, final: c.final === true, boundary: -1, act: 0, synthetic: false }];
+  });
+  if (unknownKinds.size) err('spine-declared', `unknown handover kind${unknownKinds.size > 1 ? 's' : ''} ${[...unknownKinds].join(', ')}: use ${SPINE_H.join(', ')} (or H1-H14), anchor, ground, world, optics or cut`);
+  // every act boundary is a scene change: one with no change declared there is a bare cut
+  for (const a of acts.slice(1)) {
+    if (!changes.some((c) => Math.abs(c.at - a.from) <= tol)) changes.push({ at: a.from, kind: 'cut', ch: new Set(), whip: false, downbeat: null, final: false, boundary: -1, act: 0, synthetic: true });
+  }
+  changes.sort((a, b) => a.at - b.at);
+  for (const c of changes) {
+    const b = acts.findIndex((a, i) => i > 0 && Math.abs(c.at - a.from) <= tol);
+    c.boundary = b;
+    c.act = b >= 0 ? b : actAt(c.at);
+  }
+  const n = changes.length;
+  const E = changes.filter((c) => c.ch.has('E'));
+  const within = changes.filter((c) => c.boundary < 0);
+  const withinE = within.filter((c) => c.ch.has('E'));
+  const share = n ? E.length / n : 0;
+  const withinShare = within.length ? withinE.length / within.length : 1;
+  if (!n) err('spine-carry', 'no scene changes declared (SPINE_PLAN.changes): every change of scene is a handover of the element, or says what else carries it');
+  else {
+    if (share < SPINE.carry.fail) carryErr('spine-carry', `the element carries ${E.length} of ${n} scene changes (${pctOf(E.length, n)} %): at least half, two thirds or more in a film that flows. Let the element's last form become the next scene (grow, shrink, swell and swap, fly, zoom into it)${longNote}`);
+    else if (share < SPINE.carry.warn) warn('spine-carry', `the element carries ${E.length} of ${n} scene changes (${pctOf(E.length, n)} %); two thirds or more reads as one action`);
+    if (within.length) {
+      if (withinShare < SPINE.within.fail) carryErr('spine-carry', `inside the acts the element carries ${withinE.length} of ${within.length} changes (${pctOf(withinE.length, within.length)} %): at least 60 %, three quarters or more; inside an act the element changes state, the scene does not cut away from it${longNote}`);
+      else if (withinShare < SPINE.within.warn) warn('spine-carry', `inside the acts the element carries ${withinE.length} of ${within.length} changes (${pctOf(withinE.length, within.length)} %); three quarters or more keeps each act on the element`);
+    }
+  }
+  // --- bare changes
+  const bare = changes.filter((c) => c.ch.size === 0 && !c.final);
+  const bareIn = bare.filter((c) => c.boundary < 0);
+  const bareB = bare.filter((c) => c.boundary >= 0);
+  if (bareIn.length) carryErr('spine-bare', `a bare change inside an act at ${bareIn.map((c) => sec(c.at)).join(', ')}: nothing carries it (no element, anchor, ground, speed or optics). Inside an act the element hands the scene on${longNote}`);
+  if (bareB.length > 1) carryErr('spine-bare', `${bareB.length} bare act boundaries (${bareB.map((c) => `${sec(c.at)}${c.synthetic ? ' (no change declared)' : ''}`).join(', ')}): a bare cut is a section break on a downbeat, once a film at most${longNote}`);
+  const onDown = (c: SpineChange): boolean | null => {
+    if (c.downbeat !== null) return c.downbeat;
+    if (!ctx.downbeats || !ctx.downbeats.length) return null;
+    return ctx.downbeats.some((d) => Math.abs(d - c.at) <= 1);
+  };
+  const offDown = bareB.filter((c) => onDown(c) === false);
+  if (offDown.length) warn('spine-bare', `a bare act boundary off the downbeat at ${offDown.map((c) => sec(c.at)).join(', ')}: a section cut lands on the bar`);
+  // --- momentum
+  const speedOnly = changes.filter((c) => c.ch.has('M') && !c.ch.has('E') && !c.ch.has('A'));
+  const mShare = n ? speedOnly.length / n : 0;
+  if (mShare > SPINE.momentum.fail) carryErr('spine-momentum', `${speedOnly.length} of ${n} changes (${pctOf(speedOnly.length, n)} %) are joined by speed alone: at most 30 %, under 20 % in a film that flows. Speed carries a run of consequences of the same case, never one subject to another${longNote}`);
+  else if (mShare > SPINE.momentum.warn) warn('spine-momentum', `${speedOnly.length} of ${n} changes (${pctOf(speedOnly.length, n)} %) are joined by speed alone; keep it under 20 %: the element carries, speed is the fallback`);
+  // --- act boundaries
+  const loose = changes.filter((c) => c.boundary >= 0 && c.ch.size > 0 && !c.ch.has('E') && !c.ch.has('A') && !c.ch.has('M') && !acts[c.boundary].step);
+  if (loose.length) warn('spine-boundary', `act boundar${loose.length > 1 ? 'ies' : 'y'} at ${loose.map((c) => sec(c.at)).join(', ')} held only by ${loose.map((c) => [...c.ch].join('')).join(', ')} (ground or optics): an act turns on the element, an anchor or speed, or makes the world's one step for that act (enter, closer, light, turn, pull-back)`);
+  // --- lines
+  const unknownPlaces = new Set<string>();
+  const changeNear = (f: number) => changes.filter((c) => Math.abs(c.at - f) <= tol);
+  const sideJoined = (v: unknown, f: number, atFilmEdge: boolean): boolean => {
+    if (v !== undefined && v !== null) return typeof v === 'boolean' ? v : joinedBy(carryChannels(v));
+    if (atFilmEdge) return false;
+    return changeNear(f).some((c) => joinedBy([...c.ch].join('')));
+  };
+  const lines: SpineLine[] = list(['lines']).flatMap((l) => {
+    // frames: from / to (or a COPY entry's numeric in / out); joins: in / out as letters or a kind, joinIn / joinOut, becomes
+    const from = isNum(l.from) ? (l.from as number) : isNum(l.in) ? (l.in as number) : NaN;
+    const to = isNum(l.to) ? (l.to as number) : isNum(l.out) ? (l.out as number) : NaN;
+    const place = String(l.place ?? '').toLowerCase();
+    if (!SPINE_PLACES.includes(place)) {
+      unknownPlaces.add(place || '(none)');
+      return [];
+    }
+    if (!isNum(from) || !isNum(to)) return [];
+    const joinIn = l.joinIn ?? (isNum(l.in) ? undefined : l.in);
+    const joinOut = l.joinOut ?? l.becomes ?? (isNum(l.out) ? undefined : l.out);
+    return [{ text: String(l.text ?? ''), place, from, to, act: actAt(from), inJ: sideJoined(joinIn, from, from <= tol), outJ: sideJoined(joinOut, to, to >= total - tol) }];
+  });
+  if (unknownPlaces.size) err('spine-declared', `line place ${[...unknownPlaces].join(', ')}: a line sits alone (the promise, the claim), inside the product's own words, around the element or over a picture`);
+  lines.sort((a, b) => a.from - b.from);
+  const last = acts.length - 1;
+  const middle = (l: SpineLine) => l.act > 0 && l.act < last;
+  const count = (p: string) => lines.filter((l) => l.place === p).length;
+  const placed = count('inside') + count('around');
+  if (lines.length && placed < SPINE.placed * lines.length)
+    warn('spine-lines', `${placed} of ${lines.length} lines sit inside the product or around the element (${pctOf(placed, lines.length)} %): half or more. In the middle acts the product speaks (the request typed, a status, a button's label) or the element parts the line, rises behind it, holds it`);
+  if (count('over') > SPINE.over) warn('spine-lines', `${count('over')} lines sit over a picture they do not touch: once a film at most`);
+  const groups: SpineLine[][] = [];
+  lines.forEach((l, i) => {
+    if (l.place !== 'alone' || !middle(l)) return;
+    const prev = lines[i - 1];
+    if (prev && prev.place === 'alone' && prev.act === l.act && groups.length && groups[groups.length - 1].includes(prev)) groups[groups.length - 1].push(l);
+    else groups.push([l]);
+  });
+  if (groups.length > 1)
+    err('spine-lines', `${groups.length} groups of alone lines in the middle acts (${groups.map((g) => `"${g[0].text}"`).join(', ')}): a line stands alone for the promise and the claim; in the middle one joined pair at most (a word or letter swap in its slot)`);
+  // --- text then cards
+  const alone = lines.filter((l) => l.place === 'alone');
+  const island = (l: SpineLine) => !l.inJ && !l.outJ;
+  const midIslands = alone.filter((l) => middle(l) && island(l));
+  const endIslands = alone.filter((l) => !middle(l) && island(l));
+  if (midIslands.length)
+    err('text-then-cards', `an alone line in a middle act is an island: ${midIslands.map((l) => `"${l.text}" (${sec(l.from)})`).join(', ')}. Nothing carries it in or out: it comes out of the element (swell and swap, a word that survives the cut, the element parting it) or the element takes it on`);
+  if (alone.length >= SPINE.aloneMany && n && share < SPINE.aloneCarry)
+    carryErr('text-then-cards', `${alone.length} alone lines while the element carries ${pctOf(E.length, n)} % of the changes: a line, a card, a cut, again. Put the middle lines inside the product or around the element and let the element carry the scenes${longNote}`);
+  if (endIslands.length) warn('text-then-cards', `an alone line with nothing carried in or out: ${endIslands.map((l) => `"${l.text}" (${sec(l.from)})`).join(', ')}; the promise is born from the element or turns into it, the claim comes out of the last form`);
+  // --- the case
+  const C = (P.case && typeof P.case === 'object' ? P.case : {}) as Record<string, unknown>;
+  const request = String(C.request ?? '').trim();
+  const names = (Array.isArray(C.names) ? C.names : []).map(String).filter(Boolean);
+  const numbers = (Array.isArray(C.numbers) ? C.numbers : []).map(String).filter(Boolean);
+  const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}$€£%.]+/gu, ' ').trim();
+  const nouns = [...new Set(norm(request).split(/\s+/).filter((w) => w.length >= 3 && !SPINE_STOP.has(w)))];
+  const showsCase = (a: SpineAct) => {
+    if (a.flag !== null) return a.flag;
+    const text = norm(a.strings.join(' | '));
+    if (!text) return false;
+    if (request && text.includes(norm(request))) return true;
+    if (names.some((x) => text.includes(norm(x))) || numbers.some((x) => text.includes(norm(x)))) return true;
+    const hits = nouns.filter((w) => new RegExp(`(^|[^\\p{L}\\p{N}])${w.replace(/[.$]/g, '\\$&')}`, 'u').test(text)).length;
+    return hits >= Math.min(2, nouns.length) && hits > 0;
+  };
+  const caseActs = acts.filter(showsCase).map((a) => a.i);
+  if (!request && !names.length && !numbers.length && !acts.some((a) => a.flag)) err('spine-case', 'no case (SPINE_PLAN.case): one request, record or person, with its names and numbers, followed from the request to the result');
+  else if (caseActs.length < 2)
+    err('spine-case', `the case ${request ? `("${request}")` : ''} is on screen in ${caseActs.length ? `act ${caseActs[0] + 1} only` : 'no act'}: the request made early is the result shown later, its names, numbers or nouns in the strings of two acts or more`);
+  else if (caseActs[caseActs.length - 1] === caseActs[0]) err('spine-case', 'the case never reaches a later act');
+  const allText = norm(acts.map((a) => a.strings.join(' | ')).join(' | '));
+  const unseen = [...names, ...numbers].filter((x) => allText && !allText.includes(norm(x)));
+  if (unseen.length && acts.some((a) => a.strings.length)) warn('spine-case', `the case's ${unseen.map((x) => `"${x}"`).join(', ')} never show${unseen.length === 1 ? 's' : ''} on screen: the names and numbers of the case are the ones the product shows, the same in every act (data-check reads them)`);
+  // --- the end
+  const end = (P.end && typeof P.end === 'object' ? P.end : null) as Record<string, unknown> | null;
+  if (end) {
+    const raw = String(end.kind ?? '').toLowerCase();
+    const kind = ['entry', 'none', 'cut', 'empty'].includes(raw) ? raw : spineKind(raw);
+    const at = isNum(end.at) ? (end.at as number) : null;
+    const arrival = at !== null ? changeNear(at)[0] : undefined;
+    if (kind !== 'none') {
+      if (kind === 'cut' || kind === 'empty' || (arrival && arrival.ch.size === 0) || end.after === 'cut' || end.after === 'empty')
+        err('spine-end', `the lockup arrives after ${kind === 'empty' || end.after === 'empty' ? 'empty frames' : 'a bare cut from a picture'}${at !== null ? ` (${sec(at)})` : ''} with nothing carried: grow the mark out of the element's last form (converge the notices into the count and the count into the mark, pull back from the last screen onto the mark, swell the chip into it, swap the case's key word into the wordmark)`);
+      else if (!SPINE_ELEMENT.includes(kind) && !(kind === 'entry' && (!arrival || arrival.ch.has('G'))))
+        warn('spine-end', `the lockup is not built from the last form (end.kind ${raw || '(none)'}): the mark grows out of it, or enters with its own designed move on the claim's kept ground`);
+    }
+  } else warn('spine-end', 'no end declared (SPINE_PLAN.end): say how the lockup arrives (grown from the last form, its own entry on the kept ground) or that the film ends inside the action');
+  // --- the checklist
+  const kindsUsed = changes.filter((c) => SPINE_H.includes(c.kind));
+  const tally = new Map<string, number>();
+  for (const c of kindsUsed) tally.set(c.kind, (tally.get(c.kind) ?? 0) + 1);
+  const top = [...tally.entries()].sort((a, b) => b[1] - a[1])[0];
+  if (n && tally.size < SPINE.kinds) warn('checklist', `${tally.size} handover kind${tally.size === 1 ? '' : 's'} (${[...tally.keys()].join(', ') || 'none'}): three or more a film, dealt by the form pair (grow, shrink, swell and swap, fly, zoom into, iris, converge, word, part, stay, same surface)`);
+  else if (top && top[1] > SPINE.kindShare * kindsUsed.length) warn('checklist', `one handover kind (${top[0]}) takes ${top[1]} of ${kindsUsed.length} handovers: one house kind may lead, up to 60 %`);
+  const devIn = list(['devices']);
+  if (devIn.length) {
+    const actOf = (d: Record<string, unknown>): number => {
+      if (typeof d.act === 'number') return Math.max(0, Math.min(acts.length - 1, Math.round(d.act) - 1));
+      if (typeof d.act === 'string') {
+        const k = acts.findIndex((a) => a.id === d.act || a.verb === d.act);
+        if (k >= 0) return k;
+      }
+      return isNum(d.at) ? actAt(d.at as number) : -1;
+    };
+    const devs = devIn.map((d) => ({ id: String(d.id ?? '?'), act: actOf(d), verb: String(d.verb ?? '').trim(), form: d.form === undefined ? '' : String(d.form).toLowerCase(), signature: d.signature === true }));
+    const noVerb = devs.filter((d) => !d.verb);
+    if (noVerb.length) err('checklist', `a device with no verb: ${noVerb.map((d) => d.id).join(', ')}. A device is chosen by its act's verb (types, writes, sends, fills, chooses, counts, shows pictures) and draws the element; one with no verb is out`);
+    const offForm = devs.filter((d) => d.form && d.act >= 0 && acts[d.act].forms.length && !acts[d.act].forms.includes(d.form));
+    if (offForm.length) err('checklist', `a device that does not draw its act's form: ${offForm.map((d) => `${d.id} draws ${d.form}, act ${d.act + 1} is ${acts[d.act].forms.join(' / ')}`).join('; ')}`);
+    if (devs.length > acts.length + 1) err('checklist', `${devs.length} devices in ${acts.length} acts: no more than acts + 1`);
+    const sig = devs.filter((d) => d.signature);
+    if (sig.length > 1) err('checklist', `${sig.length} signature devices (${sig.map((d) => d.id).join(', ')}): one signature event a film, at the turn`);
+    const actsWith = [...new Set(devs.map((d) => d.act).filter((k) => k >= 0))].sort((a, b) => a - b);
+    const unjoined: string[] = [];
+    for (let i = 1; i < actsWith.length; i++) {
+      const [a, b] = [actsWith[i - 1], actsWith[i]];
+      if (b !== a + 1) continue;
+      const bound = changes.find((c) => c.boundary === b);
+      if (!bound || !bound.ch.has('E')) unjoined.push(`${devs.filter((d) => d.act === a).map((d) => d.id).join('+')} -> ${devs.filter((d) => d.act === b).map((d) => d.id).join('+')} (${bound ? sec(bound.at) : `act ${b + 1}`})`);
+    }
+    if (unjoined.length) err('checklist', `devices in adjacent acts with no element handover between them: ${unjoined.join('; ')}. Two devices meet through the form table (a ring of photos collapses to a chip or a point before it becomes a stack of notices)`);
+  }
+  const summary = {
+    seconds: +seconds.toFixed(2), format, acts: acts.length, changes: n, element: pctOf(E.length, n), withinActs: within.length ? pctOf(withinE.length, within.length) : null,
+    bare: bare.length, bareInsideActs: bareIn.length, bareBoundaries: bareB.length, speedOnly: pctOf(speedOnly.length, n), kinds: Object.fromEntries(tally),
+    lines: { alone: count('alone'), inside: count('inside'), around: count('around'), over: count('over') }, caseActs: caseActs.map((k) => k + 1), long,
+  };
+  return { findings: out, summary };
+}
+
+/** The music's downbeats in film frames (MUSIC), else the bar lines of the timeline's own grid; null without either. */
+function spineDownbeats(T: Record<string, unknown>): number[] | null {
+  const M = T.MUSIC && typeof T.MUSIC === 'object' ? (T.MUSIC as Music) : null;
+  if (M && Array.isArray(M.downbeats) && M.downbeats.length) return M.downbeats.map(Number).filter(Number.isFinite);
+  const fps = Number(T.FPS);
+  const bpm = Number(T.BPM);
+  const total = Number(T.TOTAL);
+  if (!(fps > 0 && bpm > 0 && total > 0)) return null;
+  const bar = (60 / bpm) * fps * 4;
+  const out: number[] = [];
+  for (let f = 0; f < total; f += bar) out.push(f);
+  return out;
+}
+
+/** --part spine: the spine rules alone, on any module that exports SPINE_PLAN. */
+function spineOnly(T: Record<string, unknown>) {
+  const out: Finding[] = [];
+  let summary: Record<string, unknown> | null = null;
+  const plan = T.SPINE_PLAN;
+  if (plan === undefined || plan === null) {
+    out.push({ check: 'spine-declared', severity: 'error', message: `${tlPath} exports no SPINE_PLAN: the film's sentence, its case, its element and its acts, scene changes and lines (see --help)` });
+  } else {
+    const fps = Number(T.FPS) > 0 ? Number(T.FPS) : 60;
+    const fmt = String((plan as { format?: string }).format ?? (T.LOOK as { filmType?: string } | undefined)?.filmType ?? 'launch');
+    const r = spineFindings(plan, { fps, total: Number(T.TOTAL) > 0 ? Number(T.TOTAL) : 0, format: fmt, downbeats: spineDownbeats(T) });
+    out.push(...r.findings);
+    summary = r.summary;
+  }
+  const errors = out.filter((x) => x.severity === 'error').length;
+  const warnings = out.length - errors;
+  const pass = errors === 0 && !(strict && warnings > 0);
+  if (json) console.log(JSON.stringify({ tool: 'grid-check', part: 'spine', timeline: tlPath, pass, errors, warnings, summary: { spine: summary }, findings: out }, null, 1));
+  else {
+    for (const f of out) console.log(`${f.severity === 'error' ? 'FAIL' : 'warn'}  ${f.check}  ${f.message}`);
+    const s = summary as { acts?: number; changes?: number; element?: number; withinActs?: number | null; speedOnly?: number; lines?: Record<string, number>; caseActs?: number[] } | null;
+    console.log(s
+      ? `grid-check spine: ${s.acts} acts, ${s.changes} scene changes, the element on ${s.element} % (${s.withinActs ?? '-'} % inside acts), speed alone ${s.speedOnly} %, lines ${Object.entries(s.lines ?? {}).map(([k, v]) => `${v} ${k}`).join(', ')}, the case in acts ${(s.caseActs ?? []).join(', ') || 'none'} -> ${pass ? 'pass' : 'FAIL'} (${errors} errors, ${warnings} warnings)`
+      : `grid-check spine: no plan -> FAIL`);
+  }
+  process.exit(pass ? 0 : 1);
+}
+
 async function main() {
   if (!existsSync(tlPath)) die(`${tlPath} not found`);
   let T: Record<string, unknown>;
@@ -352,6 +761,8 @@ async function main() {
     return die(`importing ${tlPath} failed (keep timeline.ts free of React/CSS imports): ${(e as Error).message}`);
   }
   const src = readFileSync(tlPath, 'utf8');
+  if (!['all', 'spine'].includes(part)) die(`--part must be spine (got ${part})`);
+  if (part === 'spine') return spineOnly(T);
   const FPS = Number(T.FPS);
   const BPM = Number(T.BPM);
   const TOTAL = Number(T.TOTAL);
@@ -1314,6 +1725,25 @@ async function main() {
   if (T.TAIL !== undefined && TAIL < FPS) warn('tail', `TAIL is ${TAIL} f; use >= ${FPS} f (1 s)`);
   if (!MUSIC && Math.abs(bodyEnd / BAR - Math.round(bodyEnd / BAR)) > 1e-6) warn('whole-bars', `the body (TOTAL - TAIL = ${bodyEnd} f) is ${(bodyEnd / BAR).toFixed(2)} bars; whole bars loop and end cleanly`);
 
+  // --- the spine: the plan when the timeline exports one; a film that imports the spine, or a template film, without one
+  let spine: Record<string, unknown> | null = null;
+  if (T.SPINE_PLAN !== undefined && T.SPINE_PLAN !== null) {
+    const r = spineFindings(T.SPINE_PLAN, { fps: FPS, total: TOTAL, format: filmType, downbeats: spineDownbeats(T) });
+    out.push(...r.findings);
+    spine = r.summary;
+  } else {
+    let template = '';
+    try {
+      template = String(JSON.parse(readFileSync(resolve(dirname(tlPath), '..', 'film.json'), 'utf8')).template ?? '');
+    } catch {
+      /* no film.json: a film made without a template */
+    }
+    if (existsSync(resolve(dirname(tlPath), 'spine.ts')) || /\bspine\b/i.test(src))
+      err('spine-declared', 'the film plays a spine (src/spine.ts, or the timeline reads it) but the timeline exports no SPINE_PLAN: export it, so the acts, the handovers, the lines and the case are checked');
+    else if (['launch-simple', 'update'].includes(template))
+      warn('spine-declared', `a film from the ${template} template with no SPINE_PLAN: write the film as one sentence, one case, one element in 3-5 acts (the template's spine) and export SPINE_PLAN from the timeline`);
+  }
+
   // --- report
   const errors = out.filter((x) => x.severity === 'error').length;
   const warnings = out.length - errors;
@@ -1343,6 +1773,7 @@ async function main() {
     cuts: cuts.length,
     onsets: onsets.length,
     shots: shotInfo,
+    spine,
   };
   if (json) console.log(JSON.stringify({ tool: 'grid-check', timeline: tlPath, pass, errors, warnings, summary, findings: out }, null, 1));
   else {

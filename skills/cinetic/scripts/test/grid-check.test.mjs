@@ -9,7 +9,12 @@
  *      `args: --cues declares-cover.cues.json`. Music mode: music-124 (a 124 BPM track whose first
  *      downbeat is at 0.37 s) passes clean; music-errors and music-metronome fail and warn as declared.
  *      The script: script-pile (a keyword pile) and script-lines (two lines at once, a declared swap, a
- *      sentence on two lines, the script's reading budget) warn and fail as declared.
+ *      sentence on two lines, the script's reading budget) warn and fail as declared. The spine (SPINE_PLAN, most
+ *      with `args: --part spine`): spine-flow (one action, one case, one element carrying every change) passes clean;
+ *      spine-beats (a line, a card, a cut, again) fails the carry, bare, lines, case, end, checklist and
+ *      text-then-cards rules; spine-long (40 s) holds the carry family as warnings; spine-shape fails the plan's
+ *      shape; spine-timeline is read by the default run. A template film with no SPINE_PLAN warns, a film that plays
+ *      the spine (src/spine.ts) without one fails, and so does --part spine.
  *   2. The HyperFrames starter: grid-check reads its timeline.js (FILM, with the pace from
  *      motion.js) and passes it as calm with no finding, at its own 120 BPM and at 100 BPM; the
  *      accent's fall always lands on CUE.hit (DUR.fall comes from the grid); chain() in replace
@@ -109,6 +114,26 @@ for (const f of runs('fixtures') ? readdirSync(FIX).filter((x) => x.endsWith('.t
   else if ((r.code === 1) !== wantFail) diffs.push(`exit ${r.code}, want ${wantFail ? 1 : 0}`);
   result(!diffs.length, `fixture ${f}`, diffs.join('; ') || Object.entries(expect).map(([k, v]) => `${k}=${v}`).join(' ') || 'clean');
   if (verbose || diffs.length) for (const x of r.findings ?? []) console.log(`      ${x.severity} ${x.check}: ${x.message.slice(0, 140)}`);
+}
+// the spine's declaration: a template film with no SPINE_PLAN warns, one that plays the spine and exports none fails,
+// --part spine on a timeline with no plan fails, and a plan in a film over 35 s holds the carry family as warnings
+if (runs('fixtures')) {
+  const dir = join(TMP, 'spine-film');
+  mkdirSync(join(dir, 'src'), { recursive: true });
+  copyFileSync(join(FIX, 'beats-loop-meets.ts'), join(dir, 'src', 'timeline.ts'));
+  const spineOf = (args = []) => {
+    const r = run(process.execPath, [...strip, '--no-warnings', GRID, join(dir, 'src', 'timeline.ts'), '--json', '--no-copy', ...args]);
+    return { code: r.code, d: (r.findings ?? []).filter((x) => x.check === 'spine-declared').map((x) => x.severity), error: r.error };
+  };
+  const plain = spineOf();
+  writeFileSync(join(dir, 'film.json'), JSON.stringify({ template: 'launch-simple' }));
+  const tmpl = spineOf();
+  writeFileSync(join(dir, 'src', 'spine.ts'), 'export const SPINE = {};\n');
+  const played = spineOf();
+  const part = spineOf(['--part', 'spine']);
+  result(plain.code === 0 && !plain.d.length && tmpl.code === 0 && tmpl.d.join() === 'warn' && played.code === 1 && played.d.join() === 'error' && part.code === 1 && part.d.join() === 'error',
+    'spine-declared: silent without a template, a warning in a template film with no SPINE_PLAN, an error beside src/spine.ts and with --part spine',
+    JSON.stringify({ plain, tmpl, played, part }));
 }
 
 // 2. the HyperFrames starter (plain node: timeline.js and motion.js are classic scripts)
