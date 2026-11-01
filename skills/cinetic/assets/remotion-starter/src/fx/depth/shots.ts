@@ -88,14 +88,19 @@ export const whip = (at: number, to: Framing, o: Opts = {}): Shot => ({ kind: 'w
 /**
  * Follow: the camera rides a moving subject (the caret as text types, the newest row of a list, a cursor on its way
  * to a button), trailing it by about half of `lag` frames and landing when the subject stops (or when the shot ends).
+ * The subject is a point [x, y, z] or a box in scene px (a screen's focus box of that frame, placed with placeFocus:
+ * `(g) => placeFocus(promptBarLayout(p, g).focus, x, y).caret`): the camera rides its centre.
  * `to` changes the other camera fields over the shot on its ease (a slow push while following).
  */
-export const follow = (at: number, subject: (f: number) => V3, o: Opts & { frames: number; lag?: number; to?: Framing }): Shot => ({
+export const follow = (at: number, subject: (f: number) => V3 | Box, o: Opts & { frames: number; lag?: number; to?: Framing }): Shot => ({
   kind: 'follow',
   at,
   frames: o.frames,
   ease: o.ease ?? E.strongInOut,
-  subject,
+  subject: (f: number): V3 => {
+    const p = subject(f);
+    return 'w' in p ? centreOf(p) : p;
+  },
   lag: o.lag ?? f60x(SHOT.follow.lag60, fpsOf(o.film)),
   to: o.to,
   id: o.id,
