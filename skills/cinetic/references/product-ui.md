@@ -621,7 +621,7 @@ Pause on any frame and check it as a screenshot. Run this on the act contact she
 ## 15. Macro screens: rich content a camera can push into
 
 A product shot has to hold up twice: paused (every name, number and date believable, nothing grey or lorem) and pushed
-in 3-4x (the type still crisp, the picture still sharp). `src/kit/screens` is twelve dense screens built for both: one
+in 3-4x (the type still crisp, the picture still sharp). `src/kit/screens` is fifteen dense screens built for both: one
 component each, few props, the film's own content written from the brief by one script, vector type at real UI sizes,
 pictures fetched at 3x their drawn size, and every element exposed as a focus box a camera can frame on any frame.
 
@@ -659,6 +659,11 @@ a date:
 - **Dates round the film's day** (`--date`, else the brief's, else today; written into `FILM_DATE`) with the right
   weekdays; ages as feeds print them ("6 hours ago", "34m"); future times after the film's clock.
 - **Pictures:** a grid of real photos for the brief's words (landscape first, keyless sources, no credit needed).
+- **The product's own site, the request, the covers:** a headline written from `does` ("turns a cooking channel into a
+  paid cookbook" -> "Turn a cooking channel into a paid cookbook", its accent "paid cookbook"; `headline:` and `accent:`
+  in the brief override both), a lead, nav and cards whose figures are the other screens' own (the sales card is the
+  payments header); the one thing many asked for, with the count the assistant's answer gives; the product's items as
+  covers, a figure in a title ("8-Week", "20-Minute") set as its accent.
 
 Read the file, keep what is true of the product, change the rest, run `--check`. Offline (no `--fetch`) a person is
 the product's own coloured initial disc and a picture a lit poster, never grey.
@@ -684,13 +689,19 @@ seen at, for the readable/texture tags), `backdrop` (glass over a photographic p
 | `CodePage` | an editor tab with syntax in two hues of the accent, typed or streamed, a line held in a wash; as wide as its longest line | `code lang file type stream highlight` | editor, file, caret, line{i} |
 | `ChatReply` | the person's ask, the product's mark and name, thinking dots, the answer streaming word by word with items | `ask who text items close at` | thread, ask, who, card, item{i}, close |
 | `ProfileCard` | a channel or account: face, name, seal, handle, counts, the main button pressed, thumbnails with title cards | `name handle photo verified stats action press thumbs` | card, face, name, stats, action, thumb{i} |
+| `BrowserWindow` | the product's own site (or the app it built) in a browser: lights, the address with a lock (typed, then a load line), nav with the mark and a call to action, a headline of up to two lines with its accent words, a lead, two buttons, a real picture with a notice on its edge, three cards (faces and a count, a figure with its trend or a ring, a picture with its title) | `...CONTENT.site type build frost w chrome` | window, chrome, address, url, nav, brand, cta, headline, lead, buttons, picture, notice, cards, card{i} |
+| `RequestPill` | what many asked for: a small label, a pill on the accent opening from the faces of a few who asked, their words, a badge counting how many | `text label people count countLabel at dur` | pill, label, faces, text, badge |
+| `CoverStack` | the thing being made as covers: kicker, the title in heavy condensed capitals with its accent word on a line of its own, a real photo, a strip of facts; the other items stepping back behind it (higher, smaller, darker), landing one after the other | `items kicker at cover size` | stack, cover, title, photo, cover{i} |
 
 ```tsx
 import { CONTENT } from './content';
-import { CommentFeed, PromptBar } from './kit/screens';
+import { BrowserWindow, CommentFeed, CoverStack, PromptBar, RequestPill } from './kit/screens';
 
 <PromptBar {...CONTENT.prompt} at={12} send={90} tone="light" ground={C.paper} />
 <CommentFeed {...CONTENT.comments} header={{ ...CONTENT.comments.header, at: 0, dur: 70 }} scroll={{ at: 20 }} highlight={[{ at: 30, index: 2 }]} />
+<RequestPill {...CONTENT.request!} at={8} tone="dark" ground={C.ink} />
+<BrowserWindow {...CONTENT.site!} type={{ at: 0 }} tone="glass" ground={C.ink} />   // the address types, the page loads and builds
+<CoverStack {...CONTENT.cover!} at={6} tone="dark" ground={C.ink} />
 ```
 
 ### 15.3 Macro: a camera frames a focus box
@@ -743,6 +754,9 @@ dark.
 | `price-pick` | `PriceCards` revealed side by side, the featured plan picked: it lifts with an accent rim, the others step back with their words fading, never into a grey veil |
 | `doc-travel` | `DocPage` written on, the camera travelling down from the title to the table (`title`, `lead`, `table`, `row{i}`) |
 | `answer` | `ChatReply`: the ask bubble, thinking dots, the answer streaming word by word, items with real marks, the closing question |
+| `site-build` | `BrowserWindow` with `type`: the camera starts on `address` at 1.5x while the domain types, the load line runs, then one move pulls back to `window` (fillScale 0.84) as the page builds section by section (nav, headline, lead, buttons, picture, notice, cards, 5 f@60 apart) and lands on the whole page; a close-up can then read `headline` or `cards` |
+| `crowd-to-one` | after `feed-read`: `RequestPill` with the same people and the answer's count; the pill pops where the faces will be, opens to its width as the words arrive, the badge counts on over a second; the camera can sit on `text` at 3x |
+| `making` | `CoverStack` with a `ProgressPill` under it: the covers land back to front (5 f@60 apart, each opaque within the first third of its rise), the pill counts linearly and is still counting at the cut; a push to `title` reads the product's name |
 
 ### 15.6 Rules
 
@@ -758,6 +772,8 @@ dark.
   `public/fonts`), never the film's voice; the screens wait for it (`useFace`).
 - One screen, one job in a shot; dense, never crowded; nothing idles up and down; a camera move on a screen starts,
   travels with its subject and lands; cards face the camera unless a designed 3D move turns them.
-- Cost: a screen is DOM and SVG: about 0.35-0.7 s a frame at 1080p on software GL (no GPU), 1-2 s for the picture-heavy
-  ones (a thumbnail grid, a stack's shadows at 3x) and about 1 s for frost over a plate; on a GPU a fraction of that.
-  Blur only inside a small shape (the plate's soft copy behind a pill), never a full frame.
+- Cost: a screen is DOM and SVG: about 0.75 s a frame on average at 1080p on software GL (no GPU, one tab), measured
+  over sixteen wide and macro shots, up to 1-2 s for the picture-heavy ones (a thumbnail grid, a stack's shadows at
+  3x, frost over a plate); the site window, the request and the covers about 0.9 s; on a GPU a fraction of that. Blur
+  only inside a small shape (the plate's soft copy behind a pill), never a full frame: the glass site window is a tint
+  and a rim unless `frost` is set, and a photograph behind it goes in as `backdrop`.
