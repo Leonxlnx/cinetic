@@ -713,6 +713,10 @@ row while the feed moves. `placeFocus(focus, x, y, k)` puts them in the scene; `
 which the type inside reaches `TEXT_MIN` (36 px); `fillScale(box, W, H, share)` the scale at which the box fills a
 share of the frame. At the default `pt` a 15 pt body is 30 px in a wide shot (texture) and 90 px at 3x (a macro read).
 Text below the readable size at the scale it is seen at is tagged `data-texture`; pass `view` with the camera scale.
+A screen drawn at its film size (k = 1) is a wide shot that leaves most of the frame to the world; when the screen is
+the shot's subject, frame it: a card or a list fills 55-70 % of the frame (`fillScale(focus.card, W, H, 0.66)`), a pill
+about half its width, a site window 84 %, and a close-up reads one box at `readScale` or 3x. Content drawn small and
+left small reads thin, however good it is.
 
 The macro move along the input as it types (one move that starts, travels with its subject and lands):
 
