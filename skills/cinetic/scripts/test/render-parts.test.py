@@ -192,6 +192,8 @@ def main():
             cut_parts = sorted(n for n in os.listdir(os.path.join(proj, 'out', 'render', 'cut')) if n.startswith('part-'))
             result(code == 0 and cut_parts == ['part-000000-000006.mp4', 'part-000007-000013.mp4', 'part-000014-000019.mp4'],
                    'part boundaries land on the act lines in the last half of their parts (7 and 14 for parts of up to 10)', ' '.join(cut_parts))
+            # the act lines above are this test's own: the split tests below cut 20 frames into parts of 5 with none
+            os.remove(os.path.join(proj, 'out', 'cues.json'))
         if PART in ('all', 'split'):
             def renders_of(out_dir_name):
                 rows = [l for l in open(log) if l.startswith('remotion render') and f'/render/{out_dir_name}/' in l.replace(os.sep, '/')] if os.path.exists(log) else []

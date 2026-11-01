@@ -319,7 +319,7 @@ if [[ -n "$FROM_DRAFT" ]]; then
   ACODEC=(-c:a aac -b:a 320k -ar 48000 -ac 2)
   [[ $NOAUDIO -eq 1 ]] && { AMAP=(); ACODEC=(-an); }
   ffmpeg -v error -y -i "$FROM_DRAFT" ${AIN[@]+"${AIN[@]}"} -map 0:v:0 ${AMAP[@]+"${AMAP[@]}"} \
-    -vf "scale=${TW}:${TH}:flags=lanczos,format=yuv420p" -c:v libx264 -crf "${CRF:-16}" -preset medium \
+    -vf "scale=${TW}:${TH}:flags=lanczos,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv" -c:v libx264 -crf "${CRF:-16}" -preset medium \
     -color_primaries bt709 -color_trc bt709 -colorspace bt709 -color_range tv ${ACODEC[@]+"${ACODEC[@]}"} -t "$DDUR" -movflags +faststart "$OUT_ABS" \
     || die "ffmpeg could not scale the draft"
   if [[ $NOCHECK -eq 0 ]] && python3 -c "import numpy" >/dev/null 2>&1; then
@@ -433,6 +433,7 @@ touch "$WORK/.bundled"
 # muted), so writing a new mix never rebuilds the bundle or drops a rendered part
 PUBDIRS=()
 for d in public/*/; do [[ -d "$d" && "$d" != public/audio/ ]] && PUBDIRS+=("${d%/}"); done
+for f in public/*; do [[ -f "$f" ]] && PUBDIRS+=("$f"); done   # top-level files of public/ too (keyed by path and size)
 # the parts route keeps its bundle and parts in a folder of the project, so a stopped run resumes
 CHUNKED=0; [[ $MODE != blur && $SINGLE -eq 0 ]] && CHUNKED=1
 PARTS=${PARTS:-out/render/$NAME}

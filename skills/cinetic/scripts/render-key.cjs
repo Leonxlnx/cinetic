@@ -3,8 +3,8 @@
 // the composition it renders changed since (then it rebuilds the bundle; the parts rendered from the old one go,
 // or, with --redo A-B, only those that overlap the frames the edit changes).
 //
-//   node scripts/render-key.cjs --entry src/index.ts --comp Film [--manifest FILE] [<public dir>...]
-//   node scripts/render-key.cjs <src dir> [<public dir>...]          (every file under the src dir, the 1.1 key)
+//   node scripts/render-key.cjs --entry src/index.ts --comp Film [--manifest FILE] [<public dir or file>...]
+//   node scripts/render-key.cjs <src dir> [<public dir or file>...]  (every file under the src dir, the 1.1 key)
 //
 // With --entry and --comp the key covers what that composition's frames can depend on: the entry, the file that
 // registers the composition (Root.tsx), the closure of relative imports of its component and of every module the
@@ -38,6 +38,7 @@ const sha = (buf) => crypto.createHash('sha1').update(buf).digest('hex');
 
 const walk = (dir, out = []) => {
   if (!fs.existsSync(dir)) return out;
+  if (!fs.statSync(dir).isDirectory()) return (out.push(dir), out); // a file given in the list (a top-level public/ file)
   for (const name of fs.readdirSync(dir).sort()) {
     const p = path.join(dir, name);
     const st = fs.statSync(p);
