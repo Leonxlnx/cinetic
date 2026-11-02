@@ -30,11 +30,13 @@ budget, the final started by 70 %, never a cut film).
    track is picked and fitted before the picture is timed, and `npm run sound` mixes the kit before the review.
 2. **The fast gates**, each seconds to a minute on a 30 s film: `npm run gates` (`forensics.py out/draft.mp4 --cues
    out/cues.json --grammar-only`: the sound, cuts that hide themselves, ghost and torn cuts, empty frames and stalls,
-   frozen holds, legibility, the ending, the world; `copy-check.py --ui src`; `logos.mjs check`), `grid-check.ts`
-   (the text-then-cards loop, the brief's length), `lint-film.mjs src`, `precheck.mjs` (the cast), `layout-audit.sh
-   Film --cues --scale 0.5` (placement, overlaps, text cut by the frame in the product beats, kit icons, stand-ins),
-   `film-diff.mjs` (`references/checks.md` §1 lists them in order). A gate that costs more than 5 minutes on a 30 s
-   film is advisory.
+   frozen holds, legibility, the ending, the world, and in a spine film the element in its box across every handover,
+   undeclared swaps and the pixel loop; `copy-check.py --ui src`; `logos.mjs check`), `grid-check.ts` (the
+   text-then-cards loop, the brief's length, the spine: the element carrying the changes, one case, lines alone only at
+   the ends), `lint-film.mjs src`, `precheck.mjs` (the cast, the case), `look-audit.py out/draft.mp4 --look` (no
+   flat void, no plain card slab), `layout-audit.sh Film --cues --scale 0.5` (placement, overlaps, text cut by the
+   frame in the product beats, kit icons, stand-ins), `film-diff.mjs` (`references/checks.md` §1 lists them in order).
+   A gate that costs more than 5 minutes on a 30 s film is advisory.
 3. **One contact sheet, cut from the draft**: `node scripts/frames.mjs sheet --from out/draft.mp4` (16 labelled tiles;
    `--frames A-B --every N` for one act, `grab --from out/draft.mp4 <frames>` for full frames). No per-frame stills.
 4. **The director pass** (`assets/critics/director.md`): the picture beats read with the words ignored first (what
@@ -51,6 +53,21 @@ budget, the final started by 70 %, never a cut film).
    card drifting off centre to the last frame; a world that is one still photograph or murk; a shot without the
    habits of standard 10 (a sharp plane and its falloff, a camera move that lands, light from a source, a real
    material, real content in quantity); the music cut at the end.
+   Two tests on the sheet, before the checklist:
+   - **The chain sentence.** Write the cut film as one line, "A becomes B becomes C ...", the element's form in each
+     tile (the request typed becomes the page, the page's Publish becomes the live pill, the live pill becomes the
+     first sign-up, the sign-ups become the count, the count becomes the mark). Every "then" between two tiles is a
+     join still to design: a cut where the element should grow, shrink, swell and swap, fly or be zoomed into; a film
+     that needs "and also" is two films, cut one. `chainSentence()` (lib/spine) prints the plan's own sentence:
+     the sheet must read the same.
+   - **The covered words.** Cover the text in six frames (one per act and the end) and ask: what is the one action,
+     and which case runs through it (the same request, names and numbers)? If a stranger cannot say it, the picture
+     does not tell it: the product's own words and the element carry the middle, the lines only promise and claim.
+   The words a blind critic uses, and the gate that catches each: "text then cards" (grid-check `text-then-cards` and
+   `spine-carry`; forensics `text-then-cards` and `swap`), "a checklist of strong moments" (grid-check `checklist`,
+   `spine-case`), "no world that belongs to the product" (look-audit `flat-void`; forensics `world-still`,
+   `world-murk`), "plain card slabs" (look-audit `card-slab`), "the product never does its job in motion" (grid-check
+   `spine-carry` inside acts, forensics `spine-track`), "a lockup cut in from a picture" (grid-check `spine-end`).
 5. **Fix** in order of impact per minute: every P0, then the P1s the time allows, then the draft again (only the parts
    whose source changed re-render).
 6. **A second round only when a gate fails or a P0 was fixed**; otherwise go to the master. Stop after three rounds.
@@ -60,7 +77,8 @@ budget, the final started by 70 %, never a cut film).
    `film-diff.mjs --record`.
 
 Advisory, never a ship gate in the default review: `grammar-score.mjs` (it rewards the house grammar, not this film's),
-`look-audit.py` (its floors are a useful read of a flat film), `measure-speed.py`. The blind pair test, the detail pass,
+`look-audit.py`'s full run (its floors are a useful read of a flat film; its `--look` read is the default look's
+gate above), `measure-speed.py`. The blind pair test, the detail pass,
 the four lenses, the verifier and the 12-dimension rubric belong to the long review.
 
 ### Rounds in the long review
