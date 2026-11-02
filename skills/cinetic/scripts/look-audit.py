@@ -3,6 +3,7 @@
 
 Usage:
   python3 scripts/look-audit.py out/film.mp4 --cues out/cues.json --json out/qa/look.json
+  python3 scripts/look-audit.py out/draft.mp4 --look     # the default look: flat-void, card-slab, small-subject (fast)
   python3 scripts/look-audit.py out/film.mp4 --cues out/cues.json --layout out/qa/layout-Film.json --tokens src/brand/tokens.ts
   python3 scripts/look-audit.py out/clip.mp4 --trajectory --roi 600,400,720,200 --accent '#08965A' [--target t.json]
   python3 scripts/look-audit.py --self-test
@@ -80,6 +81,18 @@ Look checks (warn unless marked fail):
                   ramp follows the ground's (translucent: the ground shows through), or, on a light ground, one under
                   9 L* off it with no shadow under it. A card is an opaque face with a hairline, a top highlight and two
                   shadows (kit/card Card); glass only with its backdrop
+  card-slab       fail in a film that stands on a world (under half its samples a void): a plain card slab on 3 or more
+                  samples and 15 % of them (two warn), two samples a second read at 960 wide: a flat white or grey face (L* 50+,
+                  neutral) floating inside the frame, faces grown block to block while a neighbour stays within 2 L* (cards
+                  stacked in depth stay apart, text rows close inside a face), its own light spanning under 3 L* (p90 - p10,
+                  a block in from its outline: no key across it, no sweep), no rim (no peak across its top edge 4 L* over
+                  the face and the ground above it), no glass (its face opaque and flat); the drop shadow is reported, not
+                  required. A quiet 1-2 L* sheen alone stays a slab. `--surfaces` reads it
+  flat-void       (the picture floor, and `--surfaces`) fail: 80 % of the body samples or more stand on one void (60 %
+                  warns): the ground (the largest flat field touching two frame edges, 16 px blocks at 480 wide, std < 1.5,
+                  15 % of the frame or more; a card may cover the rest) is near-white (L* 88+) or near-black (12 or less),
+                  neutral, unlit (its L* range under 12), with no plate (no textured region bleeding off two frame edges
+                  over 15 % of the frame), and its lightness spreads under 8 L* across those samples (no world step)
   text-on-asset   fail (--layout): a text box that cuts into a mark or a picture in view on 2 or more audited frames (warn on
                   one): the layout audit's text box crosses the edge of a mark ([data-logo]) or a picture ([data-imagery])
                   by more than 2 px each way at 1080, and the strip of the asset beside the crossing (24 px, outside the text
@@ -725,27 +738,24 @@ def cheap_cards(rgb, keep=None, P=CHEAP):
     L = lstar(mean)
     flat = std < P['flat_std']
     hb, wb = flat.shape
-    seen = np.zeros_like(flat)
+    # flat regions grown while a neighbour stays within `join` L* (OpenCV flood fills, neighbour-relative); kept: the
+    # regions large enough to be a panel and the ones touching two frame edges (the ground)
+    Lm = np.ascontiguousarray(L.astype(np.float32))
+    seen = np.zeros((hb + 2, wb + 2), np.uint8)
+    seen[1:-1, 1:-1] = (~flat).astype(np.uint8)
     regs = []
-    for y in range(hb):
-        for x in range(wb):
-            if not flat[y, x] or seen[y, x]:
-                continue
-            stack, pts = [(y, x)], []
-            seen[y, x] = True
-            while stack:
-                cy, cx = stack.pop()
-                pts.append((cy, cx))
-                for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                    ny, nx = cy + dy, cx + dx
-                    if 0 <= ny < hb and 0 <= nx < wb and flat[ny, nx] and not seen[ny, nx] and abs(L[ny, nx] - L[cy, cx]) < P['join']:
-                        seen[ny, nx] = True
-                        stack.append((ny, nx))
-            ys = np.array([q[0] for q in pts])
-            xs = np.array([q[1] for q in pts])
-            y0, y1, x0, x1 = int(ys.min()), int(ys.max()), int(xs.min()), int(xs.max())
-            regs.append(dict(ys=ys, xs=xs, n=len(pts), touch=int(y0 == 0) + int(x0 == 0) + int(y1 == hb - 1) + int(x1 == wb - 1),
-                             fill=len(pts) / ((y1 - y0 + 1) * (x1 - x0 + 1)), box=[x0, y0, x1, y1]))
+    for y, x in zip(*np.nonzero(flat)):
+        if seen[y + 1, x + 1]:
+            continue
+        cnt, _, _, (rx, ry, rw, rh) = cv2.floodFill(Lm, seen, (int(x), int(y)), 0, P['join'], P['join'], 4 | cv2.FLOODFILL_MASK_ONLY | (2 << 8))
+        win = seen[ry + 1: ry + rh + 1, rx + 1: rx + rw + 1]
+        new = win == 2
+        win[new] = 1
+        touch = int(ry == 0) + int(rx == 0) + int(ry + rh >= hb) + int(rx + rw >= wb)
+        if cnt < P['area'] * hb * wb and touch < 2:
+            continue
+        yy, xx = np.nonzero(new)
+        regs.append(dict(ys=yy + ry, xs=xx + rx, n=int(cnt), touch=touch, fill=cnt / float(rw * rh), box=[rx, ry, rx + rw - 1, ry + rh - 1]))
     grounds = [r for r in regs if r['touch'] >= 2]
     if not grounds:
         return dict(panels=0, cheap=[])
@@ -783,6 +793,109 @@ def cheap_cards(rgb, keep=None, P=CHEAP):
         if why:
             out.append(dict(box=[x0 * b, y0 * b, (x1 + 1) * b, (y1 + 1) * b], step=round(step, 1), shadow=shadow, track=round(track, 2), why='; '.join(why)))
     return dict(panels=panels, ground=round(gL, 1), cheap=out)
+
+
+# a plain card slab: a flat white or grey face with a drop shadow and nothing else: no glass, no rim, no lit face
+SLAB = dict(
+    block=8, flat_std=2.2, join=2.0,  # 8 px blocks at 1920 wide, flat inside; neighbours within 2 L* are one face
+    area=0.015, fill=0.7,  # a card: this share of the frame or more, its outline filling this share of its box, touching no edge
+    light=50.0,  # L*: a white or grey face (a dark card is card-separation's)
+    chroma=0.06,  # max - min of the face's mean RGB / 255 under this: neutral
+    lit=3.0,  # L*: a face whose own light spans this much (p90 - p10 of its blocks, a block in from its outline) is lit: a key
+    # across it, a sweep, a pool (a quiet 1-2 L* sheen alone stays a slab)
+    rim=4.0,  # L*: a peak across the top edge this much over the face and the ground above it is a rim or a top highlight
+    shadow=0.8,  # L*: the strip under the card darker than the strip below it: a drop shadow (reported; on a dark ground it hides)
+    samples=3, share=0.15,  # fail: slabs on this many samples and this share of them (in a film that stands on a world); warn from 2
+    # (a crafted film on a world may show a plain light card on about a tenth of its samples, a passing state; a film
+    # whose cards read cheap shows them on a fifth or more)
+)
+
+
+def card_slabs(rgb, keep=None, P=SLAB):
+    """card-slab: flat white or grey cards floating in the frame (touching no edge) with no rim (a bright peak across the
+    top edge), no lit face (the face's own light spread) and no glass (the face is opaque, flat and neutral); the drop
+    shadow under them is reported. Independent of the ground: on a photograph or a lit field too. Returns [{box (px), L,
+    lit, rim, shadow, dropped}]."""
+    h, w = rgb.shape[:2]
+    s = w / 1920.0
+    b = max(3, int(round(P['block'] * s)))
+    mean, std = _blocks(rgb, b, keep)
+    L = lstar(mean)
+    ch = (mean.max(-1) - mean.min(-1)) / 255.0
+    flat = (std < P['flat_std']) & (L >= P['light']) & (ch < P['chroma'])
+    hb, wb = flat.shape
+    if hb < 4 or wb < 4:
+        return []
+    # faces: flat light blocks grown while a neighbour stays within `join` L* (cards stacked in depth stay apart), then
+    # each face's filled outline (a card's text rows break its face into pieces)
+    lab = np.zeros((hb, wb), np.int32)
+    n = 1
+    Lm = np.ascontiguousarray(L.astype(np.float32))
+    seen = np.zeros((hb + 2, wb + 2), np.uint8)  # the flood fills' mask: non-flat blocks and filled faces are closed
+    seen[1:-1, 1:-1] = (~flat).astype(np.uint8)
+    regions = []  # (label, x0, y0, w, h) of the faces large enough to be a card
+    min_n = 0.25 * P['area'] * hb * wb
+    for y, x in zip(*np.nonzero(flat)):
+        if seen[y + 1, x + 1]:
+            continue
+        # neighbour-relative growth (no fixed range): a face's own slow light stays one face, a step of `join` L* ends it
+        cnt, _, _, (rx, ry, rw, rh) = cv2.floodFill(Lm, seen, (int(x), int(y)), 0, P['join'], P['join'], 4 | cv2.FLOODFILL_MASK_ONLY | (2 << 8))
+        win = seen[ry + 1: ry + rh + 1, rx + 1: rx + rw + 1]
+        new = win == 2
+        win[new] = 1
+        if cnt >= min_n and rw * rh >= P['area'] * hb * wb:
+            lab[ry: ry + rh, rx: rx + rw][new] = n
+            regions.append((n, rx, ry, rw, rh))
+        n += 1
+    Lw = lambda y0, y1, x0, x1: lstar(rgb[y0:y1, x0:x1].astype(np.float32))  # noqa: E731  (L* of a window, never the whole frame)
+    out = []
+    for c, x0, y0, bw, bh in regions:
+        if x0 == 0 or y0 == 0 or x0 + bw >= wb or y0 + bh >= hb:
+            continue
+        comp = np.zeros((hb, wb), np.uint8)
+        comp[y0:y0 + bh, x0:x0 + bw] = lab[y0:y0 + bh, x0:x0 + bw] == c
+        comp = cv2.morphologyEx(comp, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
+        cs, _ = cv2.findContours(comp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        filled = np.zeros_like(comp)
+        cv2.drawContours(filled, cs, -1, 1, thickness=-1)
+        fa = int(filled.sum())
+        if fa < P['area'] * hb * wb or fa / float(bw * bh) < P['fill']:
+            continue
+        face_m = lab == c
+        if face_m.sum() < 0.4 * fa:
+            continue  # mostly a picture or a screen inside a frame: its face is not the card
+        face = np.sort(L[face_m].ravel())
+        q = lambda a, p: float(a[min(len(a) - 1, int(round(p * (len(a) - 1))))])  # noqa: E731
+        if q(face, 0.95) - q(face, 0.05) > P['join'] * 3:
+            continue  # several faces joined: not one card
+        # the face's own light, away from its edge (a block in from the outline): a key across it, a sheen, a top highlight
+        core = cv2.erode(filled, np.ones((3, 3), np.uint8)) > 0
+        core_L = np.sort(L[core & face_m].ravel()) if (core & face_m).sum() >= 6 else face
+        lit = q(core_L, 0.90) - q(core_L, 0.10)
+        fL = q(face, 0.5)
+        X0, Y0, X1, Y1 = x0 * b, y0 * b, (x0 + bw) * b, (y0 + bh) * b
+        # a rim or a top highlight: a peak across the top edge brighter than both the face and the ground above it
+        rim = 0.0
+        for fx in (0.3, 0.5, 0.7):
+            x = int(X0 + fx * (X1 - X0))
+            prof = Lw(max(0, Y0 - b), min(h, Y0 + 2 * b), x, x + 1)[:, 0]
+            if prof.size < 6:
+                continue
+            e = int(np.argmax(np.abs(np.diff(prof))))
+            seg = prof[max(0, e - 2): e + 6]
+            rim = max(rim, float(seg.max()) - max(fL, float(np.median(prof[:2]))))
+        Xa, Xb = int(X0 + 0.15 * (X1 - X0)), int(X1 - 0.15 * (X1 - X0))
+        near = Lw(min(h - 1, Y1 + int(4 * s)), min(h, Y1 + int(0.025 * h)), Xa, Xb)
+        far = Lw(min(h - 1, Y1 + int(0.045 * h)), min(h, Y1 + int(0.07 * h)), Xa, Xb)
+        shadow = float(far.mean() - near.mean()) if near.size and far.size else 0.0
+        if lit < P['lit'] and rim < P['rim']:
+            out.append(dict(box=[int(X0), int(Y0), int(X1 - X0), int(Y1 - Y0)], L=round(fL, 1), lit=round(lit, 2), rim=round(rim, 2), shadow=round(shadow, 2),
+                            dropped=bool(shadow >= P['shadow'])))
+    # a pill or a field inside a card is part of that card
+    def inside(a, o):
+        (ax, ay, aw, ah), (ox, oy, ow, oh) = a['box'], o['box']
+        return a is not o and ax >= ox and ay >= oy and ax + aw <= ox + ow and ay + ah <= oy + oh
+    return [a for a in out if not any(inside(a, o) for o in out)]
 
 
 SUBJECT = dict(
@@ -843,9 +956,10 @@ def small_subject(rgb, P=SUBJECT):
                 box=[int(x0 * k), int(y0 * k), int((x1 - x0) * k), int((y1 - y0) * k)])
 
 
-def surface_scan(paths_or_video, info=None, small=None):
+def surface_scan(paths_or_video, info=None, small=None, slabs=None, voids=None):
     """banding and cheap_cards over a film (two samples a second, full resolution) or stills: (band hits, cheap hits,
-    samples); a list passed as `small` collects the small-subject hits."""
+    samples); a list passed as `small` collects the small-subject hits, one passed as `slabs` the plain card slabs, one
+    passed as `voids` every sample's ground read (flat-void)."""
     bands, cheap, n = [], [], 0
 
     def one(rgb, tag):
@@ -861,6 +975,19 @@ def surface_scan(paths_or_video, info=None, small=None):
             ss = small_subject(rgb)
             if ss['small']:
                 small.append(dict(tag, **ss))
+        # the card and the void reads are size-independent: half resolution (960 wide) and the 480-wide analysis size
+        h0, w0 = rgb.shape[:2]
+        if slabs is not None:
+            k = 960.0 / w0 if w0 > 960 else 1.0
+            half = cv2.resize(rgb, (int(round(w0 * k)), int(round(h0 * k))), interpolation=cv2.INTER_AREA) if k < 1 else rgb
+            sl = card_slabs(half)
+            for c in sl:
+                c['box'] = [int(round(v / k)) for v in c['box']]
+            if sl:
+                slabs.append(dict(tag, cards=sl))
+        if voids is not None:
+            small_v = cv2.resize(rgb, (480, max(2, int(round(h0 * 480.0 / w0)))), interpolation=cv2.INTER_AREA) if w0 > 480 else rgb
+            voids.append(dict(tag, **ground_void(small_v)))
 
     if info is not None:
         for f, rgb in ui_frames(paths_or_video, info):
@@ -873,6 +1000,44 @@ def surface_scan(paths_or_video, info=None, small=None):
     return bands, cheap, n
 
 
+def look_scan(paths_or_video, info=None):
+    """--look, the default look on a draft: two samples a second read at 960 wide (stills as they are): the ground's void
+    read, plain card slabs, cheap cards and small subjects. Returns (voids, slabs, cheap, small, samples)."""
+    voids, slabs, cheap, small = [], [], [], []
+    n = 0
+
+    def one(rgb, tag):
+        nonlocal n
+        n += 1
+        h0, w0 = rgb.shape[:2]
+        if w0 > 960:
+            rgb = cv2.resize(rgb, (960, int(round(h0 * 960.0 / w0))), interpolation=cv2.INTER_AREA)
+            h0, w0 = rgb.shape[:2]
+        k = 1920.0 / w0  # boxes reported at 1920 wide
+        sl = card_slabs(rgb)
+        for c in sl:
+            c['box'] = [int(round(v * k)) for v in c['box']]
+        if sl:
+            slabs.append(dict(tag, cards=sl))
+        cc = cheap_cards(rgb)
+        if cc['cheap']:
+            cheap.append(dict(tag, cards=cc['cheap']))
+        ss = small_subject(rgb)
+        if ss['small']:
+            small.append(dict(tag, **ss))
+        voids.append(dict(tag, **ground_void(cv2.resize(rgb, (480, max(2, int(round(h0 * 480.0 / w0)))), interpolation=cv2.INTER_AREA) if w0 > 480 else rgb)))
+
+    if info is not None:
+        for f, rgb in ui_frames(paths_or_video, info, width=960):
+            one(rgb, dict(f=f))
+    else:
+        for p in paths_or_video:
+            im = cv2.imread(p)
+            if im is not None:
+                one(cv2.cvtColor(im, cv2.COLOR_BGR2RGB), dict(file=p))
+    return voids, slabs, cheap, small, n
+
+
 def subject_flags(small, n, add, fps):
     """small-subject: fail on SUBJECT['samples'] or more samples with a small subject in an empty frame, warn on one."""
     if not small:
@@ -883,6 +1048,40 @@ def subject_flags(small, n, add, fps):
     add('small-subject', sev, at, f"a small subject in an empty frame on {len(small)} of {n} sample(s) (first {x.get('file') or f'{at / fps:.1f} s'}: the content spans "
         f"{x['height'] * 100:.0f} % of the height and {x['area'] * 100:.0f} % of the frame, a solid shape at {x['solid'][0]}): on a product beat the subject fills the frame "
         '(50 % of its height or more: the device or the card at film size, the scene framed on its focus box) or a macro crop of the moment that matters, never a small card in an empty field')
+
+
+def void_flags(voids, add, fps):
+    """flat-void on the surface samples (--surfaces): VOID['share'] of them standing on one void fails, VOID['warn']
+    warns. Returns the share."""
+    vs = [v for v in voids if is_void(v)]
+    share = len(vs) / max(1, len(voids))
+    Ls = [v['L'] for v in vs]
+    spread = float(np.percentile(Ls, 90) - np.percentile(Ls, 10)) if Ls else 0.0
+    if vs and spread < VOID['step'] and share >= VOID['warn']:
+        x = vs[0]
+        at = x.get('f', 0)
+        add('flat-void', 'fail' if share >= VOID['share'] else 'warn', at,
+            f"{len(vs)} of {len(voids)} samples ({share * 100:.0f} %) stand on one empty {'near-white' if Ls[0] >= 50 else 'near-black'} field (L* "
+            f"{float(np.median(Ls)):.1f}, spread {spread:.1f} L*; unlit, no plate): the film stands in a void. Give it a world that belongs to the product: "
+            'a graded plate of its place, a lit field (fx/world, fx/light) and one step of that world per act')
+    return share
+
+
+def slab_flags(slabs, n, add, fps, world=True):
+    """card-slab: plain card slabs on SLAB['samples'] or more samples and SLAB['share'] of them fail in a film that stands
+    on a world (a film in a void fails flat-void instead); two samples warn."""
+    if not slabs or not world:
+        return
+    sev = 'fail' if len(slabs) >= SLAB['samples'] and len(slabs) / max(1, n) >= SLAB['share'] else 'warn' if len(slabs) >= 2 else None
+    if not sev:
+        return
+    x = slabs[0]
+    at = x.get('f', 0)
+    c = x['cards'][0]
+    add('card-slab', sev, at, f"plain card slabs on {len(slabs)} of {n} sample(s) (first {x.get('file') or f'{at / fps:.1f} s'} at {c['box']}: a flat L* {c['L']} face, "
+        f"its own light spanning {c['lit']} L*, no rim{', a drop shadow' if c.get('dropped') else ''}): a plain white or grey slab reads cheap in a film with a world. Give the card "
+        "its material: a lit face (the key's gradient across it), a rim on the key side and an inner top highlight, or glass over its backdrop (kit/card Card, "
+        "kit/parts Surface, fx/light)")
 
 
 def surface_flags(bands, cheap, n, add, fps):
@@ -1088,6 +1287,52 @@ def ground_place(rgb, keep=None):
     return best
 
 
+# flat-void: the film stands on an empty near-white or near-black field all through (no plate, no lit field, no step)
+VOID = dict(
+    field=0.15,  # the ground (the largest flat field touching two frame edges: 16 px blocks at 480 wide, std < 1.5) shows on this
+    # share of the frame or more (a card may cover the rest: it still stands on that field) ...
+    light=88.0, dark=12.0,  # ... at L* 88 or more (a blank page) or 12 or less (a black void) ...
+    chroma=0.12, range=12.0,  # ... neutral (RGB max - min under 0.12) and unlit (its L* range under 12: a lit field spans more)
+    plate=0.15,  # ... and no plate: no textured region bleeding off two frame edges over this share (a photograph, footage, a world)
+    share=0.80, warn=0.60,  # body samples on a void: fail from this share, warn from this one
+    step=8.0,  # L*: the void's lightness across those samples spreads less than this: one void, no world step
+)
+
+
+def ground_void(rgb, keep=None):
+    """flat-void: the frame's ground, the largest connected flat field touching two frame edges: its share, L* (median),
+    chroma and L* range."""
+    s = rgb.shape[1] / 480.0
+    mean, std = _blocks(rgb, max(4, int(round(GPLATE['block'] * s))), keep)
+    flat = std < GPLATE['flat_std']
+    if flat.sum() < 4:
+        return dict(field=0.0)
+    n, lab, st, _ = cv2.connectedComponentsWithStats(flat.astype(np.uint8), connectivity=4)
+    hb, wb = flat.shape
+    edges = lambda c: int(st[c, 0] == 0) + int(st[c, 1] == 0) + int(st[c, 0] + st[c, 2] >= wb) + int(st[c, 1] + st[c, 3] >= hb)  # noqa: E731
+    grounds = [c for c in range(1, n) if edges(c) >= 2]
+    if not grounds:
+        return dict(field=0.0)
+    c = max(grounds, key=lambda k: st[k, cv2.CC_STAT_AREA])
+    sel = lab == c
+    Ls = lstar(mean)[sel]
+    chs = ((mean.max(-1) - mean.min(-1)) / 255.0)[sel]
+    # a plate: textured blocks bleeding off two frame edges (a photograph, footage, a built world behind the content); a
+    # card's map, rows or type inside the frame are content on the field, not a plate
+    m, tl, ts, _ = cv2.connectedComponentsWithStats((~flat).astype(np.uint8), connectivity=4)
+    tedges = lambda k: int(ts[k, 0] == 0) + int(ts[k, 1] == 0) + int(ts[k, 0] + ts[k, 2] >= wb) + int(ts[k, 1] + ts[k, 3] >= hb)  # noqa: E731
+    plate = max([ts[k, cv2.CC_STAT_AREA] for k in range(1, m) if tedges(k) >= 2] or [0]) / float(hb * wb)
+    return dict(field=round(float(sel.mean()), 3), L=round(float(np.median(Ls)), 1), chroma=round(float(np.median(chs)), 3),
+                range=round(float(np.percentile(Ls, 95) - np.percentile(Ls, 5)), 2), plate=round(float(plate), 3))
+
+
+def is_void(v, P=VOID):
+    """A sample standing on a void: its ground is an empty, unlit near-white or near-black field, and no plate shares the
+    frame (no textured region bleeding off two edges over P['plate'] of it; cards, type and UI on the field are content)."""
+    return bool(v and v.get('field', 0) >= P['field'] and (v['L'] >= P['light'] or v['L'] <= P['dark']) and v['chroma'] < P['chroma']
+                and v['range'] < P['range'] and v.get('plate', 0.0) < P['plate'])
+
+
 def card_steps(rgb, keep=None):
     """card-separation: on a dark ground, the L* step of each flat panel floating inside the frame (CARD)."""
     s = rgb.shape[1] / 480.0
@@ -1275,7 +1520,7 @@ def pic_sample(P, f, rgb, gray, C, nong, edges, H=None, keep=None, L=None):
         H = (np.degrees(np.arctan2(B_, A_)) + 360) % 360 if H is None else H
         L = L_ if L is None else L
     filler, haze = filler_and_haze(rgb, L, edges, keep)
-    P['samples'].append(dict(f=f, filler=len(filler), filler_boxes=filler[:8], haze=haze, place=ground_place(rgb, keep), cards=card_steps(rgb, keep), sat=round(float((C >= PIC['sat_c']).mean()), 4),
+    P['samples'].append(dict(f=f, filler=len(filler), filler_boxes=filler[:8], haze=haze, place=ground_place(rgb, keep), void=ground_void(rgb, keep), cards=card_steps(rgb, keep), sat=round(float((C >= PIC['sat_c']).mean()), 4),
                              sat_hsv=round(float(((hsv[..., 1] > 89) & (hsv[..., 2] > 64)).mean()), 4),
                              neu=round(float((C < PIC['neutral_c']).mean()), 4), hues=hue_hist(C, H, keep),
                              subject={k: (round(v, 3) if isinstance(v, float) else v) for k, v in sub.items()}, bars=len(bars), bar_boxes=bars[:12]))
@@ -1593,6 +1838,13 @@ def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, sec
     darks = [s for s in P['samples'] if (s.get('cards') or {}).get('dark')]
     weak = [s for s in darks if s['cards'].get('weak')]
     cards_ok = not (len(weak) >= CARD['samples'] and len(weak) / max(1, len(darks)) >= CARD['share'])
+    # flat-void over the body samples: one empty near-white or near-black field all through, no plate, no lit field, no step
+    voided = [s for s in smp if is_void(s.get('void'))]
+    v_share = len(voided) / max(1, len(smp))
+    v_L = [s['void']['L'] for s in voided]
+    v_spread = float(np.percentile(v_L, 90) - np.percentile(v_L, 10)) if v_L else 0.0
+    one_void = v_spread < VOID['step']
+    void_ok = not (smp and v_share >= VOID['share'] and one_void)
     framed = [s for s in smp if s['subject'].get('found')]
     centred = [s['f'] for s in framed if s['subject'].get('centred')]
     T = PIC['target']
@@ -1621,6 +1873,9 @@ def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, sec
         cards=dict(frames=[s['f'] for s in weak][:20], samples=len(weak), dark=len(darks), share=round(len(weak) / max(1, len(darks)), 3),
                    steps=[s['cards']['weak'][:3] for s in weak[:3]], grounds=[s['cards'].get('ground') for s in weak[:3]],
                    need=dict(samples=CARD['samples'], share=CARD['share'], step=CARD['hi']), ok=cards_ok, target_ok=cards_ok),
+        void=dict(frames=[s['f'] for s in voided][:20], samples=len(voided), measured=len(smp), share=round(v_share, 3), spread=round(v_spread, 1),
+                  L=round(float(np.median(v_L)), 1) if v_L else None, need=dict(share=VOID['share'], warn=VOID['warn'], step=VOID['step']),
+                  ok=void_ok, target_ok=void_ok, warn=bool(void_ok and smp and v_share >= VOID['warn'] and one_void)),
         # depth of field is a target only: the motion floor (floor-depth) already asks for two planes at different rates
         falloff=dict(share=round(fall_share, 3), raw=round(float(np.mean([P['falloff_raw'][i] for i in body])) if body else 0.0, 3), target=T['falloff_share'], ok=True,
                      target_ok=fall_share >= T['falloff_share']),
@@ -1662,6 +1917,7 @@ def picture_line(video, pf, framing, ok):
             f"accent {pf['accent']['mean'] * 100:.1f} %, bleed {pf['bleed']['share'] * 100:.0f} % of acts, glyphless bars max {pf['skeleton']['max_bars']}, "
             f"filler {pf['filler']['samples']} sample(s), haze max {pf['haze']['max']:.3f}, "
             f"grey field {pf['plate']['samples']} sample(s), weak cards {pf['cards']['samples']} of {pf['cards']['dark']} dark, "
+            f"void {pf['void']['share'] * 100:.0f} % of the body, "
             f"centred {framing['centred_share']}; target {tgt}")
 
 
@@ -1698,11 +1954,16 @@ def picture_flags(pf, framing, add, fps):
         'cards': f"{pf['cards']['samples']} of {pf['cards']['dark']} dark-ground samples ({pf['cards']['share'] * 100:.0f} %) hold a card one step off its own ground "
                  f"(L* steps {pf['cards']['steps'][:1]} on grounds at L* {pf['cards']['grounds'][:1]}; under {CARD['hi']:.0f} reads as one grey): give dark cards "
                  f"8 L* or more over the ground, a rim light on the key side and an inner top highlight (kit Surface, kit theme)",
+        'void': f"{pf['void']['samples']} of {pf['void']['measured']} body samples ({pf['void']['share'] * 100:.0f} %) stand on one empty "
+                f"{'near-white' if (pf['void']['L'] or 0) >= 50 else 'near-black'} field (L* {pf['void']['L']}, spread {pf['void']['spread']} L* across the film; "
+                f"the frame's largest flat field, unlit, no plate): the film stands in a void. Give it a world that belongs to the product: a graded plate of "
+                f"its place, a lit field (fx/world, fx/light: the key's gradient, a glow where the light comes from) and one step of that world per act "
+                f"(enter, closer, light, turn, pull-back)",
         'wash': f"one colour washes the picture: saturated pixels {pf['wash']['saturated'] * 100:.0f} % of the frame (ceiling {PIC['saturated_max'] * 100:.0f} %), "
                 f"{pf['wash']['frames_over'] * 100:.0f} % of frames over half saturated (ceiling {PIC['wash_share'] * 100:.0f} %): grounds and UI neutral (C <= .025), "
                 f"the accent on what matters, imagery graded natural; declare a deliberate colour moment (cues declared.colour)",
     }
-    names = {'skeleton': 'skeleton-bars', 'filler': 'filler-shape', 'haze': 'ground-haze', 'plate': 'ground-plate', 'cards': 'card-separation'}
+    names = {'skeleton': 'skeleton-bars', 'filler': 'filler-shape', 'haze': 'ground-haze', 'plate': 'ground-plate', 'cards': 'card-separation', 'void': 'flat-void'}
     hint = {'plate': GPLATE['warn_share'], 'cards': CARD['warn_share']}
     for key, msg in msgs.items():
         if key not in pf:
@@ -1710,6 +1971,8 @@ def picture_flags(pf, framing, add, fps):
         if not pf[key]['ok']:
             at = pf[key]['frames'][0] if key in names and pf[key].get('frames') else 0
             add(names.get(key, f'picture-{key}'), 'fail', at, msg)
+        elif key == 'void' and pf[key].get('warn'):  # most of the film on one void: a warning under the floor
+            add(names[key], 'warn', pf[key]['frames'][0] if pf[key]['frames'] else 0, msg)
         elif key in ('filler', 'haze') and pf[key]['samples'] >= 2:  # under the floor: a review hint
             add(names[key], 'warn', pf[key]['frames'][0], msg)
         elif key in hint and pf[key]['samples'] >= 2 and pf[key]['share'] >= hint[key]:
@@ -1727,6 +1990,7 @@ def picture_flags(pf, framing, add, fps):
             'haze': 'haze over the ground',
             'plate': 'a flat grey or charcoal ground',
             'cards': 'dark cards one step off their ground',
+            'void': 'an empty field all through',
             'wash': f"saturated {pf['wash']['saturated'] * 100:.0f} % (target <= {T['saturated_max'] * 100:.0f} %), {pf['wash']['frames_over'] * 100:.0f} % of frames over half saturated (target <= {T['wash_share'] * 100:.0f} %)",
             'neutral': f"neutral pixels {pf['neutral']['mean'] * 100:.0f} % (target >= {T['neutral_min'] * 100:.0f} %: grounds and surfaces neutral)",
             'accent': f"the accent's hue family {pf['accent']['mean'] * 100:.1f} % of the frame (target {T['accent'][0] * 100:.0f}-{T['accent'][1] * 100:.0f} %, on what matters)",
@@ -2381,10 +2645,12 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
     if not args.no_finish and not args.no_ui:
         ui_hits, _ = ui_scan(args.video, info)
         ui_bar_flags(ui_hits, add, fps)
-        small_ = []
-        bands_, cheap_, ns_ = surface_scan(args.video, info, small_)
+        small_, slabs_ = [], []
+        bands_, cheap_, ns_ = surface_scan(args.video, info, small_, slabs_)
         surface_flags(bands_, cheap_, ns_, add, fps)
         subject_flags(small_, ns_, add, fps)
+        # plain card slabs count in a film that stands on a world (a film in a void fails flat-void already)
+        slab_flags(slabs_, ns_, add, fps, world=pf['void']['share'] < 0.5)
     if layout and not args.no_ui:
         text_asset_flags(text_on_asset(args.video, info, layout, fps / (cues.get('fps') or fps) if cues else 1.0), add, fps)
     # luminance flips: the stage turns light <-> dark
@@ -2699,7 +2965,7 @@ def self_test(F, part='all'):
             g[yy:yy + 3, xx:xx + 3] -= 15
         return np.clip(g, 0, 255).astype(np.uint8)
 
-    if part in ('all', 'a'):
+    if part in ('all', 'a', 'a1'):
         # a flat film: two locked-off cards and a hard cut
         n = 150
         flat = [card(paper, 140, 90, 120, (30, 32, 36))] * 75 + [card(paper, 200, 100, 80, (30, 32, 36))] * 75
@@ -2843,9 +3109,47 @@ def self_test(F, part='all'):
     if part in ('all', 'c'):
         surface_self_test(check)
         subject_self_test(check)
+        look_gate_self_test(check, tmp)
     shutil.rmtree(tmp, ignore_errors=True)
     print('look-audit self-test: ' + ('all pass' if not bad else f'{bad} failed'))
     return 1 if bad else 0
+
+
+def look_gate_self_test(check, tmp):
+    """--look (and --surfaces) on folders of stills, the default look's gate: white cards on blank paper fail flat-void;
+    flat white cards on a lit field fail card-slab; the same cards with a lit face pass."""
+    H_, W_ = 540, 960
+    rng = np.random.default_rng(11)
+    yy = np.linspace(0, 1, H_, dtype=np.float32)[:, None]
+
+    def still(ground_top, ground_bottom, lit, seed):
+        g = ground_top + (ground_bottom - ground_top) * yy + 0 * np.zeros((1, W_), np.float32)
+        g = np.clip(np.round(g + rng.random(g.shape) + rng.random(g.shape) - 1), 0, 255)
+        x0, x1, y0, y1 = 200 + 20 * seed, 760 + 20 * seed, 90, 450
+        g[y1:y1 + 14, x0 + 10:x1 - 10] -= 18
+        g[y0:y1, x0:x1] = 250.0 - lit * np.linspace(0, 1, y1 - y0, dtype=np.float32)[:, None]
+        for k in range(4):
+            g[y0 + 60 + 60 * k: y0 + 76 + 60 * k, x0 + 40: x1 - 120] = 60.0
+        return np.repeat(np.clip(g, 0, 255).astype(np.uint8)[..., None], 3, -1)
+
+    def gate(name, frames, mode='--look'):
+        d = os.path.join(tmp, name)
+        os.makedirs(d, exist_ok=True)
+        for i, img in enumerate(frames):
+            cv2.imwrite(os.path.join(d, f's{i}.png'), cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+        out = os.path.join(tmp, name + mode + '.json')
+        r = subprocess.run([sys.executable, os.path.abspath(__file__), d, mode, '--json', out], capture_output=True, text=True)
+        rep = json.load(open(out)) if os.path.exists(out) else {'flags': []}
+        return r.returncode, [(x['check'], x['severity']) for x in rep.get('flags', [])]
+
+    c1, f1 = gate('void', [still(242, 241, 0, i) for i in range(3)])
+    c2, f2 = gate('slab', [still(72, 40, 0, i) for i in range(3)])
+    c3, f3 = gate('lit', [still(72, 40, 16, i) for i in range(3)])
+    check(c1 == 1 and ('flat-void', 'fail') in f1 and c2 == 1 and ('card-slab', 'fail') in f2 and not any(k == 'flat-void' for k, _ in f2) and c3 == 0 and not f3,
+          '--look: white cards on blank paper fail flat-void, flat white cards on a lit field fail card-slab, the same cards lit pass',
+          f'void {c1} {f1} | slab {c2} {f2} | lit {c3} {f3}')
+    c4, f4 = gate('void', [], '--surfaces')
+    check(c4 == 1 and ('flat-void', 'fail') in f4, '--surfaces reads the default look too (the void fails there)', f'{c4} {f4}')
 
 
 def surface_self_test(check):
@@ -2883,6 +3187,38 @@ def surface_self_test(check):
     c3, c4 = cheap_cards(frame_with(light, flat)), cheap_cards(frame_with(light, shadowed))
     check(any('no shadow' in c['why'] for c in c3['cheap']) and not c4['cheap'], 'cheap-card: a card a few L* off a light ground reads cheap without a shadow, not with one',
           f"{json.dumps(c3['cheap'])[:120]} vs {json.dumps(c4['cheap'])[:120]}")
+    # card-slab: a flat white card with a drop shadow on a lit field is a slab, with rows of text on its face too; the same
+    # card with a lit face (the key's gradient across it), or an off-white one with a bright rim on its top edge, is not
+    field = ramp_ground(72, 40)
+
+    def white_card(g, lit=0.0, rim=False, rows=False, face=250.0):
+        g[y1:y1 + 14, x0 + 10:x1 - 10] -= 18  # its drop shadow
+        g[y0:y1, x0:x1] = face - lit * np.linspace(0, 1, y1 - y0, dtype=np.float32)[:, None]
+        if rim:
+            g[y0:y0 + 3, x0 + 8:x1 - 8] = 255.0
+        if rows:
+            for k in range(4):
+                g[y0 + 40 + 40 * k: y0 + 52 + 40 * k, x0 + 30: x1 - 60] = 60.0
+    s1 = card_slabs(frame_with(field, white_card))
+    s2 = card_slabs(frame_with(field, lambda g: white_card(g, lit=14.0)))
+    s3 = card_slabs(frame_with(field, lambda g: white_card(g, rim=True, face=225.0)))
+    s4 = card_slabs(frame_with(field, lambda g: white_card(g, rows=True)))
+    check(len(s1) == 1 and s1[0]['dropped'] and not s2 and not s3 and len(s4) == 1,
+          'card-slab: a flat white card with a drop shadow is a slab (with text rows too); a lit face or a bright top rim is not',
+          f"{json.dumps(s1)[:110]} | lit {json.dumps(s2)[:60]} | rim {json.dumps(s3)[:60]} | rows {len(s4)}")
+    # flat-void: an off-white field under a white card is a void; a lit field, a mid grey and a plate bleeding off the
+    # frame's edges are not
+    paper_g = ramp_ground(242, 241)
+    v1 = ground_void(frame_with(paper_g, lambda g: white_card(g, rows=True)))
+    v2 = ground_void(frame_with(ramp_ground(252, 196), white_card))
+    v3 = ground_void(frame_with(ramp_ground(120, 119), white_card))
+    plate = frame_with(paper_g, white_card)
+    rng_p = np.random.default_rng(9)
+    plate[:, :300] = np.clip(cv2.GaussianBlur(rng_p.integers(30, 220, (H_, 300)).astype(np.float32), (0, 0), 2), 0, 255).astype(np.uint8)[..., None]
+    v4 = ground_void(plate)
+    check(is_void(v1) and not is_void(v2) and not is_void(v3) and not is_void(v4),
+          'flat-void: an off-white field under a card is a void; a lit field, a mid grey and a plate bleeding off the edges are not',
+          f"{v1} | {v2} | {v3} | {v4}")
 
 
 def subject_self_test(check):
@@ -2946,7 +3282,7 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
             return g.astype(np.uint8)
         return np.clip(g * np.array([0.3, 0.72, 1.0], np.float32)[None, None, :] + np.array([10, 20, 30], np.float32), 0, 255).astype(np.uint8)
 
-    if part in ('all', 'a'):
+    if part in ('all', 'a', 'a2'):
         # --- the picture floor: an empty film fails every reading; a picture busy everywhere fails flat ground and
         # edges; type beats on a clean field beside a plate (its far half defocused) pass and meet the target
         empty = [card(paper, 180 + i * 0.3, 110, 70, (30, 32, 36)) for i in range(60)]
@@ -3171,7 +3507,7 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
     if part in ('all', 'b'):
         # --- framing-hold and floor-device: a still frame held for 5 s; the rich film moves through both
         still = [card(paper, 140, 90, 120, (30, 32, 36))] * 180
-        rep = run('still5', still, cues_for(180))
+        rep = rep_v = run('still5', still, cues_for(180))  # rep_v: the same film read for flat-void below
         check(bool(has(rep, 'framing-hold', 'warn')), 'a framing held still for 5 s warns framing-hold')
         check(bool(has(rep, 'floor-device', 'fail')), 'five seconds with nothing designed fail floor-device', f"gap {rep.get('floor', {}).get('device', {}).get('max_gap_s')}")
         check(bool(has(rep, 'living-ground', 'warn')), 'a still camera over a still ground warns living-ground')
@@ -3184,6 +3520,9 @@ def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='a
         rep = run('moving5', moving, cues_for(180, seams=[dict(at=60, kind='velocity', carry='x', id='c1'), dict(at=120, kind='velocity', carry='x', id='c2')]))
         check(not has(rep, 'framing-hold') and not has(rep, 'living-ground'), 'a creeping ground with a card moving apart passes framing-hold and living-ground')
         check(rep.get('floor', {}).get('device', {}).get('ok') is True, 'designed seams every 2 s pass floor-device')
+        check(not has(rep, 'flat-void'), 'a card over a living, textured ground is no void (flat-void stays quiet)')
+        check(bool(has(rep_v, 'flat-void', 'fail')), 'a card on blank paper all film fails flat-void (no plate, no lit field, no step)',
+              json.dumps({k: v for k, v in (rep_v.get('floor', {}).get('picture', {}).get('void') or {}).items() if k != 'frames'}))
         # --- camera-lock and the read lock: a camera creeping through both reads warns camera-lock; a film that locks
         # 1 s on each of three reads (camera, card and ground still) passes floor-moving only because the locks sit on reads
         two = cues_for(180, seams=[dict(at=60, kind='velocity', carry='x', id='c1'), dict(at=120, kind='velocity', carry='x', id='c2')])
@@ -3483,7 +3822,10 @@ def main():
     ap.add_argument('--no-finish', action='store_true', help='skip the full-resolution grain and vignette samples (and the ui-accent-bar read)')
     ap.add_argument('--no-ui', action='store_true', help='skip the ui-accent-bar read (full resolution, two samples a second) and text-on-asset')
     ap.add_argument('--ui-only', action='store_true', help='only the ui-accent-bar read, on the video, a folder of stills or one image (exit 1 on a bar); with --layout also text-on-asset')
-    ap.add_argument('--surfaces', action='store_true', help='only the banding and cheap-card reads, on the video, a folder of stills or one image (exit 1 on banding)')
+    ap.add_argument('--surfaces', action='store_true', help='the default look alone (banding, flat-void, card-slab, cheap-card, small-subject) on the video, a '
+                    'folder of stills or one image; exit 1 on banding, a flat void, plain card slabs in a film with a world, or small subjects')
+    ap.add_argument('--look', action='store_true', help='the default look on a draft (flat-void, card-slab, small-subject; cheap-card warns): two samples '
+                    'a second at 960 wide, on the video, a folder of stills or one image; exit 1 on a fail. Banding is read on the master (--surfaces)')
     ap.add_argument('--no-audio', action='store_true', help='skip the audio onsets (cut sync)')
     ap.add_argument('--trajectory', action='store_true', help='the one-hue gate on --roi instead of the film checks')
     ap.add_argument('--roi', help='x,y,w,h for --trajectory (video pixels)')
@@ -3493,8 +3835,9 @@ def main():
     ap.add_argument('--from', dest='from_frame', type=int)
     ap.add_argument('--to', dest='to_frame', type=int)
     ap.add_argument('--series', help='also write the per-frame motion series here (camera, layers, ground, pair speed, cuts)')
-    ap.add_argument('--self-test', nargs='?', const='all', choices=['all', 'a', 'b', 'c'],
-                    help='run the checks on synthetic clips made in code, then exit (a: the floor, colour and picture cases; b and c: the look rules; default all)')
+    ap.add_argument('--self-test', nargs='?', const='all', choices=['all', 'a', 'a1', 'a2', 'b', 'c'],
+                    help='run the checks on synthetic clips made in code, then exit (a: the floor, colour and picture cases, in two halves a1 (the '
+                    'floor, colour and marks) and a2 (the picture rules) for a machine that limits job length; b and c: the look rules; default all)')
     args = ap.parse_args()
     global cv2, np
     try:
@@ -3515,10 +3858,18 @@ def main():
         elif args.video.lower().endswith(('.png', '.jpg', '.jpeg')):
             stills = [args.video]
         info_ = None if stills is not None else F.probe(args.video)
-        small = []
-        bands, cheap, n = surface_scan(stills if stills is not None else args.video, info_, small)
-        bad = len(bands) >= (1 if stills is not None else BAND['samples']) or len(small) >= SUBJECT['samples']
-        res = dict(tool='look-audit', mode='surfaces', file=args.video, samples=n, banding=bands, cheap_cards=cheap, small_subject=small, **{'pass': not bad})
+        small, slabs, voids = [], [], []
+        bands, cheap, n = surface_scan(stills if stills is not None else args.video, info_, small, slabs, voids)
+        # the default look: a flat void all through fails, and plain card slabs in a film that stands on a world
+        look_flags = []
+        lf = lambda check, sev, frame, note, **kw: look_flags.append(dict(check=check, severity=sev, frame=frame, note=note))  # noqa: E731
+        fps_s = info_['fps'] if info_ else 1.0
+        v_share = void_flags(voids, lf, fps_s)
+        slab_flags(slabs, n, lf, fps_s, world=v_share < 0.5)
+        bad = (len(bands) >= (1 if stills is not None else BAND['samples']) or len(small) >= SUBJECT['samples']
+               or any(x['severity'] == 'fail' for x in look_flags))
+        res = dict(tool='look-audit', mode='surfaces', file=args.video, samples=n, banding=bands, cheap_cards=cheap, small_subject=small, card_slabs=slabs,
+                   void_share=round(v_share, 3), flags=look_flags, **{'pass': not bad})
         if args.json:
             os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
             json.dump(res, open(args.json, 'w'), indent=1, default=lambda o: o.item() if hasattr(o, 'item') else str(o))
@@ -3527,10 +3878,39 @@ def main():
         for x in cheap[:20]:
             for c in x['cards'][:3]:
                 print(f"  cheap-card {x.get('file') or 'f' + str(x['f'])} {c['box']}: {c['why']}")
+        for x in look_flags:
+            print(f"  {x['severity']:4s} {x['check']}: {x['note']}")
         for x in small[:20]:
             print(f"  small-subject {x.get('file') or 'f' + str(x['f'])}: the content spans {x['height'] * 100:.0f} % of the height, {x['area'] * 100:.0f} % of the frame (solid {x['solid'][:2]})")
-        print(f"look-audit surfaces: {args.video}  {n} samples, {len(bands)} banded, {len(cheap)} with a cheap card, {len(small)} with a small subject in an empty frame -> {'pass' if res['pass'] else 'FAIL'}")
+        print(f"look-audit surfaces: {args.video}  {n} samples, {len(bands)} banded, {len(cheap)} with a cheap card, {len(slabs)} with a plain card slab, "
+              f"{v_share * 100:.0f} % on a void, {len(small)} with a small subject in an empty frame -> {'pass' if res['pass'] else 'FAIL'}")
         sys.exit(0 if res['pass'] else 1)
+    if args.look:
+        stills = None
+        if os.path.isdir(args.video):
+            stills = sorted(os.path.join(args.video, x) for x in os.listdir(args.video) if x.lower().endswith(('.png', '.jpg', '.jpeg')))
+        elif args.video.lower().endswith(('.png', '.jpg', '.jpeg')):
+            stills = [args.video]
+        info_ = None if stills is not None else F.probe(args.video)
+        voids, slabs, cheap, small, n = look_scan(stills if stills is not None else args.video, info_)
+        look_flags = []
+        lf = lambda check, sev, frame, note, **kw: look_flags.append(dict(check=check, severity=sev, frame=frame, note=note))  # noqa: E731
+        fps_l = info_['fps'] if info_ else 1.0
+        v_share = void_flags(voids, lf, fps_l)
+        slab_flags(slabs, n, lf, fps_l, world=v_share < 0.5)
+        subject_flags(small, n, lf, fps_l)
+        surface_flags([], cheap, n, lf, fps_l)
+        ok = not any(x['severity'] == 'fail' for x in look_flags)
+        res = dict(tool='look-audit', mode='look', file=args.video, samples=n, void_share=round(v_share, 3), card_slabs=slabs, cheap_cards=cheap,
+                   small_subject=small, flags=look_flags, **{'pass': ok})
+        if args.json:
+            os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
+            json.dump(res, open(args.json, 'w'), indent=1, default=lambda o: o.item() if hasattr(o, 'item') else str(o))
+        for x in look_flags:
+            print(f"  {x['severity']:4s} {x['check']}: {x['note']}")
+        print(f"look-audit look: {args.video}  {n} samples, {v_share * 100:.0f} % on a void, {len(slabs)} with a plain card slab, {len(cheap)} with a cheap card, "
+              f"{len(small)} with a small subject -> {'pass' if ok else 'FAIL'}")
+        sys.exit(0 if ok else 1)
     if args.ui_only:
         stills = None
         if os.path.isdir(args.video):
