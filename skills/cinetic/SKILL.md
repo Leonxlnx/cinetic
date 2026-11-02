@@ -176,8 +176,8 @@ with `node scripts/frames.mjs end` (the ending, first) and `still <frames>` (sev
 the mix exists). `npm run sound` (cues, the kit cast and rendered for this film's actions, plan and mix in one command; no
 setting; its last line says PASS, FAIL or PARTIAL), the draft again.
 The fast gates: `npm run gates` (`forensics.py out/draft.mp4 --grammar-only`: the sound, cuts that hide, empty
-frames, freezes, legibility, the ending, the world; `copy-check.py --ui src`; `logos.mjs check`) and `bash
-scripts/layout-audit.sh Film --cues --scale 0.5` (the product beats too: text cut by the frame) ([checks.md](references/checks.md) §1).
+frames, freezes, legibility, the ending, the world; `copy-check.py --ui src`; `logos.mjs check`), `look-audit.py
+out/draft.mp4 --look` (no flat void or slab cards) and `bash scripts/layout-audit.sh Film --cues --scale 0.5` (text cut by the frame) ([checks.md](references/checks.md) §1).
 
 **7. One review round.** `node scripts/frames.mjs sheet --from out/draft.mp4` (16 tiles; `--frames A-B --every N` for
 an act, `grab --from` for full frames), then the director pass

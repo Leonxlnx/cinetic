@@ -17,9 +17,9 @@ The default path runs the fast gates; each takes seconds to a minute on a 30 s f
 ```
 python3 scripts/copy-check.py TREATMENT.md                    # the script, before any picture work
 node scripts/film-diff.mjs                                    # film.json: the picks differ from the last three films
-npx tsx scripts/grid-check.ts src/timeline.ts                 # after every timeline edit (beats, seams, the grid)
+npx tsx scripts/grid-check.ts src/timeline.ts                 # after every timeline edit (beats, seams, the grid, the spine's SPINE_PLAN)
 node scripts/lint-film.mjs src [--strict]                     # every build step
-node scripts/precheck.mjs [--ship]                            # before every still or render: imports, frames, timing, kit, the cast, fit
+node scripts/precheck.mjs [--ship]                            # before every still or render: imports, frames, timing, kit, the cast, the case, fit
 python3 scripts/copy-check.py --ui src                        # the product's UI strings: real words, no slot, no sample
 npm run cues                                                  # out/cues.json (declarations, copy, events)
 node scripts/frames.mjs end                                   # the ending as stills, early: the lockup must read
@@ -28,6 +28,8 @@ npm run gates                                                 # forensics --gram
 bash scripts/layout-audit.sh Film --cues --scale 0.5          # placement, overlaps, text cut by the frame in the product beats
 python3 scripts/forensics.py out/draft.mp4 --cues out/cues.json --grammar-only     # motion, seam, film and sound gates, small decode
 python3 scripts/forensics.py out/draft.mp4 --cues out/cues.json --seams            # the seam checks alone, seconds
+python3 scripts/forensics.py out/draft.mp4 --cues out/cues.json --spine            # the element in its box across every handover, swaps, the loop
+python3 scripts/look-audit.py out/draft.mp4 --look                                 # the default look: no flat void, no plain card slab
 node scripts/logos.mjs check                                  # a film that shows other products' marks
 node scripts/frames.mjs sheet --from out/draft.mp4            # the contact sheet for the director pass (16 tiles, seconds)
 bash scripts/render.sh Film out/film.mp4 --max-min 9          # the master by 70 % of the budget; rerun until exit 0
@@ -38,7 +40,10 @@ node scripts/film-diff.mjs --record                           # after the ship g
 **What a ship needs (the default review, `references/review-loop.md` §1):** copy-check (the script and `--ui src`,
 `--final` on the master, `--ocr` on full-size held stills: half-size stills hide a screen's small strings), lint `--strict` and grid-check clean (its `beats` rules: type-only beats at least 15 % of the
 shots and two a film, a line over a picture on at most 40 % of the beats, the first line by 1 s, in a film that
-declares its beat plan); precheck `--ship`; layout-audit passing with its placeholder floor and its placement gate
+declares its beat plan; its spine rules in a film that plays the spine: one action in 3-5 acts, the element carrying
+most scene changes, one case, lines alone only at the ends, the lockup grown from the last form); forensics `--spine`
+on the draft (`--grammar-only` runs it when the cues declare handovers) and `look-audit.py --look` on it (no flat
+void, no plain card slab); precheck `--ship`; layout-audit passing with its placeholder floor and its placement gate
 (statements centred 80 % of their time, in the middle band 85 %, none flush left at the top or bottom, one text-top
 split at most (a line above a picture filling the rest of the frame), one split layout per 30 s); forensics passing on
 the master (its seam checks: every hard cut carries a device, at most two ground flips, no seam kind over 45 % of five
@@ -52,7 +57,8 @@ s (grid-check reads the template's `end_hold`); the ground family's tokens from 
 `grammar-score.mjs` (closeness to the house grammar; it rewards the template, not this film), `measure-speed.py`,
 `av-audit.py` on a preview, `data-check.mjs` (fast: wrong weekdays, counts that contradict their list, counters that
 should move together (a distance counting while its moving time stays frozen: `co-moving`), one photo in more than half
-the beats; films declare shoots and people in `public/cast.json`). The long review
+the beats, the case's figure changing beside its name (`case-number`) or its name misspelled (`case-name`); films declare
+shoots and people in `public/cast.json`). The long review
 (`references/review-loop.md` §2-§10) adds them back with the detail pass (`detail-pair.py`), the four lenses and the rubric:
 
 ```
@@ -90,6 +96,7 @@ Run it on `TREATMENT.md` at Step 1b, before any picture work, and again on `out/
 | `close` | the end lacks the name or what to do (a URL, "Out now") | warning |
 | `placeholder` | a line, a COPY `ui` string or (with `--ui`) a UI string that marks itself unfinished: lorem ipsum, "Placeholder", "Label text", "Your text here", a generic label alone ("Button", "Caption"), a generic noun and a number ("Item 1"); the words are `scripts/placeholders.json`, which `lint-film.mjs` reads too | error |
 | `slot` | (`--ui`) a UI string still holding a template's bracketed slot ("[Product]", "[N] items") | error |
+| `case` | (`out/cues.json`) one case runs from the request to the result: with the spine in the cues, its request, names or numbers (or two of the request's nouns) on screen in fewer than two acts; without it, the brief's typed request (`prompt:`) against the strings COPY shows in each act | error; warning without the spine |
 
 It prints every line with its second, the findings, and "a stranger reads": what it is, what it does, what to do,
 and a verdict. `--allow <word>` keeps a word the brand's own voice owns (record it in `BRIEF.md`); `--json` for tools.
@@ -123,6 +130,29 @@ Reads `timeline.ts` (a HyperFrames project: `timeline.js`) and checks it against
 | `script` | the film's words are a script: every line (an entry, a build chain joined, a replace fragment; not ui strings, `kind: 'name'` or the end card) holds 2–7 words (over 7 an error, a single word a warning, called a keyword); more than half the lines a single word warns as a keyword pile; then `copy-check.py` reads every entry as a stranger would and its errors are script errors (vague or fancy words, metaphors, slogan shapes, no verb, two claims in a line, no name, nothing that says what the product is by 3 s; an update film: the name and the version by 3 s, from `LOOK.filmType`; `--no-copy` skips it); two lines on screen together after the first one's read is an error unless the later one declares `swap: '<id>'`; a sentence set on two lines warns. A film whose lines are mostly sentences reads at the script's budget: 50 words, 2.4 words a second in any 5 s, 1.6 over the body, text on up to 85 % (`references/copy-and-type.md` §1–2b) |
 | text flow | `fragment` (chain parts), `copy-lines`, `copy-concurrent`, `read-first`, `reveal-rate`, `chain-gap`, `chain-beat`, `word-rate`, `word-total`, `text-hold`, `text-share` (`references/copy-and-type.md`) |
 | `read-quiet` (calm) | nothing that asks for the eye starts while a line is read. Only cues whose `SALIENCE` is `copy`, `hit` or `cut` are guarded (missing = `hit`); `life` (creep, light, drift, carried decay) and `move` (camera moves away from the text) run freely and count toward density |
+
+**The spine** (`SPINE_PLAN`, the plan `lib/spine.ts` `planSpine()` exports from the timeline; read in the default run,
+alone with `--part spine`). A film is one action played as 3-5 acts, one case followed from the request to the result,
+and one element whose form changes act to act and carries the scene changes. A beat film (a line, a card, a cut,
+again) can pass every rule above and fails here. Shares are of all the declared scene changes; past 35 s the carry
+family (carry, bare, momentum and the element share of text-then-cards) warns instead of failing.
+
+| Rule | Fails (error) | Warns |
+|---|---|---|
+| `spine-declared` | no `SPINE_PLAN` with `--part spine`, or in a film that plays the spine (`src/spine.ts`, or a timeline that reads it); acts outside 3-5 (an update 3-4); no element named; an unknown handover kind or line place; the plan's own grammar errors (the sentence, the world's steps, a form pair no handover joins) | a film from launch-simple or update with no plan; the first act outside 20-32 % of the film (an update's hook 10-32 %), the last outside 12-31 % |
+| `spine-carry` | the element carries under half the scene changes, or under 60 % of those inside acts | under 65 % / 75 % |
+| `spine-bare` | a bare change inside an act (nothing carried, or a `cut`); more than one bare act boundary | a bare boundary off the downbeat |
+| `spine-momentum` | speed alone joins over 30 % of the changes | over 20 % |
+| `spine-boundary` | | an act boundary held only by the ground or optics: no element, anchor, speed or world step |
+| `spine-lines` | more than one group of alone lines in the middle acts | under half the lines inside the product or around the element; more than one line over a picture |
+| `spine-case` | no case, or its request, names, numbers (or two of its nouns) in the strings of fewer than two acts | a name or number of the case never on screen |
+| `spine-end` | the lockup after a bare cut or empty frames | a lockup neither grown from the last form nor entering on the claim's kept ground |
+| `checklist` | a device no verb asks for or not drawing its act's form; more devices than acts + 1; two signatures; devices in adjacent acts with no element handover between them | fewer than 3 handover kinds; one kind over 60 % |
+| `text-then-cards` | an alone line in a middle act that is an island (no element, anchor or speed carries it in or out); three alone lines or more while the element carries under half the changes | an island in the first or last act |
+
+The handover kinds: grow, shrink, swell (and swap), press-open, iris, zoom-into, pull-out, fly, stay, word, part,
+converge, same-surface (the element carries) and momentum (speed only), or H1-H14; `entry` is the mark's own entry on
+the kept ground. A change that is not the element names what else carries it (anchor, ground, optics) or is a `cut`.
 
 In a calm film a missing or short picture beat, two lines arriving together and copy on more than 75 % of the body are
 errors. `LOOK.filmType` takes `launch`, `update`, `explainer`, `reel` or `social`; an update film sets `update`, so
@@ -294,6 +324,10 @@ cues file that carries the declarations:
 | motion-density | more than 2 primary moves (peaks at 25 % of the film's 90th-percentile move or more) per 3 s | fail |
 | motion-stop | a move goes still in one frame from above 15 % of its peak speed | fail |
 | motion-cut | a visible cut while a braking move is above 10 % of its peak, unless a whip, velocity or zoomThrough seam or a camera-blur range carries it (fail over 0.25 per 3 s) | warn |
+| spine-track | (`--spine`; inside `--grammar-only` when the cues declare a spine) along each declared handover's box track (a seam with `track`, `fx/Handover`'s declares), a crisp object stands in the box on every frame: the luma step across the box's edge at least 6 levels and twice the film's floor; gone for more than 2 frames at 30 fps, or the declared box jumping over 8 % of the width in one frame (a speed handover and a swell's or shrink's swap frame excepted) | fail |
+| | a spine declared in the cues with no handover carrying a track | warn |
+| swap | (`--spine`) a hard cut changing more than 65 % of the frame with no handover, seam, spine change or `--cuts` declared within 2 frames: the picture swapped, not handed on | fail |
+| text-then-cards | (`--spine`) a line alone (a statement, no declared element drawn, at most a quarter of the frame's blocks with detail, a soft plate passing) then, over the next 2 s, a picture whose detail rises 8 points and 1.5 times over the line's level, with no declared element drawn across the turn: twice | fail; once warn |
 
 The camera checks read the same 0.4 s windows (optical flow at 480 wide, speeds at 1080p, the camera as the similarity fit of the structure). A still hold passes: the camera is still unless a shot declares a move (`lib/drift` `stageMove`, `lib/camera` `camPath`), and what changes in a hold is the product. The fix for `dead-stretch` is a product change in the hold or a sooner cut, never a float; the fix for `camera-wander` is a still camera or one declared move that starts, travels and lands. Motion energy is still printed under the verdict (the film's median, its low share, its longest low stretch) for reading, not as a gate.
 
@@ -362,7 +396,17 @@ A one-take film is judged on 2 s segments and has no seam or cut items.
 | `ground-haze`: the ground's light rising to a dome inside the frame over its brightest edge (a pool, a white haze, a fog vignette) | over 0.025 L on fewer than 3 samples or under 20 % of the measured ones (2 samples warn) | none; a key gradient from one side reads 0 |
 | `ground-plate`: a flat field (≥ 25 % of the frame, outside imagery) at L* 12-88, chroma under 0.12 and an L* range under 12: a flat grey or charcoal ground | on fewer than 3 body samples or under 10 % of them (2 samples and 3 % warn) | none: every product shot on the key's lit gradient or a blurred plate of the film's own picture; a flat neutral field is a clean page (L* 88+) or a black void (under 12) |
 | `card-separation`: on a dark ground (L* < 50), a flat panel floating inside the frame 1.5-8 L* off the ground | on fewer than 3 samples or under 20 % of the dark-ground samples (10 % warns) | none: dark cards 8 L* or more over the ground, a key-side rim and an inner top highlight (kit `Surface`) |
+| `flat-void`: the ground (the largest flat field touching two frame edges, 15 % of the frame or more) an unlit near-white (L* 88+) or near-black (12 or less) field, neutral, its L* range under 12, with no plate (no textured region bleeding off two edges over 15 % of the frame) | on under 80 % of the body samples, or with the void's lightness spreading 8 L* or more across them (a world step); 60 % warns | none: every shot on the film's world (a graded plate of its place, a lit field, one step an act) |
 | focus falloff: a crisp plane and a defocused one in the same frame | (target only) | ≥ 35 % of frames |
+
+**The default look** (`look-audit.py out/draft.mp4 --look`, two samples a second read at 960 wide, about a minute on a
+draft; `--surfaces` adds banding, a read for the master; both also inside the full run): `flat-void` fails as in the
+table above, `small-subject` fails, `cheap-card` warns; `card-slab` fails a film
+that stands on a world (under half its samples a void) when 3 samples or more and 15 % of them hold a plain card
+slab (two warn): a flat white or grey card face floating in the frame whose own light spans under 3 L* (no key across
+it, no sweep), with no rim catching the light on its top edge and no glass over its backdrop; its drop shadow is
+reported, not required (on a dark ground it hides). A quiet 1-2 L* sheen alone stays a slab: give the card the key's
+gradient across its face, a rim on the key side, or glass over the film's own picture (`kit/card` Card, `fx/light`).
 
 Type reads large and frontal on clean grounds, so a film with every frame on relief, footage or grain fails
 `picture-flat` and usually `picture-edges` too. Give each type beat a clean field, or dim and defocus the plate behind the type.
