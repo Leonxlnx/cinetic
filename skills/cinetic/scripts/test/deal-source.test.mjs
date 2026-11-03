@@ -8,7 +8,8 @@
  *      DEAL (through tsx) equals the sheet's template deal slot for slot, for several directions, and DEAL_SOURCE names
  *      the direction; at least half the slots differ from the template's floor.
  *   3. A redraw rewrites src/dealt.ts with the sheet: they still agree.
- *   4. launch.ts `pin` still fixes a slot by hand over the deck's deal (DEAL_SOURCE lists it).
+ *   4. The last films' choices (src/recent.ts, new-film.sh writes them from the film history): a deal from the name
+ *      leaves a recent voice and world out while another is free; the deck's deal is played as dealt (one source).
  *   5. A dealt.ts naming a device the template does not have throws at import with the slot named.
  *   6. In a project whose template deals nothing (no src/deal.ts), deck.py writes no dealt.ts and no section 0.
  *
@@ -62,11 +63,6 @@ const project = (name, withDeal = true) => {
   const dir = path.join(TMP, name);
   fs.mkdirSync(path.join(dir, 'src', 'brand'), { recursive: true });
   for (const f of withDeal ? ['deal.ts', 'dealt.ts', 'recent.ts', 'launch.ts'] : ['launch.ts']) fs.copyFileSync(path.join(TPL, f), path.join(dir, 'src', f));
-  // deal.ts deals the film's creative elements from the starter's library (fx/creative/meta.ts, React-free)
-  if (withDeal) {
-    fs.mkdirSync(path.join(dir, 'src', 'fx', 'creative'), { recursive: true });
-    fs.copyFileSync(path.join(SKILL, 'assets', 'remotion-starter', 'src', 'fx', 'creative', 'meta.ts'), path.join(dir, 'src', 'fx', 'creative', 'meta.ts'));
-  }
   fs.writeFileSync(path.join(dir, 'src', 'brand', 'identity.ts'), "export const IDENTITY = { name: 'Switchyard', supplied: false } as const;\n");
   return dir;
 };
@@ -92,7 +88,7 @@ try {
     const got = dealOf(dir);
     const md = fs.readFileSync(path.join(dir, 'out', 'DIRECTION.md'), 'utf8');
     const same = td && got.deal && Object.keys(got.deal).every((k) => got.deal[k] === td.deal[k]) && Object.keys(td.deal).length === Object.keys(got.deal).length;
-    result(same && fs.existsSync(path.join(dir, 'src', 'dealt.ts')) && /## 0\. The template's deal/.test(md) && got.source === `deck.py (${id})`,
+    result(same && fs.existsSync(path.join(dir, 'src', 'dealt.ts')) && /## 0\. The template's deal/.test(md) && got.source === `deck.py direction ${id}`,
       `${id}: the sheet's template deal is the deal the template plays (src/dealt.ts, DIRECTION.md section 0, DEAL_SOURCE)`, JSON.stringify({ sheet: td?.deal, plays: got.deal, source: got.source }).slice(0, 400));
     const off = got.deal && got.floor ? Object.keys(got.floor).filter((k) => got.deal[k] !== got.floor[k]).length : 0;
     result(2 * off >= Object.keys(got.floor ?? {}).length, `${id}: at least half the slots differ from the template's floor`, `${off} of ${Object.keys(got.floor ?? {}).length}`);
@@ -104,17 +100,19 @@ try {
   const r3 = deck(b, '--redraw', 'direction', '--reason', 'the brief asks for a calmer world');
   const after = dealOf(b);
   const td3 = sheetDeal(b);
-  result(r3.status === 0 && td3 && after.source === `deck.py (${JSON.parse(fs.readFileSync(path.join(b, 'out', 'direction.json'), 'utf8')).direction.id})` && Object.keys(td3.deal).every((k) => after.deal[k] === td3.deal[k]),
+  result(r3.status === 0 && td3 && after.source === `deck.py direction ${JSON.parse(fs.readFileSync(path.join(b, 'out', 'direction.json'), 'utf8')).direction.id}` && Object.keys(td3.deal).every((k) => after.deal[k] === td3.deal[k]),
     'a redraw rewrites src/dealt.ts with the sheet: they still agree', (r3.stderr || '').slice(-200) + JSON.stringify({ sheet: td3?.deal, plays: after.deal }));
 
-  // 4. a pin over the deck's deal
-  const lp = path.join(b, 'src', 'launch.ts');
-  const src = fs.readFileSync(lp, 'utf8');
-  const other = after.deal.camera === 'still' ? 'land' : 'still';
-  fs.writeFileSync(lp, src.replace(/export const LAUNCH(: [^=]+)? = \{/, (m) => `${m}\n  pin: { camera: '${other}' },`));
-  const pinned = dealOf(b);
-  result(pinned.deal?.camera === other && /pinned: camera/.test(pinned.source ?? ''), 'launch.ts pin fixes a slot over the deck\'s deal, and the source says so', JSON.stringify(pinned).slice(0, 240));
-  fs.writeFileSync(lp, src);
+  // 4. the last films' choices: the name's deal leaves them out while another is free; the deck's deal stands as dealt
+  const recentTs = (d, r) => fs.writeFileSync(path.join(d, 'src', 'recent.ts'), `export const RECENT: Partial<Record<'voice' | 'ground', readonly string[]>> = ${JSON.stringify(r)};\n`);
+  recentTs(a, { voice: [before.deal.voice], ground: [before.deal.ground] });
+  const fresh = dealOf(a);
+  result(!!fresh.deal && fresh.deal.voice !== before.deal.voice && fresh.deal.ground !== before.deal.ground && /the name "Switchyard"/.test(fresh.source ?? ''),
+    'a deal from the name leaves the last films\' voice and world out while another is free', JSON.stringify({ before: before.deal, after: fresh.deal }));
+  recentTs(b, { voice: [after.deal.voice], ground: [after.deal.ground] });
+  const kept = dealOf(b);
+  result(!!kept.deal && Object.keys(after.deal).every((k) => kept.deal[k] === after.deal[k]) && /^deck\.py direction /.test(kept.source ?? ''),
+    'the deck\'s deal is played as dealt, recent or not (one source: the sheet and the template agree)', JSON.stringify({ dealt: after.deal, plays: kept.deal }));
 
   // 5. a device the template does not have
   const dt = path.join(b, 'src', 'dealt.ts');
