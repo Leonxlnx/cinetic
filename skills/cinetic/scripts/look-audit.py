@@ -52,7 +52,8 @@ Look checks (warn unless marked fail):
                   and a quarter of its area, on 2 or more samples (one warns): a small card in an empty field. On a
                   product beat the subject fills the frame (50 % of its height or more) or the shot is a macro crop
                   of the moment that matters. Type alone (letters, not a filled shape) and the lockup's small mark
-                  pass. `--surfaces` reads it too
+                  pass. On a white or black stage that never stops and has depth (the flat-void excuse) a few small
+                  subjects belong to the look: it fails there from 12 % of the samples. `--surfaces` reads it too
   type-size       (--layout) cap height off the role bands layout-audit.sh wrote (both type families: caption 2.3-4 %,
                   line 4-9 %, display 9-14 %, hero 14-26 %, giant 26-90 % of the frame height: calm line 84 px is 5.6 %,
                   bold line 120 8 %), more than 2 non-UI sizes at once, a line wider than 61 % of the frame (a calm
@@ -908,6 +909,7 @@ SUBJECT = dict(
     solid=0.02, fill=0.8,  # a solid subject: a part of this share of the frame or more filling this share of its box
     height=0.5, area=0.25,  # everything off the ground spans less than this share of the height and of the frame
     samples=2,  # samples with a small subject before it fails (one warns)
+    excused_share=0.12,  # a white or black stage that never stops and has depth (void_excused): small subjects fail only on this share of the samples
 )
 
 
@@ -1041,16 +1043,31 @@ def look_scan(paths_or_video, info=None):
     return voids, slabs, cheap, small, n
 
 
-def subject_flags(small, n, add, fps):
-    """small-subject: fail on SUBJECT['samples'] or more samples with a small subject in an empty frame, warn on one."""
+def void_stage(voids, P=None):
+    """A film on a white or black stage: half its samples or more stand on a near-white field (L* P['light'] or more) or a
+    near-black one (P['dark'] or less), lit or not (the stage void_excused speaks of)."""
+    P = P or VOID
+    reads = [v for v in voids if v]
+    stage = [v for v in reads if v.get('field', 0) >= P['field'] and 'L' in v and (v['L'] >= P['light'] or v['L'] <= P['dark'])]
+    return bool(reads) and len(stage) >= 0.5 * len(reads)
+
+
+def subject_flags(small, n, add, fps, stage=False):
+    """small-subject: fail on SUBJECT['samples'] or more samples with a small subject in an empty frame, warn on one. On a
+    white or black stage that never stops and has depth (`stage`: void_stage and void_excused), a few small subjects belong to the look
+    (a product shot on its sweep, a card the camera travels round): it fails only from SUBJECT['excused_share'] of the
+    samples and warns under it."""
     if not small:
         return
     sev = 'fail' if len(small) >= SUBJECT['samples'] else 'warn'
+    if stage and sev == 'fail' and len(small) / max(1, n) < SUBJECT['excused_share']:
+        sev = 'warn'
     x = small[0]
     at = x.get('f', 0)
     add('small-subject', sev, at, f"a small subject in an empty frame on {len(small)} of {n} sample(s) (first {x.get('file') or f'{at / fps:.1f} s'}: the content spans "
         f"{x['height'] * 100:.0f} % of the height and {x['area'] * 100:.0f} % of the frame, a solid shape at {x['solid'][0]}): on a product beat the subject fills the frame "
-        '(50 % of its height or more: the device or the card at film size, the scene framed on its focus box) or a macro crop of the moment that matters, never a small card in an empty field')
+        '(50 % of its height or more: the device or the card at film size, the scene framed on its focus box) or a macro crop of the moment that matters, never a small card in an empty field'
+        + (f" [a white or black stage that never stops and has depth: fails from {SUBJECT['excused_share'] * 100:.0f} % of the samples]" if stage else ''))
 
 
 def void_excused(motion, depth_share):
@@ -1876,8 +1893,10 @@ def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, sec
     one_void = v_spread < VOID['step']
     void_ok = not (smp and v_share >= VOID['share'] and one_void)
     v_excused = False
-    if not void_ok:  # a white or black stage that never stops and has depth warns instead (void_excused)
-        v_excused, _ = void_excused(motion, float(np.mean(fall)) if fall else None)
+    # a white or black stage that never stops and has depth (void_excused): flat-void warns instead, small-subject counts more
+    stage_ok, _ = void_excused(motion, float(np.mean(fall)) if fall else None)
+    if not void_ok:
+        v_excused = stage_ok
         void_ok = v_excused
     framed = [s for s in smp if s['subject'].get('found')]
     centred = [s['f'] for s in framed if s['subject'].get('centred')]
@@ -1909,7 +1928,7 @@ def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, sec
                    need=dict(samples=CARD['samples'], share=CARD['share'], step=CARD['hi']), ok=cards_ok, target_ok=cards_ok),
         void=dict(frames=[s['f'] for s in voided][:20], samples=len(voided), measured=len(smp), share=round(v_share, 3), spread=round(v_spread, 1),
                   L=round(float(np.median(v_L)), 1) if v_L else None, need=dict(share=VOID['share'], warn=VOID['warn'], step=VOID['step']),
-                  ok=void_ok, target_ok=void_ok, warn=bool(void_ok and smp and v_share >= VOID['warn'] and one_void), excused=v_excused),
+                  ok=void_ok, target_ok=void_ok, warn=bool(void_ok and smp and v_share >= VOID['warn'] and one_void), excused=v_excused, stage_ok=bool(stage_ok)),
         # depth of field is a target only: the motion floor (floor-depth) already asks for two planes at different rates
         falloff=dict(share=round(fall_share, 3), raw=round(float(np.mean([P['falloff_raw'][i] for i in body])) if body else 0.0, 3), target=T['falloff_share'], ok=True,
                      target_ok=fall_share >= T['falloff_share']),
@@ -2680,10 +2699,10 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
     if not args.no_finish and not args.no_ui:
         ui_hits, _ = ui_scan(args.video, info)
         ui_bar_flags(ui_hits, add, fps)
-        small_, slabs_ = [], []
-        bands_, cheap_, ns_ = surface_scan(args.video, info, small_, slabs_)
+        small_, slabs_, voids_ = [], [], []
+        bands_, cheap_, ns_ = surface_scan(args.video, info, small_, slabs_, voids_)
         surface_flags(bands_, cheap_, ns_, add, fps)
-        subject_flags(small_, ns_, add, fps)
+        subject_flags(small_, ns_, add, fps, stage=void_stage(voids_) and bool(pf['void'].get('stage_ok')))
         # plain card slabs count in a film that stands on a world (a film in a void fails flat-void already)
         slab_flags(slabs_, ns_, add, fps, world=pf['void']['share'] < 0.5)
     if layout and not args.no_ui:
@@ -3291,6 +3310,18 @@ def subject_self_test(check):
     a, b, c, d = small_subject(rgb(small)), small_subject(rgb(big)), small_subject(words), small_subject(pic)
     check(a['small'] and not b['small'] and not c['small'] and not d['small'], 'small-subject: a small card in an empty lit frame fails; the card at frame size, type alone and a full picture pass',
           f"{a['height']},{a['area']} / {b['height']} / {c['solid']} / {d['ground']}")
+    # on a white or black stage that never stops and has depth a few small subjects belong to the look: 2 of 20 samples warn
+    # there (and fail anywhere else); 3 of 20 (15 %) fail on that stage too
+    def sev(k, stage):
+        fl = []
+        subject_flags([dict(a, f=10 * i) for i in range(k)], 20, lambda c_, s_, f_, n_, **kw: fl.append(s_), 30.0, stage=stage)
+        return fl[0] if fl else None
+    white = [ground_void(rgb(g + 12))] * 6 + [dict(field=0.0)] * 2
+    black = [ground_void(rgb(g * 0.04))] * 8
+    grey = [ground_void(rgb(g * 0.6))] * 8
+    check(void_stage(white) and void_stage(black) and not void_stage(grey) and sev(2, False) == 'fail' and sev(2, True) == 'warn' and sev(3, True) == 'fail',
+          'small-subject: on a white or black stage that never stops and has depth, small subjects on 10 % of the samples warn and on 15 % fail (elsewhere 2 samples fail)',
+          f"white {void_stage(white)} black {void_stage(black)} grey {void_stage(grey)} {sev(2, False)} {sev(2, True)} {sev(3, True)}")
 
 
 def self_test_more(F, tmp, run, has, cues_for, card, dots, paper, check, part='all'):
@@ -3942,9 +3973,12 @@ def main():
         look_flags = []
         lf = lambda check, sev, frame, note, **kw: look_flags.append(dict(check=check, severity=sev, frame=frame, note=note))  # noqa: E731
         fps_l = info_['fps'] if info_ else 1.0
-        v_share = void_flags(voids, lf, fps_l, motion=film_motion(F, args.video, info_) if info_ else None)
+        motion_l = film_motion(F, args.video, info_) if info_ else None
+        v_share = void_flags(voids, lf, fps_l, motion=motion_l)
         slab_flags(slabs, n, lf, fps_l, world=v_share < 0.5)
-        subject_flags(small, n, lf, fps_l)
+        falls = [v['falloff'] for v in voids if v.get('falloff') is not None]
+        stage_l = void_stage(voids) and void_excused(motion_l, (sum(1 for x in falls if x) / len(falls)) if falls else None)[0]
+        subject_flags(small, n, lf, fps_l, stage=stage_l)
         surface_flags([], cheap, n, lf, fps_l)
         ok = not any(x['severity'] == 'fail' for x in look_flags)
         res = dict(tool='look-audit', mode='look', file=args.video, samples=n, void_share=round(v_share, 3), card_slabs=slabs, cheap_cards=cheap,
