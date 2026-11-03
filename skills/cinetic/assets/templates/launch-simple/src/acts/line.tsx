@@ -1,6 +1,6 @@
 // A line, set word by word so the element can come out of it (its starred word swells into the next form) or sit in it.
-// Centred, in the film's pairing (the tokens' FONT.text), at a cap of 6.6 % of the frame for a line alone (7.2 % for a
-// line around the element, 9 % for the claim). The build (deal.ts voice): each word is born in the accent, rises 0.55 of
+// Centred, in the film's pairing (the tokens' FONT.text), at a cap of 8.6 % of the frame for a line alone (8 % for a
+// line around the element, 10.8 % for the claim; a long line shrinks to 84 % of the width). The build (deal.ts voice): each word is born in the accent, rises 0.55 of
 // its x-height into place at .7 / .9 / 1 opacity and drains to ink in 7 f; the line re-centres on the words already
 // there, front-loaded (E.jump: most of the move on its first frame). The starred word keeps the accent. Out: the words
 // part away from the key word at speed (the element leaves through the gap), or the whole line lifts away. A held line
@@ -15,7 +15,7 @@ import { textW } from '../kit/screens';
 import { DEAL, f60x, keyWords, VOICE, W } from '../timeline';
 
 /** Statement type: cap targets as shares of the frame height, weights, tracking. */
-export const LINE_SET = { cap: 0.727, alone: 0.066, around: 0.072, claim: 0.09, maxW: 0.8, weight: Math.max(560, TYPE.line.weight), keyGain: 140, track: -0.022 } as const;
+export const LINE_SET = { cap: 0.727, alone: 0.086, around: 0.08, claim: 0.108, maxW: 0.84, weight: Math.max(560, TYPE.line.weight), keyGain: 140, track: -0.022 } as const;
 
 export type SetWord = { word: string; key: boolean; x: number; w: number };
 export type SetLine = { size: number; weight: number; words: SetWord[]; width: number; space: number; h: number };

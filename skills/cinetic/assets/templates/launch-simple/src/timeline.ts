@@ -217,9 +217,11 @@ export const lineById = (id: string) => LINES.find((l) => l.id === id);
 
 // ---------------------------------------------------------------------------------------------------- the end
 
-/** The lockup: the mark grows out of the last form (the end's handover lands it), the name slides out from behind it, the
- * one fact under it; then it holds (a slow creep, 3 %) to the end while the music rings out. f@60 from the lockup scene. */
-export const LOCK = { mark: 0, name: 26, slide: 30, fact: 64, creep: 0.03 } as const;
+/** The lockup: the mark grows out of the last form (the end's handover lands it) large and alone (solo x its lockup
+ * size), pulls back into the lockup as the name slides out from behind it, the one fact under it; then it keeps creeping
+ * in to the end while the music rings out (creep: a front-loaded start, its time constant in 30 fps frames, then the
+ * house hold rate in % a 30 fps frame). f@60 from the lockup scene. */
+export const LOCK = { mark: 0, name: 26, slide: 30, fact: 64, creep: { start: 0.04, tau30: 14, pct: 0.1 }, solo: 1.9 } as const;
 const LS = SCENES[LOCKUP_SCENE];
 const landOfEnd = (() => {
   const h = handIn(LOCKUP_SCENE);
@@ -228,8 +230,11 @@ const landOfEnd = (() => {
 export const LOCKUP_AT = q16(LS.from + landOfEnd);
 export const NAME_AT = q16(LOCKUP_AT + f60(LOCK.name));
 export const FACT_AT = q16(NAME_AT + f60(LOCK.fact) + f60(18)) - f60(18);
-/** The frame the whole frame settles out with the music's ring-out (declared fadeEnd). */
-export const END_FADE = { fade: 30 } as const;
+/** The settle-out: the whole frame goes into the world's deep tone WITH the music's ring-out: it starts `after` f@60
+ * past the body's last bar line (the final hit lands first), runs to the last frame and completes there (never cut
+ * mid-fade); `fade` is the shortest it may be (a film with no ring-out). */
+export const END_FADE = { fade: 30, after: 8 } as const;
+export const FADE_FROM = Math.min(TOTAL - f60(END_FADE.fade), BODY_END + f60(END_FADE.after));
 
 // ---------------------------------------------------------------------------------------------------- COPY
 
@@ -296,7 +301,7 @@ export type Salience = 'copy' | 'hit' | 'cut' | 'move' | 'life';
 
 export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'launch', oneTake: false, whiteWorld: false };
 /** One seam per scene change (lib/spine spineDeclares: the handover in its id, its element and forms), the settle-out. */
-export const SEAMS: Seam[] = [...spineDeclares(SPINE_PLAN).seams, { at: TOTAL - f60(END_FADE.fade), kind: 'fadeEnd' as SeamKind, id: 'fadeEnd:settle-out' }].sort((x, y) => x.at - y.at);
+export const SEAMS: Seam[] = [...spineDeclares(SPINE_PLAN).seams, { at: FADE_FROM, kind: 'fadeEnd' as SeamKind, id: 'fadeEnd:settle-out' }].sort((x, y) => x.at - y.at);
 export const STEPPED: SteppedRange[] = [];
 export const FLASHES: Flash[] = [];
 export const CAMERA_BLUR: CameraBlurRange[] = [];

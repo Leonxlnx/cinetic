@@ -24,6 +24,20 @@ export const camAt = (keys: readonly CamKey[], f: number): Cam2 => {
   }
   return keys[keys.length - 1].c;
 };
+/**
+ * A scene's last move as a hold that never stops: the move's own ease front-loads it, and `k` of the travel is spread
+ * evenly to the scene's end, so the held result keeps travelling the same way (the decaying tail of the move, never a
+ * still frame, never back). House k 0.3.
+ */
+export const holdEase = (e: Ease = E.glideOut, k = 0.3): Ease => (u) => (1 - k) * e(u) + k * u;
+/** The camera creeping in from frame `from`: `pct` % of scale per 30 fps frame (a hold creep of 0.1-0.4 %/f). */
+export const creep = (c: Cam2, f: number, from: number, fps: number, pct = 0.12): Cam2 => ({ ...c, s: c.s * (1 + pct / 100) ** Math.max(0, ((f - from) * 30) / fps) });
+/** The box round two boxes. */
+export const union = (a: Box, b: Box): Box => {
+  const x = Math.min(a.x, b.x);
+  const y = Math.min(a.y, b.y);
+  return { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y };
+};
 /** A stage box on screen under the camera. */
 export const under = (c: Cam2, b: Box): Box => ({ x: (b.x - c.tx) * c.s + W / 2, y: (b.y - c.ty) * c.s + H / 2, w: b.w * c.s, h: b.h * c.s });
 /** The CSS transform that films a stage (origin 0 0) through the camera. */

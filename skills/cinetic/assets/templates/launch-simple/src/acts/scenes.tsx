@@ -6,14 +6,16 @@
 //           into the next form while the other words part away from it)
 //   prompt  macro-type: the request typed into a lit input; the camera pushes in to macro on the caret, rides it,
 //           pulls back to read the request whole, a pointer presses send (a glow the size of the button)
-//   site    page-fly / push-press: the page the product makes, written section by section while the camera travels it
-//           (mode 'page'); then the same surface, one push onto its button, pressed (mode 'button')
+//   site    page-fly / push-press: the page the product makes, written section by section, filmed whole with its
+//           toolbar, then one push in toward the toolbar (mode 'page'); the button scene carries that push on to the
+//           button, the cursor arrives once it has landed and presses right before the handover (mode 'button')
 //   live    the state the press makes, a status pill in the product's own words (a line inside): a band of light
 //           crosses it as it lands, its dot pings once; the world's turn floods out of it
-//   notice  toast-stack: notices drop into the front slot and push the stack back (blur, dim, scale by slot); a line
+//   notice  toast-stack: notices rise into the front slot and push the stack up and back (blur, dim, scale by slot); a line
 //           around it: the giant line builds in front while the stack racks soft behind it, then lifts away
 //   count   glass-counter: the many fold into one figure that climbs in cut steps, the faces beside it
-//   lockup  the mark grows out of the last form, the name slides out from behind it, the fact under it; it creeps
+//   lockup  the mark grows out of the last form large and alone, pulls back as the name slides out from behind it, the
+//           fact under it, a band of light once it is whole; it keeps creeping in to the last frame
 //
 // Every scene: one sharp plane, cards lit (the kit's material: a sheen, a hairline, a top light, two shadows) or glass,
 // facing the camera; its camera's one move lands on the scene's end (the hold is the tail of that move, never a dead
@@ -31,8 +33,9 @@ import { clamp, E, mix } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { withAlpha } from '../lib/handover';
 import { measureTracked } from '../lib/measure';
-import { f60x, FACT_AT, GATHER, H, type LineTime, LOCK, LOCKUP_AT, NAME_AT, TOTAL, W } from '../timeline';
-import { type Box, type Cam2, camAt, camCss, type CamKey, frameBox, REST, under } from './cam';
+import { f60x, FACT_AT, FPS, GATHER, H, type LineTime, LOCK, LOCKUP_AT, NAME_AT, W } from '../timeline';
+import { type Box, type Cam2, camAt, camCss, type CamKey, creep, frameBox, holdEase, REST, under, union } from './cam';
+import { glyphSweep } from '../lib/moves';
 import { CHIP, keyBox, LINE_SET, LineWords, setLine } from './line';
 import type { Look, Tone } from '../world';
 
@@ -246,7 +249,7 @@ export const promptScene = (P: PromptSpec): SceneDef => {
 // ------------------------------------------------------------------------------------------------ site (page-fly, push-press)
 
 export type SiteSpec = { site: Site; toolbar?: { status: string; action: string }; w?: number };
-/** The page the product makes, built section by section under a travelling camera (mode 'page'); the same surface pushed onto its button and pressed (mode 'button'). */
+/** The page the product makes, built section by section, then one push in toward its toolbar (mode 'page'); the same surface pushed on to its button and pressed (mode 'button'). */
 export const siteScene = (S: SiteSpec, mode: 'page' | 'button'): SceneDef => {
   const ww = S.w ?? 1180;
   const pt = ww / 1024;
@@ -268,17 +271,18 @@ export const siteScene = (S: SiteSpec, mode: 'page' | 'button'): SceneDef => {
   // the page writes itself from the cut: its chrome and headline are there while it grows out of the request, the rest
   // section by section under the camera's travel
   const pageTimes = (dur: number, _land: number) => ({ at: -Math.round(dur * 0.08), every: Math.max(2, (dur * 0.55) / 9) });
+  // ONE move: the page and its toolbar whole while the page writes itself, then a front-loaded push in toward the
+  // toolbar that keeps travelling to the scene's end; the button scene picks it up and lands on the button. It never
+  // goes there and back, and the toolbar never leaves the frame.
   const pageKeys = (dur: number, land: number, fps: number): CamKey[] => {
     const g = geo();
-    const hb = g.L.focus.headline;
-    const pic = g.L.focus.picture ?? g.L.focus.cards ?? hb;
-    const whole = frameBox(g.win, 0.7);
+    const whole = frameBox(union(g.win, g.tbox), 0.8, 0.86);
+    const tc = { x: g.tbox.x + g.tbox.w / 2, y: g.tbox.y + g.tbox.h / 2 };
+    const toward = { tx: whole.tx + (tc.x - whole.tx) * 0.24, ty: whole.ty + (tc.y - whole.ty) * 0.24, s: whole.s * 1.16 };
     return [
       { f: 0, c: whole },
-      { f: land + k60(4, fps), c: whole },
-      { f: land + k60(34, fps), c: { tx: g.win.x + hb.x + hb.w / 2 + 40, ty: g.win.y + hb.y + hb.h / 2, s: whole.s * 1.5 }, e: E.liftOut },
-      { f: Math.round(dur * 0.66), c: { tx: g.win.x + pic.x + pic.w * 0.3, ty: g.win.y + pic.y + pic.h * 0.55, s: whole.s * 1.32 }, e: E.strongInOut },
-      { f: dur, c: { tx: whole.tx + 40, ty: whole.ty - 30, s: whole.s * 1.08 }, e: E.glideOut },
+      { f: Math.max(land + k60(6, fps), Math.round(dur * 0.34)), c: whole },
+      { f: dur, c: toward, e: holdEase(E.liftOut, 0.25) },
     ];
   };
   const cam = (c: SceneCtx): Cam2 => {
@@ -286,9 +290,11 @@ export const siteScene = (S: SiteSpec, mode: 'page' | 'button'): SceneDef => {
     const g = geo();
     const from = c.prev ? camAt(pageKeys(c.prev.dur, 0, c.fps), c.prev.dur) : frameBox(g.win, 0.7);
     const btn = { tx: g.btn.x + g.btn.w / 2 - 30, ty: g.btn.y + g.btn.h / 2 + 40, s: 2.3 };
-    return camAt([{ f: 0, c: from }, { f: k60(38, c.fps), c: btn, e: E.liftOut }, { f: c.dur, c: { ...btn, s: 2.42 }, e: E.glideOut }], c.f);
+    return camAt([{ f: 0, c: from }, { f: k60(38, c.fps), c: btn, e: E.liftOut }, { f: c.dur, c: { ...btn, s: 2.5 }, e: holdEase(E.glideOut) }], c.f);
   };
-  const press = (dur: number) => Math.round(dur * 0.56);
+  // the press comes right before the handover's lead: the press IS the cause of what follows (never a cursor parked on
+  // the button); the cursor glides in once the push has landed
+  const press = (dur: number, leadAt: number, fps: number) => Math.min(dur - k60(6, fps), Math.max(Math.round(dur * 0.42), k60(52, fps), Math.round(leadAt - k60(12, fps))));
   return {
     form: mode === 'page' ? 'page' : 'button',
     Draw: ({ c }) => {
@@ -297,10 +303,13 @@ export const siteScene = (S: SiteSpec, mode: 'page' | 'button'): SceneDef => {
       const sk = skinAt(c);
       const bt = pageTimes(c.prev && mode === 'button' ? c.prev.dur : c.dur, mode === 'button' ? 0 : c.land);
       const pf = mode === 'button' ? 1e5 : c.f;
-      const pr = press(c.dur);
+      const pr = press(c.dur, c.leadAt, c.fps);
       const q = mode === 'button' && c.f >= pr ? 1 - E.buildIn(clamp((c.f - pr - k60(6, c.fps)) / k60(12, c.fps))) : 0;
       const pressed = mode === 'button' && c.f >= pr;
-      const reach = E.strongInOut(clamp((c.f - (pr - k60(30, c.fps))) / k60(28, c.fps)));
+      // the cursor arrives on a decelerating jump once the push has landed (most of the way in its first frames) and
+      // settles on the button just before the press
+      const cIn = Math.max(k60(34, c.fps), pr - k60(40, c.fps));
+      const reach = E.out(clamp((c.f - cIn) / Math.max(1, pr - k60(4, c.fps) - cIn)));
       const winA = mode === 'page' ? c.own : around(c) * 0.999 + 0.001;
       return (
         <Stage cam={cm}>
@@ -327,9 +336,9 @@ export const siteScene = (S: SiteSpec, mode: 'page' | 'button'): SceneDef => {
             </div>
           </div>
           {mode === 'button' ? <Glow f={c.f} at={pr + k60(4, c.fps)} x={g.btn.x + g.btn.w / 2} y={g.btn.y + g.btn.h / 2} r={g.btn.w * 0.62} fps={c.fps} color={mixColor(C.accent, C.white, 0.55)} peak={0.5} /> : null}
-          {mode === 'button' && c.f >= pr - k60(30, c.fps) && c.own > 0.5 ? (
-            <div style={{ position: 'absolute', left: 0, top: 0, opacity: clamp((c.f - (pr - k60(30, c.fps))) / k60(6, c.fps)) }}>
-              <Cursor x={g.btn.x + g.btn.w * 0.6 + mix(130, 0, reach)} y={g.btn.y + g.btn.h * 0.6 + mix(110, 0, reach)} scale={0.62} shape="pointer" fill={C.white} outline={C.ink} press={q} />
+          {mode === 'button' && c.f >= cIn && c.own > 0.5 ? (
+            <div style={{ position: 'absolute', left: 0, top: 0, opacity: clamp((c.f - cIn) / k60(4, c.fps)) }}>
+              <Cursor x={g.btn.x + g.btn.w * 0.6 + mix(250, 0, reach)} y={g.btn.y + g.btn.h * 0.6 + mix(190, 0, reach)} scale={0.62} shape="pointer" fill={C.white} outline={C.ink} press={q} />
             </div>
           ) : null}
         </Stage>
@@ -357,7 +366,7 @@ export const siteScene = (S: SiteSpec, mode: 'page' | 'button'): SceneDef => {
       );
     },
     moments: (m) => {
-      if (mode === 'button') return [{ f: press(m.dur), kind: 'click', weight: 0.8, action: 'press', id: 'press' }, { f: k60(2, m.fps), kind: 'swell', weight: 0.3, action: 'shape', id: 'push-in', dur: k60(36, m.fps), apexFrac: 0.7 }];
+      if (mode === 'button') return [{ f: press(m.dur, m.leadAt, m.fps), kind: 'click', weight: 0.85, action: 'touch', id: 'press' }, { f: k60(2, m.fps), kind: 'swell', weight: 0.3, action: 'shape', id: 'push-in', dur: k60(36, m.fps), apexFrac: 0.7 }];
       const bt = pageTimes(m.dur, m.land);
       return [1, 3, 4, 6, 8].map((k, i): Moment => ({ f: Math.round(bt.at + k * bt.every), kind: 'pop', weight: 0.22 + 0.04 * i, action: 'card-land', id: `section${k}`, pan: (i % 2 ? 0.12 : -0.12) }));
     },
@@ -369,7 +378,7 @@ export const siteScene = (S: SiteSpec, mode: 'page' | 'button'): SceneDef => {
 export type LiveSpec = { words: string; strong?: string; w?: number; h?: number };
 /** The state the press makes, in the product's own words; a band of light crosses it as it lands, its dot pings once. */
 export const liveScene = (P: LiveSpec): SceneDef => {
-  const h = P.h ?? 124;
+  const h = P.h ?? 150;
   const font = h * 0.36;
   const parts = P.words.split(/\s+/).filter(Boolean);
   const strong = P.strong ?? parts[0];
@@ -378,7 +387,7 @@ export const liveScene = (P: LiveSpec): SceneDef => {
     const w = P.w ?? Math.round(h * 0.42 + 26 + 20 + tw + 30 + font * 0.9 + h * 0.36);
     return { box: { x: (W - w) / 2, y: (H - h) / 2, w, h } };
   };
-  const cam = (c: SceneCtx): Cam2 => camAt([{ f: 0, c: REST }, { f: c.dur, c: { ...REST, s: 1.09 }, e: E.glideOut }], c.f);
+  const cam = (c: SceneCtx): Cam2 => creep(camAt([{ f: 0, c: REST }, { f: c.dur, c: { ...REST, s: 1.1 }, e: holdEase(E.glideOut) }], c.f), c.f, c.land, c.fps, 0.1);
   const Pill: React.FC<{ c: SceneCtx; k?: number }> = ({ c, k = 1 }) => {
     const sk = skinOf('light', c.look.bottom, C.accent);
     const g = geo();
@@ -443,8 +452,8 @@ const ladder = (arr: readonly number[], s: number) => {
 };
 /** Notices drop into the front slot and push the stack back; the line around builds in front while the stack racks soft, then lifts away. */
 export const noticeScene = (P: NoticeSpec): SceneDef => {
-  const w = P.w ?? 820;
-  const pt = P.pt ?? 1.55;
+  const w = P.w ?? 1040;
+  const pt = P.pt ?? 2.05;
   const cardH = (c: Pick<SceneCtx, 'fps'>) => noticeStackLayout({ items: [P.items[0]], mode: 'list', w, pt }, 600, { pt, fps: c.fps }).h;
   const arrivals = (land: number, fps: number) => P.items.map((_, j) => (j === 0 ? 0 : land + k60(12, fps) + (j - 1) * k60(13, fps)));
   const rack = (c: SceneCtx) => {
@@ -462,7 +471,8 @@ export const noticeScene = (P: NoticeSpec): SceneDef => {
     const ch = cardH(c);
     const r = rack(c);
     const s = LADDER.scale ** back * (1 - 0.12 * r);
-    const y = cy - ch / 2 + back * ch * LADDER.step - (1 - enter) * ch * 0.85 + r * H * 0.25;
+    // older notices recede up and back (smaller, softer, dimmer) behind the front card: the stack faces the camera
+    const y = cy - ch / 2 - back * ch * LADDER.step * 0.62 + (1 - enter) * ch * 0.85 + r * H * 0.27;
     return { back, enter, s, y, ch, blur: ladder(LADDER.blur, back) + 2.5 * r, bright: ladder(LADDER.bright, back) * (1 - 0.12 * r), o: c.f < arr[j] ? 0 : clamp(enter * 1.6) * clamp(4.8 - back) };
   };
   const boxOf = (c: SceneCtx, j: number): Box => {
@@ -476,7 +486,7 @@ export const noticeScene = (P: NoticeSpec): SceneDef => {
     arr.forEach((a, k) => (c.f >= a ? (j = k) : null));
     return j;
   };
-  const cam = (c: SceneCtx): Cam2 => camAt([{ f: 0, c: { ...REST, s: 1.04 } }, { f: c.dur, c: { ...REST, ty: H / 2 + 20, s: 0.97 }, e: E.glideOut }], c.f);
+  const cam = (c: SceneCtx): Cam2 => camAt([{ f: 0, c: { ...REST, s: 1.04 } }, { f: c.dur, c: { ...REST, ty: H / 2 + 20, s: 0.95 }, e: holdEase(E.glideOut) }], c.f);
   const NoticeCard: React.FC<{ c: SceneCtx; j: number; k?: number }> = ({ c, j, k = 1 }) => {
     const sk = skinAt(c);
     const it = P.items[j];
@@ -532,10 +542,11 @@ export const noticeScene = (P: NoticeSpec): SceneDef => {
 export type CountSpec = { title: string; label: string; from: number; to: number; faces: { name: string; photo?: string }[]; chip?: string };
 /** The many folded into one figure that climbs in cut steps, the faces beside it. */
 export const countScene = (P: CountSpec): SceneDef => {
-  const cw = 900;
-  const chh = 360;
+  const CZ = 1.22; // the card's scale over its base layout (900 x 360 at 1080p)
+  const cw = 900 * CZ;
+  const chh = 360 * CZ;
   const box: Box = { x: (W - cw) / 2, y: (H - chh) / 2, w: cw, h: chh };
-  const cam = (c: SceneCtx): Cam2 => camAt([{ f: 0, c: REST }, { f: c.dur, c: { ...REST, s: 1.08 }, e: E.glideOut }], c.f);
+  const cam = (c: SceneCtx): Cam2 => creep(camAt([{ f: 0, c: REST }, { f: c.dur, c: { ...REST, s: 1.08 }, e: holdEase(E.glideOut) }], c.f), c.f, c.land, c.fps, 0.08);
   const value = (c: SceneCtx) => {
     const a = c.land;
     const b = Math.max(a + 2, Math.round(c.dur * 0.62));
@@ -544,11 +555,12 @@ export const countScene = (P: CountSpec): SceneDef => {
     return Math.round(mix(P.from, P.to, E.snapOut(clamp((fq - a) / (b - a)))));
   };
   // centred: the figure in the middle of the card (a converge grows it from its centre outward), its words under it
-  const Body: React.FC<{ c: SceneCtx; k?: number }> = ({ c, k = 1 }) => {
+  const Body: React.FC<{ c: SceneCtx; k?: number }> = ({ c, k: k0 = 1 }) => {
     const sk = skinAt(c);
     const v = value(c);
+    const k = k0 * CZ;
     return (
-      <div style={{ position: 'relative', width: cw * k, height: chh * k, fontFamily: KIT_FONT, whiteSpace: 'pre', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ position: 'relative', width: cw * k0, height: chh * k0, fontFamily: KIT_FONT, whiteSpace: 'pre', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{ marginTop: 30 * k, display: 'flex', alignItems: 'center', gap: 14 * k, fontSize: 40 * k, fontWeight: 560, color: sk.mute }}>
           <span data-text="count-title">{P.title}</span>
           {P.chip ? <span style={{ fontSize: 40 * k * 0.62, fontWeight: 620, color: sk.accentText, background: sk.accentSoft, padding: `${4 * k}px ${14 * k}px`, borderRadius: 22 * k }}>{P.chip}</span> : null}
@@ -608,7 +620,11 @@ export const countScene = (P: CountSpec): SceneDef => {
 // ------------------------------------------------------------------------------------------------ lockup
 
 export type LockupSpec = { name: string; fact: string; mark: (size: number, color: string) => React.ReactNode; markRatio?: number; tile?: boolean };
-/** The mark grown out of the last form; the name slides out from behind it; the fact under it; the whole creeps 3 % to the last frame. */
+/**
+ * The mark grown out of the last form, large and alone (LOCK.solo); it pulls back into the lockup as the name slides
+ * out from behind it; the fact under it; a band of light crosses the lockup once the name is whole; the whole keeps
+ * creeping in (front-loaded, LOCK.creep) to the last frame, so the end card is never a frozen frame.
+ */
 export const lockupScene = (P: LockupSpec): SceneDef => {
   const cap = 0.098 * H;
   const fs = cap / 0.72;
@@ -621,9 +637,16 @@ export const lockupScene = (P: LockupSpec): SceneDef => {
     const n = E.glideOut(clamp((F - NAME_AT) / f60x(LOCK.slide)));
     const markX = mix(W / 2 - mk / 2, W / 2 - total / 2, n);
     const y = H / 2 - mk / 2 - 24;
-    return { n, markX, y, nw, total };
+    // alone the mark stands LOCK.solo x its lockup size; it pulls back to 1 on a snap as the name starts to slide
+    const z = mix(LOCK.solo, 1, E.snapOut(clamp((F - NAME_AT) / f60x(LOCK.slide * 0.8))));
+    return { n, markX, y, nw, total, z, mb: { x: markX + (mk * (1 - z)) / 2, y: y + (mk * (1 - z)) / 2, w: mk * z, h: mk * z } };
   };
-  const creep = (F: number) => 1 + LOCK.creep * clamp((F - LOCKUP_AT) / Math.max(1, TOTAL - LOCKUP_AT));
+  // front-loaded and never still: a short exponential start, then the house hold rate to the last frame
+  const creep = (F: number) => {
+    const t = (Math.max(0, F - LOCKUP_AT) * 30) / FPS;
+    return 1 + LOCK.creep.start * (1 - Math.exp(-t / LOCK.creep.tau30)) + (LOCK.creep.pct / 100) * t;
+  };
+  const SWEEP_AT = NAME_AT + f60x(LOCK.slide + 6);
   // the mark on its lit tile (house): the element the last form converges into stays a crisp object on any world
   const tile = P.tile !== false;
   return {
@@ -633,9 +656,19 @@ export const lockupScene = (P: LockupSpec): SceneDef => {
       const s = creep(c.F);
       const ink = c.look.ink;
       const fact = E.glideOut(clamp((c.F - FACT_AT) / f60x(18)));
+      const span = g.total + mk;
+      const sw = glyphSweep(c.F, SWEEP_AT, span, { fps: c.fps, width: W, height: H }, { band: 150, peak: 0.42 });
+      const dark = c.look.tone === 'dark';
+      const lockLeft = W / 2 - g.total / 2 - mk / 2;
       return (
         <div style={{ ...FULL, transformOrigin: `${W / 2}px ${H / 2}px`, transform: `scale(${s.toFixed(5)})` }}>
-          <div data-logo="" style={{ position: 'absolute', left: g.markX, top: g.y, width: mk, height: mk, opacity: c.own }}>
+          {/* the light that marks the lockup whole: a slanted band crossing it once, in the world's own light */}
+          {sw ? <div style={{ position: 'absolute', left: lockLeft + sw.x - sw.band / 2, top: g.y - mk * 0.9, width: sw.band, height: mk * 2.8, transform: `skewX(${(-sw.angle).toFixed(1)}deg)`, background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${dark ? 'rgba(255,255,255,1)' : withAlpha(mixColor(C.accent, C.white, 0.7), 1)} 50%, rgba(255,255,255,0) 100%)`, opacity: sw.opacity * (dark ? 0.55 : 0.8), mixBlendMode: dark ? 'screen' : 'multiply', filter: 'blur(18px)' }} /> : null}
+          {/* the name slides out from BEHIND the mark: clipped at the mark's right edge and drawn under it */}
+          <div style={{ position: 'absolute', left: g.markX + mk + gap * 0.3, top: g.y - mk, width: g.nw + gap * 2, height: mk * 3, overflow: 'hidden' }}>
+            <div data-text="name" style={{ position: 'absolute', left: gap * 0.7 - (1 - g.n) * (g.nw + gap), top: mk + mk / 2 - fs * 0.56, fontFamily: FONT.text, fontSize: fs, fontWeight: 720, letterSpacing: '-0.035em', color: ink, whiteSpace: 'pre', lineHeight: 1.12, opacity: clamp(g.n * 3), ...TYPE_FEATURES }}>{P.name}</div>
+          </div>
+          <div data-logo="" style={{ position: 'absolute', left: g.markX, top: g.y, width: mk, height: mk, opacity: c.own, transformOrigin: '50% 50%', transform: `scale(${g.z.toFixed(4)})` }}>
             {tile ? (
               <>
                 <div style={{ position: 'absolute', inset: 0, borderRadius: mk * 0.24, background: C.white, boxShadow: `0 ${mk * 0.08}px ${mk * 0.24}px ${withAlpha(MASK, 0.22)}` }} />
@@ -646,10 +679,6 @@ export const lockupScene = (P: LockupSpec): SceneDef => {
               P.mark(mk, ink)
             )}
           </div>
-          {/* the name slides out from behind the mark: clipped at the mark's right edge */}
-          <div style={{ position: 'absolute', left: g.markX + mk + gap * 0.3, top: g.y - mk, width: g.nw + gap * 2, height: mk * 3, overflow: 'hidden' }}>
-            <div data-text="name" style={{ position: 'absolute', left: gap * 0.7 - (1 - g.n) * (g.nw + gap), top: mk + mk / 2 - fs * 0.56, fontFamily: FONT.text, fontSize: fs, fontWeight: 720, letterSpacing: '-0.035em', color: ink, whiteSpace: 'pre', lineHeight: 1.12, opacity: clamp(g.n * 3), ...TYPE_FEATURES }}>{P.name}</div>
-          </div>
           <div data-text="close" style={{ position: 'absolute', left: 0, width: W, top: g.y + mk + 54 + (1 - fact) * 18, textAlign: 'center', fontFamily: FONT.text, fontSize: 46, fontWeight: 480, color: c.look.mute, opacity: fact, whiteSpace: 'pre', ...TYPE_FEATURES }}>{P.fact}</div>
         </div>
       );
@@ -657,10 +686,11 @@ export const lockupScene = (P: LockupSpec): SceneDef => {
     el: (c) => {
       const g = geo(c.F);
       const s = creep(c.F);
-      const b = { x: g.markX, y: g.y, w: mk, h: mk };
-      return { box: { x: W / 2 + (b.x - W / 2) * s, y: H / 2 + (b.y - H / 2) * s, w: b.w * s, h: b.h * s }, r: mk * (tile ? 0.24 : 0.22) * s, fill: tile ? C.white : 'rgba(255, 255, 255, 0)', ...(tile ? { shadow: { y: 10, blur: 30, a: 0.22 } } : {}) };
+      const b = g.mb;
+      return { box: { x: W / 2 + (b.x - W / 2) * s, y: H / 2 + (b.y - H / 2) * s, w: b.w * s, h: b.h * s }, r: mk * g.z * (tile ? 0.24 : 0.22) * s, fill: tile ? C.white : 'rgba(255, 255, 255, 0)', ...(tile ? { shadow: { y: 10, blur: 30, a: 0.22 } } : {}) };
     },
     Content: ({ c, w }) => (tile ? <div style={{ width: w, height: w, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{P.mark(w * 0.62, C.accent)}</div> : <div style={{ width: w, height: w }}>{P.mark(w, c.look.ink)}</div>),
+    // the mark pulling back into the lockup as the name starts out (the lockup's own hit is sync.ts's)
     moments: () => [],
   };
 };

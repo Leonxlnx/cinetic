@@ -80,9 +80,10 @@ export default function cues(): SoundEvent[] {
       ev.push({ f: Math.max(0, h.span[0]), kind: 'whoosh', weight: 0.5, pan: 0, dur: lead + land, apexFrac: lead / Math.max(1, lead + land), action: 'swipe', id });
     }
   }
-  // the world's turn (the film's one colour event): a sub drop as the flood leaves the element
+  // the world's turn (the film's biggest change): a sub drop as the flood leaves the element, at weight 1 so the music
+  // steps down for a breath before it (plan.py stop-downs) and the turn lands clear
   const turn = SPINE_PLAN.world.find((w) => w.step === 'turn');
-  if (turn) ev.push({ f: turn.at, kind: 'drop', weight: 0.8, pan: 0, action: 'thud', id: 'the-world-turns' });
+  if (turn) ev.push({ f: turn.at, kind: 'drop', weight: 1, pan: 0, action: 'thud', id: 'the-world-turns' });
   // the lockup: the name's slide, then ONE clean hit as the mark lands whole
   ev.push({ f: NAME_AT, kind: 'whoosh', weight: 0.28, pan: 0.2, dur: f60(28), apexFrac: 0.5, action: 'swipe', id: 'the-name-slides-out' });
   ev.push({ f: LOCKUP_AT, kind: 'hit', weight: 1, pan: 0, action: 'logo-lock', id: 'lockup' });

@@ -68,8 +68,11 @@ export const lookAt = (F: number): Look => (turnAt(F) >= 1 || F >= WORLD_TURN.at
 /** The kit screens' tone in the world at F: light cards on a light stage, dark glass on a field or at night. */
 export const toneAt = (F: number): Tone => lookAt(F).tone;
 
+/** Every moving plane of the world overscans the frame by this share on each side, so a pull-back or a step never shows its edge. */
+const OVER = 0.16;
 const Field: React.FC<{ look: Look; m: { x: number; y: number; s: number } }> = ({ look, m }) => {
   const fill: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: W, height: H };
+  const over: React.CSSProperties = { position: 'absolute', left: -W * OVER, top: -H * OVER, width: W * (1 + 2 * OVER), height: H * (1 + 2 * OVER) };
   // the backdrop: a vertical value ramp (dithered, baked once), lit from above
   const back = bakePlate('linear', [{ at: 0, color: look.top }, { at: 0.62, color: mixColor(look.top, look.bottom, 0.6) }, { at: 1, color: look.bottom }], 64, 256, { vertical: true });
   // the light pool from above-left (the key) and the glow on the floor under the element (in the brand's hue)
@@ -81,13 +84,13 @@ const Field: React.FC<{ look: Look; m: { x: number; y: number; s: number } }> = 
   const near = `translate(${(m.x * 1.2).toFixed(2)}px, ${(m.y * 1.2).toFixed(2)}px) scale(${(1 + (m.s - 1) * 1.25).toFixed(5)})`;
   const horizon = H * 0.7;
   return (
-    <div style={fill} data-world={look.kind}>
-      <Img src={back} style={{ ...fill, transformOrigin: '50% 40%', transform: far }} />
-      {look.plate ? <Img src={look.plate} data-imagery="" style={{ ...fill, objectFit: 'cover', transformOrigin: '50% 45%', transform: far }} /> : null}
-      <Img src={key} style={{ ...fill, transformOrigin: '50% 40%', transform: far }} />
+    <div style={{ ...fill, background: look.bottom }} data-world={look.kind}>
+      <Img src={back} style={{ ...over, transformOrigin: '50% 40%', transform: far }} />
+      {look.plate ? <Img src={look.plate} data-imagery="" style={{ ...over, objectFit: 'cover', transformOrigin: '50% 45%', transform: far }} /> : null}
+      <Img src={key} style={{ ...over, transformOrigin: '50% 40%', transform: far }} />
       {/* the floor: a lighter plane from a soft horizon, the pool of light on it under the element */}
-      <div style={{ position: 'absolute', left: -W * 0.1, top: horizon, width: W * 1.2, height: H * 0.5, transformOrigin: `${W * 0.6}px 0px`, transform: near, background: `linear-gradient(180deg, ${withAlpha(mixColor(look.floor, look.bottom, 0.5), 0)} 0%, ${look.floor} 22%, ${mixColor(look.floor, look.bottom, 0.35)} 100%)`, opacity: look.plate ? 0.4 : 1 }} />
-      <Img src={glow} style={{ position: 'absolute', left: -W * 0.05, top: H * 0.62, width: W * 1.1, height: H * 0.7, transformOrigin: `${W * 0.55}px 0px`, transform: near }} />
+      <div style={{ position: 'absolute', left: -W * 0.3, top: horizon, width: W * 1.6, height: H * 0.62, transformOrigin: `${W * 0.6}px 0px`, transform: near, background: `linear-gradient(180deg, ${withAlpha(mixColor(look.floor, look.bottom, 0.5), 0)} 0%, ${look.floor} 22%, ${mixColor(look.floor, look.bottom, 0.35)} 100%)`, opacity: look.plate ? 0.4 : 1 }} />
+      <Img src={glow} style={{ position: 'absolute', left: -W * 0.15, top: H * 0.62, width: W * 1.3, height: H * 0.7, transformOrigin: `${W * 0.55}px 0px`, transform: near }} />
       {look.rings > 0 ? (
         <svg width={W} height={H} style={{ ...fill, transformOrigin: '50% 92%', transform: near }}>
           {[0.42, 0.7, 1.02, 1.4].map((r, i) => (
@@ -109,7 +112,7 @@ export const FilmWorld: React.FC<{ F: number; children?: React.ReactNode }> = ({
   const cy = H * WORLD_TURN.y;
   const R = Math.hypot(Math.max(cx, W - cx), Math.max(cy, H - cy)) * 1.04;
   return (
-    <div style={{ ...fill, background: LOOK_A.bottom }}>
+    <div style={{ ...fill, background: (k >= 1 ? LOOK_B : LOOK_A).bottom }}>
       {k < 1 ? <Field look={LOOK_A} m={m} /> : null}
       {k > 0 ? (
         <div style={{ ...fill, clipPath: k < 1 ? `circle(${(R * k).toFixed(1)}px at ${cx}px ${cy}px)` : undefined }}>

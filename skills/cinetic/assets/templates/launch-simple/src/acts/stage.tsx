@@ -12,7 +12,7 @@ import { clamp, E } from '../lib/anim';
 import { useFilm } from '../lib/film';
 import { type BoxAt, type HandoverSpec, ownOpacity } from '../lib/handover';
 import { SCENE_DRAW } from '../product';
-import { ACT, END_FADE, f60x, FPS, H, HANDOVER_PLAN, type HandoverPlan, handIn, handOut, lineOf, sceneAt, SCENES, SPINE_PLAN, TOTAL, W } from '../timeline';
+import { ACT, FADE_FROM, FPS, H, HANDOVER_PLAN, type HandoverPlan, handIn, handOut, lineOf, sceneAt, SCENES, SPINE_PLAN, TOTAL, W } from '../timeline';
 import { FilmWorld, lookAt, LOOK_A, toneAt } from '../world';
 import type { SceneCtx, SceneDef } from './scenes';
 
@@ -108,13 +108,13 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
       />
     );
   }
-  // the settle-out: the whole frame into the world's deep tone with the music's ring-out
-  const fade = E.softIn(clamp((F - (TOTAL - f60x(END_FADE.fade))) / f60x(END_FADE.fade)));
+  // the settle-out: the whole frame into the world's deep tone with the music's ring-out, complete on the last frame
+  const fade = E.softIn(clamp((F - FADE_FROM) / Math.max(1, TOTAL - 1 - FADE_FROM)));
   return (
     <FilmWorld F={F}>
       <D.Draw c={c} />
       {carried}
-      {fade > 0.001 ? <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, background: lookAt(F).bottom, opacity: fade * 0.85 }} /> : null}
+      {fade > 0.001 ? <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, background: lookAt(F).bottom, opacity: fade }} /> : null}
     </FilmWorld>
   );
 };

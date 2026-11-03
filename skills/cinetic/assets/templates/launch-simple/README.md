@@ -43,12 +43,12 @@ the starter's own acts). references/spine.md is the grammar; this file is how th
 |---|---|---|---|
 | `wordScene()` | word | the promise, the claim | the line built word by word (each word born in the accent, rising, draining to ink; the row re-centring front-loaded); once read, its key word glides to the centre as a chip while the other words part, and swells into the next form |
 | `promptScene()` | pill | asks, types, tells | macro-type: the request typed into a lit input; the camera pushes to macro on the caret and rides it, pulls back to read the request whole, a pointer presses send with a glow the size of the button |
-| `siteScene(spec, 'page')` | page, window | writes, makes, builds | page-fly: the page the product makes writes itself section by section while the camera travels it (headline, picture, cards) and lands on the whole |
+| `siteScene(spec, 'page')` | page, window | writes, makes, builds | page-fly: the page the product makes writes itself section by section, filmed whole with its toolbar, then one push in toward the toolbar that the button scene carries on to the button (never a pan there and back, the toolbar never cut by the frame) |
 | `siteScene(spec, 'button')` | button | publishes, presses | push-press on the same surface: one push onto the product's own button, a pointer presses it |
 | `liveScene()` | pill | publishes, ships | the state the press makes in the product's own words (a line inside); a band of light crosses it as it lands, its dot pings once; the world's turn floods out of it |
 | `noticeScene()` | notice, list | fills, arrives, notifies | toast-stack: notices drop into the front slot and push the stack back (blur 0 / 2.5 / 3 / 3.5 / 9, brightness 1 / .92 / .85 / .78 / .7, scale .943 a slot); a line around it steps the stack down and soft, then lifts away |
 | `countScene()` | count | counts, grows, sells | glass-counter: the many fold into one figure that climbs in cut steps, the faces arriving beside it |
-| `lockupScene()` | mark | the end | the mark grows from the point the last form converged to, the name slides out from behind it, the fact under it; the whole creeps 3 % to the last frame |
+| `lockupScene()` | mark | the end | the mark grows from the point the last form converged to, large and alone (`LOCK.solo`), and pulls back into the lockup as the name slides out from behind it (under the mark), the fact under it, a band of light crossing it once whole; the whole keeps creeping in to the last frame (`LOCK.creep`) while the frame settles out with the ring-out |
 
 Every scene keeps the house habits: one sharp plane; cards are the kit's lit material with the key across them
 (`Lit`: 5-7 L* of light across the face, a top rim, an inner shade), facing the camera, never tilted at rest; the
