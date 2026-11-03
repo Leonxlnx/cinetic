@@ -184,7 +184,9 @@ export const promptScene = (P: PromptSpec): SceneDef => {
     const tail = E.glideOut(clamp((c.f - t.pull) / Math.max(1, c.dur - t.pull)));
     const L0 = promptBarLayout(p, 0, { pt, fps: c.fps });
     const sendX = bb.x + L0.focus.send.x + L0.focus.send.w / 2;
-    const s = Math.exp(Math.log(mag) * m) * (1 + 0.07 * tail);
+    // the bar lands from its handover still settling (a short glide into the macro push), never a dead stop
+    const settle = 0.965 + 0.035 * E.glideOut(clamp(c.f / Math.max(1, t.at + k60(12, c.fps))));
+    const s = Math.exp(Math.log(mag) * m) * (1 + 0.07 * tail) * settle;
     const tx = mix(W / 2, cx - (W * 0.08) / s, m) + tail * (sendX - W / 2) * 0.2 * (1 - m);
     return { tx, ty: H / 2, s };
   };

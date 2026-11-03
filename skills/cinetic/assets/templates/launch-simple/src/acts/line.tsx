@@ -88,13 +88,13 @@ export const LineWords: React.FC<{ L: SetLine; t: number; fps: number; cx: numbe
           const tw = t - wordStart(i, fps);
           const q = tw / f60x(2, fps);
           const a = tw < 0 ? 0 : DEAL.voice === 'blur' ? E.glideOut(clamp(t / f60x(20, fps))) : q < 1 ? mix(0.7, 0.9, q) : q < 2 ? mix(0.9, 1, q - 1) : 1;
-          const rise = tw < 0 || DEAL.voice === 'blur' ? 0 : (1 - E.snapOut(clamp(tw / f60x(VOICE.fade * 0.6, fps)))) * VOICE.rise * 0.5 * L.size;
+          const rise = tw < 0 || DEAL.voice === 'blur' ? 0 : (1 - E.glideOut(clamp(tw / f60x(18, fps)))) * VOICE.rise * 0.5 * L.size;
           const drain = DEAL.voice === 'ink' ? clamp(tw / f60x(10, fps)) : clamp((tw - f60x(2, fps)) / f60x(VOICE.drain, fps));
           const base = DEAL.voice === 'ink' ? mixColor(ink, C.white, 0.6) : accent;
           const color = w.key ? accent : mixColor(base, ink, drain);
           // out: the words leave from the key word at speed (or the line lifts), never a fade in place
           const side = w.x + w.w / 2 < keyMid ? -1 : 1;
-          // gather: the key word glides to the centre (it becomes the element there) as the others part
+          // the rise lands on an arrive curve over 18 f@60 (a 4-6 f tail, never a dead stop); gather: the key word glides to the centre (it becomes the element there) as the others part
           const toMid = -(shift + keyMid - L.width / 2) * E.strongInOut(clamp(gather));
           const dx = w.key ? toMid : lift ? 0 : side * o * (W * 0.12 + Math.abs(w.x + w.w / 2 - keyMid) * 0.6);
           const dy = lift ? -o * L.size * 0.9 : 0;
