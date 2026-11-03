@@ -9,7 +9,16 @@ signature, logo design, moves, seam kinds) shares at most 25 % with each of them
 last films used. Never take a whole shot order from anywhere: the menus are parts, the film is yours.
 
 Numbers are at 60 fps and 1080p (f@60, px@1080); `fx/Seam` and the starter's primitives convert them to the film's
-frame rate and size. The camera moves only with a purpose (a move that starts, travels and lands; a hold may be still),
+frame rate and size.
+
+**The motion library** ([motion-library/README.md](motion-library/README.md)) is the long list behind these menus: 269
+techniques in eight files (effects, animations, items, transitions, backgrounds, camera and type, content and pacing, sound),
+each with its job, its numbers, named presets, what reads rich and what reads cheap, and Remotion code that compiles as
+written. Reach for it when a beat needs a device these menus do not name, when you vary a dealt device (pick another preset
+of its entry), and for the numbers of any move you build by hand. Its README's "Finding an entry by need" table is the way
+in. The signature moves are starter parts at the library's numbers: `lib/moves.ts` and `fx/Moves.tsx` (a centred word build
+with a snap re-centre and accent drain, the doubling whip with a matched entry, a landing in motion, a fly-in from the lens,
+the press, the hold tail that keeps every hold moving one way, and light that marks an event); `src/gallery` shows them. The camera moves only with a purpose (a move that starts, travels and lands; a hold may be still),
 nothing idles up and down, cards face the camera.
 
 ## 0. Creative elements (two or three a film, dealt)
