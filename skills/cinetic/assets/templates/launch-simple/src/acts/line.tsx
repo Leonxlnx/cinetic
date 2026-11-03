@@ -1,243 +1,114 @@
-// The line: one sentence, centred in the middle band, in the film's one voice (deal.ts voice), set in the film's dealt
-// type pairing (fx/TypePairs, written into the tokens by scripts/type-deal.ts: PAIR below) with a hierarchy, never one
-// size and one weight in plain ink: a line alone at a 7.4 % cap in the pairing's line weight, a line over its picture a
-// step under it (6.6 %: it shares the frame), the claim, the film's last line and its hero, at 11.2 % in the hero weight,
-// its last word taking the film's one contrasting entry (a snap from its left edge: one frame at x1.6, settling in 7 f,
-// the words before it centred until it lands and then making room; timeline.ts HERO). Every line sets one key word
-// apart in the pairing's emphasis weight: the word starred in launch.ts takes the accent ink as well; a line with no
-// star sets its last content word heavier in its own ink (KEY_AUTO). Tracking is the pairing's optical tracking at the
-// size; a long line keeps one row at a sentence cap (6-6.4 %) or breaks into two balanced rows, never shrinks under a
-// 6 % cap. Its text sits on its own composited layer while it is sharp (layer.tsx usePromote); the blur voice's soft
-// start goes through layer.tsx Soft (fixed levels). A finished line holds its place: no drift, no float.
+// A line, set word by word so the element can come out of it (its starred word swells into the next form) or sit in it.
+// Centred, in the film's pairing (the tokens' FONT.text), at a cap of 6.6 % of the frame for a line alone (7.2 % for a
+// line around the element, 9 % for the claim). The build (deal.ts voice): each word is born in the accent, rises 0.55 of
+// its x-height into place at .7 / .9 / 1 opacity and drains to ink in 7 f; the line re-centres on the words already
+// there, front-loaded (E.jump: most of the move on its first frame). The starred word keeps the accent. Out: the words
+// part away from the key word at speed (the element leaves through the gap), or the whole line lifts away. A held line
+// creeps (a slow push, never a drift sideways or a bob).
 import React from 'react';
-import { FONT, TYPE, TYPE_FAMILY, U } from '../brand/tokens';
-import { PAIR_IDS, PAIRS as TYPE_PAIRS, type PairId, roleSetting, stackOf, TYPE_FEATURES } from '../fx/TypePairs';
-import type { FamilyInks } from '../fx/Grounds';
-import { arrive, clamp, E, mix } from '../lib/anim';
+import { C, FONT, TYPE } from '../brand/tokens';
+import { TYPE_FEATURES } from '../fx/TypePairs';
+import { clamp, E, mix } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { measureTracked } from '../lib/measure';
-import { LAUNCH } from '../launch';
-import { copy, FPS, H, HERO, heroSnapAt, keyWords, PAIRS, VOICE, voiceOf, W } from '../timeline';
-import { Soft, usePromote } from './layer';
-import { PLATE_WORLD, WORLD_SPEC } from '../world';
-import { toOklch } from '../lib/color';
+import { textW } from '../kit/screens';
+import { DEAL, f60x, keyWords, VOICE, W } from '../timeline';
 
-/**
- * The line's ground on a photograph: a soft pool of the place's own deep tone behind the line (its light tone behind dark
- * type), wide and feathered, fading in with the first word and leaving with the line. A line over a bright band of
- * clouds or haze reads at 3:1 or better with it; a halo of text-shadow round each letter only muddies them. `a`: its
- * strength at the centre; `w`, `h`: its size as multiples of the line's width and its rows' height.
- */
-export const TYPE_POOL = { a: 0.42, w: 1.6, h: 3.0, in: 10 } as const;
-const poolOn = (type: string) => PLATE_WORLD && toOklch(type)[0] > 0.6;
+/** Statement type: cap targets as shares of the frame height, weights, tracking. */
+export const LINE_SET = { cap: 0.727, alone: 0.066, around: 0.072, claim: 0.09, maxW: 0.8, weight: Math.max(560, TYPE.line.weight), keyGain: 140, track: -0.022 } as const;
 
-/**
- * The film's type pairing (fx/TypePairs), read from the tokens scripts/type-deal.ts wrote (FONT.text the voice, FONT.ui
- * the text face): one source, whoever dealt it (deck.py runs type-deal.ts --pair with the direction; type-deal.ts
- * --seed by hand). null for a brand face set with add-font.mjs: the tokens' own numbers then.
- */
-export const PAIR: PairId | null = (() => {
-  const first = (x?: string) => (x ?? '').split(',')[0].replace(/["']/g, '').trim().toLowerCase();
-  const v = first(FONT.text);
-  const t = first((FONT as { ui?: string }).ui ?? FONT.text);
-  const voiceOf = (id: PairId) => first(stackOf(TYPE_PAIRS[id].voice));
-  return PAIR_IDS.find((id) => voiceOf(id) === v && first(stackOf(TYPE_PAIRS[id].text)) === t) ?? PAIR_IDS.find((id) => voiceOf(id) === v) ?? null;
-})();
-export const FAM = TYPE_FAMILY === 'bold' ? 'bold' : 'calm';
-/** A voice role's weight in the pairing (the tokens' numbers without one). */
-const roleWeight = (role: 'line' | 'display' | 'hero', fallback: number) => (PAIR ? roleSetting(PAIR, role, 120, FAM).weight : fallback);
-/** The pairing's emphasis weight: a key word set apart from its line by weight (at least 140 over the line's weight). */
-export const EMPHASIS_WEIGHT = Math.min(860, Math.max(PAIR ? TYPE_PAIRS[PAIR].emphasis : TYPE.line.weight + 200, roleWeight('line', TYPE.line.weight) + 140));
+export type SetWord = { word: string; key: boolean; x: number; w: number };
+export type SetLine = { size: number; weight: number; words: SetWord[]; width: number; space: number; h: number };
 
-/**
- * Statement type (shares of the frame): the weights (the pairing's line weight for a statement, its hero weight for the
- * claim, its emphasis weight for a key word), the cap target, the claim's (the last line), the sentence band a long line
- * may drop to on one row, the widths (one row at the target up to `width`, a sentence row up to `sentence.width`: under
- * look-audit's 61 % and 75 % lines), the leading of two rows and the floor.
- */
-export const LINE_TYPE = { weight: roleWeight('line', Math.max(400, TYPE.line.weight - 60)), claimWeight: roleWeight('hero', Math.min(800, TYPE.line.weight + 80)), keyWeight: EMPHASIS_WEIGHT, cap: 0.727, target: 0.066, aside: 0.05, over: 0.058, claim: 0.118, claimWidth: 0.76, sentence: { lo: 0.05, hi: 0.06, width: 0.72 }, width: 0.585, lead: 1.06, floor: 0.046 } as const;
-/** Tracking for a display size (px): the pairing's optical tracking at that size; without a pairing -0.01 em at 60 px
- * tightening to -0.03 em at 130 px and over (letters kept apart). */
-export const trackFor = (size: number) => (PAIR ? roleSetting(PAIR, 'line', size, FAM).track : -0.01 - 0.02 * clamp((size - 60) / 70));
+const measure = (s: string, size: number, weight: number) => (typeof document === 'undefined' ? textW(s, size, weight, LINE_SET.track) : measureTracked(s, size, weight, LINE_SET.track, FONT.text, { trailing: false }));
 
-/** Words a line never sets apart on its own (the automatic key word is the last word that is not one of them). */
-const PLAIN = new Set(['a', 'an', 'the', 'to', 'of', 'in', 'on', 'for', 'and', 'or', 'with', 'your', 'you', 'it', 'its', 'is', 'are', 'be', 'into', 'at', 'by', 'from', 'that', 'this', 'just', 'now', 'all', 'every', 'each', 'our', 'we', 'my', 'me', 'up', 'out', 'so', 'as', 'than', 'then', 'no', 'not']);
-/** Whether a line with no starred word sets its last content word apart by weight (in its own ink, not the accent). Off:
- * a word set apart on every line is the template's tic; the one starred word of the film is the emphasis. */
-export const KEY_AUTO = false;
-/**
- * The line's words with the one set apart: the starred word (`key`: the accent ink and the emphasis weight), else,
- * with KEY_AUTO, the last content word (`strong`: the emphasis weight in the line's ink). One word a line, never two.
- */
-export const keyed = (words: { word: string; key: boolean }[]): { word: string; key: boolean; strong: boolean }[] => {
-  if (words.some((w) => w.key) || !KEY_AUTO || words.length < 2) return words.map((w) => ({ ...w, strong: w.key }));
-  const bare = (w: string) => w.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
-  let k = -1;
-  for (let i = words.length - 1; i >= 0; i--) if (bare(words[i].word).length > 1 && !PLAIN.has(bare(words[i].word))) { k = i; break; }
-  return words.map((w, i) => ({ ...w, strong: i === k }));
-};
-
-/** The film's claim: its last line, the hero, set largest. */
-export const isClaim = (id: string) => id === `line${LAUNCH.pairs.length}`;
-/** A line that shares the frame with its picture (launch.ts beat with or over): a step smaller. */
-export const isOver = (id: string) => PAIRS[Number(id.replace(/\D/g, '')) - 1]?.mode !== 'alone';
-/** A line between the first and the claim: an aside, set a size down (three sizes in a film: the statement, the asides,
- * the claim at more than twice their cap), never every line one size. */
-export const isAside = (id: string) => {
-  const k = Number(id.replace(/\D/g, ''));
-  return k > 1 && k < LAUNCH.pairs.length;
-};
-
-const capPx = (cap: number) => (cap * H) / LINE_TYPE.cap;
-const widthOf = (s: string, size: number, wt: number = LINE_TYPE.weight) => measureTracked(s, size, wt, trackFor(size), FONT.text, { trailing: false });
-/** A line's weight: the claim a step heavier than the statements. */
-export const weightOf = (claim: boolean) => (claim ? LINE_TYPE.claimWeight : LINE_TYPE.weight);
-
-/** The two rows of a line broken where they balance best (the longer row as short as it can be). */
-const balance = (words: string[], size: number, wt: number): [string[], string[]] => {
-  let best: [string[], string[]] = [words, []];
-  let bw = Infinity;
-  for (let i = 1; i < words.length; i++) {
-    const w = Math.max(widthOf(words.slice(0, i).join(' '), size, wt), widthOf(words.slice(i).join(' '), size, wt));
-    if (w < bw) [bw, best] = [w, [words.slice(0, i), words.slice(i)]];
-  }
-  return best;
-};
-
-/** How a line is set: its size (px) and its rows (word counts per row). Browser only (it measures with the film's face). */
-export const lineLayout = (text: string, claim = false, over: boolean | 'aside' = false): { size: number; rows: number[] } => {
-  const words = text.split(/\s+/).filter(Boolean);
-  const target = capPx(claim ? LINE_TYPE.claim : over === 'aside' ? LINE_TYPE.aside : over ? LINE_TYPE.over : LINE_TYPE.target);
-  // one row at the target (the hero line may run wider: it is the one big line)
-  const wt = weightOf(claim);
-  if (widthOf(text, target, wt) <= W * (claim ? LINE_TYPE.claimWidth : LINE_TYPE.width)) return { size: target, rows: [words.length] };
-  // one row at a sentence cap (a statement, never the claim, which takes two rows before it gets smaller)
-  if (!claim) {
-    const s = Math.min(capPx(LINE_TYPE.sentence.hi), (W * LINE_TYPE.sentence.width * 100) / widthOf(text, 100, wt));
-    if (s >= capPx(LINE_TYPE.sentence.lo)) return { size: s, rows: [words.length] };
-  }
-  if (words.length < 2) return { size: Math.max(capPx(LINE_TYPE.floor), (W * LINE_TYPE.sentence.width * 100) / widthOf(text, 100, wt)), rows: [1] };
-  // two balanced rows at the target, shrinking only as far as they must
-  const [a, b] = balance(words, target, wt);
-  const wide = Math.max(widthOf(a.join(' '), 100, wt), widthOf(b.join(' '), 100, wt));
-  const size = Math.max(capPx(LINE_TYPE.floor), Math.min(target, (W * LINE_TYPE.width * 100) / wide));
-  return { size, rows: [a.length, b.length] };
-};
-/** A statement's size (px), for code that only needs the size. */
-export const lineSize = (text: string, claim = false) => lineLayout(text, claim).size;
-
-/** The life of a line while it is read: a slow push (scale per second about its centre). No sideways drift: a line
- * holds its place (LINE_DRIFT 0; the camera never wanders off and back). */
-export const LINE_CREEP = 0.015;
-export const LINE_DRIFT = 0;
-export const LINE_PART = 0.6;
-
-/** Text set on its own composited layer while its layer is sharp (sub-pixel moves, no whole-pixel ticks). */
-export const Text: React.FC<{ id?: string; x: number; y: number; style: React.CSSProperties; children: React.ReactNode; width?: number }> = ({ id, x, y, style, children, width }) => {
-  const promote = usePromote();
-  return (
-    <div style={{ position: 'absolute', left: 0, top: 0, width, whiteSpace: 'pre', transform: `translate3d(${x.toFixed(3)}px, ${y.toFixed(3)}px, 0)`, willChange: promote ? 'transform' : undefined, ...style }}>
-      <span data-text={id} style={{ display: 'inline-block' }}>
-        {children}
-      </span>
-    </div>
-  );
-};
-
-/** One line in the film's one voice, centred on (W/2, cy). The key word (stars in launch.ts) takes the accent ink.
- * `life` scales its read's drift and creep: a line on a colour field (white on a mid tone, less contrast than on the
- * dark ground) needs about twice the travel to read as alive rather than frozen. */
-export const Line: React.FC<{ id: string; raw: string; F: number; inks: FamilyInks; cy?: number; life?: number }> = ({ id, raw, F, inks, cy = H / 2, life = 1 }) => {
-  const c = copy(id);
-  const words = keyed(keyWords(raw));
-  const text = words.map((w) => w.word).join(' ');
-  const hero = isClaim(id);
-  const { size, rows } = lineLayout(text, hero, isOver(id) || (isAside(id) ? 'aside' : false));
-  const track = trackFor(size);
-  const wt = weightOf(hero);
-  const wOf = (w: { strong: boolean }) => (w.strong ? Math.max(LINE_TYPE.keyWeight, wt + 100) : wt);
-  // a row's width up to each word, every word at its own weight (the key word is heavier)
-  const space = measureTracked('a a', size, wt, track, FONT.text, { trailing: false }) - 2 * measureTracked('a', size, wt, track, FONT.text, { trailing: false });
-  const ends = (row: typeof words) => {
+/** The line laid out at a cap share of `frameH` (it shrinks to fit LINE_SET.maxW of the width): each word's x from the line's left. */
+export const setLine = (raw: string, cap: number, frameH: number): SetLine => {
+  const kw = keyWords(raw);
+  let size = (cap * frameH) / LINE_SET.cap;
+  const wOf = (k: boolean) => (k ? Math.min(860, LINE_SET.weight + LINE_SET.keyGain) : LINE_SET.weight);
+  const lay = (sz: number) => {
+    const space = sz * 0.27; // a word space of the voice faces (a measured 'a a' loses it to the trailing trim)
     let x = 0;
-    return row.map((w, i) => (x += (i ? space : 0) + measureTracked(w.word, size, wOf(w), track, FONT.text, { trailing: false })));
+    const words = kw.map((k, i) => {
+      const w = measure(k.word, sz, wOf(k.key));
+      const out = { word: k.word, key: k.key, x: x + (i ? space : 0), w };
+      x = out.x + w;
+      return out;
+    });
+    return { words, width: x, space };
   };
-  const t = F - c.in;
-  const k = FPS / 60;
-  const voice = voiceOf(Number(id.replace(/\D/g, '')) - 1);
-  // the hero line's last word: hidden until its snap (one frame at HERO.from x, settling in HERO.settle), a frame-whole
-  // state (sub-frames never disagree on whether it is in)
-  const last = words.length - 1;
-  const snap = heroSnapAt(words.length) * k;
-  const snapQ = Math.round(t) - snap;
-  const snapScale = snapQ < 0 ? 1 : 1 + (HERO.from - 1) * (1 - E.snapOut(clamp(snapQ / (HERO.settle * k))));
-  // until it comes, the words already there are centred on their own (never a ragged block that keeps the room for the
-  // missing word); just before it snaps in they glide over and open its room (HERO.recentre, ending on the snap), so the
-  // word lands in an open slot at its place, growing from its left edge away from the word before it
-  const landed = hero ? E.glideOut(clamp((snapQ + HERO.recentre * k) / (HERO.recentre * k))) : 1;
-  // the blur voice: the whole line out of a 12 px blur, gone by 60 % of its settle (still moving), settling from 104 %
-  // on a glide
-  const whole = voice === 'blur' ? E.glideOut(clamp(t / (VOICE.blur.dur * k))) : 1;
-  const sigma = voice === 'blur' ? VOICE.blur.blur * clamp(1 - whole / 0.6) : 0;
-  const push = (voice === 'blur' ? mix(VOICE.blur.from, 1, whole) : 1) * (1 + (LINE_CREEP * life * Math.max(0, t)) / FPS);
-  const odd = Number(id.replace(/\D/g, '')) % 2 === 1;
-  const read = (F - (c.in + c.out) / 2) / FPS; // seconds from the middle of the read
-  const lineH = size * LINE_TYPE.lead;
-  // a hero word alone on the last row: the rows above stand centred in the band until it lands
-  const lone = hero && rows.length > 1 && rows[rows.length - 1] === 1;
-  const top = cy - (rows.length * lineH) / 2 + (lone ? (1 - landed) * lineH * 0.5 : 0);
-  let first = 0;
-  // the pool behind the line on a photograph: as wide as its widest row, faded in with its first word
-  const widest = Math.max(...rows.map((n, r) => { const st = rows.slice(0, r).reduce((a, b) => a + b, 0); const e = ends(words.slice(st, st + n)); return e[e.length - 1] ?? 0; }));
-  const poolA = poolOn(inks.type) ? TYPE_POOL.a * E.softOut(clamp(t / (TYPE_POOL.in * k))) : 0;
-  const deep = mixColor(WORLD_SPEC.base, '#000000', 0.4);
-  const pw = widest * TYPE_POOL.w + size * 2;
-  const ph = rows.length * lineH * TYPE_POOL.h;
+  let L = lay(size);
+  if (L.width > W * LINE_SET.maxW) {
+    size *= (W * LINE_SET.maxW) / L.width;
+    L = lay(size);
+  }
+  return { size, weight: LINE_SET.weight, ...L, h: size * 1.12 };
+};
+
+/** Each word's start (frames from the line's first frame, f@60 converted): the voice's stagger. */
+export const wordStart = (i: number, fps: number) => f60x(i * VOICE.stagger, fps);
+
+/** Where the line's left edge stands at t (frames since its first word): centred on the words already there, re-centring front-loaded. */
+export const lineLeft = (L: SetLine, t: number, fps: number, cx = W / 2) => {
+  let off = 0;
+  L.words.forEach((w, i) => {
+    if (i === 0) return;
+    const there = DEAL.voice === 'build' ? E.jump(clamp((t - wordStart(i, fps)) / f60x(VOICE.recentre, fps))) : 1;
+    off += ((w.w + L.space) / 2) * (1 - there);
+  });
+  return cx - L.width / 2 + off;
+};
+
+/** The key word's box (the first starred word, else the last word) at t, centred on (cx, cy), scaled by `s` about (cx, cy). */
+export const keyBox = (L: SetLine, t: number, fps: number, cx: number, cy: number, s = 1) => {
+  const k = L.words.find((w) => w.key) ?? L.words[L.words.length - 1];
+  const left = lineLeft(L, t, fps, cx);
+  const x = left + k.x;
+  const y = cy - L.h / 2;
+  return { x: cx + (x - cx) * s, y: cy + (y - cy) * s, w: k.w * s, h: L.h * s };
+};
+
+/**
+ * The words drawn. `t` frames since the first word; `out` 0..1 (the words part away from the key word, or the line
+ * lifts when `lift`); `keyOpacity` the key word's own opacity (0 while a handover carries it); `ink` / `accent` colours;
+ * `s` a creep scale about (cx, cy).
+ */
+export const LineWords: React.FC<{ L: SetLine; t: number; fps: number; cx: number; cy: number; ink: string; accent: string; out?: number; lift?: boolean; keyOpacity?: number; s?: number; id?: string; gather?: number; chip?: string }> = ({ L, t, fps, cx, cy, ink, accent, out = 0, lift = false, keyOpacity = 1, s = 1, id = 'line', gather = 0, chip }) => {
+  // the browser sets the row (each word an inline block, the spaces as margins), centred on cx; the re-centre moves the
+  // row by the words not yet there, so the measured widths only size that move, never the spacing
+  const shift = lineLeft(L, t, fps, cx) - (cx - L.width / 2);
+  const keyI = Math.max(0, L.words.findIndex((w) => w.key));
+  const keyMid = (L.words[keyI]?.x ?? 0) + (L.words[keyI]?.w ?? 0) / 2;
+  const o = E.launchIn(clamp(out));
   return (
-    <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, opacity: voice === 'blur' ? clamp(whole / 0.35) : 1, transformOrigin: `${W / 2}px ${cy}px`, transform: `scale(${push.toFixed(5)})` }}>
-      {poolA > 0.004 ? <div data-pool="" style={{ position: 'absolute', left: W / 2 - pw / 2, top: cy - ph / 2, width: pw, height: ph, borderRadius: '50%', background: `radial-gradient(closest-side, ${deep} 0%, ${deep} 38%, transparent 100%)`, opacity: poolA }} /> : null}
-      <Soft sigma={sigma}>
-        {rows.map((n, r) => {
-          const row = words.slice(first, first + n);
-          const i0 = first;
-          first += n;
-          // re-centre (build): each new word of the row pushes it half its width left, settling on a glide (24 f)
-          const end = ends(row);
-          let offset = 0;
-          // each word not yet there keeps the row centred on the words that are: the build re-centres as each word
-          // arrives; the hero line's last word makes its room as it snaps in (landed), in every voice
-          for (let i = 1; i < row.length; i++) {
-            const isLast = hero && i0 + i === last;
-            const there = isLast ? landed : voice === 'build' ? E.glideOut(clamp((t - (i0 + i) * VOICE.build.stagger * k) / (VOICE.build.recentre * k))) : 1;
-            offset += ((end[i] - end[i - 1]) / 2) * (1 - there);
-          }
-          // the read's drift: one row drifts with the line's side; a second row drifts against it, slower (the rows part)
-          const dir = (odd ? 1 : -1) * (r === 0 ? 1 : -LINE_PART);
-          const drift = dir * LINE_DRIFT * life * U * read;
+    <div style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', transformOrigin: `${cx}px ${cy}px`, transform: `scale(${s.toFixed(5)})` }}>
+      <div data-text={id} style={{ position: 'absolute', left: cx - W / 2, top: cy - L.h / 2, width: W, textAlign: 'center', whiteSpace: 'pre', transform: `translate3d(${shift.toFixed(2)}px, 0, 0)`, fontFamily: FONT.text, fontSize: L.size, letterSpacing: `${LINE_SET.track}em`, lineHeight: 1.12, ...TYPE_FEATURES }}>
+        {L.words.map((w, i) => {
+          const tw = t - wordStart(i, fps);
+          const q = tw / f60x(2, fps);
+          const a = tw < 0 ? 0 : DEAL.voice === 'blur' ? E.glideOut(clamp(t / f60x(20, fps))) : q < 1 ? mix(0.7, 0.9, q) : q < 2 ? mix(0.9, 1, q - 1) : 1;
+          const rise = tw < 0 || DEAL.voice === 'blur' ? 0 : (1 - E.snapOut(clamp(tw / f60x(VOICE.fade * 0.6, fps)))) * VOICE.rise * 0.5 * L.size;
+          const drain = DEAL.voice === 'ink' ? clamp(tw / f60x(10, fps)) : clamp((tw - f60x(2, fps)) / f60x(VOICE.drain, fps));
+          const base = DEAL.voice === 'ink' ? mixColor(ink, C.white, 0.6) : accent;
+          const color = w.key ? accent : mixColor(base, ink, drain);
+          // out: the words leave from the key word at speed (or the line lifts), never a fade in place
+          const side = w.x + w.w / 2 < keyMid ? -1 : 1;
+          // gather: the key word glides to the centre (it becomes the element there) as the others part
+          const toMid = -(shift + keyMid - L.width / 2) * E.strongInOut(clamp(gather));
+          const dx = w.key ? toMid : lift ? 0 : side * o * (W * 0.12 + Math.abs(w.x + w.w / 2 - keyMid) * 0.6);
+          const dy = lift ? -o * L.size * 0.9 : 0;
+          const op = (w.key ? keyOpacity : 1) * a * (1 - (lift || !w.key ? clamp(out * 1.25) : 0));
           return (
-            <Text key={r} id={id} x={offset + drift} y={top + r * lineH} width={W} style={{ ...TYPE_FEATURES, textAlign: 'center', fontFamily: FONT.text, fontSize: size, fontWeight: wt, letterSpacing: `${track}em`, lineHeight: LINE_TYPE.lead }}>
-              {row.map((w, j) => {
-                const i = i0 + j;
-                const s = i * (voice === 'build' ? VOICE.build.stagger : VOICE.ink.stagger) * k;
-                const p = clamp((t - s) / ((voice === 'build' ? VOICE.build.fade : VOICE.ink.fade) * k));
-                const snapped = hero && i === last;
-                const a = snapped ? (snapQ >= 0 ? 1 : 0) : voice === 'blur' ? 1 : E.snapOut(p);
-                const inked = voice === 'ink' ? E.softOut(clamp((t - s) / (VOICE.ink.ink * k))) : 1;
-                const col = w.key ? inks.accent : inks.type;
-                const color = voice === 'ink' ? mixColor(mixColor(inks.type, inks.ground, 0.72), col, inked) : col;
-                // the build's rise (and the ink voice's small one) ends while the word still travels (arrive): no settling tail
-                const rise = voice === 'build' ? (1 - arrive(E.glideOut(p))) * 0.12 * size : voice === 'ink' ? (1 - arrive(E.glideOut(clamp((t - s) / (26 * k))))) * 0.06 * size : 0;
-                return (
-                  <React.Fragment key={j}>
-                    {j > 0 ? ' ' : ''}
-                    <span style={{ display: 'inline-block', fontWeight: wOf(w), color: snapped ? col : color, opacity: a, transformOrigin: snapped ? '0% 62%' : '50% 62%', transform: snapped ? `scale(${snapScale.toFixed(4)})` : `translate3d(0px, ${rise.toFixed(3)}px, 0)` }}>{w.word}</span>
-                  </React.Fragment>
-                );
-              })}
-            </Text>
+            <span key={i} style={{ display: 'inline-block', marginLeft: i ? L.space : 0, fontWeight: w.key ? Math.min(860, L.weight + LINE_SET.keyGain) : L.weight, color: w.key && chip ? mixColor(color, C.white, clamp(gather * 2)) : color, opacity: op, transform: `translate3d(${dx.toFixed(2)}px, ${(rise + dy).toFixed(2)}px, 0)`, ...(w.key && chip && gather > 0 ? { borderRadius: L.h, background: chip, boxShadow: `0 0 0 ${(CHIP.pad * L.size * clamp(gather * 2)).toFixed(2)}px ${chip}` } : {}) }}>
+              {w.word}
+            </span>
           );
         })}
-      </Soft>
+      </div>
     </div>
   );
 };
+export const LINE_INK = C.ink;
+/** The key word as a chip (its padding as a share of the type size) when it is about to become the element. */
+export const CHIP = { pad: 0.22 } as const;

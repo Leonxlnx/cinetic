@@ -1,6 +1,6 @@
 {
  "name": "launch-simple",
- "about": "The default launch film, 15-30 s: a product shown doing its thing in a world, through hero shots. One world per film (src/world.tsx: a graded photograph or a lit field with its key light, dealt with the direction, never cut, racking soft behind the type), three or more hero shots dealt by the deck (src/hero: a glass input over the world as the camera pushes in while it types, the input at macro scale riding the caret, the page the product makes flown in and travelled, notifications stacking back in a blur ladder, a frosted composer focusing in, cards fanned in depth, a giant word with cards rising behind it, a porthole parting the line, a ring of real pictures, a push into the button as it is pressed, the 3D mark pulling back into the lockup), each filled with the product's own content (src/content.ts) and holding one sharp plane, one camera move that lands, light sized to its source; the creative elements (src/fx/creative) take the beats left. Lines centred and few, every change of picture carried, the lockup built from the last picture with the one fact under it. The agent writes the script (src/launch.ts), the content (scripts/content.mjs), the product's scenes (src/product.tsx) and fetches the world's plate; the timeline, the seams, the shots' moments, the end card and the sound plan follow. new-film.sh lays these files over the Remotion starter (the default for --format launch).",
+ "about": "The default launch film, 15-30 s, played as a spine: one sentence as 3-5 acts, one case (the brief's request, names and numbers in every act), one element whose form changes act to act and is handed on at every scene change (src/timeline.ts HANDOVER_PLAN, drawn by fx/Handover), lines alone only for the promise and the claim (inside the product's words or around the element between), a designed world lit in the brand's hue that takes one step per act and turns once (src/world.tsx), the lockup grown out of the last form. The agent writes src/spine.ts first, then src/content.ts (scripts/content.mjs) and src/product.tsx (house scenes from src/acts/scenes.tsx: macro-type, page-fly, push-press, toast-stack, glass-counter, the lockup); the timeline, the handovers, the world steps and the sound plan follow.",
  "engine": "remotion",
  "pace": "crisp",
  "type_family": "bold",
@@ -10,16 +10,15 @@
   3
  ],
  "beats": {
-  "T": "a line alone, centred in the middle band, on a clean ground (launch.ts beat 'alone'; it builds over the last picture as that one falls back): 0.5-2.4 s (about 1.3), one entry voice for the film",
-  "A": "the product or the picture acting, full frame, centred, no statement over it: 1-3.5 s, varied (a long one beside a short one); a pair with no line is one A beat, carried on from the last picture",
-  "TA": "a line with its picture: the picture far behind it, centred, smaller, soft and dim, then coming up and racking into focus as the line leaves (beat 'with'), or the line held over a picture composed round it (beat 'over'): at most 40 % of the beats",
-  "end": "the centred lockup built from the last picture's element, the one fact under it, held 2-3 s",
-  "mix": "unset, the first line and the claim alone, the lines between with; aim for about T 25 % / T+A 30 % / A 37 % (timeline.ts BEAT_MIX): one 'over' in a film of four or five lines gets there"
+  "acts": "3-5 acts on whole bars (first 20-32 %, last 12-31 %), each one verb of the sentence with 1-3 states of the element (src/spine.ts)",
+  "handover": "every scene change: the element carried (grow, swell, fly, converge, same-surface ...; lib/spine FORM_PAIRS), never a bare cut inside an act",
+  "lines": "alone only for the promise (act 1, its key word becoming the element) and the claim; inside the product's own words or around the element between; at most four",
+  "end": "the mark grows out of the last form (a converge, a swell, a pull-out), the name slides out from behind it, the one fact under it; held 2-2.5 s, creeping"
  },
  "deal": {
   "file": "src/deal.ts",
-  "seed": "the deck's direction the agent picked (deck.py --direction <id> --why: it writes src/dealt.ts, one source), else the product's name (IDENTITY.name) or launch.ts seed; launch.ts pin fixes a slot by hand",
-  "print": "npx tsx -e \"import { DEAL, DEAL_SOURCE, HERO_DEAL } from './src/deal'; import { HERO_PLAN, HERO_END, CREATIVE_PLAN, SEAM_PLAN, BEAT_PLAN } from './src/timeline'; console.log(DEAL_SOURCE, DEAL, HERO_DEAL.deal, HERO_PLAN, HERO_END, CREATIVE_PLAN, SEAM_PLAN.map((s) => s.recipe), BEAT_PLAN.map((b) => b.kind + ' ' + ((b.to - b.from) / 30).toFixed(2)))\"",
+  "seed": "the deck's direction (deck.py --direction <id> --why: src/dealt.ts), else the product's name",
+  "print": "npx tsx -e \"import { PLAN_PRINT } from './src/timeline'; console.log(PLAN_PRINT)\"",
   "slots": {
    "voice": [
     "build",
@@ -27,11 +26,11 @@
     "ink"
    ],
    "ground": [
-    "nearWhite",
     "paleSky",
+    "nearWhite",
+    "electric",
     "blackField",
     "deepField",
-    "electric",
     "clouds",
     "sky",
     "aerial",
@@ -39,37 +38,13 @@
     "nightCity",
     "studio",
     "macro"
-   ],
-   "seamTA": [
-    "matchCut",
-    "velocityCut",
-    "blurThrough"
-   ],
-   "seamAT": [
-    "recede",
-    "zoomThrough"
-   ],
-   "seamAA": [
-    "velocityCut",
-    "matchCut",
-    "blurThrough"
-   ],
-   "end": [
-    "element",
-    "badge"
-   ],
-   "camera": [
-    "still",
-    "land"
-   ],
-   "creative": "two or three of src/fx/creative (deal.ts CREATIVE: scripts/deck.py writes them into src/dealt.ts, else the name deals them), never a recent film's set; timeline.ts CREATIVE_PLAN puts them on at least half the beats",
-   "hero": "three or more of src/hero (deal.ts HERO_META), dealt by scripts/deck.py with the direction (the brief's words, the world's tone, the photos, the brand's mark) into src/dealt.ts hero, never the last film's set; timeline.ts HERO_PLAN puts them on their beats before the creative elements; a pair's `hero` pins one, launch.ts heroes.swap trades one with a reason"
+   ]
   }
  },
  "music": {
   "required": true,
   "slot": "audio/music/",
-  "about": "Every launch is cut to a licensed, human-made, instrumental track (references/music.md): the track carries the film and its cuts, earshot effects mark the picture's own moments (each line whole, the product's clicks and results, the seams that move, one hit on the lockup); never effects only. Any tempo from 90 to 140 BPM fits: the timeline fits each line and picture to the track's beats and each pair to whole bars.",
+  "about": "Every launch is cut to a licensed, human-made, instrumental track (references/music.md): the track carries the film, the effects are cut to the picture (src/sync.ts: every handover by its kind, the keys, the press, the notices, the turn, one hit on the lockup). Any tempo from 90 to 140 BPM fits: the acts sit on whole bars of the track.",
   "pick": "node scripts/music.mjs pick --mood \"<the film's mood words>\" --length <s> (a launch here: 115-136 BPM and the film's energy preferred; the curated library; with none, music.mjs search --bpm 115-136), then music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track)",
   "add": "bash scripts/new-film.sh <dir> --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL --ai-generated no --vocals no, or later: python3 scripts/audio/track.py add <file> ...",
   "then": [
@@ -79,37 +54,32 @@
   ]
  },
  "next": [
-  "simple launch: write the script in src/launch.ts (3-5 pairs: a line of 2-7 words and the picture that proves it; line 1 says what the product does by name; at most four lines; the one fact for the end card) and the name in src/brand/identity.ts,",
-  "  deal: run deck.py here (three directions into out/OPTIONS.md, each with its world and hero shots), pick the one that fits the product and deal it with --direction <id> --why \"<one line>\" (src/dealt.ts: the world, the hero shots, the creative elements, the type pairing),",
-  "  the world: a plate world (clouds, sky, aerial, sea, nightCity, studio, macro) needs its photograph: node scripts/assets.mjs plate <kind>, look at the sheet, then --pick <n> --to public/plates --accent '<accent>' (a built world needs nothing),",
-  "  the content: node scripts/content.mjs --brief BRIEF.md --fetch --force (the request, the page, the notifications, the faces, the pictures the hero shots show), then read src/content.ts and keep only what is true of the product,",
-  "  build each picture the hero shots leave in src/product.tsx from the product's real screens (each with its focus box, the one a push-press shot presses with its `button`, the last with its hero element); print the plan (template.json deal.print) and pin a shot to a pair (`hero`) where the story wants it there,",
-  "  the mark: scripts/brand.py with the brand's SVG (or an invented brand's own mark) makes logo-3d dealable for the end card,",
-  "  then the music (below), npm run check, the draft (render.sh --draft) and a contact sheet against references/checks.md"
+  "simple launch: write the spine first in src/spine.ts (the sentence, the case from the brief, one element, 3-5 acts each with its verb, its forms and scenes, the lines alone only for the promise and the claim, BARS and CLOSE); say it as a chain (A becomes B becomes C) and print the plan (template.json deal.print),",
+  "  deal: deck.py here (three directions into out/OPTIONS.md), pick the one that fits with --direction <id> --why \"<one line>\" (src/dealt.ts: the world and the voice),",
+  "  the content: node scripts/content.mjs --brief BRIEF.md --fetch --force, then read src/content.ts and keep only what is true (look at every picture: the brief's own subject or none),",
+  "  the scenes: src/product.tsx gives every scene of the spine its house scene (src/acts/scenes.tsx) filled with the case, or a scene of your own from src/kit/screens; real companies' marks from scripts/logos.mjs get,",
+  "  the mark: scripts/brand.py with the brand's SVG (an invented brand's own mark),",
+  "  then the music (below), npm run check and grid-check --part spine, npm run sound, the draft (render.sh --draft) and forensics --spine, look-audit --look on it, one review round on its sheet"
  ],
  "copy": [
+  "src/spine.ts",
   "src/launch.ts",
   "src/product.tsx",
   "src/deal.ts",
   "src/dealt.ts",
   "src/recent.ts",
-  "src/input.ts",
   "src/world.tsx",
   "src/content.ts",
-  "src/hero/time.ts",
-  "src/hero/parts.tsx",
-  "src/hero/shots.tsx",
   "src/timeline.ts",
   "src/Film.tsx",
   "src/Root.tsx",
   "src/sync.ts",
   "src/acts/stage.tsx",
-  "src/acts/layer.tsx",
+  "src/acts/scenes.tsx",
   "src/acts/line.tsx",
-  "src/acts/ui.tsx",
+  "src/acts/cam.ts",
   "src/brand/identity.ts",
-  "src/brand/logo.ts",
-  "tools/input.mjs"
+  "src/brand/logo.ts"
  ],
  "keep_if_present": [
   "src/brand/identity.ts",

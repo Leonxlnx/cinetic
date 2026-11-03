@@ -1,21 +1,17 @@
-// The sound events of a simple launch, computed from the timeline. scripts/export-cues.ts calls the default export
-// and writes out/cues.json; scripts/audio/score.py voices each event with the film's kit on its exact frame, over the
-// film's licensed track. The track carries the film and its cuts; the effects mark what the picture does: each line
-// once it is whole (one soft text sound), each picture's own moments (launch.ts hits: the click, the result), the
-// push closer (a soft swell under the camera's move), the seams that move (a whoosh on the speed, never on a
-// cross-blur or a focus pull), a sub drop as the claim arrives, the element becoming the mark and ONE clean hit on the
-// lockup (the drop and the hit each take a stop-down in the mix: two dynamic accents, never a flat bed). A hero shot
-// sounds its own moments (src/hero/time.ts heroSounds: the glass landing, send pressed, each notification arriving, the
-// ring landing) on the frames the shot draws them, instead of its pair's hits.
-import { DEAL } from './deal';
-import { heroSounds } from './hero/time';
-import { ACT, copy, CUE, type Declares, f60, FPS, HERO_END, HERO_LINE, HERO_OVER, HERO_PIC, PAIRS, PUSH, type Salience, SEAM_PLAN, TOTAL } from './timeline';
-import { LAUNCH } from './launch';
+// The sound of a launch played as a spine, computed from the timeline: scripts/export-cues.ts calls the default export
+// and writes out/cues.json; scripts/audio/score.py voices each event with the film's kit on its exact frame over the
+// licensed track (npm run sound). The track carries the film; the effects are cut to the picture by the reference
+// grammar: a contact sounds on the contact, a word's sound lands once the line is whole, a whoosh starts 4 f before its
+// cut and peaks 3 f after it, a swell rides a handover into its cut, a riser ends on its hit, nothing sounds on a start.
+// One strong sound per gesture; micro-sounds (keys, ticks) come in cascades, quiet. Every handover sounds by its kind,
+// the world's turn takes the sub drop (the film's colour event), the lockup ONE clean hit.
+import { HANDOVERS } from './lib/spine';
+import { ACT, type Declares, f60, FPS, HANDOVER_PLAN, LINES, LOCKUP_AT, NAME_AT, type Salience, SCENES, SPINE_PLAN, TOTAL } from './timeline';
+import { ctxOf, defOf, specs } from './acts/stage';
+import { handoverDeclares } from './lib/handover';
+import { stepsFromPlan, worldStepDeclares } from './fx/world/Step';
 
-export type Kind =
-  | 'tick' | 'tock' | 'hit' | 'land' | 'pop' | 'whoosh' | 'riser'
-  | 'drop' | 'key' | 'click' | 'snap' | 'swell' | 'bell' | 'suck' | 'text';
-
+export type Kind = 'tick' | 'tock' | 'hit' | 'land' | 'pop' | 'whoosh' | 'riser' | 'drop' | 'key' | 'click' | 'snap' | 'swell' | 'bell' | 'suck' | 'text';
 export type SoundEvent = {
   f: number;
   kind: Kind;
@@ -34,54 +30,70 @@ export type SoundEvent = {
 };
 
 const actOf = (f: number) => Object.entries(ACT).find(([, a]) => f >= a.from && f < a.from + a.dur)?.[0] ?? 'tail';
+const film = { fps: FPS };
 
-/** What the primitives the acts use declare on purpose: the timeline's SEAMS cover the stage's seams. */
-export const declares = (): (Declares & { id?: string })[] => [];
+/** What the picture declares on purpose: each drawn handover's box track (forensics --spine follows the element in it), the world's steps. */
+export const declares = (): (Declares & { id?: string })[] => {
+  const out: (Declares & { id?: string })[] = [];
+  specs().forEach((s, i) => {
+    if (!s) return;
+    try {
+      out.push({ id: `handover-${i + 1}`, ...handoverDeclares(s, film) });
+    } catch {
+      /* a scene whose boxes need the browser: its seam is still declared by the timeline */
+    }
+  });
+  out.push({ id: 'world-steps', ...worldStepDeclares(stepsFromPlan(SPINE_PLAN), film), colour: [] });
+  return out;
+};
 
 export default function cues(): SoundEvent[] {
   const ev: SoundEvent[] = [];
-  LAUNCH.pairs.forEach((_, i) => {
-    const k = i + 1;
-    if (LAUNCH.pairs[i].line?.trim()) ev.push({ f: copy(`line${k}`).resolved, kind: 'text', weight: 0.65, pan: 0, action: 'text', id: `line${k}-whole` });
-    // a hero shot's own moments, on the frames it draws them (its pair's hits are the product scene's, not drawn)
-    const pr = PAIRS[i];
-    const shots: [string | undefined, number, number, number][] = [
-      [HERO_PIC[i]?.id, pr.pic, pr.to - pr.pic, 0],
-      [HERO_OVER[i]?.id, pr.from, pr.to - pr.from, LAUNCH.pairs[i].line?.trim() ? copy(`line${k}`).resolved - pr.from : 0],
-      [HERO_LINE[i]?.id, LAUNCH.pairs[i].line?.trim() ? copy(`line${k}`).in : pr.from, pr.ta - (LAUNCH.pairs[i].line?.trim() ? copy(`line${k}`).in : pr.from), LAUNCH.pairs[i].line?.trim() ? copy(`line${k}`).resolved - copy(`line${k}`).in : 0],
-    ];
-    for (const [id, at, dur, whole] of shots) if (id) for (const h of heroSounds(id, dur, FPS, whole)) ev.push({ ...h, f: Math.round(at + h.f), pan: h.pan ?? 0, id: `hero${k}-${h.id}` });
-    const heroPicture = !!HERO_PIC[i] || !!HERO_OVER[i];
-    const hits = heroPicture ? [] : Object.keys(CUE).filter((n) => n.startsWith(`a${k}h`));
-    hits.forEach((n, j) => ev.push({ f: CUE[n], kind: j === hits.length - 1 ? 'pop' : 'click', weight: 0.6, pan: (j % 2 ? 0.1 : -0.1), action: j === hits.length - 1 ? 'card-land' : 'press', id: `pic${k}-${n}` }));
-    // the push closer: a soft swell under the camera's move (it lands with the push, PUSH.dur f@60 after the cue)
-    if (CUE[`a${k}cut`] !== undefined) ev.push({ f: CUE[`a${k}cut`], kind: 'swell', weight: 0.3, pan: 0, dur: f60(PUSH.dur), apexFrac: 0.8, action: 'shape', id: `pic${k}-closer` });
+  // each line once it is whole (one soft text sound); the product's own words sound through their scene
+  for (const l of LINES) if (l.place !== 'inside') ev.push({ f: l.resolved + f60(4), kind: 'text', weight: l.claim ? 0.7 : 0.55, pan: 0, action: 'text', id: `${l.id}-whole` });
+  // each scene's own moments (keys, the press, sections landing, notices, the count's ticks)
+  SCENES.forEach((s) => {
+    const d = defOf(s.i);
+    if (!d.moments) return;
+    const c = ctxOf(s.i, s.from);
+    for (const m of d.moments({ dur: c.dur, fps: FPS, land: c.land, leadAt: c.leadAt, i: s.i, prev: c.prev })) {
+      const f = s.from + m.f;
+      if (f >= s.from && f < Math.min(TOTAL, s.to + f60(20))) ev.push({ f, kind: m.kind, weight: m.weight, pan: m.pan ?? 0, action: m.action, id: `s${s.i + 1}-${m.id}`, ...(m.dur ? { dur: m.dur } : {}), ...(m.apexFrac !== undefined ? { apexFrac: m.apexFrac } : {}) });
+    }
   });
-  // a creative line that turns into its picture: a swell under the transformation, a suck into the picture as it lands
-  for (const k of Object.keys(CUE).filter((n) => /^dev\d+a$/.test(n))) {
-    const n = k.slice(3, -1);
-    ev.push({ f: CUE[k], kind: 'swell', weight: 0.45, pan: 0, dur: f60(24), apexFrac: 0.7, action: 'shape', id: `line${n}-becomes-its-picture` });
-    if (CUE[`dev${n}b`] !== undefined) ev.push({ f: CUE[`dev${n}b`], kind: 'suck', weight: 0.5, pan: 0, dur: f60(20), apexFrac: 0.85, action: 'shape', id: `line${n}-lands-in-its-picture` });
+  // every handover by its kind, on the cut's own grammar
+  for (const h of HANDOVER_PLAN) {
+    if (h.kind === 'cut' || h.kind === 'entry') continue;
+    const lead = h.at - h.span[0];
+    const land = h.span[1] - h.at;
+    const id = `${HANDOVERS[h.kind].id}-${h.kind}-${h.forms.join('-')}`;
+    if (h.kind === 'fly' || h.kind === 'momentum') {
+      ev.push({ f: h.at - f60(8), kind: 'whoosh', weight: 0.55, pan: h.dir === 'left' ? -0.3 : 0.3, dur: f60(30), apexFrac: 0.38, action: 'whip', id });
+      ev.push({ f: h.span[1], kind: 'land', weight: 0.5, pan: 0, action: 'card-land', id: `${id}-lands` });
+    } else if (h.kind === 'converge' || h.kind === 'shrink') {
+      ev.push({ f: Math.max(0, h.span[0]), kind: 'suck', weight: 0.5, pan: 0, dur: lead + f60(4), apexFrac: 0.85, action: 'shape', id });
+      ev.push({ f: h.at + f60(4), kind: 'pop', weight: 0.6, pan: 0, action: 'shape', id: `${id}-spark` });
+    } else if (h.kind === 'swell' || h.kind === 'grow' || h.kind === 'press-open' || h.kind === 'iris') {
+      ev.push({ f: Math.max(0, h.span[0]), kind: 'swell', weight: h.kind === 'grow' ? 0.5 : 0.42, pan: 0, dur: lead + land, apexFrac: lead / Math.max(1, lead + land), action: 'shape', id });
+      if (h.kind === 'grow') ev.push({ f: h.span[1], kind: 'land', weight: 0.45, pan: 0, action: 'card-land', id: `${id}-lands` });
+    } else if (h.kind === 'zoom-into' || h.kind === 'pull-out') {
+      ev.push({ f: Math.max(0, h.span[0]), kind: 'whoosh', weight: 0.5, pan: 0, dur: lead + land, apexFrac: lead / Math.max(1, lead + land), action: 'swipe', id });
+    }
   }
-  // the claim's arrival (its colour field filling the frame) is the film's second accent: a sub drop the mix takes a
-  // stop-down before (score.py: the music dips 0.3-0.5 s and lands back on it), so the track has two dynamic moments
-  // (the claim and the lockup), never one flat bed to the end; the seam into it sounds as that drop, once
-  const claimAt = PAIRS[PAIRS.length - 1].from;
-  ev.push({ f: claimAt, kind: 'drop', weight: 0.85, pan: 0, action: 'thud', id: 'the-claim-arrives' });
-  for (const s of SEAM_PLAN) {
-    if (s.at === claimAt) continue;
-    if (s.recipe === 'velocityCut') ev.push({ f: s.at, kind: 'whoosh', weight: 0.55, pan: s.dir === 'left' ? -0.4 : 0.4, dur: f60(26), apexFrac: 0.62, action: 'whip', id: `seam-${s.id}` });
-    else if (s.recipe === 'matchCut') ev.push({ f: s.at, kind: 'snap', weight: 0.45, pan: 0, action: 'jump-cut', id: `seam-${s.id}` });
-    else if (s.recipe === 'zoomThrough') ev.push({ f: s.at, kind: 'suck', weight: 0.6, pan: 0, dur: f60(30), apexFrac: 0.85, action: 'shape', id: `seam-${s.id}` });
-  }
-  if (HERO_END) for (const h of heroSounds(HERO_END, ACT.end.dur, FPS)) ev.push({ ...h, f: Math.round(ACT.end.from + h.f), pan: 0, id: `end-${h.id}` });
-  else if (DEAL.end === 'element') ev.push({ f: ACT.end.from, kind: 'swell', weight: 0.55, pan: 0, dur: f60(30), action: 'shape', id: 'element-becomes-the-mark' });
-  else ev.push({ f: ACT.end.from - f60(12), kind: 'whoosh', weight: 0.5, pan: 0, dur: f60(34), apexFrac: 0.3, action: 'swipe', id: 'the-element-spins-into-the-mark' });
-  ev.push({ f: CUE.lockup, kind: 'hit', weight: 1, pan: 0, action: 'logo-lock', id: 'lockup' });
+  // the world's turn (the film's one colour event): a sub drop as the flood leaves the element
+  const turn = SPINE_PLAN.world.find((w) => w.step === 'turn');
+  if (turn) ev.push({ f: turn.at, kind: 'drop', weight: 0.8, pan: 0, action: 'thud', id: 'the-world-turns' });
+  // the lockup: the name's slide, then ONE clean hit as the mark lands whole
+  ev.push({ f: NAME_AT, kind: 'whoosh', weight: 0.28, pan: 0.2, dur: f60(28), apexFrac: 0.5, action: 'swipe', id: 'the-name-slides-out' });
+  ev.push({ f: LOCKUP_AT, kind: 'hit', weight: 1, pan: 0, action: 'logo-lock', id: 'lockup' });
 
+  // one strong sound per gesture: a quiet event inside 2 f of a stronger one of the same kind goes
+  ev.sort((a, b) => a.f - b.f || (b.weight ?? 0) - (a.weight ?? 0));
+  const kept: SoundEvent[] = [];
   for (const e of ev) {
-    if (!(e.f >= 0 && e.f < TOTAL)) throw new Error(`sync: ${e.id} at f=${e.f} is outside the film (0..${TOTAL - 1})`);
-    e.id = `${actOf(e.f)}:${e.id}`;
+    if (!(e.f >= 0 && e.f < TOTAL)) continue;
+    if (kept.some((k) => k.kind === e.kind && e.kind !== 'key' && Math.abs(k.f - e.f) < 2)) continue;
+    kept.push({ ...e, id: `${actOf(e.f)}:${e.id}` });
   }
-  return ev.sort((a, b) => a.f - b.f);
+  return kept;
 }
