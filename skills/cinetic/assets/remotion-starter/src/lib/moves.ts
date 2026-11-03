@@ -1,4 +1,4 @@
-// The signature moves at measured numbers: the timings that make a launch film read as decided, written as
+// The signature moves at their house numbers: the timings that make a launch film read as decided, written as
 // pure functions of the frame (any frame, any order, sub-frames for motion blur). Each one is the numeric core of an
 // entry in references/motion-library (its slug in brackets); fx/Moves.tsx draws them.
 //
@@ -28,7 +28,7 @@ import { mixColor } from './color';
 import { type FilmCtx, fpsOf, uOf } from './film';
 
 export const MOVES = {
-  /** Frame rate of the tables below. */
+  /** The rate the tables below are written at (30 fps). */
   ref: 30,
   /** A re-centre or a step: share of the move per 30 fps frame (8 f in all, 69 % on frame 1). */
   snap: { recentre: [0, 0.69, 0.85, 0.93, 0.97, 0.99, 1] as const, first: 0.69, q: 0.48 },

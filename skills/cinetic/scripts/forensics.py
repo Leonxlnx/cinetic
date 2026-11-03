@@ -193,7 +193,7 @@ at 160x90, one sample per 1/30 s (landings also at the film's own rate), outside
   motion-floor (every film of 8 s or more, declared or not; --motion-floor runs it alone) frozen runs over 0.8 s
                (at 320 x 180: under 0.02 % of pixels change 10+ levels and the mean change is under 0.12, or
                the only change is grain) take more than 8 % of the body (outside the end lock, freezes and
-               ignored ranges); a film that never stops: 0-6 %                       fail; over 5 %  warn
+               ignored ranges); a film that never stops reads 0-6 %                  fail; over 5 %  warn
                (one single frozen run up to 2.5 s, a short film's one held breath, warns at most)
                (fail over 0.25 per 3 s), unless a whip, velocity or zoomThrough seam or a camera-blur
                range carries it into the cut
@@ -3785,7 +3785,7 @@ def motion_floor_check(args, info, decl):
         a, b = m['runs'][0] if m['runs'] else (0, 0)
         flags.append(dict(check='motion-floor', severity=m['severity'], frame=f'{a}-{b}',
                           note=f"{m['frozen_share'] * 100:.0f} % of the body ({len(m['runs'])} run(s), longest {m['longest_s']:.1f} s) stands frozen for over "
-                               f"{MOTION_FLOOR['run_s']:g} s (floor {MOTION_FLOOR['fail'] * 100:.0f} %; aim 0-6 %): keep purposeful motion in every second: "
+                               f"{MOTION_FLOOR['run_s']:g} s (floor {MOTION_FLOOR['fail'] * 100:.0f} %; a film that never stops: 0-6 %): keep purposeful motion in every second: "
                                'the decaying tail of the last move (lib/moves holdTail, 0.3-2 px/f@30, same direction), a scale creep of 0.1-0.4 %/f, '
                                'the product working in frame (typing, a counter, a status), or cut sooner. Never an idle bob or an aimless pan'))
     return m, flags
