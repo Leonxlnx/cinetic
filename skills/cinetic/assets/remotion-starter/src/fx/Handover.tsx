@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import { type FilmCtx, sizeOf, uOf, useFilm } from '../lib/film';
-import { type BoxAt, type HandoverSpec, type HandoverState, handoverDeclares, handoverState, type HBox, ownOpacity, type SceneLayer, shadowColor, withAlpha } from '../lib/handover';
+import { type BoxAt, faceKey, type HandoverSpec, type HandoverState, handoverDeclares, handoverState, type HBox, ownOpacity, type SceneLayer, shadowColor, withAlpha } from '../lib/handover';
 import type { Declares } from '../timeline';
 import { Defocus, DirBlur } from './Defocus';
 import { type Cam, basisOf, frameOf, project } from './depth/math';
@@ -15,7 +15,9 @@ import { type Cam, basisOf, frameOf, project } from './depth/math';
 //
 // The element's container (box, corner, fill, rim, shadow) morphs from the out box to the in box; its content never
 // scales: `a` is laid out at the out box's size, `b` at the in box's (each sampled where its scene hands it over), and
-// each rides the box (or, for an iris or a porthole, stays home while the box reveals it). Blur and smear are fixed
+// each rides the box (or, for an iris or a porthole, stays home while the box reveals it). Two exceptions: a side marked
+// `picture: true` (a photo, a thumbnail, a plate) scales to cover the box, so a tile growing into its photo stays one
+// picture and never doubles; and a converge's next element pops up whole out of the point (contained, never clipped). Blur and smear are fixed
 // ladder copies (fx/Defocus), never an animated radius. While it draws the element, the scenes hide their own copy:
 // useOwnOpacity(spec, 'out' | 'in') (or lib/handover ownOpacity(f, spec, side, film)) is the opacity to draw it at (0 inside the span).
 //
@@ -80,9 +82,9 @@ const ElementView: React.FC<{ h: HandoverState; a?: React.ReactNode; b?: React.R
   const sh = el.shape;
   const shadow = el.shadow.a > 0.001 ? `0 ${px(el.shadow.y * u)} ${px(el.shadow.blur * u)} ${shadowColor(el.shadow.a)}` : undefined;
   const box = (s: HBox, r: number): React.CSSProperties => ({ position: 'absolute', left: 0, top: 0, width: Math.max(0, s.w), height: Math.max(0, s.h), borderRadius: r, transform: `translate3d(${px(s.x)}, ${px(s.y)}, 0)` });
-  const layer = (node: React.ReactNode, o: number, blur: number, size: { w: number; h: number }, place: { x: number; y: number }, key: string) =>
+  const layer = (node: React.ReactNode, o: number, blur: number, size: { w: number; h: number }, place: { x: number; y: number }, key: string, k = 1) =>
     node !== undefined && o > 0.002 ? (
-      <div key={key} data-handover-content={key} style={{ position: 'absolute', left: 0, top: 0, width: size.w, height: size.h, opacity: o, transform: `translate3d(${px(place.x - sh.x)}, ${px(place.y - sh.y)}, 0)` }}>
+      <div key={key} data-handover-content={key} style={{ position: 'absolute', left: 0, top: 0, width: size.w, height: size.h, opacity: o, transformOrigin: '50% 50%', transform: `translate3d(${px(place.x - sh.x)}, ${px(place.y - sh.y)}, 0)${Math.abs(k - 1) > 1e-4 ? ` scale(${k.toFixed(5)})` : ''}` }}>
         {blur >= 0.5 ? <Defocus sigma={blur}>{node}</Defocus> : node}
       </div>
     ) : null;
@@ -100,8 +102,10 @@ const ElementView: React.FC<{ h: HandoverState; a?: React.ReactNode; b?: React.R
       {/* the many collapsing to the point draw the element until the cut; then the one that grows from it */}
       {el.many.length ? null : (
         <div data-handover={h.kind} style={{ ...box(sh, el.r), overflow: 'hidden', background: open ? undefined : el.fill, boxShadow: open ? undefined : shadow }}>
-          {layer(a, el.content.a, el.content.blurA, el.size.a, el.place.a, 'a')}
-          {layer(b, el.content.b, el.content.blurB, el.size.b, el.place.b, 'b')}
+          {/* the key across the face: a lit object in flight, never a flat slab */}
+          {!open && faceKey(el.fill) ? <div style={{ ...FULL, background: faceKey(el.fill) }} /> : null}
+          {layer(a, el.content.a, el.content.blurA, el.size.a, el.place.a, 'a', el.content.scaleA)}
+          {layer(b, el.content.b, el.content.blurB, el.size.b, el.place.b, 'b', el.content.scaleB)}
         </div>
       )}
       {el.many.length ? null : rim}

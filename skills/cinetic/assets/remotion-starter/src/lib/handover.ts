@@ -52,6 +52,7 @@ export const HANDOVER_LOOK = {
   momentum: { v: 48, build: 1.25, ratio: 0.7, decay: 0.915, residual: 0.5, smear: 9 }, // px per f@60 at 1080p
   blend: 0, // f@60 the scenes' own copies cross with the handover's at either end (0: an exact hand-off)
   minPx: 2, // the smallest box drawn
+  whole: 0.85, // a side covering this share of the frame is the whole scene (the next scene waits for it to land, or shows round it)
 } as const;
 
 // ---------------------------------------------------------------------------------------------------- types
@@ -74,6 +75,8 @@ export type HandSide = {
   shadow?: Partial<Shadow>;
   blur?: number; // its own resting blur, px at 1080p
   many?: BoxAt[]; // converge: the many that collapse to the point
+  picture?: boolean; // its content is a picture (a photo, a thumbnail, a plate): it scales with the box to cover it, so a tile
+  //                   growing into its photo stays one picture (UI content, text and rows, never scales)
 };
 
 export type HandoverSpec = {
@@ -104,8 +107,8 @@ export type ElementState = {
   opacity: number;
   blur: number; // px at 1080p
   smear: { v: number; angle: number }; // the centre's speed (px per film frame) and its direction (deg)
-  content: { a: number; b: number; blurA: number; blurB: number; show: 'a' | 'b' };
-  size: { a: { w: number; h: number }; b: { w: number; h: number } }; // each content's layout size: constant, never scaled
+  content: { a: number; b: number; blurA: number; blurB: number; show: 'a' | 'b'; scaleA: number; scaleB: number }; // scale: a picture side covers the box; a converge's next element pops up whole from the point
+  size: { a: { w: number; h: number }; b: { w: number; h: number } }; // each content's layout size: constant (a picture or a pop scales it about its centre)
   place: { a: { x: number; y: number }; b: { x: number; y: number } }; // each content's top-left on screen
   many: { box: HBox; r: number; opacity: number; size: { w: number; h: number } }[];
 };
@@ -202,6 +205,17 @@ export const withAlpha = (c: string, a: number) => {
   return n ? `rgba(${n[1]}, ${n[2]}, ${n[3]}, ${clamp(a).toFixed(3)})` : s;
 };
 const oklchParts = (c: string): [number, number, number] => toOklch(rgbPart(c).replace(/^(#[0-9a-f]{6})[0-9a-f]{2}$/i, '$1'));
+/**
+ * The key across an element's face (a CSS background to lay over its fill): it falls off from the upper left, a shade
+ * toward the far corner on a light face, a lift at the key on a dark one, so the carried container is a lit object in
+ * flight, never a flat slab (the kit Card's face does the same at rest). None on a clear or mostly clear fill. Pure.
+ */
+export const faceKey = (fill: string): string | undefined => {
+  if (alphaOf(fill) < 0.5) return undefined;
+  return oklchParts(fill)[0] >= 0.5
+    ? 'radial-gradient(130% 115% at 20% 0%, rgba(0, 0, 0, 0) 38%, rgba(0, 0, 0, 0.04) 100%)'
+    : 'radial-gradient(120% 100% at 18% 0%, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 70%)';
+};
 /**
  * Two colours mixed in OKLCH at t: lightness and chroma straight, the hue the short way round (a grey takes the other
  * colour's hue, so a white button draining to blue never passes through green), alpha straight. -> 'rgba(...)'.
@@ -474,6 +488,19 @@ export const handoverState = (f: number, spec: HandoverSpec, film?: Partial<Film
     out.show = f < t1;
     inn.show = f >= t0;
     if (active) inn.clip = { x: shape.x, y: shape.y, w: shape.w, h: shape.h, r: Math.min(shape.w, shape.h) / 2 };
+  } else if (draws) {
+    // an element that becomes the whole frame (a tile growing into its photo) is the next scene: the next scene waits
+    // until it lands (shown under it, the scene's own full-frame copy doubles it at another scale) and the scene it
+    // leaves stays round it meanwhile; one that starts as the whole frame (a photo collapsing to a point) reveals the
+    // next scene round it from the first frame, so the frame never empties round a shrinking element
+    const whole = (b: HBox) => Math.max(0, Math.min(b.x + b.w, W) - Math.max(b.x, 0)) * Math.max(0, Math.min(b.y + b.h, H) - Math.max(b.y, 0)) >= L.whole * W * H;
+    if (whole(sideBox(spec.to, spec.to.at ?? t1))) {
+      out.show = f < t1;
+      inn.show = f >= t1;
+    } else if (whole(sideBox(spec.from, spec.from.at ?? t0))) {
+      out.show = f < t0;
+      inn.show = f >= t0;
+    }
   }
 
   // the look: radius, fill, rim, shadow
@@ -525,6 +552,9 @@ export const handoverState = (f: number, spec: HandoverSpec, film?: Partial<Film
     }
     ca = 1 - win(u, aw[0], aw[1]);
     cb = bw[1] > bw[0] ? win(u, bw[0], bw[1]) : u >= bw[0] ? 1 : 0;
+    // picture into picture: the next one develops over the last, which stays whole under it (two half-faded pictures
+    // over a clear face read as a dip to the ground mid-flight)
+    if (spec.from.picture && spec.to.picture) ca = cb >= 1 - 1e-6 ? 0 : 1;
     show = ca >= cb ? 'a' : 'b';
   } else if (mode === 'swap') {
     ca = f < at ? 1 : 0;
@@ -540,6 +570,12 @@ export const handoverState = (f: number, spec: HandoverSpec, film?: Partial<Film
   const home = kind === 'iris' || kind === 'press-open';
   const placeA = { x: c.x - Asz.w / 2, y: c.y - Asz.h / 2 };
   const placeB = home ? { x: B.x, y: B.y } : { x: c.x - Bsz.w / 2, y: c.y - Bsz.h / 2 };
+  // a picture covers the shape it rides (the same photo at the same framing on both sides, so the two never double); a
+  // converge's next element grows out of the point whole (contained, never clipped mid-text), then sits at its own size
+  const cover = (sz: { w: number; h: number }) => Math.max(shape.w / Math.max(1, sz.w), shape.h / Math.max(1, sz.h));
+  const contain = (sz: { w: number; h: number }) => Math.min(shape.w / Math.max(1, sz.w), shape.h / Math.max(1, sz.h));
+  const scaleA = spec.from.picture && !home ? cover(Asz) : 1;
+  const scaleB = home ? 1 : spec.to.picture ? cover(Bsz) : kind === 'converge' && f >= at ? Math.min(1, contain(Bsz)) : 1;
 
   // converge: the many, each collapsing to the point
   const many: ElementState['many'] = [];
@@ -586,7 +622,7 @@ export const handoverState = (f: number, spec: HandoverSpec, film?: Partial<Film
     opacity,
     blur,
     smear,
-    content: { a: ca, b: cb, blurA, blurB, show },
+    content: { a: ca, b: cb, blurA, blurB, show, scaleA, scaleB },
     size: { a: { w: Asz.w, h: Asz.h }, b: { w: Bsz.w, h: Bsz.h } },
     place: { a: placeA, b: placeB },
     many,

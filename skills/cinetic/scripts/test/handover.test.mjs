@@ -114,6 +114,7 @@ const inRender = (f: number, el: any) => { const t = { frame: { Probe: f }, isPl
 const r2 = (v: number) => Math.round(v * 100) / 100;
 const box = (b: any) => [r2(b.x), r2(b.y), r2(b.w), r2(b.h)];
 const out: any = {};
+let picture: any = null;
 for (const [name, spec] of Object.entries(specs)) {
   const [t0, t1] = Hd.handoverSpan(spec, film);
   const frames: number[] = [];
@@ -128,7 +129,7 @@ for (const [name, spec] of Object.entries(specs)) {
   for (let f = t0 - 1; f <= t1; f++) {
     const s = Hd.handoverState(f, spec, film);
     states.push({ f, show: s.el.show, active: s.active, phase: s.phase, snap: s.snap, shape: box(s.el.shape), box: box(s.el.box), r: r2(s.el.r), blur: r2(s.el.blur), smear: r2(s.el.smear.v), op: s.el.opacity,
-      fillA: Number((s.el.fill.match(/rgba\\(.*,\\s*([\\d.]+)\\)/) ?? [0, 1])[1]), ca: r2(s.el.content.a), cb: r2(s.el.content.b), show2: s.el.content.show, sizeA: [r2(s.el.size.a.w), r2(s.el.size.a.h)], sizeB: [r2(s.el.size.b.w), r2(s.el.size.b.h)],
+      fillA: Number((s.el.fill.match(/rgba\\(.*,\\s*([\\d.]+)\\)/) ?? [0, 1])[1]), ca: r2(s.el.content.a), cb: r2(s.el.content.b), show2: s.el.content.show, sizeA: [r2(s.el.size.a.w), r2(s.el.size.a.h)], sizeB: [r2(s.el.size.b.w), r2(s.el.size.b.h)], kA: s.el.content.scaleA, kB: s.el.content.scaleB,
       hideOut: s.hide.out, hideIn: s.hide.in, draws: s.draws, outS: r2(s.scenes.out.scale), inS: r2(s.scenes.in.scale), outX: r2(s.scenes.out.x), inX: r2(s.scenes.in.x), outY: r2(s.scenes.out.y), inY: r2(s.scenes.in.y), outShow: s.scenes.out.show, inShow: s.scenes.in.show, clip: !!s.scenes.in.clip, ox: r2(s.scenes.out.ox), oy: r2(s.scenes.out.oy), iox: r2(s.scenes.in.ox), ioy: r2(s.scenes.in.oy) });
   }
   const sideA = Hd.boxAt(spec.from.box, t0);
@@ -138,6 +139,18 @@ for (const [name, spec] of Object.entries(specs)) {
   const markAll: boolean[] = [];
   for (let f = t0; f < t1; f++) markAll.push(renderToStaticMarkup(inRender(f, h(Handover, { ...spec, frame: f, a: h('i', null, 'a'), b: h('i', null, 'b') }))).includes('data-handover='));
   out[name] = { t0, t1, span60: Hd.handoverSpan(spec, film60), same: fwd.every((x, i) => x === back[i] && x === mixed[i]), n: frames.length, states, sideA: box(sideA), sideB: box(sideB), markup, markAll, decl: Hd.handoverDeclares(spec, film) };
+}
+{
+  // a picture side: a 16:9 tile growing into its full-frame photo (both sides pictures)
+  const pic: any = { kind: 'grow', at: AT, element: 'photo', from: { form: 'photo', box: { x: 300, y: 420, w: 384, h: 216 }, picture: true }, to: { form: 'photo', box: { x: 0, y: 0, w: W, h: H }, picture: true } };
+  const [p0, p1] = Hd.handoverSpan(pic, film);
+  const rows: any[] = [];
+  for (let f = p0; f < p1; f++) {
+    const s = Hd.handoverState(f, pic, film);
+    rows.push({ f, kA: s.el.content.scaleA, kB: s.el.content.scaleB, w: s.el.shape.w, h: s.el.shape.h, ca: s.el.content.a, cb: s.el.content.b, outShow: s.scenes.out.show, inShow: s.scenes.in.show, active: s.active });
+  }
+  const after = Hd.handoverState(p1, pic, film);
+  picture = { t0: p0, t1: p1, rows, after: { outShow: after.scenes.out.show, inShow: after.scenes.in.show } };
 }
 // colour and curves
 const hueOf = (c: string) => { const m = c.match(/rgba?\\((\\d+), (\\d+), (\\d+)/); return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null; };
@@ -149,7 +162,7 @@ const colour = {
 };
 const curve = (uc: number) => { const n = 400; const ys = Array.from({ length: n + 1 }, (_, i) => Hd.cutCurve(i / n, uc)); const v = ys.slice(1).map((y, i) => (y - ys[i]) * n); return { ys: [ys[0], ys[n]], mono: v.every((x) => x >= -1e-9), peakAt: v.indexOf(Math.max(...v)) / n, left: v[Math.round(uc * n) - 2], right: v[Math.round(uc * n) + 1] }; };
 const stage = underStage({ x: 400, y: 300, w: 500, h: 200 }, () => restCam({ W, H, u: 1 }), film)(0);
-console.log(JSON.stringify({ out, colour, curves: [curve(0.4), curve(0.3)], stage }));
+console.log(JSON.stringify({ out, picture, colour, curves: [curve(0.4), curve(0.3)], stage }));
 `;
 
 const TMP = mkdtempSync(join(tmpdir(), 'cinetic-handover-'));
@@ -209,7 +222,26 @@ for (const k of DRAWN) {
   result(new Set(sa).size === 1 && new Set(sb).size === 1 && sa[0] === `${o.sideA[2]}x${o.sideA[3]}` && sb[0] === `${o.sideB[2]}x${o.sideB[3]}`, `${k}: each content keeps its own layout size on every frame (${sa[0]}, ${sb[0]})`);
   const wrappers = o.markup.flatMap((m) => [...m.matchAll(/data-handover-content="(a|b)" style="([^"]*)"/g)].map((x) => x[2]));
   const container = o.markup.flatMap((m) => [...m.matchAll(/data-handover="[^"]*" style="([^"]*)"/g)].map((x) => x[1]));
-  result(wrappers.length > 0 && wrappers.every((st) => !/scale\(/.test(st)) && container.every((st) => !/scale\(/.test(st)), `${k}: the drawn content and container carry no scale (${wrappers.length} content layers)`);
+  // a converge's next element pops up whole out of the point (contained, up to its own size); nothing else scales
+  const popped = k === 'converge' ? wrappers.filter((st) => /scale\(/.test(st)) : [];
+  const still = k === 'converge' ? wrappers.filter((st) => !/scale\(/.test(st)) : wrappers;
+  result(wrappers.length > 0 && still.every((st) => !/scale\(/.test(st)) && container.every((st) => !/scale\(/.test(st)) && popped.every((st) => Number((st.match(/scale\(([\d.]+)\)/) ?? [0, 2])[1]) <= 1),
+    `${k}: the drawn container carries no scale; the content none (a converge's next element only pops up to its own size: ${popped.length} layer(s))`, popped.join(' | '));
+  if (k === 'converge') {
+    const act = o.states.filter((s) => s.active);
+    result(act.every((s) => s.kA === 1 && (s.f < 100 ? s.kB === 1 : s.kB <= 1 + 1e-9)) && act.some((s) => s.f >= 100 && s.kB < 1),
+      'converge: the next element grows out of the point whole (contained, never clipped mid-text), never past its own size', act.map((s) => `${s.f}:${s.kB.toFixed(2)}`).join(' '));
+  } else result(o.states.every((s) => s.kA === 1 && s.kB === 1), `${k}: no content scale (UI content never scales)`);
+}
+
+// 4b. a picture side scales with its box: the tile and its photo are one picture at one scale (never a double image),
+// the photo develops over the tile (no dip), and the next scene waits until the element lands (it is the whole frame)
+{
+  const Pc = P.picture;
+  const same = Pc.rows.filter((r) => r.active).every((r) => Math.abs((r.kA * 384) / (r.kB * 1920) - 1) < 1e-6 && r.kA * 384 >= r.w - 1e-6 && r.kA * 216 >= r.h - 1e-6);
+  result(same, 'picture: the tile and the photo cover the growing box at one scale on every frame (one picture, never doubled)', JSON.stringify(Pc.rows.slice(0, 3)));
+  result(Pc.rows.every((r) => r.ca === 1 || r.cb >= 1 - 1e-6), 'picture: the photo develops over the tile, which stays whole under it (no dip to the ground)', Pc.rows.map((r) => `${r.ca.toFixed(2)}/${r.cb.toFixed(2)}`).join(' '));
+  result(Pc.rows.every((r) => r.outShow && !r.inShow) && Pc.after.inShow, 'picture: an element that becomes the whole frame is the next scene: that scene waits for it to land, the last one stays round it', JSON.stringify(Pc.after));
 }
 
 // 5. no frame without the element

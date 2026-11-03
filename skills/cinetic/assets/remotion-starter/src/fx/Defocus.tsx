@@ -42,8 +42,11 @@ export const Defocus: React.FC<{ sigma: number; style?: React.CSSProperties; chi
   if (s < DEFOCUS_SHARP) return <div style={base}>{children}</div>;
   return (
     <div style={base}>
-      {defocusMix(s).map((c, i) => (
-        <div key={c.level} data-audit-copy={i > 0 ? '' : undefined} style={{ ...layer, opacity: i === 0 ? 1 : c.weight, filter: c.level > 0 ? `blur(${c.level}px)` : undefined }}>
+      {defocusMix(s).map((c, i, all) => (
+        // two levels add (plus-lighter: (1 - w) of one and w of the other, premultiplied), an exact cross for a card or for
+        // type on nothing alike: laying the upper level over the lower at w let the sharp ink show through until the step
+        // to the next pair, a one-frame jump in a fading layer
+        <div key={c.level} data-audit-copy={i > 0 ? '' : undefined} style={{ ...layer, opacity: all.length > 1 ? c.weight : 1, mixBlendMode: i > 0 ? 'plus-lighter' : undefined, filter: c.level > 0 ? `blur(${c.level}px)` : undefined }}>
           {children}
         </div>
       ))}

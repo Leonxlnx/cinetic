@@ -26,7 +26,8 @@ export const CARD = {
   pad: { sm: 30, md: 44, lg: 60 }, // inner padding by size class
   size: { md: 520, lg: 900 }, // width at which a card is md, lg (under md: sm)
   hairline: 1.25, // px
-  sheen: { light: 0.03, dark: 0.03 }, // OKLCH L from the top edge to the bottom edge (a lit face, never a flat slab)
+  sheen: { light: 0.05, dark: 0.045 }, // OKLCH L from the top edge to the bottom edge (a lit face, never a flat slab: 4-5 L* across)
+  key: { light: 0.04, dark: 0.06 }, // the key's fall-off across the face from the upper left: a shade toward the far corner (light), a lift at the key (dark)
   edge: { light: 0.42 }, // a light card on a dark ground: its top edge catching the key (an outer line of light)
   lift: { dark: 0.09, darkMin: 0.08 }, // a dark card sits this far over its ground (look-audit card-separation: 8 L*)
   // the type inside a card: the text face (FONT.ui) at film size
@@ -154,6 +155,20 @@ export const Card: React.FC<CardProps> = ({ tone = 'light', w, h, x = 0, y = 0, 
           <div style={{ position: 'absolute', inset: 0, background: inks.dark ? `rgba(12, 14, 18, ${CARD.glass.tint.dark})` : `rgba(255, 255, 255, ${CARD.glass.tint.light})` }} />
           <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, rgba(255, 255, 255, ${inks.dark ? 0.06 : 0.22}) 0%, rgba(255, 255, 255, 0) 42%)` }} />
         </>
+      )}
+      {glass ? null : (
+        // the key across the face: it falls off from the upper left (look-audit card-slab reads a face whose own light spans
+        // 3 L* or more as lit; the sheen alone is a slab)
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: inks.dark
+              ? `radial-gradient(120% 100% at 18% 0%, rgba(255, 255, 255, ${CARD.key.dark}) 0%, rgba(255, 255, 255, 0) 70%)`
+              : `radial-gradient(130% 115% at 20% 0%, rgba(0, 0, 0, 0) 38%, rgba(0, 0, 0, ${CARD.key.light}) 100%)`,
+            pointerEvents: 'none',
+          }}
+        />
       )}
       <div style={{ position: 'absolute', inset: 0 }}>{children}</div>
       {/* the hairline and the top highlight sit over the content, so a photo filling the card still has its edge */}

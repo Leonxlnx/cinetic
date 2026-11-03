@@ -12,7 +12,8 @@
  *   turn       the film's one colour or value event: a flood grows out of the element (a circle from its centre, the
  *              opposite value of the world by default: a light world turns dark, a dark one light, or a colour given)
  *              and becomes the ground for the acts after it (declared as a colour event)
- *   pull-back  the place wide again for the claim and the lockup: the pushes undone and a little wider, landing at the act's end
+ *   pull-back  the place wide again for the claim and the lockup: the pushes undone, landing at scale 1 at the act's end (never
+ *              below 1: a world smaller than the frame shows the layer under it as a strip at the frame's edges)
  *   hold       nothing changes: the element turns, the world keeps still
  *
  * Every move starts, travels and lands (fastest on its cut, a long settle that ends on the next cut): the world never
@@ -45,7 +46,7 @@ export const WORLD_STEP = {
   closer: { scale: 1.09, rise: 16, lead: 10, land: 120 }, // from 10 f before the cut; 120 f when the act's end is unknown
   light: { up: 0.1, gain: 0.22, dur: 84, pool: { y: 0.94, r: 0.42, ry: 0.16, strength: 0.6 } },
   turn: { dur: 30, lift: 0.04 }, // the flood covers the frame in 30 f (glideOut), its edge a soft 4 % of the frame
-  pullBack: { wide: 0.96, lead: 10, dur: 96 },
+  pullBack: { wide: 1, lead: 10, dur: 96 }, // lands at 1: the world always covers the frame (forensics edge-cover)
 } as const;
 
 /** One step on an act's cut: `at` the cut, `to` the act's end (the move lands there), `from` where a turn's flood starts (film px), `rack` the frame the enter's rack starts, `color` a turn's colour. */
@@ -61,8 +62,8 @@ const carrying = (uc: number): Ease => (t: number) => cutCurve(t, uc, E.buildIn,
 
 /**
  * The world's camera path for the steps: enter, closer and pull-back moves (each starts, travels and lands; scales
- * multiply, shifts add: World push / Plate move). A pull-back undoes the pushes before it and goes a little wider.
- * Frames at the film's rate. Pure.
+ * multiply, shifts add: World push / Plate move). A pull-back undoes the pushes before it and lands at scale 1: the
+ * world's scale never falls below 1, so it covers the frame on every frame. Frames at the film's rate. Pure.
  */
 export const worldStepMoves = (steps: readonly StepAt[], film?: Partial<FilmCtx>): (PlateMove & { step: WorldStep })[] => {
   const k = fpsOf(film) / 60;
@@ -85,8 +86,9 @@ export const worldStepMoves = (steps: readonly StepAt[], film?: Partial<FilmCtx>
       const S = WORLD_STEP.pullBack;
       const from = Math.round(s.at - S.lead * k);
       const to = Math.max(s.at + 1, s.to ?? Math.round(s.at + S.dur * k));
-      moves.push({ step: s.step, from, to, scale: S.wide / scale, y: -rise, ease: carrying((s.at - from) / Math.max(1, to - from)) });
-      scale = S.wide;
+      const wide = Math.max(1, S.wide); // never below the frame
+      moves.push({ step: s.step, from, to, scale: wide / scale, y: -rise, ease: carrying((s.at - from) / Math.max(1, to - from)) });
+      scale = wide;
       rise = 0;
     }
   }

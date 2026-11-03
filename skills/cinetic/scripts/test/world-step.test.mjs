@@ -120,7 +120,10 @@ result(M.map((m) => m.step).join(' ') === 'enter closer pull-back', 'enter, clos
 result(M[0].from === 0 && M[0].to === 180 && M[0].scale === 1.07, 'the enter push (x1.07) lands at the first act\'s end', JSON.stringify(M[0]));
 result(M[1].from === 175 && M[1].to === 420 && M[1].scale === 1.09 && M[1].y === 16, 'the closer step (x1.09, a rise of 16 px) starts 10 f@60 before its cut and lands at its act\'s end', JSON.stringify(M[1]));
 const end = P.track[720];
-result(Math.abs(end[0] - 0.96) < 1e-6 && Math.abs(end[1]) < 1e-6 && M[2].to === 720, `the pull-back undoes the pushes and lands 4 % wider than the opening (x${end[0].toFixed(4)}, y ${end[1].toFixed(2)})`);
+result(Math.abs(end[0] - 1) < 1e-6 && Math.abs(end[1]) < 1e-6 && M[2].to === 720, `the pull-back undoes the pushes and lands at scale 1, the opening's frame (x${end[0].toFixed(4)}, y ${end[1].toFixed(2)})`);
+result(T_MIN() >= 1 - 1e-9, `the world's scale never falls below 1 (it covers the frame on every frame: min x${T_MIN().toFixed(4)})`);
+
+function T_MIN() { return Math.min(...P.track.filter(Boolean).map((x) => x[0])); }
 
 // 2. each move starts, travels and lands; the world never stands dead inside an act
 const T = P.track;
