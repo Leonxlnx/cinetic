@@ -88,8 +88,10 @@ Look checks (warn unless marked fail):
                   a block in from its outline: no key across it, no sweep), no rim (no peak across its top edge 4 L* over
                   the face and the ground above it), no glass (its face opaque and flat); the drop shadow is reported, not
                   required. A quiet 1-2 L* sheen alone stays a slab. `--surfaces` reads it
-  flat-void       (the picture floor, and `--surfaces`) fail: 80 % of the body samples or more stand on one void (60 %
-                  warns): the ground (the largest flat field touching two frame edges, 16 px blocks at 480 wide, std < 1.5,
+  flat-void       (the picture floor, `--look` and `--surfaces`) fail: 80 % of the body samples or more stand on one void
+                  AND the film is below the motion floor (forensics.py motion-floor: frozen runs over 0.8 s past 8 % of the
+                  body) or has no depth (under 25 % of samples with a sharp and a soft plane); a white or black stage that
+                  never stops and has depth only warns, as does 60 %: the ground (the largest flat field touching two frame edges, 16 px blocks at 480 wide, std < 1.5,
                   15 % of the frame or more; a card may cover the rest) is near-white (L* 88+) or near-black (12 or less),
                   neutral, unlit (its L* range under 12), with no plate (no textured region bleeding off two frame edges
                   over 15 % of the frame), and its lightness spreads under 8 L* across those samples (no world step)
@@ -987,7 +989,7 @@ def surface_scan(paths_or_video, info=None, small=None, slabs=None, voids=None):
                 slabs.append(dict(tag, cards=sl))
         if voids is not None:
             small_v = cv2.resize(rgb, (480, max(2, int(round(h0 * 480.0 / w0)))), interpolation=cv2.INTER_AREA) if w0 > 480 else rgb
-            voids.append(dict(tag, **ground_void(small_v)))
+            voids.append(dict(tag, falloff=focus_falloff(cv2.cvtColor(small_v, cv2.COLOR_RGB2GRAY))[0], **ground_void(small_v)))
 
     if info is not None:
         for f, rgb in ui_frames(paths_or_video, info):
@@ -1025,7 +1027,8 @@ def look_scan(paths_or_video, info=None):
         ss = small_subject(rgb)
         if ss['small']:
             small.append(dict(tag, **ss))
-        voids.append(dict(tag, **ground_void(cv2.resize(rgb, (480, max(2, int(round(h0 * 480.0 / w0)))), interpolation=cv2.INTER_AREA) if w0 > 480 else rgb)))
+        small_v = cv2.resize(rgb, (480, max(2, int(round(h0 * 480.0 / w0)))), interpolation=cv2.INTER_AREA) if w0 > 480 else rgb
+        voids.append(dict(tag, falloff=focus_falloff(cv2.cvtColor(small_v, cv2.COLOR_RGB2GRAY))[0], **ground_void(small_v)))
 
     if info is not None:
         for f, rgb in ui_frames(paths_or_video, info, width=960):
@@ -1050,20 +1053,46 @@ def subject_flags(small, n, add, fps):
         '(50 % of its height or more: the device or the card at film size, the scene framed on its focus box) or a macro crop of the moment that matters, never a small card in an empty field')
 
 
-def void_flags(voids, add, fps):
-    """flat-void on the surface samples (--surfaces): VOID['share'] of them standing on one void fails, VOID['warn']
-    warns. Returns the share."""
+def void_excused(motion, depth_share):
+    """A white or black stage is a look, not a failure, when the film never stops and has depth: the motion floor holds
+    (forensics.motion_floor: frozen runs over 0.8 s under 8 % of the body; None = not measured, e.g. stills) and
+    VOID['depth'] of the samples or more show a sharp and a soft plane. Returns (excused, why-not)."""
+    below = motion is not None and motion.get('severity') == 'fail'
+    deep = depth_share is not None and depth_share >= VOID['depth']
+    why = []
+    if below:
+        why.append(f"below the motion floor ({motion['frozen_share'] * 100:.0f} % frozen)")
+    if not deep:
+        why.append(f"no depth ({(depth_share or 0) * 100:.0f} % of samples with a sharp and a soft plane, need {VOID['depth'] * 100:.0f} %)")
+    return (not below and deep), '; '.join(why)
+
+
+def film_motion(F, path, info, end_from=None):
+    """The motion floor of a video for flat-void (None when it cannot be measured)."""
+    try:
+        return F.motion_floor(path, info, end_from=end_from)
+    except Exception:  # noqa: BLE001  a read that fails leaves flat-void at its strict reading
+        return None
+
+
+def void_flags(voids, add, fps, motion=None):
+    """flat-void on the surface samples (--surfaces, --look): VOID['share'] of them standing on one void fails when the
+    film is also below the motion floor or has no depth (void_excused), and warns otherwise; VOID['warn'] warns.
+    Returns the share."""
     vs = [v for v in voids if is_void(v)]
     share = len(vs) / max(1, len(voids))
     Ls = [v['L'] for v in vs]
     spread = float(np.percentile(Ls, 90) - np.percentile(Ls, 10)) if Ls else 0.0
+    reads = [v['falloff'] for v in voids if v.get('falloff') is not None]
+    excused, why = void_excused(motion, (sum(1 for x in reads if x) / len(reads)) if reads else None)
     if vs and spread < VOID['step'] and share >= VOID['warn']:
         x = vs[0]
         at = x.get('f', 0)
-        add('flat-void', 'fail' if share >= VOID['share'] else 'warn', at,
+        add('flat-void', 'fail' if share >= VOID['share'] and not excused else 'warn', at,
             f"{len(vs)} of {len(voids)} samples ({share * 100:.0f} %) stand on one empty {'near-white' if Ls[0] >= 50 else 'near-black'} field (L* "
             f"{float(np.median(Ls)):.1f}, spread {spread:.1f} L*; unlit, no plate): the film stands in a void. Give it a world that belongs to the product: "
-            'a graded plate of its place, a lit field (fx/world, fx/light) and one step of that world per act')
+            'a graded plate of its place, a lit field (fx/world, fx/light) and one step of that world per act'
+            + (f' [fails: {why}]' if share >= VOID['share'] and not excused else ' [a white or black stage that never stops and has depth: a warning]' if share >= VOID['share'] else ''))
     return share
 
 
@@ -1289,6 +1318,7 @@ def ground_place(rgb, keep=None):
 
 # flat-void: the film stands on an empty near-white or near-black field all through (no plate, no lit field, no step)
 VOID = dict(
+    depth=0.25,  # flat-void warns instead of failing when this share of samples shows a sharp and a soft plane (and the motion floor holds)
     field=0.15,  # the ground (the largest flat field touching two frame edges: 16 px blocks at 480 wide, std < 1.5) shows on this
     # share of the frame or more (a card may cover the rest: it still stands on that field) ...
     light=88.0, dark=12.0,  # ... at L* 88 or more (a blank page) or 12 or less (a black void) ...
@@ -1799,7 +1829,7 @@ def colour_reads(P, fps, events=None, accent_h=None, second_h=None):
                 second=dict(h=sec_hue, frames=round(sec_frames, 3), share_when=round(sec_when, 4), support=support, second_accent=second_accent, declared=declared))
 
 
-def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, second_h=None, mono=False):
+def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, second_h=None, mono=False, motion=None):
     """The picture floor from the reads: flat ground, edges, saturated, bleed, skeleton bars (fail), the
     house target on the same reads plus focus falloff (warn), and the framing read (centred subjects).
     Frames inside the end lock are left out of flat, edges, falloff and bleed (an end card may sit on a
@@ -1845,6 +1875,10 @@ def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, sec
     v_spread = float(np.percentile(v_L, 90) - np.percentile(v_L, 10)) if v_L else 0.0
     one_void = v_spread < VOID['step']
     void_ok = not (smp and v_share >= VOID['share'] and one_void)
+    v_excused = False
+    if not void_ok:  # a white or black stage that never stops and has depth warns instead (void_excused)
+        v_excused, _ = void_excused(motion, float(np.mean(fall)) if fall else None)
+        void_ok = v_excused
     framed = [s for s in smp if s['subject'].get('found')]
     centred = [s['f'] for s in framed if s['subject'].get('centred')]
     T = PIC['target']
@@ -1875,7 +1909,7 @@ def picture_floor(P, fps, n, acts, end_rng=None, events=None, accent_h=None, sec
                    need=dict(samples=CARD['samples'], share=CARD['share'], step=CARD['hi']), ok=cards_ok, target_ok=cards_ok),
         void=dict(frames=[s['f'] for s in voided][:20], samples=len(voided), measured=len(smp), share=round(v_share, 3), spread=round(v_spread, 1),
                   L=round(float(np.median(v_L)), 1) if v_L else None, need=dict(share=VOID['share'], warn=VOID['warn'], step=VOID['step']),
-                  ok=void_ok, target_ok=void_ok, warn=bool(void_ok and smp and v_share >= VOID['warn'] and one_void)),
+                  ok=void_ok, target_ok=void_ok, warn=bool(void_ok and smp and v_share >= VOID['warn'] and one_void), excused=v_excused),
         # depth of field is a target only: the motion floor (floor-depth) already asks for two planes at different rates
         falloff=dict(share=round(fall_share, 3), raw=round(float(np.mean([P['falloff_raw'][i] for i in body])) if body else 0.0, 3), target=T['falloff_share'], ok=True,
                      target_ok=fall_share >= T['falloff_share']),
@@ -2509,7 +2543,8 @@ def evaluate(args, info, F, probe_m, S, size, cues, extra, layout, accent, brand
     acc_h = lch_of_hex(accent)[2] if accent else None
     sec_hex = getattr(args, 'second', None) or second_colour(getattr(args, 'tokens_path', None))
     pf, framing = picture_floor(S['pic'], fps, n, list(acts.items()) if acts else None, end_rng, getattr(args, 'events', None), acc_h,
-                                lch_of_hex(sec_hex)[2] if sec_hex else None, getattr(args, 'mono', False))
+                                lch_of_hex(sec_hex)[2] if sec_hex else None, getattr(args, 'mono', False),
+                                motion=film_motion(F, args.video, info, end_rng[0] if end_rng else None))
     floor['picture'] = pf
     if args.no_picture:
         pf['reported_only'] = True
@@ -3150,6 +3185,17 @@ def look_gate_self_test(check, tmp):
           f'void {c1} {f1} | slab {c2} {f2} | lit {c3} {f3}')
     c4, f4 = gate('void', [], '--surfaces')
     check(c4 == 1 and ('flat-void', 'fail') in f4, '--surfaces reads the default look too (the void fails there)', f'{c4} {f4}')
+    # a white stage is a look when the film never stops and has depth: the same void warns; frozen or flat, it fails
+    white = dict(field=0.6, L=96.0, chroma=0.02, range=2.0, plate=0.0)
+
+    def void_sev(motion, deep):
+        out = []
+        void_flags([dict(white, f=i, falloff=(i % 2 == 0) if deep else False) for i in range(20)], lambda c, s, f, n: out.append(s), 30.0, motion=motion)
+        return out
+    live, frozen = dict(severity='ok', frozen_share=0.0), dict(severity='fail', frozen_share=0.2)
+    check(void_sev(live, True) == ['warn'] and void_sev(frozen, True) == ['fail'] and void_sev(live, False) == ['fail'] and void_sev(None, True) == ['warn'],
+          'flat-void: a white stage that never stops and has depth warns; below the motion floor or with no depth it fails',
+          str([void_sev(live, True), void_sev(frozen, True), void_sev(live, False), void_sev(None, True)]))
 
 
 def surface_self_test(check):
@@ -3864,7 +3910,7 @@ def main():
         look_flags = []
         lf = lambda check, sev, frame, note, **kw: look_flags.append(dict(check=check, severity=sev, frame=frame, note=note))  # noqa: E731
         fps_s = info_['fps'] if info_ else 1.0
-        v_share = void_flags(voids, lf, fps_s)
+        v_share = void_flags(voids, lf, fps_s, motion=film_motion(F, args.video, info_) if info_ else None)
         slab_flags(slabs, n, lf, fps_s, world=v_share < 0.5)
         bad = (len(bands) >= (1 if stills is not None else BAND['samples']) or len(small) >= SUBJECT['samples']
                or any(x['severity'] == 'fail' for x in look_flags))
@@ -3896,7 +3942,7 @@ def main():
         look_flags = []
         lf = lambda check, sev, frame, note, **kw: look_flags.append(dict(check=check, severity=sev, frame=frame, note=note))  # noqa: E731
         fps_l = info_['fps'] if info_ else 1.0
-        v_share = void_flags(voids, lf, fps_l)
+        v_share = void_flags(voids, lf, fps_l, motion=film_motion(F, args.video, info_) if info_ else None)
         slab_flags(slabs, n, lf, fps_l, world=v_share < 0.5)
         subject_flags(small, n, lf, fps_l)
         surface_flags([], cheap, n, lf, fps_l)
@@ -3977,7 +4023,7 @@ def main():
         acc_hex = args.accent or (brand_colours(tokens, args.brand)[0] if tokens else None)
         sec_hex = args.second or second_colour(tokens)
         pf, framing = picture_floor(P, fps, n, acts, end_rng, args.events, lch_of_hex(acc_hex)[2] if acc_hex else None, lch_of_hex(sec_hex)[2] if sec_hex else None,
-                                    args.mono)
+                                    args.mono, motion=film_motion(F, args.video, info, end_rng[0] if end_rng else None))
         flags = []
 
         def add(check, severity, frame, note):

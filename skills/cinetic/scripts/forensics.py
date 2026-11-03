@@ -190,6 +190,11 @@ at 160x90, one sample per 1/30 s (landings also at the film's own rate), outside
   motion-density more than 2 primary moves (peaks >= 25 % of the film's 90th-percentile move) per 3 s  fail
   motion-stop  a move goes still in one frame from above 15 % of its peak speed (cut off mid-ease)    fail
   motion-cut   a visible cut while a braking move is still above 10 % of its peak speed               warn
+  motion-floor (every film of 8 s or more, declared or not; --motion-floor runs it alone) frozen runs over 0.8 s
+               (at 320 x 180: under 0.02 % of pixels change 10+ levels and the mean change is under 0.12, or
+               the only change is grain) take more than 8 % of the body (outside the end lock, freezes and
+               ignored ranges); a film that never stops: 0-6 %                       fail; over 5 %  warn
+               (one single frozen run up to 2.5 s, a short film's one held breath, warns at most)
                (fail over 0.25 per 3 s), unless a whip, velocity or zoomThrough seam or a camera-blur
                range carries it into the cut
   What machine-made motion looks like here: many short events that start and stop in one frame, a camera that
@@ -3684,6 +3689,108 @@ def audio_check(path, args, fps):
     return rep, flags
 
 
+# ------------------------------------------------------------------------------------------
+# motion floor: purposeful motion in every second (a film-level density read)
+# ------------------------------------------------------------------------------------------
+# A frame is FROZEN when nothing in it changes: under 0.02 % of the pixels move by more than 10 grey levels and the mean
+# change is under 0.12 levels at 320 x 180 (the encoder's noise), or the only change is temporal noise (animated grain: the
+# change against two frames back is no larger than against one, where any real motion, even a 0.3 px/f creep, doubles it).
+# The floor is the share of the body spent in frozen runs longer than 0.8 s. A film that never stops reads 0 to about 6 %
+# (one deliberate long hold); a film built on still holds reads
+# 10-25 %. A film fails above 8 %, warns above 5 %; one single frozen run up to 2.5 s (DEAD_S, a short film's one held
+# breath) warns at most. It does not reward fake life: an idle bob or an aimless pan keeps the
+# frames changing but fails lint-film idle-bob / camera-float and forensics camera-wander.
+MOTION_FLOOR = dict(w=320, h=180, chg=10, hold_chg=0.0002, hold_mad=0.12, noise_ratio=1.15, noise_mad=1.5, run_s=0.8, fail=0.08, warn=0.05,
+                    end_s=2.0, min_body_s=8.0, dead_live=0.25)
+
+
+def motion_floor(path, info, end_from=None, freezes=(), ignore=()):
+    """The motion floor of a video: per-frame change at 320 x 180, the frozen runs over MOTION_FLOOR run_s, their share of
+    the body (after frame 0, before `end_from` (default: the last 2 s), outside `freezes` / `ignore` ranges [a, b] in
+    video frames), the seconds with almost no live frame, and the verdict. Pure measurement (no flags)."""
+    P = MOTION_FLOOR
+    fps = info['fps']
+    n_all = info['frames']
+    end = int(end_from) if end_from is not None else max(1, n_all - int(round(P['end_s'] * fps)))
+    prev2 = prev = None
+    mad, mad2, chg = [], [], []
+    for _, y in decode(path, info, pix='gray', size=(P['w'], P['h'])):
+        g = y.astype(np.int16)
+        if prev is None:
+            mad.append(0.0), mad2.append(0.0), chg.append(0.0)
+        else:
+            d = np.abs(g - prev)
+            mad.append(float(d.mean()))
+            chg.append(float((d > P['chg']).mean()))
+            mad2.append(float(np.abs(g - prev2).mean()) if prev2 is not None else 2 * float(d.mean()))
+        prev2, prev = prev, g
+    n = len(mad)
+    end = min(end, n)
+    skip = lambda f: any(a <= f <= b for a, b in list(freezes) + list(ignore))  # noqa: E731
+    body = [f for f in range(1, end) if not skip(f)]
+    res = dict(frames=n, fps=round(fps, 3), body_s=round(len(body) / fps, 2), runs=[], frozen_share=0.0, longest_s=0.0, dead_seconds=0,
+               median_change=0.0, need=dict(fail=P['fail'], warn=P['warn'], run_s=P['run_s']), measured=len(body) / fps >= P['min_body_s'])
+
+    def frozen(f):
+        if chg[f] >= P['hold_chg']:
+            return False
+        if mad[f] < P['hold_mad']:
+            return True
+        # grain alone: a small change that is no larger against two frames back, while the frame before changed as much
+        # (a picture on twos repeats a frame, so its ratio says nothing: that change is motion)
+        return mad[f] < P['noise_mad'] and mad2[f] < P['noise_ratio'] * mad[f] and mad[f - 1] > 0.6 * mad[f]
+
+    fz = [frozen(f) for f in range(n)]
+    runs, a = [], None
+    for f in body + [None]:
+        if f is not None and fz[f] and (a is None or f == last + 1):
+            a = f if a is None else a
+            last = f
+            continue
+        if a is not None and (last - a + 1) / fps > P['run_s']:
+            runs.append((a, last))
+        a = None
+        if f is not None and fz[f]:
+            a = last = f
+    frozen_n = sum(b - a + 1 for a, b in runs)
+    secs = int(len(body) // fps)
+    dead = 0
+    for s in range(secs):
+        win = body[int(round(s * fps)):int(round((s + 1) * fps))]
+        if win and sum(0 if fz[f] else 1 for f in win) / len(win) < P['dead_live']:
+            dead += 1
+    res.update(runs=[[a, b] for a, b in runs], frozen_share=round(frozen_n / max(1, len(body)), 3),
+               longest_s=round(max([(b - a + 1) / fps for a, b in runs] or [0.0]), 2), dead_seconds=dead,
+               median_change=round(float(np.median([mad[f] for f in body])) / 255, 5) if body else 0.0)
+    sh = res['frozen_share']
+    # one held breath is allowed: a single frozen run up to DEAD_S (a short film's one deliberate hold) warns at most
+    one_hold = len(runs) <= 1 and res['longest_s'] <= DEAD_S
+    res['one_hold'] = one_hold
+    res['severity'] = ('info' if not res['measured'] else 'warn' if one_hold and sh > P['warn'] else 'ok' if one_hold
+                       else 'fail' if sh > P['fail'] else 'warn' if sh > P['warn'] else 'ok')
+    res['ok'] = res['severity'] in ('ok', 'info', 'warn')
+    return res
+
+
+def motion_floor_check(args, info, decl):
+    """The motion floor as a check: (report, flags). The end lock is the cues' declared END, else the last 2 s; declared
+    freezes and ignored ranges are left out."""
+    extra = decl[7]
+    k_ = info['fps'] / decl[6] if decl[6] else 1.0
+    end = extra.get('end')
+    end_from = int(round(end['from'] * k_)) if end and end.get('to', 0) > end.get('from', 0) else None
+    m = motion_floor(args.video, info, end_from=end_from, freezes=decl[1], ignore=decl[2])
+    flags = []
+    if m['severity'] in ('fail', 'warn'):
+        a, b = m['runs'][0] if m['runs'] else (0, 0)
+        flags.append(dict(check='motion-floor', severity=m['severity'], frame=f'{a}-{b}',
+                          note=f"{m['frozen_share'] * 100:.0f} % of the body ({len(m['runs'])} run(s), longest {m['longest_s']:.1f} s) stands frozen for over "
+                               f"{MOTION_FLOOR['run_s']:g} s (floor {MOTION_FLOOR['fail'] * 100:.0f} %; aim 0-6 %): keep purposeful motion in every second: "
+                               'the decaying tail of the last move (lib/moves holdTail, 0.3-2 px/f@30, same direction), a scale creep of 0.1-0.4 %/f, '
+                               'the product working in frame (typing, a counter, a status), or cut sooner. Never an idle bob or an aimless pan'))
+    return m, flags
+
+
 def merge_flags(res, flags):
     """Add flags made outside a pass (the audio) to a result: counts and verdict."""
     if not flags:
@@ -4271,8 +4378,34 @@ def self_test(part='all'):
     def gram(rep):
         return rep.get('checks', {}).get('grammar') or {}
 
+    def floor_tests():
+        # the motion floor (11 s clips: a film-level read): a slow one-way tail passes; still holds fail, with grain on them too;
+        # one held breath of 2 s passes
+        nf = 330
+        rep = run('floor-tail', [warp(A, dx=0.1 * i) for i in range(nf)], cues(nf), more=('--motion-floor',))
+        mf = rep.get('checks', {}).get('motion_floor') or {}
+        check(not flags(rep, 'motion-floor'), 'motion floor: a 0.4 px/f@1080 one-way tail all through is never frozen', json.dumps({k: mf.get(k) for k in ('frozen_share', 'runs')}))
+        seg = lambda i: (i % 105) if (i % 105) < 60 else 60  # noqa: E731  2 s moving, 1.5 s held, three times
+        holds = [warp(A, dx=1.5 * (60 * (i // 105) + seg(i))) for i in range(nf)]
+        rep = run('floor-holds', holds, cues(nf), more=('--motion-floor',))
+        mf = rep.get('checks', {}).get('motion_floor') or {}
+        check(bool(flags(rep, 'motion-floor', 'fail')), 'motion floor: three 1.5 s still holds in 9 s fail', json.dumps({k: mf.get(k) for k in ('frozen_share', 'runs')}))
+        rng = np.random.default_rng(7)
+        grain = [np.clip(fr.astype(np.float32) + rng.normal(0, 1.0, fr.shape[:2])[..., None], 0, 255).astype(np.uint8) for fr in holds]
+        rep = run('floor-grain', grain, cues(nf), more=('--motion-floor',))
+        mf = rep.get('checks', {}).get('motion_floor') or {}
+        check(bool(flags(rep, 'motion-floor', 'fail')), 'motion floor: the same holds under animated grain still fail (grain is not motion)',
+              json.dumps({k: mf.get(k) for k in ('frozen_share', 'runs')}))
+        one = [warp(A, dx=1.5 * (i if i < 120 else 120 if i < 180 else i - 60)) for i in range(nf)]
+        rep = run('floor-one', one, cues(nf), more=('--motion-floor',))
+        check(not flags(rep, 'motion-floor', 'fail'), 'motion floor: one held breath of 2 s passes (warns at most)', str([x['severity'] for x in flags(rep, 'motion-floor')]))
     A, B = texture(1, w, h), texture(2, w, h)
     n = 90
+    if part == 'motion':
+        floor_tests()
+        shutil.rmtree(tmp, ignore_errors=True)
+        print('forensics self-test (motion floor): ' + ('all pass' if not bad else f'{bad} failed'))
+        return 1 if bad else 0
     rep = run('frozen', [A] * 120, cues(120))
     check(bool(flags(rep, 'dead-stretch', 'fail')), 'a 4 s hold where nothing changes fails dead-stretch', f"{len(flags(rep, 'dead-stretch', 'fail'))} fail")
     check(not flags(rep, 'static-share', 'warn') and not flags(rep, 'motion-energy'), 'static-share and motion-energy are info only (a still hold passes)')
@@ -4283,6 +4416,7 @@ def self_test(part='all'):
     check(not flags(rep, 'dead-stretch', 'fail'), 'a 3 %/s creep is not a dead stretch', f"live share {gram(rep).get('holds', {}).get('live_share')}")
     rep = run('drift', [warp(A, dx=12 * i / fps / 4) for i in range(n)], cues(n))
     check(not flags(rep, 'dead-stretch', 'fail') and not flags(rep, 'camera-wander', 'fail'), 'a 12 px/s one-way creep (at 1080p) is neither dead nor a wander', json.dumps(gram(rep).get('wander', {})))
+    floor_tests()
     # the old camera float: +-24 px at 1080p sideways at 1.3 rad/s, the push breathing 3 %: it pans one way and back
     fl6 = [warp(A, dx=24 * math.cos(1.3 * i / fps) / 4, k=1 + 0.015 * (1 + math.sin(1.3 * i / fps))) for i in range(180)]
     rep = run('float', fl6, cues(180))
@@ -4596,7 +4730,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0],
                                  formatter_class=argparse.RawDescriptionHelpFormatter, epilog=__doc__)
     ap.add_argument('video', nargs='?')
-    ap.add_argument('--self-test', nargs='?', const='all', choices=['all', 'spine'],
+    ap.add_argument('--self-test', nargs='?', const='all', choices=['all', 'spine', 'motion'],
                     help='run the checks on synthetic clips made in code, then exit (spine: only the spine checks)')
     ap.add_argument('--json', help='write the report here (e.g. out/qa/forensics.json)')
     ap.add_argument('--cues', help='out/cues.json: act seams, cue moments, a "qa" block, events of kind "cut"')
@@ -4608,6 +4742,8 @@ def main():
     ap.add_argument('--to', dest='to_frame', type=int, help='last frame to analyse (inclusive)')
     ap.add_argument('--loop', action='store_true', help='check the loop seam (last frame -> frame 0)')
     ap.add_argument('--no-audio', action='store_true', help='a silent deliverable (a loop, a sting for a muted feed): skip the sound checks')
+    ap.add_argument('--no-motion-floor', action='store_true', help='skip the motion floor (frozen runs over 0.8 s, a film-level read)')
+    ap.add_argument('--motion-floor', action='store_true', help='run only the motion floor and print it (fast: one 320 x 180 decode)')
     ap.add_argument('--against', help='a second render of the same thing; report frames that differ')
     ap.add_argument('--track', action='append', help='x,y,w,h region to phase-track for judder (repeatable)')
     ap.add_argument('--no-judder', action='store_true', help='skip the automatic 3x3 judder patches')
@@ -4681,6 +4817,21 @@ def main():
 
     info = probe(args.video)
     decl = load_declarations(args)
+    if args.motion_floor:
+        m, fl = motion_floor_check(args, info, decl)
+        res = dict(file=args.video, frames=m['frames'], fps=m['fps'], checks=dict(motion_floor=m), flags=fl,
+                   fails=sum(1 for x in fl if x['severity'] == 'fail'), warnings=sum(1 for x in fl if x['severity'] == 'warn'))
+        res['pass'] = res['fails'] == 0
+        if args.json:
+            os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
+            with open(args.json, 'w') as fh:
+                json.dump(res, fh, indent=1)
+        print(f"forensics (motion floor): {args.video}  {'PASS' if res['pass'] else 'FAIL'}  frozen {m['frozen_share'] * 100:.1f} % of {m['body_s']} s "
+              f"(fail > {MOTION_FLOOR['fail'] * 100:.0f} %), {len(m['runs'])} run(s) over {MOTION_FLOOR['run_s']:g} s, longest {m['longest_s']} s, "
+              f"{m['dead_seconds']} dead second(s), median change {m['median_change']}" + ('' if m['measured'] else '  (under 8 s: info only)'))
+        for x in fl:
+            print(f"  {x['severity']:4s} {x['check']}: {x['note']}")
+        sys.exit(0 if res['pass'] else 1)
     if not args.pace:
         args.pace = (load_cues(args.cues)['pace'] if args.cues else None) or 'crisp'
     # the pace's hold and quiet limits are stated at 60 fps: evaluate() scales those left at None (scaled60)
@@ -4721,9 +4872,12 @@ def main():
         pf = {g for c in cuts_v for g in range(c - 2 * n_ - 1, c + 7)}
         args._probe = MotionProbe(info['fps'], *probe_size(info), pair_frames=pf, tiles=False, force={x for c in cuts_v for x in (c - 1, c + kk)},
                                   seam_frames=velocity_frames(extra, k_))
+    floor_m, floor_flags = (None, []) if args.no_motion_floor else motion_floor_check(args, info, decl)
+    aud_flags = aud_flags + floor_flags
     if args.grammar_only:
         res = merge_flags(grammar_only(args, info, decl), aud_flags)
         res['checks']['audio'] = aud
+        res['checks']['motion_floor'] = floor_m
         if args.json:
             os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
             with open(args.json, 'w') as fh:
@@ -4739,6 +4893,7 @@ def main():
     M['smear'] = [] if args.no_smear else smear_scan(args, info)
     res = merge_flags(evaluate(args, info, M, decl), aud_flags)
     res.setdefault('checks', {})['audio'] = aud
+    res['checks']['motion_floor'] = floor_m
 
     if args.curves:
         os.makedirs(os.path.dirname(os.path.abspath(args.curves)), exist_ok=True)
