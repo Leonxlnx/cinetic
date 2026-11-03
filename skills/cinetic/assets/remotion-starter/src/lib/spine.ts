@@ -69,9 +69,14 @@ export type HandoverHouse = {
   when: string; // use it when
   frames: readonly [number, number]; // the house range, f@60
   lead: number; // house frames before the cut (the incoming scene's first frame), f@60
+  leadMin?: number; // the fewest film frames the lead may take at any rate: a collapse of a large picture in fewer reads as a
+  //                   dissolve squeezed into a frame or two (at 30 fps a 10 f@60 converge is 5 frames: forensics ghost-cut)
   land: number; // house frames from the cut to the landing, f@60
   channels: readonly Channel[]; // what it carries by itself (the ground is added when the world holds)
-  seam: SeamKind; // the seam kind the checks know
+  seam: SeamKind; // the seam kind the checks know: what the handover really is (references/transitions.md section 3): a
+  //                 shape becoming the next (morph), a collapse under a blur (defocus), a reveal through an opening or a
+  //                 gap (mask), a push through the element (zoomThrough), an exit into a point and an entry out of it
+  //                 (breath), speed alone (velocity)
   carry: NonNullable<Seam['carry']>;
   content: ContentMode;
   /** who draws the element: 'handover' (fx/Handover draws it across the cut), 'scene' (scene-internal: the scene draws it, the handover only declares) */
@@ -84,7 +89,7 @@ export type HandoverHouse = {
  */
 export const HANDOVERS: Record<HandoverKind, HandoverHouse> = {
   grow: { id: 'H1', what: "the element's rect, radius and fill become the next screen; the content cross-blurs mid-way", when: 'the request becomes the result; a notice opens', frames: [24, 36], lead: 12, land: 18, channels: ['E'], seam: 'morph', carry: 'shape', content: 'fade', draws: 'handover' },
-  shrink: { id: 'H2', what: 'the whole scene or card collapses into a chip or card under a 12-20 px blur', when: 'the whole becomes one item, a scene becomes a token', frames: [10, 20], lead: 12, land: 8, channels: ['E', 'A', 'O'], seam: 'morph', carry: 'shape', content: 'swap', draws: 'handover' },
+  shrink: { id: 'H2', what: 'the whole scene or card collapses into a chip or card under a 12-20 px blur', when: 'the whole becomes one item, a scene becomes a token', frames: [10, 20], lead: 12, land: 8, channels: ['E', 'A', 'O'], seam: 'defocus', carry: 'shape', content: 'swap', draws: 'handover' },
   swell: { id: 'H3', what: 'a small thing swells +40-60 % and is replaced at its pre-swell size, colour kept', when: 'a state becomes the next control: chip -> word, icon -> pill, status -> button', frames: [24, 46], lead: 12, land: 17, channels: ['E', 'A'], seam: 'morph', carry: 'shape', content: 'swap', draws: 'handover' },
   'press-open': { id: 'H4', what: 'a pressed button drains and opens as a window (a porthole); a line parts on the same spring', when: 'the press reveals who or what does the work', frames: [50, 70], lead: 22, land: 36, channels: ['E', 'A'], seam: 'mask', carry: 'shape', content: 'fade', draws: 'handover' },
   iris: { id: 'H5', what: "a circle (or the brand's shape) from the element opens onto the next world", when: 'a turn: into the product, out to the world', frames: [14, 76], lead: 0, land: 28, channels: ['E', 'A', 'O'], seam: 'mask', carry: 'shape', content: 'fade', draws: 'handover' },
@@ -93,8 +98,8 @@ export const HANDOVERS: Record<HandoverKind, HandoverHouse> = {
   fly: { id: 'H8', what: "the element launches on an arc and lands as the next scene's first element", when: 'something is sent or delivered', frames: [36, 56], lead: 14, land: 22, channels: ['E', 'M'], seam: 'morph', carry: 'shape', content: 'swap', draws: 'handover' },
   stay: { id: 'H9', what: 'the element holds while its surroundings change (others fade, the world swaps, a label changes)', when: 'choosing one of many; the same request, a new answer', frames: [16, 22], lead: 0, land: 18, channels: ['E', 'A'], seam: 'morph', carry: 'shape', content: 'keep', draws: 'scene' },
   word: { id: 'H10', what: 'a word survives the cut and becomes the next line, the name or the mark', when: "the case's key word becomes the claim or the name", frames: [1, 37], lead: 0, land: 36, channels: ['E', 'A'], seam: 'morph', carry: 'shape', content: 'keep', draws: 'handover' },
-  part: { id: 'H11', what: "the line parts; the element appears in the gap or takes a word's slot", when: 'the line names the thing; the thing arrives in it', frames: [6, 36], lead: 0, land: 18, channels: ['E', 'A'], seam: 'morph', carry: 'shape', content: 'keep', draws: 'scene' },
-  converge: { id: 'H12', what: 'many collapse to a point; the next element grows from it', when: 'many become one: results -> the count -> the mark', frames: [30, 60], lead: 10, land: 26, channels: ['E', 'A'], seam: 'morph', carry: 'shape', content: 'swap', draws: 'handover' },
+  part: { id: 'H11', what: "the line parts; the element appears in the gap or takes a word's slot", when: 'the line names the thing; the thing arrives in it', frames: [6, 36], lead: 0, land: 18, channels: ['E', 'A'], seam: 'mask', carry: 'shape', content: 'keep', draws: 'scene' },
+  converge: { id: 'H12', what: 'many collapse to a point; the next element grows from it', when: 'many become one: results -> the count -> the mark', frames: [30, 60], lead: 10, leadMin: 8, land: 26, channels: ['E', 'A'], seam: 'breath', carry: 'shape', content: 'swap', draws: 'handover' },
   'same-surface': { id: 'H13', what: 'the camera makes one move across the same screen to the next state', when: 'the next step happens in the same product', frames: [34, 40], lead: 0, land: 36, channels: ['E', 'G', 'M'], seam: 'morph', carry: 'shape', content: 'keep', draws: 'scene' },
   momentum: { id: 'H14', what: 'speed only: a velocity cut or a whip, the same direction', when: 'a run of consequences of the same case; never between two subjects', frames: [20, 40], lead: 16, land: 18, channels: ['M'], seam: 'velocity', carry: 'x', content: 'none', draws: 'scene' },
 };
@@ -322,11 +327,11 @@ const allocate = (total: number, weights: number[], fixed: (number | undefined)[
   return out.map((v, i) => (free[i] ? base[i] : v));
 };
 
-/** The frames of a handover kind at a film's rate: [lead, land] in film frames. */
+/** The frames of a handover kind at a film's rate: [lead, land] in film frames (a lead never under the kind's leadMin). */
 export const handoverFrames = (kind: HandoverKind, fps: number): [number, number] => {
   const H = HANDOVERS[kind];
   const k = fps / 60;
-  return [H.lead ? Math.max(1, Math.round(H.lead * k)) : 0, Math.max(1, Math.round(H.land * k))];
+  return [H.lead ? Math.max(1, H.leadMin ?? 1, Math.round(H.lead * k)) : 0, Math.max(1, Math.round(H.land * k))];
 };
 
 /** The case's words to look for in an act's strings: the request, the result, every name and number, the request's content words. */

@@ -4330,6 +4330,17 @@ def seam_self_test(check):
     rep, fl = gate(still, seams=mixed, copy_n=5)
     ok(not any(x['check'] == 'seam-mix' for x in fl) and 'exit-then-enter' in rep['plan']['kinds'] and 'text-swap' in rep['plan']['kinds'],
        'seams: a mixed plan with an exit-then-enter and a text-swap passes seam-mix', json.dumps(rep['plan']))
+    # a spine film (lib/spine spineDeclares): each change counts by its handover, whatever seam kind it declares for the
+    # devices it promises; six handovers of six kinds that all declare a shape carried (morph) pass, five converges fail
+    hs = ['grow', 'swell', 'fly', 'stay', 'word', 'same-surface']
+    spine = [dict(at=10 * (i + 1), kind='morph', carry='shape', id=f'spine:H{i + 1}-{k}:request:a>b', handover=k) for i, k in enumerate(hs)]
+    rep, fl = gate(still * 4, seams=spine)
+    ok(not any(x['check'] == 'seam-mix' for x in fl) and rep['plan']['changes'] == 6 and rep['plan']['top_share'] <= SEAM['mix'],
+       'seams: a spine film of six handover kinds that each declare morph passes seam-mix (counted by handover)', json.dumps(rep['plan']))
+    conv = [dict(at=10 * (i + 1), kind='breath', carry='shape', id=f'spine:H12-converge:request:a>b{i}', handover='converge') for i in range(5)]
+    rep, fl = gate(still * 4, seams=conv)
+    ok(rep['plan']['top'] == 'handover:converge' and any(x['check'] == 'seam-mix' and x['severity'] == 'fail' for x in fl),
+       'seams: a spine film that converges at all five changes fails seam-mix', json.dumps(rep['plan']))
     return bad[0]
 
 

@@ -4,7 +4,11 @@
  * one element whose form changes from scene to scene, a handover at every change.
  *
  *   1. The house tables: fourteen handovers H1-H14, each with its frames inside its range (lead + land), a seam kind
- *      the checks know and its channels; every recipe of the form table names a real handover; kindOf reads names
+ *      the checks know that says what it is (a shape carried: morph; a collapse under a blur: defocus; a reveal through
+ *      an opening or a gap: mask; a push through: zoomThrough; an exit into a point and an entry out of it: breath;
+ *      speed alone: velocity), no kind for more than half of them, and its channels; a converge's lead never under 8
+ *      film frames (at 30 fps a 5-frame collapse reads as a dissolve squeezed into a frame: forensics ghost-cut), the
+ *      other leads at the house rate; every recipe of the form table names a real handover; kindOf reads names
  *      and ids; handoversFor gives the house recipe first; shrink into a chip and converge through a point are
  *      always allowed; devicesFor reads a verb's family.
  *   2. planSpine on a launch spine of four acts over 12 bars at 30 fps: acts contiguous on bar lines (the first a
@@ -92,6 +96,7 @@ console.log(JSON.stringify({
   kinds: S.HANDOVER_KINDS.map((k) => ({ k, ...S.HANDOVERS[k] })),
   table: Object.entries(S.FORM_PAIRS).flatMap(([row, cols]) => Object.entries(cols as object).flatMap(([col, rs]) => (rs as any[]).map((r) => ({ row, col, r })))),
   kindOf: [S.kindOf('grow'), S.kindOf('H3'), S.kindOf('h12'), S.kindOf('slide'), S.kindOf(undefined)],
+  frames: Object.fromEntries([24, 30, 60].map((fps) => [fps, Object.fromEntries(S.HANDOVER_KINDS.map((k) => [k, S.handoverFrames(k, fps)]))])),
   pairs: { pillPage: S.handoversFor('pill', 'page'), cardMark: S.handoversFor('card', 'mark'), threadCount: S.handoversFor('thread', 'count'), wordPage: S.pairRecipes('word', 'page') },
   allows: [S.allows('thread', 'count', 'converge'), S.allows('thread', 'chip', 'shrink'), S.allows('thread', 'count', 'grow'), S.allows('pill', 'page', 'fly')],
   devices: [S.devicesFor('asks'), S.devicesFor('publishes'), S.devicesFor('choosing'), S.devicesFor('ponders'), S.stemVerb('publishes'), S.stemVerb('fills'), S.stemVerb('carries')],
@@ -124,6 +129,15 @@ for (const k of P.kinds) {
   result(total >= k.frames[0] && total <= k.frames[1] + 1, `${k.id} ${k.k}: lead ${k.lead} + land ${k.land} f@60 inside its range ${k.frames.join('-')}`);
 }
 result(P.kinds.every((k) => SEAM_KINDS.includes(k.seam) && k.channels.length > 0 && ['handover', 'scene'].includes(k.draws)), 'every handover has a seam kind the checks know, channels and who draws it');
+// the seam kind each handover really is (references/transitions.md section 3), so a spine film declares a mix of them
+const IS = { grow: 'morph', shrink: 'defocus', swell: 'morph', 'press-open': 'mask', iris: 'mask', 'zoom-into': 'zoomThrough', 'pull-out': 'zoomThrough', fly: 'morph', stay: 'morph', word: 'morph', part: 'mask', converge: 'breath', 'same-surface': 'morph', momentum: 'velocity' };
+const seamOf = Object.fromEntries(P.kinds.map((k) => [k.k, k.seam]));
+const byKind = P.kinds.reduce((m, k) => ({ ...m, [k.seam]: (m[k.seam] ?? 0) + 1 }), {});
+result(Object.entries(IS).every(([k, s]) => seamOf[k] === s) && Math.max(...Object.values(byKind)) <= 7 && Object.keys(byKind).length >= 6,
+  'each handover declares the seam kind it is (collapse under a blur: defocus, opening or gap: mask, push through: zoomThrough, through a point: breath, speed: velocity, a shape carried: morph); no kind for more than half', JSON.stringify(byKind));
+const fr = P.frames;
+result(fr[30].converge[0] === 8 && fr[24].converge[0] === 8 && fr[60].converge[0] === 10 && fr[30].grow[0] === 6 && fr[30].fly[0] === 7 && fr[30].converge[1] === 13,
+  "a converge's lead never under 8 film frames (8 at 24 and 30 fps, the house 10 at 60); the other leads and the landing at the house rate", JSON.stringify({ c24: fr[24].converge, c30: fr[30].converge, c60: fr[60].converge, grow30: fr[30].grow, fly30: fr[30].fly }));
 result(P.kinds.filter((k) => k.channels.includes('E')).length === 13 && P.kinds.find((k) => k.k === 'momentum').channels.join('') === 'M', 'thirteen kinds carry the element; momentum carries speed alone');
 const names = P.kinds.map((k) => k.k);
 result(P.table.length > 30 && P.table.every((c) => (typeof c.r === 'string' ? names.includes(c.r) : c.r.via.every((x) => names.includes(x)) && typeof c.r.through === 'string')), `every recipe of the form table names real handovers (${P.table.length} recipes)`);

@@ -5,7 +5,8 @@
  *
  *   1. Determinism: every kind's state at every frame and sub-frame of its span is the same computed forward,
  *      backward or in a scrambled order (closed form: any frame, any order).
- *   2. House frames: the span is lead + land of lib/spine HANDOVERS at 30 and at 60 fps (the same seconds).
+ *   2. House frames: the span is lead + land of lib/spine HANDOVERS at 30 and at 60 fps (the same seconds), a lead never
+ *      under its leadMin film frames (a converge: 8 at 30 fps, so its collapse reads as a move).
  *   3. Box continuity across the cut: the element is picked up exactly where the outgoing scene draws it (its box under
  *      a moving camera at t0), lands exactly where the incoming scene draws it (under another camera at t1), and no
  *      frame steps further than its neighbours, the cut frame included; the one designed jump (swell, shrink) is
@@ -15,7 +16,8 @@
  *   5. No frame without the element: every frame of a drawn handover shows a container of at least 2 px with a face
  *      or content, and the markup draws it; the scenes' own copies hide exactly inside the span.
  *   6. The swap: one-frame swaps flip on the cut, which is the most blurred frame (shrink, converge), the smallest
- *      (converge) or the fastest (fly); a fade crosses where both contents are nearly gone.
+ *      (converge) or the fastest (fly); a fade crosses where both contents are nearly gone; a grow's cross at 30 fps
+ *      has no one-frame spike (no frame's change of the contents or the shape twice both its neighbours').
  *   7. The camera kinds: zoom-into pushes into the element until it fills the frame on the cut and the next scene opens
  *      still growing; pull-out pulls both scenes about one point; momentum launches one scene and carries the next the
  *      same way. Scene-internal kinds draw nothing and keep the scenes' copies.
@@ -180,6 +182,8 @@ const DRAWN = ['grow', 'shrink', 'swell', 'press-open', 'iris', 'fly', 'converge
 const SCENE = ['stay', 'part', 'same-surface', 'zoom-into', 'pull-out', 'momentum'];
 const ELEMENT = ['grow', 'shrink', 'swell', 'press-open', 'fly', 'converge', 'word', 'stay', 'part', 'same-surface', 'pull-out'];
 const HOUSE = { grow: [12, 18], shrink: [12, 8], swell: [12, 17], 'press-open': [22, 36], iris: [0, 28], 'zoom-into': [22, 28], 'pull-out': [30, 48], fly: [14, 22], stay: [0, 18], word: [0, 36], part: [0, 18], converge: [10, 26], 'same-surface': [0, 36], momentum: [16, 18] };
+// the fewest film frames a lead takes at any rate (lib/spine leadMin): a converge's collapse reads as a move, not a dissolve
+const LEAD_MIN = { converge: 8 };
 const near = (a, b, tol) => a.every((v, i) => Math.abs(v - b[i]) <= tol);
 const cx = (b) => [b[0] + b[2] / 2, b[1] + b[3] / 2];
 const step = (p, q) => { const [ax, ay] = cx(p); const [bx, by] = cx(q); return Math.max(Math.hypot(bx - ax, by - ay), Math.abs(q[2] - p[2]) / 2, Math.abs(q[3] - p[3]) / 2); };
@@ -190,8 +194,9 @@ for (const [k, o] of Object.entries(O)) result(o.same, `${k}: the same state at 
 // 2. house frames
 for (const [k, o] of Object.entries(O)) {
   const [lead, land] = HOUSE[k];
-  const at30 = [100 - Math.round(lead / 2), 100 + Math.max(1, Math.round(land / 2))];
-  result(o.t0 === (lead ? Math.min(at30[0], 100 - 1) : 100) && o.t1 === at30[1] && o.span60[0] === 100 - lead && o.span60[1] === 100 + land, `${k}: spans ${lead} + ${land} f@60 (${o.t0}..${o.t1} at 30 fps, ${o.span60.join('..')} at 60)`);
+  const at30 = [100 - Math.max(Math.round(lead / 2), LEAD_MIN[k] ?? 1), 100 + Math.max(1, Math.round(land / 2))];
+  result(o.t0 === (lead ? Math.min(at30[0], 100 - 1) : 100) && o.t1 === at30[1] && o.span60[0] === 100 - (lead ? Math.max(lead, LEAD_MIN[k] ?? 0) : 0) && o.span60[1] === 100 + land,
+    `${k}: spans ${lead} + ${land} f@60${LEAD_MIN[k] ? `, a lead of ${LEAD_MIN[k]} film frames at least` : ''} (${o.t0}..${o.t1} at 30 fps, ${o.span60.join('..')} at 60)`);
 }
 
 // 3. continuity across the cut, each side under its own camera
@@ -279,6 +284,12 @@ for (const k of ['shrink', 'converge']) {
   const g = grow.find((s, i) => i > 0 && s.show2 !== grow[i - 1].show2);
   const dbl = grow.filter((s) => s.ca > 0.6 && s.cb > 0.6);
   result(g && g.ca <= 0.5 && g.cb <= 0.5 && !dbl.length, `grow: the contents cross-blur round the middle (frame ${g?.f}: ${g?.ca} / ${g?.cb}), never both at full strength`);
+  // the cross at 30 fps has no one-frame spike: no frame changes the contents (opacity on both sides, and the shape's
+  // growth) more than twice as much as both frames around it (forensics reads such a frame as a pop mid-grow)
+  const step = grow.slice(1).map((s, i) => Math.abs(s.ca - grow[i].ca) + Math.abs(s.cb - grow[i].cb));
+  const grew = grow.slice(1).map((s, i) => Math.abs(s.shape[2] - grow[i].shape[2]) + Math.abs(s.shape[3] - grow[i].shape[3]));
+  const spike = (d, floor) => d.findIndex((v, i) => i > 0 && i < d.length - 1 && v > floor && v > 2 * Math.max(d[i - 1], d[i + 1]));
+  result(spike(step, 0.1) < 0 && spike(grew, 8) < 0, 'grow: the contents and the shape change smoothly frame to frame at 30 fps (no one-frame spike)', JSON.stringify({ step: step.map((v) => +v.toFixed(2)), grew: grew.map((v) => Math.round(v)) }));
 }
 
 // 7. the camera kinds and the scene kinds
