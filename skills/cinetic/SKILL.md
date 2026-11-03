@@ -65,8 +65,8 @@ These are the rules every film is held to, with their numbers. The gates named i
    form, verified on the brand's own page within 12 months, in one presentation a film (a chip in the line, pills round
    a centred line, or a wall), never a pill on every line (`logos.mjs check`). The end card is centred, built from the
    film's last element (the last picture's element becomes the mark, the last word the wordmark, the badge spins in),
-   lands centred and holds 2-3 s still or on an eased settle (never a flat drift to the last frame) while the music
-   rings out, the name once and the one fact under it. The logo is the brand's own or built from the film's last
+   lands centred and keeps creeping in about its centre (never a slide off it) while the music rings out and the frame
+   settles out with it, the name once and the one fact under it. The logo is the brand's own or built from the film's last
    element, never a sparkle, a star or a generic glyph (`forensics.py` end-drift, end-centre, audio-end).
 9. **Its own film, never a template.** One world for the whole film, one face and its voices, two
    or three moves, two or three seam kinds, one signature and one end-card design, picked from
@@ -165,7 +165,7 @@ exists); never cut it by hand.
 **5. The product's scenes.** In launch-simple you write `src/product.tsx`: one entry per scene of the spine, a house
 scene filled with the product's real content, or a scene of your own from the kit (`Draw`; `el`, the element's box;
 `Content`, the element alone for the handover). Something purposeful moves in every frame (a hold is the landing tail of
-a move, never still over 0.8 s; the lockup up to 2.5 s); cards are lit or glass, never plain slabs. The kit shows only the film's own content (a part given nothing draws a dashed box and fails precheck;
+a move, never still over 0.8 s, the lockup too); cards are lit or glass, never plain slabs. The kit shows only the film's own content (a part given nothing draws a dashed box and fails precheck;
 [product-ui.md](references/product-ui.md)). Real people, places and objects are real photos or clips with a studio
 finish, never drawn (`node scripts/assets.mjs recipe "<product>"`; [imagery.md](references/imagery.md)). Other products' marks: `node scripts/logos.mjs get <name> --film .`. Before a look:
 `node scripts/precheck.mjs` (seconds: imports, every act at three frames, timing, empty kit parts, text fit). Look
@@ -197,7 +197,7 @@ with the format's variants (it runs `credits.py`: credits go into `CREDITS.md`, 
 | Format | Length | Template | Script | Deliverables |
 |---|---|---|---|---|
 | Launch film | 15-30 s (to 45) | `launch-simple` | what it is, 2-5 things it does, the close | 16:9 master, 9:16 and 1:1 variants, poster |
-| Update film ("vX is out") | 8-20 s | `update` | name + version, a hero shot and a line per change, the 3D mark | master, poster, 9:16 |
+| Update film ("vX is out") | 8-20 s | `update` | one session; the version pill handed on into the 3D mark | master, poster, 9:16 |
 | Product or feature video | 8-30 s | `launch-simple` or `ui-walkthrough` | 3-6 lines | master, poster |
 | UI walkthrough | 20-90 s | `ui-walkthrough` | what it is, one line per step | master, SRT captions |
 | Feature loop | 4-15 s, whole bars | `--template none` | 1-2 lines, reads muted | MP4, WebM, GIF, seamless seam |

@@ -131,29 +131,40 @@ frame, and the porthole's, so forensics `--spine` checks that a crisp element st
 
 **Lines meet the element** (`src/deal.ts` PLACES): the hook's line stands alone and becomes the pill; between, no line
 stands alone:
-- `part` (around, once a film, never on a line carrying a mark): the line builds round a gap, the element flies into it
-  as a rounded window holding its shot (a shot of pictures shows its chosen picture, in the world's duotone); the words
-  leave and the window opens into the frame, handing its picture to the shot through a blur.
+- `part` (around, once a film, never on a line carrying a mark): the line builds round a gap (8 % of the width clear
+  on each side), the element flies into it as a rounded window holding its shot itself (its subject slid into the window,
+  creeping toward the lens while it waits); the words leave and the window opens into the frame: one picture growing,
+  never a second crop of it blended over the shot (two offset silhouettes read as a ghost).
 - `head` (inside): the line arrives as the element lands and rides over it in the shot's space, centred above it (or
   under it when the element fills the top); it leaves once read as the shot's action starts.
 The parted line is the film's statement (a larger size band); the riding lines are set smaller, as the shot's heading.
-The lines rotate their move (`LINES.move`), one whole-line exit a film, the accent on one line in three.
+The lines rotate their move (`LINES.move`: build, open, snap; each builds centred, the line re-centring on the words
+already there, never typed on from a fixed left edge); a parted line takes mask, so its gap holds still for the window.
+One whole-line exit a film, the accent on one line in three. Type sits on the world by its value: no glow or halo round
+a line or the wordmark.
 
 ## 6. The world and the picture rules
 
-- **One world for the whole film** (fx/world `WorldSteps`), dealt among the lit dark fields where glass and rims read
-  (blackField, deepField, electric). nearWhite, paleSky and the photographs (clouds, sky, aerial, sea, nightCity, studio,
-  macro) come by `PIN` when the brief names the place: `node scripts/assets.mjs plate <kind>`, then `--pick <n> --to
+- **One world for the whole film** (fx/world `WorldSteps`), dealt among the lit fields in the brand's light where glass
+  and rims read (deepField, electric). The near-black blackField, nearWhite, paleSky and the photographs (clouds, sky,
+  aerial, sea, nightCity, studio, macro) come by `PIN` or the deck when the brief names the place: `node scripts/assets.mjs plate <kind>`, then `--pick <n> --to
   public/plates --accent '<the accent>'`; a plate is graded and stands soft behind the type.
 - **The world takes one step per act** on the spine's act cuts (lib/spine world steps: enter, closer, light, pull-back:
   a push that carries the cut and lands, the key climbing, a pool of light rising from the floor), and holds inside an act.
-- **Never a still frame:** a held result keeps creeping on the tail of its shot's last move (about 0.07 % a frame at 60
-  fps, about the element), the lockup creeps toward the lens to the last frame. Never a float, a bob or an aimless pan;
-  no card rests tilted.
+- **Never a still frame:** from the element's landing a shot keeps creeping on the tail of the move that brought it in
+  (about the element: it leaves at about 0.3 % a 30 fps frame and decays onto a steady creep, about 8 % over 3 s, so a
+  long shot's element never grows past the frame), through its action and its held result; the hook creeps at half
+  that opening rate while it is read; the lockup creeps toward the lens from the flat mark's
+  landing to the last frame (a 3 % front-loaded start, then 0.1 % a 30 fps frame). Never a float, a bob or an aimless
+  pan; no card rests tilted.
 - **The product's surfaces follow the world:** dark cards with lit rims on a dark world, glass that frosts the world for
   the hero input or a caption; the changed UI fills the frame on its beat (its subject 55-90 % of the frame).
 - **Type from the pairing:** every line centred; the name a wordmark in the hook (tracked so no two letters touch); the
-  version apart from the name, lighter, in the accent.
+  version's pill a solid face in the accent lit from above (never an outlined badge), its numerals in white or the ink,
+  whichever reads on it; at the end the version apart from the name, lighter, in the accent. In the `stack` end the mark
+  lifts and the name rises into its own slot under it through its baseline mask: never through the mark.
+- **A pointer or a fingertip lands clear of the label** it presses (on the button's end), on a decelerating move, and
+  the press answers in the button itself (a tap ring, the state), never a soft second pill behind it.
 
 ## 7. Sound
 

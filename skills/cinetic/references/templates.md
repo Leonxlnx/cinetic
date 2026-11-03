@@ -73,14 +73,23 @@ case, or a scene of your own); the template's `README.md` walks through all thre
 - **Devices by verb.** `src/acts/scenes.tsx`: `wordScene`, `promptScene` (macro-type), `siteScene` (page-fly, then
   push-press on the same surface), `liveScene`, `noticeScene` (toast-stack with its depth ladder), `countScene`
   (glass-counter), `lockupScene`; each with one sharp plane, the kit's cards lit by the key (`Lit`), one camera move a
-  scene that lands on its end (never still over 0.8 s, never a float), its own sounds (`moments`). Other moves and their
-  numbers: `references/motion-library/`.
+  scene, front-loaded and still travelling the same way to the scene's end (`acts/cam.ts` `holdEase`, `creep`: never
+  still over 0.8 s, never a float, never there and back), its own sounds (`moments`). The page is filmed whole with its
+  toolbar while it writes, then one push in toward the toolbar that the button scene carries on to the button: the
+  cursor arrives on a decelerating move once that push has landed and presses right before the handover's lead (the
+  press is the cause of what follows, never a cursor parked on the button). Notices recede up and back behind the front
+  card (frontal depth, rows large enough to read). Lines alone at a cap of 8.6 % of the frame, the claim at 10.8 %.
+  Other moves and their numbers: `references/motion-library/`.
 - **The end.** The last form converges (or swells, or pulls out) into the brand's mark (`scripts/brand.py`; an invented
-  brand gets its own mark, never a sparkle), the name slides out from behind it, the fact under it, the whole creeping 3 %
-  to the last frame, then settling out with the music's ring-out.
+  brand gets its own mark, never a sparkle) large and alone (`LOCK.solo`), which pulls back into the lockup as the name
+  slides out from behind it (drawn under the mark, never through it), the fact under it, a band of light crossing it once
+  it is whole, the whole creeping in to the last frame at the hold rate (`LOCK.creep`); the frame settles into the
+  world's deep tone with the music's ring-out, from just after the final hit to the last frame, and completes there
+  (never cut mid-fade). Every moving plane of the world overscans the frame, so a pull-back never shows an edge.
 - **Sound cut to the picture.** `src/sync.ts`: every handover sounds by its kind (a swell into its cut, a whoosh 4 f
-  before a fly, a suck and a spark on a converge), the keys typed, the press, each notice, the turn's sub drop, one hit
-  on the lockup; `npm run sound` mixes it over the fitted track.
+  before a fly, a suck and a spark on a converge), the keys typed, the press (a `touch` moment: the music breathes before
+  it), each notice, the turn's sub drop at weight 1 (a stop-down before the film's biggest change), one hit on the
+  lockup; `npm run sound` mixes it over the fitted track.
 
 ## update
 
@@ -92,12 +101,15 @@ swell, shrink, or converge through a spark; a two-form shot reaches its button o
 gone by the cut and the next racking in behind the landing element. Each change is filmed by a hero shot that draws the
 element in its form (`src/acts/heroes.tsx`; `src/deal.ts` HERO_META, `heroFit` and the change's `verb`: push-press,
 macro-type, toast-stack, fan-focus, carousel, photo-develop, glass-counter, page-fly, focus-swap, glass-tiles). Its
-line meets the element (`place`: `part`, once, the line parted round a rounded window holding the element that opens
-into the shot; `head`, the line riding over the element as the shot's heading). The lockup grows out of the last form:
+line meets the element (`place`: `part`, once, the line parted round a rounded window holding the shot itself that opens
+into the frame; `head`, the line riding over the element as the shot's heading); every line builds centred (build, open,
+snap re-centre on the words already there; a parted line takes mask). The pill is a solid lit accent face, the type
+never haloed. The lockup grows out of the last form:
 it converges into the mark as a solid (fx/three Logo3D; a CSS-3D solid on software GL) pulling back onto the flat mark,
-the name beside or under it (`end`) and the version landing on the bar line. One lit world (`ground`: blackField,
-deepField or electric dealt; the pale fields and the plates by PIN) steps once per act; held results creep on the tail
-of their move, never still. `SPINE_PLAN` is exported for grid-check `--part spine` and the cues (with each handover's
+the name beside or under it (`end`: under it, the name rises into its own slot as the mark lifts) and the version
+landing on the bar line. One lit world (`ground`: deepField or electric dealt; blackField, the pale fields and the plates
+by PIN or the deck) steps once per act; from the element's landing each shot creeps on the tail of its move at the hold
+rate (the hook at half of it, the lockup to the last frame), never still. `SPINE_PLAN` is exported for grid-check `--part spine` and the cues (with each handover's
 box track for forensics `--spine`). Acts in whole bars (two changes 15-20 s, three 20-25 s). The deal (`src/deal.ts`,
 template.json "slots"): ground, hook, place, end, the hero shots (the deck's `src/dealt.ts`, else the name's) and the
 lines' voice. Slots: `src/content.ts` (`scripts/content.mjs --brief BRIEF.md --fetch --force`) and `src/update.ts` (the
