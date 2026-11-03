@@ -1,6 +1,6 @@
 # The update template
 
-A 15-25 s update film ("vX is out", 2-3 changes; two changes for an 8-20 s spec) laid over the Remotion starter by
+An 8-20 s update film ("vX is out": two changes run 16-19 s, three 20-23 s) laid over the Remotion starter by
 `bash scripts/new-film.sh <dir> --format update` (template.json lists the files it copies and the starter acts it
 removes). The film fills `src/update.ts` (and `src/content.ts`, written from the brief by `scripts/content.mjs`);
 everything else is derived from it or dealt from the product's name, or from the deck (`src/dealt.ts`).

@@ -7,7 +7,8 @@
 // cinetic:placeholder - an invented release of an invented product: write the real version, the session and its case,
 // 2-3 real changes in the order the session meets them (each one plain sentence of 2-6 words that says the result the
 // user sees, never a feature name: scripts/copy-check.py, its verb, and the screen that shows it and the moment it plays,
-// below), in the product's own words; then delete these lines.
+// below), in the product's own words; then delete these lines. Two changes fit the 8-20 s spec (16-19 s); a third runs
+// the film to 20-23 s: write that length in BRIEF.md's spec line, or keep the two the session needs most.
 import { IDENTITY } from './brand/identity';
 
 /**
@@ -110,14 +111,9 @@ export const UPDATE: { name: string; from: string; version: string; session: str
       title: '[Screen title]',
       show: { kind: 'fill', layout: 'list', items: [{ label: '[Item]', meta: '[detail]' }, { label: '[Item]', meta: '[detail]' }, { label: '[Item]', meta: '[detail]' }, { label: '[Item]', meta: '[detail]', accent: true }], noun: ['[item]', '[items]'] },
     },
-    {
-      id: 'third',
-      words: '[Third change in plain words]',
-      key: '[words]',
-      verb: 'count',
-      title: '[Screen title]',
-      show: { kind: 'count', label: '[What is counted]', from: 12, to: 48, unit: '[unit]', sub: '[detail]' },
-    },
+    // a third change (the film runs 20-23 s), e.g. a figure that rises:
+    // { id: 'third', words: '[Third change in plain words]', key: '[words]', verb: 'count', title: '[Screen title]',
+    //   show: { kind: 'count', label: '[What is counted]', from: 12, to: 48, unit: '[unit]', sub: '[detail]' } },
   ],
 };
 

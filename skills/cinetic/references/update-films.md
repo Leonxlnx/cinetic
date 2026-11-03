@@ -24,7 +24,7 @@ The film reads as one sentence: `[Name] [version] [session]: [verb], [verb], [ve
 on Ridge Loop: see, arrive, join"), and its chain as forms joined by handovers: `pill -grow-> photo -converge-> notice
 -grow-> card -same-surface-> button -converge-> mark`. `src/timeline.ts` builds the spine (`SPINE`), plans it on the
 music grid (`SPINE_PLAN`, lib/spine `planSpine`) and derives every frame from it: no carry boxes, no seam pins and no
-arrival shapes to write by hand. Two changes for an 8-20 s update; three run 20-25 s.
+arrival shapes to write by hand. Two changes for an 8-20 s update (16-19 s); three run 20-23 s, so the spec line says so.
 
 ## 2. Start
 
@@ -147,7 +147,8 @@ a line or the wordmark.
 
 - **One world for the whole film** (fx/world `WorldSteps`), dealt among the lit fields in the brand's light where glass
   and rims read (deepField, electric). The near-black blackField, nearWhite, paleSky and the photographs (clouds, sky,
-  aerial, sea, nightCity, studio, macro) come by `PIN` or the deck when the brief names the place: `node scripts/assets.mjs plate <kind>`, then `--pick <n> --to
+  aerial, sea, nightCity, studio, macro) come by `PIN` or the deck when the brief names the place. A world is its kind
+  and its hue: never a recent film's world at this film's hue (`deck.py` deals away from it, `film-diff.mjs` fails it). A plate: `node scripts/assets.mjs plate <kind>`, then `--pick <n> --to
   public/plates --accent '<the accent>'`; a plate is graded and stands soft behind the type.
 - **The world takes one step per act** on the spine's act cuts (lib/spine world steps: enter, closer, light, pull-back:
   a push that carries the cut and lands, the key climbing, a pool of light rising from the floor), and holds inside an act.

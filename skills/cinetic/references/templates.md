@@ -29,6 +29,11 @@ stop`) adds the gap to its one element and 1 s rings out after it.
   as `floor.json` (the unnamed scaffold's deal, measured once), and `node scripts/film-diff.mjs` holds the film to at
   least half its slots off that floor and apart from the last three films (ground, voice, signature, end card, and a
   move set shared at most 25 %): no scaffold render in the film's hour.
+- The place: a world is its kind and its hue (the accent's, through fx/world's window per world; launch-simple's own
+  looks take the accent's hue as it is). Two films in one world at hues under 40 degrees apart stand in the same place
+  even under two ground families: `deck.py` deals away from the last three films' worlds at this film's hue (a deep
+  field at a blue accent after one at a green accent is free) and writes the world and its hue into its deal history;
+  `film-diff.mjs` fails the repeat and `--record` keeps both in the film history.
 
 ## Which one
 
@@ -36,7 +41,7 @@ stop`) adds the gap to its one element and 1 s rings out after it.
 |---|---|---|---|
 | `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing to one case, act by act | a spine (`src/spine.ts`: one sentence as 3-5 acts, one case from the brief, one element whose form changes act to act and is handed on at every scene change), a designed world lit in the brand's hue taking one step per act and turning once, the device each act's verb asks for (macro-type, page-fly, push-press, toast-stack, glass-counter ...), lines alone only for the promise and the claim, the lockup grown out of the last form; the direction you pick from the deck's three sets the world, the voice and the type pairing (`deck.py --direction <id> --why` writes `src/dealt.ts`), never the last films' (`src/recent.ts`) |
 | none (the starter, `--template none`) | 15-45 s | a launch film whose idea is its own device | the dealt direction's skeleton |
-| `update` | 15-25 s | "vX is out": 2-3 changes, played as one session that uses each in turn | a spine: the version's pill is the element, handed from the hook into each change's hero shot (a press at macro scale with the camera following the pointer, a typed request ridden by the camera, notices stacking in depth, a picture developing under glass, a figure counting in glass, a page travelled ...) by a handover at every change (grow, fly, swell, converge through a spark), the same case in every act, each line parted round a porthole holding the element or riding over it, one lit world stepping per act; the last form converges into the brand's mark as a solid pulling back into the lockup with the version |
+| `update` | 8-20 s (two changes; three run 20-23 s) | "vX is out": 2-3 changes, played as one session that uses each in turn | a spine: the version's pill is the element, handed from the hook into each change's hero shot (a press at macro scale with the camera following the pointer, a typed request ridden by the camera, notices stacking in depth, a picture developing under glass, a figure counting in glass, a page travelled ...) by a handover at every change (grow, fly, swell, converge through a spark), the same case in every act, each line parted round a porthole holding the element or riding over it, one lit world stepping per act; the last form converges into the brand's mark as a solid pulling back into the lockup with the version |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
 | `capability-reel` | 15-25 s | only when the brief asks for a wall of the product's breadth (sources, formats, integrations); never the default | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
 | `camera-teaser` | 20-25 s | a dark, fast teaser of a product's screens where the motion is the camera's: whips, pushes, one 3D turn over one layout per shot | the request box arriving tilted in the light, a whip into its close-up and the send button, the window streaming code under the one 3D turn, the proof in depth with the real marks of what it works with, the page with a modal toast, the stages, the mark; each act deals one of two or three devices |
@@ -110,7 +115,7 @@ the name beside or under it (`end`: under it, the name rises into its own slot a
 landing on the bar line. One lit world (`ground`: deepField or electric dealt; blackField, the pale fields and the plates
 by PIN or the deck) steps once per act; from the element's landing each shot creeps on the tail of its move at the hold
 rate (the hook at half of it, the lockup to the last frame), never still. `SPINE_PLAN` is exported for grid-check `--part spine` and the cues (with each handover's
-box track for forensics `--spine`). Acts in whole bars (two changes 15-20 s, three 20-25 s). The deal (`src/deal.ts`,
+box track for forensics `--spine`). Acts in whole bars; a two-form shot's button lands on the first beat its element is in, never the act's middle beat (two changes run 16-19 s at 112-128 BPM, inside the spec's 8-20 s; three run 20-23 s: write that length in the spec line, or keep two). The deal (`src/deal.ts`,
 template.json "slots"): ground, hook, place, end, the hero shots (the deck's `src/dealt.ts`, else the name's) and the
 lines' voice. Slots: `src/content.ts` (`scripts/content.mjs --brief BRIEF.md --fetch --force`) and `src/update.ts` (the
 version, the one before it, the session and its case, the changes: `words`, `key`, `verb`, the screen and its moment

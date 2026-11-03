@@ -190,10 +190,16 @@ const END_BEATS = 8;
 const HOOK_BARS = 1;
 
 /**
+ * A two-form shot's second form (the same-surface change: its action) starts on this beat of its act, counted from the
+ * act's first beat: the first whole beat once the element is in and a riding line is read. planSpine shares an act's
+ * beats evenly between its scenes, which put the action on the act's middle beat and doubled an act whose element comes
+ * late (a parted line: a two-change film ran 20 s, now 18); SPINE_PLAN below moves the change to this beat.
+ */
+const GO_BEAT: (number | undefined)[] = [];
+/**
  * Change i's act in whole bars: the element's arrival (the handover's land, or for a parted line its read and the
  * porthole opening), the shot's action and its result held, the line's read, the next handover's lead; the last act adds
- * the lockup's beats. A shot of two forms starts its action on the act's middle beat (where planSpine puts the second
- * scene: the same-surface change).
+ * the lockup's beats. Length (112-128 BPM): two changes run 16-19 s (the spec band 8-20 s), three 20-23 s.
  */
 const actBars = (i: number): number => {
   const c = UPDATE.changes[i];
@@ -205,17 +211,21 @@ const actBars = (i: number): number => {
   const two = formsOf(i).length > 1;
   const last = i === N - 1;
   for (let bars = 1; bars <= 12; bars++) {
-    const beats = bars * 4 + (last ? END_BEATS : 0);
-    const body = beats - (last ? END_BEATS : 0); // the change's own beats before the lockup
+    const body = bars * 4; // the change's own beats before the lockup
     const span = beat(body) - beat(0);
     const hinOf = place === 'part' ? landIn + Math.max(R, f60(40)) + Math.round(0.3 * EXIT_F) + f60(IRIS60) : landIn;
-    const mid = beat(Math.round((two ? body / 2 : 0))) - beat(0);
-    const go = two ? Math.max(mid, hinOf + f60(hf.pre)) : hinOf + f60(hf.pre);
-    if (two && go > mid) continue; // the action must start on the same-surface change
+    // a riding line is read (to within a beat) before the camera pushes past it to the button; it leaves as the push starts
+    const ready = Math.max(hinOf + f60(hf.pre), two && place === 'head' ? Math.max(0, landIn - f60(10)) + R - BEAT : 0);
+    const gb = two ? Math.max(1, Math.ceil((ready - 0.5) / BEAT)) : 0;
+    if (two && gb >= body) continue; // the same-surface change needs a beat of the act after it
+    const go = two ? beat(gb) - beat(0) : ready;
     const hit = go + f60(hf.act);
     const end = hit + Math.round((last ? SHOW.last : SHOW.result) * FPS) + leadOut;
     const lineEnd = place === 'head' ? landIn + R + EXIT_F + leadOut : 0;
-    if (Math.max(end, lineEnd) <= span) return bars;
+    if (Math.max(end, lineEnd) <= span) {
+      GO_BEAT[i] = two ? gb : undefined;
+      return bars;
+    }
   }
   return 12;
 };
@@ -278,7 +288,26 @@ SPINE.end = { via: 'converge', share: END_BEATS / ((BARS_OF[N] + END_BEATS / 4) 
 /** The total bars of the body. */
 const BODY_BARS = BARS_OF.reduce((a, v) => a + v, 0) + END_BEATS / 4;
 /** The plan the checks read (grid-check --part spine, export-cues): acts, scenes, changes, lines, the world's steps. */
-export const SPINE_PLAN: SpinePlan = planSpine(SPINE, { fps: FPS, b, bars: BODY_BARS });
+export const SPINE_PLAN: SpinePlan = (() => {
+  const p = planSpine(SPINE, { fps: FPS, b, bars: BODY_BARS });
+  // retime: a two-form shot's same-surface change moves from the act's middle beat to its action's beat (GO_BEAT)
+  const scenes = p.scenes.map((s) => ({ ...s }));
+  let bar0 = 1;
+  p.acts.forEach((act, a) => {
+    const own = act.scenes.map((k) => scenes[k]).filter((s) => s.form !== 'mark');
+    const gb = a > 0 ? GO_BEAT[a - 1] : undefined;
+    if (gb !== undefined && own.length === 2) own[0].to = own[1].from = b(bar0 + Math.floor(gb / 4), gb % 4);
+    bar0 += act.bars;
+  });
+  const downbeats = new Set(Array.from({ length: Math.ceil(BODY_BARS) + 1 }, (_, k) => b(1 + k)));
+  const changes = p.changes.map((c) => {
+    const at = scenes[c.to.scene].from;
+    if (at === c.at) return c;
+    const [lead, land] = leadLand(c.kind as HandoverKind);
+    return { ...c, at, span: [at - lead, at + land] as [number, number], downbeat: downbeats.has(at) };
+  });
+  return { ...p, scenes, changes };
+})();
 
 /** Where each act starts and ends (absolute frames): 0 the hook, i + 1 change i. */
 const ACTS = SPINE_PLAN.acts;
