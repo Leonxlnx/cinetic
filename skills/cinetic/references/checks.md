@@ -47,7 +47,7 @@ void, no plain card slab); precheck `--ship`; layout-audit passing with its plac
 (statements centred 80 % of their time, in the middle band 85 %, none flush left at the top or bottom, one text-top
 split at most (a line above a picture filling the rest of the frame), one split layout per 30 s); forensics passing on
 the master (its seam checks: every hard cut carries a device, at most two ground flips, no seam kind over 45 % of five
-or more changes); `logos.mjs check` (current marks, every brand verified on its own page within 12 months);
+or more changes); `logos.mjs check` (current marks, every brand verified on its own page within 12 months, no drawn or inline stand-in for a real company's mark: its official file through `logos.mjs get`);
 `film-diff.mjs` (ground, voice, signature and end card apart from the last three films, the move set at most 25 %
 shared, a template film half its slots off the floor); the end card centred, built from the last element and held 2-3
 s (grid-check reads the template's `end_hold`); the ground family's tokens from `palette.py --family`; the sound gates

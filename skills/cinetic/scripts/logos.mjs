@@ -29,6 +29,11 @@
  * or was verified over 12 months ago (the row's "verified", else the table's "checked"). A brand the table does not
  * list is taken as before, unchecked.
  *
+ * Never a drawn stand-in: check also fails a look-alike of a listed brand's mark drawn in the film's code (a component
+ * named for the brand's logo that draws SVG inline, a map key named for it holding path data, an inline <svg> labelled
+ * with it) and an image named for the brand that the record does not list. The official file comes through get (an
+ * open collection, or the brand's own press-kit file with --file); the film's own mark in src/brand/ is its own.
+ *
  * Collections (each checked on its own page, 2026-10-27):
  *   gilbarbara  gilbarbara/logos, the SVG Logos set: full-colour marks and wordmarks, CC0 1.0 (LICENSE.txt).
  *   svgl        svgl.app: marks, light and dark variants and wordmarks; the repository is MIT; its API asks
@@ -1585,10 +1590,138 @@ export function checkMarks(film, table = loadBrands()) {
   return rows;
 }
 
+// ------------------------------------------------------------------------------------------------ stand-ins
+/** Brand words too common to name a brand on their own after Icon / Mark / Glyph (a close X, a zoom glyph, a cursor). */
+const AMBIGUOUS = new Set(['x', 'box', 'zoom', 'linear', 'meta', 'cursor', 'threads', 'messenger', 'safari', 'android', 'apple', 'notion', 'framer', 'loom', 'canva', 'miro']);
+const LOGO_WORDS = /(Logo|Logomark|Wordmark|Brandmark|Brand|Mark|Icon|Glyph|Badge|Symbol)/;
+const DRAWS = /<svg\b|<path\b|<circle\b|<polygon\b|<ellipse\b|\bd=\{?["'`]\s*[Mm]\s*-?[\d.]|["'`][Mm]\s*-?[\d.]+[\s,]+-?[\d.]+\s*[LlCcHhVvQqSsAaZz]/;
+const OFFICIAL = /staticFile\(|['"`/]logos\/|<AppIcon\b|<LogoChip\b|<InlineLogo\b|\blogo=\{?["'`]|<Img\b/;
+const compact = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+/** Every brand word of the table (name, slug, aliases) compacted, to its brand row, plus former names (twitter, vscode). */
+function brandWords(table) {
+  const m = new Map();
+  for (const b of Object.values(table.brands)) for (const k of [b.name, b.slug, ...(b.aliases || [])]) if (compact(k)) m.set(compact(k), b);
+  const extra = { twitter: 'x', vscode: 'visual-studio-code', gdrive: 'google-drive', gcal: 'google-calendar', youtubemusic: 'youtube', msteams: 'microsoft-teams', teams: 'microsoft-teams', outlook: 'microsoft-outlook', excel: 'microsoft-excel', powerpoint: 'microsoft-powerpoint', onedrive: 'microsoft-onedrive', chrome: 'google-chrome', copilot: 'github-copilot' };
+  for (const [k, slug] of Object.entries(extra)) if (table.brands[slug] && !m.has(k)) m.set(k, table.brands[slug]);
+  return m;
+}
+/** The brand an identifier names with a logo word (SlackLogo, logoFigma, GithubMark, IconNotion), or null. */
+function brandOfIdent(id, words) {
+  const mm = id.match(new RegExp(`^(.*?)${LOGO_WORDS.source}(.*)$`, "i"));
+  if (!mm) return null;
+  const word = mm[2];
+  for (const part of [mm[1], mm[3]]) {
+    const k = compact(part);
+    if (!k || !words.has(k)) continue;
+    if (AMBIGUOUS.has(k) && !/logo|wordmark|brand/i.test(word)) continue;
+    return words.get(k);
+  }
+  return null;
+}
+function codeFiles(dir, out = [], depth = 0) {
+  let list = [];
+  try { list = fs.readdirSync(dir, { withFileTypes: true }); } catch { return out; }
+  for (const d of list) {
+    if (d.name.startsWith('.') || d.name === 'node_modules' || d.name === 'out') continue;
+    const p = path.join(dir, d.name);
+    if (d.isDirectory() && depth < 8) codeFiles(p, out, depth + 1);
+    else if (d.isFile() && /\.(tsx|ts|jsx|js|mjs)$/i.test(d.name)) out.push(p);
+  }
+  return out;
+}
+/**
+ * Drawn or inline stand-ins for real companies' marks in a film: a mark of a brand the table lists must be its official
+ * file (an open collection through `get`, or the brand's own press-kit file through `get --file`), never a look-alike
+ * drawn in code or a file of unknown origin. Reads the film's src/ (its own mark in src/brand/ and the kit's file reader
+ * are left out) and its public/ and src/ asset files. Rows: { file, line, brand, slug, why }.
+ *   - a component or constant named for a brand's logo (SlackLogo, GithubMark, logoFigma) that draws SVG inline;
+ *   - an object key named for a brand whose value is SVG markup or path data (a map of hand-drawn marks);
+ *   - an inline <svg> labelled with a brand (aria-label, title, data-logo, data-brand, <title>);
+ *   - an image or SVG file named for a brand that the film's logo record does not list (no provenance).
+ */
+export function standIns(film, table = loadBrands()) {
+  const words = brandWords(table);
+  const rows = [];
+  const src = path.join(film, 'src');
+  const skip = (p) => {
+    const r = path.relative(src, p).split(path.sep).join('/');
+    return r.startsWith('brand/') || r === 'logos.ts' || r === 'kit/logos.tsx';
+  };
+  for (const p of codeFiles(src)) {
+    if (skip(p)) continue;
+    let text = '';
+    try { text = fs.readFileSync(p, 'utf8'); } catch { continue; }
+    if (!DRAWS.test(text)) continue;
+    const rel = path.relative(film, p).split(path.sep).join('/');
+    const lines = text.split(/\r?\n/);
+    const lineOf = (i) => text.slice(0, i).split('\n').length;
+    // 1. a declaration named for a brand's logo whose body draws inline (up to the next top-level declaration)
+    const decl = /^(?:export\s+)?(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/;
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(decl);
+      if (!m) continue;
+      const brand = brandOfIdent(m[1], words);
+      if (!brand) continue;
+      let j = i + 1;
+      while (j < lines.length && !decl.test(lines[j])) j++;
+      const body = lines.slice(i, j).join('\n');
+      if (DRAWS.test(body) && !OFFICIAL.test(body)) rows.push({ file: rel, line: i + 1, brand: brand.name, slug: brand.slug, why: `${m[1]} draws ${brand.name}'s mark inline` });
+    }
+    // 2. an object key named for a brand whose value is SVG markup or path data
+    const key = /(?:^|[{,\s])(?:(['"])([^'"\n]{1,40})\1|([A-Za-z_$][\w$]*))\s*:\s*/g;
+    let km;
+    while ((km = key.exec(text))) {
+      const k = compact(km[2] || km[3]);
+      if (!k || !words.has(k) || AMBIGUOUS.has(k)) continue;
+      const value = text.slice(km.index + km[0].length, km.index + km[0].length + 400).split(/\n\s*[\w'"]+\s*:/)[0];
+      if (DRAWS.test(value.slice(0, 300)) && !OFFICIAL.test(value.slice(0, 300))) {
+        const b = words.get(k);
+        rows.push({ file: rel, line: lineOf(km.index + 1), brand: b.name, slug: b.slug, why: `the key "${km[2] || km[3]}" holds a drawn ${b.name} mark (SVG markup or path data)` });
+      }
+    }
+    // 3. an inline <svg> labelled with a brand
+    const lab = /<svg\b[^>]*?\b(?:aria-label|title|data-logo|data-brand)=\{?["'`]([^"'`]{1,40})["'`]|<title>([^<]{1,40})<\/title>/g;
+    let lm;
+    while ((lm = lab.exec(text))) {
+      const k = compact(lm[1] || lm[2]);
+      if (!words.has(k)) continue;
+      const b = words.get(k);
+      rows.push({ file: rel, line: lineOf(lm.index + 1), brand: b.name, slug: b.slug, why: `an inline <svg> labelled "${lm[1] || lm[2]}" draws ${b.name}'s mark` });
+    }
+  }
+  // 4. an image or SVG file named for a brand that the logo record does not list
+  const rec = readRecord(film);
+  const listed = new Set(Object.values(rec.logos).flatMap((e) => Object.values(e.files || {}).map((f) => path.resolve(film, 'public', f.path))));
+  const assets = (dir, out = [], depth = 0) => {
+    let list = [];
+    try { list = fs.readdirSync(dir, { withFileTypes: true }); } catch { return out; }
+    for (const d of list) {
+      if (d.name.startsWith('.') || d.name === 'node_modules' || d.name === 'out' || d.name === 'baked') continue;
+      const p = path.join(dir, d.name);
+      if (d.isDirectory() && depth < 6) assets(p, out, depth + 1);
+      else if (d.isFile() && /\.(svg|png|webp|jpe?g|avif)$/i.test(d.name)) out.push(p);
+    }
+    return out;
+  };
+  for (const p of [...assets(path.join(film, 'public')), ...assets(src)]) {
+    if (listed.has(path.resolve(p)) || (p.startsWith(src) && skip(p))) continue;
+    const toks = path.basename(p).replace(/\.[^.]+$/, '').toLowerCase().split(/[-_.\s]+/).filter(Boolean);
+    const joined = compact(path.basename(p).replace(/\.[^.]+$/, '').replace(/[-_.\s]+(logo|icon|mark|wordmark|dark|light|white|black|mono|color|colour)$/i, ''));
+    const hit = [joined, ...toks.filter((t) => !AMBIGUOUS.has(t) && t.length > 2)].find((t) => words.has(t));
+    if (!hit || (AMBIGUOUS.has(hit) && !toks.some((t) => /^(logo|wordmark|brand)$/.test(t)))) continue;
+    const b = words.get(hit);
+    rows.push({ file: path.relative(film, p).split(path.sep).join('/'), line: 0, brand: b.name, slug: b.slug, why: `a file named for ${b.name} that the logo record does not list (no provenance: a drawn copy or an unchecked download)` });
+  }
+  return rows;
+}
+
 function cmdCheck(args) {
   const film = path.resolve(args._[0] || args.film || '.');
   if (!fs.existsSync(path.join(film, 'public'))) throw new Usage(`${film} has no public/ folder: name a film project (check <film>)`);
   const { record, problems } = checkRecord(film);
+  const fakes = standIns(film);
+  for (const s of fakes) problems.push(`STAND-IN ${s.file}${s.line ? `:${s.line}` : ''}: ${s.why}. A real company's mark is its official file: node scripts/logos.mjs get ${s.slug} --film <film> `
+    + `(open collections: svgl, Simple Icons, SVG Logos, Wikimedia Commons), or the brand's own press-kit file with get ${s.slug} --file <svg>; then <AppIcon logo="${s.slug}" /> or <LogoChip logo="${s.slug}" /> (kit/logos.tsx)`);
   const rows = checkMarks(film);
   const old = rows.filter((r) => r.status === 'outdated');
   const table = loadBrands();
@@ -1623,7 +1756,9 @@ export const USAGE = `logos.mjs: real company and product marks in their officia
   list   [--film .] [--json] [--write]      the film's marks (--write rewrites src/logos.ts from the record)
   check  [<film>] [--json]                  every file present, every source with its licence, every owner named,
                                             no retired mark (record files and any .svg under public/), and every brand
-                                            shown verified on its own page within 12 months: exit 1 if one fails
+                                            shown verified on its own page within 12 months, and no drawn stand-in
+                                            for a listed brand (inline SVG named or labelled for it, or an unlisted file
+                                            named for it): exit 1 if one fails
   --file <svg>       get: the brand's own file from its brand page (when no open collection draws the current mark)
   --allow-outdated   get: keep a retired mark knowingly (check still flags it)
 
