@@ -96,13 +96,15 @@ const Glow: React.FC<{ f: number; at: number; x: number; y: number; r: number; f
 /**
  * (Drawn on the scenes' own cards, never inside a handover's carried content: there the fall-off would melt the
  * element's edge into a light stage, and the carried element must stay the crispest thing in the frame.)
- * The key's light across a card: a face lit from above-left falls off toward the far bottom corner (5-7 L* across it,
- * never a flat slab), a bright rim along its top edge, a thin shade inside its bottom edge (its thickness). Laid over a
- * kit card (its own face, hairline and shadows stay), multiplied so the words keep their ink.
+ * The key's light across a card: a bright rim along its top edge and a thin shade inside its bottom edge (its
+ * thickness). A kit card (kit/card Card, every kit/screens Panel) lights its own face (the key's fall-off from the upper
+ * left, 6-7 L* across: look-audit card-slab passes it), so over one the rim is all this adds; `face` lays the fall-off
+ * too (5-7 L* toward the far bottom corner, multiplied so the words keep their ink) on a surface the template draws
+ * itself (the mark's tile).
  */
-export const Lit: React.FC<{ w: number; h: number; r: number; x?: number; y?: number; dark?: boolean; k?: number }> = ({ w, h, r, x = 0, y = 0, dark = false, k = 1 }) => (
+export const Lit: React.FC<{ w: number; h: number; r: number; x?: number; y?: number; dark?: boolean; k?: number; face?: boolean }> = ({ w, h, r, x = 0, y = 0, dark = false, k = 1, face = false }) => (
   <>
-    <div style={{ position: 'absolute', left: x, top: y, width: w, height: h, borderRadius: r, pointerEvents: 'none', mixBlendMode: 'multiply', background: `linear-gradient(166deg, rgba(255, 255, 255, 0) 0%, ${withAlpha(mixColor(C.ink, C.accent, 0.35), dark ? 0.22 : 0.15)} 100%)` }} />
+    {face ? <div style={{ position: 'absolute', left: x, top: y, width: w, height: h, borderRadius: r, pointerEvents: 'none', mixBlendMode: 'multiply', background: `linear-gradient(166deg, rgba(255, 255, 255, 0) 0%, ${withAlpha(mixColor(C.ink, C.accent, 0.35), dark ? 0.22 : 0.15)} 100%)` }} /> : null}
     <div style={{ position: 'absolute', left: x, top: y, width: w, height: h, borderRadius: r, pointerEvents: 'none', boxShadow: `inset 0 ${(2 * k).toFixed(2)}px 0 rgba(255, 255, 255, ${dark ? 0.28 : 1}), inset 0 ${(-2 * k).toFixed(2)}px 0 ${withAlpha(mixColor(C.ink, C.accent, 0.3), 0.08)}` }} />
   </>
 );
@@ -673,7 +675,7 @@ export const lockupScene = (P: LockupSpec): SceneDef => {
               <>
                 <div style={{ position: 'absolute', inset: 0, borderRadius: mk * 0.24, background: C.white, boxShadow: `0 ${mk * 0.08}px ${mk * 0.24}px ${withAlpha(MASK, 0.22)}` }} />
                 <div style={{ position: 'absolute', left: mk * 0.19, top: mk * 0.19 }}>{P.mark(mk * 0.62, C.accent)}</div>
-                <Lit w={mk} h={mk} r={mk * 0.24} />
+                <Lit w={mk} h={mk} r={mk * 0.24} face />
               </>
             ) : (
               P.mark(mk, ink)
