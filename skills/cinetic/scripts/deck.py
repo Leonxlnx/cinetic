@@ -1505,7 +1505,7 @@ def template_preview(d, inp, seed, data, root, history_on, devices, floor):
     pal = deal_slot(d, 'palette', seed)
     fam = deal_family(data, pal, seed, d['id'], recent_grounds(history_on))
     sh = {'direction': d, 'ground_family': fam, 'name': project_name(root) or '', 'input': inp}
-    deal, _ = template_deal(sh, devices, floor, recent_template(history_on)) if devices else ({}, {})
+    deal, _ = template_deal(sh, devices, floor, recent_template(history_on), world_context(root, inp, history_on)) if devices else ({}, {})
     lib = creative_library(root)
     c = deal_creative(lib, project_name(root), inp.get('brief', ''), inp.get('have', ()), recent_creative(history_on), direction=d,
                       photos=photos_known(inp, root))
@@ -1523,7 +1523,9 @@ def template_preview(d, inp, seed, data, root, history_on, devices, floor):
     world = deal.get('ground') if deal.get('ground') in WORLD_KINDS else None
     hc = deal_hero(hlib, project_name(root), inp.get('brief', ''), inp.get('have', ()), recent_hero(history_on), direction=d, world=world, root=root) if hlib else None
     if world:
-        lines.append(f'**World.** `{world}`' + (' (a photograph: assets.mjs plate fetches it)' if world in PLATE_WORLDS else '') + '.')
+        wc = world_context(root, inp, history_on)
+        hue = world_hue(world, wc['accent'], wc['template'])
+        lines.append(f'**World.** `{world}`' + (f' at hue {hue}' if hue is not None and world not in NEUTRAL_WORLDS else '') + (' (a photograph: assets.mjs plate fetches it)' if world in PLATE_WORLDS else '') + '.')
     if hc:
         hby = {h['id']: h for h in hlib}
         lines.append('**Hero shots.** ' + '; '.join(f'`{i}` ({hby.get(i, {}).get("about", "")[:80]})' for i in hc['deal']) + '.')
@@ -2153,6 +2155,95 @@ WORLD_KINDS = ('nearWhite', 'paleSky', 'blackField', 'deepField', 'electric', 'c
 PLATE_WORLDS = ('clouds', 'sky', 'aerial', 'sea', 'nightCity', 'studio', 'macro')
 DARK_WORLDS = ('blackField', 'deepField', 'nightCity', 'electric', 'clouds', 'aerial', 'sea', 'macro')
 NIGHT_WORLDS = ('blackField', 'deepField', 'nightCity')
+# A world is its kind AND its hue (OKLCH degrees): a deep field at a green accent and one at a blue accent are two places,
+# two films at one kind and one hue the same place. Hues closer than WORLD_SAME_HUE read as one; the near-neutral worlds
+# show too little hue to tell two films apart. world_hue() mirrors the pictures: launch-simple lights its looks in the
+# accent's own hue (src/world.tsx), the starter's fx/world reads it through a window per world (worlds.ts WORLD_HUE:
+# lo, hi, the cool default outside it). The deal leaves out a world a recent film stood in at this film's hue, and
+# records the world and its hue in the deal history (film-diff.mjs --record keeps them in the film history).
+WORLD_SAME_HUE = 40
+NEUTRAL_WORLDS = ('blackField', 'nearWhite', 'studio')
+FX_WORLD_HUE = {'electric': (228, 266, 258), 'deep': (195, 266, 252), 'plate': (195, 266, 236), 'neutral': (140, 266, 245)}
+
+
+def world_hue(kind, accent, template=None):
+    """The hue (OKLCH degrees, rounded) world `kind` takes in a film whose accent is `accent`, else None."""
+    if kind not in WORLD_KINDS or not (isinstance(accent, str) and HEX.match(accent)):
+        return None
+    _, c, h = hex_oklch(accent)
+    if template == 'launch-simple':
+        return round(h) % 360
+    win = 'electric' if kind == 'electric' else 'deep' if kind in ('deepField', 'nightCity') else 'neutral' if kind in NEUTRAL_WORLDS else 'plate'
+    lo, hi, dflt = FX_WORLD_HUE[win]
+    return round(h) % 360 if c >= 0.04 and lo <= h < hi else dflt
+
+
+def same_place(kind, hue, other, other_hue):
+    """Two films stand in the same place: one world kind, and a hue under WORLD_SAME_HUE apart (or a neutral world, or
+    a hue nobody recorded)."""
+    if kind != other:
+        return False
+    if kind in NEUTRAL_WORLDS or not isinstance(hue, (int, float)) or not isinstance(other_hue, (int, float)):
+        return True
+    d = abs(hue - other_hue) % 360
+    return min(d, 360 - d) < WORLD_SAME_HUE
+
+
+def _dir_key(p):
+    return os.path.normcase(os.path.normpath(os.path.abspath(p))) if p else None
+
+
+def project_accent(root):
+    """The accent of a project (src/brand/tokens.ts `accent: '#RRGGBB'`), else None."""
+    p = os.path.join(root, 'src', 'brand', 'tokens.ts')
+    try:
+        with open(p, encoding='utf-8') as fh:
+            m = re.search(r"""\baccent:\s*['"](#[0-9A-Fa-f]{6})['"]""", fh.read())
+    except OSError:
+        return None
+    return m.group(1).upper() if m else None
+
+
+def project_template(root):
+    try:
+        with open(os.path.join(root, 'film.json'), encoding='utf-8') as fh:
+            t = json.load(fh).get('template')
+        return t if isinstance(t, str) else None
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+def recent_worlds(history_on, skip_dir=None):
+    """[(world, hue)] of the last three films, newest first: the film history (devices.world and .hue, else its deal's
+    ground), then the deal history (each template deal's world and hue: a film dealt but not yet recorded counts); a film
+    counts once (by its folder), and this film's own earlier deals never."""
+    rows = []
+    for f in film_history(history_on):
+        dv = f.get('devices') or {}
+        rows.append((dv.get('world') or (f.get('deal') or {}).get('ground'), dv.get('hue'), f.get('dir')))
+    rows += [(h.get('world'), h.get('hue'), h.get('dir')) for h in read_history(history_on) if h.get('world')]
+    out, seen, own = [], set(), _dir_key(skip_dir)
+    for w, hue, d in rows:
+        k = _dir_key(d)
+        if w not in WORLD_KINDS or (k and k == own) or (k and k in seen):
+            continue
+        if k:
+            seen.add(k)
+        out.append((w, hue if isinstance(hue, (int, float)) else None))
+    return out[:3]
+
+
+def world_context(root, inp, history_on):
+    """What the world deal reads: the recent worlds, this film's accent and its template."""
+    acc = None
+    if (inp or {}).get('brand'):
+        try:
+            acc = read_brand(inp['brand'])['accent']
+        except SystemExit:
+            acc = None
+    return {'recent': recent_worlds(history_on, root), 'accent': acc or project_accent(root), 'template': project_template(root)}
+
+
 FAMILY_WORLDS = {
     'nearWhite': ('nearWhite', 'studio', 'paleSky', 'sky'), 'lightStudio': ('studio', 'nearWhite', 'paleSky'),
     'softSky': ('paleSky', 'sky', 'clouds'), 'gradientField': ('paleSky', 'sky', 'electric'),
@@ -2247,10 +2338,11 @@ def recent_template(history_on):
     return out
 
 
-def template_deal(sh, devices, floor, recent=None):
+def template_deal(sh, devices, floor, recent=None, place=None):
     """The direction mapped onto the template's slots: {slot: choice}, and {slot: why}. Each slot takes the first of the
     direction's own preferences that the last three films did not play (else the first), and at least half the slots
-    differ from the template's floor (the scaffold's own look), the least telling slots giving way first."""
+    differ from the template's floor (the scaffold's own look), the least telling slots giving way first. A world
+    (`ground` holding worlds) is fresh unless a recent film stood in it at this film's hue (`place`: world_context)."""
     d = sh['direction']
     seams = list(d['cuts'].get('seams') or [])
     modes = d['type'].get('modes') or ['build']
@@ -2277,21 +2369,32 @@ def template_deal(sh, devices, floor, recent=None):
         'camera': ((['land', 'still'] if motion in LAND_MOTIONS else ['still', 'land']), f'camera {motion}'),
     }
     recent = recent or {}
-    deal, why, order = {}, {}, {}
+    deal, why, order, fresh_of = {}, {}, {}, {}
+    wc = place or {}
+    hue_of = lambda c: world_hue(c, wc.get('accent'), wc.get('template'))  # noqa: E731
     for slot, choices in devices.items():
         p, reason = pref.get(slot, ([], 'nothing in the direction'))
         ranked = [c for c in p if c in choices] + [c for c in choices if c not in p]
         order[slot] = ranked
-        fresh = [c for c in ranked if c not in recent.get(slot, [])]
+        if slot == 'ground' and place is not None and any(c in WORLD_KINDS for c in ranked):
+            # the world and its hue: a kind a recent film stood in is free again at a hue WORLD_SAME_HUE or more away
+            fresh = [c for c in ranked if not any(same_place(c, hue_of(c), w, h) for w, h in wc.get('recent', []))]
+            taken = "stood in a recent film's world at this hue"
+        else:
+            fresh = [c for c in ranked if c not in recent.get(slot, [])]
+            taken = "was a recent film's"
+        fresh_of[slot] = fresh
         deal[slot] = (fresh or ranked)[0]
-        why[slot] = reason + ('' if deal[slot] == ranked[0] else f" (its first choice, {ranked[0]}, was a recent film's)")
+        why[slot] = reason + ('' if deal[slot] == ranked[0] else f" (its first choice, {ranked[0]}, {taken})")
+        if slot == 'ground' and place is not None and deal[slot] in WORLD_KINDS and hue_of(deal[slot]) is not None:
+            why[slot] += f'; hue {hue_of(deal[slot])}'
     if floor:
         slots = [x for x in devices if x in floor]
         for slot in ('camera', 'seamAT', 'seamAA', 'end', 'voice', 'seamTA', 'ground'):
             if 2 * sum(deal[x] != floor[x] for x in slots) >= len(slots):
                 break
             if slot in slots and deal[slot] == floor[slot]:
-                alt = next((c for c in order[slot] if c != floor[slot]), None)
+                alt = next((c for c in order[slot] if c != floor[slot] and c in fresh_of[slot]), None) or next((c for c in order[slot] if c != floor[slot]), None)
                 if alt:
                     deal[slot] = alt
                     why[slot] += f" (moved off the template's own {floor[slot]}: half the slots differ from the scaffold)"
@@ -2544,7 +2647,8 @@ def write_template_deal(sh, outdir):
         sh.pop('template_deal', None)
         return
     sh['name'] = project_name(root) or ''
-    deal, why = template_deal(sh, devices, floor, recent_template(sh.get('history', True)))
+    wc = world_context(root, sh.get('input') or {}, sh.get('history', True))
+    deal, why = template_deal(sh, devices, floor, recent_template(sh.get('history', True)), wc)
     sh.pop('name', None)
     # the hero shots (a template that plays them), weighted by the world just dealt
     hlib = hero_library(root)
@@ -2556,6 +2660,9 @@ def write_template_deal(sh, outdir):
     else:
         sh.pop('hero', None)
     sh['world'] = world
+    # the world's hue, recorded with it (direction.json, the deal history): the next films stay out of this place
+    sh['world_hue'] = world_hue(world, wc['accent'], wc['template']) if world else None
+    sh['project_dir'] = root
     rel = 'src/dealt.ts'
     with open(os.path.join(root, 'src', 'dealt.ts'), 'w', encoding='utf-8', newline='\n') as fh:
         fh.write(dealt_body(sh['direction']['id'], deal, sh.get('creative'), hc))
@@ -2860,6 +2967,7 @@ def main():
     md = write_sheet(sh, a.out, data, library)
     write_history(history_on, {'direction': d['id'], 'format': a.format, 'signature': d['signature']['family'], 'lockup': d['lockup']['kind'],
                                **({'ground': sh['ground_family']['id']} if sh.get('ground_family') else {}),
+                               **({'world': sh['world'], 'hue': sh.get('world_hue'), 'dir': sh.get('project_dir')} if sh.get('world') else {}),
                                **({'creative': sh['creative']['deal']} if sh.get('creative') else {}),
                                **({'hero': sh['hero']['deal']} if sh.get('hero') else {}),
                                **({'type': sh['type_pair']['id']} if sh.get('type_pair') else {})})

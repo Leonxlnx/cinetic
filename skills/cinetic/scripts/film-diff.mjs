@@ -29,6 +29,12 @@
  *             last film's (warn); --record keeps them, so the next deal (deck.py, deal.ts) plays others
  *   hero      the hero shots (film.json devices.hero, else src/deal.ts HERO_DEAL.deal or the update film's PLAYED) are not
  *             all the last film's (warn); --record keeps them, so deck.py's next deal weighs them down
+ *   world     the place the film stands in is its world AND that world's hue (film.json devices.world / devices.hue, else
+ *             the deal's ground and the hue the accent in src/brand/tokens.ts gives it: launch-simple its own hue, the
+ *             starter's fx/world through its window): one of the last three films in the same world at a hue under 40
+ *             degrees away fails (a neutral world, or a hue nobody recorded, by its kind alone), even when the ground
+ *             families differ; a ground that is itself a world is held to the same rule (a deep field at a blue accent
+ *             after one at a green accent passes). --record keeps the world and its hue; deck.py deals away from them
  *
  * Usage (from the film project):
  *   node scripts/film-diff.mjs [<film dir>]              check the film
@@ -57,6 +63,13 @@ const JACCARD_MAX = 0.25;
 const RECENT = 3;
 const KEEP = 12;
 const RECIPES = new Set(['exitEnter', 'textSwap', 'matchCut', 'velocityCut', 'blurThrough', 'zoomThrough', 'sharedElement']);
+// the worlds a template's ground may hold (fx/world; deck.py WORLD_KINDS), the near-neutral ones that show no hue, and the
+// hue gap under which two films in one world stand in the same place (deck.py WORLD_SAME_HUE)
+export const WORLDS = new Set(['nearWhite', 'paleSky', 'blackField', 'deepField', 'electric', 'clouds', 'sky', 'aerial', 'sea', 'nightCity', 'studio', 'macro']);
+const NEUTRAL_WORLDS = new Set(['blackField', 'nearWhite', 'studio']);
+const WORLD_SAME_HUE = 40;
+// fx/world worlds.ts WORLD_HUE: [lo, hi) lends the accent's own hue, else the default
+const FX_WORLD_HUE = { electric: [228, 266, 258], deep: [195, 266, 252], plate: [195, 266, 236], neutral: [140, 266, 245] };
 
 const argv = process.argv.slice(2);
 const flag = (f) => argv.includes(f);
@@ -124,6 +137,51 @@ function tsDealMany(dir, names) {
   }
 }
 
+/** OKLCH [C, h] of a #RRGGBB colour (h in degrees). */
+export function hexChromaHue(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex ?? '').trim());
+  if (!m) return null;
+  const lin = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  const [r, g, b] = [0, 2, 4].map((i) => lin(parseInt(m[1].slice(i, i + 2), 16) / 255));
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const mm = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  const A = 1.9779984951 * l - 2.428592205 * mm + 0.4505937099 * s;
+  const B = 0.0259040371 * l + 0.7827717662 * mm - 0.808675766 * s;
+  return [Math.hypot(A, B), ((Math.atan2(B, A) * 180) / Math.PI + 360) % 360];
+}
+/** The hue (degrees, rounded) world `kind` takes under accent `hex` in a film made from `template`, else null. */
+export function worldHue(kind, hex, template) {
+  const ch = WORLDS.has(kind) ? hexChromaHue(hex) : null;
+  if (!ch) return null;
+  const [c, h] = ch;
+  if (template === 'launch-simple') return Math.round(h) % 360;
+  const win = kind === 'electric' ? 'electric' : kind === 'deepField' || kind === 'nightCity' ? 'deep' : NEUTRAL_WORLDS.has(kind) ? 'neutral' : 'plate';
+  const [lo, hi, dflt] = FX_WORLD_HUE[win];
+  return c >= 0.04 && h >= lo && h < hi ? Math.round(h) % 360 : dflt;
+}
+/** Two films stand in the same place: one world, hues under WORLD_SAME_HUE apart (a neutral world or an unknown hue: the kind alone). */
+export function samePlace(kind, hue, other, otherHue) {
+  if (!kind || kind !== other) return false;
+  if (NEUTRAL_WORLDS.has(kind) || !Number.isFinite(hue) || !Number.isFinite(otherHue)) return true;
+  const d = Math.abs(hue - otherHue) % 360;
+  return Math.min(d, 360 - d) < WORLD_SAME_HUE;
+}
+/** A history entry's world and hue (an older entry: its deal's ground, or its ground when that is a world). */
+const placeOf = (h) => {
+  const d = h?.devices ?? {};
+  const w = norm(d.world) || (WORLDS.has(h?.deal?.ground) ? h.deal.ground : WORLDS.has(d.ground) ? d.ground : '');
+  return { world: w, hue: Number.isFinite(d.hue) ? d.hue : null };
+};
+/** The accent of a project (src/brand/tokens.ts `accent: '#RRGGBB'`), else null. */
+const accentOf = (dir) => {
+  try {
+    return /\baccent:\s*['"](#[0-9A-Fa-f]{6})['"]/.exec(fs.readFileSync(path.join(dir, 'src', 'brand', 'tokens.ts'), 'utf8'))?.[1] ?? null;
+  } catch {
+    return null;
+  }
+};
+
 const seamRecipe = (s) => {
   const pre = String(s.id ?? '').split(':')[0];
   return RECIPES.has(pre) ? pre : String(s.kind ?? '');
@@ -153,6 +211,9 @@ export function filmDevices(dir, { useTsx = true } = {}) {
     for (const s of ['voice', 'ground', 'end', 'camera']) if (!out[s] && typeof deal[s] === 'string') out[s] = deal[s];
     if (!out.seams.length) out.seams = [...new Set(['seamTA', 'seamAT'].map((s) => deal[s]).filter((x) => typeof x === 'string'))];
   }
+  // the place: the world (declared, else the deal's ground when it holds worlds) and the hue it takes from the accent
+  out.world = norm(d.world) || (deal && WORLDS.has(deal.ground) ? deal.ground : WORLDS.has(out.ground) ? out.ground : '');
+  out.hue = Number.isFinite(d.hue) ? d.hue : out.world ? worldHue(out.world, accentOf(dir), norm(fj.template)) : null;
   const cues = readJson(path.join(dir, 'out', 'cues.json'));
   const declared = cues?.declared?.seams;
   if (Array.isArray(declared) && declared.length) out.seams = [...new Set([...out.seams, ...declared.map(seamRecipe).filter(Boolean)])];
@@ -188,11 +249,14 @@ export function diff(film, history, { allow = [], floor = null, choices = {} } =
   if ((d.moves ?? []).length < 2) add('declared', 'warn', `${(d.moves ?? []).length} moves named (film.json devices.moves): pick 2-3 from references/catalogue.md`);
   for (const s of HARD) {
     if (!d[s] || ok.has(s)) continue;
-    const hits = recent.map((h, i) => (h.devices?.[s] === d[s] ? i + 1 : 0)).filter(Boolean);
+    // a ground that is a world is a place: the same world at another hue is another place (samePlace)
+    const placed = s === 'ground' && WORLDS.has(d[s]);
+    const same = (h, o) => (placed ? samePlace(o, o === d[s] ? d.hue : null, placeOf(h).world || h.devices?.[s], placeOf(h).hue) : h.devices?.[s] === o);
+    const hits = recent.map((h, i) => (same(h, d[s]) ? i + 1 : 0)).filter(Boolean);
     if (!hits.length) continue;
     const opts = Array.isArray(choices[s]) && choices[s].length ? choices[s] : null;
     const lastUse = (o) => {
-      const i = recent.findIndex((h) => h.devices?.[s] === o);
+      const i = recent.findIndex((h) => same(h, o));
       return i < 0 ? Infinity : i + 1;
     };
     const free = opts ? opts.filter((o) => lastUse(o) === Infinity) : null;
@@ -200,8 +264,13 @@ export function diff(film, history, { allow = [], floor = null, choices = {} } =
     if (free && !free.length && d[s] === leastRecent) {
       add('repeat', 'warn', `${s} ${d[s]} repeats the film ${hits[0]} back: the least recent of the template's ${opts.length} choices (the last ${RECENT} films used every one)`);
     } else {
-      add('repeat', 'error', `${s} ${d[s]} repeats the film ${hits.map((k) => `${k} back`).join(' and ')}${free?.length ? ` (free: ${free.join(', ')})` : ''}: choose another (film.json, or the deal's pin), or add "${s}" to film.json allow when the brief asks for it`);
+      add('repeat', 'error', `${s} ${d[s]}${placed && Number.isFinite(d.hue) ? ` at hue ${d.hue}` : ''} repeats the film ${hits.map((k) => `${k} back`).join(' and ')}${free?.length ? ` (free: ${free.join(', ')})` : ''}: choose another (film.json, or the deal's pin), or add "${s}" to film.json allow when the brief asks for it`);
     }
+  }
+  // the world under another ground family: two families that both stand in one world at one hue are one place
+  if (d.world && d.world !== d.ground && !ok.has('world') && !ok.has('ground')) {
+    const hits = recent.map((h, i) => (samePlace(d.world, d.hue, placeOf(h).world, placeOf(h).hue) ? i + 1 : 0)).filter(Boolean);
+    if (hits.length) add('world', 'error', `the world ${d.world}${Number.isFinite(d.hue) ? ` at hue ${d.hue}` : ''} is the film ${hits.map((k) => `${k} back`).join(' and ')}'s place (a world at a hue ${WORLD_SAME_HUE} degrees or more away, or another world, is another place): re-deal (deck.py), pin another, or add "world" to film.json allow when the brief asks for it`);
   }
   for (const s of SOFT) {
     if (d[s] && !ok.has(s) && recent[0]?.devices?.[s] === d[s]) add('repeat', 'warn', `${s} ${d[s]} is the last film's: a different ${s} reads as a different film`);
@@ -238,7 +307,7 @@ function main() {
     const h = readHistory();
     if (flag('--json')) console.log(JSON.stringify(h, null, 1));
     else if (!h.length) console.log(`film-diff: no films in ${HISTORY} yet`);
-    else h.forEach((e, i) => console.log(`${i + 1}. ${e.name ?? '(unnamed)'}${e.template ? ` [${e.template}]` : ''}: ${SLOTS.map((s) => `${s} ${e.devices[s] || '-'}`).join(', ')}; moves ${(e.devices.moves ?? []).join(' ') || '-'}; seams ${(e.devices.seams ?? []).join(' ') || '-'}${e.devices.type ? `; type ${e.devices.type}` : ''}${(e.devices.creative ?? []).length ? `; creative ${e.devices.creative.join(' ')}` : ''}${(e.devices.hero ?? []).length ? `; hero ${e.devices.hero.join(' ')}` : ''}`));
+    else h.forEach((e, i) => console.log(`${i + 1}. ${e.name ?? '(unnamed)'}${e.template ? ` [${e.template}]` : ''}: ${SLOTS.map((s) => `${s} ${e.devices[s] || '-'}`).join(', ')}${placeOf(e).world ? `; world ${placeOf(e).world}${Number.isFinite(placeOf(e).hue) ? ` at hue ${placeOf(e).hue}` : ''}` : ''}; moves ${(e.devices.moves ?? []).join(' ') || '-'}; seams ${(e.devices.seams ?? []).join(' ') || '-'}${e.devices.type ? `; type ${e.devices.type}` : ''}${(e.devices.creative ?? []).length ? `; creative ${e.devices.creative.join(' ')}` : ''}${(e.devices.hero ?? []).length ? `; hero ${e.devices.hero.join(' ')}` : ''}`));
     return 0;
   }
   const fl = value('--floor');
@@ -266,7 +335,7 @@ function main() {
   if (flag('--json')) console.log(JSON.stringify({ film: { name, ...film }, history: history.length, findings }, null, 1));
   else {
     const d = film.devices;
-    console.log(`film-diff: ${name}${film.template ? ` [${film.template}]` : ''}: ${SLOTS.map((s) => `${s} ${d[s] || '-'}`).join(', ')}; moves ${d.moves.join(' ') || '-'}; seams ${d.seams.join(' ') || '-'}${d.type ? `; type ${d.type}` : ''}${d.creative.length ? `; creative ${d.creative.join(' ')}` : ''}${(d.hero ?? []).length ? `; hero ${d.hero.join(' ')}` : ''}`);
+    console.log(`film-diff: ${name}${film.template ? ` [${film.template}]` : ''}: ${SLOTS.map((s) => `${s} ${d[s] || '-'}`).join(', ')}${d.world ? `; world ${d.world}${Number.isFinite(d.hue) ? ` at hue ${d.hue}` : ''}` : ''}; moves ${d.moves.join(' ') || '-'}; seams ${d.seams.join(' ') || '-'}${d.type ? `; type ${d.type}` : ''}${d.creative.length ? `; creative ${d.creative.join(' ')}` : ''}${(d.hero ?? []).length ? `; hero ${d.hero.join(' ')}` : ''}`);
     console.log(`  against ${Math.min(RECENT, history.length)} of the last films${film.template ? ` and the ${film.template} floor` : ''}`);
     for (const f of findings) console.log(`  ${f.severity === 'error' ? 'FAIL' : 'warn'}  ${f.check}: ${f.message}`);
     if (!findings.length) console.log('  pass: nothing repeats');
