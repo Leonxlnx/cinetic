@@ -1513,12 +1513,12 @@ def template_preview(d, inp, seed, data, root, history_on, devices, floor):
     by = {x['id']: x for x in lib}
     plays_worlds = deal.get('ground') in WORLD_KINDS
     lines = [(f'**The template plays.** ' if plays_worlds else f'**The template plays.** ground `{(fam or {}).get("id", "?")}` ({(fam or {}).get("what", "")[:90]}); ')
-             + f'voice `{deal.get("voice", "?")}`, end `{deal.get("end", "?")}`, camera `{deal.get("camera", "?")}`'
+             + ', '.join(f'{k} `{deal[k]}`' for k in ('voice', 'end', 'camera') if deal.get(k))
              + (f'; type `{pr["id"]}` ({pr.get("voice")} with {pr.get("text")})' if pr else '') + '.']
     if c and template_plays_creative(root):
         lines.append('**Creative elements.** ' + '; '.join(f'`{i}` ({by.get(i, {}).get("about", "")[:80]})' for i in c['deal']) + '.')
     elif c:
-        lines.append('**Creative elements.** not played (the hero shots of this template carry those beats).')
+        lines.append('**Creative elements.** not played (its own devices carry those beats: a spine template plays the device each act verb asks for, the update template its hero shots).')
     hlib = hero_library(root)
     world = deal.get('ground') if deal.get('ground') in WORLD_KINDS else None
     hc = deal_hero(hlib, project_name(root), inp.get('brief', ''), inp.get('have', ()), recent_hero(history_on), direction=d, world=world, root=root) if hlib else None
@@ -2111,7 +2111,7 @@ def template_plays_creative(root):
 
 
 CREATIVE_NOT_PLAYED = ('\n## The creative elements: not played\n\nThis template plays no creative element (src/deal.ts imports none '
-                       'from fx/creative): its hero shots carry those beats. The deal goes to the film history only; build '
+                       'from fx/creative): its own devices carry those beats (a spine template: the device each act verb asks for, drawn by its house scene; the update template: its hero shots). The deal goes to the film history only; build '
                        'nothing for it.\n')
 
 

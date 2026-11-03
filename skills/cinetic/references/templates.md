@@ -34,9 +34,9 @@ stop`) adds the gap to its one element and 1 s rings out after it.
 
 | Template | Length | Use it when | Shape |
 |---|---|---|---|
-| `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing, line by line | a world (a graded photograph or a lit field with its key light), a few centred lines, the product's own content in hero shots (a glass input over the world, the input at macro scale, a page travelled, a notification stack, a porthole parting the line, the 3D mark into the lockup ...), the creative elements on the beats left, the centred lockup; the direction you pick from the deck's three sets the world, the hero shots, the voice, the seams, the end card, the camera, the type pairing and the creative elements (`deck.py --direction <id> --why` writes `src/dealt.ts`), never the last films' (`src/recent.ts`) |
+| `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing to one case, act by act | a spine (`src/spine.ts`: one sentence as 3-5 acts, one case from the brief, one element whose form changes act to act and is handed on at every scene change), a designed world lit in the brand's hue taking one step per act and turning once, the device each act's verb asks for (macro-type, page-fly, push-press, toast-stack, glass-counter ...), lines alone only for the promise and the claim, the lockup grown out of the last form; the direction you pick from the deck's three sets the world, the voice and the type pairing (`deck.py --direction <id> --why` writes `src/dealt.ts`), never the last films' (`src/recent.ts`) |
 | none (the starter, `--template none`) | 15-45 s | a launch film whose idea is its own device | the dealt direction's skeleton |
-| `update` | 21-33 s | "vX is out": 2-4 changes to show | the name and the version centred in one dealt world (a photograph or a built field, with its key light); each change filmed by a hero shot that fits it (a press at macro scale with the camera following the pointer, a typed request ridden by the camera, cards stacking or fanned in depth on a blur ladder, a ring of its pictures, a picture developing under glass, a figure counting in a slab of glass, a page travelled in perspective, a before falling back as the after rises, the products it works with as glass tiles) and said in one centred line over the shot gone soft, alone, or parted round a porthole into it; the brand's mark as a solid pulling back into the lockup with the version; the deck's world and hero shots (`src/dealt.ts`) or the name's |
+| `update` | 15-25 s | "vX is out": 2-3 changes, played as one session that uses each in turn | a spine: the version's pill is the element, handed from the hook into each change's hero shot (a press at macro scale with the camera following the pointer, a typed request ridden by the camera, notices stacking in depth, a picture developing under glass, a figure counting in glass, a page travelled ...) by a handover at every change (grow, fly, swell, converge through a spark), the same case in every act, each line parted round a porthole holding the element or riding over it, one lit world stepping per act; the last form converges into the brand's mark as a solid pulling back into the lockup with the version |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
 | `capability-reel` | 15-25 s | only when the brief asks for a wall of the product's breadth (sources, formats, integrations); never the default | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
 | `camera-teaser` | 20-25 s | a dark, fast teaser of a product's screens where the motion is the camera's: whips, pushes, one 3D turn over one layout per shot | the request box arriving tilted in the light, a whip into its close-up and the send button, the window streaming code under the one 3D turn, the proof in depth with the real marks of what it works with, the page with a modal toast, the stages, the mark; each act deals one of two or three devices |
@@ -53,70 +53,56 @@ film may end on the reel's close (rebuild its acts after your own) or open on th
 
 ## launch-simple
 
-The default launch, and simple is never flat: one thing a frame, every frame lit and alive. You write `src/launch.ts`
-(each line, its picture, the strings that picture shows, the one fact under the lockup) and `src/product.tsx` (each
-picture as the product's real screen); the template's `README.md` walks through both. What it carries for you:
-- **One deal, picked.** Run `deck.py` in the project after `new-film.sh`: it deals three directions into
-  `out/OPTIONS.md`, each with what the template would play; pick the one that fits the product and deal it with
-  `--direction <id> --why "<one line>"`. It maps the direction onto the template's slots (voice, ground, seams, end
-  card, camera), deals the creative elements and the type pairing, and writes `src/dealt.ts`, which `src/deal.ts` plays;
-  DIRECTION.md opens on your reason and section 0 prints the same deal (`pin` in `src/launch.ts` fixes a slot).
-- **A world.** One place for the whole film (`src/world.tsx`, dealt as `ground`): built (`nearWhite`, `paleSky`,
-  `blackField`, `deepField`, `electric`) or a photograph (`clouds`, `sky`, `aerial`, `sea`, `nightCity`, `studio`, `macro`:
-  `node scripts/assets.mjs plate <kind>`, then `--pick <n> --to public/plates`), a photograph only of what the brief is
-  about (deck.py `WORLD_SUBJECTS`), its key light read by the glass, rims and type, sharp as the film opens and soft
-  behind the type and the product after; the film travels through it (`worldPath`: it enters the place, then moves on
-  with every change of picture, landing after the cut, still between); never a bare gradient, never one still photograph
-  under every scene.
-- **Hero shots.** Three or more dealt with the direction ([catalogue.md](catalogue.md) §0b: `glass-input`, `macro-type`,
-  `black-glass`, `page-fly`, `toast-stack`, `fan-focus`, `rise-behind`, `porthole`, `carousel`, `push-press`, `logo-3d`),
-  placed first by role (`HERO_PLAN`), each filled from `src/content.ts` (`node scripts/content.mjs --brief BRIEF.md
-  --fetch --force`), each with one sharp plane, one camera move that lands and light sized to its source, the camera
-  square to its cards at rest; a hero picture between the first line and the claim arrives with its line (`with`), never
-  line, card, line, card; a pair's `hero` pins one. The creative elements take the beats left.
-- **A world and scale.** Each picture framed on its `focus` box from its first frame until the subject stands 62 % of
-  the frame's height (`FRAME`), on a contact shadow (`FLOOR`): never a small card in an empty field (look-audit
-  `small-subject`).
-- **The core action.** The first picture is real footage of the input (`node scripts/assets.mjs recipe "<input>"`, then
-  `public/assets/input.mp4` and `INPUT` in `src/product.tsx`), cut on the action to the lit phone with the product's UI
-  receiving it; with no clip that fits, a code-built fallback plays.
-- **The product as a lit object.** The kit's `Phone` or `Laptop`, or a `Card` in the kit's one material
-  (`kit/card.tsx`: a vertical sheen lit from above, a hairline, a top highlight, two shadows), facing the camera.
-- **Type.** The dealt pairing's weights and tracking; the voices rotate line by line (build, blur, ink); the starred
-  word in the accent, no automatic emphasis on the other lines; three sizes (line 1 at a 6.6 % cap height, the lines
-  between at 5 %, the claim at 11.8 %); on a photograph a soft pool of its deep tone behind each line; the wordmark in
-  the pairing's wordmark style, its tracking kept clear of touching letters (an r before a stem keeps 0.04 em: "rn" never
-  reads as "m").
-- **Seams and the end.** Whips that hide the cut (the outgoing picture 0.75 of the frame gone by the cut, smeared), blurs
-  that dim both shots at the cut, a picture darkening into a dark world as it falls back (never a translucent card);
-  the lockup laid out by the mark's ink, held still once whole, the frame settling out over the last 0.6 s.
-- **One signature** from [catalogue.md](catalogue.md), built in its scene and named in `SIGNATURE` (`src/product.tsx`),
-  and the end mark: the brand's SVG (`scripts/brand.py`), or the stand-in the template builds from the film's own element
-  until then (lint flags its marker), never a sparkle, a star or an AI glyph.
+The default launch, played as a spine (references/spine.md): you write `src/spine.ts` FIRST (the sentence, the case
+from the brief, one element, 3-5 acts each with its verb, the forms the element takes and the scenes that draw them,
+the lines, `BARS` and the one fact under the lockup), then `src/content.ts` (`node scripts/content.mjs --brief BRIEF.md
+--fetch --force`, kept to what is true) and `src/product.tsx` (each scene name given its house scene filled with the
+case, or a scene of your own); the template's `README.md` walks through all three. What it carries for you:
+- **Every change carried.** `HANDOVER_PLAN` gives each scene change its handover (the scene's `via`, else the form
+  table's recipe, varied: grow, swell, fly, converge, same-surface ...); `acts/stage.tsx` draws the element across the
+  cut (fx/Handover), each side under its own camera, the scenes hiding their own copy while it flies; nothing cuts from
+  a line to a card. `grid-check.ts --part spine` and `forensics.py --spine` hold it.
+- **Lines where they live.** A line alone for the promise (its starred word glides to the centre as a chip and becomes
+  the element) and the claim; between them inside the product's own words (a status pill) or around the element (the
+  giant line with the element stepping back behind it, then taking the frame again); whole on the music's 16ths.
+- **A designed world.** `src/world.tsx`: a stage lit in the brand's hue with a floor glow (`paleSky`, `nearWhite`), the
+  brand's colour field with its rings (`electric`), a dark stage (`blackField`, `deepField`); a photograph only of the
+  brief's own subject (`studio`, `clouds` ...: `assets.mjs plate`). It takes one step per act (enter, closer, turn,
+  pull-back), each move landing on its act's end, the planes in parallax; the turn floods out of the element into the
+  opposite world (a light stage turns into the brand's field) as the film's one colour event.
+- **Devices by verb.** `src/acts/scenes.tsx`: `wordScene`, `promptScene` (macro-type), `siteScene` (page-fly, then
+  push-press on the same surface), `liveScene`, `noticeScene` (toast-stack with its depth ladder), `countScene`
+  (glass-counter), `lockupScene`; each with one sharp plane, the kit's cards lit by the key (`Lit`), one camera move a
+  scene that lands on its end (never still over 0.8 s, never a float), its own sounds (`moments`). Other moves and their
+  numbers: `references/motion-library/`.
+- **The end.** The last form converges (or swells, or pulls out) into the brand's mark (`scripts/brand.py`; an invented
+  brand gets its own mark, never a sparkle), the name slides out from behind it, the fact under it, the whole creeping 3 %
+  to the last frame, then settling out with the music's ring-out.
+- **Sound cut to the picture.** `src/sync.ts`: every handover sounds by its kind (a swell into its cut, a whoosh 4 f
+  before a fly, a suck and a spark on a converge), the keys typed, the press, each notice, the turn's sub drop, one hit
+  on the lockup; `npm run sound` mixes it over the fitted track.
 
 ## update
 
-"vX is out", told by the product itself (`references/update-films.md`). One world for the whole film (fx/world, the
-`ground` slot: a photograph fetched with `assets.mjs plate` or a built field, with its key light that the glass, the
-rims and the type read). The name and the version centred (`hook`: roll, rise or badge), then one `change` act per
-change, each filmed by a hero shot (`src/acts/heroes.tsx`; `src/deal.ts` HERO_META and `heroFit`: push-press,
-macro-type, toast-stack, fan-focus, carousel, photo-develop, glass-counter, page-fly, focus-swap, glass-tiles; each
-change takes the first in the film's order that can film it, at least two different ones a film) and said in one
-centred line in its own shape: `show` (the shot, then it goes soft and dims under the line), `lead` (the line alone,
-then the shot) or `split` (once: the line parted round a porthole that opens into the shot). Shots arrive on the film's
-optics (`arrive`: rack, whip or bloom) and leave soft under the next; a line never follows a line. `end` is the mark as
-a solid pulling back onto the flat mark (fx/three Logo3D; a CSS-3D solid on software GL), the name sliding out beside
-it or under it (`end`: beside or stack) and the version landing as accent numerals on the last bar line (never the hook's
-pill a second time). Every shot has one declared camera move that lands, square to its cards at rest (`src/sync.ts`
-declares them), a graded blur ladder and real content from `src/content.ts`; the shots stand in the film's one world,
-which moves only on the film's path (`worldPath`), and a shot leaving falls back soft and dark under the next (whipped
-out ahead of a whip arrival), never a sharp double exposure. The change lines rotate their move and take three sizes,
-the accent on one line in three. Acts in whole bars at 120 BPM (two changes about 17 s, three about 25 s: an 8-20 s
-update shows two changes, or three on a faster track). The deal (`src/deal.ts`,
-template.json "slots"): ground, hook, arrive, order, end, the hero shots (the deck's `src/dealt.ts`, else the name's)
-and the lines' voice. Slots: `src/content.ts` (`scripts/content.mjs --brief BRIEF.md --fetch --force`) and
-`src/update.ts` (the version, the one before it, the changes: `words`, `key`, the screen and its moment `tap` / `type`
-/ `fill` / `swap` / `count` / `page`, and `photos`, `logos`, `hero` when the change has them).
+"vX is out", told by the product itself (`references/update-films.md`), played as a spine (`references/spine.md`):
+one session (`src/update.ts` `session`, its `case`) in 3-4 acts, the hook and one act per change in the order the session
+meets them. The version's pill in the hook (`hook`: roll, rise or badge) is the film's element: every change of scene
+hands it on (`src/timeline.ts` HANDS, drawn by fx/Handover with each side under its own shot's camera: grow, fly,
+swell, shrink, or converge through a spark; a two-form shot reaches its button on its own surface), the shot before
+gone by the cut and the next racking in behind the landing element. Each change is filmed by a hero shot that draws the
+element in its form (`src/acts/heroes.tsx`; `src/deal.ts` HERO_META, `heroFit` and the change's `verb`: push-press,
+macro-type, toast-stack, fan-focus, carousel, photo-develop, glass-counter, page-fly, focus-swap, glass-tiles). Its
+line meets the element (`place`: `part`, once, the line parted round a rounded window holding the element that opens
+into the shot; `head`, the line riding over the element as the shot's heading). The lockup grows out of the last form:
+it converges into the mark as a solid (fx/three Logo3D; a CSS-3D solid on software GL) pulling back onto the flat mark,
+the name beside or under it (`end`) and the version landing on the bar line. One lit world (`ground`: blackField,
+deepField or electric dealt; the pale fields and the plates by PIN) steps once per act; held results creep on the tail
+of their move, never still. `SPINE_PLAN` is exported for grid-check `--part spine` and the cues (with each handover's
+box track for forensics `--spine`). Acts in whole bars (two changes 15-20 s, three 20-25 s). The deal (`src/deal.ts`,
+template.json "slots"): ground, hook, place, end, the hero shots (the deck's `src/dealt.ts`, else the name's) and the
+lines' voice. Slots: `src/content.ts` (`scripts/content.mjs --brief BRIEF.md --fetch --force`) and `src/update.ts` (the
+version, the one before it, the session and its case, the changes: `words`, `key`, `verb`, the screen and its moment
+`tap` / `type` / `fill` / `swap` / `count` / `page`, and `photos`, `logos`, `hero` when the change has them).
 
 ## ui-walkthrough
 

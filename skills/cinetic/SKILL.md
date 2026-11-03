@@ -27,10 +27,10 @@ These are the rules every film is held to, with their numbers. The gates named i
    the height): centred for 80 % of the statement time or more, in the middle band for 85 % or more. Centred top or
    bottom only over a full-bleed picture. Never flush left at the top or the bottom. "Text on top, big picture below"
    at most once a film; a line beside, above or below a picture at most once per 30 s. (`layout-audit.sh` placement.)
-2. **Text and picture, mixed.** A line alone on a clean ground (0.5-2.3 s), the product acting (1-3.5 s)
-   and a line built with the picture it names, mixed: never the line-card-line-card loop (one pair's beat `with` or
-   `over` at least), never an empty frame between scenes. Type-only beats two or more; a line over a picture on at most
-   40 % of beats; first line by 1 s. (`grid-check.ts` beats, `forensics.py` empty-frame.)
+2. **One element carried, the text mixed in.** Every scene change hands one element on (it grows, swells, flies,
+   converges): never a cut from a line to a card, never the line-card-line-card loop, never an empty frame between
+   scenes. Lines alone only for the promise and the claim (0.5-2.3 s); between them inside the product's own words or
+   around the element; first line by 1 s. (`grid-check.ts --part spine`, `forensics.py --spine`, empty-frame.)
 3. **The picture tells what the product does.** Each picture proves its line without repeating its words (input ->
    output, a count rising; "every" drawn as many at once); a line its picture already says is cut (`copy-check`
    repeats, quantity). The first picture beat shows
@@ -132,28 +132,28 @@ Then scaffold:
 bash scripts/new-film.sh films/<name> --name "<Product>" [--brand <kit>] [--like <clip>] [--music <file> + licence flags] [--link-modules <node_modules>]
 ```
 A launch gets `launch-simple`; `--format update` the update film; other shapes are in
-[templates.md](references/templates.md). It writes `film.json` (the start time, the last three films' devices) and
-deals the type pairing from the name (`type-deal.ts`); cards are the kit's `Card`, logo rows `LogoRow`.
+[templates.md](references/templates.md). It writes `film.json` and
+deals the type pairing from the name (`type-deal.ts`).
 
-**2. Direction and script.** `python3 scripts/deck.py --brief "<one line>" --format launch [--have ui,photos]
+**2. Direction, then the spine, first.** `python3 scripts/deck.py --brief "<one line>" --format launch [--have ui,photos]
 [--brand brand/brand.json]` deals three directions into `out/OPTIONS.md`; pick the one that fits the product with
-`--direction <id> --why "<one line>"`. Copy [TREATMENT.md](assets/TREATMENT.md) to the project and write
-the idea sentence (it fails with a competitor's name in it) and the script: line 1 says what the product is ("[Name]
-turns [input] into [output]."), then one concrete thing it does a line, then the claim: 3-4 lines at any length, the
-pictures between carry the rest. `python3 scripts/copy-check.py TREATMENT.md` passes before any picture work
-([copy-and-type.md](references/copy-and-type.md)).
+`--direction <id> --why "<one line>"`. Then the spine, before any picture ([spine.md](references/spine.md)): one
+sentence as 3-5 acts, one case (the brief's request, names and numbers in every act), one element changing form act to
+act, said as a chain ("the word becomes the pill becomes the page becomes the count becomes the mark"); lines alone
+only for the promise and the claim. In launch-simple it is `src/spine.ts`: print its plan, pass `grid-check.ts --part
+spine`. Its lines go in [TREATMENT.md](assets/TREATMENT.md) (the idea sentence fails with a competitor's name in it);
+`copy-check.py TREATMENT.md` passes before any picture work ([copy-and-type.md](references/copy-and-type.md)).
 
-**3. World, hero shots, creative elements.** The deal (`src/dealt.ts`) holds the film's **world** (one place with its
-key light, never cut: the product's own world, where its users are, never a stock city; a photograph needs `node
-scripts/assets.mjs plate <kind>`, then `--pick <n> --to public/plates --accent '<accent>'`), three or more **hero shots** (designed 3D and light shots: a glass input over the world, the input
-at macro scale, a page travelled, a notification stack, a porthole parting the line, the 3D mark into the lockup ...;
-[catalogue.md](references/catalogue.md) §0b) and two or three **creative elements** (`src/fx/creative`). The parts:
-`fx/world` and `fx/light` ([lighting.md](references/lighting.md) §8), `fx/depth` ([camera.md](references/camera.md)
-§13), `fx/three` ([three.md](references/three.md)), `kit/screens` ([product-ui.md](references/product-ui.md) §15);
-every shot keeps the habits of standard 10. The shots fill themselves from `src/content.ts`: `node scripts/content.mjs --brief BRIEF.md --fetch --force`, then keep what is true.
-launch-simple places the shots first (`HERO_PLAN`; a pair's `hero` pins one), the elements take the beats left; swap
-one of each at most, with a reason. Other templates pick from the catalogue into `film.json` `devices`, then `node
-scripts/film-diff.mjs`.
+**3. World and devices.** The deal (`src/dealt.ts`) holds the **world**: a designed place lit in the brand's hue that
+takes one step per act and turns once, out of the element; a photograph only of the brief's own subject (`node
+scripts/assets.mjs plate <kind>`, then `--pick <n> --to public/plates --accent '<accent>'`). Each act's **device** comes
+from its verb (types: macro-type; writes: page-fly; presses: push-press; fills: toast-stack; counts: glass-counter),
+drawn by launch-simple's house scenes (`src/acts/scenes.tsx`); for other moves and their numbers read the
+[motion library](references/motion-library/README.md) and build them into a scene. Parts: `fx/world`, `fx/light`
+([lighting.md](references/lighting.md) §8), `fx/depth` ([camera.md](references/camera.md) §13), `fx/three`
+([three.md](references/three.md)), `kit/screens` ([product-ui.md](references/product-ui.md) §15). Content: `node
+scripts/content.mjs --brief BRIEF.md --fetch --force`; keep what is true, look at every picture. Other templates pick
+from the catalogue into `film.json` `devices`, then `node scripts/film-diff.mjs`.
 
 **4. Music.** The track is chosen before the timeline and the picture is cut to it
 ([music.md](references/music.md)): `node scripts/music.mjs pick --mood "<words>" --length <s>` (the curated library;
@@ -162,10 +162,10 @@ scripts/audio/track.py analyze` and, once the script is written, `fit` (the time
 the track's own ending: never a cut), `check`. The track plays only through `score.py` (`--bed-only` before the kit
 exists); never cut it by hand.
 
-**5. The product and the pictures.** In launch-simple you write two files: `src/launch.ts` (each line, its
-picture, the strings that picture shows, the one fact for the end card) and `src/product.tsx` (each picture as the
-product's real screen built in code with the kit, the first one showing the core action, the last one with its hero
-element). The kit shows only the film's own content (a part given nothing draws a dashed box and fails precheck;
+**5. The product's scenes.** In launch-simple you write `src/product.tsx`: one entry per scene of the spine, a house
+scene filled with the product's real content, or a scene of your own from the kit (`Draw`; `el`, the element's box;
+`Content`, the element alone for the handover). Something purposeful moves in every frame (a hold is the landing tail of
+a move, never still over 0.8 s; the lockup up to 2.5 s); cards are lit or glass, never plain slabs. The kit shows only the film's own content (a part given nothing draws a dashed box and fails precheck;
 [product-ui.md](references/product-ui.md)). Real people, places and objects are real photos or clips with a studio
 finish, never drawn (`node scripts/assets.mjs recipe "<product>"`; [imagery.md](references/imagery.md)). Other products' marks: `node scripts/logos.mjs get <name> --film .`. Before a look:
 `node scripts/precheck.mjs` (seconds: imports, every act at three frames, timing, empty kit parts, text fit). Look
@@ -173,8 +173,8 @@ with `node scripts/frames.mjs end` (the ending, first) and `still <frames>` (sev
 
 **6. Draft, sound and check.** `npm run check` (tsc, `lint-film.mjs`, `grid-check.ts`) clean, then the whole draft:
 `bash scripts/render.sh Film out/draft.mp4 --draft --max-min 9` (rerun until exit 0; the picked track under it until
-the mix exists). `npm run sound` (cues, the kit cast and rendered for this film's actions, plan and mix in one command; no
-setting; its last line says PASS, FAIL or PARTIAL), the draft again.
+the mix exists). `npm run sound` (the cues, the kit and the mix in one command; it ends PASS, FAIL
+or PARTIAL), the draft again.
 The fast gates: `npm run gates` (`forensics.py out/draft.mp4 --grammar-only`: the sound, cuts that hide, empty
 frames, freezes, legibility, the ending, the world; `copy-check.py --ui src`; `logos.mjs check`), `look-audit.py
 out/draft.mp4 --look` (no flat void or slab cards) and `bash scripts/layout-audit.sh Film --cues --scale 0.5` (text cut by the frame) ([checks.md](references/checks.md) §1).
@@ -216,15 +216,15 @@ the picture leading by up to 3 f; a 0.2-0.5 s stop or dip before the biggest rev
 
 **Motion.** Curves by role from `lib/anim.ts` (`E.glideOut` to arrive, `stdInOut` to reposition, `buildIn` to leave);
 one spring class a film, never an overshoot on type; never scale from zero; speed carried through cuts; nothing
-changes state in one frame (`glideValue`), every move lands before its cut (`landBeforeCut`), the camera moves only
-with a purpose and holds may rest (`stageMove`; no float, no bob, no resting tilt)
+changes state in one frame (`glideValue`), every move lands before its cut, the camera moves only with a purpose and
+a hold is that move's landing tail (no float, no bob, no resting tilt)
 ([motion-tokens.md](references/motion-tokens.md), [camera.md](references/camera.md)).
 
 **Engine.** Everything is a pure function of the frame: no CSS transitions or keyframes, no `Math.random`, `Date.now`
 or `performance.now` (seeded `rand(seed)`); all translation in one `transform`; clamp every value that feeds geometry;
 no `will-change` where a blur animates, defocus at fixed levels, large soft shapes baked into dithered plates; fonts
-loaded before any measurement. Never run `npx remotion still` or `render` in a loop (each call bundles again;
-`frames.mjs` and `render.sh` share one Rspack bundle)
+loaded before any measurement. Never loop `npx remotion still` (`frames.mjs` and
+`render.sh` share one bundle)
 ([remotion-engine.md](references/remotion-engine.md), [chromium-rendering.md](references/chromium-rendering.md)).
 
 **Sound.** A licensed, human-made instrumental track cut to the picture carries the film; earshot's kit gives each
@@ -253,7 +253,7 @@ camera films with shutter samples on fast frames); never upscale a final ([finis
 | the timeline, declarations, density, holds | [timing-grid.md](references/timing-grid.md) |
 | curves, springs, carry, creep; the camera; the seams | [motion-tokens.md](references/motion-tokens.md), [camera.md](references/camera.md), [transitions.md](references/transitions.md) |
 | the world, the key light, glass, glow and plates; 3D hero objects | [lighting.md](references/lighting.md), [three.md](references/three.md) |
-| every device with timing and build (search it) | [devices/INDEX.md](references/devices/INDEX.md) |
+| moves, effects, seams, worlds with their numbers; every device (search it) | [motion-library/](references/motion-library/README.md), [devices/INDEX.md](references/devices/INDEX.md) |
 | the effects kit, cues, placement, levels, mastering | [sound.md](references/sound.md) |
 | render paths, blur, banding, encoding, deliverables | [finishing.md](references/finishing.md) |
 | every gate script and its rules | [checks.md](references/checks.md) |
