@@ -1,28 +1,24 @@
 #!/usr/bin/env node
 /**
- * launch-simple.test.mjs: the default launch template's own standard, read from its modules (no render).
+ * launch-simple.test.mjs: the default launch template, played as a spine, read from its modules (no render).
  *
- *   1. ground     the key light's plate never turns its top edge into the frame (a hard wedge of bare ground in the
- *                 top corner): at every angle the sway reaches and every height the drift reaches, the edge stays
- *                 above the frame at both sides.
- *   2. claim      the hero word snaps in at x1.6 at most, and the claim is read once it has settled.
- *   3. end card   the lockup holds still once it is whole (no drift: END_DRIFT 0, endSway 0 on every frame of the
- *                 hold), then the whole frame settles out over the last END_FADE frames, declared as a fadeEnd seam
- *                 that starts after the lockup is read; the fact keeps the name's axis (END_PART 1, no shear).
- *   4. seams      a line -> picture change is never a match cut (a line and a picture share no shape: a dealt matchCut
- *                 plays as blurThrough); a picture -> picture match cut only where it was dealt, and a dealt one with
- *                 nothing carried over it is reported (gate issue `carry`) with both scenes named.
- *   5. pushes     a picture behind its line (with) takes no push; no two pictures in a row push.
- *   6. key words  at most two lines a film carry a key word, about 40 % of them: two of four pass, two of three fail.
- *   7. lines      a pair may leave its line out (a picture-only beat: one A beat, no COPY line, a carried change
- *                 into it); the first pair and the claim keep theirs; at most four lines a film.
- *   8. field      the claim sits on its colour field even when the scene before it names no `field`: a disc of the
- *                 accent at that scene's focus.
- *   9. layer      a velocity seam's smear runs along the layer's travel (Layer draws it as a directional blur).
- *  10. input      tools/input.mjs films no input that happens on a screen (a developer typing: the product's own screen
- *                 is the shot, status none with that reason; --force fetches); a fetched clip always lands as the file
- *                 src/input.ts names (the old one steps aside, never a second file beside it); a clip in the house's
- *                 banned hues warns with its share (a stand-in assets.mjs hands over an orange clip; needs ffmpeg).
+ *   1. the spine   the scaffold's src/spine.ts plans with no error (SPINE_PLAN.issues.errors empty): one element, 3-5
+ *                  acts on whole bars, the lockup as the last scene; one change per scene boundary, every one carried
+ *                  (no bare cut: a handover from the form table for its two forms, or the mark's own entry); the
+ *                  handover plan is the changes (HANDOVER_PLAN, one per change, scenes - 1).
+ *   2. lines       at most four; alone only for the promise (the first act) and the claim; each arrives, is whole and
+ *                  leaves inside its scene (in < resolved < out), whole on the music's 16th.
+ *   3. stage       every drawn handover's spec (acts/stage specAt) has finite boxes of positive size on both sides on
+ *                  every frame of its span, and the element's state there is finite (lib/handover handoverState).
+ *   4. sound       src/sync.ts: every cue inside the film, every handover sounds by its kind (the scene-internal ones
+ *                  through their scenes), the world's turn
+ *                  takes the drop, one lockup hit at weight 1 on the frame the mark lands; declares() gives each drawn
+ *                  handover's box track (finite, on every frame of its span) and the world's steps.
+ *   5. the end     the mark lands, then the name, then the fact; the end lock runs from the fact to the last frame; the
+ *                  settle-out is the last seam (fadeEnd), starts after the body's last bar line and completes on the
+ *                  last frame (never cut mid-fade); the world's one turn is the film's colour event.
+ *   6. a bad spine a bare cut inside an act is a spine error (SPINE_PLAN.issues.errors names it).
+ *   7. grid-check  --part spine passes on the scaffold.
  *
  * It lays the template over the Remotion starter in a temp folder (as new-film.sh does) and imports the modules through
  * the starter's tsx (npm install in assets/remotion-starter first).
@@ -67,152 +63,130 @@ for (const f of tj.copy) {
 for (const f of tj.remove ?? []) fs.rmSync(path.join(DIR, f), { force: true });
 fs.copyFileSync(path.join(STARTER, 'package.json'), path.join(DIR, 'package.json'));
 fs.symlinkSync(path.join(STARTER, 'node_modules'), path.join(DIR, 'node_modules'), 'junction');
-const LAUNCH_SRC = fs.readFileSync(path.join(DIR, 'src', 'launch.ts'), 'utf8');
-
-/** launch.ts with these pairs (and a pin), the scaffold's scenes; the rest of the file kept. */
-const writeLaunch = (pairs, pin) => {
-  const body = `export const LAUNCH: Launch = {\n  name: IDENTITY.name,\n  pairs: ${JSON.stringify(pairs)},\n  close: 'Out now',\n  input: 'a person speaking into a phone',\n${pin ? `  pin: ${JSON.stringify(pin)},\n` : ''}};\n`;
-  const src = LAUNCH_SRC.replace(/export const LAUNCH: Launch = \{[\s\S]*?\n\};\n/, body);
-  fs.writeFileSync(path.join(DIR, 'src', 'launch.ts'), src);
-};
 const url = (p) => pathToFileURL(path.join(DIR, 'src', p)).href;
-/** Import the modules in a fresh process and return what the checks read (or the import error). */
-const probe = () => {
-  const file = path.join(DIR, 'probe.mts');
-  fs.writeFileSync(file, `
-let out: any = {};
-try {
-  const T: any = await import(${JSON.stringify(url('timeline.ts'))});
-  out = { seams: T.SEAM_PLAN.map((s: any) => [s.recipe, s.id, s.cls]), beats: T.BEAT_PLAN.map((b: any) => [b.id, b.kind]), modes: T.MODES,
-    copy: T.COPY.map((c: any) => c.id), cues: Object.keys(T.CUE), hero: T.HERO, keyedMax: T.KEYED_MAX, total: T.TOTAL, lockup: T.CUE.lockup, H: T.H, W: T.W };
-  const S: any = await import(${JSON.stringify(url('acts/stage.tsx'))});
-  const L: any = await import(${JSON.stringify(url('acts/layer.tsx'))});
-  const angles = []; for (let a = -9 - 2.6; a <= -9 + 2.6; a += 0.2) angles.push(a);
-  const kys = [-0.12 * T.H - 0.04 * T.H, -0.12 * T.H, -0.12 * T.H + 0.04 * T.H];
-  out.edge = Math.max(...angles.flatMap((a) => kys.map((ky) => { const e = S.keyPlateTopEdge(a, ky); return Math.max(e.left, e.right); })));
-  const sway = (f: number) => S.endSway(f);
-  const fade = T.SEAMS.find((s: any) => s.kind === 'fadeEnd');
-  out.end = { moves: Math.max(...Array.from({ length: T.TOTAL - T.CUE.lockup }, (_, i) => Math.abs(sway(T.CUE.lockup + i)))), drift: S.END_DRIFT, part: S.END_PART,
-    fadeAt: fade?.at ?? null, fadeFrom: T.TOTAL - T.f60(T.END_FADE.fade), whole: T.END.from, total: T.TOTAL };
-  out.fieldOn = S.FIELD_ON;
-  out.field = S.fieldBoxOf({ draw: () => null, focus: { x: 400, y: 200, w: 600, h: 400 } });
-  out.smear = [L.smearAxis({ x: 80, y: 0 }), L.smearAxis({ x: 0, y: -60 })];
-  out.depth = S.TA_DEPTH;
-} catch (e: any) { out.error = String(e?.message ?? e).split('\\n')[0]; }
-out.issues = ((globalThis as any).__cineticGateIssues ?? []).map((x: any) => x.rule + ': ' + x.message);
-console.log('@@' + JSON.stringify(out));
-`);
-  const r = spawnSync(process.execPath, [TSX, file], { cwd: DIR, encoding: 'utf8', env: { ...process.env, CINETIC_GATE: '' } });
+
+/** Run a probe body (TypeScript, top-level await) in a fresh process; it sets `out`. */
+const run = (body) => {
+  const file = path.join(DIR, `probe-${fs.readdirSync(DIR).length}.mts`);
+  fs.writeFileSync(file, `let out: any = {};\ntry {\n${body}\n} catch (e: any) { out.error = String(e?.stack ?? e).split('\\n').slice(0, 3).join(' | '); }\nconsole.log('@@' + JSON.stringify(out));\n`);
+  const r = spawnSync(process.execPath, [TSX, file], { cwd: DIR, encoding: 'utf8', env: { ...process.env, CINETIC_GATE: '' }, maxBuffer: 64 * 1024 * 1024 });
   const line = (r.stdout ?? '').split('\n').find((l) => l.startsWith('@@'));
   return line ? JSON.parse(line.slice(2)) : { error: (r.stderr || r.stdout || 'no output').trim().split('\n').slice(-3).join(' | ') };
 };
 
-const P = {
-  input: (line, extra = {}) => ({ line, scene: 'input', seconds: 2.8, hits: [0.3, 0.62], ui: ['Call the dentist', 'Dentist, Tuesday 9:00'], ...extra }),
-  steps: (line, extra = {}) => ({ ...(line ? { line } : {}), scene: 'steps', seconds: 2.4, hits: [0.12, 0.38, 0.62], ui: ['Call the dentist', 'Buy milk', 'Book flights', 'Tuesday', 'Wednesday', 'Friday'], ...extra }),
-  result: (line, extra = {}) => ({ ...(line ? { line } : {}), scene: 'result', seconds: 2.6, hits: [0.35], ui: ['Your week is planned', 'Three tasks'], ...extra }),
-};
-
 try {
-  // a: the scaffold's shape (alone, with, claim), the floor's deal (seamTA matchCut), the steps scene naming no field
-  writeLaunch([P.input('Tern turns voice notes into *plans*.'), P.steps('Each task lands on its day.'), P.input('Then you just start.', { seconds: 3.2 }), P.result('Your week, *planned*.')]);
-  const a = probe();
-  result(!a.error, 'the template imports (four pairs, the floor deal)', a.error);
-  if (!a.error) {
-    result(a.edge < -40, 'ground: the key plate\'s top edge stays above the frame at every sway angle and drift height', `highest ${a.edge?.toFixed(1)} px`);
-    result(a.hero.from <= 1.6 && a.hero.recentre > 0, 'claim: the hero word snaps in at x1.6 at most, into a slot opened before it', JSON.stringify(a.hero));
-    const e = a.end;
-    result(e.drift === 0 && e.moves < 0.01 && e.part === 1 && e.fadeAt === e.fadeFrom && e.fadeAt > e.whole && e.fadeAt < e.total,
-      'end card: the lockup holds still once whole, the frame settles out over the declared fadeEnd after it is read; the fact keeps the axis of the name',
-      JSON.stringify(e));
-    const ta = a.seams.filter((s) => s[2] === 'TA');
-    result(ta.length >= 1 && ta.every((s) => s[0] !== 'matchCut'), 'seams: no line -> picture change is a match cut (the floor deals one; it plays as blurThrough)', JSON.stringify(ta));
-    const aa = a.seams.filter((s) => s[2] === 'AA');
-    result(aa.every((s) => s[0] !== 'matchCut'), 'seams: no picture -> picture match cut where none was dealt', JSON.stringify(aa));
-    const withs = a.modes.map((m, i) => (m === 'with' ? i + 1 : 0)).filter(Boolean);
-    const pushes = a.cues.filter((c) => /^a\d+cut$/.test(c)).map((c) => Number(c.slice(1, -3)));
-    result(!pushes.some((k) => withs.includes(k)) && !pushes.some((k) => pushes.includes(k + 1)), 'pushes: none on a picture behind its line, never two pictures in a row', `with ${withs}, pushes ${pushes}`);
-    result(a.fieldOn === true && a.field && Math.abs(a.field.x + a.field.w / 2 - 700) < 1 && Math.abs(a.field.y + a.field.h / 2 - 400) < 1,
-      'field: the claim sits on its colour field though the scene before it names none (a disc at that scene\'s focus)', JSON.stringify({ on: a.fieldOn, box: a.field }));
-    result(a.smear[0] === 'x' && a.smear[1] === 'y', 'layer: the smear runs along the travel', JSON.stringify(a.smear));
-    result(a.depth.scale < 1 && a.depth.creep <= 0.03 && !('below' in a.depth) && !('drop' in a.depth), 'with: the picture stands centred behind its line, never dropped below it', JSON.stringify(a.depth));
+  const P = run(`
+  const T: any = await import(${JSON.stringify(url('timeline.ts'))});
+  const L: any = await import(${JSON.stringify(url('lib/spine.ts'))});
+  const HO: any = await import(${JSON.stringify(url('lib/handover.ts'))});
+  const S: any = await import(${JSON.stringify(url('acts/stage.tsx'))});
+  const Y: any = await import(${JSON.stringify(url('sync.ts'))});
+  const WD: any = await import(${JSON.stringify(url('world.tsx'))});
+  const sp = T.SPINE_PLAN;
+  out.errors = sp.issues.errors; out.element = sp.element; out.fps = T.FPS; out.total = T.TOTAL; out.bodyEnd = T.BODY_END; out.bar = T.BAR;
+  out.acts = sp.acts.map((a: any) => ({ from: a.from, to: a.to, bars: a.bars, world: a.world }));
+  out.scenes = T.SCENES.map((s: any) => ({ i: s.i, act: s.act, form: s.form, name: s.name, from: s.from, to: s.to }));
+  out.changes = T.CHANGES.map((c: any) => ({ kind: c.kind, at: c.at, from: c.from, to: c.to, allowed: c.kind === 'cut' || c.kind === 'entry' ? null : L.allows(c.from.form, c.to.form, c.kind) }));
+  out.plan = T.HANDOVER_PLAN.map((h: any) => ({ kind: h.kind, at: h.at, span: h.span, from: h.from, to: h.to, draws: h.draws }));
+  out.end = sp.end;
+  out.lines = T.LINES.map((l: any) => ({ id: l.id, place: l.place, act: l.act, claim: l.claim, scene: l.scene, in: l.in, resolved: l.resolved, out: l.out, q16: T.q16(l.resolved) === l.resolved }));
+  // 3. the drawn handovers' boxes and state on every frame of their spans
+  out.specs = T.HANDOVER_PLAN.map((h: any, k: number) => {
+    if (h.draws !== 'handover') return null;
+    const s = S.specAt(k);
+    if (!s) return { k, missing: true };
+    const bad: string[] = [];
+    for (let f = h.span[0]; f <= h.span[1]; f++) {
+      const a = typeof s.from.box === 'function' ? s.from.box(f) : s.from.box;
+      const b = typeof s.to.box === 'function' ? s.to.box(f) : s.to.box;
+      const st = HO.handoverState(f, s, { fps: T.FPS, width: T.W, height: T.H });
+      const e = st.el.shape;
+      const okBox = (x: any) => x && [x.x, x.y, x.w, x.h].every(Number.isFinite) && x.w > 0 && x.h > 0;
+      if (!okBox(a) || !okBox(b) || ![e.x, e.y, e.w, e.h, st.el.opacity, st.el.content.a, st.el.content.b].every(Number.isFinite)) bad.push(String(f));
+    }
+    return { k, kind: h.kind, bad };
+  });
+  // 4. the sound and the declares
+  out.cues = Y.default().map((e: any) => ({ f: e.f, kind: e.kind, weight: e.weight, id: e.id }));
+  out.declares = Y.declares().map((d: any) => ({ id: d.id, seams: (d.seams ?? []).map((x: any) => ({ at: x.at, kind: x.kind, id: x.id, span: x.span, track: x.track })) }));
+  out.lock = { lockup: T.LOCKUP_AT, name: T.NAME_AT, fact: T.FACT_AT, end: T.END, fadeFrom: T.FADE_FROM, fade: T.END_FADE, f60fade: T.f60(T.END_FADE.fade), f60after: T.f60(T.END_FADE.after) };
+  out.seams = T.SEAMS.map((x: any) => ({ at: x.at, kind: x.kind, id: x.id }));
+  out.colour = T.COLOUR; out.worldTurn = WD.WORLD_TURN.at;
+  out.turn = sp.world.find((w: any) => w.step === 'turn') ?? null;
+  out.hid = Object.fromEntries(L.HANDOVER_KINDS.map((k: string) => [k, L.HANDOVERS[k].id]));
+  `);
+  result(!P.error, 'the scaffold imports (timeline, stage, sync, world)', P.error);
+  if (!P.error) {
+    // 1. the spine
+    const nS = P.scenes.length;
+    result(!P.errors.length && !!P.element && P.acts.length >= 3 && P.acts.length <= 5 && P.scenes[nS - 1].form === 'mark',
+      `spine: no error, one element ("${P.element}"), ${P.acts.length} acts, the lockup as the last scene`, JSON.stringify({ errors: P.errors, last: P.scenes[nS - 1] }));
+    result(P.acts.every((a, i) => (i === 0 || a.from === P.acts[i - 1].to) && Number.isInteger(a.bars) && a.bars > 0), 'spine: acts contiguous on whole bars', JSON.stringify(P.acts));
+    const carried = P.changes.every((c) => c.kind !== 'cut' && (c.kind === 'entry' ? c.to.form === 'mark' : c.allowed === true));
+    result(P.changes.length === nS - 1 && carried, `spine: ${P.changes.length} changes for ${nS} scenes, every one carried by a handover its forms allow (${P.changes.map((c) => c.kind).join(', ')})`,
+      JSON.stringify(P.changes.map((c) => [c.from.form, c.to.form, c.kind, c.allowed])));
+    result(P.plan.length === P.changes.length && P.plan.every((h, i) => h.kind === P.changes[i].kind && h.at === P.changes[i].at && h.span[0] <= h.at && h.at < h.span[1]),
+      'spine: the handover plan is the changes, each span around its cut', JSON.stringify(P.plan));
+
+    // 2. lines
+    const alone = P.lines.filter((l) => l.place === 'alone');
+    result(P.lines.length <= 4 && alone.every((l) => l.claim || l.act === 0), `lines: ${P.lines.length} (four at most), alone only for the promise and the claim`, JSON.stringify(P.lines.map((l) => [l.id, l.place, l.act])));
+    const sceneOf = (i) => P.scenes[i];
+    result(P.lines.every((l) => l.in < l.resolved && l.resolved < l.out && l.in >= sceneOf(l.scene).from - 1 && l.q16),
+      'lines: each arrives, is whole on the music\'s 16th and leaves after it, inside its scene', JSON.stringify(P.lines));
+
+    // 3. stage
+    const drawn = P.specs.filter(Boolean);
+    result(drawn.length >= 1 && drawn.every((s) => !s.missing && !s.bad.length),
+      `stage: ${drawn.length} drawn handover(s), finite boxes on both sides and a finite element on every frame of each span`, JSON.stringify(drawn.filter((s) => s.missing || s.bad.length)));
+
+    // 4. sound and declares
+    const total = P.total;
+    result(P.cues.length > 0 && P.cues.every((e) => e.f >= 0 && e.f < total && Number.isFinite(e.f)), `sound: ${P.cues.length} cues, all inside the film`, JSON.stringify(P.cues.filter((e) => !(e.f >= 0 && e.f < total))));
+    const sounded = P.plan.filter((h) => h.kind !== 'cut' && h.kind !== 'entry' && !['stay', 'word', 'part', 'same-surface'].includes(h.kind));
+    result(sounded.every((h) => P.cues.some((e) => e.id.includes(`${P.hid[h.kind]}-${h.kind}-`))), 'sound: every handover sounds by its kind (the scene-internal stay, word, part and same-surface sound through their scenes)', JSON.stringify(sounded.map((h) => h.kind)));
+    const hits = P.cues.filter((e) => /lockup$/.test(e.id));
+    result(hits.length === 1 && hits[0].kind === 'hit' && hits[0].weight === 1 && hits[0].f === P.lock.lockup, 'sound: one lockup hit at weight 1 on the frame the mark lands', JSON.stringify(hits));
+    result(!P.turn || P.cues.some((e) => e.kind === 'drop' && e.f === P.turn.at), 'sound: the world\'s turn takes the drop', JSON.stringify(P.turn));
+    const tracks = P.declares.filter((d) => /^handover-/.test(d.id));
+    const tracksOk = tracks.length === drawn.length && tracks.every((d) => d.seams.length === 1 && Array.isArray(d.seams[0].track) && d.seams[0].track.length === d.seams[0].span[1] - d.seams[0].span[0] + 1
+      && d.seams[0].track.every((r) => r.length === 5 && r.every(Number.isFinite) && r[3] > 0 && r[4] > 0));
+    result(tracksOk && P.declares.some((d) => d.id === 'world-steps'), `declares: each drawn handover's box track on every frame of its span (${tracks.length}), the world's steps`,
+      JSON.stringify(tracks.map((d) => [d.id, d.seams[0]?.track?.length, d.seams[0]?.span])));
+
+    // 5. the end
+    const L5 = P.lock;
+    const lastAct = P.acts[P.acts.length - 1];
+    result(L5.lockup >= lastAct.from && L5.lockup < L5.name && L5.name < L5.fact && L5.fact < total && L5.end.to === total && L5.end.from > L5.fact && L5.end.from < total,
+      'end: the mark lands in the last act, then the name, then the fact; the end lock runs from the fact to the last frame', JSON.stringify(L5));
+    const lastSeam = P.seams[P.seams.length - 1];
+    result(lastSeam.kind === 'fadeEnd' && lastSeam.at === L5.fadeFrom && P.seams.filter((s) => s.kind === 'fadeEnd').length === 1
+      && (L5.fadeFrom >= P.bodyEnd || L5.fadeFrom === total - L5.f60fade) && L5.fadeFrom <= total - L5.f60fade,
+      'end: the settle-out is the last seam, starts after the body\'s last bar line, and completes on the last frame', JSON.stringify({ fadeFrom: L5.fadeFrom, bodyEnd: P.bodyEnd, total }));
+    result(P.turn ? P.colour.length === 1 && P.colour[0].from === P.turn.at && P.worldTurn === P.turn.at : !P.colour.length,
+      'end: the world\'s one turn is the film\'s colour event (declared from its cut; the world turns there)', JSON.stringify({ turn: P.turn, colour: P.colour, world: P.worldTurn }));
   }
 
-  // b: a picture-only pair between two lines; a dealt picture -> picture match cut over an uncarried change
-  // (creative elements that draw lines only, no reserve: a match cut beside a creative picture plays as the blur)
-  const DEALT_TS = path.join(DIR, 'src', 'dealt.ts');
-  const dealtSrc = fs.readFileSync(DEALT_TS, 'utf8');
-  fs.writeFileSync(DEALT_TS, `export const DEALT: { direction: string; deal: Record<string, string>; creative?: string[]; reserve?: string[] } | null = ${JSON.stringify({ direction: '', deal: {}, creative: ['word-swap', 'scale-contrast'], reserve: [] })};
-`);
-  writeLaunch([P.input('Tern turns voice notes into *plans*.'), P.result(), P.steps('Each task lands on its day.'), P.result('Your week, planned.')], { seamAA: 'matchCut' });
-  const b = probe();
-  fs.writeFileSync(DEALT_TS, dealtSrc);
-  result(!b.error, 'a picture-only pair imports', b.error);
-  if (!b.error) {
-    result(b.modes[1] === 'none' && b.beats.filter((x) => x[0] === 'pic2').length === 1 && !b.beats.some((x) => x[0] === 'line2') && !b.copy.includes('line2') && b.copy.includes('ui2.1') && !b.cues.includes('line2'),
-      'lines: a pair with no line is one picture beat, its strings kept, no line in COPY or CUE', JSON.stringify({ modes: b.modes, beats: b.beats }));
-    result(b.seams.some((s) => s[1] === 'pic1-pic2' && s[2] === 'AA'), 'lines: the change into a picture-only pair is a picture -> picture seam', JSON.stringify(b.seams));
-    const mc = b.seams.filter((s) => s[0] === 'matchCut' && s[2] === 'AA').map((s) => s[1]);
-    const warned = b.issues.filter((x) => x.startsWith('carry:'));
-    result(mc.length >= 1 && warned.length >= 1 && warned.every((w) => mc.some((id) => w.includes(id))) && warned.some((w) => /"result"/.test(w)),
-      'seams: a dealt picture -> picture match cut with nothing carried is reported (carry), naming both scenes', JSON.stringify({ mc, warned: warned.map((w) => w.slice(0, 120)) }));
-  }
-
-  // c: two key words in three lines fail; five lines fail; a first pair without a line fails
-  writeLaunch([P.input('Tern turns notes into *plans*.'), P.steps('Each task finds its *day*.'), P.result('Start your week.')]);
-  const c = probe();
-  result(/key word/.test(c.error ?? ''), 'key words: two of three lines with a key word fail at import (two of four pass, above)', c.error ?? 'imported');
-  writeLaunch([P.input('Tern turns notes into *plans*.'), P.steps('Each task finds its day.'), P.result('Your week is ready.'), P.input('It works offline.'), P.result('Start your week.')]);
-  const d = probe();
-  result(/at most 4/.test(d.error ?? ''), 'lines: five lines fail (four at most: the pictures carry the rest)', d.error ?? 'imported');
-  writeLaunch([P.steps(), P.input('Tern turns notes into plans.'), P.result('Start your week.')]);
-  const g = probe();
-  result(/first pair and the last/.test(g.error ?? ''), 'lines: the first pair keeps its line', g.error ?? 'imported');
-
-  // 10. the input shot: a stand-in scripts/assets.mjs (a recipe of one clip; get writes an orange clip with ffmpeg)
-  const IN = path.join(TMP, 'input');
-  fs.mkdirSync(path.join(IN, 'src'), { recursive: true });
-  fs.mkdirSync(path.join(IN, 'scripts'), { recursive: true });
-  fs.mkdirSync(path.join(IN, 'public', 'assets'), { recursive: true });
-  fs.writeFileSync(path.join(IN, 'scripts', 'assets.mjs'), `import fs from 'node:fs';
-import path from 'node:path';
-import { spawnSync } from 'node:child_process';
-const a = process.argv.slice(2);
-const at = (k) => a[a.indexOf(k) + 1];
-if (a[0] === 'recipe') {
-  fs.mkdirSync(path.dirname(at('--out')), { recursive: true });
-  fs.writeFileSync(at('--out'), JSON.stringify({ recipe: 'stand-in', items: [{ n: 1, kind: 'video', ref: 'stand-in:1', width: 1920, height: 1080, duration: 8, screen: 'cut' }] }));
-  process.exit(0);
-}
-if (a[0] === 'get') {
-  const r = spawnSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'color=c=0xE8792B:s=320x180:d=1:r=30', '-pix_fmt', 'yuv420p', path.join(at('--to'), 'input.mp4')]);
-  process.exit(r.status ?? 1);
-}
-process.exit(1);
-`);
-  const runInput = (words, ...args) => {
-    fs.writeFileSync(path.join(IN, 'src', 'launch.ts'), `export const LAUNCH = { name: 'Tern', pairs: [], close: 'Out now', input: '${words}' };\n`);
-    const r = spawnSync(process.execPath, [path.join(DIR, 'tools', 'input.mjs'), ...args], { cwd: IN, encoding: 'utf8' });
-    const ts = fs.existsSync(path.join(IN, 'src', 'input.ts')) ? fs.readFileSync(path.join(IN, 'src', 'input.ts'), 'utf8') : '';
-    const shot = /INPUT_SHOT: InputShot = (\{.*\});/.exec(ts);
-    return { out: `${r.stdout}${r.stderr}`, shot: shot ? JSON.parse(shot[1]) : null };
-  };
-  const dev = runInput('a developer typing code at a desk');
-  result(dev.shot?.status === 'none' && /happens on a screen/.test(dev.shot?.reason ?? ''), 'input: an input that happens on a screen is not filmed (the product\'s own screen is the shot)', JSON.stringify(dev.shot));
-  const ffmpeg = spawnSync('ffmpeg', ['-version']).status === 0;
-  if (!ffmpeg) console.log('skip  input: the clip checks need ffmpeg');
+  // 6. a bare cut inside an act is a spine error
+  const spinePath = path.join(DIR, 'src', 'spine.ts');
+  const spineSrc = fs.readFileSync(spinePath, 'utf8');
+  const cutSrc = spineSrc.replace(/(\{ form: 'button', name: 'press'[^}]*?)( \})/, "$1, via: 'cut'$2");
+  if (cutSrc === spineSrc) result(false, 'a bad spine: the scaffold\'s press scene was found to cut into', 'no { form: \'button\', name: \'press\' ... } in src/spine.ts');
   else {
-    // a clip from an earlier pick is already there: the new one replaces it in place
-    spawnSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'color=c=0x2B6CE8:s=320x180:d=1:r=30', '-pix_fmt', 'yuv420p', path.join(IN, 'public', 'assets', 'input.mp4')]);
-    const before = fs.statSync(path.join(IN, 'public', 'assets', 'input.mp4')).size;
-    const forced = runInput('a developer typing code at a desk', '--force');
-    const files = fs.readdirSync(path.join(IN, 'public', 'assets')).sort();
-    result(forced.shot?.status === 'fetched' && forced.shot.clip === 'assets/input.mp4' && files.join(',') === 'input.mp4',
-      'input: --force fetches; the clip lands as the file src/input.ts names, the old one gone, no second file beside it', JSON.stringify({ files, before, status: forced.shot?.status }));
-    result(/off-palette colour/.test(forced.out) && /\d+\.\d % of the clip's pixels/.test(forced.out), 'input: a clip in the banned hues (an orange field) warns with its share', forced.out.split('\n').filter((l) => /warn/.test(l)).join(' | ').slice(0, 200));
-    const talk = runInput('a person speaking into a phone');
-    result(talk.shot?.status === 'fetched' && !/happens on a screen/.test(talk.out), 'input: a human input is filmed (no screen refusal)', JSON.stringify(talk.shot));
+    fs.writeFileSync(spinePath, cutSrc);
+    const B = run(`const T: any = await import(${JSON.stringify(url('timeline.ts'))}); out.errors = T.SPINE_PLAN.issues.errors;`);
+    fs.writeFileSync(spinePath, spineSrc);
+    result(!B.error && B.errors.some((e) => /bare cut inside an act/.test(e)), 'a bad spine: a bare cut inside an act is a spine error', B.error ?? JSON.stringify(B.errors));
   }
+
+  // 7. grid-check --part spine on the scaffold
+  const g = spawnSync(process.execPath, [TSX, path.join(SKILL, 'scripts', 'grid-check.ts'), 'src/timeline.ts', '--part', 'spine', '--json'], { cwd: DIR, encoding: 'utf8', env: { ...process.env, CINETIC_GATE: '' }, maxBuffer: 64 * 1024 * 1024 });
+  let gj = null;
+  try {
+    gj = JSON.parse(g.stdout.slice(g.stdout.indexOf('{')));
+  } catch {}
+  const gErr = gj ? (gj.errors ?? gj.issues?.filter?.((x) => x.severity === 'error') ?? []) : null;
+  result(g.status === 0, 'grid-check --part spine passes on the scaffold', g.status === 0 ? '' : JSON.stringify(gErr ?? (g.stderr || g.stdout).slice(-400)).slice(0, 500));
 } finally {
   // the link to the starter's node_modules goes first (the folder it points at stays)
   try {

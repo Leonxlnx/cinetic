@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * creative.test.mjs: the creative elements (assets/remotion-starter/src/fx/creative), their random deal and the
- * launch-simple plumbing that plays them as real scenes, read from the modules (no render).
+ * creative.test.mjs: the creative elements (assets/remotion-starter/src/fx/creative), the deck's random deal of them, and
+ * the default launch's own deal and devices (launch-simple plays a spine: devices by verb, house scenes), read from the
+ * modules (no render).
  *
  *   1. library     at least 12 finished devices, ids unique, both roles, a recipe of substance and house parameters each,
  *                  meta.ts and index.tsx agree.
@@ -13,14 +14,12 @@
  *                  hold still; scale-contrast's rising letters start wholly under their mask.
  *   4. timings     meta.ts's line arithmetic (lineResolve, tail) equals the components' own (buildFrames, swapResolve,
  *                  scaleResolve, WINDOW_TAIL, OBJECT_TAIL, AROUND_TAIL).
- *   5. deal        the name deals three: a line device, a picture device, families apart; another name another set; a
- *                  recent set is never dealt again and at most one device is shared with the last film.
- *   6. plan        launch-simple maps the deal onto the beats: at least half the body's beats creative, a handover seam
- *                  where a line device carries its picture in, no self-ending picture device on the last pair, a missing
- *                  script field reported (CREATIVE_MISSING), a swap needing a reason, a colour device turning the claim's
- *                  field off.
- *   7. item 29     no camera float or drift (deal camera still/land, the key light still, no line drift, no card creep,
- *                  Film.tsx without a Float).
+ *   5. deal        launch-simple deals the text voice and the world from the name (no camera slot): the unnamed
+ *                  scaffold plays the floor, ten names deal 2+ voices and 3+ built worlds (never a photograph: that is
+ *                  the deck's, for the brief's own subject), the same name the same deal.
+ *   6. plan        launch-simple plays the spine: every act the device its verb asks for (lib/spine VERB_DEVICES), one
+ *                  signature at most and at the turn, no spine error, every scene drawn by a house scene (SCENE_DRAW).
+ *   7. item 29     no camera float: Film.tsx without a Float (holds creep on purpose now: the motion floor asks for it).
  *   8. deck.py     reads the same library from meta.ts, deals two or three with a line and a picture device, never a
  *                  recent set, the needs-gated devices only with --have (or the brief's words), and writes src/dealt.ts;
  *                  eight deals in a row walk the library (recency-weighted), each holding a device the last four lacked.
@@ -67,11 +66,6 @@ for (const f of tj.remove ?? []) fs.rmSync(path.join(DIR, f), { force: true });
 fs.copyFileSync(path.join(STARTER, 'package.json'), path.join(DIR, 'package.json'));
 fs.symlinkSync(path.join(STARTER, 'node_modules'), path.join(DIR, 'node_modules'), 'junction');
 const url = (p) => pathToFileURL(path.join(DIR, 'src', p)).href;
-const LAUNCH_SRC = fs.readFileSync(path.join(DIR, 'src', 'launch.ts'), 'utf8');
-const writeLaunch = (pairs, extra = '') => {
-  const body = `export const LAUNCH: Launch = {\n  name: IDENTITY.name,\n  pairs: ${JSON.stringify(pairs)},\n  close: 'Out now',\n  input: 'a person typing',\n${extra}};\n`;
-  fs.writeFileSync(path.join(DIR, 'src', 'launch.ts'), LAUNCH_SRC.replace(/export const LAUNCH: Launch = \{[\s\S]*?\n\};\n/, body));
-};
 const writeDealt = (creative) => fs.writeFileSync(path.join(DIR, 'src', 'dealt.ts'), `export const DEALT: { direction: string; deal: Record<string, string>; creative?: string[]; reserve?: string[] } | null = ${creative ? JSON.stringify({ direction: '', deal: {}, creative }) : 'null'};\n`);
 const writeName = (name) => fs.writeFileSync(path.join(DIR, 'src', 'brand', 'identity.ts'), `export const IDENTITY = { name: ${JSON.stringify(name)}, supplied: false } as const;\n`);
 
@@ -243,103 +237,51 @@ try {
     result(!bob.length, 'no bobbing: no device drives a position with a sine of the frame', bob.join(' '));
   }
 
-  // ---- 5: the deal from a name
+  // ---- 5: launch-simple's deal from a name (the spine template deals the text voice and the world; the creative set is
+  // the deck's, section 8, for the templates that play it)
   const deal = run(`
   const D: any = await import(${JSON.stringify(url('deal.ts'))});
-  const M: any = await import(${JSON.stringify(url('fx/creative/meta.ts'))});
-  const role = (id: string) => M.metaOf(id).role, fam = (id: string) => M.metaOf(id).family;
-  const names = ['Ferry', 'Morrow', 'Tern', 'Quill', 'Harbor', 'Lumen', 'Pocket', 'Atlas', 'Sable', 'Juniper'];
-  const all = { swap: true, logos: true, count: true, before: true, photos: true };
-  out.deals = names.map((n) => D.creativeOf(n, [], 3, all).deal);
-  // with nothing in the script to feed them, the name never deals a device that needs logos, a figure, alternatives,
-  // the old way or five photos (the template's own placeholder script feeds none)
-  out.fed = names.every((n) => D.creativeOf(n).deal.every((x: string) => M.metaOf(x).needs.length === 0));
-  // a run of films: each deal takes the last ones as recent, and the weighted walk reaches far into the library
-  const run: string[][] = [];
-  for (let i = 0; i < 8; i++) run.unshift(D.creativeOf("walk " + i, run.slice(0, 4), 3, all).deal);
-  out.walk = new Set(run.flat()).size;
-  out.shape = out.deals.every((d: string[]) => d.length === 3 && d.some((x) => role(x) === 'line') && d.some((x) => role(x) === 'picture') && new Set(d.map(fam)).size === d.length);
-  out.distinct = new Set(out.deals.map((d: string[]) => [...d].sort().join(','))).size;
-  out.used = new Set(out.deals.flat()).size;
-  const first = D.creativeOf('Ferry').deal;
-  const again = D.creativeOf('Ferry', [first]).deal;
-  out.recent = { first, again, same: [...first].sort().join() === [...again].sort().join(), shared: again.filter((x: string) => first.includes(x)).length };
-  out.det = JSON.stringify(D.creativeOf('Ferry')) === JSON.stringify(D.creativeOf('Ferry'));
-  out.camera = D.DEVICES.camera;
+  out.slots = Object.keys(D.DEVICES); out.floor = D.FLOOR; out.deal = D.DEAL; out.source = D.DEAL_SOURCE;
   `);
+  const dealOfName = (name) => {
+    writeName(name);
+    return run(`const D: any = await import(${JSON.stringify(url('deal.ts'))}); out.deal = D.DEAL; out.source = D.DEAL_SOURCE; out.devices = D.DEVICES; out.floor = D.FLOOR;`);
+  };
   result(!deal.error, 'the deal imports', deal.error);
   if (!deal.error) {
-    result(deal.shape, 'deal: three devices, a line device and a picture device, never two of one family', JSON.stringify(deal.deals));
-    result(deal.distinct >= 8 && deal.used >= 11, `deal: ten names deal ${deal.distinct} different sets over ${deal.used} devices (random across the library)`);
-    result(deal.fed, 'deal: the name deals only devices the script can feed (no logos, figure, alternatives, old way or photos in it: none that need them)');
-    result(deal.walk >= 13, `deal: eight deals in a row, each with the last four as recent, play ${deal.walk} devices (the recency-weighted walk)`);
-    result(!deal.recent.same && deal.recent.shared <= 1 && deal.det, 'deal: a recent set is never dealt again, at most one device shared with the last film; the same name deals the same set', JSON.stringify(deal.recent));
-    result(JSON.stringify(deal.camera) === JSON.stringify(['still', 'land']), 'item 29: the dealt camera is still or a push that lands (no drift, no rise)', JSON.stringify(deal.camera));
+    result(JSON.stringify(deal.slots) === JSON.stringify(['voice', 'ground']), 'deal: the spine template deals the text voice and the world, nothing that moves the camera (item 29: the scenes make one push that lands)', JSON.stringify(deal.slots));
+    result(JSON.stringify(deal.deal) === JSON.stringify(deal.floor) && /the name "\[/.test(deal.source), 'deal: the unnamed scaffold plays the floor', JSON.stringify({ deal: deal.deal, source: deal.source }));
+    const names = ['Ferry', 'Morrow', 'Tern', 'Quill', 'Harbor', 'Lumen', 'Pocket', 'Atlas', 'Sable', 'Juniper'];
+    const got = names.map((n) => dealOfName(n));
+    const ok = got.every((g) => !g.error && g.deal);
+    const BUILT = ['paleSky', 'nearWhite', 'electric', 'blackField', 'deepField'];
+    result(ok && new Set(got.map((g) => g.deal.voice)).size >= 2 && new Set(got.map((g) => g.deal.ground)).size >= 3,
+      `deal: ten names deal ${ok ? new Set(got.map((g) => g.deal.voice)).size : 0} voices and ${ok ? new Set(got.map((g) => g.deal.ground)).size : 0} worlds (random across the slots)`, JSON.stringify(got.map((g) => g.deal ?? g.error)));
+    result(ok && got.every((g) => BUILT.includes(g.deal.ground)), 'deal: a name deals a built world only (a photograph only by the deck, for the brief\'s own subject)', JSON.stringify(got.map((g) => g.deal?.ground)));
+    const again = dealOfName('Ferry');
+    result(ok && JSON.stringify(again.deal) === JSON.stringify(got[0].deal), 'deal: the same name deals the same voice and world', JSON.stringify([again.deal, got[0].deal]));
   }
 
-  // ---- 6: the plan in launch-simple
-  const PAIRS = [
-    { line: 'Ferry gives every PR a *database*.', scene: 'input', seconds: 2.8, hits: [0.3, 0.62], ui: ['pr-482', 'Database ready'] },
-    { line: 'Test with your real data.', scene: 'steps', seconds: 2.4, hits: [0.2, 0.5], ui: ['Seed copied', 'Rows', 'Tables'] },
-    { line: 'Ship what you tested.', scene: 'result', seconds: 2.6, hits: [0.35], ui: ['Merged', 'Database closed'] },
-  ];
-  const probePlan = `
+  // ---- 6: the plan in launch-simple: the spine's devices by verb, each scene drawn by a house scene
+  writeName('Ferry');
+  writeDealt(null);
+  const a = run(`
   const T: any = await import(${JSON.stringify(url('timeline.ts'))});
   const S: any = await import(${JSON.stringify(url('acts/stage.tsx'))});
-  const D: any = await import(${JSON.stringify(url('deal.ts'))});
-  out.plan = T.CREATIVE_PLAN; out.missing = T.CREATIVE_MISSING; out.modes = T.MODES; out.unplaced = T.CREATIVE_UNPLACED;
-  out.seams = T.SEAM_PLAN.map((s: any) => [s.recipe, s.id]);
-  const body = T.BEAT_PLAN.filter((b: any) => b.kind !== 'end');
-  out.beats = body.length; out.colour = T.COLOUR; out.fieldOn = S.FIELD_ON; out.source = D.CREATIVE.source;
-  out.copy = T.COPY.filter((c: any) => /^line/.test(c.id)).map((c: any) => [c.id, c.in, c.resolved, c.out]);
-  out.key = S.KEY_LIGHT; out.land = S.LAND;
-  const L: any = await import(${JSON.stringify(url('acts/line.tsx'))});
-  const U: any = await import(${JSON.stringify(url('acts/ui.tsx'))});
-  out.drift = L.LINE_DRIFT; out.creep = U.CARD.creep;
-  `;
-  writeName('Ferry');
-  writeDealt(['type-window', 'pixel-assemble', 'logo-orbit']);
-  writeLaunch(PAIRS);
-  const a = run(probePlan);
-  result(!a.error, 'plan: launch-simple imports with a dealt creative set', a.error);
+  const L: any = await import(${JSON.stringify(url('lib/spine.ts'))});
+  out.devices = T.SPINE_PLAN.devices; out.acts = T.SPINE_PLAN.acts.map((x: any) => ({ verb: x.verb, world: x.world, asks: L.devicesFor(x.verb) }));
+  out.drawn = T.SCENES.map((s: any) => { try { return [s.name, S.defOf(s.i).form]; } catch (e: any) { return [s.name, 'MISSING ' + String(e?.message ?? e)]; } });
+  out.errors = T.SPINE_PLAN.issues.errors;
+  `);
+  result(!a.error, 'plan: launch-simple imports its spine', a.error);
   if (!a.error) {
-    const ids = a.plan.map((c) => `${c.pair}:${c.id}`);
-    result(a.plan.length >= Math.ceil(0.5 * a.beats), `plan: ${a.plan.length} creative beats of ${a.beats} (at least half)`, ids.join(' '));
-    result(a.seams.some(([r, id]) => r === 'handover' && /^line\d-pic\d$/.test(id)), 'plan: a line device that carries its picture in hands over (no seam drawn)', JSON.stringify(a.seams));
-    result(a.missing.some((m) => /logo-orbit/.test(m) && /logos/.test(m)), 'plan: a device whose script is missing is reported (logo-orbit without logos)', a.missing.join(' | '));
-    result(a.source === 'deck.py', 'plan: the deck\'s creative set plays (one source)', a.source);
-    result(a.key.sway === 0 && a.key.drift === 0 && a.drift === 0 && a.creep === 0, 'item 29: the key light holds still, lines do not drift, cards do not creep', JSON.stringify({ key: a.key, drift: a.drift, creep: a.creep }));
-    const tw = a.copy.find((c) => c[0] === `line${a.plan.find((p) => p.id === 'type-window')?.pair}`);
-    result(!!tw && tw[3] - tw[2] > 0, 'plan: the type-window line is read before its words leave', JSON.stringify(a.copy));
+    const sig = a.devices.filter((d) => d.signature);
+    result(a.devices.length >= a.acts.length && a.devices.every((d) => d.fits && a.acts[d.act].asks.includes(d.id)),
+      `plan: every act plays the device its verb asks for (${a.devices.map((d) => `${a.acts[d.act].verb}: ${d.id}`).join(', ')})`, JSON.stringify(a.devices));
+    result(sig.length <= 1 && sig.every((d) => a.acts[d.act].world === 'turn') && !a.errors.length,
+      'plan: one signature device at most, at the turn; the spine without errors', JSON.stringify({ sig, worlds: a.acts.map((x) => x.world), errors: a.errors }));
+    result(a.drawn.every(([, f]) => !/^MISSING/.test(f)), 'plan: every scene of the spine has its house scene (src/product.tsx SCENE_DRAW)', JSON.stringify(a.drawn));
   }
-  // the needs met, a self-ending device kept off the last pair, the colour device turning the claim's field off
-  writeDealt(['word-swap', 'zoom-wall', 'colour-flood']);
-  writeLaunch([{ ...PAIRS[0], alts: ['PR', 'branch'] }, PAIRS[1], PAIRS[2]]);
-  const b = run(probePlan);
-  result(!b.error, 'plan: a second set imports', b.error);
-  if (!b.error) {
-    const last = b.plan.filter((c) => c.pair === 3 && c.role === 'picture').map((c) => c.id);
-    result(!last.includes('zoom-wall'), 'plan: a picture device that ends on itself never takes the last picture (the end card is built from it)', JSON.stringify(b.plan));
-    result(!b.missing.length, 'plan: word-swap with its alternatives needs nothing more', b.missing.join(' | '));
-    result(!b.fieldOn && b.colour.some((c) => c.id === 'colour-flood'), 'plan: colour-flood is the film\'s colour event (declared; the claim\'s field off)', JSON.stringify(b.colour));
-  }
-  // a dealt device with no beat left is named (two self-ending picture devices and a line device that hands over, three pairs)
-  writeDealt(['type-object', 'zoom-wall', 'object-turn']);
-  writeLaunch(PAIRS);
-  const u = run(probePlan);
-  result(!u.error && u.unplaced.length === 1 && u.issues.some((m) => /found no beat/.test(m)), 'plan: a dealt device that finds no beat is reported (add a pair or swap it)', u.error ?? JSON.stringify({ plan: u.plan, unplaced: u.unplaced }));
-  // a swap needs a reason
-  writeLaunch(PAIRS, "  creative: { swap: { 'zoom-wall': 'photo-arc' } },\n");
-  const c = run(probePlan);
-  result(/needs a reason/.test(c.error ?? ''), 'plan: a swap without a reason fails at import', c.error);
-  writeLaunch(PAIRS, "  creative: { swap: { 'zoom-wall': 'photo-arc' }, reason: 'one product moment, not many' },\n");
-  const d = run(probePlan);
-  result(!d.error && d.plan.some((p) => p.id === 'photo-arc') && !d.plan.some((p) => p.id === 'zoom-wall'), 'plan: a swap with its reason trades the device', d.error ?? JSON.stringify(d.plan));
-  // the name deals when the deck dealt nothing
-  writeDealt(null);
-  writeLaunch(PAIRS);
-  const e = run(probePlan);
-  result(!e.error && /the name "Ferry"/.test(e.source) && e.plan.length >= 3, 'plan: without the deck the name deals the set', e.error ?? `${e.source} ${JSON.stringify(e.plan)}`);
   const film = fs.readFileSync(path.join(TPL, 'src', 'Film.tsx'), 'utf8');
   result(!/<Float\b/.test(film), 'item 29: Film.tsx draws no camera float');
 

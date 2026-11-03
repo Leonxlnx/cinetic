@@ -6,9 +6,10 @@
   2. end_hold: the tail an ending asks for (its own ring clipped to 1.5-2.5 s, a hit's 1.8 s, a fade's length).
   3. fit on a launch-simple project (the timeline and every module it imports, the template's over the starter's; tsx
      from the starter): the timeline is read at the track's tempo, the edit plays
-     exactly the film's bars (BARS read again with the final src/music.ts), the track's entry lands on the bar where
-     the end act opens (the lockup's), the ending is a hit and never a fade unless asked, and edit.json records the
-     fit (`track.py music` fits again from it).
+     exactly the film's bars (BARS read again with the final src/music.ts), the track's entry lands on the lockup's bar
+     (the spine has no end act: the mark grows out of the last form inside the last act, REVEAL is the frame it lands,
+     in the film's last bars), the ending is a hit and never a fade unless asked, and edit.json records the fit
+     (`track.py music` fits again from it).
   4. --end fade is honoured when asked; a timeline that does not import leaves src/music.ts as it was.
 
 Usage (from the skill root): python3 scripts/test/fit.test.py
@@ -139,11 +140,13 @@ try:
     e = json.load(open(os.path.join(root, 'audio', 'music', 'edit.json'), encoding='utf-8')) if r.returncode == 0 else {}
     p = plan() if r.returncode == 0 else {}
     down = p.get('downbeats') or []
-    end_bar = 1 + sum(1 for d in down if d <= (p.get('end') or 0) + 0.5) - 1 if down else None
+    lock = p.get('reveal')
+    lock_bar = sum(1 for d in down if d <= lock + 0.5) if down and lock is not None else None
     check(r.returncode == 0 and e.get('film_bars') == round(p.get('bars') or -1), 'fit: the edit plays exactly the film\'s bars (BARS read again on the final grid)',
           f"exit {r.returncode}, edit {e.get('film_bars')}, timeline {p.get('bars')}: {(r.stderr or r.stdout)[-300:]}")
-    check(e.get('reveal', {}).get('film_bar') == end_bar and e.get('reveal', {}).get('src_bar') == 17,
-          "fit: the track's entry lands on the bar where the end act opens (the lockup's)", f"reveal {e.get('reveal')}, end act bar {end_bar}")
+    check(p.get('end') is None and lock_bar is not None and lock_bar > (p.get('bars') or 0) / 2 and e.get('reveal', {}).get('film_bar') == lock_bar
+          and e.get('reveal', {}).get('src_bar') == 17,
+          "fit: the track's entry lands on the lockup's bar (the bar the mark lands in, late in the film)", f"reveal {e.get('reveal')}, lockup bar {lock_bar}, end act {p.get('end')}")
     check(e.get('ending', {}).get('mode') in ('ring', 'button', 'hit') and e.get('args', {}).get('fit') is True and isinstance(e.get('fit', {}).get('cuts'), list),
           'fit: the ending is a hit, never a fade unless asked; edit.json records the fit', f"ending {e.get('ending', {}).get('mode')}, fit {e.get('fit')}")
     # 4. --end fade, and a timeline that does not import
