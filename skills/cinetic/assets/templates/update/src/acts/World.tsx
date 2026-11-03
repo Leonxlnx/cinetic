@@ -1,22 +1,24 @@
-// The update film's stage: one world (fx/world, dealt, never cut) under the whole film with its key light, and in it the
-// name and the version, then each change's hero shot (acts/heroes.tsx) and its line, then the end card. Every act renders
-// this stage at its own frames, so the acts join by construction.
+// The update film's stage: one world (fx/world WorldSteps: dealt, never cut, one step per act on the spine's act cuts)
+// under the whole film, and in it the film's ONE element handed on from act to act (src/timeline.ts SPINE, HANDS):
 //
-//   the hook    the name and the version, centred, as one pair from the first frame (roll, rise or badge, dealt); on a
-//               night world their light blooms softly; they recede as the first shot arrives
-//   a change    its hero shot arrives on the film's optics (rack: out of focus to sharp; whip: a fast move braking into
-//               the shot; bloom: out of the world's light), plays its one camera move and its moment, and holds its
-//               result. Its line, by the shape (src/deal.ts SHAPES):
-//                 show   the shot goes soft and dims (a focus isolate) and the line lands centred in front of it
-//                 lead   the line first, alone in the world (the shot before goes soft into the world); then the shot
-//                 split  the line parted round a porthole that opens in its gap with the shot inside; the words leave
-//                        and the porthole opens into the frame as the shot plays
-//   the end     the brand's mark as a solid, close up and turning, out of focus as what was on screen goes soft; one
-//               pull-back lands it exactly on the flat mark (fx/three Logo3D; its flat twin without hardware WebGL); the
-//               name slides out of it and the version lands on the last bar line apart from the name, held to the end
+//   the hook    the name and the version's pill, centred (roll, rise or badge, dealt): the pill is the element. The name
+//               leaves as the pill lifts and is handed into the first change
+//   a change    its hero shot (acts/heroes.tsx) draws the element in the act's form. It arrives INSIDE the element: the
+//               handover (fx/Handover) carries the element's box, corner and content from the last shot's camera into
+//               this shot's camera (it grows, flies, swells, shrinks or converges through a spark) while the shot before
+//               falls back soft and this one racks in behind the landing element. The shot plays its one camera move and
+//               its moment; its held result keeps creeping on the tail of that move (never a still frame). Its line
+//               meets the element (src/deal.ts PLACES):
+//                 part   the line builds round a gap; the element lands in it as a porthole holding the shot; the words
+//                        leave and the porthole opens into the frame
+//                 head   the line arrives as the element lands and rides over it in the shot's own space (centred above
+//                        or under it), leaving as the element hands on
+//   the end     the last form converges into a spark from which the brand's mark grows as a solid (fx/three Logo3D;
+//               its CSS-3D twin without hardware WebGL); one pull-back lands it exactly on the flat mark; the name slides
+//               out of it and the version lands on the last bar line apart from the name, held to the end
 //
-// The camera never floats: it moves only inside a hero shot (one declared move that lands) and in the mark's pull-back;
-// a hold is still. Nothing bobs or breathes, no card rests tilted. Lines are centred, never over a sharp shot.
+// The camera never floats: it moves inside a hero shot (one declared move that lands), on the world's step per act and
+// in the handovers. Nothing bobs or breathes, no card rests tilted. Lines are centred, never over a sharp shot.
 import React from 'react';
 import { AbsoluteFill, Freeze, Img, useCurrentFrame } from 'remotion';
 import { type Logo, LogoMark } from '../brand/Mark';
@@ -24,28 +26,37 @@ import { LOGO } from '../brand/logo';
 import { C, FONT, TYPE, TYPE_FAMILY, typeStyle, U } from '../brand/tokens';
 import { DEAL, HEROES, LINES } from '../deal';
 import { Bloom } from '../fx/light';
+import { Handover } from '../fx/Handover';
 import { type GlMode, Logo3D } from '../fx/three';
-import { World as Place, worldPath } from '../fx/world';
+import { stepsFromPlan, WorldSteps } from '../fx/world';
+import { type CameraPath } from '../fx/depth/index';
+import { underStage } from '../fx/Handover';
 import { FACE_SET, PAIR_IDS, PAIRS, type PairId, safeTrack, wordmarkStyle } from '../fx/TypePairs';
 import { hasLogo } from '../kit';
 import type { InlineRef } from '../kit/inline';
 import { clamp, E, hitPulse, mix, prog } from '../lib/anim';
 import { mixColor, toOklch } from '../lib/color';
 import { defocusLevel } from '../lib/defocus';
+import { type HandSide, type HBox, scaleAbout } from '../lib/handover';
 import { measureTracked } from '../lib/measure';
-import { ACT, ARRIVALS, ARRIVE60, CLOSE, copy, EXIT_F, f60, FPS, H, HOOK, N, ROLL, TIMES, type ChangeTimes, W } from '../timeline';
+import type { Form } from '../lib/spine';
+import { ACT, CLOSE, copy, EXIT_F, f60, FPS, H, type Hand, HANDS, handIn, handOut, HOOK, N, ROLL, SPINE_PLAN, TIMES, type ChangeTimes, W } from '../timeline';
 import { type Change, photosOf, spokenChange, UPDATE } from '../update';
-import { heroFocus, HeroShot } from './heroes';
-import { ACCENT, DARK, INK, LIGHT3D, MUTE, NIGHT, pic, PICTURE, PLATE, THEME, WORLD, warnStandIn, worldDrawn } from './look';
+import { heroCamera, heroElement, heroFocus, HeroShot } from './heroes';
+import { ACCENT, DARK, INK, LIGHT3D, MUTE, NIGHT, pic, PLATE, THEME, WORLD, warnStandIn, worldDrawn } from './look';
 import { gapLine, HeroLine, MarkLine } from './type';
 
 export { THEME } from './look';
 
 /**
- * The end card's 3D mark: 'auto' draws it in 3D on a hardware GPU and its flat twin otherwise (software GL); 'force'
+ * The end card's 3D mark: 'auto' draws it in 3D on a hardware GPU and its CSS-3D twin otherwise (software GL); 'force'
  * renders the 3D on software GL too (slow: a check at half size, a few samples); 'fallback' always the flat twin.
  */
 export const MARK_3D: { gl: GlMode; samples?: number } = { gl: 'auto' };
+const FILM = { fps: FPS, width: W, height: H };
+
+/** Text width: the loaded face in the browser; 0.55 em a letter in Node (src/sync.ts builds the handovers' tracks there). */
+const mt: typeof measureTracked = (text, size, weight, track, family, o) => (typeof document === 'undefined' ? text.length * size * (0.55 + track) : measureTracked(text, size, weight, track, family, o));
 
 // ---------------------------------------------------------------------------------------------- the type pairing
 /** The film's pairing (fx/TypePairs), read from the voice and text faces scripts/type-deal.ts wrote; null for a brand face. */
@@ -64,25 +75,24 @@ const wordmarkAt = (size: number): React.CSSProperties => {
 
 // ---------------------------------------------------------------------------------------------- the lines
 /**
- * Three sizes across the change lines (a hierarchy, never every line the same white line at one size): change i's line
- * is set at LINE_SCALE[i] x the line role's size, the biggest the one that carries the release; smaller only when the line
- * (with its gap) would pass 62 % of the frame width.
+ * Two size bands across the lines (a hierarchy, never every line the same white line at one size): the parted line is
+ * the film's statement (large, the porthole in it), a line riding over its element is set smaller, as the shot's heading.
  */
-export const LINE_SCALE = [1.3, 1.0, 1.55, 1.15] as const;
-/** The line's ground on a photograph: a soft pool of the place's deep tone behind the words (TYPE_POOL in launch-simple's
- * acts/line.tsx: the same numbers); a text-shadow halo round each letter only muddies them. */
+export const LINE_SCALE = { part: 1.25, head: 0.86 } as const;
+/** The line's ground on a photograph: a soft pool of the place's deep tone behind the words. */
 const POOL = { a: 0.42, w: 1.6, h: 3.0 } as const;
-const LinePool: React.FC<{ w: number; size: number; a: number }> = ({ w, size, a }) => {
+const LinePool: React.FC<{ w: number; size: number; a: number; y?: number }> = ({ w, size, a, y = H / 2 }) => {
   if (!PLATE || DARK === false || a <= 0.004) return null;
   const deep = mixColor(WORLD.base, '#000000', 0.4);
   const pw = w * POOL.w + size * 2;
   const ph = size * 1.2 * POOL.h;
-  return <div data-pool="" style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(W / 2 - pw / 2).toFixed(2)}px, ${(H / 2 - ph / 2).toFixed(2)}px)`, width: pw, height: ph, borderRadius: '50%', background: `radial-gradient(closest-side, ${deep} 0%, ${deep} 38%, transparent 100%)`, opacity: POOL.a * a }} />;
+  return <div data-pool="" style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(W / 2 - pw / 2).toFixed(2)}px, ${(y - ph / 2).toFixed(2)}px)`, width: pw, height: ph, borderRadius: '50%', background: `radial-gradient(closest-side, ${deep} 0%, ${deep} 38%, transparent 100%)`, opacity: POOL.a * a }} />;
 };
-const lineSize = (text: string, extra = 0, k = 1) => {
+const lineSize = (text: string, extra = 0, k = 1, share = 0.66) => {
   const base = TYPE.line.size * U * k;
-  const w = measureTracked(text.replace('[]', 'MM'), base, TYPE.line.weight, TYPE.line.track, FONT.text) + extra;
-  return Math.min(base, (base * 0.62 * W) / Math.max(1, w));
+  const w = mt(text.replace('[]', 'MM'), base, TYPE.line.weight, TYPE.line.track, FONT.text) + extra;
+  // the words take what the measure leaves after the object in the line (a gap does not scale with the type)
+  return extra > 0 ? Math.min(base, (base * Math.max(0.2 * W, share * W - extra)) / Math.max(1, w - extra)) : Math.min(base, (base * share * W) / Math.max(1, w));
 };
 /** A line leaving on the film's one whole-line exit (lift: up into a blur; recede: back out of focus), gone before its travel ends. */
 const exitStyle = (F: number, out: number, size: number, voice: string = LINES.exitVoice): React.CSSProperties => {
@@ -95,13 +105,13 @@ const exitStyle = (F: number, out: number, size: number, voice: string = LINES.e
 };
 /** Another product's mark inside a line: its official mark set in the line's own ink. */
 const objectOf = (c: Change): InlineRef => (c.logo && hasLogo(c.logo) ? { kind: 'logo', logo: c.logo, mono: true } : { kind: 'chip', label: c.logoName ?? '' });
-/** Where a split line parts: the word boundary nearest its middle by width, never inside the change's key words. */
+/** Where a parted line parts: the word boundary nearest its middle by width, never inside the change's key words. */
 const splitAt = (c: Change, size: number): [string, string] => {
   const words = spokenChange(c).split(/\s+/);
   const bare = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
   const key = (c.key ?? '').toLowerCase().split(/\s+/).map(bare).filter(Boolean);
   const k0 = key.length ? words.findIndex((_, j) => key.every((kw, m) => bare(words[j + m] ?? '') === kw)) : -1;
-  const width = (s: string) => measureTracked(s, size, TYPE.line.weight, TYPE.line.track, FONT.text);
+  const width = (s: string) => mt(s, size, TYPE.line.weight, TYPE.line.track, FONT.text);
   let best = 1;
   let score = Infinity;
   for (let j = 1; j < words.length; j++) {
@@ -111,308 +121,356 @@ const splitAt = (c: Change, size: number): [string, string] => {
   }
   return [words.slice(0, best).join(' '), words.slice(best).join(' ')];
 };
-/** The picture a porthole holds before it opens: a shot of pictures shows its chosen one (the view itself), else none. */
-const PORT_PHOTO = (i: number): string | null => (['carousel', 'photo-develop'].includes(HEROES[i]) ? photosOf(UPDATE.changes[i])[0] ?? null : null);
-/** The porthole's picture handing over to the shot as it opens: never a cross-dissolve of two sharp pictures (a muddy
- * double exposure) but a blur-through: the picture goes soft to `blur` px over the last part of the opening, the shot
- * arrives out of the same blur and sharpens (f@60). */
-const PORT_HAND = { blur: 36, from: 0.55, in: 16 } as const;
-/** The porthole: its diameter as a share of the split line's size, and the line set a little larger round it. */
-const PORT = { d: 3.3, k: 1.15 } as const;
+/** The porthole: its side as a share of the frame height (the picture in the sentence is the frame's subject). */
+const PORT = { h: 0.52 } as const;
 /** A value measured from the real face: built on first use, inside a render (FontGate has loaded the fonts by then). */
 const lazy = <V,>(make: () => V): (() => V) => {
   let v: V | undefined;
   return () => (v === undefined ? (v = make()) : v);
 };
-/** Each split change's line, laid out once: its text with the gap, its size, the gap's centre and the porthole's radius. */
+/** Each parted change's line, laid out once: its text with the gap, its size, the gap's centre and the porthole's radius. */
 const SPLIT = lazy(() =>
   TIMES.map((t) => {
-    if (t.shape !== 'split') return null;
+    if (t.place !== 'part') return null;
     const c = UPDATE.changes[t.i];
-    const s0 = lineSize(spokenChange(c), PORT.d * TYPE.line.size * U * PORT.k, PORT.k);
+    const k = LINE_SCALE.part;
+    const side = PORT.h * H; // the window: about half the frame high, whatever the line's size
+    const s0 = lineSize(spokenChange(c), side * 1.18, k, 0.9);
     const [a, b] = splitAt(c, s0);
     const id = `change${t.i + 1}`;
-    const gapW = PORT.d * s0 * 1.18;
+    const gapW = side * 1.18;
+    if (typeof document === 'undefined') {
+      // Node (the tracks src/sync.ts declares): the gap's centre from estimated widths
+      const wa = mt(a, s0, TYPE.line.weight, TYPE.line.track, FONT.text);
+      const wb = mt(b, s0, TYPE.line.weight, TYPE.line.track, FONT.text);
+      return { text: `${a} [] ${b}`, size: s0, x: W / 2 + (wa - wb) / 2, w: gapW, y: H / 2, r: side / 2 };
+    }
     const g = gapLine({ id, text: `${a} [] ${b}`, at: 0, move: LINES.move[id], role: 'line', size: s0, x: W / 2, y: H / 2, color: INK, gapW });
-    return { ...g, r: (PORT.d * g.size) / 2 };
+    return { ...g, y: H / 2, r: side / 2 };
   }),
 );
 
-/** Change i's sentence, centred: alone in the world, over its shot gone soft and dim, or parted round its porthole. */
-const ChangeLine: React.FC<{ t: ChangeTimes; F: number }> = ({ t, F }) => {
-  const ch = UPDATE.changes[t.i];
-  const c = copy(`change${t.i + 1}`);
-  if (F < c.in || F >= c.out + EXIT_F) return null;
-  const split = SPLIT()[t.i];
-  const size = split ? split.size : lineSize(ch.words, 0, LINE_SCALE[t.i % LINE_SCALE.length]);
-  const id = `change${t.i + 1}`;
-  const p = { id, at: c.in, frame: F, move: LINES.move[id], role: 'line' as const, size, x: W / 2, y: H / 2, color: INK, accent: ACCENT, mute: MUTE };
-  const node = split ? <HeroLine {...p} text={split.text} /> : ch.words.includes('[]') ? <MarkLine {...p} text={ch.words} objects={[objectOf(ch)]} ground={DARK ? 'dark' : 'light'} theme={THEME} /> : <HeroLine {...p} text={spokenChange(ch)} />;
-  const box = { x: W * 0.12, y: H / 2 - size * 1.2, w: W * 0.76, h: size * 2.4 };
-  const textW = measureTracked(spokenChange(ch), size, TYPE.line.weight, TYPE.line.track, FONT.text);
-  const poolA = E.softOut(clamp((F - c.in) / f60(10)));
+// ---------------------------------------------------------------------------------------------- the shots and their element
+/** The held result's creep (per frame at 60 fps): the tail of the shot's last move, about the element, never a sinusoid. */
+const CREEP = 0.0007;
+/** How a shot falls back as the element leaves it, and how it racks in behind the landing element. */
+const LEAVE = { blur: 22, scale: 0.05, dim: 0.5, arrive: 16 } as const;
+
+/** Change i's shot camera (local frames from h0), cached. */
+const CAMS: (CameraPath | null)[] = TIMES.map((t) => heroCamera(t.i));
+/** The creep's scale at film frame F and its origin (the element's out box centre when the creep starts). */
+const creepOf = (i: number, F: number): { s: number; ox: number; oy: number } => {
+  const t = TIMES[i];
+  const s = 1 + CREEP * Math.max(0, Math.min(F, t.heroEnd) - t.creep) * (60 / FPS);
+  const o = rawBox(i, 'out', t.creep);
+  return { s, ox: o.x + o.w / 2, oy: o.y + o.h / 2 };
+};
+/** Change i's element on screen at film frame F under its shot's camera (before the creep). */
+const rawBox = (i: number, side: 'in' | 'out', F: number): HBox => {
+  const t = TIMES[i];
+  const el = heroElement(i, side);
+  const cam = CAMS[i];
+  if (!el || !cam) return { x: W * 0.28, y: H * 0.22, w: W * 0.44, h: H * 0.56 };
+  return underStage(el.box, (f) => cam(Math.max(0, f - t.h0)), FILM, el.z)(F);
+};
+/** Change i's element on screen at film frame F, with the held result's creep. */
+const elBox = (i: number, side: 'in' | 'out', F: number): HBox => {
+  const b = rawBox(i, side, F);
+  const c = creepOf(i, F);
+  return c.s === 1 ? b : scaleAbout(b, c.s, c.ox, c.oy);
+};
+
+/** Change i's shot at film frame F, with its creep (no optics): what a handover's window and the porthole show. */
+const ShotPlain: React.FC<{ i: number; F: number }> = ({ i, F }) => {
+  const t = TIMES[i];
+  const f = Math.max(0, F - t.h0);
+  const c = creepOf(i, F);
   return (
-    <div style={{ position: 'absolute', inset: 0, ...exitStyle(F, c.out, size) }}>
-      <LinePool w={textW} size={size} a={poolA} />
-      {NIGHT ? <Bloom strength={0.28} radius={16} box={box}>{node}</Bloom> : node}
+    <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: c.s !== 1 ? `scale(${c.s.toFixed(5)})` : undefined, transformOrigin: `${c.ox.toFixed(1)}px ${c.oy.toFixed(1)}px` }}>
+      <Freeze frame={f}>
+        <HeroShot t={t} f={f} />
+      </Freeze>
+    </div>
+  );
+};
+/** A window onto a full-frame layer: its region `box` laid out at the box's size (a handover's content rides the box). */
+const Window: React.FC<{ box: HBox; dx?: number; dy?: number; children: React.ReactNode }> = ({ box, dx = 0, dy = 0, children }) => (
+  <div style={{ position: 'absolute', left: -box.x + dx, top: -box.y + dy, width: W, height: H }}>{children}</div>
+);
+
+/** Change i's shot as a scene: racking in behind the landing element, playing, falling back as the element hands on. */
+const ShotLayer: React.FC<{ t: ChangeTimes; F: number }> = ({ t, F }) => {
+  const hi = handIn(t.i);
+  const ho = handOut(t.i);
+  const start = t.iris ? t.iris[1] : hi.at;
+  if (F < start || F >= ho.t1) return null;
+  let o = 1;
+  let blur = 0;
+  let bright = 1;
+  let s = 1;
+  // the scenes never cross-dissolve: the one before has gone by the cut, this one racks in from it behind the element
+  if (!t.iris && F < hi.t1) {
+    const p = prog(F, hi.at, hi.t1, E.stdInOut);
+    o = 0.15 + 0.85 * p;
+    blur = LEAVE.arrive * (1 - p);
+  }
+  if (F >= ho.t0) {
+    // it falls back as the element lifts off it, soft, dim and smaller, and has gone by the cut (the next one only racks
+    // in from the cut: two pictures never share a frame sharp)
+    const q = prog(F, ho.t0, ho.at, E.stdInOut);
+    o *= 1 - E.softIn(clamp((q - 0.25) / 0.75));
+    blur = Math.max(blur, LEAVE.blur * q);
+    s = 1 - LEAVE.scale * q;
+    if (DARK) bright = 1 - LEAVE.dim * q;
+  }
+  if (o <= 0.003) return null;
+  const level = blur > 0.4 ? defocusLevel(blur) : 0;
+  const filter = [level > 0 ? `blur(${level}px)` : '', bright !== 1 ? `brightness(${bright.toFixed(3)})` : ''].filter(Boolean).join(' ') || undefined;
+  return (
+    <div style={{ position: 'absolute', inset: 0, opacity: o, filter, transform: s !== 1 ? `scale(${s.toFixed(5)})` : undefined, transformOrigin: '50% 50%' }}>
+      <ShotPlain i={t.i} F={F} />
     </div>
   );
 };
 
-// ---------------------------------------------------------------------------------------------- the hero shots' optics
-/** When change i's shot leaves (it goes soft and fades): under the next shot's arrival, the next line's clear, or the end card's. */
-const leaveOf = (i: number): [number, number] => {
-  const next = TIMES[i + 1];
-  if (!next) return CLOSE.clear;
-  if (next.clear) return next.clear;
-  if (next.iris) return [next.gap![0], next.gap![0] + f60(12)];
-  return [next.h0, next.hin + f60(6)];
-};
 /**
- * The focus isolate under a 'show' line: the shot falls back into the world as the line lands (soft to `blur` px, to
- * `push` of its size, darkened to `dim` on a dark world) and is gone `out` f@60 after it: the line stands on the world
- * with its pool, never on a full-frame veil over a dimmed card (a muddy slate ground with the card's ghost in it).
+ * A parted change's porthole: the element landed in the line's gap as a rounded window holding its shot (or its
+ * chosen picture), then opening into the frame: its box grows to cover the frame and its corners square off.
  */
-const ISO = { blur: 26, push: 0.84, dim: 0.22, out: 22 } as const;
-/** A shot leaving: how soft it goes (px), how much it falls back (scale) and, on a dark world, how dark before it goes. */
-const LEAVE = { blur: 26, scale: 0.12, dim: 0.18, whip: 0.55 } as const;
-/** The smear of a whip arrival, at fixed levels (px, horizontal). */
-const SMEAR = [0, 4, 8, 14, 22] as const;
-const smearLevel = (s: number) => SMEAR.reduce((b, l) => (Math.abs(l - s) < Math.abs(b - s) ? l : b), 0);
-
-/** Change i's shot with its optics: the arrival, the porthole and its opening, the isolate under its line, the leaving. */
-const ShotLayer: React.FC<{ t: ChangeTimes; F: number }> = ({ t, F }) => {
-  const start = t.gap ? t.gap[0] : t.h0;
-  const leave = leaveOf(t.i);
-  if (F < start || F >= leave[1]) return null;
-  const f = Math.max(0, F - t.h0);
-  let blur = 0;
-  let bright = 1;
-  let glow = 0;
-  let tx = 0;
-  let smear = 0;
-  let push = 1;
-  let clip: string | undefined;
-  let ring: React.ReactNode = null;
-  let isoFade = 0;
-  if (!t.iris && F < t.hin) {
-    const p = clamp((F - t.h0) / Math.max(1, t.hin - t.h0));
-    if (ARRIVALS[t.i] === 'whip') {
-      // a fast move braking into the shot: most of the travel in the first third, smeared while it is fast
-      const e = E.glideOut(p);
-      tx = (1 - e) * 0.42 * W;
-      const de = E.glideOut(clamp(p + 0.02)) - E.glideOut(clamp(p - 0.02));
-      smear = smearLevel(Math.min(22, (de / 0.04) * 0.42 * W * 0.012));
-    } else if (ARRIVALS[t.i] === 'bloom') {
-      // out of the world's light: a soft bloom that settles as the shot sharpens
-      glow = 1 - E.softOut(p);
-      blur = 6 * (1 - E.glideOut(p));
-    } else {
-      // rack: out of focus to sharp, half the blur gone in the first third (7.5 -> 1.4 -> 0)
-      blur = 7.5 * Math.pow(1 - p, 1.8);
-    }
+const PORT_R = 0.62; // the window's corner radius as a share of its half side
+const portOf = (t: ChangeTimes, F: number) => {
+  const sp = SPLIT()[t.i];
+  if (!sp || !t.iris) return null;
+  const q = prog(F, t.iris[0], t.iris[1], E.strongInOut);
+  const cx = mix(sp.x, W / 2, q);
+  const cy = H / 2;
+  const w = Math.exp(mix(Math.log(2 * sp.r), Math.log(W + 80), q));
+  const h = Math.exp(mix(Math.log(2 * sp.r), Math.log(H + 80), q));
+  const rad = mix(PORT_R * sp.r, 0, q);
+  const [fx, fy] = heroFocus(t.i);
+  // the shot inside slides so its subject sits in the window, settling to its own framing as it opens
+  const tx = mix(sp.x - fx, 0, q);
+  const ty = mix(cy - fy, 0, q);
+  return { sp, q, box: { x: cx - w / 2, y: cy - h / 2, w, h } as HBox, rad, cx, cy, tx, ty };
+};
+/** The porthole's box on every frame from the element's landing in the gap until it covers the frame (src/sync.ts declares it as the element's track). */
+export const portTrack = (i: number): [number, number, number, number, number][] => {
+  const t = TIMES[i];
+  if (!t.iris || !t.gap) return [];
+  const out: [number, number, number, number, number][] = [];
+  const r1 = (v: number) => Math.round(v * 10) / 10;
+  for (let f = t.gap[1]; f <= t.iris[1]; f++) {
+    const P = portOf(t, f);
+    if (!P) break;
+    const x0 = Math.max(0, P.box.x);
+    const y0 = Math.max(0, P.box.y);
+    const x1 = Math.min(W, P.box.x + P.box.w);
+    const y1 = Math.min(H, P.box.y + P.box.h);
+    out.push([f, r1(x0), r1(y0), r1(x1 - x0), r1(y1 - y0)]);
   }
-  if (t.gap && t.iris) {
-    // the porthole: a circle in the line's gap with the shot inside (its opening frame), then opening into the frame
-    const sp = SPLIT()[t.i];
-    if (sp) {
-      const o = prog(F, t.gap[0], t.gap[1], E.glideOut);
-      const q = prog(F, t.iris[0], t.iris[1], E.strongInOut);
-      const big = Math.hypot(W, H) / 2 + 40;
-      const r = q > 0 ? mix(sp.r, big, q) : sp.r * o;
-      const [fx, fy] = heroFocus(t.i);
-      const cx = mix(sp.x, W / 2, q);
-      const cy = H / 2;
-      // the shot inside slides so its subject sits in the porthole, settling to its own framing as it opens
-      tx = mix(sp.x - fx, 0, q);
-      const ty = mix(cy - fy, 0, q);
-      if (q < 1) {
-        clip = `circle(${r.toFixed(2)}px at ${(cx - tx).toFixed(2)}px ${(cy - ty).toFixed(2)}px)`;
-        ring = (
-          <div style={{ position: 'absolute', left: 0, top: 0, width: 2 * r, height: 2 * r, transform: `translate(${(cx - r).toFixed(2)}px, ${(cy - r).toFixed(2)}px)`, borderRadius: r, pointerEvents: 'none', opacity: clamp(o * 2) * (1 - q), boxShadow: `0 0 ${(70 * U).toFixed(1)}px ${DARK ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.12)'}, inset 0 0 0 ${(1.5 * U).toFixed(2)}px rgba(255,255,255,${DARK ? 0.35 : 0.8})`, background: `radial-gradient(circle at 72% 78%, transparent ${(r * 0.8).toFixed(1)}px, ${mixColor(ACCENT, '#FFFFFF', 0.45)}55 ${(r * 0.96).toFixed(1)}px, transparent ${r.toFixed(1)}px)` }} />
-        );
-      }
-      // a shot of pictures shows its chosen picture in the porthole, handing over to the shot through a blur as it opens
-      const photo = PORT_PHOTO(t.i);
-      const span = t.iris[1] - t.iris[0];
-      const photoBlur = photo ? PORT_HAND.blur * prog(F, t.iris[0] + PORT_HAND.from * span, t.iris[1], E.buildIn) : 0;
-      const po = photo ? 1 - prog(F, t.iris[1] - f60(4), t.iris[1] + f60(6), E.stdInOut) : 0;
-      const shotBlur = photo && F >= t.iris[0] + PORT_HAND.from * span ? PORT_HAND.blur * (1 - prog(F, t.iris[1] - f60(2), t.iris[1] + f60(PORT_HAND.in), E.glideOut)) : 0;
-      const shotLevel = shotBlur > 0.4 ? defocusLevel(shotBlur) : 0;
-      const photoLevel = photoBlur > 0.4 ? defocusLevel(photoBlur) : 0;
-      return (
-        <>
-          <div style={{ position: 'absolute', inset: 0, clipPath: clip, transform: `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px)`, filter: shotLevel > 0 ? `blur(${shotLevel}px)` : undefined }}>
-            <Freeze frame={f}>
-              <HeroShot t={t} f={f} />
-            </Freeze>
-          </div>
-          {photo && po > 0 && (
-            <div style={{ position: 'absolute', inset: 0, clipPath: `circle(${r.toFixed(2)}px at ${cx.toFixed(2)}px ${cy.toFixed(2)}px)`, opacity: po }}>
-              <Img src={pic(photo)} style={{ position: 'absolute', left: 0, top: 0, width: 2.3 * r, height: 2.3 * r, transform: `translate(${(cx - 1.15 * r).toFixed(2)}px, ${(cy - 1.15 * r).toFixed(2)}px)`, objectFit: 'cover', filter: [PICTURE.filter, photoLevel > 0 ? `blur(${photoLevel}px)` : ''].filter(Boolean).join(' ') || undefined }} />
-            </div>
-          )}
-          {ring}
-        </>
-      );
-    }
-  }
-  if (t.iso && F >= t.iso[0]) {
-    // the focus isolate: the shot goes soft (to about 6 px), the camera pushes through it a little (x1.06, landing with
-    // the blur) and it dims (a dark world) or pales into the world (a light one)
-    const p = prog(F, t.iso[0], t.iso[1], E.stdInOut);
-    blur = Math.max(blur, mix(1.2, ISO.blur, p) * (p > 0 ? 1 : 0));
-    push = mix(1, ISO.push, E.strongInOut(prog(F, t.iso[0], t.iso[1] + f60(8), E.linear)));
-    // a dark world: the shot sinks deep into the world's own tone, a faint shape behind the line (a card left at a
-    // quarter of its light under the words is a muddy slate ground); a pale world: it pales into it
-    if (DARK) bright = 1 - (1 - ISO.dim) * p;
-    isoFade = E.stdInOut(prog(F, t.iso[0] + f60(4), t.iso[1] + f60(ISO.out), E.linear));
-  }
-  let opacity = 1 - isoFade;
-  if (F >= leave[0]) {
-    // it falls back into the world: soft and smaller at once, darkening into a dark world (never a translucent card
-    // with the next one showing through it), gone by the end of its span
-    const q = prog(F, leave[0], leave[1], E.linear);
-    const e = E.glideOut(clamp(q / 0.6));
-    blur = Math.max(blur, LEAVE.blur * Math.sqrt(q));
-    push *= 1 - LEAVE.scale * E.stdInOut(q);
-    // the next shot whips in: this one whips out ahead of it the same way, smeared (one move carried across the
-    // change, never the new card sliding over the old one still standing sharp)
-    const next = TIMES[t.i + 1];
-    if (next && !next.clear && !next.iris && ARRIVALS[next.i] === 'whip') {
-      const b = E.buildIn(q);
-      tx -= LEAVE.whip * W * b;
-      const db = E.buildIn(clamp(q + 0.03)) - E.buildIn(clamp(q - 0.03));
-      smear = Math.max(smear, smearLevel(Math.min(22, (db / 0.06) * LEAVE.whip * W * 0.012)));
-    }
-    if (DARK) bright = Math.min(bright, 1 - (1 - LEAVE.dim) * e);
-    opacity = Math.min(opacity, 1 - E.stdInOut(clamp((q - (DARK ? 0.3 : 0)) / (DARK ? 0.7 : 1))));
-  }
-  const level = blur > 0.4 ? defocusLevel(blur) : 0;
-  const filter = [level > 0 ? `blur(${level}px)` : '', bright !== 1 ? `brightness(${bright.toFixed(3)})` : '', smear > 0 ? `url(#whip-${smear})` : ''].filter(Boolean).join(' ') || undefined;
+  return out;
+};
+/** A shot of pictures shows its chosen picture in the porthole (the view itself, whole), in the world's duotone as its shot opens. */
+const PORT_PIC = (i: number): string | null => (['carousel', 'photo-develop'].includes(HEROES[i]) ? photosOf(UPDATE.changes[i])[0] ?? null : null);
+/** The porthole's picture: covering a w x h window (laid out at its size), creeping slowly toward the lens. */
+const PortPicture: React.FC<{ src: string; w: number; h: number; F: number; t: ChangeTimes }> = ({ src, w, h, F, t }) => {
+  const k = 1.12 + 0.06 * clamp((F - (t.gap?.[0] ?? t.from)) / Math.max(1, (t.iris?.[1] ?? t.to) - (t.gap?.[0] ?? t.from)));
+  return (
+    <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, overflow: 'hidden' }}>
+      <Img src={pic(src)} style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, objectFit: 'cover', filter: 'grayscale(1) contrast(1.18) brightness(0.92)', transform: `scale(${k.toFixed(5)})`, transformOrigin: '50% 50%' }} />
+      <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(160deg, ${WORLD.glow}, ${mixColor(WORLD.base, '#000000', 0.45)})`, mixBlendMode: 'color' }} />
+    </div>
+  );
+};
+/** The porthole's picture handing over to the shot as it opens: never a cross-dissolve of two sharp pictures but a blur-through (px, shares of the opening). */
+const PORT_HAND = { blur: 30, from: 0.35 } as const;
+const PortholeLayer: React.FC<{ t: ChangeTimes; F: number }> = ({ t, F }) => {
+  if (!t.iris || !t.gap || F < t.gap[1] || F >= t.iris[1]) return null;
+  const P = portOf(t, F);
+  if (!P) return null;
+  const { box, rad, tx, ty, q } = P;
+  const src = PORT_PIC(t.i);
+  const span = t.iris[1] - t.iris[0];
+  const h = src ? prog(F, t.iris[0] + PORT_HAND.from * span, t.iris[1], E.stdInOut) : 1;
+  const picBlur = src ? defocusLevel(Math.max(0.5, PORT_HAND.blur * h)) : 0;
+  const shotBlur = src && h < 1 ? defocusLevel(Math.max(0.5, PORT_HAND.blur * (1 - h))) : 0;
+  const clip = `inset(${box.y.toFixed(2)}px ${(W - box.x - box.w).toFixed(2)}px ${(H - box.y - box.h).toFixed(2)}px ${box.x.toFixed(2)}px round ${rad.toFixed(2)}px)`;
   return (
     <>
-      {smear > 0 && (
-        <svg width={0} height={0} style={{ position: 'absolute' }} aria-hidden>
-          <filter id={`whip-${smear}`} x="-20%" y="-5%" width="140%" height="110%" colorInterpolationFilters="sRGB">
-            <feGaussianBlur stdDeviation={`${smear} 0`} />
-          </filter>
-        </svg>
-      )}
-      <div style={{ position: 'absolute', inset: 0, filter, opacity, transform: tx || push !== 1 ? `translateX(${tx.toFixed(2)}px) scale(${push.toFixed(5)})` : undefined, transformOrigin: '50% 50%' }}>
-        <Freeze frame={f}>
-          <HeroShot t={t} f={f} />
-        </Freeze>
+      <div style={{ position: 'absolute', inset: 0, clipPath: clip }}>
+        {(!src || h > 0) && (
+          <div style={{ position: 'absolute', inset: 0, transform: `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px)`, filter: shotBlur > 0.4 ? `blur(${shotBlur}px)` : undefined }}>
+            <ShotPlain i={t.i} F={F} />
+          </div>
+        )}
+        {src && h < 1 && (
+          <div style={{ position: 'absolute', left: box.x, top: box.y, opacity: 1 - h, filter: picBlur > 0.4 && h > 0 ? `blur(${picBlur}px)` : undefined }}>
+            <PortPicture src={src} w={box.w} h={box.h} F={F} t={t} />
+          </div>
+        )}
       </div>
-      {glow > 0 && <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 70% 60% at 50% 45%, ${WORLD.glow} 0%, transparent 100%)`, opacity: glow * 0.9, mixBlendMode: 'screen' }} />}
+      <div style={{ position: 'absolute', left: 0, top: 0, width: box.w, height: box.h, transform: `translate(${box.x.toFixed(2)}px, ${box.y.toFixed(2)}px)`, borderRadius: rad, pointerEvents: 'none', opacity: 1 - q, boxShadow: `0 ${(18 * U).toFixed(1)}px ${(70 * U).toFixed(1)}px ${DARK ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.14)'}, inset 0 0 0 ${(1.5 * U).toFixed(2)}px rgba(255,255,255,${DARK ? 0.38 : 0.85})` }} />
     </>
   );
 };
 
-// ---------------------------------------------------------------------------------------------- the name and the version
-const NAME = { size: TYPE.display.size * U, gap: 0.42 } as const;
-const tab: React.CSSProperties = { fontVariantNumeric: 'tabular-nums' };
-/** A string that rolls from `from` to `to` on a drum: each changed character in its own column, whole glyphs (never squashed). */
-const Drum: React.FC<{ from: string; to: string; p: number; size: number; color: string; id: string }> = ({ from, to, p, size, color, id }) => {
-  const box = size * 1.18;
-  const style: React.CSSProperties = { ...typeStyle('display', size), ...tab, color, lineHeight: `${box}px`, height: box, display: 'block', whiteSpace: 'pre' };
-  const col = (a: string, b: string, k: number) =>
-    a === b ? (
-      <span key={k} style={style}>{b}</span>
-    ) : (
-      <span key={k} style={{ display: 'inline-block', height: box, overflow: 'hidden', verticalAlign: 'top' }}>
-        <span style={{ display: 'flex', flexDirection: 'column', transform: `translateY(${(-p * box).toFixed(2)}px)` }}>
-          <span style={style}>{a}</span>
-          <span style={style}>{b}</span>
-        </span>
-      </span>
+/** Change i's sentence: parted round its porthole (part), or riding over its element in the shot (head). */
+const ChangeLine: React.FC<{ t: ChangeTimes; F: number }> = ({ t, F }) => {
+  const ch = UPDATE.changes[t.i];
+  const c = copy(`change${t.i + 1}`);
+  if (F < c.in || F >= c.out + EXIT_F) return null;
+  const id = `change${t.i + 1}`;
+  const split = SPLIT()[t.i];
+  if (split) {
+    const p = { id, at: c.in, frame: F, move: LINES.move[id], role: 'line' as const, size: split.size, x: W / 2, y: H / 2, color: INK, accent: ACCENT, mute: MUTE };
+    const textW = measureTracked(spokenChange(ch), split.size, TYPE.line.weight, TYPE.line.track, FONT.text);
+    const node = <HeroLine {...p} text={split.text} />;
+    return (
+      <div style={{ position: 'absolute', inset: 0, ...exitStyle(F, c.out, split.size) }}>
+        <LinePool w={textW} size={split.size} a={E.softOut(clamp((F - c.in) / f60(10)))} />
+        {NIGHT ? <Bloom strength={0.24} radius={14} box={{ x: W * 0.1, y: H / 2 - split.size * 1.2, w: W * 0.8, h: split.size * 2.4 }}>{node}</Bloom> : node}
+      </div>
     );
-  const same = from.length === to.length;
+  }
+  // head: centred above the element (or under it when it fills the top), riding it as the shot's camera moves
+  const size = lineSize(ch.words, 0, LINE_SCALE.head);
+  const gap = size * 0.95;
+  const b0 = elBox(t.i, 'in', t.hin);
+  const above = b0.y - gap - size * 0.6 >= H * 0.12;
+  const below = b0.y + b0.h + gap + size * 0.6 <= H * 0.9;
+  const b = elBox(t.i, 'in', Math.min(Math.max(F, t.hin), c.out)); // it rides the element until it leaves, then leaves from there
+  const yRaw = above || !below ? b.y - gap - size * 0.1 : b.y + b.h + gap + size * 0.5;
+  const y = clamp(yRaw, H * 0.1, H * 0.9);
+  const p = { id, at: c.in, frame: F, move: LINES.move[id], role: 'line' as const, size, x: W / 2, y, color: INK, accent: ACCENT, mute: MUTE };
+  const node = ch.words.includes('[]') ? <MarkLine {...p} text={ch.words} objects={[objectOf(ch)]} ground={DARK ? 'dark' : 'light'} theme={THEME} /> : <HeroLine {...p} text={spokenChange(ch)} />;
+  const textW = measureTracked(spokenChange(ch), size, TYPE.line.weight, TYPE.line.track, FONT.text);
+  return (
+    <div style={{ position: 'absolute', inset: 0, ...exitStyle(F, c.out, size) }}>
+      <LinePool w={textW} size={size} a={E.softOut(clamp((F - c.in) / f60(10)))} y={y} />
+      {NIGHT ? <Bloom strength={0.22} radius={12} box={{ x: W * 0.12, y: y - size * 1.2, w: W * 0.76, h: size * 2.4 }}>{node}</Bloom> : node}
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------------------------- the name and the version
+const NAME = { size: TYPE.display.size * U, gap: 0.3 } as const;
+const tab: React.CSSProperties = { fontVariantNumeric: 'tabular-nums' };
+/** The version's pill at a name size: the numerals set smaller in the accent pill. */
+const pillOf = (size: number) => {
+  const vs = 0.5 * size;
+  const h = vs * 1.62;
+  const w = mt(UPDATE.version, vs, 640, -0.01, FONT.text, { tabular: true }) + 1.1 * vs;
+  return { vs, h, w };
+};
+/** The pill is glass lit by the accent: a faint accent tint, an accent rim, the numerals in the accent at the world's reading lightness. */
+const PILL = { tint: 0.12, rim: 2 } as const;
+const GROUND_TINT = WORLD.base;
+const PILL_FILL = (() => {
+  if (!/^#[0-9a-f]{6}$/i.test(C.accent)) return mixColor(C.accent, GROUND_TINT, 1 - PILL.tint);
+  const [r, g, b] = [1, 3, 5].map((k) => parseInt(C.accent.slice(k, k + 2), 16));
+  return `rgba(${r}, ${g}, ${b}, ${PILL.tint})`;
+})();
+const ON_PILL = ACCENT;
+/** The numerals in the pill: rolling on a drum from the version before (roll), else standing. */
+const Numerals: React.FC<{ size: number; roll: number; id: string }> = ({ size, roll, id }) => {
+  const box = size * 1.1;
+  const style: React.CSSProperties = { fontFamily: FONT.text, fontSize: size, fontWeight: 640, letterSpacing: '-0.01em', lineHeight: `${box}px`, height: box, color: ON_PILL, whiteSpace: 'pre', display: 'block', ...tab };
+  const from = UPDATE.from;
+  const to = UPDATE.version;
+  if (roll >= 1 || from.length !== to.length) return <span data-text={id} style={style}>{to}</span>;
   return (
     <span data-text={id} style={{ display: 'flex', height: box }}>
-      {same ? [...to].map((ch, k) => col(from[k], ch, k)) : col(from, to, 0)}
+      {[...to].map((ch, k) =>
+        from[k] === ch ? (
+          <span key={k} style={style}>{ch}</span>
+        ) : (
+          <span key={k} style={{ display: 'inline-block', height: box, overflow: 'hidden', verticalAlign: 'top' }}>
+            <span style={{ display: 'flex', flexDirection: 'column', transform: `translateY(${(-roll * box).toFixed(2)}px)` }}>
+              <span style={style}>{from[k]}</span>
+              <span style={style}>{ch}</span>
+            </span>
+          </span>
+        ),
+      )}
     </span>
   );
 };
+/** The pill at full size (what the handover carries): the accent face, the numerals centred. */
+const PillFace: React.FC<{ size: number; roll?: number; id?: string }> = ({ size, roll = 1, id = 'hook-version' }) => {
+  const b = pillOf(size);
+  return (
+    <div style={{ position: 'absolute', left: 0, top: 0, width: b.w, height: b.h, borderRadius: b.h / 2, background: PILL_FILL, boxShadow: `inset 0 0 0 ${(PILL.rim * U).toFixed(2)}px ${ACCENT}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <Numerals size={b.vs} roll={roll} id={id} />
+    </div>
+  );
+};
+/** The hook's layout: the name and the pill centred as one pair from the first frame; the pill's box on screen. */
+const HOOK_LAYOUT = lazy(() => {
+  const size = NAME.size;
+  const hw = wordmarkAt(size);
+  const nameW = mt(UPDATE.name, size, Number(hw.fontWeight) || TYPE.display.weight, parseFloat(String(hw.letterSpacing)) || 0, String(hw.fontFamily));
+  const pill = pillOf(size);
+  const gap = NAME.gap * size;
+  const groupW = nameW + gap + pill.w;
+  const left = (W - groupW) / 2;
+  const y = H / 2 - (size * 1.18) / 2;
+  const pillBox: HBox = { x: left + nameW + gap, y: H / 2 - pill.h / 2 + 0.04 * size, w: pill.w, h: pill.h };
+  return { size, nameW, groupW, left, y, pill, pillBox };
+});
 /** A word rising out of a mask on its baseline (p 0..1). */
 const MaskUp: React.FC<{ p: number; size: number; children: React.ReactNode }> = ({ p, size, children }) => (
   <div style={{ height: size * 1.18, overflow: 'hidden' }}>
     <div style={{ transform: `translateY(${((1 - p) * size * 1.25).toFixed(2)}px)` }}>{children}</div>
   </div>
 );
-/** The 'badge' hook's pill: the version set smaller in the accent pill, its metrics at a name size. */
-const badgeOf = (size: number) => {
-  const vs = 0.5 * size;
-  const h = vs * 1.62;
-  const w = measureTracked(UPDATE.version, vs, 640, -0.01, FONT.text, { tabular: true }) + 1.1 * vs;
-  return { vs, h, w };
-};
-/** The version in its pill: a dot that lands and widens into the pill on one move, the numerals rising in it. */
-const Badge: React.FC<{ p: number; size: number; id: string }> = ({ p, size, id }) => {
-  const b = badgeOf(size);
-  const dot = E.glideOut(clamp(p / 0.3));
-  const wide = E.strongInOut(clamp((p - 0.08) / 0.62));
-  const txt = E.snapOut(clamp((p - 0.45) / 0.5));
-  const d = 0.42 * b.h;
-  const w = mix(d, b.w, wide);
-  const h = mix(d, b.h, wide);
-  const fill = C.accent;
-  const onPill = toOklch(fill)[0] < 0.66 ? '#FFFFFF' : C.ink;
-  return (
-    <div style={{ position: 'relative', width: b.w, height: size * 1.18 }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, borderRadius: h / 2, background: fill, transform: `translateY(${((size * 1.18 - h) / 2 + 0.04 * size).toFixed(2)}px) scale(${dot.toFixed(4)})`, transformOrigin: `${(d / 2).toFixed(2)}px 50%`, overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, width: b.w, height: b.h, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: txt, transform: `translateY(${((1 - txt) * 0.5 * b.h).toFixed(2)}px)` }}>
-          <span data-text={id} style={{ fontFamily: FONT.text, fontSize: b.vs, fontWeight: 640, letterSpacing: '-0.01em', lineHeight: 1, color: onPill, whiteSpace: 'pre', ...tab }}>{UPDATE.version}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const Hook: React.FC<{ F: number }> = ({ F }) => {
-  if (F >= HOOK.out + EXIT_F) return null;
-  const size = NAME.size;
-  const hw = wordmarkAt(size);
-  const nameW = measureTracked(UPDATE.name, size, Number(hw.fontWeight) || TYPE.display.weight, parseFloat(String(hw.letterSpacing)) || 0, String(hw.fontFamily));
-  const verW = (s: string) => measureTracked(s, size, TYPE.display.weight, TYPE.display.track, FONT.text, { tabular: true });
-  const roll = DEAL.hook === 'roll';
-  const badge = DEAL.hook === 'badge';
-  const gap = (badge ? 0.3 : NAME.gap) * size;
-  const rollP = prog(F, HOOK.roll, HOOK.roll + f60(ROLL), E.snapOut);
-  const vIn = roll ? prog(F, 0, f60(22), E.snapOut) : badge ? prog(F, HOOK.version - f60(4), HOOK.version + f60(34), E.linear) : prog(F, HOOK.version, HOOK.version + f60(24), E.snapOut);
-  const vw = roll ? mix(verW(UPDATE.from), verW(UPDATE.version), rollP) : badge ? badgeOf(size).w : verW(UPDATE.version);
-  const groupW = nameW + gap + vw; // the pair is laid out centred from the first frame: the name never slides while it is read
-  const left = (W - groupW) / 2;
+  const L = HOOK_LAYOUT();
+  const hand = HOOK.hand;
+  if (F >= Math.max(HOOK.out + EXIT_F, hand.t0)) return null;
+  const { size, left, y, pillBox } = L;
   const nameIn = prog(F, 0, f60(22), E.snapOut);
-  const y = H / 2 - (size * 1.18) / 2;
-  const flash = roll ? hitPulse(F - (HOOK.roll + f60(ROLL)), 2, 14) : 0;
-  const pair = (
-    <div style={{ position: 'absolute', inset: 0, ...exitStyle(F, HOOK.out, size, 'recede') }}>
-      <LinePool w={groupW} size={size} a={nameIn} />
-      <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${left.toFixed(2)}px, ${y.toFixed(2)}px)` }}>
-        <MaskUp p={nameIn} size={size}>
-          <span data-text="hook-name" style={{ ...wordmarkAt(size), color: INK, lineHeight: `${size * 1.18}px`, whiteSpace: 'pre', display: 'block' }}>{UPDATE.name}</span>
-        </MaskUp>
+  const mode = DEAL.hook;
+  // the pill: a dot that lands and widens into the pill (badge), the pill rising out of its mask (rise), or standing
+  // from the first frame with its changed numerals rolling (roll); it hides as the handover lifts it
+  const pv = mode === 'badge' ? prog(F, HOOK.version - f60(4), HOOK.version + f60(34), E.linear) : mode === 'rise' ? prog(F, HOOK.version, HOOK.version + f60(24), E.snapOut) : prog(F, 0, f60(22), E.snapOut);
+  const roll = mode === 'roll' ? prog(F, HOOK.roll, HOOK.roll + f60(ROLL), E.snapOut) : 1;
+  const dot = mode === 'badge' ? E.glideOut(clamp(pv / 0.3)) : 1;
+  const wide = mode === 'badge' ? E.strongInOut(clamp((pv - 0.08) / 0.62)) : 1;
+  const txt = mode === 'badge' ? E.snapOut(clamp((pv - 0.45) / 0.5)) : 1;
+  const d = 0.42 * pillBox.h;
+  const pw = mix(d, pillBox.w, wide);
+  const ph = mix(d, pillBox.h, wide);
+  const rise = mode === 'rise' ? (1 - pv) * size * 0.9 : 0;
+  const flash = mode === 'roll' ? hitPulse(F - (HOOK.roll + f60(ROLL)), 2, 14) : 0;
+  const pill = F < hand.t0 && pv > 0 ? (
+    <div style={{ position: 'absolute', left: 0, top: 0, width: pw, height: ph, transform: `translate(${pillBox.x.toFixed(2)}px, ${(pillBox.y + (pillBox.h - ph) / 2 + rise).toFixed(2)}px) scale(${dot.toFixed(4)})`, transformOrigin: `${(d / 2).toFixed(2)}px 50%`, borderRadius: ph / 2, background: PILL_FILL, boxShadow: `inset 0 0 0 ${(PILL.rim * U).toFixed(2)}px ${mixColor(ACCENT, '#FFFFFF', 0.3 * flash)}`, overflow: 'hidden', opacity: mode === 'rise' ? clamp(pv * 2) : 1 }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, width: pillBox.w, height: pillBox.h, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: txt, transform: `translateY(${((1 - txt) * 0.5 * pillBox.h).toFixed(2)}px)` }}>
+        <Numerals size={L.pill.vs} roll={roll} id="hook-version" />
       </div>
-      {vIn > 0 && (
-        <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(left + nameW + gap).toFixed(2)}px, ${y.toFixed(2)}px)` }}>
-          {badge ? (
-            <Badge p={vIn} size={size} id="hook-version" />
-          ) : (
-            <MaskUp p={vIn} size={size}>
-              <Drum from={roll ? UPDATE.from : UPDATE.version} to={UPDATE.version} p={roll ? rollP : 1} size={size} color={mixColor(ACCENT, INK, 0.15 - 0.15 * flash)} id="hook-version" />
-            </MaskUp>
-          )}
+    </div>
+  ) : null;
+  const pair = (
+    <div style={{ position: 'absolute', inset: 0 }}>
+      <div style={{ position: 'absolute', inset: 0, ...exitStyle(F, HOOK.out, size, 'recede') }}>
+        <LinePool w={L.groupW} size={size} a={nameIn} />
+        <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${left.toFixed(2)}px, ${y.toFixed(2)}px)` }}>
+          <MaskUp p={nameIn} size={size}>
+            <span data-text="hook-name" style={{ ...wordmarkAt(size), color: INK, lineHeight: `${size * 1.18}px`, whiteSpace: 'pre', display: 'block' }}>{UPDATE.name}</span>
+          </MaskUp>
         </div>
-      )}
+      </div>
+      {pill}
     </div>
   );
   // on a night world the name is a light in the dark: its brightest strokes bloom a little
-  return NIGHT ? <Bloom strength={0.32} radius={18} box={{ x: left - 40, y: y - 40, w: groupW + 80, h: size * 1.18 + 80 }}>{pair}</Bloom> : pair;
+  return NIGHT ? <Bloom strength={0.3} radius={18} box={{ x: left - 40, y: y - 40, w: L.groupW + 80, h: size * 1.18 + 80 }}>{pair}</Bloom> : pair;
 };
 
 // ---------------------------------------------------------------------------------------------- the end card
 const MARK = 150 * U;
+/** The solid's close-up the converge grows it to (x the lockup), turned, its centre on the frame's centre. */
+const SOLID = { scale: 2.8, yaw: -48, pitch: 14, roll: -6 } as const;
 /** The mark for this world: on a dark world its near-black parts take the world's ink, so it never sinks into the dark. */
 const MARK_LOGO: Logo = (() => {
   if (!DARK) return LOGO;
@@ -428,102 +486,161 @@ const FlatAt: React.FC<{ x: number; y: number; s?: number; pulse?: number }> = (
     </div>
   );
 };
+const LOCKUP = { x: W / 2 - MARK / 2, y: H / 2 - MARK / 2, size: MARK };
+/** The solid's box on screen as the converge lands it (its close-up's bounds). */
+const SOLID_BOX: HBox = (() => {
+  const s = MARK * SOLID.scale;
+  return { x: W / 2 - s / 2, y: H / 2 - s / 2, w: s, h: s };
+})();
+/** The mark's solid at film frame F: its close-up held until the converge lands it, then the pull-back onto the flat mark. */
+const Solid: React.FC<{ F: number }> = ({ F }) => {
+  const durF = ((CLOSE.markFlat - CLOSE.solid) * 60) / FPS;
+  const fe = Math.max(0, F - CLOSE.solid);
+  return (
+    <Freeze frame={fe}>
+      <Logo3D lockup={LOCKUP} logo={MARK_LOGO} at={0} dur={durF} from={{ ...SOLID, focus: [0, 0] }} light={LIGHT3D} gl={MARK_3D.gl} samples={MARK_3D.samples} seed={UPDATE.name} />
+    </Freeze>
+  );
+};
 
 const EndCard: React.FC<{ F: number }> = ({ F }) => {
-  if (F < CLOSE.markIn - f60(4)) return null;
-  const fe = F - CLOSE.markIn;
+  if (F < CLOSE.solid) return null;
   const stack = DEAL.end === 'stack';
-  // the version lands as the accent numerals beside the name: never the hook's pill growing a second time (one plain
-  // lockup shown twice is time spent on nothing new)
-  const badge = false;
   const size = NAME.size * (stack ? 0.86 : 0.9);
   const wm = wordmarkAt(size);
   const nameWeight = Number(wm.fontWeight) || TYPE.display.weight;
   const nameTrack = parseFloat(String(wm.letterSpacing)) || 0;
   const nameW = measureTracked(UPDATE.name, size, nameWeight, nameTrack, String(wm.fontFamily));
   const verWeight = Math.max(400, nameWeight - 160);
-  const verW = badge ? badgeOf(size).w : measureTracked(UPDATE.version, size, verWeight, TYPE.display.track, FONT.text, { tabular: true });
+  const verW = measureTracked(UPDATE.version, size, verWeight, TYPE.display.track, FONT.text, { tabular: true });
   const gapMN = 0.34 * size;
-  const gapNV = (badge ? 0.3 : NAME.gap) * size;
+  const gapNV = 0.42 * size;
   const pB = prog(F, CLOSE.nameIn, CLOSE.named, E.strongInOut);
-  const pC = badge ? prog(F, CLOSE.versionIn, CLOSE.lockup, E.linear) : prog(F, CLOSE.versionIn, CLOSE.lockup, E.settleOut);
-  const pW = badge ? E.strongInOut(clamp(pC / 0.7)) : pC; // the pair re-centres as the version comes
+  const pC = prog(F, CLOSE.versionIn, CLOSE.lockup, E.settleOut);
   const box = size * 1.18;
   const pulse = hitPulse(F - CLOSE.lockup, 2, 9);
-  // where the mark is: centred alone (the 3D pull-back lands there), then aside (beside) or up (stack) as the name comes
-  const rowW = stack ? pB * nameW + pW * (gapNV + verW) : MARK + pB * (gapMN + nameW) + pW * (gapNV + verW);
+  // the lockup keeps living: a slow creep toward the lens from the version's landing to the last frame
+  const live = 1 + 0.035 * E.glideOut(clamp((F - CLOSE.lockup) / Math.max(1, ACT.end.from + ACT.end.dur - CLOSE.lockup)));
+  const rowW = stack ? pB * nameW + pC * (gapNV + verW) : MARK + pB * (gapMN + nameW) + pC * (gapNV + verW);
   const x0 = (W - rowW) / 2;
   const markX = stack ? W / 2 - MARK / 2 : x0;
   const markY = stack ? H / 2 - MARK / 2 - pB * (0.5 * MARK + 0.36 * box) : H / 2 - MARK / 2;
   const nameX = stack ? x0 : x0 + MARK + gapMN;
   const nameY = stack ? H / 2 - box / 2 + pB * (0.5 * MARK + 0.3 * box) - (1 - pB) * 0.4 * size : H / 2 - box / 2;
-  // the mark arriving: out of focus as what was on screen goes soft, its pull-back landing on the flat mark
-  const rack = 7.5 * Math.pow(1 - clamp((F - CLOSE.markIn) / f60(ARRIVE60.rack)), 1.8);
-  const level = rack > 0.4 ? defocusLevel(rack) : 0;
-  const durF = ((CLOSE.markFlat - CLOSE.markIn) * 60) / FPS; // the pull-back, f@60 (its landing on the grid)
-  const lockup = { x: W / 2 - MARK / 2, y: H / 2 - MARK / 2, size: MARK };
   const flat = F >= CLOSE.markFlat;
-  let markNode: React.ReactNode;
-  // the pull-back: the solid on a GPU, its CSS-3D twin on software GL (fx/three Logo3D draws either), landing on the
-  // flat mark where the name slides out of it
-  if (flat) markNode = <FlatAt x={markX} y={markY} pulse={pulse} />;
-  else
-    markNode = (
-      <Freeze frame={Math.max(0, fe)}>
-        <Logo3D lockup={lockup} logo={MARK_LOGO} at={0} dur={durF} light={LIGHT3D} gl={MARK_3D.gl} samples={MARK_3D.samples} seed={UPDATE.name} />
-      </Freeze>
-    );
   return (
-    <div style={{ position: 'absolute', inset: 0 }}>
-      <div style={{ position: 'absolute', inset: 0, filter: level > 0 ? `blur(${level}px)` : undefined }}>{markNode}</div>
+    <div style={{ position: 'absolute', inset: 0, transform: live !== 1 ? `scale(${live.toFixed(5)})` : undefined, transformOrigin: '50% 50%' }}>
+      {flat ? <FlatAt x={markX} y={markY} pulse={pulse} /> : <Solid F={F} />}
       {pB > 0 && (
         <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${nameX.toFixed(2)}px, ${nameY.toFixed(2)}px)`, width: (nameW + 24 * U) * (stack ? 1 : pB), height: box, overflow: 'hidden', opacity: stack ? clamp(pB * 1.6) : 1 }}>
           <span data-text="wordmark" style={{ ...wm, color: INK, lineHeight: `${box}px`, whiteSpace: 'pre', display: 'block', transform: stack ? undefined : `translateX(${(-(1 - pB) * 0.3 * size).toFixed(2)}px)` }}>{UPDATE.name}</span>
         </div>
       )}
       {pC > 0 && (
-        <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(nameX + nameW + gapNV).toFixed(2)}px, ${nameY.toFixed(2)}px)`, opacity: badge ? 1 : clamp(pC * 2) }}>
-          {badge ? (
-            <Badge p={pC} size={size} id="release" />
-          ) : (
-            <MaskUp p={pC} size={size}>
-              <span data-text="release" style={{ ...typeStyle('display', size), fontWeight: verWeight, ...tab, color: ACCENT, lineHeight: `${box}px`, whiteSpace: 'pre', display: 'block' }}>{UPDATE.version}</span>
-            </MaskUp>
-          )}
+        <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(nameX + nameW + gapNV).toFixed(2)}px, ${nameY.toFixed(2)}px)`, opacity: clamp(pC * 2) }}>
+          <MaskUp p={pC} size={size}>
+            <span data-text="release" style={{ ...typeStyle('display', size), fontWeight: verWeight, ...tab, color: ACCENT, lineHeight: `${box}px`, whiteSpace: 'pre', display: 'block' }}>{UPDATE.version}</span>
+          </MaskUp>
         </div>
       )}
     </div>
   );
 };
 
-// ---------------------------------------------------------------------------------------------- the stage
+// ---------------------------------------------------------------------------------------------- the handovers
+/** The element's look in a handover: a thin light rim and a soft shadow under it (its face is the shot's own pixels). */
+const RIM = { color: '#FFFFFF', a: DARK ? 0.5 : 0.7, w: 2 } as const;
+const SHADOW = { y: 18, blur: 52, a: DARK ? 0.5 : 0.2 } as const;
+/** A side of handover h on screen and its content: the hook's pill, a shot's element (a window onto the shot), a porthole, the mark's solid. */
+const sideOf = (h: Hand, which: 'from' | 'to'): { side: HandSide; node: React.ReactNode; fix: HBox } => {
+  const s = h[which];
+  const at = which === 'from' ? h.t0 : h.t1;
+  const form: Form = s.form;
+  if (s.side === 'hook') {
+    const L = HOOK_LAYOUT();
+    return { side: { form, box: L.pillBox, r: L.pillBox.h / 2, fill: PILL_FILL, rim: { color: ACCENT, a: 1, w: PILL.rim }, shadow: { a: 0 } }, node: <PillFace size={L.size} />, fix: L.pillBox };
+  }
+  if (s.side === 'mark') {
+    return { side: { form, box: SOLID_BOX, r: SOLID_BOX.w / 2, rim: { a: 0 }, shadow: { a: 0 } }, node: <Window box={SOLID_BOX}><Solid F={at} /></Window>, fix: SOLID_BOX };
+  }
+  const i = s.side;
+  const t = TIMES[i];
+  if (which === 'to' && t.place === 'part') {
+    const sp = SPLIT()[i];
+    const P = portOf(t, at);
+    if (sp && P) {
+      const box: HBox = { x: sp.x - sp.r, y: sp.y - sp.r, w: 2 * sp.r, h: 2 * sp.r };
+      const src = PORT_PIC(i);
+      const node = src ? <PortPictureAt src={src} w={box.w} h={box.h} t={t} /> : <Window box={box} dx={P.tx} dy={P.ty}><ShotPlainAt i={i} /></Window>;
+      return { side: { form, box, r: PORT_R * sp.r, rim: RIM, shadow: SHADOW }, node, fix: box };
+    }
+  }
+  const box = elBox(i, which === 'from' ? 'out' : 'in', at);
+  return { side: { form, box, rim: RIM, shadow: SHADOW }, node: <Window box={box}><ShotPlainAt i={i} /></Window>, fix: box };
+};
+/** A shot drawn at the handover's current frame (inside its window). */
+const FrameCtx = React.createContext(0);
+const ShotPlainAt: React.FC<{ i: number }> = ({ i }) => <ShotPlain i={i} F={React.useContext(FrameCtx)} />;
+const PortPictureAt: React.FC<{ src: string; w: number; h: number; t: ChangeTimes }> = ({ src, w, h, t }) => <PortPicture src={src} w={w} h={h} t={t} F={React.useContext(FrameCtx)} />;
+/** Each drawn handover's spec, built once (its sides sampled where the scenes hand the element over). */
+const SPECS = lazy(() =>
+  HANDS.filter((h) => h.drawn).map((h) => {
+    const A = sideOf(h, 'from');
+    const B = sideOf(h, 'to');
+    return { h, from: { ...A.side, at: h.t0 }, to: { ...B.side, at: h.t1 }, a: A.node, b: B.node };
+  }),
+);
+const Hands: React.FC<{ F: number }> = ({ F }) => (
+  <FrameCtx.Provider value={F}>
+    {SPECS().map(({ h, from, to, a, b }) =>
+      F >= h.t0 && F < h.t1 ? <Handover key={h.k} kind={h.kind} at={h.at} element="version" id={`${h.from.form}>${h.to.form}`} from={from} to={to} a={a} b={b} frame={F} /> : null,
+    )}
+  </FrameCtx.Provider>
+);
+
 /**
- * The film's path through its world (fx/world worldPath): the camera enters the place on the opening frames and moves on
- * with every change of picture (a shot arriving, a line clearing the shot before, the end card's mark), landing just
- * after it; every hold between is still and every move goes the same way. The world is a place the film travels
- * through, never one still photograph under every scene.
+ * A two-form shot's second form on every frame from its same-surface change (the camera riding the screen to it) until
+ * the element hands on: its button under the shot's camera (src/sync.ts declares it as the element's track).
  */
-const PATH_CUTS = (() => {
-  const raw = [...TIMES.flatMap((t) => [t.clear?.[0], t.gap ? t.gap[0] : t.h0]), CLOSE.markIn].filter((x): x is number => typeof x === 'number').sort((a, b) => a - b);
-  return raw.filter((x, k) => k === 0 || x - raw[k - 1] > f60(40));
-})();
-const PATH = worldPath(PATH_CUTS, { fps: FPS });
+export const surfaceTrack = (i: number): { at: number; track: [number, number, number, number, number][] } | null => {
+  const h = HANDS.find((x) => x.kind === 'same-surface' && x.from.side === i);
+  if (!h) return null;
+  const ho = handOut(i);
+  const r1 = (v: number) => Math.round(v * 10) / 10;
+  const track: [number, number, number, number, number][] = [];
+  for (let f = h.at; f <= ho.t0; f++) {
+    const b = elBox(i, 'out', f);
+    track.push([f, r1(b.x), r1(b.y), r1(b.w), r1(b.h)]);
+  }
+  return { at: h.at, track };
+};
+
+/** The drawn handovers as plain specs (src/sync.ts declares their box tracks for the render checks). Browser (it measures the faces). */
+export const handSpecs = () => SPECS().map(({ h, from, to }) => ({ kind: h.kind, at: h.at, element: 'version', id: `${h.from.form}>${h.to.form}`, from, to }));
+
+// ---------------------------------------------------------------------------------------------- the stage
+/** The world's steps: one per act on the spine's act cuts (enter, closer, light, pull-back). */
+const STEPS = stepsFromPlan(SPINE_PLAN);
 export const Stage: React.FC<{ from: number }> = ({ from }) => {
   const F = useCurrentFrame() + from;
   const d = worldDrawn();
   warnStandIn();
   return (
     <AbsoluteFill style={{ background: WORLD.base, overflow: 'hidden' }}>
-      <Place kind={d.kind} src={d.src} soft={d.soft} frame={F} push={PATH}>
-        <Hook F={F} />
+      <WorldSteps kind={d.kind} src={d.src} soft={d.soft} frame={F} steps={STEPS}>
         {TIMES.map((t) => (
           <ShotLayer key={t.i} t={t} F={F} />
         ))}
         {TIMES.map((t) => (
+          <PortholeLayer key={`p${t.i}`} t={t} F={F} />
+        ))}
+        <Hook F={F} />
+        <EndCard F={F} />
+        <Hands F={F} />
+        {TIMES.map((t) => (
           <ChangeLine key={`l${t.i}`} t={t} F={F} />
         ))}
-        <EndCard F={F} />
-      </Place>
+      </WorldSteps>
     </AbsoluteFill>
   );
 };

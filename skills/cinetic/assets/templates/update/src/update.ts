@@ -1,10 +1,13 @@
-// The update film's facts: the version, the version before it and the changes, each with the product screen that shows
-// it working. The timeline, the hero shots and the sound all read this file; it is the one file a film fills (with
-// src/content.ts, the people, pictures and screens scripts/content.mjs writes from the brief).
+// The update film's facts: the version, the version before it, the ONE session the film follows (one person doing one
+// task that uses each change in turn: the spine, lib/spine.ts) with its case (the same names and numbers in every act),
+// and the changes, each an act of that session with the product screen that shows it working. The timeline, the hero
+// shots and the sound all read this file; it is the one file a film fills (with src/content.ts, the people, pictures
+// and screens scripts/content.mjs writes from the brief).
 //
-// cinetic:placeholder - an invented release of an invented product: write the real version, 2-4 real changes (each one
-// plain sentence of 2-6 words that says the result the user sees, never a feature name: scripts/copy-check.py) and,
-// for each, the screen that shows it and the moment it plays (below), in the product's own words; then delete these lines.
+// cinetic:placeholder - an invented release of an invented product: write the real version, the session and its case,
+// 2-3 real changes in the order the session meets them (each one plain sentence of 2-6 words that says the result the
+// user sees, never a feature name: scripts/copy-check.py, its verb, and the screen that shows it and the moment it plays,
+// below), in the product's own words; then delete these lines.
 import { IDENTITY } from './brand/identity';
 
 /**
@@ -61,6 +64,10 @@ export type Change = {
   id: string;
   words: string;
   key?: string;
+  /** the act's verb in the session's sentence ('see', 'arrive', 'join'): it picks the hero shots that can film it (lib/spine devicesFor); default the line's first word */
+  verb?: string;
+  /** how its line meets the element (else dealt, src/deal.ts PLACES): 'part' the line parts round a porthole holding the element, which opens into the shot (once a film, never a line with "[]"); 'head' the line rides over the element in the shot's own space */
+  place?: 'part' | 'head';
   title: string;
   sub?: string;
   show: Show;
@@ -72,15 +79,25 @@ export type Change = {
   why?: string;
 };
 
-export const UPDATE: { name: string; from: string; version: string; changes: Change[] } = {
+/**
+ * The case the session works on: `request` the one record every act touches (the task, the item, the place: real words
+ * from the brief, as the screens write them), `names` and `numbers` as they appear on screen (a person, a place, a time,
+ * a figure). The checks follow them through the acts (grid-check spine-case, data-check): the same ones in 2-4 acts.
+ */
+export type Case = { request: string; result?: string; who?: string; names?: string[]; numbers?: string[] };
+
+export const UPDATE: { name: string; from: string; version: string; session: string; case: Case; changes: Change[] } = {
   name: IDENTITY.name,
   from: '2.3', // the version before this one (the hook may roll its changed numerals to the new one): write the real one
   version: '2.4', // the new version: write the real one
+  session: '[does the one task the film follows]', // the session as a verb phrase ("plans Saturday's hike on Ridge Loop"): the film's sentence
+  case: { request: '[Row]', names: ['[Row]'], numbers: [] }, // the record every act touches, as its screens write it
   changes: [
     {
       id: 'first',
       words: '[First change in plain words]',
       key: '[words]',
+      verb: 'tap',
       title: '[Screen title]',
       sub: '[detail]',
       show: { kind: 'tap', rows: [{ label: '[Row]', meta: '[detail]' }, { label: '[Row]', meta: '[detail]' }], action: '[Action]', done: '[Done]', result: [{ label: '[Result]' }, { label: '[Result]' }] },
@@ -89,6 +106,7 @@ export const UPDATE: { name: string; from: string; version: string; changes: Cha
       id: 'second',
       words: '[Second change in plain words]',
       key: '[words]',
+      verb: 'fill',
       title: '[Screen title]',
       show: { kind: 'fill', layout: 'list', items: [{ label: '[Item]', meta: '[detail]' }, { label: '[Item]', meta: '[detail]' }, { label: '[Item]', meta: '[detail]' }, { label: '[Item]', meta: '[detail]', accent: true }], noun: ['[item]', '[items]'] },
     },
@@ -96,6 +114,7 @@ export const UPDATE: { name: string; from: string; version: string; changes: Cha
       id: 'third',
       words: '[Third change in plain words]',
       key: '[words]',
+      verb: 'count',
       title: '[Screen title]',
       show: { kind: 'count', label: '[What is counted]', from: 12, to: 48, unit: '[unit]', sub: '[detail]' },
     },
@@ -128,7 +147,10 @@ const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 const need = (ok: boolean, msg: string) => {
   if (!ok) throw new Error(`update.ts: ${msg}`);
 };
-need(UPDATE.changes.length >= 2 && UPDATE.changes.length <= 4, `an update film shows 2-4 changes (it has ${UPDATE.changes.length})`);
+need(UPDATE.changes.length >= 2 && UPDATE.changes.length <= 3, `an update film plays the hook and 2-3 changes as the acts of one session (it has ${UPDATE.changes.length}); a fourth change is a second film`);
+need(!!UPDATE.session.trim() && !!UPDATE.case.request.trim(), 'give the session (the one task the film follows) and its case (the record every act touches)');
+need(UPDATE.changes.filter((c) => c.place === 'part').length <= 1, 'one change at most parts its line round the porthole (place: part)');
+need(UPDATE.changes.every((c) => c.place !== 'part' || !c.words.includes('[]')), 'a line that carries a mark ([]) never parts round the porthole (its gap holds the mark)');
 need(!!UPDATE.version.trim() && !!UPDATE.from.trim(), 'give the version and the version before it');
 need(new Set(UPDATE.changes.map((c) => c.id)).size === UPDATE.changes.length, 'every change needs its own id');
 // a face is a person: one photo carries one name through the film (the name content.ts cast with it: its people come

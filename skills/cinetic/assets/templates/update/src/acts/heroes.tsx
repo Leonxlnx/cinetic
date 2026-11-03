@@ -41,6 +41,11 @@ const opening = (fr: Framing): Partial<typeof BASE> => {
 /** A change's frames, local to its shot (0 = h0). */
 const localOf = (t: ChangeTimes) => ({ go: t.go - t.h0, hit: t.hit - t.h0, res: t.res - t.h0, res2: t.res2 - t.h0, end: t.heroEnd - t.h0, hin: t.hin - t.h0 });
 const centred = (w: number, h: number, dy = 0): Box => ({ x: (W - w) / 2, y: (H - h) / 2 + dy, w, h });
+/**
+ * The opening framing's fill and anchor: a shot whose line rides over its element (src/deal.ts PLACES 'head') opens a
+ * little wider with the element low in the frame, leaving the band above it for the line (never a line on the card).
+ */
+const room = (t: ChangeTimes, fill: number): { fill: number; anchor?: [number, number] } => (t.place === 'head' ? { fill: fill * 0.8, anchor: [0.5, 0.36] } : { fill });
 const at3 = (b: { x: number; y: number; w: number; h: number }, z = 0): V3 => [b.x + b.w / 2, b.y + b.h / 2, z];
 
 // ------------------------------------------------------------------------------------------------ shared parts
@@ -135,7 +140,7 @@ const pressPlan = (t: ChangeTimes) => {
   };
   const cam = camera(
     [follow(L.go, subject, { frames: Math.max(f60(30), L.hit - L.go), lag: f60(14), to: { dist: focalPx(FR, 50) / mag, yaw: 0, pitch: 0, roll: 0 }, film: FILM, id: 'press-follow' })],
-    { film: FILM, base: opening(frame(box, { fill: 0.8, yaw: 0, pitch: 0 })) },
+    { film: FILM, base: opening(frame(box, { ...room(t, 0.8), yaw: 0, pitch: 0 })) },
   );
   return { c, w, h, box, b, glide, cam, L };
 };
@@ -218,7 +223,7 @@ const typePlan = (t: ChangeTimes) => {
       follow(L.go + f60(2), caret, { frames: tf, lag: f60(14), film: FILM, id: 'type-follow' }),
       travel(L.go + f60(2) + tf + f60(2), { target: [box.x + send.x + send.w / 2 - lead * 0.6, box.y + send.y + send.h / 2, 0] }, { frames: Math.max(f60(12), L.hit - (L.go + f60(4) + tf) - 1), film: FILM, id: 'type-send' }),
     ],
-    { film: FILM, base: opening(frame(box, { fill: 0.84, yaw: 0, pitch: 0 })) },
+    { film: FILM, base: opening(frame(box, { ...room(t, 0.84), yaw: 0, pitch: 0 })) },
   );
   return { box, cam, send, L };
 };
@@ -400,7 +405,7 @@ const developPlan = (t: ChangeTimes) => {
   const card: Box = { x: photo.x - 90 * U, y: photo.y + photo.h - 170 * U, w: 560 * U, h: 228 * U, z: 190 } as Box;
   const cam = camera(
     [push(Math.max(0, L.go - f60(6)), frame({ x: card.x - 30 * U, y: photo.y + 60 * U, w: photo.w * 0.86, h: card.y + card.h + 36 * U - (photo.y + 60 * U) }, { fill: 0.97, yaw: 0, pitch: 0 }), { frames: Math.max(f60(40), L.hit + f60(10) - L.go), film: FILM, id: 'develop-push' }), rack(L.go + f60(18), at3(card, 190), { frames: f60(30), film: FILM, id: 'develop-rack' })],
-    { film: FILM, base: opening(frame(photo, { fill: 0.86, yaw: 0, pitch: 0 })) },
+    { film: FILM, base: opening(frame(photo, { ...room(t, 0.86), yaw: 0, pitch: 0 })) },
   );
   const row = rowsOf(c).find((r) => r.accent) ?? rowsOf(c)[0];
   return { c, photos, L, photo, card, cam, row };
@@ -460,7 +465,7 @@ const counterPlan = (t: ChangeTimes) => {
   const fig: Box = { x: slab.x + 44 * U, y: slab.y + 30 * U, w: 720 * U, h: 470 * U };
   const cam = camera([push(L.go, frame(fig, { fill: 0.86, yaw: 0, pitch: 0, anchor: [0.48, 0.52] }), { frames: Math.max(f60(40), L.hit - L.go), film: FILM, id: 'counter-push' })], {
     film: FILM,
-    base: opening(frame(slab, { fill: 0.84, yaw: 0, pitch: 0 })),
+    base: opening(frame(slab, { ...room(t, 0.84), yaw: 0, pitch: 0 })),
   });
   return { c, L, slab, fig, cam };
 };
@@ -561,7 +566,7 @@ const swapPlan = (t: ChangeTimes) => {
   const bb = centred(w, h, 30);
   const cam = camera([push(L.hit - f60(24), frame({ ...bb, z: 210 } as Box, { fill: 0.82, yaw: 0, pitch: 0 }), { frames: f60(48), film: FILM, id: 'swap-push' }), rack(L.hit - f60(22), at3(bb, 210), { frames: f60(30), film: FILM, id: 'swap-rack' })], {
     film: FILM,
-    base: opening(frame(a, { fill: 0.78, yaw: 0, pitch: 0 })),
+    base: opening(frame(a, { ...room(t, 0.78), yaw: 0, pitch: 0 })),
   });
   return { c, w, h, a, bb, cam, L };
 };
@@ -677,6 +682,50 @@ const heroSubject = (i: number): V3 | null => {
     }
     case 'focus-swap':
       return at3(swapPlan(t).a);
+    default:
+      return null;
+  }
+};
+/**
+ * Change i's element on its stage (design px at 1080p, a plane's box at depth z): what the shot opens on (`in`: the
+ * element as it lands from the handover before) and what it hands on (`out`), in the forms of src/timeline.ts HERO_FORMS
+ * (the card, then its button; the front notice; the chosen picture; the figure's slab ...). null: a shot whose element
+ * lives on its own 3D stage (the handovers frame its centre). acts/World.tsx carries this box under the shot's camera.
+ */
+export const heroElement = (i: number, side: 'in' | 'out'): { box: Box; z: number } | null => {
+  const t = TIMES[i];
+  switch (HEROES[i]) {
+    case 'push-press': {
+      const P = pressPlan(t);
+      return side === 'in' ? { box: P.box, z: 0 } : { box: { x: P.box.x + P.b.x, y: P.box.y + P.b.y, w: P.b.w, h: P.b.h }, z: 0 };
+    }
+    case 'macro-type': {
+      const P = typePlan(t);
+      return side === 'in' ? { box: P.box, z: 0 } : { box: { x: P.box.x + P.send.x, y: P.box.y + P.send.y, w: P.send.w, h: P.send.h }, z: 0 };
+    }
+    case 'toast-stack': {
+      const P = stackPlan(t);
+      return { box: { x: (W - P.cw) / 2, y: SLOTS[0].cy * H - P.ch / 2, w: P.cw, h: P.ch }, z: 0 };
+    }
+    case 'carousel': {
+      const P = carouselPlan(t);
+      if (side === 'out') {
+        const k = 1.18;
+        return { box: { x: W / 2 - (RING.cw * k) / 2, y: H / 2 - (RING.ch * k) / 2, w: RING.cw * k, h: RING.ch * k }, z: 260 };
+      }
+      const th = P.turn(0);
+      return { box: { x: W / 2 - RING.cw / 2 + P.R * Math.sin(th), y: H / 2 - RING.ch / 2, w: RING.cw, h: RING.ch }, z: -P.R + P.R * Math.cos(th) };
+    }
+    case 'photo-develop':
+      return { box: developPlan(t).photo, z: 0 };
+    case 'glass-counter': {
+      const P = counterPlan(t);
+      return { box: side === 'in' ? P.slab : P.fig, z: 0 };
+    }
+    case 'focus-swap': {
+      const P = swapPlan(t);
+      return side === 'in' ? { box: P.a, z: 0 } : { box: P.bb, z: 210 };
+    }
     default:
       return null;
   }

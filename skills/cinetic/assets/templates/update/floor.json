@@ -3,10 +3,13 @@
  "about": "The template as it ships: what its unnamed scaffold plays (src/deal.ts FLOOR and FLOOR_HERO). film-diff.mjs holds a film made from it to at least half its slots apart.",
  "deal": {
   "ground": "blackField",
-  "hook": "rise",
-  "arrive": "rack",
-  "order": "show-show-show",
+  "hook": "badge",
+  "place": "part-head-head",
   "end": "beside"
  },
- "heroes": ["push-press", "toast-stack", "glass-counter"]
+ "heroes": [
+  "push-press",
+  "toast-stack",
+  "glass-counter"
+ ]
 }
