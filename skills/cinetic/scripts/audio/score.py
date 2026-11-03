@@ -13,7 +13,13 @@ cinetic makes no music: "music": "synth" exits 1 (choose a licensed track, refer
 
 Music-led (renders exactly the plan of scripts/audio/plan.py, run in-process):
   bed        the edit's segments and joins (track.py build_bed), staged to -18 LUFS integrated, plus
-             music.gain_db; no EQ, no saturation and no glue on an already mastered track
+             music.gain_db; no saturation and no glue on an already mastered track, and no EQ unless it is
+             dull: a bed whose 8-16 kHz band sits more than 28 dB under its whole (a pad that masks every
+             click) gets a parallel air shelf (half the deficit, at most +4.5 dB above 7 kHz) and +1.5 dB of
+             presence (2-5 kHz), so the hits cut through; a track whose own 2-8 kHz band sits under -35 dB is
+             muffled and fails the gate (pick another), and a mix under -22 dB there or -32 dB at 8-16 kHz warns
+  fx lift    when the effects sit under 3 dB over the bed on the median (their hits lost in the music), the
+             effects bus rises until the median reads 4.5 dB over it (at most +6 dB), said in the report
   effects    each placed event's take at the plan's gain (bed_db over the bed as played), dry; roles with a
              width keep their stereo, whooshes, risers and swells travel along the cue's pan, every other
              effect is mono within +-0.15 of the centre; a 30 Hz high-pass; tuned takes fade out by 1.5 s
@@ -1501,6 +1507,100 @@ def plan_voice(kit, p, song):
     return x, start
 
 
+AIR = dict(floor_db=-28.0, k=0.5, max_db=4.5, shelf_hz=7000.0, presence=(2000.0, 5000.0), presence_db=1.5,
+           # the mix's balance: a soundtrack whose 2-8 kHz band sits under -22 dB of the whole, or its 8-16 kHz band under
+           # -32, reads as a dull murk (studio launch mixes: about -11 to -25 and -11 to -31); a track whose own 2-8 kHz
+           # band sits under -35 dB is muffled (a low-passed pad: no EQ adds what the file does not hold)
+           mix_presence=-22.0, mix_air=-32.0, muffled=-35.0)
+FX_LIFT = dict(floor_db=3.0, target_db=4.5, max_db=6.0)
+
+
+def band_balance(x):
+    """The share of a signal's power in four bands against its whole (dB, over the film): low (30-250 Hz), mid
+    (250-2k), presence (2-8k), air (8-16k); None when shorter than a second."""
+    x = np.asarray(x, np.float64)
+    x = x.mean(axis=1) if x.ndim == 2 else x
+    seg = 1 << 15
+    if len(x) < max(SR, seg):
+        return None
+    win = np.hanning(seg)
+    tot = np.zeros(seg // 2 + 1)
+    for i in range(len(x) // seg):
+        tot += np.abs(np.fft.rfft(x[i * seg:(i + 1) * seg] * win)) ** 2
+    fr = np.fft.rfftfreq(seg, 1.0 / SR)
+    allp = float(tot[fr >= 30].sum())
+    if allp <= 0:
+        return None
+    band = lambda lo, hi: round(10 * math.log10(float(tot[(fr >= lo) & (fr < hi)].sum()) / allp + 1e-24), 2)  # noqa: E731
+    return dict(low=band(30, 250), mid=band(250, 2000), presence=band(2000, 8000), air=band(8000, 16000))
+
+
+def open_bars_hint(edit, base_dir='.'):
+    """Where the track opens up (its bars with a full spectrum: the centroid over 700 Hz and 0.4 of its 75th percentile
+    bar), as an instruction for the edit: 'fit the edit on its open bars 17-32, 41-45 (track.py edit --start-bar 17 ...)'."""
+    try:
+        a = json.load(open(locate((edit or {}).get('analysis'), base_dir), encoding='utf-8'))
+        cen = np.array([float(b.get('centroid') or 0.0) for b in a['bars']])
+        lim = min(700.0, 0.4 * float(np.percentile(cen, 75)))
+        runs, st = [], None
+        for i, c in enumerate(list(cen) + [0.0]):
+            if c >= lim and st is None:
+                st = i
+            if c < lim and st is not None:
+                runs.append((st + 1, i))
+                st = None
+        runs = [r for r in runs if r[1] - r[0] >= 1]
+        if not runs:
+            return 'the whole track is muffled'
+        ranges = ', '.join(f'{x}-{y}' for x, y in runs[:4])
+        return f'fit the edit on the bars where the track opens up ({ranges}: track.py edit --start-bar {runs[0][0]} or --entry {runs[0][0]})'
+    except (OSError, ValueError, KeyError, TypeError):
+        return 'fit the edit on the bars where the track opens up (track.py edit --start-bar)'
+
+
+def air_bed(bed):
+    """A dull bed with air and presence back (a parallel high-pass blend: a smooth shelf, no ringing), or the bed as it
+    is: (bed, info)."""
+    b = band_balance(bed)
+    info = dict(bed=b, shelf_db=0.0, presence_db=0.0)
+    if b is None or b['air'] >= AIR['floor_db']:
+        return bed, info
+    g = min(AIR['max_db'], AIR['k'] * (AIR['floor_db'] - b['air']))
+    y = bed + (10 ** (g / 20) - 1) * D.filt(bed, D.hp(AIR['shelf_hz'], 2))
+    y = y + (10 ** (AIR['presence_db'] / 20) - 1) * D.filt(bed, D.bp(AIR['presence'][0], AIR['presence'][1], 2))
+    info.update(shelf_db=round(g, 2), presence_db=AIR['presence_db'])
+    return y, info
+
+
+def fx_lift(bed_played, placed, n):
+    """How far to raise the effects bus (dB, 0 when they already read): the median of the effects' loudest 50 ms with
+    the bed over the bed alone, keys left out; under FX_LIFT floor_db the take level that reads target_db over a
+    steady bed, at most max_db."""
+    import mixkeys as MK
+    mix_over, take_over = [], []
+    for p in placed:
+        if p.get('kind') == 'key' or 'x' not in p or 'g' not in p or 'start' not in p:
+            continue
+        lvs = effect_levels(bed_played, p, n)
+        if lvs is None:
+            continue
+        try:
+            lv = MK.bed_level(bed_played, p.get('sync_s', p.get('t', 0.0)))
+        except MK.BedError:
+            lv = None
+        if lv is None:
+            continue
+        mix_over.append(lvs['mix'] - lv)
+        take_over.append(lvs['take'] - lv)
+    if len(mix_over) < 3:
+        return 0.0, None
+    med = float(np.median(mix_over))
+    if med >= FX_LIFT['floor_db']:
+        return 0.0, round(med, 2)
+    want_take = 10 * math.log10(10 ** (FX_LIFT['target_db'] / 10) - 1)
+    return round(float(np.clip(want_take - float(np.median(take_over)), 0.0, FX_LIFT['max_db'])), 2), round(med, 2)
+
+
 def render_music(song, events, cues, kit, bed, edit, stems_dir=None, draft=False, plan_path=None, base_dir='.'):
     """The music-led soundtrack: the plan (plan.py, in-process) rendered over the staged bed as played."""
     import plan as PL
@@ -1512,6 +1612,7 @@ def render_music(song, events, cues, kit, bed, edit, stems_dir=None, draft=False
         PL.write_json(os.path.join(os.path.dirname(os.path.abspath(plan_path)), 'cues_sounded.json'), PL.sounded_cues(cues, plan))
     active = [s for s in plan['stopdowns'] if s.get('status') in ('added', 'arrangement')]
     auto = PL.ride_envelope(song, n) * PL.stop_envelope(n, active) * PL.hold_envelope(song, n) * PL.end_fade(song, n)
+    bed, air = air_bed(bed)  # a dull pad gets its air and presence back (the hits cut through it)
     bed_played = bed * auto[:, None] * song.mix['music']
     bed_ring = ring_bed(edit, bed_played, bed * (PL.ride_envelope(song, n) * PL.hold_envelope(song, n))[:, None] * song.mix['music'],
                         until_s=song.dur)
@@ -1539,7 +1640,22 @@ def render_music(song, events, cues, kit, bed, edit, stems_dir=None, draft=False
     ring_hit(song, edit, placed, sfx)
     sfx = D.filt(sfx, D.hp(30, 2)) * (PL.hold_envelope(song, n) * PL.end_fade(song, n))[:, None] * song.mix['sfx']
     fade_warnings(song, placed)
+    lift, fx_med = fx_lift(bed_played, placed, n)
+    if lift > 0:  # the effects under the music: the bus rises until their hits read over it
+        kf = 10 ** (lift / 20)
+        sfx = sfx * kf
+        for p in placed:
+            if 'g' in p:
+                p['g'] *= kf
+        song.warnings.append(f'the effects sat {fx_med:+.1f} dB over the bed on the median (under {FX_LIFT["floor_db"]:g}: the hits lost in the music); '
+                             f'the effects bus rose {lift:+.1f} dB. Give the moments that matter a weight of 0.45+ in src/sync.ts and pick a bed '
+                             'that leaves them room (a dull pad masks a click)')
+    if air.get('shelf_db'):
+        song.warnings.append(f"the bed is dull (its 8-16 kHz band {air['bed']['air']:g} dB under the whole, want above {AIR['floor_db']:g}): "
+                             f"+{air['shelf_db']:g} dB of air above {AIR['shelf_hz'] / 1000:g} kHz and +{air['presence_db']:g} dB of presence on it; "
+                             'a brighter track needs none')
     mix = (bed_played + sfx)[:n_out]
+    air['mix'] = band_balance(mix)
     y, info = M.finish(mix, song.lufs, song.ceiling, fade=0, glue=False)
     if stems_dir:
         import soundfile as sf
@@ -1552,6 +1668,15 @@ def render_music(song, events, cues, kit, bed, edit, stems_dir=None, draft=False
     tuned = [dict(f=p['f'], kind=p['kind'], id=p.get('id', ''), note=note_name(p['midi']), in_key=fits(song, p))
              for p in placed if p.get('midi') is not None]
     gates = music_gates(song, plan, bed, bed_played, sfx, auto, edit, base_dir, placed)
+    bb, mb = air.get('bed'), air.get('mix')
+    if bb and bb['presence'] < AIR['muffled']:
+        gates['fails'].append(f"the bed is muffled: its 2-8 kHz band sits {bb['presence']:g} dB under the whole (under {AIR['muffled']:g}: a low-passed "
+                              'pad or a filtered intro that masks every click and reads as a murk; no EQ adds what the file does not hold): '
+                              + open_bars_hint(edit, base_dir) + ', or pick a brighter track (music.mjs search or pick), then mix again')
+    elif mb and (mb['presence'] < AIR['mix_presence'] or mb['air'] < AIR['mix_air']):
+        gates['warnings'].append(f"the mix is dull: 2-8 kHz {mb['presence']:g} dB and 8-16 kHz {mb['air']:g} dB under the whole (want over "
+                                 f"{AIR['mix_presence']:g} and {AIR['mix_air']:g}): a brighter track, or effects with attack and air (clicks, ticks, "
+                                 'glass) on the moments that matter')
     masked, read = [], 0
     lock_f = (cues.get('cue') or {}).get('lockup')
     for p in placed:
@@ -1573,7 +1698,8 @@ def render_music(song, events, cues, kit, bed, edit, stems_dir=None, draft=False
             masked.append(dict(f=p['f'], kind=p['kind'], id=p.get('id', ''), band_hz=r[0], snr_db=round(r[1], 1), margin_db=thr,
                                role=p.get('role'), hero=hero))
     return y, info, dict(placed=placed, skipped=skipped, missing=missing, masked=masked, masked_read=read, tuned=tuned,
-                         typing=None, sfx_levels={}, plan=plan, gates=gates, bed_ring=bed_ring)
+                         typing=None, sfx_levels={}, plan=plan, gates=gates, bed_ring=bed_ring,
+                         lift=dict(fx_db=lift, fx_median_db=fx_med, **air))
 
 
 def effect_levels(bed_played, p, n):
@@ -2129,6 +2255,7 @@ def main(argv=None):
                                  "track set each role's bed_db in audio/kit.json (music.gain_db for headroom) and leave mix at 1")
         rep['lockup'] = lockup_after_stop(song, plan, y, rep)
         rep['bed_ring'] = ev.get('bed_ring')
+        rep['lift'] = ev.get('lift')
         rep['ride'] = plan.get('ride')
         if events and not a.bed_only:
             rep['accents'] = accent_read(y, events, song, plan)

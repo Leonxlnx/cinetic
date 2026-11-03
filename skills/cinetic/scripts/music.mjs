@@ -682,8 +682,33 @@ export function quickTempo(pcm, sr) {
   return Math.round(bpm * 10) / 10;
 }
 
+/**
+ * The presence of a track: the share of its power at 2-5 kHz against the whole (dB, 2048-point frames over the first two
+ * minutes of mono samples at `sr` >= 11025). A low-passed pad reads under -35: it masks every click laid over it and
+ * reads as a murk (score.py fails such a bed: no EQ adds what the file does not hold).
+ */
+export function presenceDb(pcm, sr) {
+  const N = 2048;
+  const frames = Math.min(Math.floor(pcm.length / N), Math.floor((120 * sr) / N));
+  if (frames < 8 || sr < 11000) return null;
+  const win = Float64Array.from({ length: N }, (_, i) => 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / N));
+  const buf = new Float64Array(N);
+  let all = 0, band = 0;
+  for (let f = 0; f < frames; f++) {
+    for (let i = 0; i < N; i++) buf[i] = pcm[f * N + i] * win[i];
+    const mag = fftMag(buf);
+    for (let i = 1; i < mag.length; i++) {
+      const hz = (i * sr) / N, p = mag[i] * mag[i];
+      if (hz >= 30) all += p;
+      if (hz >= 2000 && hz < 5000) band += p;
+    }
+  }
+  return all > 0 ? Math.round(100 * 10 * Math.log10(band / all + 1e-24)) / 100 : null;
+}
+export const MUFFLED_DB = -35;
+
 // ------------------------------------------------------------------------------------------------ ranking
-/** {score, why[]} of one item against the brief: the words, length, tempo, energy, history. */
+/** {score, why[]} of one item against the brief: the words, length, tempo, energy, presence, history. */
 export function scoreItem(it, want = {}) {
   const why = []; let s = 0;
   if (it.licence === 'unknown') return { score: -Infinity, why: ['no licence the finder can use'] };
@@ -729,6 +754,7 @@ export function scoreItem(it, want = {}) {
     } else why.push('tempo unknown');
   }
   if (it.kind === 'music' && want.shortlist?.has(it.ref)) { s -= 1.5; why.push('a shortlist track the example films used'); }
+  if (it.kind === 'music' && Number.isFinite(it.presence_db) && it.presence_db < MUFFLED_DB) { s -= 4; why.push(`muffled (2-5 kHz ${it.presence_db} dB under the whole): a low-passed pad masks every click`); }
   if (it.kind === 'music' && !(want.words || []).some((w) => STOCK_RE.test(w))) {
     const st = stockPenalty({ tags: it.tags, genre: it.genre, listen: it.listen });
     if (st.penalty) { s -= st.penalty; why.push(st.why); }
@@ -1336,6 +1362,8 @@ async function cmdSheet(args, env = process.env) {
           const bpm = quickTempo(pcm.subarray(0, 11025 * 120), 11025);
           if (bpm) { it.tempo = { value: bpm, kind: 'quick' }; tc[it.ref] = { bpm, kind: 'quick', date: new Date().toISOString().slice(0, 10) }; }
           if (!it.energy) it.energy = energyFromPcm(pcm, 11025);
+          const pr = presenceDb(pcm, 11025);
+          if (pr != null) it.presence_db = pr;
           heard.push([k, f]);
         } catch (e) { it.notes = [...(it.notes || []), `measure: ${e.message}`]; fs.rmSync(f, { force: true }); }
         r.items[k] = it;
@@ -1506,6 +1534,12 @@ async function cmdGet(args, env = process.env) {
   }
   console.log(`get: ${dest} (${(d.bytes / 1e6).toFixed(1)} MB${local ? ', the library\'s copy' : ''}) and ${recPath} (${L.name}, no credit needed; its licence read again now at ${v.url})`);
   if (it.plan?.text) console.log(`  cut points (the library's analysis): ${it.plan.text}`);
+  if (it.kind === 'music') {
+    // a muffled track (a low-passed pad) masks every effect over it and fails the sound gate: say so before the edit
+    let pr = null;
+    try { pr = presenceDb(decode(dest, 11025, 120), 11025); } catch { pr = null; }
+    if (pr != null && pr < MUFFLED_DB) console.log(`  WARNING: this track is muffled (2-5 kHz ${pr} dB under the whole, under ${MUFFLED_DB}): every click sinks into it and score.py fails its bed; get another`);
+  }
   if (it.kind === 'music') {
     console.log(`  next: python3 scripts/audio/track.py analyze ${dest} --profile <calm|crisp|punchy>`);
     console.log(`        python3 scripts/audio/listen.py --track ${dest}   (possible vocals, tempo against track.py's)`);

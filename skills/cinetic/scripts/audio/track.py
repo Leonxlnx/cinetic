@@ -125,6 +125,10 @@ ENTRY_CONFIRM_DB, ENTRY_CONFIRM_GAP_DB = 12.0, 2.0  # a low-band entrance this b
 STOP_DB, STOP_MIN_S, STOP_MAX_S = 12.0, 0.15, 1.0
 ACCENT_DB = 6.0
 MIDSHOT_DB, MIDSHOT_W = 4.0, 2.0   # fit: a level step over 4 dB inside a shot costs 2 a dB (a section entering mid-shot)
+# a muffled bar (a filtered intro or break: its spectral centroid under 700 Hz and under 0.4 of the track's 75th
+# percentile bar) costs this much a film bar after the first: a short film played on a filter sweep is a murk every click
+# sinks into (score.py fails a bed whose 2-8 kHz band sits under -35 dB of the whole)
+MUFFLE_HZ, MUFFLE_RATIO, MUFFLE_W = 700.0, 0.4, 2.0
 FADE_INTO_HIT_DB = 2.0        # ending: a fade with a hit in its last bars has fallen this much over the 2 bars before it
 PRE_MS, TAIL_MS, TAIL_SUSTAIN_MS = 8.0, 60.0, 150.0
 OPEN_FADE_S = 0.08            # an opening inside the track (bars before film bar 1) fades in from silence this long: the
@@ -1001,6 +1005,10 @@ def plan_edit(a, bars, reveal, end, start=None, entry=None, arc=None, max_splice
     feats = np.array([b['feat'] for b in a['bars']])
     lufs = np.array([b['lufs'] for b in a['bars']])
     rel = lufs - np.percentile(lufs, 90)
+    cen = np.array([float(b.get('centroid') or 0.0) for b in a['bars']])
+    muff = np.zeros(nb)
+    if (cen > 0).all():
+        muff = np.where(cen < min(MUFFLE_HZ, MUFFLE_RATIO * float(np.percentile(cen, 75))), MUFFLE_W, 0.0)
     pst = set(a['phrases']['starts'])
     sec_key = np.empty(nb, object)
     for s in a['sections']:
@@ -1083,7 +1091,7 @@ def plan_edit(a, bars, reveal, end, start=None, entry=None, arc=None, max_splice
                 new[s + 1, 0] = np.where(better, cand, new[s + 1, 0])
                 bk[s + 1, 0][better] = np.stack([np.full(better.sum(), s), np.full(better.sum(), 1),
                                                  ib[better]], axis=1)
-        new += (np.abs(rel - arc[k]) / 3.0)[None, None, :]
+        new += (np.abs(rel - arc[k]) / 3.0 + muff)[None, None, :]
         if k == reveal - 1:
             mask = np.ones(nb, bool)
             mask[E] = False
@@ -1114,7 +1122,8 @@ def plan_edit(a, bars, reveal, end, start=None, entry=None, arc=None, max_splice
         s, r, j = s_p, r_p, j_p
     path = path[::-1]
     info = dict(entry_bar=E + 1, end_bar=(endbar + 1) if endbar is not None else None, total=float(fin.min()),
-                arc=[float(v) for v in arc], splices=sum(1 for p, q in zip(path[:-1], path[1:]) if q != p + 1), soft_entry=soft)
+                arc=[float(v) for v in arc], splices=sum(1 for p, q in zip(path[:-1], path[1:]) if q != p + 1), soft_entry=soft,
+                muffled=[k + 1 for k, j in enumerate(path) if muff[j] > 0])
     return path, info
 
 
@@ -1287,7 +1296,7 @@ def cmd_edit(a_):
            'reveal': dict(film_bar=a_.reveal_bar, src_bar=info['entry_bar'], film_s=film_down[a_.reveal_bar - 1]),
            'segments': segs, 'joins': joins, 'ending': ending, 'track_dips': dips,
            'film': dict(downbeats=film_down, **fg), 'key': a['key']['name'], 'key_r': a['key']['r'],
-           'cost': dict(total=round(info['total'], 2), splices=info['splices'])}
+           'cost': dict(total=round(info['total'], 2), splices=info['splices']), 'muffled_bars': info.get('muffled', [])}
     if getattr(a_, 'fit', None):
         doc['args']['fit'] = True
         doc['fit'] = dict(a_.fit, midshot_steps=midshot)
