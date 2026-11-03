@@ -88,9 +88,13 @@ over 0.4 s windows at 480 wide (camera fit, fastest layer, flat-ground change), 
                of a shot of 2 s or longer at a flat speed (no start, no landing) between a creep (15
                px/s, 1.5 %/s) and 60 px/s or 4 %/s. Per shot that wanders or drifts           warn
                a wander in two shots or more, a drift in three or more                      fail
+               There and back at any speed: two opposite runs 1 s or less apart in one scene (no declared
+               seam between them), each travelling 80 px at 1080p or more (a zoom: 3 %), the second
+               returning 40 % of the first (a pan across a page and back, push in, pull out)   fail
                Declared camera shots (cues declared.fx[].shots / stages, fx/depth shotDeclares): a shot
                is a purposeful move (its frames never count as an idle camera); two in a row whose
-               picture travels opposite ways within 1.5 s go back and forth at any speed       fail
+               picture travels opposite ways within 1.5 s, no declared seam between them, go back
+               and forth at any speed                                                          fail
                and inside a declared stage the picture creeping at a flat, slow speed outside
                every shot for 1 s or longer is a drift (a plane's eased entry is not)        warn
                and a camera that never rests: faster than a sub-pixel creep (15 px/s, 1.5 %/s) on more
@@ -129,7 +133,7 @@ over 0.4 s windows at 480 wide (camera fit, fastest layer, flat-ground change), 
                >= 150) or dark (<= 80) for 0.5 s flips more than twice (flips within 1 s are one
                colour event; a colour field between its deep and light state is one family)  fail
                (a film without declared seams: warn)
-  seam-mix     the most-used seam (declared seams by recipe, fx/Seam ids first; undeclared act
+  seam-mix     the most-used seam (declared seams by recipe: a spine handover by its kind, fx/Seam ids next; undeclared act
                lines are hard cuts) takes more than 45 % of 5 or more scene changes         fail
                4+ copy lines and no exit-then-enter, text-swap or match-cut                warn
                --seams runs only these three on a 480-wide decode (fast; implies --grammar)
@@ -190,11 +194,22 @@ at 160x90, one sample per 1/30 s (landings also at the film's own rate), outside
   motion-density more than 2 primary moves (peaks >= 25 % of the film's 90th-percentile move) per 3 s  fail
   motion-stop  a move goes still in one frame from above 15 % of its peak speed (cut off mid-ease)    fail
   motion-cut   a visible cut while a braking move is still above 10 % of its peak speed               warn
-  motion-floor (every film of 8 s or more, declared or not; --motion-floor runs it alone) frozen runs over 0.8 s
-               (at 320 x 180: under 0.02 % of pixels change 10+ levels and the structure moves under 0.012 px,
-               read on its edges so a pale creep counts, or the only change is grain) take more than 8 % of the body (outside the end lock, freezes and
-               ignored ranges); a film that never stops reads 0-6 %                  fail; over 5 %  warn
-               (one single frozen run up to 2.5 s, a short film's one held breath, warns at most)
+  motion-floor (every film of 8 s or more, declared or not; --motion-floor and --spine run it too) near-still
+               runs of 0.3 s or more (at 320 x 180: under 0.2 % of pixels change 10+ levels and the structure moves
+               under 0.03 px a frame (about 0.2 px at 1080p), read on its edges so a pale creep counts, or the only
+               change is grain) take more than 10 % of the body (outside the end lock, freezes and ignored ranges);
+               a film that never stops reads under 8 %          fail (a body over 60 s: warn); over 8 %  warn
+               (one single near-still run up to 2.5 s, a short film's one held breath, warns at most)
+  end-hold     the end card stands near-still for over 2.5 s (the still run that reaches into the end lock,
+               counted from its start; a lockup keeps living: a slow push that lands, a light pass)   warn
+  edge-cover   a frame edge shows a strip that is not the picture (the outer 1-3 px of a side, at 1080p,
+               differ by 25+ levels from the flat picture just inside along 85 % of the side, the strip itself
+               flat along the side): a world, plate or
+               card that does not cover the frame (a pull-back below scale 1, a plane moved off its edge)
+               on 0.25 s or more, or on the last frame                                              fail
+  end-cut      the film stops mid-fade: the last frames still change by a global gain (a fade) at a third
+               or more of the fade's fastest step and the last frame is neither black nor white nor the
+               held card (let the fade land on an ease-out, or end on the held frame)              fail
                (fail over 0.25 per 3 s), unless a whip, velocity or zoomThrough seam or a camera-blur
                range carries it into the cut
   What machine-made motion looks like here: many short events that start and stop in one frame, a camera that
@@ -877,7 +892,10 @@ WANDER = dict(min=6.0, min_pct=0.5, run_s=0.4, gap_s=1.0, slow=60.0, slow_pct=4.
               # declared shots (fx/depth shotDeclares): two in a row whose picture travels opposite ways (cosine under
               # `shots_cos`, each over `shots_px` px, a zoom of 1 % counted as `zoom_px` px) within `shots_gap_s` go back
               # and forth at any speed; inside a declared stage the camera moves only inside its shots (pad `pad_s`)
-              shots_cos=-0.3, shots_px=40.0, zoom_px=9.6, shots_gap_s=1.5, pad_s=0.2)
+              shots_cos=-0.3, shots_px=40.0, zoom_px=9.6, shots_gap_s=1.5, pad_s=0.2,
+              # there and back at any speed: two opposite runs inside one shot (no declared seam between them), each
+              # travelling `back_px` px at 1080p (a zoom: `back_pct` %), the second returning `back_ret` of the first
+              back_px=80.0, back_pct=3.0, back_ret=0.4)
 # carried-cut: the house band, a direction read needs this coherence, a repeat reaching this autocorrelation makes the
 # step ambiguous, and the read's spread widens the ratio band by at most this much
 CARRY = dict(cos=0.7, ratio=(0.4, 1.4), coherence=0.5, period_ac=0.5, spread_max=0.5)
@@ -1202,11 +1220,13 @@ def window_at(win, f, wstride):
     return None
 
 
-def camera_wander(frames, state, breaks, fps, P=WANDER, shots=(), stages=()):
+def camera_wander(frames, state, breaks, fps, P=WANDER, shots=(), stages=(), seams=(), hard=None, spans=()):
     """An aimless camera over the body frames (state: frame -> its window, with cam_vec px/s and cam_k %/s): inside one
     shot (a break ends it), per axis (x, y, push), runs of one sign at least P['min'] fast for P['run_s'] or longer;
     two runs of opposite sign at most P['gap_s'] apart, both peaking under P['slow'] (px/s) or P['slow_pct'] (%/s), are a
-    wander (one event per shot, kind 'reverse'). One run over P['drift_share'] of a shot of P['drift_s'] or longer at a
+    wander (one event per shot, kind 'reverse'); faster, each travelling P['back_px'] (P['back_pct'] for a zoom) with the
+    second returning P['back_ret'] of the first and no declared seam (`seams`, video frames) between them, they go there
+    and back (kind 'back': read on scenes split only by the designed cuts `hard`, since a fast move breaks the flow). One run over P['drift_share'] of a shot of P['drift_s'] or longer at a
     flat speed (its 10th percentile at least P['drift_flat'] of its peak) between a creep and P['slow'] is a drift (no
     start, no landing; kind 'drift'). Declared camera shots (video frames, fx/depth shotDeclares): two in a row whose
     picture travels opposite ways within P['shots_gap_s'] go back and forth at any speed (kind 'shots-reverse'); inside
@@ -1252,12 +1272,15 @@ def camera_wander(frames, state, breaks, fps, P=WANDER, shots=(), stages=()):
                 if start is None and sg:
                     start = (i, sg)
             for r1, r2 in zip(runs_, runs_[1:]):
-                if r1[2] != r2[2] and r2[0] - r1[1] <= gap and max(r1[3], r2[3]) < slow:
-                    sign1 = '+' if r1[2] > 0 else '-'
-                    sign2 = '+' if r2[2] > 0 else '-'
+                if r1[2] == r2[2] or r2[0] - r1[1] > gap:
+                    continue
+                sign1 = '+' if r1[2] > 0 else '-'
+                sign2 = '+' if r2[2] > 0 else '-'
+                if max(r1[3], r2[3]) < slow:
                     hit = dict(**{'from': shot[r1[0]][0], 'to': shot[r2[1]][0]}, axis=axis, what=what, kind='reverse',
                                first=f'{r1[3]:.0f} {unit} {sign1}', second=f'{r2[3]:.0f} {unit} {sign2}')
                     break
+
             if hit:
                 break
             if drift is None and len(v) >= P['drift_s'] * fps:
@@ -1273,6 +1296,56 @@ def camera_wander(frames, state, breaks, fps, P=WANDER, shots=(), stages=()):
             events.append(hit)
         elif drift:
             events.append(drift)
+    # there and back at speed: scenes split only by the designed cuts (`hard`: act lines, declared seams, declared cuts; a
+    # fast move the flow cannot follow is not a scene change), two opposite runs, each travelling far, no seam between
+    if hard is not None:
+        segs, cur, prev = [], [], None
+        for f in frames:
+            w = state.get(f)
+            if prev is not None and (f != prev + 1 or f in hard):
+                if cur:
+                    segs.append(cur)
+                cur = []
+            if w is not None:
+                cur.append((f, w))
+            prev = f
+        if cur:
+            segs.append(cur)
+        for seg in segs:
+            cam = [(w.get('cam_vec', [0, 0]), w.get('cam_k', 0.0)) if w.get('moving_share', 0.0) >= P['whole'] else ([0, 0], 0.0) for _, w in seg]
+            hit = None
+            for what, axis, v, lo, u_, back_min in (('pans', 'x', [c[0][0] for c in cam], P['min'], 'px', P['back_px']),
+                                                     ('pans', 'y', [c[0][1] for c in cam], P['min'], 'px', P['back_px']),
+                                                     ('pushes', 'push', [c[1] for c in cam], P['min_pct'], '%', P['back_pct'])):
+                runs_, start = [], None
+                for i, x in enumerate(v + [0.0]):
+                    sg = 1 if x >= lo else -1 if x <= -lo else 0
+                    if start is not None and sg != start[1]:
+                        if i - start[0] >= need:
+                            runs_.append((start[0], i - 1, start[1]))
+                        start = None
+                    if start is None and sg:
+                        start = (i, sg)
+                for r1, r2 in zip(runs_, runs_[1:]):
+                    if r1[2] == r2[2] or r2[0] - r1[1] > gap:
+                        continue
+                    f1, f2 = seg[r1[1]][0], seg[r2[0]][0]
+                    if any(f1 - pad <= sf <= f2 + pad for sf in seams):
+                        continue
+                    # a drawn handover moves the element itself (a swell, a grow): its span is not the camera's
+                    g0, g1 = seg[r1[0]][0], seg[r2[1]][0]
+                    if any(a_ <= g1 and g0 <= b_ and (a_ <= f1 + pad or b_ >= f2 - pad) for a_, b_ in spans):
+                        continue
+                    t1_ = sum(abs(y) for y in v[r1[0]:r1[1] + 1]) / fps
+                    t2_ = sum(abs(y) for y in v[r2[0]:r2[1] + 1]) / fps
+                    if t1_ >= back_min and t2_ >= max(back_min, P['back_ret'] * t1_):
+                        hit = dict(**{'from': seg[r1[0]][0], 'to': seg[r2[1]][0]}, axis=axis, what=what, kind='back',
+                                   first=f"{t1_:.0f} {u_} {'+' if r1[2] > 0 else '-'}", second=f"{t2_:.0f} {u_} {'+' if r2[2] > 0 else '-'}")
+                        break
+                if hit:
+                    break
+            if hit:
+                events.append(hit)
     # declared shots: the net picture travel of each (px at 1080p; a zoom of 1 % counts zoom_px), two in a row opposite
     nets = []
     for a, b, s in shot_rng:
@@ -1289,6 +1362,9 @@ def camera_wander(frames, state, breaks, fps, P=WANDER, shots=(), stages=()):
     for (a1, b1, s1, u), (a2, b2, s2, v) in zip(nets, nets[1:]):
         nu, nv = math.sqrt(sum(x * x for x in u)), math.sqrt(sum(x * x for x in v))
         if nu < P['shots_px'] or nv < P['shots_px'] or a2 - b1 > P['shots_gap_s'] * fps:
+            continue
+        # a declared scene change between the two shots: a new scene's move ("carry on, hold, or cut": the cut is there)
+        if any(min(b1, a2) - pad <= sf <= max(b1, a2) + pad for sf in seams):
             continue
         cos = sum(x * y for x, y in zip(u, v)) / (nu * nv)
         if cos < P['shots_cos']:
@@ -2146,14 +2222,21 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
         out['energy'] = energy_runs(body, state, breaks, fps)  # info: a still hold passes (dead-stretch fails only nothing changing)
         d_shots = [dict(r, **{'from': vf(r['from']), 'to': vf(r['to'])}) for r in extra.get('shots', [])]
         d_stages = [dict(r, **{'from': vf(r['from']), 'to': vf(r['to'])}) for r in extra.get('stages', [])]
-        out['wander'] = wd = camera_wander(body, state, breaks, fps, shots=d_shots, stages=d_stages)
+        d_seams = sorted({vf(s_['at']) for s_ in extra.get('seams', []) if _num(s_.get('at')) and s_.get('kind') != 'fadeEnd'})
+        d_spans = [(vf(s_['span'][0]), vf(s_['span'][1])) for s_ in extra.get('seams', []) if isinstance(s_.get('span'), (list, tuple)) and len(s_['span']) == 2]
+        out['wander'] = wd = camera_wander(body, state, breaks, fps, shots=d_shots, stages=d_stages, seams=d_seams, hard=set(cuts_all), spans=d_spans)
         fix = ('Hold the camera still, or give the shot one declared move that starts, travels and lands (fx/depth camera([push(...), '
                'travel(...)]), lib/drift stageMove, lib/camera camPath)')
-        n_kind = {k: sum(1 for x in wd['events'] if x['kind'] == k) for k in ('reverse', 'drift', 'outside')}
+        n_kind = {k: sum(1 for x in wd['events'] if x['kind'] == k) for k in ('reverse', 'drift', 'outside', 'back')}
         for e in wd['events']:
             if e['kind'] == 'shots-reverse':  # declared shots straight back the way they came: back and forth at any speed
                 add('camera-wander', sev('fail'), f"{e['from']}-{e['to']}", f"two declared camera shots go back and forth ({e['first']}, then "
                     f"{e['second']} the opposite way within {WANDER['shots_gap_s']:g} s): carry on in one direction, hold 1.5 s or more, or cut")
+                continue
+            if e['kind'] == 'back':  # there and back at speed inside one scene: the pan the viewer reads as aimless
+                add('camera-wander', sev('fail'), f"{e['from']}-{e['to']}", f"the camera goes one way and back inside one scene ({e['axis']}: {e['first']} "
+                    f"then {e['second']}): the 'pan there and back'. One move that starts, travels and lands on the thing that matters; to show two "
+                    'places, hand over or cut between them. ' + fix)
                 continue
             msg = {
                 'reverse': f"the camera {e['what']} one way and back inside one shot ({e['axis']}: {e['first']} then {e['second']}, both slow): an aimless float. ",
@@ -2678,8 +2761,12 @@ SEAM_WITHIN = ('snapZoom', 'stepped', 'fadeEnd', 'dissolveUi')  # not a change o
 SEAM_THOUGHT = ('exit-then-enter', 'text-swap', 'match-cut')  # a type film moves from line to line with one of these
 
 
-def seam_recipe(s):
-    """The recipe a declared seam names: its id prefix (exitEnter:..., textSwap:..., fx/Seam) or its kind."""
+def seam_recipe(s, plan=False):
+    """The recipe a declared seam names: its id prefix (exitEnter:..., textSwap:..., fx/Seam) or its kind. For the seam plan
+    (plan=True) a spine handover counts by its kind (lib/handover: each of the fourteen is its own way across, whatever seam
+    kind it declares for the devices it promises)."""
+    if plan and s.get('handover'):
+        return f"handover:{s['handover']}"
     pre = str(s.get('id') or '').split(':', 1)[0]
     return SEAM_RECIPES.get(pre) or SEAM_OF_KIND.get(s.get('kind'), str(s.get('kind')))
 
@@ -3026,7 +3113,7 @@ def seam_check(scan, extra, k_, acts, add, sev, ignored, copy_n=0):
                   ([f"the next shot decays in {dec:g} f@60 (house {SEAM['decay_f60'][0]}-{SEAM['decay_f60'][1]})"] if short else [])
             add('carried-cut', sev('warn'), c['frame'], f"velocity cut f{c['frame']}: " + ', '.join(why))
     # the seam plan: declared seams and undeclared act boundaries (plain cuts), scene changes only
-    plan = [seam_recipe(s) for f, s in seams if s.get('kind') not in SEAM_WITHIN]
+    plan = [seam_recipe(s, plan=True) for f, s in seams if s.get('kind') not in SEAM_WITHIN]
     sf = [f for f, _ in seams]
     plan += ['hard-cut' for a, _ in acts.values() if a > 0 and not any(abs(vf(a) - f) <= 2 for f in sf)]
     if plan:
@@ -3701,23 +3788,78 @@ def audio_check(path, args, fps):
 # 10-25 %. A film fails above 8 %, warns above 5 %; one single frozen run up to 2.5 s (DEAD_S, a short film's one held
 # breath) warns at most. It does not reward fake life: an idle bob or an aimless pan keeps the
 # frames changing but fails lint-film idle-bob / camera-float and forensics camera-wander.
-MOTION_FLOOR = dict(w=320, h=180, chg=10, hold_chg=0.0002, hold_mad=0.12, noise_ratio=1.15, noise_mad=1.5, run_s=0.8, fail=0.08, warn=0.05,
-                    end_s=2.0, min_body_s=8.0, dead_live=0.25, edge=6.0, edge_px=150, disp=0.012)
+MOTION_FLOOR = dict(w=320, h=180, chg=10, hold_chg=0.002, hold_mad=0.12, noise_ratio=1.15, noise_mad=1.5, run_s=0.3, fail=0.10, warn=0.08,
+                    end_s=2.0, min_body_s=8.0, long_s=60.0, dead_live=0.25, edge=6.0, edge_px=150, disp=0.03,
+                    # end-hold: the still run reaching into the end lock (s); edge-cover: the outer band (px at 320 wide) against
+                    # the band just inside, the level step, the share of the side, the run that fails (s); end-cut: a fade still
+                    # running on the last frames
+                    end_warn=2.5, edge_in=3, edge_step=25.0, edge_share=0.85, edge_sd=14.0, edge_flat=0.35, edge_s=0.25,
+                    fade_k=6, fade_min=4.0, fade_res=2.5, fade_tail=0.33, fade_dark=20.0, fade_light=235.0)
+
+
+def _edge_sides(g, P):
+    """The four sides of a grey frame (320 wide) whose outer column/row differs from the picture just inside it along most of
+    the side: a strip that is not the picture (the white base under a world that shrank, a plane moved off the edge). The
+    strip is flat along the side (one layer, not content crossing the edge) and the picture inside it is flat across the
+    next few px (a step at the edge, not a card's shaded border or a gradient running out of the frame)."""
+    k = P['edge_in']
+    h, w = g.shape
+    out = []
+    for name, o, i, i2 in (('left', g[8:h - 8, 0], g[8:h - 8, k], g[8:h - 8, 2 * k]), ('right', g[8:h - 8, w - 1], g[8:h - 8, w - 1 - k], g[8:h - 8, w - 1 - 2 * k]),
+                           ('top', g[0, 8:w - 8], g[k, 8:w - 8], g[2 * k, 8:w - 8]), ('bottom', g[h - 1, 8:w - 8], g[h - 1 - k, 8:w - 8], g[h - 1 - 2 * k, 8:w - 8])):
+        o = o.astype(np.float32)
+        d = o - i.astype(np.float32)
+        med = float(np.median(d))
+        if abs(med) < P['edge_step'] or float(o.std()) > P['edge_sd']:
+            continue
+        share = float(max((d > 0.6 * P['edge_step']).mean(), (d < -0.6 * P['edge_step']).mean()))
+        if share >= P['edge_share'] and abs(float(i.mean()) - float(i2.mean())) <= P['edge_flat'] * abs(med):
+            out.append((name, round(med, 1)))
+    return out
+
+
+def _fade_tail(tail, P):
+    """The last frames (grey, oldest first): is a global fade still running on them? Fits the last frame as gain * frame +
+    offset of the frame fade_k back; a fade is a small residual with a real change of level; it is cut when its last steps
+    are still a third or more of its fastest and the last frame is neither black nor white."""
+    if len(tail) < P['fade_k'] + 1:
+        return None
+    a = tail[-1 - P['fade_k']].astype(np.float64).ravel()
+    b = tail[-1].astype(np.float64).ravel()
+    A = np.stack([a, np.ones_like(a)], 1)
+    (gain, off), *_ = np.linalg.lstsq(A, b, rcond=None)
+    res = float(np.sqrt(np.mean((A @ np.array([gain, off]) - b) ** 2)))
+    lum = [float(t.mean()) for t in tail]
+    steps = [abs(y - x) for x, y in zip(lum, lum[1:])]
+    change = abs(lum[-1] - lum[-1 - P['fade_k']])
+    last = float(np.mean(steps[-3:]))
+    peak = max(steps[-P['fade_k']:])
+    out = dict(gain=round(float(gain), 3), offset=round(float(off), 2), residual=round(res, 2), change=round(change, 2),
+               last_step=round(last, 2), peak_step=round(peak, 2), last_luma=round(lum[-1], 1))
+    # a fade: a real change of level (gain or offset) that a global gain explains (the picture may keep moving under it)
+    out['cut'] = bool(change >= P['fade_min'] and res <= max(P['fade_res'], 0.15 * change) and (abs(gain - 1) >= 0.08 or abs(off) >= 6)
+                      and last >= max(0.4, P['fade_tail'] * peak) and P['fade_dark'] < lum[-1] < P['fade_light'])
+    return out
 
 
 def motion_floor(path, info, end_from=None, freezes=(), ignore=()):
-    """The motion floor of a video: per-frame change at 320 x 180, the frozen runs over MOTION_FLOOR run_s, their share of
-    the body (after frame 0, before `end_from` (default: the last 2 s), outside `freezes` / `ignore` ranges [a, b] in
-    video frames), the seconds with almost no live frame, and the verdict. Pure measurement (no flags)."""
+    """The motion floor of a video: per-frame change at 320 x 180, the near-still runs of MOTION_FLOOR run_s or more, their
+    share of the body (after frame 0, before `end_from` (default: the last 2 s), outside `freezes` / `ignore` ranges [a, b]
+    in video frames), the seconds with almost no live frame, and the verdict; with it the end hold (the still run that
+    reaches into the end lock), the frame edges (a strip that is not the picture) and the ending (a fade cut short).
+    Pure measurement (no flags)."""
     P = MOTION_FLOOR
     fps = info['fps']
     n_all = info['frames']
     end = int(end_from) if end_from is not None else max(1, n_all - int(round(P['end_s'] * fps)))
     prev2 = prev = None
-    mad, mad2, chg, disp = [], [], [], []
+    mad, mad2, chg, disp, edges = [], [], [], [], []
+    tail = deque(maxlen=P['fade_k'] + 2)
     grad_prev = None
     for _, y in decode(path, info, pix='gray', size=(P['w'], P['h'])):
         g = y.astype(np.int16)
+        tail.append(y.copy())
+        edges.append(_edge_sides(y, P))
         grad = np.zeros(g.shape, np.float32)  # |dI/dx| + |dI/dy| in grey levels per px
         grad[:, :-1] += np.abs(np.diff(g, axis=1))
         grad[:-1, :] += np.abs(np.diff(g, axis=0))
@@ -3731,7 +3873,15 @@ def motion_floor(path, info, end_from=None, freezes=(), ignore=()):
             # how far the structure moved (px at 320 wide): the change on edges over their gradient, so a slow creep of a
             # pale card on a pale ground reads as the move it is, whatever its contrast; None on a frame with no edges
             e = np.maximum(grad, grad_prev) > P['edge']
-            disp.append(float(d[e].sum() / max(1e-6, np.maximum(grad, grad_prev)[e].sum())) if e.sum() >= P['edge_px'] else None)
+            if e.sum() >= P['edge_px']:
+                gs = max(1e-6, float(np.maximum(grad, grad_prev)[e].sum()))
+                one = float(d[e].sum()) / gs
+                # a slow creep read over two frames as well (half the two-frame shift): 8-bit levels round a sub-pixel step
+                # on a pale edge to nothing, its two-frame shift survives; grain does not add up, so a still frame stays still
+                two = float(np.abs(g - prev2)[e].sum()) / gs / 2 if prev2 is not None else 0.0
+                disp.append(max(one, two))
+            else:
+                disp.append(None)
         prev2, prev, grad_prev = prev, g, grad
     n = len(mad)
     end = min(end, n)
@@ -3741,7 +3891,7 @@ def motion_floor(path, info, end_from=None, freezes=(), ignore=()):
                median_change=0.0, need=dict(fail=P['fail'], warn=P['warn'], run_s=P['run_s']), measured=len(body) / fps >= P['min_body_s'])
 
     def frozen(f):
-        if chg[f] >= P['hold_chg']:
+        if f < 1 or chg[f] >= P['hold_chg']:
             return False
         if (disp[f] < P['disp']) if disp[f] is not None else (mad[f] < P['hold_mad']):
             return True
@@ -3756,7 +3906,7 @@ def motion_floor(path, info, end_from=None, freezes=(), ignore=()):
             a = f if a is None else a
             last = f
             continue
-        if a is not None and (last - a + 1) / fps > P['run_s']:
+        if a is not None and (last - a + 1) / fps >= P['run_s']:
             runs.append((a, last))
         a = None
         if f is not None and fz[f]:
@@ -3772,31 +3922,82 @@ def motion_floor(path, info, end_from=None, freezes=(), ignore=()):
                longest_s=round(max([(b - a + 1) / fps for a, b in runs] or [0.0]), 2), dead_seconds=dead,
                median_change=round(float(np.median([mad[f] for f in body])) / 255, 5) if body else 0.0)
     sh = res['frozen_share']
-    # one held breath is allowed: a single frozen run up to DEAD_S (a short film's one deliberate hold) warns at most
+    # one held breath is allowed: a single near-still run up to DEAD_S (a short film's one deliberate hold) warns at most
     one_hold = len(runs) <= 1 and res['longest_s'] <= DEAD_S
     res['one_hold'] = one_hold
     res['severity'] = ('info' if not res['measured'] else 'warn' if one_hold and sh > P['warn'] else 'ok' if one_hold
                        else 'fail' if sh > P['fail'] else 'warn' if sh > P['warn'] else 'ok')
+    if res['severity'] == 'fail' and res['body_s'] > P['long_s']:
+        res['severity'] = 'warn'  # a long explainer may breathe: the floor fails launch-length films (up to a minute)
     res['ok'] = res['severity'] in ('ok', 'info', 'warn')
+    # the end hold: the longest still run that reaches into the end lock (from its start, before the lock or in it)
+    hold, a = None, None
+    for f in range(1, n + 1):
+        if f < n and fz[f]:
+            a = f if a is None else a
+            continue
+        if a is not None and f - 1 >= end and (hold is None or f - a > hold[1] - hold[0] + 1):
+            hold = (a, f - 1)
+        a = None
+    res['end_hold'] = dict(frames=list(hold), s=round((hold[1] - hold[0] + 1) / fps, 2)) if hold else None
+    # the frame edges: the runs where a side shows a strip that is not the picture, and the last frame
+    bad = [f for f in range(n) if edges[f] and not skip(f)]
+    eruns, a, last_e = [], None, None
+    for f in bad + [None]:
+        if f is not None and (a is None or f == last_e + 1):
+            a = f if a is None else a
+            last_e = f
+            continue
+        if a is not None:
+            eruns.append((a, last_e))
+        a = last_e = f
+    long_e = [(a, b) for a, b in eruns if (b - a + 1) / fps >= P['edge_s']]
+    res['edges'] = dict(frames=len(bad), runs=[[a, b] for a, b in long_e][:8], last=edges[n - 1] if n else [],
+                        sides=sorted({s for f in bad for s, _ in edges[f]}),
+                        first=dict(frame=bad[0], sides=edges[bad[0]]) if bad else None)
+    res['ending'] = _fade_tail(list(tail), P)
     return res
 
 
 def motion_floor_check(args, info, decl):
-    """The motion floor as a check: (report, flags). The end lock is the cues' declared END, else the last 2 s; declared
-    freezes and ignored ranges are left out."""
+    """The motion floor as a check: (report, flags), with the end hold, the frame edges and the ending. The end lock is the
+    cues' declared END, else the last 2 s; declared freezes and ignored ranges are left out."""
     extra = decl[7]
     k_ = info['fps'] / decl[6] if decl[6] else 1.0
     end = extra.get('end')
     end_from = int(round(end['from'] * k_)) if end and end.get('to', 0) > end.get('from', 0) else None
     m = motion_floor(args.video, info, end_from=end_from, freezes=decl[1], ignore=decl[2])
+    P = MOTION_FLOOR
+    fps = info['fps']
     flags = []
     if m['severity'] in ('fail', 'warn'):
-        a, b = m['runs'][0] if m['runs'] else (0, 0)
-        flags.append(dict(check='motion-floor', severity=m['severity'], frame=f'{a}-{b}',
-                          note=f"{m['frozen_share'] * 100:.0f} % of the body ({len(m['runs'])} run(s), longest {m['longest_s']:.1f} s) stands frozen for over "
-                               f"{MOTION_FLOOR['run_s']:g} s (floor {MOTION_FLOOR['fail'] * 100:.0f} %; a film that never stops: 0-6 %): keep purposeful motion in every second: "
-                               'the decaying tail of the last move (lib/moves holdTail, 0.3-2 px/f@30, same direction), a scale creep of 0.1-0.4 %/f, '
-                               'the product working in frame (typing, a counter, a status), or cut sooner. Never an idle bob or an aimless pan'))
+        a, b = max(m['runs'], key=lambda r: r[1] - r[0]) if m['runs'] else (0, 0)
+        flags.append(dict(check='motion-floor', severity=m['severity'], frame=f'{a}-{b}', t=round(a / fps, 3),
+                          note=f"{m['frozen_share'] * 100:.0f} % of the body ({len(m['runs'])} run(s), longest {m['longest_s']:.1f} s) stands near-still for "
+                               f"{P['run_s']:g} s or more (floor {P['fail'] * 100:.0f} %; a film that never stops reads under {P['warn'] * 100:.0f} %): keep purposeful "
+                               'motion in every second: the decaying tail of the last move (lib/moves holdTail, 0.3-2 px/f@30, same direction), a scale '
+                               'creep of 0.1-0.4 %/f, the product working in frame (typing, a counter, a status), or cut sooner. Never an idle bob or an aimless pan'))
+    eh = m.get('end_hold')
+    if m['measured'] and eh and eh['s'] > P['end_warn']:
+        flags.append(dict(check='end-hold', severity='warn', frame=f"{eh['frames'][0]}-{eh['frames'][1]}", t=round(eh['frames'][0] / fps, 3),
+                          note=f"the end card stands near-still for {eh['s']:.1f} s (at most {P['end_warn']:g} s): the lockup keeps "
+                               'living until the last frame: a slow push that lands, a light pass over the mark, the line settling (lib/moves holdTail), '
+                               'or a shorter hold'))
+    ed = m.get('edges') or {}
+    if ed.get('runs') or ed.get('last'):
+        a, b = ed['runs'][0] if ed.get('runs') else (m['frames'] - 1, m['frames'] - 1)
+        sides = ', '.join(ed.get('sides') or [s for s, _ in ed.get('last') or []])
+        flags.append(dict(check='edge-cover', severity='fail', frame=f'{a}-{b}', t=round(a / fps, 3),
+                          note=f"a strip that is not the picture shows at the frame edge ({sides}; {ed['frames']} frame(s)"
+                               f"{', the last frame too' if ed.get('last') else ''}): the world, plate or plane does not cover the frame. Keep every "
+                               'full-frame layer at scale 1 or more under its moves (a pull-back lands at 1, never below), overscan a plane that '
+                               "travels, and give the composition a ground of the world's own colour"))
+    en = m.get('ending')
+    if en and en.get('cut') and m['frames'] / fps >= 3:
+        flags.append(dict(check='end-cut', severity='fail', frame=m['frames'] - 1, t=round((m['frames'] - 1) / fps, 3),
+                          note=f"the film stops mid-fade: the last frames still fade (gain {en['gain']:g}, last steps {en['last_step']:g} of its fastest "
+                               f"{en['peak_step']:g} levels) and the last frame sits at luma {en['last_luma']:g}, neither black nor the held card. Let the fade "
+                               "land (an ease-out that reaches its end a few frames before the last), or end on the held lockup with the music's ring-out"))
     return m, flags
 
 
@@ -4409,15 +4610,36 @@ def self_test(part='all'):
         cv2.rectangle(pale, (140, 75), (340, 200), (250, 250, 250), -1, cv2.LINE_AA)
         for r_ in range(3):
             cv2.rectangle(pale, (160, 100 + 30 * r_), (290 - 30 * r_, 112 + 30 * r_), (205, 208, 212), -1, cv2.LINE_AA)
-        rep = run('floor-pale', [warp(pale, dx=0.1 * i) for i in range(nf)], cues(nf), more=('--motion-floor',))
+        rep = run('floor-pale', [warp(pale, dx=0.3 * i) for i in range(nf)], cues(nf), more=('--motion-floor',))
         mf = rep.get('checks', {}).get('motion_floor') or {}
-        check(not flags(rep, 'motion-floor'), 'motion floor: a pale card creeping 0.4 px/f@1080 on a pale ground is motion (read by its edges, not its contrast)',
+        check(not flags(rep, 'motion-floor'), 'motion floor: a pale card creeping 1.2 px/f@1080 (a house tail) on a pale ground is motion (read by its edges, not its contrast)',
               json.dumps({k: mf.get(k) for k in ('frozen_share', 'runs')}))
         rep = run('floor-pale-still', [pale] * nf, cues(nf), more=('--motion-floor',))
         check(bool(flags(rep, 'motion-floor', 'fail')), 'motion floor: the same pale card held still all through fails')
         one = [warp(A, dx=1.5 * (i if i < 120 else 120 if i < 180 else i - 60)) for i in range(nf)]
         rep = run('floor-one', one, cues(nf), more=('--motion-floor',))
         check(not flags(rep, 'motion-floor', 'fail'), 'motion floor: one held breath of 2 s passes (warns at most)', str([x['severity'] for x in flags(rep, 'motion-floor')]))
+        # the frame edges: a light strip down both sides of a dark moving world (the base showing past a shrunk ground) fails
+        dark = texture(3, w, h, mean=70, amp=30)
+        strip = []
+        for i in range(nf):
+            fr = warp(dark, dx=0.3 * i)
+            if i >= 150:
+                fr[:, :2] = 200
+                fr[:, w - 2:] = 200
+            strip.append(fr)
+        rep = run('floor-edge', strip, cues(nf), more=('--motion-floor',))
+        check(bool(flags(rep, 'edge-cover', 'fail')), 'edge-cover: a light strip down both sides of a dark world from 5 s to the end fails',
+              json.dumps((rep.get('checks', {}).get('motion_floor') or {}).get('edges')))
+        check(not flags(run('floor-edge-ok', strip[:150], cues(150), more=('--motion-floor',)), 'edge-cover'), 'edge-cover: the same world covering the frame passes')
+        # the ending: a fade still running on the last frame fails end-cut; one that lands on black passes
+        moving = [warp(dark, dx=0.3 * i) for i in range(nf)]
+        cut = [np.clip(fr.astype(np.float32) * (1 - 0.6 * max(0, i - (nf - 10)) / 10), 0, 255).astype(np.uint8) for i, fr in enumerate(moving)]
+        rep = run('floor-endcut', cut, cues(nf), more=('--motion-floor',))
+        check(bool(flags(rep, 'end-cut', 'fail')), 'end-cut: a fade to 40 % still running on the last frame fails', json.dumps((rep.get('checks', {}).get('motion_floor') or {}).get('ending')))
+        landed = [np.clip(fr.astype(np.float32) * (1 - min(1.0, max(0, i - (nf - 24)) / 14)), 0, 255).astype(np.uint8) for i, fr in enumerate(moving)]
+        rep = run('floor-endok', landed, cues(nf), more=('--motion-floor',))
+        check(not flags(rep, 'end-cut'), 'end-cut: a fade that lands on black 10 frames before the end passes', json.dumps((rep.get('checks', {}).get('motion_floor') or {}).get('ending')))
     A, B = texture(1, w, h), texture(2, w, h)
     n = 90
     if part == 'motion':
@@ -4845,9 +5067,11 @@ def main():
             os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
             with open(args.json, 'w') as fh:
                 json.dump(res, fh, indent=1)
-        print(f"forensics (motion floor): {args.video}  {'PASS' if res['pass'] else 'FAIL'}  frozen {m['frozen_share'] * 100:.1f} % of {m['body_s']} s "
-              f"(fail > {MOTION_FLOOR['fail'] * 100:.0f} %), {len(m['runs'])} run(s) over {MOTION_FLOOR['run_s']:g} s, longest {m['longest_s']} s, "
-              f"{m['dead_seconds']} dead second(s), median change {m['median_change']}" + ('' if m['measured'] else '  (under 8 s: info only)'))
+        eh = m.get('end_hold') or {}
+        print(f"forensics (motion floor): {args.video}  {'PASS' if res['pass'] else 'FAIL'}  near-still {m['frozen_share'] * 100:.1f} % of {m['body_s']} s "
+              f"(fail > {MOTION_FLOOR['fail'] * 100:.0f} %), {len(m['runs'])} run(s) of {MOTION_FLOOR['run_s']:g} s+, longest {m['longest_s']} s, "
+              f"{m['dead_seconds']} dead second(s), median change {m['median_change']}, end hold {eh.get('s', 0)} s, "
+              f"edge strip on {(m.get('edges') or {}).get('frames', 0)} frame(s)" + ('' if m['measured'] else '  (under 8 s: info only)'))
         for x in fl:
             print(f"  {x['severity']:4s} {x['check']}: {x['note']}")
         sys.exit(0 if res['pass'] else 1)
@@ -4859,8 +5083,11 @@ def main():
     aud, aud_flags = audio_check(args.video, args, info['fps'])
     args._spine = spine_setup(args, info, decl)  # the spine checks join the grammar when the cues declare a spine
     if args.spine:
-        res = merge_flags(spine_only(args, info, decl), aud_flags)
+        # the spine gate reads the whole film's motion too: the floor, the end hold, the frame edges and the ending
+        floor_m, floor_flags = (None, []) if args.no_motion_floor else motion_floor_check(args, info, decl)
+        res = merge_flags(spine_only(args, info, decl), aud_flags + floor_flags)
         res['checks']['audio'] = aud
+        res['checks']['motion_floor'] = floor_m
         if args.json:
             os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
             with open(args.json, 'w') as fh:

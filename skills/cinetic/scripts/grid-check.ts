@@ -1656,7 +1656,13 @@ async function main() {
         if (x.kind === 'dissolveUi' && isNum(x.dur) && x.dur > s60(8) + 1e-9) err('seam-plan', `seam ${id}: a ${x.dur} f dissolve; keep UI dissolves <= ${s60(8)} f (8 f@60)`);
       });
       const counts = new Map<string, number>();
-      for (const x of SEAMS) if (!x.signature) counts.set(x.kind, (counts.get(x.kind) ?? 0) + 1);
+      // a spine handover counts by its own kind (grow, swell, fly, converge ...): each is a different way across, whatever
+      // seam kind it declares for the devices it promises
+      const planKind = (x: (typeof SEAMS)[number]) => {
+        const h = (x as { handover?: unknown }).handover;
+        return typeof h === 'string' && h ? `${h} handover` : `${x.kind}`;
+      };
+      for (const x of SEAMS) if (!x.signature) counts.set(planKind(x), (counts.get(planKind(x)) ?? 0) + 1);
       for (const [k, n] of counts) if (n > 3) warn('seam-plan', `${n} ${k} seams; any one kind <= 3 times except the signature move (mark it signature: true)`);
       if (SEAMS.length >= 3) {
         const carried = SEAMS.filter((x) => CARRIED.has(x.kind)).length / SEAMS.length;
