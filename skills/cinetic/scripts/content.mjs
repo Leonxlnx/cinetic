@@ -741,7 +741,13 @@ const get = async (u, ms = 30000) => {
 };
 const hasFfmpeg = () => spawnSync('ffmpeg', ['-version'], { encoding: 'utf8' }).status === 0;
 
-/** The cast's faces: download, crop to the face, 512 px. Returns the ids written. */
+/**
+ * One grade for the whole cast, so the faces read as one shoot and not as portraits from unrelated sessions (a yellow
+ * wall, a navy backdrop, a red shirt side by side in one row): colour held back, the same contrast, and the corners of
+ * the square (the backdrop round the avatar's circle) falling off a little.
+ */
+const FACE_GRADE = 'eq=saturation=0.78:contrast=1.03,vignette=angle=PI/5';
+/** The cast's faces: download, crop to the face, grade them as one set, 512 px. Returns the ids written. */
 const fetchFaces = async (cast, dir, record) => {
   fs.mkdirSync(dir, { recursive: true });
   const ff = hasFfmpeg();
@@ -755,7 +761,7 @@ const fetchFaces = async (cast, dir, record) => {
       const tmp = `${out}.src.jpg`;
       fs.writeFileSync(tmp, buf);
       const [cx, cy, cw, ch] = p.face.crop;
-      const r = ff ? spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', tmp, '-vf', `crop=iw*${cw}:ih*${ch}:iw*${cx}:ih*${cy},scale=512:512:flags=lanczos`, '-q:v', '3', out], { encoding: 'utf8' }) : { status: 1 };
+      const r = ff ? spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', tmp, '-vf', `crop=iw*${cw}:ih*${ch}:iw*${cx}:ih*${cy},scale=512:512:flags=lanczos,${FACE_GRADE}`, '-q:v', '3', out], { encoding: 'utf8' }) : { status: 1 };
       if (r.status !== 0) fs.copyFileSync(tmp, out);
       fs.unlinkSync(tmp);
       done.push(p.face.id);
