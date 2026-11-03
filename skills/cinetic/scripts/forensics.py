@@ -191,8 +191,8 @@ at 160x90, one sample per 1/30 s (landings also at the film's own rate), outside
   motion-stop  a move goes still in one frame from above 15 % of its peak speed (cut off mid-ease)    fail
   motion-cut   a visible cut while a braking move is still above 10 % of its peak speed               warn
   motion-floor (every film of 8 s or more, declared or not; --motion-floor runs it alone) frozen runs over 0.8 s
-               (at 320 x 180: under 0.02 % of pixels change 10+ levels and the mean change is under 0.12, or
-               the only change is grain) take more than 8 % of the body (outside the end lock, freezes and
+               (at 320 x 180: under 0.02 % of pixels change 10+ levels and the structure moves under 0.012 px,
+               read on its edges so a pale creep counts, or the only change is grain) take more than 8 % of the body (outside the end lock, freezes and
                ignored ranges); a film that never stops reads 0-6 %                  fail; over 5 %  warn
                (one single frozen run up to 2.5 s, a short film's one held breath, warns at most)
                (fail over 0.25 per 3 s), unless a whip, velocity or zoomThrough seam or a camera-blur
@@ -3692,8 +3692,9 @@ def audio_check(path, args, fps):
 # ------------------------------------------------------------------------------------------
 # motion floor: purposeful motion in every second (a film-level density read)
 # ------------------------------------------------------------------------------------------
-# A frame is FROZEN when nothing in it changes: under 0.02 % of the pixels move by more than 10 grey levels and the mean
-# change is under 0.12 levels at 320 x 180 (the encoder's noise), or the only change is temporal noise (animated grain: the
+# A frame is FROZEN when nothing in it moves: under 0.02 % of the pixels change by more than 10 grey levels at 320 x 180 and
+# its structure moved under 0.012 px (the change on its edges over their gradient: a pale card creeping on a pale ground
+# counts as the move it is; a frame with no edges falls back to a mean change under 0.12 levels), or the only change is temporal noise (animated grain: the
 # change against two frames back is no larger than against one, where any real motion, even a 0.3 px/f creep, doubles it).
 # The floor is the share of the body spent in frozen runs longer than 0.8 s. A film that never stops reads 0 to about 6 %
 # (one deliberate long hold); a film built on still holds reads
@@ -3701,7 +3702,7 @@ def audio_check(path, args, fps):
 # breath) warns at most. It does not reward fake life: an idle bob or an aimless pan keeps the
 # frames changing but fails lint-film idle-bob / camera-float and forensics camera-wander.
 MOTION_FLOOR = dict(w=320, h=180, chg=10, hold_chg=0.0002, hold_mad=0.12, noise_ratio=1.15, noise_mad=1.5, run_s=0.8, fail=0.08, warn=0.05,
-                    end_s=2.0, min_body_s=8.0, dead_live=0.25)
+                    end_s=2.0, min_body_s=8.0, dead_live=0.25, edge=6.0, edge_px=150, disp=0.012)
 
 
 def motion_floor(path, info, end_from=None, freezes=(), ignore=()):
@@ -3713,17 +3714,25 @@ def motion_floor(path, info, end_from=None, freezes=(), ignore=()):
     n_all = info['frames']
     end = int(end_from) if end_from is not None else max(1, n_all - int(round(P['end_s'] * fps)))
     prev2 = prev = None
-    mad, mad2, chg = [], [], []
+    mad, mad2, chg, disp = [], [], [], []
+    grad_prev = None
     for _, y in decode(path, info, pix='gray', size=(P['w'], P['h'])):
         g = y.astype(np.int16)
+        grad = np.zeros(g.shape, np.float32)  # |dI/dx| + |dI/dy| in grey levels per px
+        grad[:, :-1] += np.abs(np.diff(g, axis=1))
+        grad[:-1, :] += np.abs(np.diff(g, axis=0))
         if prev is None:
-            mad.append(0.0), mad2.append(0.0), chg.append(0.0)
+            mad.append(0.0), mad2.append(0.0), chg.append(0.0), disp.append(None)
         else:
             d = np.abs(g - prev)
             mad.append(float(d.mean()))
             chg.append(float((d > P['chg']).mean()))
             mad2.append(float(np.abs(g - prev2).mean()) if prev2 is not None else 2 * float(d.mean()))
-        prev2, prev = prev, g
+            # how far the structure moved (px at 320 wide): the change on edges over their gradient, so a slow creep of a
+            # pale card on a pale ground reads as the move it is, whatever its contrast; None on a frame with no edges
+            e = np.maximum(grad, grad_prev) > P['edge']
+            disp.append(float(d[e].sum() / max(1e-6, np.maximum(grad, grad_prev)[e].sum())) if e.sum() >= P['edge_px'] else None)
+        prev2, prev, grad_prev = prev, g, grad
     n = len(mad)
     end = min(end, n)
     skip = lambda f: any(a <= f <= b for a, b in list(freezes) + list(ignore))  # noqa: E731
@@ -3734,7 +3743,7 @@ def motion_floor(path, info, end_from=None, freezes=(), ignore=()):
     def frozen(f):
         if chg[f] >= P['hold_chg']:
             return False
-        if mad[f] < P['hold_mad']:
+        if (disp[f] < P['disp']) if disp[f] is not None else (mad[f] < P['hold_mad']):
             return True
         # grain alone: a small change that is no larger against two frames back, while the frame before changed as much
         # (a picture on twos repeats a frame, so its ratio says nothing: that change is motion)
@@ -4396,6 +4405,16 @@ def self_test(part='all'):
         mf = rep.get('checks', {}).get('motion_floor') or {}
         check(bool(flags(rep, 'motion-floor', 'fail')), 'motion floor: the same holds under animated grain still fail (grain is not motion)',
               json.dumps({k: mf.get(k) for k in ('frozen_share', 'runs')}))
+        pale = np.full((h, w, 3), 233, np.uint8)  # a pale card with pale rows on a pale ground: little contrast, few edges
+        cv2.rectangle(pale, (140, 75), (340, 200), (250, 250, 250), -1, cv2.LINE_AA)
+        for r_ in range(3):
+            cv2.rectangle(pale, (160, 100 + 30 * r_), (290 - 30 * r_, 112 + 30 * r_), (205, 208, 212), -1, cv2.LINE_AA)
+        rep = run('floor-pale', [warp(pale, dx=0.1 * i) for i in range(nf)], cues(nf), more=('--motion-floor',))
+        mf = rep.get('checks', {}).get('motion_floor') or {}
+        check(not flags(rep, 'motion-floor'), 'motion floor: a pale card creeping 0.4 px/f@1080 on a pale ground is motion (read by its edges, not its contrast)',
+              json.dumps({k: mf.get(k) for k in ('frozen_share', 'runs')}))
+        rep = run('floor-pale-still', [pale] * nf, cues(nf), more=('--motion-floor',))
+        check(bool(flags(rep, 'motion-floor', 'fail')), 'motion floor: the same pale card held still all through fails')
         one = [warp(A, dx=1.5 * (i if i < 120 else 120 if i < 180 else i - 60)) for i in range(nf)]
         rep = run('floor-one', one, cues(nf), more=('--motion-floor',))
         check(not flags(rep, 'motion-floor', 'fail'), 'motion floor: one held breath of 2 s passes (warns at most)', str([x['severity'] for x in flags(rep, 'motion-floor')]))

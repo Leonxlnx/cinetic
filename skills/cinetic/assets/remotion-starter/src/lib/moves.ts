@@ -53,8 +53,8 @@ export const MOVES = {
   lens: { from: 3, blur: 20, opacity: 0.45, yaw: 18, frames: 20 },
   /** The press: depth (scale) per kind, frames held (30 fps), the release spring (SPR.criticalFast: settled in 9 f@30). */
   press: { cursor: 0.8, button: 0.9, hold: 3, spring: SPR.criticalFast },
-  /** The hold tail: px per 30 fps frame at 1080p (leaves at v0, decays to vEnd, never 0), tau (30 fps frames). Scale creep %/f. */
-  tail: { v0: 1.6, vEnd: 0.5, tau: 20, creepPct: 0.2 },
+  /** The hold tail: px per 30 fps frame at 1080p (leaves at v0, decays to vEnd = the house creep, 12 px/s, never 0), tau (30 fps frames). Scale creep %/f. */
+  tail: { v0: 1.6, vEnd: 0.4, tau: 20, creepPct: 0.2 },
   /** The depth ladder by slot (0 = the sharp plane). */
   ladder: { blur: [0, 2.5, 3, 3.5, 9] as const, light: [1, 0.92, 0.85, 0.78, 0.7] as const, scale: 0.943, arrive: { px: 6, frames: 6 } },
   /** Make room: the gap opens this share on the first frame. */
