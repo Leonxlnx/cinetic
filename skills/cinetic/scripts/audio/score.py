@@ -1509,7 +1509,7 @@ def plan_voice(kit, p, song):
 
 AIR = dict(floor_db=-28.0, k=0.5, max_db=4.5, shelf_hz=7000.0, presence=(2000.0, 5000.0), presence_db=1.5,
            # the mix's balance: a soundtrack whose 2-8 kHz band sits under -22 dB of the whole, or its 8-16 kHz band under
-           # -32, reads as a dull murk (studio launch mixes: about -11 to -25 and -11 to -31); a track whose own 2-8 kHz
+           # -32, reads as a dull murk (a bright launch mix sits about -11 to -25 and -11 to -31); a track whose own 2-8 kHz
            # band sits under -35 dB is muffled (a low-passed pad: no EQ adds what the file does not hold)
            mix_presence=-22.0, mix_air=-32.0, muffled=-35.0)
 FX_LIFT = dict(floor_db=3.0, target_db=4.5, max_db=6.0)
