@@ -122,9 +122,11 @@ const pressPlan = (t: ChangeTimes) => {
   const b = buttonRect(c, w, h) ?? { x: w * 0.3, y: h * 0.78, w: w * 0.4, h: 104 * U, r: 52 * U };
   const L = localOf(t);
   const tip0: V3 = [box.x + 0.58 * w, box.y + 0.5 * h, 0];
-  const tip1: V3 = [box.x + b.x + 0.56 * b.w, box.y + b.y + 0.58 * b.h, 0];
+  // the tip lands on the button's right end, clear of its label (the arrow hangs down-right from the tip, over nothing
+  // the viewer must read); it arrives on a decelerating move, most of the way early
+  const tip1: V3 = [box.x + b.x + 0.86 * b.w, box.y + b.y + 0.64 * b.h, 0];
   const glide = (g: number): V3 => {
-    const e = E.strongInOut(clamp((g - L.go) / Math.max(1, L.hit - f60(6) - L.go)));
+    const e = E.liftOut(clamp((g - L.go) / Math.max(1, L.hit - f60(6) - L.go)));
     return [mix(tip0[0], tip1[0], e), mix(tip0[1], tip1[1], e), 0];
   };
   // the camera rides the pointer, held toward the screen's answer (the result row above the button) so the press and

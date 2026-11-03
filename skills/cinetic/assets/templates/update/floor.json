@@ -2,7 +2,7 @@
  "template": "update",
  "about": "The template as it ships: what its unnamed scaffold plays (src/deal.ts FLOOR and FLOOR_HERO). film-diff.mjs holds a film made from it to at least half its slots apart.",
  "deal": {
-  "ground": "blackField",
+  "ground": "deepField",
   "hook": "badge",
   "place": "part-head-head",
   "end": "beside"

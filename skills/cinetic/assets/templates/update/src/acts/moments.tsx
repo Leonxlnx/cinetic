@@ -13,7 +13,7 @@ import { FONT, U } from '../brand/tokens';
 import { CARD as KCARD, cardSize as kitCardSize } from '../kit/card';
 import { Check } from '../kit/parts';
 import type { KitTheme } from '../kit/theme';
-import { clamp, E, hitPulse, mix, prog } from '../lib/anim';
+import { clamp, E, mix, prog } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { phrase } from '../lib/cadence';
 import { creep } from '../lib/handoff';
@@ -140,11 +140,10 @@ const TapMoment: React.FC<{ c: Change; s: Extract<Change['show'], { kind: 'tap' 
   const by = b0.y;
   // the tap: a soft fingertip glides in from below the card and presses the action (cursor-follow draws its own pointer)
   const glide = prog(F, T.go, T.hit - f60(6), E.settleOut);
-  const tx = mix(w / U * 0.62, b0.x + bw0 / 2, glide);
+  const tx = mix(w / U * 0.62, b0.x + bw0 * 0.86, glide); // the fingertip lands on the button's end, clear of its label
   const ty = mix(h / U + 140, by + CARD.button / 2, glide);
   const tipO = noTip ? 0 : prog(F, T.go, T.go + f60(10), E.glideOut) * (1 - prog(F, T.hit + f60(8), T.hit + f60(22), E.softIn));
   const ring = noTip ? 0 : prog(F, T.hit, T.hit + f60(26), E.glideOut);
-  const glow = 0.5 * hitPulse(F - T.res2, 3, 14);
   const rowsOut = prog(F, T.hit, T.hit + f60(9), E.buildIn); // the rows are gone before the result lands: never two layers of words at once
   const RES_ON = phrase(Math.max(1, result.length), f60(6), { shape: 'settle', seed: `${c.id}-result` }).onsets;
   const gap = 30;
@@ -183,7 +182,7 @@ const TapMoment: React.FC<{ c: Change; s: Extract<Change['show'], { kind: 'tap' 
           })}
         </div>
       )}
-      <div style={{ ...abs(bx, by), width: bw * U, height: CARD.button * U, borderRadius: (CARD.button / 2) * U, background: mixColor(t.accent, t.accentDeep, 0.35 * press + 0.18 * done), display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 * U, transform: `scale(${(1 - 0.04 * press).toFixed(4)})`, boxShadow: `0 0 0 ${(10 * glow * U).toFixed(2)}px ${mixColor(t.surface, t.accent, 0.25)}` }}>
+      <div style={{ ...abs(bx, by), width: bw * U, height: CARD.button * U, borderRadius: (CARD.button / 2) * U, background: mixColor(t.accent, t.accentDeep, 0.35 * press + 0.18 * done), display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 * U, transform: `scale(${(1 - 0.04 * press).toFixed(4)})`, boxShadow: `inset 0 ${(1.5 * U).toFixed(2)}px 0 rgba(255, 255, 255, 0.3)` }}>
         {done > 0 && <div style={{ opacity: done }}><Check size={44 * U} fill={t.accentInk} tick={t.accent} /></div>}
         <span data-text={`${c.id}-action`} style={txt(CARD.body, 600, t.accentInk, -0.01)}>{done > 0.5 ? s.done : s.action}</span>
       </div>
@@ -191,7 +190,7 @@ const TapMoment: React.FC<{ c: Change; s: Extract<Change['show'], { kind: 'tap' 
         <div style={{ position: 'absolute', left: (tx - 34) * U, top: (ty - 34) * U, width: 68 * U, height: 68 * U, borderRadius: 34 * U, background: 'rgba(255, 255, 255, 0.55)', boxShadow: `0 ${4 * U}px ${14 * U}px rgba(0,0,0,0.18), inset 0 0 0 ${2 * U}px rgba(255,255,255,0.95)`, opacity: tipO, transform: `scale(${(1 - 0.18 * press).toFixed(4)})` }} />
       )}
       {ring > 0 && ring < 1 && (
-        <div style={{ position: 'absolute', left: (b0.x + bw0 / 2 - 60) * U, top: (by + CARD.button / 2 - 60) * U, width: 120 * U, height: 120 * U, borderRadius: 60 * U, boxShadow: `0 0 0 ${(3 * U).toFixed(2)}px ${t.accent}`, opacity: 0.7 * (1 - ring), transform: `scale(${(0.6 + 1.6 * ring).toFixed(4)})` }} />
+        <div style={{ position: 'absolute', left: (b0.x + bw0 * 0.86 - 60) * U, top: (by + CARD.button / 2 - 60) * U, width: 120 * U, height: 120 * U, borderRadius: 60 * U, boxShadow: `0 0 0 ${(3 * U).toFixed(2)}px ${t.accent}`, opacity: 0.7 * (1 - ring), transform: `scale(${(0.6 + 1.6 * ring).toFixed(4)})` }} />
       )}
     </>
   );

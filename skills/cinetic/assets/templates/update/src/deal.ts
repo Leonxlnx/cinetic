@@ -16,10 +16,11 @@
 //   slot     choices          what each does
 //   ground   the world        the place the film stands in (fx/world): one for the whole film, never cut, taking one
 //            (built)          step per act (closer, light, pull-back), with its key light that the glass, the rims, the
-//                             type and the product pick up. Dealt among the lit dark fields (never a stock photograph,
-//                             never a white void): blackField, deepField, electric; paleSky, nearWhite and the plates (clouds,
-//                             sky, aerial, sea, nightCity, studio, macro: node scripts/assets.mjs plate <kind>) only by
-//                             PIN, when the brief names the place (a plate is graded and stands soft behind the type)
+//                             type and the product pick up. Dealt among the lit fields in the brand's light (never a
+//                             stock photograph, never a void): deepField, electric; blackField, paleSky, nearWhite and
+//                             the plates (clouds, sky, aerial, sea, nightCity, studio, macro: node scripts/assets.mjs plate
+//                             <kind>) only by PIN or the deck, when the brief names the place (a plate is graded and
+//                             stands soft behind the type)
 //   hook     roll             "[Name]" centred with the version's pill beside it; the changed numerals roll in the pill
 //            rise             the name, then the pill rising out of a mask beside it, the version in it
 //            badge            the name alone, centred; a dot lands after it and grows into the pill carrying the version
@@ -34,7 +35,9 @@
 //            stack            the same pull-back; the name rises under the mark and the version lands beside the name
 //   (heroes)                  each change's hero shot (HERO_META below): the deck's (src/dealt.ts hero) or dealt from the
 //                             name, each on the change it can film (heroFit) and its verb asks for (lib/spine devicesFor)
-//   (lines)  voice            the lines' moves rotate through mask, fall and crisp from the dealt one; one whole-line exit
+//   (lines)  voice            the lines' moves rotate through build, open and snap from the dealt one (each builds
+//                             centred: the line re-centres on the words already there); a parted line takes mask (its
+//                             gap must hold still for the porthole); one whole-line exit
 import { IDENTITY } from './brand/identity';
 import { DEALT } from './dealt';
 import { devicesFor } from './lib/spine';
@@ -64,8 +67,8 @@ export const WORLDS = ['nearWhite', 'paleSky', 'blackField', 'deepField', 'elect
 /** The worlds that need no picture. */
 export const BUILT_WORLDS: readonly string[] = ['nearWhite', 'paleSky', 'blackField', 'deepField', 'electric'];
 
-/** The worlds the name deals: the lit dark fields where glass and rims read (the pale ones and the plates only by PIN or the deck). */
-export const DEALT_WORLDS: readonly string[] = ['blackField', 'deepField', 'electric'];
+/** The worlds the name deals: the lit fields in the brand's light where glass and rims read (the near-black void, the pale ones and the plates only by PIN or the deck). */
+export const DEALT_WORLDS: readonly string[] = ['deepField', 'electric'];
 
 export const DEVICES = {
   ground: ['nearWhite', 'paleSky', 'blackField', 'deepField', 'electric', 'clouds', 'sky', 'aerial', 'sea', 'nightCity', 'studio', 'macro'],
@@ -88,7 +91,7 @@ export const COMPOSITION: { [S in Slot]?: Record<string, string> } = {
 };
 
 /** What the template plays before the product's name is in (its name slot, '[Product]'): a product's deal never replays it. */
-export const FLOOR: Deal = { ground: 'blackField', hook: 'badge', place: ORDERS[0], end: 'beside' };
+export const FLOOR: Deal = { ground: 'deepField', hook: 'badge', place: ORDERS[0], end: 'beside' };
 
 /** Choose a slot by hand ({ ground: 'clouds' }); a pinned slot is not dealt. */
 export const PIN: Partial<Deal> = {};
@@ -306,17 +309,23 @@ export const HERO_END = 'logo-3d';
 
 // ---- The lines' voice: every line arrives on one move and leaves on one whole-line exit, dealt once per film.
 
-/** The moves a line takes (fx/TypePresets): none travels sideways or cuts in oversized, so no line is cut by the frame as it enters. */
-export const MOVES = ['mask', 'fall', 'crisp'] as const;
-export type Move = (typeof MOVES)[number];
+/**
+ * The moves a line takes (fx/TypePresets): each builds CENTRED (the line re-centres on the words already there, so it is
+ * never off-centre while it builds), none cuts in oversized, so no line is cut by the frame as it enters. A parted line
+ * takes PART_MOVE: its gap holds still while the porthole lands in it.
+ */
+export const MOVES = ['build', 'open', 'snap'] as const;
+export const PART_MOVE = 'mask' as const;
+export type Move = (typeof MOVES)[number] | typeof PART_MOVE;
 /** The exits: the whole line leaves as one (lift: up 0.3 em into a 0.1 em blur; recede: back to 94 % out of focus), gone before its travel ends, never word by word. */
 export const EXITS = ['lift', 'recede'] as const;
 export type Exit = (typeof EXITS)[number];
 /** Frames (60 fps) from a move's start until a line of n words (index n - 1, 1-8 words) is read (fx/TypePresets typeLineFrames().resolved). */
 export const RESOLVE60: Record<Move, readonly number[]> = {
-  crisp: [6, 13, 20, 27, 34, 41, 48, 55],
+  build: [20, 26, 32, 38, 44, 50, 56, 62],
+  open: [22, 34, 41, 53, 65, 77, 89, 96],
+  snap: [14, 28, 34, 40, 46, 52, 58, 64],
   mask: [12, 32, 40, 48, 56, 64, 72, 80],
-  fall: [12, 21, 30, 39, 48, 57, 66, 75],
 };
 /** Frames (60 fps) an exit takes. */
 export const EXIT60: Record<Exit, number> = { lift: 24, recede: 26 };
@@ -328,13 +337,13 @@ export const LINES = (() => {
   const used = (RECENT as Partial<Record<string, readonly string[]>>).voice ?? [];
   const pool = MOVES.filter((m) => !used.includes(m));
   const moves = pool.length ? pool : MOVES;
-  const voice: Move = UNNAMED ? 'mask' : moves[Math.floor(r() * moves.length)];
+  const voice: Move = UNNAMED ? MOVES[0] : moves[Math.floor(r() * moves.length)];
   const exitVoice: Exit = UNNAMED ? 'lift' : EXITS[Math.floor(r() * EXITS.length)];
   // headline systems rotate: the dealt move is the first change line's and each line after takes the next move in turn,
   // so no two lines in a row arrive the same way (every line on one move, one size and one accent word is the template
   // look); the face stays the film's one pairing
-  const v0 = MOVES.indexOf(voice);
-  return { voice, exitVoice, move: Object.fromEntries(LINE_IDS.map((id, i) => [id, MOVES[(v0 + i) % MOVES.length]])) as Record<string, Move>, exit: Object.fromEntries(LINE_IDS.map((id) => [id, exitVoice])) as Record<string, Exit> };
+  const v0 = Math.max(0, (MOVES as readonly string[]).indexOf(voice));
+  return { voice, exitVoice, move: Object.fromEntries(LINE_IDS.map((id, i) => [id, PLACES[i] === 'part' ? PART_MOVE : MOVES[(v0 + i) % MOVES.length]])) as Record<string, Move>, exit: Object.fromEntries(LINE_IDS.map((id) => [id, exitVoice])) as Record<string, Exit> };
 })();
 
 /** Where the deal came from, for the print. */

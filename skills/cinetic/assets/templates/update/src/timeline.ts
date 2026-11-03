@@ -155,7 +155,8 @@ const handOf = (from: Form, to: Form, used: Partial<Record<HandoverKind, number>
   if (to === 'mark') return 'converge';
   const opts = handoversFor(from, to).filter((k) => DRAWN.includes(k));
   // a pair with no drawn recipe: a notice, a photo or a card that opens into the next screen grows into it (the grow's
-  // own "a notice opens"); anything else goes through a point
+  // own "a notice opens"); anything else goes through a point (a fly between a large picture and a small card leaves a
+  // big empty box round unscaled content, so the converge stays the fallback until fx/Handover carries a size change)
   if (!opts.length) return OPENS.includes(from) && ['card', 'page', 'window'].includes(to) && (used.grow ?? 0) <= (used.converge ?? 0) ? 'grow' : 'converge';
   return opts.slice().sort((a, b) => (used[a] ?? 0) - (used[b] ?? 0) || opts.indexOf(a) - opts.indexOf(b))[0];
 };
@@ -307,8 +308,9 @@ export const handOut = (i: number): Hand => HANDS.find((h) => h.from.side === i 
  * element from there), `hin`: the element landed and the shot open, `go`: its action starts, `hit`: the state change,
  * `res`, `res2`: the result's details landing, `live`: the result's later beats; `say` and `out`: its line in and leaving;
  * `gap` (part): the element landing in the line's gap; `iris` (part): the porthole opening into the frame; `heroEnd`: the
- * shot's last frame (the handover out of it ends); `creep`: from here the held result keeps moving on the tail of the
- * shot's last move (a slow push about the element, never a still frame).
+ * shot's last frame (the handover out of it ends); `creep`: from here (the element landed) the shot keeps moving on the
+ * tail of the move that brought it in (a slow push about the element through the action and the held result, never a
+ * still frame, never a wait before the action starts).
  */
 export type ChangeTimes = {
   i: number; place: Place; hero: string; from: number; to: number;
@@ -351,7 +353,7 @@ export const TIMES: ChangeTimes[] = UPDATE.changes.map((c, i) => {
   const live: number[] = [];
   for (let q = hit + BEAT * 2.5; q <= ho.t0 - BEAT * 0.5; q += BEAT) live.push(g16(q));
   void id;
-  return { i, place, hero: HEROES[i], from: act.from, to: act.to, h0: hi.t0, hin, go, hit, res: g16(hit + 0.75 * BEAT), res2: g16(hit + 1.75 * BEAT), live, say, out, gap, iris, heroEnd: ho.t1, creep: hit + f60(10) };
+  return { i, place, hero: HEROES[i], from: act.from, to: act.to, h0: hi.t0, hin, go, hit, res: g16(hit + 0.75 * BEAT), res2: g16(hit + 1.75 * BEAT), live, say, out, gap, iris, heroEnd: ho.t1, creep: hin };
 });
 
 /** The hook's frames: the name, the version's pill (rolling, rising or growing from a dot), the name leaving as the pill hands on. */
@@ -369,7 +371,7 @@ export const CLOSE = (() => {
   const h = HANDS[HANDS.length - 1];
   const last = ACTS[ACTS.length - 1];
   const lockup = last.to;
-  const markFlat = g16(h.t1 + f60(110));
+  const markFlat = g16(h.t1 + f60(84)); // the pull-back is short: the mark never stands alone and small for long
   return {
     conv: [h.t0, h.t1] as [number, number],
     markIn: h.at,

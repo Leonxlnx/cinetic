@@ -47,8 +47,8 @@ HERO_FORMS, its boxes in `heroElement`). Each change takes the first one in the 
 | 3+ products it works with | `glass-tiles` | tiles | their official marks as milky glass tiles rising on an arc in depth |
 
 **The deal** (`src/deal.ts`, seeded by the name; `PIN` a slot or `SEED` to re-deal; the last three films' choices are
-left out through `src/recent.ts`): the world (`ground`: blackField, deepField, electric dealt; nearWhite, paleSky and the
-photographs clouds, sky, aerial, sea, nightCity, studio, macro by PIN when the brief names the place), the hook (`roll`,
+left out through `src/recent.ts`): the world (`ground`: deepField, electric dealt; blackField, nearWhite, paleSky and the
+photographs clouds, sky, aerial, sea, nightCity, studio, macro by PIN or the deck when the brief names the place), the hook (`roll`,
 `rise`, `badge`: each ends on the pill), the placements (`place`), the end (`beside`, `stack`), the hero shots and the
 lines' voice. `deck.py` deals the world and the hero shots into `src/dealt.ts` when a direction is picked. Print it: the
 command in template.json `deal.print`.

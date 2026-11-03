@@ -69,7 +69,7 @@
  },
  "slots": {
   "ground": {
-   "blackField": "a built world, dealt: near-black under a softbox, a fine woven surface where the light falls; glass lit by its rims (white type)",
+   "blackField": "a built world, by PIN or the deck: near-black under a softbox, a fine woven surface where the light falls; glass lit by its rims (white type)",
    "deepField": "a built world, dealt: a deep night at the accent's hue, light rising from the floor (white type)",
    "electric": "a built world, dealt: a saturated blue stage lit from the top; dark cards on it (white type)",
    "nearWhite": "by PIN: paper lit from the top left, for real photos in cards (ink type)",
@@ -106,7 +106,7 @@
    "rule": "each change takes the first shot in the film's order that can film it (src/deal.ts heroFit), the ones its verb asks for first (lib/spine devicesFor), never one another change took while another fits; at least two different shots a film"
   },
   "lines": {
-   "moves": "the lines rotate their move (mask, fall, crisp) from the dealt one, one whole-line exit a film (lift or recede); the parted line is set large, a riding line smaller as the shot's heading; the accent on one line in three"
+   "moves": "the lines rotate their move (build, open, snap: each builds centred, re-centring on the words already there; a parted line takes mask so its gap holds still) from the dealt one, one whole-line exit a film (lift or recede); the parted line is set large, a riding line smaller as the shot's heading; the accent on one line in three"
   },
   "place": {
    "part": "the line builds round a gap; the element flies into it as a rounded window holding its shot (a shot of pictures shows its chosen picture); the words leave and the window opens into the frame (around: once a film, never on a line carrying a mark)",

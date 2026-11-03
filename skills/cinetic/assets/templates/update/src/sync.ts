@@ -107,7 +107,12 @@ export default function cues(): SoundEvent[] {
   CHANGE_FRAMES.forEach((t, i) => {
     const ch = UPDATE.changes[i];
     const hero = HEROES[i];
-    if (t.iris) ev.push(cutAir(t.iris[0] + f60(4), t.iris[1], 0.6, `${t.id}-opens`, 'shape'));
+    // the porthole opening into the frame is the film's biggest picture change: a swell that rides the opening (at weight
+    // 1 the music takes a breath before it, plan.py stop-downs) and a hit as the view fills the frame
+    if (t.iris) {
+      ev.push({ f: t.iris[0], kind: 'swell', weight: 1, pan: 0, dur: Math.max(f60(18), t.iris[1] - t.iris[0]), apexFrac: 0.85, action: 'swell', id: `${t.id}-opens` });
+      ev.push({ f: t.iris[1], kind: 'hit', weight: 0.7, pan: 0, action: 'reveal', id: `${t.id}-view` });
+    }
     // the shot's own moment
     if (hero === 'push-press' || hero === 'focus-swap') {
       if (hero === 'focus-swap') ev.push(air(t.hit - f60(24), t.hit + f60(12), 0.4, `${t.id}-after-rises`, 'shape'));
