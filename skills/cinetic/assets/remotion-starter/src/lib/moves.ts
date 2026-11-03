@@ -23,7 +23,7 @@
 // Nothing here loops or floats: every function starts on an event, travels, and lands (item: no idle bob, no aimless
 // drift). The hold tail keeps the direction of the move that landed and never turns back.
 import { spring } from 'remotion';
-import { clamp } from './anim';
+import { clamp, SPR } from './anim';
 import { mixColor } from './color';
 import { type FilmCtx, fpsOf, uOf } from './film';
 
@@ -45,14 +45,14 @@ export const MOVES = {
   tint: { hold: 2, drain: 6 },
   /** The pop: scale keys at 60 fps frames; opacity full after `fade60`. */
   pop: { keys60: [[0, 0.2], [3, 0.7], [6, 0.95], [9, 1.03], [14, 1]] as const, fade60: 4 },
-  /** Landing in motion: start scale, start offset px, the spring (settles in 12-25 f@30), smear = share x px/f. */
-  land: { scale: 1.17, offset: 70, spring: { mass: 1, stiffness: 140, damping: 18 }, smearShare: 0.5, smearMin: 3 },
+  /** Landing in motion: start scale, start offset px, the spring (SPR.critical: home in 14 f@30; SPR.softLanding for a 6 % landing), smear = share x px/f. */
+  land: { scale: 1.17, offset: 70, spring: SPR.critical, smearShare: 0.5, smearMin: 3 },
   /** The whip: build frames of doubling speed (30 fps), the peak px/f at 1080p, the entry/exit ratio, the brake (30 fps). */
   whip: { build: 8, peak: 140, ratio: 0.95, brake: 10, smearShare: 0.5 },
   /** From the lens: start scale, blur px, opacity, yaw deg, frames (30 fps) to land. */
   lens: { from: 3, blur: 20, opacity: 0.45, yaw: 18, frames: 20 },
-  /** The press: depth (scale) per kind, frames held (30 fps), the release spring (settled in about 9 f@30). */
-  press: { cursor: 0.8, button: 0.9, hold: 3, spring: { mass: 0.6, stiffness: 300, damping: 18 } },
+  /** The press: depth (scale) per kind, frames held (30 fps), the release spring (SPR.criticalFast: settled in 9 f@30). */
+  press: { cursor: 0.8, button: 0.9, hold: 3, spring: SPR.criticalFast },
   /** The hold tail: px per 30 fps frame at 1080p (leaves at v0, decays to vEnd, never 0), tau (30 fps frames). Scale creep %/f. */
   tail: { v0: 1.6, vEnd: 0.5, tau: 20, creepPct: 0.2 },
   /** The depth ladder by slot (0 = the sharp plane). */
@@ -158,10 +158,11 @@ export const popIn = (f: number, at: number, film?: F, o: { from?: number; over?
   return { scale, opacity: clamp(t60 / MOVES.pop.fade60 + 0.25), visible: true };
 };
 
-export type SpringCfg = { mass: number; stiffness: number; damping: number };
+/** A Remotion spring config: one of lib/anim SPR (a film keeps one underdamped class). */
+export type SpringCfg = { mass?: number; stiffness?: number; damping?: number };
 /**
  * A landing in motion: the element cuts in at `scale` (1.07-1.29, or 0.81-0.9 to grow) and/or `offset` px away
- * (50-90 at 1080p) and springs home (settling in 12-25 f@30; MOVES.land.spring is 0.7 % overshoot). Opacity is full
+ * (50-90 at 1080p) and springs home (settling in 12-25 f@30; MOVES.land.spring is SPR.critical). Opacity is full
  * on the first frame; the smear (px along the offset) is half the frame's travel, on fast frames only.
  */
 export const landIn = (f: number, at: number, o: { scale?: number; offset?: { x?: number; y?: number }; spring?: SpringCfg } = {}, film?: F) => {

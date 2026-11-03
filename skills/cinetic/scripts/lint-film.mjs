@@ -23,6 +23,9 @@
  *   inbrowser-blur    CameraMotionBlur / HtmlInCanvasMotionBlur / Trail (8-bit accumulation; use render.sh --blur)
  *   remote-font       font packages or stylesheets fetched over the network (ship local variable fonts)
  *   hf-*              HyperFrames: gsap .from(), repeat: -1, <br>, <audio> without id
+ *   stock-plate       (film-wide) a photo world (public/plates/) whose subject (its licence record's title and tags, its
+ *                     plate kind, its name) shares no word with BRIEF.md: a mood plate under a film about something else
+ *                     reads as random stock (warning; a photo is a world only when it is the story's place, input or people)
  *   placeholder       a `cinetic:placeholder` marker is still in the source: the starter's stand-in
  *                     palette, typeface, mark or name was never replaced (error; the film would look
  *                     like every other starter film). Invent the brand or apply the user's, choose the
@@ -2769,6 +2772,53 @@ if (!opt.allow.has('snap-step')) {
       if (!issues.some((x) => x.file === u.file && x.line === u.line && x.rule === 'snap-step' && x.message === message))
         issues.push({ file: u.file, line: u.line, col: u.col, rule: 'snap-step', severity: 'warn', message, excerpt: u.excerpt });
     }
+}
+
+// ---------------------------------------------------------------------------------- film-wide: stock-plate
+// A photo world belongs to the brief: the product's place, its input, its people. A plate picked by mood (a fern, a night
+// city, clouds) under a film about something else reads as random stock. Each world plate (public/plates/, or a record
+// item placed there) is read by its words (the licence record's title and tags, else its file name) against BRIEF.md;
+// a plate that shares no subject word with the brief warns. Colour, light and photo-craft words do not count.
+const PLATE_GENERIC = new Set(('photo image picture stock free background backdrop wallpaper texture pattern abstract macro closeup close up detail '
+  + 'view shot top aerial soft blur blurred bokeh defocus defocused light lights lit dark bright night day morning evening sunset sunrise glow '
+  + 'white black grey gray green blue teal red pink purple violet yellow orange gold golden silver brown beige cream colour color colourful colorful '
+  + 'surface source graded grade plate world soft hard high low wide small large big new old beautiful calm minimal modern the and with for from '
+  + 'over under into onto above across its lay lays laying open opened sits sitting').split(/\s+/));
+const plateStem = (w) => w.toLowerCase().replace(/(?:ies)$/, 'y').replace(/(?:ing|ed|es|s)$/, '');
+const plateWords = (text) => (String(text || '').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().match(/[a-z]{3,}/g) || []).filter((w) => !PLATE_GENERIC.has(w)).map(plateStem);
+function stockPlates(filmRoot) {
+  const out = [];
+  const briefPath = join(filmRoot, 'BRIEF.md');
+  const platesDir = join(filmRoot, 'public', 'plates');
+  if (!existsSync(briefPath) || !existsSync(platesDir)) return out;
+  const brief = new Set(plateWords(readFileSync(briefPath, 'utf8')));
+  let rec = [];
+  try { rec = JSON.parse(readFileSync(join(filmRoot, 'assets', 'licences.json'), 'utf8')).items || []; } catch { /* no record */ }
+  // a plate dealt by kind (assets.mjs plate <kind>) is read by its kind's description in the film's fx/world/worlds.ts
+  const kinds = new Map();
+  try {
+    for (const m of readFileSync(join(filmRoot, 'src', 'fx', 'world', 'worlds.ts'), 'utf8').matchAll(/^\s*(\w+):\s*\{\s*what:\s*'([^']*)'[^\n]*?queries:\s*\[([^\]]*)\]/gm))
+      kinds.set(m[1].toLowerCase(), `${m[2]} ${m[3]}`);
+  } catch { /* no world module */ }
+  const base = (f) => basename(f).replace(/\.[a-z0-9]+$/i, '').replace(/(?:[-_.](?:soft|source|src|graded|grade|dark|light|blur|blurred|sharp|hi|lo|\d+))+$/i, '');
+  const groups = new Map();
+  for (const f of readdirSync(platesDir)) if (/\.(jpe?g|png|webp|avif|mp4|webm|mov)$/i.test(f)) groups.set(base(f), [...(groups.get(base(f)) || []), f]);
+  for (const [stem, files] of groups) {
+    const items = rec.filter((it) => it.file && /plates[\\/]/.test(it.file) && base(it.file) === stem);
+    const words = [...new Set([...items.flatMap((it) => plateWords(`${it.title || ''} ${(it.tags || []).join(' ')} ${it.query || ''}`)), ...plateWords(stem.replace(/[-_]/g, ' ')),
+      ...(items.length ? [] : plateWords(kinds.get(stem.toLowerCase()) || ''))])];
+    const title = items.map((it) => it.title).filter(Boolean)[0] || stem;
+    if (!words.length) { out.push({ file: `public/plates/${files[0]}`, title, words, why: 'its subject is unknown (no record title or tags, a name without a subject word)' }); continue; }
+    if (!words.some((w) => brief.has(w))) out.push({ file: `public/plates/${files[0]}`, title, words, why: `"${title}" (${words.slice(0, 5).join(', ')}) shares no subject word with BRIEF.md` });
+  }
+  return out;
+}
+if (!opt.allow.has('stock-plate')) {
+  const filmRoot = basename(root) === 'src' ? dirname(root) : root;
+  for (const p of stockPlates(filmRoot))
+    issues.push({ file: relative(root, join(filmRoot, p.file)).split(sep).join('/'), line: 1, col: 1, rule: 'stock-plate', severity: 'warn',
+      message: `a photo world unrelated to the brief: ${p.why}. A photograph is a world only when it is the story's place, input or people (graded, defocused, moved once with a purpose); otherwise stand the film on a built lit ground in the brand hue (fx/world, fx/light, groundsFromAccent) or find the brief's own place (scripts/assets.mjs recipe "<the product's input>")`,
+      excerpt: p.title });
 }
 
 // ---------------------------------------------------------------------------------- report

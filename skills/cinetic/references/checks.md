@@ -176,8 +176,11 @@ or a coloured radial falloff in an act: build light with the device primitives, 
 even tips over inward dips; the brand's own SVG passes), `pure-ink` (error on a `#000` token; warn on a `#FFF` ground without `LOOK.whiteWorld`),
 `accent-count` (error: a second saturated hue outside a 30° band; `imagery` and `ui-state` comments leave a token
 out), `gradient-shape` (stops more than 7° of hue apart outside a declared device), `end-card-template` (a mark, a
-wordmark and a tagline centred over a radial gradient). `cinetic:brand-supplied <what>` covers supplied colours and
-looks; `accent-count` still applies.
+wordmark and a tagline centred over a radial gradient), `stock-plate` (warn, film-wide: a photo world in
+`public/plates/` whose subject, read from its licence record's title and tags, its plate kind or its name, shares no
+word with `BRIEF.md`: a mood plate under a film about something else reads as random stock; a photo is a world only
+when it is the story's place, input or people, else a built lit ground in the brand hue). `cinetic:brand-supplied <what>`
+covers supplied colours and looks; `accent-count` still applies.
 
 **Copy and type:** `copy-literal`, `text-spring`, `text-pace` (calm: stagger < 10, word < 29 or exit < 16 f@60),
 `typing-rate` (human typing over 45 chars/s or under 15; `kind="stream"` up to 150), `per-letter`, `type-role` (a
