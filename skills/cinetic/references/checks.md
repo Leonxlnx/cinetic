@@ -47,7 +47,7 @@ void, no plain card slab); precheck `--ship`; layout-audit passing with its plac
 (statements centred 80 % of their time, in the middle band 85 %, none flush left at the top or bottom, one text-top
 split at most (a line above a picture filling the rest of the frame), one split layout per 30 s); forensics passing on
 the master (its seam checks: every hard cut carries a device, at most two ground flips, no seam kind over 45 % of five
-or more changes); `logos.mjs check` (current marks, every brand verified on its own page within 12 months, no drawn or inline stand-in for a real company's mark: its official file through `logos.mjs get`);
+or more changes, a spine handover counted by its own kind); `logos.mjs check` (current marks, every brand verified on its own page within 12 months, no drawn or inline stand-in for a real company's mark: its official file through `logos.mjs get`);
 `film-diff.mjs` (ground, voice, signature and end card apart from the last three films, the move set at most 25 %
 shared, a template film half its slots off the floor); the end card centred, built from the last element and held 2-3
 s (grid-check reads the template's `end_hold`); the ground family's tokens from `palette.py --family`; the sound gates
@@ -120,7 +120,7 @@ Reads `timeline.ts` (a HyperFrames project: `timeline.js`) and checks it against
 | `shot-length` (warn) | median shot inside the format's band (`GRAMMAR.shot.band`: launch 1.15-2.05 s, update 0.7-1.4, explainer 1.75-2.65, reel and social 0.45-0.9); q75/q25 spread ≥ 1.6 (under it the cuts read as a metronome; aim for 1.9-3.1); the longest at least twice the shortest; under 0.25 s only as a declared punch; few shots over 4 s unless `LOOK.oneTake` |
 | `long-take`, `cut-mix` (warn) | a take over 15 s (or a one-take film's body) changes its layout or type at least twice every 10 s; with 5+ changes, at least one in seven happens without a hard cut (a morph, mask, wipe, zoom-through, breath, defocus or UI dissolve) |
 | `picture-change`, `opener` (warn) | a layout or type change at least every 2.5 s outside the end lock and the tail (a cut or seam, a COPY entry arriving or leaving, a CUE whose salience is `hit`, `cut`, `copy` or `move`; `life` is not a change); at least two in the first 2.5 s |
-| `seam-plan` | a fade only ends the film; UI dissolves ≤ 8 f@60 and never across an act line; any seam kind ≤ 3 times except the signature; ≥ 40 % of seams carried; a cut film has at least one velocity seam |
+| `seam-plan` | a fade only ends the film; UI dissolves ≤ 8 f@60 and never across an act line; any seam kind ≤ 3 times except the signature (a spine handover counts by its own kind: grow, swell, fly, converge ...); ≥ 40 % of seams carried; a cut film has at least one velocity seam |
 | `declares-cover` | every step, flash, camera-blur need and seam that a primitive declares is covered by the timeline's declarations |
 | `event-gap`, `density-plan` | a stretch past 72 f without an event or a reading hold (48 f in crisp) is a warning (a hold may rest, still); past 150 f@60 (2.5 s, `--max-rest`) it fails; starts per second and concurrency in band |
 | `stagger-shape`, `accent-time`, `end-lock`, `exit-length` | irregular staggers in the house range; the accent transient on type; the end lock held; exits long enough to read as moves |
@@ -304,9 +304,14 @@ cues file that carries the declarations:
 |---|---|---|
 | declared | a spike or stall on a declared step, flash or hard seam | info |
 | dead-stretch | a run over 2.5 s outside `END` where nothing changes at all (the camera, the layers, the ground and the content all still); a still hold shorter than that passes | fail |
-| motion-floor | (every film of 8 s or more, declared or not; `forensics.py <film> --motion-floor` runs it alone in seconds) frozen runs over 0.8 s (at 320 x 180: under 0.02 % of the pixels change by 10+ levels and the structure moves under 0.012 px, read on its edges so a pale card creeping on a pale ground counts as moving; or the only change is grain) take more than 8 % of the body outside `END`, freezes and ignored ranges. A film that never stops reads 0-6 %; one built on still holds reads 10-25 %. One single frozen run up to 2.5 s (a short film's one held breath) warns at most. The fix is purposeful motion in every second: the decaying tail of the last move (`lib/moves` `holdTail`, 0.3-2 px/f@30 in the same direction), a scale creep of 0.1-0.4 %/f (`scaleCreep`), the product working in frame, or a sooner cut. An idle bob or an aimless pan keeps frames changing but fails `idle-bob` / `camera-wander` | fail; over 5 % warn |
+| motion-floor | (every film of 8 s or more, declared or not; `forensics.py <film> --motion-floor` runs it alone in seconds, and `--spine` runs it with the spine) near-still runs of 0.3 s or more (at 320 x 180: under 0.2 % of the pixels change by 10+ levels and the structure moves under 0.03 px a frame, about 0.2 px at 1080p, read on its edges and over two frames so a slow creep counts; or the only change is grain) take more than 10 % of the body outside `END`, freezes and ignored ranges. A film that never stops reads under 8 %; one built on still holds reads 14 % or more. One single near-still run up to 2.5 s (a short film's one held breath) warns at most; a body over a minute warns at most. The fix is purposeful motion in every second: the decaying tail of the last move (`lib/moves` `holdTail`, 0.3-2 px/f@30 in the same direction), a scale creep of 0.1-0.4 %/f (`scaleCreep`), the product working in frame, or a sooner cut. An idle bob or an aimless pan keeps frames changing but fails `idle-bob` / `camera-wander` | fail; over 8 % warn |
+| end-hold | (with the floor) the end card stands near-still for over 2.5 s, counted from the start of the still run that reaches into `END`: the lockup keeps living to the last frame (a slow push that lands, a light pass over the mark, the line settling) or holds shorter | warn |
+| edge-cover | (with the floor) a strip at the frame's edge that is not the picture: the outer 1-3 px of a side (at 1080p) 25+ levels off the flat picture just inside it along 85 % of the side, the strip itself flat, on 0.25 s or more or on the last frame. A world, plate or plane that does not cover the frame: a pull-back below scale 1 (`fx/world` lands it at 1), a parallax plane moved off its edge, a stage with no ground of the world's colour under it | fail |
+| end-cut | (with the floor) the film stops mid-fade: the last frames still change by a global gain at a third or more of the fade's fastest step and the last frame is neither black nor white. Let the fade land on an ease-out a few frames before the last frame, or end on the held lockup with the music's ring-out | fail |
 | read-move | the camera moves faster than 90 px/s or 15 %/s while text is read | warn |
 | camera-wander | inside one shot most of the picture pans (or pushes) one way and then back, both runs slow (under 60 px/s or 4 %/s at their peak, each 0.4 s or longer, 1 s or less apart): the old camera float | warn; in two shots or more, fail |
+| | there and back at any speed: two opposite runs 1 s or less apart inside one scene (scenes split by the act lines, declared seams and cuts, never inside a drawn handover's span), each travelling 80 px at 1080p or more (a zoom: 3 %), the second returning 40 % of the first: a pan across a page and back, a push in, a pull out and a push in again. One move that starts, travels and lands on what matters; hand over or cut to show a second place | fail |
+| | two declared camera shots in a row whose picture travels opposite ways within 1.5 s with no declared seam between them | fail |
 | | a camera faster than a sub-pixel creep (15 px/s, 1.5 %/s) on more than 90 % of the body: it never rests | warn |
 | static-share, motion-energy, still-cut | the share of the body standing still, of the structure moving 15 px/s or more, of cuts from still to still | info |
 | hold-into-exit | fewer than half of the continuity cuts accelerate into the cut | warn |
@@ -497,6 +502,16 @@ as optical flow (one film measured concurrency 3.97 there and 1.50 on its 1920x1
 (`out/qa/sfx_plan.json`), `score.py`'s report (over-bed levels, stop-downs, density, stacks, loudness), `listen.py`
 (earshot's ears), `av-audit.py` (onsets against cues per stem, `music_sync`, loudness, true peak, clicks, the tail),
 `check-sync.py` (A/V lag) and `credits.py` (the delivery gate). The gate list is in `references/sound.md`.
+
+The mix's colour is gated too: a bed whose own 2-8 kHz band sits under -35 dB of its whole fails `score.py` (a low-passed
+pad, or a short film's edit played on a track's filtered intro, masks every click and reads as a murk; the failure names
+the bars where the track opens up, so `track.py edit --start-bar` or `--entry` moves the edit there, or pick a brighter
+track); a mix under -22 dB at 2-8 kHz or -32 dB at 8-16 kHz warns. `track.py edit` already avoids muffled bars (centroid
+under 700 Hz and under 0.4 of the track's 75th percentile bar) where the arc allows, and lists the ones it kept
+(`muffled_bars`); `music.mjs sheet --measure` ranks a muffled candidate down and `get` warns on one. A dull bed with
+some air left (8-16 kHz under -28 dB) gets a parallel air shelf of half the deficit (at most 4.5 dB) and 1.5 dB of
+presence; effects that sit under 3 dB over the bed on the median (keys left out) are lifted until they read 4.5 dB over
+it (at most 6 dB). Both are said in the report (`lift`).
 
 ## 11. The test suites
 

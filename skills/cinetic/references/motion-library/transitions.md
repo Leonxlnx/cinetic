@@ -545,7 +545,11 @@ under blur 8-10 f60; a swell of +52 %; the seam spans 0.1-0.35 s.
 **Rich.** The same centre; passing through a simpler shape; radius, size and colour all interpolating; a small overshoot
 only on arrival.
 
-**Cheap.** A scale-and-cross-fade of unrelated shapes; a path morph with mismatched points; big UI morphing into big UI.
+**Cheap.** A scale-and-cross-fade of unrelated shapes; a path morph with mismatched points; big UI morphing into big UI;
+a thumbnail growing into its own photo while the full photo already shows under it (two copies of one picture at two
+scales: mark both sides `picture: true` in `fx/Handover`, so the picture covers the growing box and the next scene waits
+for it to land); a container growing out of a point with its text clipped by the box (a converge pops the next element
+up whole instead); an empty frame round a shrinking photo (a side that fills the frame reveals the next scene round it).
 
 **Sound.** A 6 kHz shimmer at -22 dB; a 470 Hz pop.
 

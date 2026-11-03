@@ -258,9 +258,11 @@ Never a mark pill on every line, never a known product named in text alone where
 
 ## 7. Cards
 
-A card is a lit object: a vertical sheen (3 L* top to bottom), an inner top highlight and, on a dark world, its top edge
-catching the key (a hairline of light just outside it; kit/card `CARD.edge`), never a white slab with a drop shadow and
-never a halo of haze round it. One radius a film (house 23 px at 1080, range 16-34), a soft shadow or a 1 px border (not both on every card), inner
+A card is a lit object: a vertical sheen (4-5 L* top to bottom), the key falling off across its face from the upper
+left (a shade toward the far corner on a light card, a lift at the key on a dark one: kit/card `CARD.key`), an inner top
+highlight and, on a dark world, its top edge catching the key (a hairline of light just outside it; kit/card
+`CARD.edge`), never a white slab with a drop shadow and never a halo of haze round it. A container carried by a
+handover keeps the same light in flight (lib/handover `faceKey`). One radius a film (house 23 px at 1080, range 16-34), a soft shadow or a 1 px border (not both on every card), inner
 padding about 2.4 times the cap height of the text inside (never under 0.8), left edges of stacked rows within 4 px,
 no accent bar down a card's side, no text touching an asset. A glass card: a 2 px rim and no shadow. A vertical line
 beside text only as a step rail between steps.
