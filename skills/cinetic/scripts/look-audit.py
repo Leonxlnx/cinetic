@@ -1054,8 +1054,8 @@ def void_stage(voids, P=None):
 
 def subject_flags(small, n, add, fps, stage=False):
     """small-subject: fail on SUBJECT['samples'] or more samples with a small subject in an empty frame, warn on one. On a
-    white or black stage that never stops and has depth (`stage`: void_stage and void_excused), a few small subjects belong to the look
-    (a product shot on its sweep, a card the camera travels round): it fails only from SUBJECT['excused_share'] of the
+    white or black stage that never stops and has depth (`stage`: void_stage and void_excused), a few small subjects belong to the
+    look (a product on its sweep, a card the camera travels round): it fails only from SUBJECT['excused_share'] of the
     samples and warns under it."""
     if not small:
         return
