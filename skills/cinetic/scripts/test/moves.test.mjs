@@ -47,6 +47,7 @@ if (!existsSync(TSX)) {
 const url = (p) => pathToFileURL(join(SRC, p)).href;
 const PROBE = `
 import * as M from '${url('lib/moves.ts')}';
+import * as X from '${url('fx/Moves.tsx')}';
 const f30 = { fps: 30, width: 1920, height: 1080 };
 const f60 = { fps: 60, width: 1920, height: 1080 };
 const f24 = { fps: 24, width: 1920, height: 1080 };
@@ -84,6 +85,12 @@ console.log(JSON.stringify({
   sweepLong: R(0, 40).map((f) => M.glyphSweep(f, 0, 3000, f30)),
   streak: R(0, 26).map((f) => M.rimStreak(f, 0, { w: 400, h: 200 }, f30)),
   house: M.MOVES,
+  build30: X.buildFrames({ at: 6, every: 7, words: ['a', 'b', 'c'] }, 30),
+  build60: X.buildFrames({ at: 12, every: 7, words: ['a', 'b', 'c'] }, 60),
+  buildAts: X.buildFrames({ at: 0, ats: [3, 9, 20], words: ['a', 'b', 'c'] }, 30),
+  decl: X.declares({ cut: 40, dir: 'left', id: 'w' }),
+  declUp: X.declares({ cut: 10, dir: 'down' }),
+  declNone: X.declares(),
 }));
 `;
 const TMP = mkdtempSync(join(tmpdir(), 'cinetic-moves-'));
@@ -180,6 +187,14 @@ const mono = (xs, dir = 1) => xs.every((x, i) => i === 0 || dir * (x - xs[i - 1]
   result(P.sweepLong.filter(Boolean).length <= 26, 'glyphSweep: never longer than 25 frames (faster on a long span)');
   const st = P.streak.filter(Boolean);
   result(st.length >= 20 && st.every((x) => x.x >= 0 && x.x <= 400 && x.y >= 0 && x.y <= 200) && st[st.length - 1].x === 400, 'rimStreak: travels the top edge, then down the right edge, on the rim');
+}
+
+// 8. fx/Moves: the build's word frames and what a WhipCut declares
+{
+  result(P.build30.join() === '6,13,20' && P.build60.join() === '12,26,40' && P.buildAts.join() === '3,9,20', 'BuildLine: a word every 7 frames at 30 fps (the same seconds at 60), or explicit frames');
+  const s = P.decl.seams[0];
+  result(s && s.at === 40 && s.kind === 'velocity' && s.carry === 'x' && s.dir === -1 && P.declUp.seams[0].carry === 'y' && P.declUp.seams[0].dir === 1 && P.declNone.seams.length === 0,
+    'WhipCut declares a velocity seam at its cut (carry and direction from dir)');
 }
 
 process.exit(failed ? 1 : 0);
