@@ -1,16 +1,12 @@
-// The single source of truth for time, for an update film ("vX is out"), played as a SPINE (lib/spine.ts): one session
-// (src/update.ts session and case) in acts: the hook (the name and the version, the version in its pill: the film's
-// element), one act per change (its hero shot draws the element in that act's form: a photo, a stack of notices, a card
-// and its button ...), and the lockup grown out of the last form (it converges into the brand's mark as a solid, which
-// pulls back into the name and the version). Every change of scene hands the element on (HANDS: it grows, flies,
-// swells, converges ... from one shot into the next), each line meets the element (PLACES: parted round a porthole that
-// holds it, or riding over it in its shot), and the world takes one step per act. Picture (src/acts), sound
-// (src/sync.ts -> out/cues.json) and QA (scripts/grid-check.ts --part spine reads SPINE_PLAN) all import this file. The
-// facts live in src/update.ts; this file only places them on the grid. Think in bars and beats, never in seconds. Keep
-// it free of React and CSS imports: Node scripts load it directly.
-import { DEAL, EXIT60, HEROES, LINES, type Move, type Place, PLACES, RESOLVE60, verbOf } from './deal';
+// The single source of truth for time, for an update film ("vX is out"): the hook (the name and the version on a clean
+// ground), then each change as its line (alone on the ground of the scene it leads into) and its house scene (src/scenes,
+// dealt in src/deal.ts HEROES) in 2-4 s, a scene that takes over the element the one before hands on following it on a
+// match cut, then the mark pulling back into the lockup (mark-pullback) and the version landing on the bar line that
+// ends the body. Picture (src/acts), sound (src/sync.ts -> out/cues.json) and QA (scripts/grid-check.ts) all import this
+// file. The facts live in src/update.ts; this file only places them on the grid. Keep it free of React and CSS imports:
+// Node scripts load it directly.
+import { DEAL, HEROES, LINES, LINKED, type Move, PULLBACK30, RESOLVE60, SCENE_SPEC, splitLine } from './deal';
 import { holdFor, PACE, readingWindows, wordCount, type PaceName } from './lib/pace';
-import { type Act as SpineAct, type Form, HANDOVERS, handoverFrames, handoversFor, type HandoverKind, planSpine, type Scene, type Spine, type SpinePlan, spineDeclares } from './lib/spine';
 import { bar, MUSIC } from './music';
 import { type Change, spokenChange, UPDATE } from './update';
 
@@ -46,10 +42,10 @@ export const b = (n: number, beat = 0, sub = 0) =>
 
 /** A choreography length written in 60 fps frames, converted to this film's fps (rounded). */
 export const f60 = (frames: number, fps: number = FPS) => Math.round((frames * fps) / 60);
-/** The fractional twin of f60, for durations inside a move. */
-export const f60x = (frames: number, fps: number = FPS) => (frames * fps) / 60;
+/** Film frames per scene frame (the house scenes write every number at 30 fps). */
+export const K30 = FPS / 30;
 
-/** How many changes the film shows (2-3, from src/update.ts): with the hook, the spine's 3-4 acts. */
+/** How many changes the film shows (2-3, from src/update.ts). */
 export const N = UPDATE.changes.length;
 /** Absolute frame of the n-th beat from the film's first downbeat (sub = 16ths): a whole frame on the grid. */
 export const beat = (n: number, sub = 0) => b(1 + Math.floor(n / 4), n % 4, sub);
@@ -64,351 +60,180 @@ export const g16 = (f: number) => {
   while (bt(q) < f - 1e-9) q += 0.25;
   return bt(q);
 };
+/** The first bar line at or after frame f. */
+export const gBar = (f: number) => {
+  let n = Math.max(1, Math.floor(f / BAR));
+  while (b(n) < f - 1e-9) n++;
+  return b(n);
+};
 
+const pace = PACE[PACE_NAME];
 /** Frames from a move's start until a line of `n` words is read (src/deal.ts RESOLVE60, at this film's fps). */
-export const resolveSpan = (move: Move, n: number): number => Math.ceil(f60x(RESOLVE60[move][Math.min(8, Math.max(1, n)) - 1])) + 1;
+export const resolveSpan = (move: Move, n: number): number => f60(RESOLVE60[move][Math.min(8, Math.max(1, n)) - 1]) + 1;
+/** The frames a line of n words stays readable once resolved (the pace's read; grid-check holds every line to it). */
+export const readHold = (n: number): number => f60(holdFor(n, pace));
 /** The move this film dealt a line (src/deal.ts LINES). */
 export const moveOf = (id: string): Move => LINES.move[id] ?? LINES.voice;
-/** Frames a line's exit takes (the film's one whole-line exit). */
-export const EXIT_F = f60(EXIT60[LINES.exitVoice]);
-/** How long the version's changed numerals take to roll (60 fps frames). */
-export const ROLL = 18;
-/** The key word of change i's line: the last word of the change's key, else the line's longest word. */
-export const heroWord = (i: number): number => {
-  const words = spokenChange(UPDATE.changes[i]).split(/\s+/);
-  const bare = (w: string) => w.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
-  const key = (UPDATE.changes[i].key ?? '').split(/\s+/).map(bare).filter(Boolean);
-  const last = key.length ? words.map(bare).lastIndexOf(key[key.length - 1]) : -1;
-  return last >= 0 ? last : words.reduce((b, w, j) => (bare(w).length > bare(words[b]).length ? j : b), 0);
+
+// ---------------------------------------------------------------------------------------------- the scenes' own frames
+/**
+ * macro-type's length for a request (frames at 30 fps): the house scene's own formula (scenes/macro-type macroTypeDur:
+ * its last key lands (n - 1) / cps seconds after the first, whatever the cadence's jitter).
+ */
+export const macroTypeDur30 = (text: string) => {
+  const cps = Math.min(40, Math.max(24, text.length / 1.05));
+  const last = Math.max(0, text.length - 1) * (60 / cps);
+  return Math.ceil(37 + last / 2 + 2 + 11 + 6);
 };
-/** Frames change i's line needs on screen: its move to the last word, then the pace's read of its words. */
-const readOf = (i: number) => {
-  const n = wordCount(spokenChange(UPDATE.changes[i]));
-  return resolveSpan(moveOf(`change${i + 1}`), n) + f60(holdFor(n, PACE[PACE_NAME]));
+/** A scene's length for change c (frames at 30 fps). */
+export const sceneDur30 = (id: string, c: Change): number => (id === 'macro-type' && c.show.kind === 'type' ? macroTypeDur30(c.show.text) : SCENE_SPEC[id].dur);
+/**
+ * When the line a scene sets inside it is read (frames at 30 fps from the scene's first frame), and when it starts to
+ * leave: porthole-line's two lines cut on word by word behind the porthole; decode-title's title decodes; orbit-chips'
+ * line stands on the orbits from the first frame.
+ */
+export const carriedLine = (id: string, c: Change): { in: number; resolved: number; out: number } | null => {
+  if (id === 'porthole-line') {
+    const [, bottom] = splitLine(c);
+    return { in: 36, resolved: 48 + 3 * (bottom.split(/\s+/).length - 1) + 5, out: 72 };
+  }
+  if (id === 'decode-title') return { in: 1, resolved: 18, out: SCENE_SPEC[id].dur };
+  if (id === 'orbit-chips') return { in: 0, resolved: 6, out: 43 };
+  return null;
 };
 
-// ---------------------------------------------------------------------------------------------- the hero shots
+// ---------------------------------------------------------------------------------------------- the plan
+/** A change's line card (absolute frames): its ground is the scene's it leads into. */
+export type Card = { from: number; to: number; in: number; resolved: number };
 /**
- * A hero shot's own frames (f@60): `pre` from the shot at rest to its action, `act` from its action to the state change
- * (the hit: the press, the last row, the chosen picture facing the camera, the figure landing, the page's landing).
+ * A change's scene (absolute frames): `from`, `to`; `dur30` its own length; `rest`/`extra`: the film gives it `extra`
+ * frames at its scene frame `rest` (played at a quarter speed over the stretch: slower, never frozen); `endless`: it ends
+ * on its element without its own last action (the next scene's pointer takes it); `pressed`: the scene before pressed
+ * for it.
  */
-export const heroFrames = (id: string, c: Change): { pre: number; act: number } => {
-  const s = c.show;
-  const n = s.kind === 'fill' && s.layout !== 'week' ? s.items.length : 4;
-  switch (id) {
-    case 'push-press':
-      return { pre: 6, act: 74 };
-    case 'macro-type': {
-      // the typing at about 18 characters a second with its breaths, then the travel to send and the press
-      const text = s.kind === 'type' ? s.text : c.title;
-      return { pre: 24, act: Math.round(text.length * (60 / 18) * 1.3 + 34) };
+export type ScenePlan = { id: string; from: number; to: number; dur30: number; rest?: number; extra: number; endless: boolean; pressed: boolean };
+export type ChangePlan = { i: number; id: string; card: Card | null; scene: ScenePlan; line: { in: number; resolved: number; out: number } };
+/** The stretch a scene can play slower over: 4 scene frames at its rest. */
+const STRETCH30 = 4;
+
+/** The hook's frames: the name, the version arriving (pill, roll or tag), read. */
+const hookFrames = (extra: number) => {
+  const name = UPDATE.name;
+  const n = wordCount(name);
+  const nameRes = resolveSpan(LINES.voice, n);
+  const verAt = DEAL.hook === 'roll' ? nameRes + f60(4) : DEAL.hook === 'tag' ? nameRes + f60(6) : nameRes + f60(2);
+  const resolved = verAt + f60(DEAL.hook === 'tag' ? 24 : 20);
+  return { name: 0, nameRes, version: verAt, resolved, out: g16(resolved + readHold(n + 1) + extra) };
+};
+
+/** The film's plan with `extra` frames given to its parts (the hook, each card, each scene with a rest). */
+const planWith = (extra: { hook: number; card: number[]; scene: number[] }) => {
+  const hook = hookFrames(extra.hook);
+  let at = hook.out;
+  const changes: ChangePlan[] = UPDATE.changes.map((c, i) => {
+    const id = HEROES[i];
+    const spec = SCENE_SPEC[id];
+    const linkedIn = i > 0 && LINKED[i - 1];
+    let card: Card | null = null;
+    if (!spec.carries && !linkedIn) {
+      const n = wordCount(spokenChange(c));
+      const inF = at;
+      const resolved = inF + resolveSpan(moveOf(`change${i + 1}`), n);
+      const to = g16(resolved + readHold(n) + extra.card[i]);
+      card = { from: inF, to, in: inF, resolved };
+      at = to;
     }
-    case 'toast-stack':
-      return { pre: 0, act: 24 * (n - 1) + 16 };
-    case 'fan-focus':
-      return { pre: 0, act: 34 + 7 * (n - 1) + 76 };
-    case 'carousel':
-      return { pre: 0, act: 112 };
-    case 'photo-develop':
-      return { pre: 8, act: 70 };
-    case 'glass-counter':
-      return { pre: 4, act: 96 };
-    case 'page-fly':
-      return { pre: 0, act: 140 };
-    case 'focus-swap':
-      return { pre: 34, act: 30 };
-    case 'glass-tiles':
-      return { pre: 0, act: 140 };
-    default:
-      return { pre: 0, act: 80 };
-  }
+    const dur30 = sceneDur30(id, c);
+    const from = at;
+    // a carried line holds its read: the scene gives the words the frames they need at its rest
+    const cl = carriedLine(id, c);
+    const need = cl ? Math.max(0, readHold(wordCount(spokenChange(c))) - (cl.out - cl.resolved) * K30 + f60(4)) : 0;
+    let ext = spec.rest !== undefined ? need + extra.scene[i] : 0;
+    let to = from + dur30 * K30 + ext;
+    // the cut out of a scene sits on the grid: a scene with a rest takes the frames to it there, any other holds its last frame creeping
+    const snapped = g16(to);
+    if (spec.rest !== undefined) ext += snapped - to;
+    to = snapped;
+    const endless = !!LINKED[i] && !!spec.endless;
+    const scene: ScenePlan = { id, from, to, dur30, rest: spec.rest, extra: ext, endless, pressed: linkedIn };
+    at = to;
+    const line = card ? { in: card.in, resolved: card.resolved, out: card.to } : cl ? { in: sceneAt(scene, cl.in), resolved: sceneAt(scene, cl.resolved), out: sceneAt(scene, cl.out) } : { in: from, resolved: from, out: from };
+    return { i, id: c.id, card, scene, line };
+  });
+  return { hook, changes, markIn: at };
 };
 
 /**
- * The element's forms in each hero shot (lib/spine FORMS): what the shot draws it as. A shot of two forms travels its
- * own surface from the first to the second (a same-surface change: the camera rides from the card to its button).
+ * The film frame (absolute) at which scene frame s30 (frames at 30 fps from the scene's first frame) plays: K30 film
+ * frames per scene frame, except over the stretch at its rest, which takes its extra frames too.
  */
-export const HERO_FORMS: Record<string, readonly Form[]> = {
-  'push-press': ['card', 'button'],
-  'macro-type': ['card', 'button'],
-  'toast-stack': ['notice'],
-  'fan-focus': ['list'],
-  carousel: ['photo'],
-  'photo-develop': ['photo'],
-  'glass-counter': ['count'],
-  'page-fly': ['page'],
-  'focus-swap': ['card'],
-  'glass-tiles': ['card'],
+export const sceneAt = (s: ScenePlan, s30: number): number => {
+  if (s.rest === undefined || s30 <= s.rest) return Math.round(s.from + s30 * K30);
+  const into = Math.min(s30 - s.rest, STRETCH30);
+  const over = Math.max(0, s30 - s.rest - STRETCH30);
+  return Math.round(s.from + s.rest * K30 + (into / STRETCH30) * (STRETCH30 * K30 + s.extra) + over * K30);
 };
-const formsOf = (i: number): readonly Form[] => HERO_FORMS[HEROES[i]] ?? ['card'];
-
-// ---------------------------------------------------------------------------------------------- the handovers
-/**
- * The handovers the stage draws between two shots (fx/Handover: the element's box, corner, fill and content carried from
- * one shot's camera into the next's). Each change of act takes one of its form pair's recipes (lib/spine FORM_PAIRS) that
- * the stage draws, the least used first so a film plays several kinds; a pair with none goes through a point (converge,
- * always allowed). The lockup always grows out of a converge: the last form collapses to a spark and the mark grows from it.
- */
-export const DRAWN: readonly HandoverKind[] = ['grow', 'fly', 'swell', 'shrink', 'converge'];
-const OPENS: readonly Form[] = ['notice', 'list', 'photo', 'card', 'page', 'count'];
-const handOf = (from: Form, to: Form, used: Partial<Record<HandoverKind, number>>): HandoverKind => {
-  if (to === 'mark') return 'converge';
-  const opts = handoversFor(from, to).filter((k) => DRAWN.includes(k));
-  // a pair with no drawn recipe: a notice, a photo or a card that opens into the next screen grows into it (the grow's
-  // own "a notice opens"); anything else goes through a point (a fly between a large picture and a small card leaves a
-  // big empty box round unscaled content, so the converge stays the fallback until fx/Handover carries a size change)
-  if (!opts.length) return OPENS.includes(from) && ['card', 'page', 'window'].includes(to) && (used.grow ?? 0) <= (used.converge ?? 0) ? 'grow' : 'converge';
-  return opts.slice().sort((a, b) => (used[a] ?? 0) - (used[b] ?? 0) || opts.indexOf(a) - opts.indexOf(b))[0];
+/** The scene frame (30 fps, fractional) a scene plays at film frame f (absolute): the inverse of sceneAt. */
+export const sceneFrame = (s: ScenePlan, f: number): number => {
+  const local = f - s.from;
+  if (s.rest === undefined || local <= s.rest * K30) return local / K30;
+  const span = STRETCH30 * K30 + s.extra;
+  const into = local - s.rest * K30;
+  if (into <= span) return s.rest + (into / span) * STRETCH30;
+  return s.rest + STRETCH30 + (into - span) / K30;
 };
-/** Each act boundary's handover, in film order (hook -> change 1, ... , last change -> the mark). */
-export const BOUNDARY_KINDS: HandoverKind[] = (() => {
-  const used: Partial<Record<HandoverKind, number>> = {};
-  const out: HandoverKind[] = [];
-  const firsts: Form[] = UPDATE.changes.map((_, i) => formsOf(i)[0]);
-  const lasts: Form[] = ['pill', ...UPDATE.changes.map((_, i) => formsOf(i)[formsOf(i).length - 1])];
-  for (let k = 0; k <= N; k++) {
-    const kind = handOf(lasts[k], k < N ? firsts[k] : 'mark', used);
-    used[kind] = (used[kind] ?? 0) + 1;
-    out.push(kind);
-  }
-  return out;
-})();
-/** [lead, land] of a handover kind in film frames (lib/spine house frames). */
-const leadLand = (k: HandoverKind): [number, number] => handoverFrames(k, FPS);
-
-// ---------------------------------------------------------------------------------------------- the acts' lengths
-/** The porthole's opening into the frame once the parted line has gone (f@60). */
-export const IRIS60 = 36;
-/** House numbers (s): a result held after its hit before the element hands on (the last one shorter: the converge into the mark carries it on). */
-const SHOW = { result: 0.75, last: 0.55 } as const;
-/**
- * The lockup's beats: the converge into the mark, its pull-back, the name, the version landing on the bar line that ends
- * the body: two bars (it opens on a downbeat).
- */
-const END_BEATS = 8;
-/** The hook's beats: the name, the pill landing, read (one bar). */
-const HOOK_BARS = 1;
 
 /**
- * A two-form shot's second form (the same-surface change: its action) starts on this beat of its act, counted from the
- * act's first beat: the first whole beat once the element is in and a riding line is read. planSpine shares an act's
- * beats evenly between its scenes, which put the action on the act's middle beat and doubled an act whose element comes
- * late (a parted line: a two-change film ran 20 s, now 18); SPINE_PLAN below moves the change to this beat.
+ * The lockup: the mark-pullback plays from `markIn` (its cut to the flat mark at 38 scene frames, the lockup assembling
+ * from 44, settled by 60); the version lands on the first bar line once the lockup has settled: the bar line that ends the
+ * body (the track's final hit). Where that bar line would leave the lockup waiting more than half a second, the hook, the
+ * cards and the scenes with a rest take the difference first (a little longer each, never a dead wait at the end).
  */
-const GO_BEAT: (number | undefined)[] = [];
-/**
- * Change i's act in whole bars: the element's arrival (the handover's land, or for a parted line its read and the
- * porthole opening), the shot's action and its result held, the line's read, the next handover's lead; the last act adds
- * the lockup's beats. Length (112-128 BPM): two changes run 16-19 s (the spec band 8-20 s), three 20-23 s.
- */
-const actBars = (i: number): number => {
-  const c = UPDATE.changes[i];
-  const hf = heroFrames(HEROES[i], c);
-  const [, landIn] = leadLand(BOUNDARY_KINDS[i]);
-  const [leadOut] = leadLand(BOUNDARY_KINDS[i + 1]);
-  const R = readOf(i);
-  const place = PLACES[i];
-  const two = formsOf(i).length > 1;
-  const last = i === N - 1;
-  for (let bars = 1; bars <= 12; bars++) {
-    const body = bars * 4; // the change's own beats before the lockup
-    const span = beat(body) - beat(0);
-    const hinOf = place === 'part' ? landIn + Math.max(R, f60(40)) + Math.round(0.3 * EXIT_F) + f60(IRIS60) : landIn;
-    // a riding line is read (to within a beat) before the camera pushes past it to the button; it leaves as the push starts
-    const ready = Math.max(hinOf + f60(hf.pre), two && place === 'head' ? Math.max(0, landIn - f60(10)) + R - BEAT : 0);
-    const gb = two ? Math.max(1, Math.ceil((ready - 0.5) / BEAT)) : 0;
-    if (two && gb >= body) continue; // the same-surface change needs a beat of the act after it
-    const go = two ? beat(gb) - beat(0) : ready;
-    const hit = go + f60(hf.act);
-    const end = hit + Math.round((last ? SHOW.last : SHOW.result) * FPS) + leadOut;
-    const lineEnd = place === 'head' ? landIn + R + EXIT_F + leadOut : 0;
-    if (Math.max(end, lineEnd) <= span) {
-      GO_BEAT[i] = two ? gb : undefined;
-      return bars;
+/** The lockup's name is read (its letters cut on one each 0.9 scene frames from the lockup's first frame, then settle). */
+const NAMED30 = PULLBACK30.lockup + 1 + 0.9 * [...UPDATE.name].length + 4;
+/** The version lands once the name is read and held (its read, then its landing): frames from the mark's cut in. */
+const SETTLE = Math.ceil(NAMED30 * K30) + f60(36) + f60(10);
+const WAIT = f60(30);
+const PLAN = (() => {
+  const zero = { hook: 0, card: UPDATE.changes.map(() => 0), scene: UPDATE.changes.map(() => 0) };
+  const p0 = planWith(zero);
+  const lock0 = gBar(p0.markIn + SETTLE);
+  const slack = lock0 - (p0.markIn + SETTLE) - WAIT;
+  if (slack <= 0) return { ...p0, lockup: lock0 };
+  // capacities: a card up to half a second more, a scene with a rest up to half a second, the hook a quarter
+  const cap = { hook: f60(15), card: p0.changes.map((c) => (c.card ? f60(30) : 0)), scene: p0.changes.map((c) => (c.scene.rest !== undefined ? f60(30) : 0)) };
+  const total = cap.hook + cap.card.reduce((a, v) => a + v, 0) + cap.scene.reduce((a, v) => a + v, 0);
+  let best = { ...p0, lockup: lock0 };
+  for (let give = Math.min(slack, total); give > 0; give -= Math.max(1, Math.round(BEAT / 4))) {
+    const k = give / total;
+    const ex = { hook: Math.floor(cap.hook * k), card: cap.card.map((v) => Math.floor(v * k)), scene: cap.scene.map((v) => Math.floor(v * k)) };
+    const p = planWith(ex);
+    if (gBar(p.markIn + SETTLE) === lock0) {
+      best = { ...p, lockup: lock0 };
+      break;
     }
   }
-  return 12;
-};
-const BARS_OF: number[] = [HOOK_BARS, ...UPDATE.changes.map((_, i) => actBars(i))];
-
-// ---------------------------------------------------------------------------------------------- the spine
-/** A change's verb in the sentence (its own, else its line's first word). */
-export const VERBS: string[] = UPDATE.changes.map((c) => verbOf(c));
-/** The case's words a change's screen shows (its title, detail, rows, action, request, figure): the checks follow the case through them. */
-export const stringsOf = (c: Change): string[] => {
-  const s = c.show;
-  const rows = s.kind === 'tap' ? [...(s.rows ?? []), ...(s.result ?? []), ...(s.you ? [s.you] : [])] : s.kind === 'swap' ? [...s.before, ...s.after] : s.kind === 'fill' && s.layout !== 'week' ? s.items : [];
-  const extra = s.kind === 'tap' ? [s.action, s.done] : s.kind === 'type' ? [s.text] : s.kind === 'count' ? [s.label, `${s.to}${s.unit ? ` ${s.unit}` : ''}`] : s.kind === 'fill' && s.layout === 'week' ? s.items.map((x) => x.label) : [];
-  return [c.title, c.sub ?? '', ...rows.flatMap((r) => [r.label, r.meta ?? '']), ...extra].map((x) => String(x).trim()).filter(Boolean);
-};
-/** The film as one sentence: the name, the version and the session, then each change's verb. */
-export const SENTENCE = `${UPDATE.name} ${UPDATE.version} ${UPDATE.session.trim()}: ${VERBS.join(', ')}`;
-
-/**
- * The spine (lib/spine.ts) this film plays: the hook (the version's pill, its line alone and joined: the pill is the
- * element), one act per change (its hero shot's forms; the second form of a two-form shot reached on its own surface),
- * the lockup grown out of the last form by a converge. Every act boundary names its handover (BOUNDARY_KINDS).
- */
-export const SPINE: Spine = {
-  format: 'update',
-  sentence: SENTENCE,
-  element: 'version',
-  case: { ...UPDATE.case },
-  acts: [
-    {
-      id: 'hook',
-      verb: 'opens',
-      scenes: [{ form: 'pill', name: 'version' }],
-      line: { id: 'hook', text: `${UPDATE.name} ${UPDATE.version}`, place: 'alone', becomes: 'pill' },
-      world: 'enter',
-      bars: BARS_OF[0],
-      strings: [UPDATE.name, UPDATE.version],
-    },
-    ...UPDATE.changes.map((c, i): SpineAct => {
-      const forms = formsOf(i);
-      const scenes: Scene[] = forms.map((form, k) => (k === 0 ? { form, name: `${c.id}-${form}`, via: BOUNDARY_KINDS[i] } : { form, name: `${c.id}-${form}`, via: 'same-surface' }));
-      const place = PLACES[i];
-      return {
-        id: c.id,
-        verb: VERBS[i],
-        scenes,
-        line: { id: `change${i + 1}`, text: spokenChange(c), place: place === 'part' ? 'around' : 'inside', join: { in: 'element', out: 'element' } },
-        world: i === N - 1 ? 'pull-back' : i === 0 ? 'closer' : 'light',
-        bars: BARS_OF[i + 1] + (i === N - 1 ? END_BEATS / 4 : 0),
-        strings: stringsOf(c),
-        devices: [{ id: HEROES[i] }],
-      };
-    }),
-  ],
-  end: { via: 'converge', share: 0 },
-};
-// the lockup's share of the last act: exactly its beats
-SPINE.end = { via: 'converge', share: END_BEATS / ((BARS_OF[N] + END_BEATS / 4) * 4) };
-
-/** The total bars of the body. */
-const BODY_BARS = BARS_OF.reduce((a, v) => a + v, 0) + END_BEATS / 4;
-/** The plan the checks read (grid-check --part spine, export-cues): acts, scenes, changes, lines, the world's steps. */
-export const SPINE_PLAN: SpinePlan = (() => {
-  const p = planSpine(SPINE, { fps: FPS, b, bars: BODY_BARS });
-  // retime: a two-form shot's same-surface change moves from the act's middle beat to its action's beat (GO_BEAT)
-  const scenes = p.scenes.map((s) => ({ ...s }));
-  let bar0 = 1;
-  p.acts.forEach((act, a) => {
-    const own = act.scenes.map((k) => scenes[k]).filter((s) => s.form !== 'mark');
-    const gb = a > 0 ? GO_BEAT[a - 1] : undefined;
-    if (gb !== undefined && own.length === 2) own[0].to = own[1].from = b(bar0 + Math.floor(gb / 4), gb % 4);
-    bar0 += act.bars;
-  });
-  const downbeats = new Set(Array.from({ length: Math.ceil(BODY_BARS) + 1 }, (_, k) => b(1 + k)));
-  const changes = p.changes.map((c) => {
-    const at = scenes[c.to.scene].from;
-    if (at === c.at) return c;
-    const [lead, land] = leadLand(c.kind as HandoverKind);
-    return { ...c, at, span: [at - lead, at + land] as [number, number], downbeat: downbeats.has(at) };
-  });
-  return { ...p, scenes, changes };
+  return best;
 })();
 
-/** Where each act starts and ends (absolute frames): 0 the hook, i + 1 change i. */
-const ACTS = SPINE_PLAN.acts;
-/** The plan's scenes of act a. */
-const scenesOf = (a: number) => SPINE_PLAN.scenes.filter((s) => s.act === a);
+/** The hook's frames. */
+export const HOOK = PLAN.hook;
+/** Each change's line card (or null: its scene carries its line, or the scene before hands it the element) and scene. */
+export const CHANGES: ChangePlan[] = PLAN.changes;
 
-/**
- * One drawn or declared handover between two scenes: its kind, the cut (`at`, the incoming scene's first frame), its span
- * [t0, t1), the sides (the hook's pill, change i's shot, or the mark) and their forms; `drawn` when the stage draws the
- * element across it (fx/Handover); a same-surface change is the shot's own camera move (declared, drawn by the shot).
- */
-export type Hand = { k: number; kind: HandoverKind; at: number; t0: number; t1: number; from: { side: 'hook' | number; form: Form }; to: { side: 'mark' | number; form: Form }; drawn: boolean; boundary: boolean };
-export const HANDS: Hand[] = SPINE_PLAN.changes.map((c, k) => {
-  const kind = c.kind as HandoverKind;
-  const side = (act: number, form: Form): 'hook' | 'mark' | number => (form === 'mark' ? 'mark' : act === 0 ? 'hook' : act - 1);
-  const from = side(c.from.act, c.from.form) as 'hook' | number;
-  const to = side(c.to.act, c.to.form) as 'mark' | number;
-  return { k, kind, at: c.at, t0: c.span[0], t1: c.span[1], from: { side: from, form: c.from.form }, to: { side: to, form: c.to.form }, drawn: HANDOVERS[kind].draws === 'handover' && from !== to, boundary: c.boundary };
-});
-/** The handover into change i's shot, and the one out of it (to the next shot, or the converge into the mark). */
-export const handIn = (i: number): Hand => HANDS.find((h) => h.to.side === i && h.from.side !== i)!;
-export const handOut = (i: number): Hand => HANDS.find((h) => h.from.side === i && h.to.side !== i)!;
-
-// ---------------------------------------------------------------------------------------------- each change's frames
-/**
- * Each change's frames (absolute). `h0`: the shot's first frame (the handover into it starts: it is drawn inside the
- * element from there), `hin`: the element landed and the shot open, `go`: its action starts, `hit`: the state change,
- * `res`, `res2`: the result's details landing, `live`: the result's later beats; `say` and `out`: its line in and leaving;
- * `gap` (part): the element landing in the line's gap; `iris` (part): the porthole opening into the frame; `heroEnd`: the
- * shot's last frame (the handover out of it ends); `creep`: from here (the element landed) the shot keeps moving on the
- * tail of the move that brought it in (a slow push about the element through the action and the held result, never a
- * still frame, never a wait before the action starts).
- */
-export type ChangeTimes = {
-  i: number; place: Place; hero: string; from: number; to: number;
-  h0: number; hin: number; go: number; hit: number; res: number; res2: number; live: number[]; say: number; out: number;
-  gap?: [number, number]; iris?: [number, number]; heroEnd: number; creep: number;
-};
-export const TIMES: ChangeTimes[] = UPDATE.changes.map((c, i) => {
-  const act = ACTS[i + 1];
-  const own = scenesOf(i + 1).filter((s) => s.form !== 'mark');
-  const hi = handIn(i);
-  const ho = handOut(i);
-  const hf = heroFrames(HEROES[i], c);
-  const place = PLACES[i];
-  const R = readOf(i);
-  const id = `change${i + 1}`;
-  let say: number;
-  let out: number;
-  let hin: number;
-  let gap: [number, number] | undefined;
-  let iris: [number, number] | undefined;
-  if (place === 'part') {
-    // the line builds round its gap as the element flies in and lands in it as the porthole; read, the words leave and
-    // the porthole opens into the frame
-    say = act.from;
-    gap = [hi.at, hi.t1];
-    out = g16(Math.max(say + R, hi.t1 + f60(40)));
-    const i0 = g16(out + Math.round(0.3 * EXIT_F));
-    iris = [i0, i0 + f60(IRIS60)];
-    hin = iris[1];
-  } else {
-    // the line arrives over the element as it lands and rides it while the shot plays; it leaves as the element hands on
-    hin = hi.t1;
-    say = g16(Math.max(act.from, hi.t1 - f60(10)));
-    // read, then it leaves as the shot's action starts (its camera moves in), or as the element hands on
-    const go0 = own.length > 1 ? own[1].from : g16(hin + f60(hf.pre));
-    out = Math.min(Math.max(say + R, go0), Math.max(say + R, ho.t0 - EXIT_F));
-  }
-  const go = own.length > 1 ? own[1].from : g16(hin + f60(hf.pre));
-  const hit = g16(go + f60(hf.act));
-  const live: number[] = [];
-  for (let q = hit + BEAT * 2.5; q <= ho.t0 - BEAT * 0.5; q += BEAT) live.push(g16(q));
-  void id;
-  return { i, place, hero: HEROES[i], from: act.from, to: act.to, h0: hi.t0, hin, go, hit, res: g16(hit + 0.75 * BEAT), res2: g16(hit + 1.75 * BEAT), live, say, out, gap, iris, heroEnd: ho.t1, creep: hin };
-});
-
-/** The hook's frames: the name, the version's pill (rolling, rising or growing from a dot), the name leaving as the pill hands on. */
-export const HOOK = (() => {
-  const ho = HANDS[0];
-  return { name: 0, version: bt(0.75), roll: bt(1), out: Math.max(bt(2.5), ho.t0 - Math.round(0.35 * EXIT_F)), hand: ho };
-})();
-
-/**
- * The end's frames: the last form converging into a spark from which the mark's solid grows (`markIn`, the cut, on its
- * beat), its pull-back landing on the flat mark, the name sliding out of it, the version landing on the bar line that
- * ends the body (the track's final hit), held to the end.
- */
+/** The end's frames: the mark-pullback's cut in (`markIn`), its cuts, the lockup, the name, the version landing on its bar line. */
 export const CLOSE = (() => {
-  const h = HANDS[HANDS.length - 1];
-  const last = ACTS[ACTS.length - 1];
-  const lockup = last.to;
-  const markFlat = g16(h.t1 + f60(84)); // the pull-back is short: the mark never stands alone and small for long
+  const markIn = PLAN.markIn;
+  const lockup = PLAN.lockup;
   return {
-    conv: [h.t0, h.t1] as [number, number],
-    markIn: h.at,
-    solid: h.t1, // the solid's pull-back starts as the converge lands it
-    markFlat, // the pull-back lands exactly on the flat mark
-    nameIn: markFlat,
-    named: markFlat + f60(30),
-    versionIn: Math.max(markFlat + f60(30), lockup - Math.round(0.75 * BEAT)),
+    markIn,
+    markCut: markIn + PULLBACK30.cut * K30,
+    lockIn: markIn + PULLBACK30.lockup * K30,
+    settled: markIn + PULLBACK30.settled * K30,
+    nameIn: markIn + PULLBACK30.lockup * K30,
+    named: markIn + Math.ceil(NAMED30 * K30),
+    turn: markIn + 13 * K30,
+    versionIn: lockup - f60(10),
     lockup,
   };
 })();
@@ -426,49 +251,82 @@ export const TOTAL = BODY_END + TAIL;
 /** The film's bars in the body (track.py fit reads it with REVEAL and ACT.end to cut the track to the picture). */
 export const BARS = Math.round(((BODY_END - b(1)) / BAR) * 2) / 2;
 
-// Acts: contiguous, [from, from + dur). Each act is its own composition in Root.tsx (in this order); the end is the
-// last act's lockup (from the converge's cut, on its bar line).
-export const ACT: Record<string, { from: number; dur: number }> = (() => {
-  const cuts = [0, ...TIMES.map((t) => t.from), CLOSE.markIn, TOTAL];
-  const names = ['hook', ...UPDATE.changes.map((_, i) => `change${i + 1}`), 'end'];
-  return Object.fromEntries(names.map((n, k) => [n, { from: cuts[k], dur: cuts[k + 1] - cuts[k] }]));
-})();
-/** The act of change i (0-based). */
-export const changeAct = (i: number) => ACT[`change${i + 1}`];
+/**
+ * One act: the film cuts on the plan's own frames (the 16th grid), never on bar lines, so it declares no act boundary
+ * the track would have to land on; the structure the track lands on is the version mark (STRUCTURAL) on the bar line
+ * that ends the body. Root.tsx's Act1 is the whole film.
+ */
+export const ACT: Record<string, { from: number; dur: number }> = { film: { from: 0, dur: TOTAL } };
 /** Where each act starts, in beats (kept for the starter's helpers). */
-export const BEATS = { hook: 0, change: (i: number) => (i < N ? TIMES[i].from / BEAT : CLOSE.markIn / BEAT), end: CLOSE.markIn / BEAT, last: BODY_END / BEAT } as const;
+export const BEATS = { hook: 0, end: CLOSE.markIn / BEAT, last: BODY_END / BEAT } as const;
+
+/** One scene cue (the scene's own sound, src/scenes meta cues) placed in the film: its name. */
+const sceneCueName = (i: number, k: number) => `s${i}_${k}`;
+/** A scene's own sound (its meta entry's cues): frame at 30 fps from its first frame, kind, weight. */
+export type Moment = { f: number; kind: string; id: string; w: number };
 
 // Named sync points (absolute frames). Picture code reads these; src/sync.ts turns them into sound.
 export const CUE: Record<string, number> = {
-  roll: HOOK.roll, // 'roll': the changed numerals roll in the pill
-  rise: HOOK.version, // 'rise' and 'badge': the pill arrives beside the name
+  version: HOOK.version, // the version arrives beside the name
+  hookRead: Math.min(HOOK.out - 1, g16(HOOK.resolved)),
   hookOut: HOOK.out,
-  ...Object.fromEntries(HANDS.flatMap((h) => [[`hand${h.k}`, h.at], [`land${h.k}`, h.t1]])),
   ...Object.fromEntries(
-    TIMES.flatMap((t) => [
-      [`c${t.i}`, t.from],
-      [`in${t.i}`, t.hin],
-      [`go${t.i}`, t.go],
-      [`mid${t.i}`, bt(Math.round(((t.go + t.hit) / 2 / BEAT) * 4) / 4)],
-      [`hit${t.i}`, t.hit],
-      [`res${t.i}`, t.res],
-      [`res2${t.i}`, t.res2],
-      ...t.live.map((f, k) => [`live${t.i}_${k}`, f]),
-      [`say${t.i}`, t.say],
-      [`out${t.i}`, t.out],
-      ...(t.iris ? [[`iris${t.i}`, t.iris[0]]] : []),
+    CHANGES.flatMap((c) => [
+      ...(c.card ? [[`card${c.i}`, c.card.from], [`read${c.i}`, c.card.resolved]] : []),
+      [`scene${c.i}`, c.scene.from],
+      [`sceneEnd${c.i}`, c.scene.to],
+      ...(!c.card ? [[`said${c.i}`, c.line.resolved]] : []),
     ]),
   ),
   markIn: CLOSE.markIn,
-  markTurn: g16((CLOSE.solid + CLOSE.markFlat) / 2),
-  markFlat: CLOSE.markFlat,
-  nameIn: CLOSE.nameIn,
+  markTurn: CLOSE.turn,
+  markCut: CLOSE.markCut,
+  lockIn: CLOSE.lockIn,
+  settled: CLOSE.settled,
   versionIn: CLOSE.versionIn,
   lockup: CLOSE.lockup,
-  glint: g16(CLOSE.lockup + 0.5 * BEAT),
   rest: Math.min(TOTAL - 1, g16(CLOSE.lockup + BEAT)),
   end: CLOSE.lockup,
 };
+/**
+ * The scene moments the picture lands on its own measured frames (each scene's meta cues, at their place in the film):
+ * src/sync.ts voices them with their meta cue's kind; the CUEs below name them `s<change>_<k>` so the checks see the
+ * picture's events.
+ */
+export const SCENE_MOMENTS: (Moment & { i: number; k: number; at: number })[] = [];
+const m = (f: number, kind: string, id: string, w: number): Moment => ({ f, kind, id, w });
+/**
+ * The moments each scene's meta lists (its `cues`: frames at 30 fps; a scene whose length follows its content,
+ * macro-type, counts its closing moments from its end). Written here so this file stays free of React: acts/scenes.tsx
+ * checks them against the scenes' own meta entries in the Studio.
+ */
+export const MOMENTS30: Record<string, (dur30: number) => Moment[]> = {
+  'porthole-line': () => [m(8, 'click', 'press', 0.8), m(14, 'swell', 'open', 0.6), m(23, 'pop', 'picture', 0.7), m(36, 'hit', 'line-top', 0.9), m(48, 'hit', 'line-bottom', 0.8), m(72, 'whoosh', 'exit', 0.5)],
+  'decode-title': () => [m(0, 'suck', 'swirl', 0.6), m(4, 'pop', 'decode', 0.7), m(7, 'pop', 'decode-2', 0.5), m(15, 'bell', 'title', 0.7), m(27, 'whoosh', 'button-flies', 0.6), m(32, 'pop', 'button', 0.6), m(44, 'click', 'click', 0.8)],
+  'macro-type': (d) => [m(1, 'whoosh', 'pointer-in', 0.5), m(25, 'click', 'field', 0.8), m(28, 'swell', 'bloom', 0.4), m(37, 'key', 'typing', 0.5), m(d - 17, 'whoosh', 'run-to-send', 0.4), m(d - 6, 'click', 'send', 0.9)],
+  'glass-prompt': () => [m(2, 'swell', 'rise', 0.4), m(21, 'pop', 'glint', 0.4), m(27, 'whoosh', 'whip-left', 0.6), m(41, 'key', 'typing', 0.4), m(46, 'riser', 'whip-right', 0.7)],
+  'toast-stack': () => [m(4, 'bell', 'first', 0.7), m(7, 'pop', 'arrive-2', 0.6), m(11, 'pop', 'arrive-3', 0.6), m(15, 'pop', 'arrive-4', 0.6), m(19, 'pop', 'arrive-5', 0.5)],
+  'page-fly': () => [m(2, 'whoosh', 'page-rises', 0.6), m(12, 'land', 'headline', 0.6), m(24, 'tick', 'rows', 0.3), m(36, 'tick', 'rows-2', 0.3), m(65, 'whoosh', 'exit', 0.5)],
+  'photo-river': () => [m(0, 'hit', 'first', 0.6), m(8, 'tick', 'swaps', 0.4), m(26, 'riser', 'faster', 0.5), m(45, 'whoosh', 'river', 0.7), m(61, 'hit', 'last', 0.8)],
+  'photo-counters': () => [m(0, 'swell', 'photo', 0.5), m(2, 'whoosh', 'card-big', 0.5), m(4, 'tick', 'counting', 0.3), m(11, 'pop', 'card-2', 0.5), m(18, 'pop', 'card-3', 0.5), m(47, 'whoosh', 'exit', 0.6)],
+  'orbit-chips': () => [m(9, 'whoosh', 'chips-fly', 0.7), m(11, 'pop', 'chips-land-1', 0.7), m(22, 'tick', 'chips-small', 0.5), m(43, 'suck', 'chips-dip', 0.6)],
+};
+/** The mark-pullback's own moments (its meta cues). */
+export const END_MOMENTS30: Moment[] = [m(0, 'whoosh', 'pull-back', 0.7), m(PULLBACK30.cut, 'tick', 'flat-mark', 0.5), m(PULLBACK30.lockup, 'snap', 'parts', 0.6), m(PULLBACK30.lockup + 7, 'land', 'lockup', 0.7)];
+/** Moments the picture makes that a scene's meta does not list (a toast stack's climb landing at rest). */
+export const EXTRA30: Record<string, Moment[]> = { 'toast-stack': [m(24, 'land', 'stack-rests', 0.35)] };
+CHANGES.forEach((c) => {
+  const s = c.scene;
+  [...(MOMENTS30[s.id]?.(s.dur30) ?? []), ...(EXTRA30[s.id] ?? [])]
+    // a scene that hands its element on ends before its own last press: that press is the next scene's
+    .filter((x) => !(s.endless && x.f >= s.dur30 - 8))
+    .forEach((x, k) => {
+      const at = sceneAt(s, x.f);
+      if (at <= s.from || at >= s.to) return; // a moment on the cut itself is the cut's
+      SCENE_MOMENTS.push({ ...x, i: c.i, k, at });
+      CUE[sceneCueName(c.i, k)] = at;
+    });
+});
 
 // ---- Declarations: what the picture does on purpose (grid-check validates them; export-cues writes them).
 
@@ -492,42 +350,53 @@ export type ColourRange = { from: number; to: number; id: string };
 export type Declares = { stepped?: SteppedRange[]; flashes?: Flash[]; cameraBlur?: CameraBlurRange[]; seams?: Seam[]; colour?: ColourRange[] };
 export type Salience = 'copy' | 'hit' | 'cut' | 'move' | 'life';
 
-/**
- * One world, one continuous stage: every change of scene hands the element on (no hard cut). Crisp: the depth stage and
- * the handovers draw their own short-shutter smear on the fast moves, and a motion-blurred master samples only CAMERA_BLUR.
- */
-export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'update', oneTake: true, whiteWorld: false };
+/** Cut film: every part is its own shot, on the grid; each line card and the scene it leads into share one ground. */
+export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'update', oneTake: false, whiteWorld: false };
 
 /**
- * Every seam: one per spine change (lib/spine spineDeclares: its handover's kind and carry, the id naming it; the
- * converge into the mark is the signature), and the porthole opening into the frame after a parted line.
+ * Every seam: each change comes in as INTO says (carried, the exit before carrying it, or a clean ground wiping in); a
+ * line card into its scene keeps the ground and lets the scene build on it (breath); the mark's pull-back is the
+ * signature, with the scene's own two snaps (to the flat mark, to the lockup).
  */
+/** A wipe's length: a clean ground sweeping over the last frame of what was before. */
+export const WIPE_F = f60(12);
+/**
+ * How each change's first part comes in: the element carried from the scene before (morph: the send button pressed), the
+ * scene before's own exit carrying it (a defocus, a whip, the page leaving at speed), else its clean ground wiping in
+ * over the last frame of what was before (up for the first change, then from the side, alternating).
+ */
+export const INTO: Seam[] = CHANGES.map((c, i): Seam => {
+  const at = (c.card ?? c.scene).from;
+  if (i > 0 && LINKED[i - 1]) return { at, kind: 'morph', carry: 'shape', id: `element-carried-${i + 1}` };
+  const exit = i > 0 ? SCENE_SPEC[CHANGES[i - 1].scene.id].exit : undefined;
+  if (exit) return { at, kind: exit.kind, ...(exit.carry ? { carry: exit.carry } : {}), ...(exit.dir ? { dir: exit.dir } : {}), id: `${CHANGES[i - 1].scene.id}-exit-${i + 1}` };
+  return { at, kind: 'wipe', dir: i % 2 ? 1 : -1, id: `wipe-into-change-${i + 1}` };
+});
 export const SEAMS: Seam[] = (() => {
-  const out: Seam[] = spineDeclares(SPINE_PLAN).seams.map((s) => {
-    const { at, kind, carry, dir, id } = s;
-    const seam: Seam = { at, kind, ...(carry ? { carry } : {}), ...(dir ? { dir } : {}), ...(id ? { id } : {}) };
-    if (at === CLOSE.markIn) seam.signature = true;
-    return seam;
+  const out: Seam[] = INTO.filter((x) => x.at > 0).map((x) => ({ ...x }));
+  CHANGES.forEach((c, i) => {
+    if (c.card) out.push({ at: c.scene.from, kind: 'breath', id: `line-into-scene-${i + 1}` });
   });
-  TIMES.forEach((t) => {
-    if (t.iris) out.push({ at: t.iris[0], kind: 'mask', carry: 'scale', id: `porthole:opens-into-frame-${t.i + 1}` });
-  });
+  out.push({ at: CLOSE.markIn, kind: 'snapZoom', carry: 'scale', signature: true, id: 'mark-pull-back' });
+  out.push({ at: CLOSE.markCut, kind: 'snapZoom', carry: 'scale', id: 'flat-mark' });
+  out.push({ at: CLOSE.lockIn, kind: 'snapZoom', carry: 'scale', id: 'lockup' });
   return out.sort((p, q) => p.at - q.at);
 })();
-/**
- * Off the grid on purpose: the element lands where its handover's house frames land it (lib/spine HANDOVERS: the land
- * after the cut on the beat), a shot opens as its element lands, a line riding the element leaves as the element hands
- * on, the name leaves as the pill lifts; the cuts themselves stay on the beat.
- */
+/** Off the grid on purpose: the scenes' own measured moments, the mark's cuts. */
 export const OFFGRID: Record<string, string> = {
-  hookOut: 'the name leaves as the pill lifts into the first handover (its lead before the cut on the beat)',
-  ...Object.fromEntries(HANDS.map((h) => [`land${h.k}`, `the element lands ${h.t1 - h.at} f after the cut, the ${h.kind}'s house land`])),
-  ...Object.fromEntries(TIMES.flatMap((t) => [[`in${t.i}`, 'the shot opens as its element lands (the land of its handover, or the porthole open)'], [`out${t.i}`, 'the line leaves as its element hands on (the lead of the next handover)']])),
+  version: 'the version arrives on the line\'s own move, once the name is read',
+  ...Object.fromEntries(CHANGES.flatMap((c) => [[`read${c.i}`, 'the line is read on its move\'s own frames'], [`said${c.i}`, 'the scene sets its line on its own measured frames']])),
+  ...Object.fromEntries(SCENE_MOMENTS.map((m) => [sceneCueName(m.i, m.k), 'the scene\'s own measured moment'])),
+  markTurn: 'the pull-back is three quarters out on its own measured curve',
+  markCut: 'the pull-back cuts to the flat mark on its own measured frame',
+  lockIn: 'the lockup assembles on the pull-back\'s own measured frame',
+  settled: 'the lockup settles on its own measured frame',
+  versionIn: 'the version leads its bar line by its landing',
 };
 export const STEPPED: SteppedRange[] = [];
 export const FLASHES: Flash[] = [];
 /** The fast frames a motion-blurred master samples: the first, fast third of the mark's pull-back. */
-export const CAMERA_BLUR: CameraBlurRange[] = [{ from: CLOSE.solid, to: CLOSE.solid + f60(30), id: 'mark-pull-back' }];
+export const CAMERA_BLUR: CameraBlurRange[] = [{ from: CLOSE.markIn, to: CLOSE.markIn + 13 * K30, id: 'mark-pull-back' }];
 export const COLOUR: ColourRange[] = [];
 /** The one lock: the version, the mark and the name hold to the end. */
 export const END: EndLock = { from: CLOSE.lockup, to: TOTAL };
@@ -535,30 +404,23 @@ export const END: EndLock = { from: CLOSE.lockup, to: TOTAL };
 export const REVEAL = CLOSE.lockup;
 /** The one element class allowed an underdamped spring: the version landing in the lockup. */
 export const SPRING_CLASS = 'version-land';
-/** CUE names that must land on a music event: with a track, the mark's converge and the version mark (both on bar lines). */
-export const STRUCTURAL: string[] = MUSIC ? ['markIn', 'lockup'] : [];
+/** CUE names that must land on a music event: with a track, the version mark (the bar line that ends the body). */
+export const STRUCTURAL: string[] = MUSIC ? ['lockup'] : [];
 /** Each CUE's salience (missing = 'hit'). */
 export const SALIENCE: Record<string, Salience> = {
-  roll: 'hit',
-  rise: 'hit',
-  hookOut: 'copy',
-  ...Object.fromEntries(HANDS.flatMap((h) => [[`hand${h.k}`, 'cut' as Salience], [`land${h.k}`, 'hit' as Salience]])),
+  version: 'hit',
+  hookRead: 'copy',
+  hookOut: 'cut',
   ...Object.fromEntries(
-    TIMES.flatMap((t) => [
-      [`c${t.i}`, 'cut' as Salience],
-      [`in${t.i}`, 'move' as Salience],
-      [`go${t.i}`, 'move' as Salience],
-      [`mid${t.i}`, 'move' as Salience],
-      [`hit${t.i}`, 'hit' as Salience],
-      [`res${t.i}`, 'hit' as Salience],
-      [`res2${t.i}`, 'hit' as Salience],
-      ...t.live.map((_, k) => [`live${t.i}_${k}`, 'life' as Salience]),
-      [`say${t.i}`, 'copy' as Salience],
-      [`out${t.i}`, 'copy' as Salience],
-      ...(t.iris ? [[`iris${t.i}`, 'move' as Salience]] : []),
+    CHANGES.flatMap((c) => [
+      ...(c.card ? [[`card${c.i}`, 'cut' as Salience], [`read${c.i}`, 'copy' as Salience]] : []),
+      [`scene${c.i}`, 'cut' as Salience],
+      [`sceneEnd${c.i}`, 'cut' as Salience],
+      ...(!c.card ? [[`said${c.i}`, 'copy' as Salience]] : []),
     ]),
   ),
-  markIn: 'cut', markTurn: 'move', markFlat: 'hit', nameIn: 'copy', versionIn: 'move', lockup: 'hit', glint: 'life', rest: 'life', end: 'cut',
+  ...Object.fromEntries(SCENE_MOMENTS.map((m) => [sceneCueName(m.i, m.k), 'hit' as Salience])),
+  markIn: 'cut', markTurn: 'move', markCut: 'cut', lockIn: 'cut', settled: 'move', versionIn: 'move', lockup: 'hit', rest: 'life', end: 'cut',
 };
 
 export type Copy = {
@@ -574,39 +436,39 @@ export type Copy = {
   swap?: string | boolean;
 };
 
-const pace = PACE[PACE_NAME];
-
-/** One line of copy on its dealt move, leaving at `out` (never before its read). */
-export const line = (id: string, text: string, inF: number, out: number): Copy => {
-  const n = wordCount(text);
-  const resolved = inF + resolveSpan(moveOf(id), n);
-  const read = resolved + f60(holdFor(n, pace));
-  return { id, text, in: inF, resolved, out: Math.max(out, read) };
+/** The text a change's line shows: one line on its card, two where a scene parts it. */
+export const lineText = (i: number): string => {
+  const c = UPDATE.changes[i];
+  return CHANGES[i].scene.id === 'porthole-line' && !CHANGES[i].card ? splitLine(c).join('\n') : spokenChange(c);
 };
 
 // Every on-screen word: the name and the version together ("[Name] [version]": which product, which release, by 1 s),
-// each change one short sentence that meets its element, then the name and the version again in the lockup.
+// each change one short sentence (alone on its card, or set by its scene), then the name and the version in the lockup.
 export const COPY: Copy[] = [
-  { id: 'hook', text: `${UPDATE.name} ${UPDATE.version}`, in: 0, resolved: DEAL.hook === 'roll' ? HOOK.roll + f60(ROLL) : HOOK.version + f60(DEAL.hook === 'badge' ? 34 : 24), out: HOOK.out },
-  ...UPDATE.changes.map((c, i) => line(`change${i + 1}`, spokenChange(c), TIMES[i].say, TIMES[i].out)),
+  { id: 'hook', text: `${UPDATE.name} ${UPDATE.version}`, in: 0, resolved: HOOK.resolved, out: HOOK.out },
+  ...CHANGES.map((c) => ({ id: `change${c.i + 1}`, text: lineText(c.i), in: c.line.in, resolved: c.line.resolved, out: c.line.out })),
+  ...CHANGES.filter((c) => c.scene.id === 'macro-type' || c.scene.id === 'glass-prompt').map((c): Copy => {
+    const s = UPDATE.changes[c.i].show;
+    const text = s.kind === 'type' ? s.text : '';
+    return { id: `typed${c.i + 1}`, text, kind: 'ui', in: sceneAt(c.scene, 37), resolved: Math.min(c.scene.to - 1, sceneAt(c.scene, c.scene.dur30 - 19)), out: c.scene.to };
+  }),
   { id: 'wordmark', text: UPDATE.name, kind: 'name', in: CLOSE.nameIn, resolved: CLOSE.named, out: TOTAL },
   { id: 'release', text: UPDATE.version, kind: 'name', in: CLOSE.versionIn, resolved: CLOSE.lockup, out: TOTAL },
 ];
 
 /**
- * The beat plan (grid-check `beats`): the name with its pill, then each change's line meeting its element (TA: parted
- * round the porthole, or riding over the shot) and the shot playing on (A), the lockup.
+ * The beat plan (grid-check `beats`): the name with its version alone on the ground (T), each change's line alone on the
+ * ground of its scene (T), then the scene (A); a scene that parts its line round its picture plays its press first (A),
+ * then the line meeting its picture (T, meets); the lockup.
  */
 export type Beat = { id: string; kind: 'T' | 'A' | 'TA' | 'end'; from: number; to: number; meets?: boolean };
 export const BEAT_PLAN: Beat[] = [
-  { id: 'hook', kind: 'T', from: 0, to: TIMES[0].from, meets: true },
-  ...TIMES.flatMap((t): Beat[] => {
-    const id = `change${t.i + 1}`;
-    const end = t.i === N - 1 ? CLOSE.markIn : t.to;
-    const lineEnd = Math.min(end, t.out + EXIT_F);
-    // a parted line stands alone on the world with the element in its gap (it meets its picture: the porthole opens into it)
-    const lineBeat: Beat = t.place === 'part' ? { id, kind: 'T', from: t.from, to: lineEnd, meets: true } : { id, kind: 'TA', from: t.from, to: lineEnd };
-    return end - lineEnd >= FPS ? [lineBeat, { id: `${id}-shot`, kind: 'A', from: lineEnd, to: end }] : [{ ...lineBeat, to: end }];
+  { id: 'hook', kind: 'T', from: 0, to: HOOK.out },
+  ...CHANGES.flatMap((c): Beat[] => {
+    const id = `change${c.i + 1}`;
+    if (c.card) return [{ id, kind: 'T', from: c.card.from, to: c.card.to }, { id: `${id}-scene`, kind: 'A', from: c.scene.from, to: c.scene.to }];
+    if (c.line.in > c.scene.from + FPS * 0.5) return [{ id: `${id}-press`, kind: 'A', from: c.scene.from, to: c.line.in }, { id, kind: 'T', from: c.line.in, to: c.scene.to, meets: true }];
+    return [{ id, kind: 'T', from: c.scene.from, to: c.scene.to, meets: true }];
   }),
   { id: 'end', kind: 'end', from: CLOSE.markIn, to: TOTAL },
 ];
@@ -620,11 +482,11 @@ export const copy = (id: string): Copy => {
   if (!c) throw new Error(`timeline: no COPY entry "${id}"`);
   return c;
 };
-
 /** The fragments of one chain, in order of arrival (kept for the starter's helpers). */
 export const chainOf = (id: string): Copy[] => {
   const list = COPY.filter((x) => x.chain === id).sort((p, q) => p.in - q.in);
   if (!list.length) throw new Error(`timeline: no COPY chain "${id}"`);
   return list;
 };
-void DEAL;
+/** The film as one line, for the print: the hook, each change's line and scene, the end. */
+export const PLAN_LINE = [`${UPDATE.name} ${UPDATE.version} (${(HOOK.out / FPS).toFixed(2)} s)`, ...CHANGES.map((c) => `"${spokenChange(UPDATE.changes[c.i])}" ${c.card ? `card ${((c.card.to - c.card.from) / FPS).toFixed(2)} s + ` : ''}${c.scene.id} ${((c.scene.to - c.scene.from) / FPS).toFixed(2)} s${c.scene.endless ? ' (hands on)' : ''}${c.scene.pressed ? ' (pressed)' : ''}`), `mark-pullback, version on f${CLOSE.lockup} (${(TOTAL / FPS).toFixed(2)} s in all)`].join(' | ');

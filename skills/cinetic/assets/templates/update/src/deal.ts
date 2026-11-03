@@ -1,99 +1,71 @@
-// The update film's choices, dealt per film. The structure never changes: the film is ONE session played as acts (the
-// spine, lib/spine.ts): the hook (the name and the version, the version in its pill: the film's element), one act per
-// change (its hero shot draws the element in that act's form), the lockup grown out of the element's last form (it
-// converges into the brand's mark as a solid, which pulls back into the name and the version). Every change of scene
-// hands the element on (src/timeline.ts HANDS); how each part looks is dealt. The seed is the product's name
-// (src/brand/identity.ts: the same name, the same deal, on any machine); SEED re-deals without renaming, PIN fixes a slot
-// by hand. The unnamed scaffold ('[Product]') plays the floor; a named film never replays it. When scripts/deck.py dealt
-// a direction in this project (src/dealt.ts) the film stands in its world and takes its hero shots first. Print what
-// this film plays: the command in template.json deal.print.
-// Node-safe (no React, no CSS): the timeline, the sound and the tests read it.
-//
-// The camera never floats: it moves inside a hero shot (one move that starts, travels with its subject and lands), on
-// the world's one step per act, and in the handovers; a held result keeps creeping on the tail of its last move. Nothing
-// bobs or sways, and no card rests tilted: the perspective comes from where the camera stands.
+// The update film's choices, dealt per film. The structure never changes: the hook (the name and the version on a clean
+// ground), then each change as a line and its house scene (src/scenes: one moment each, 1.5-3 s, filled with this
+// product's words, pictures and mark) in 2-4 s, then the mark pulling back into the lockup and the version landing on the
+// bar line that ends the body. How each part looks is dealt. The seed is the product's name (src/brand/identity.ts: the
+// same name, the same deal, on any machine); SEED re-deals without renaming, PIN fixes a slot by hand. The unnamed
+// scaffold ('[Product]') plays the floor; a named film never replays it. When scripts/deck.py dealt a direction in this
+// project (src/dealt.ts) the film takes its scenes (`hero`) first. Print what this film plays: the command in
+// template.json deal.print.
+// Node-safe (no React, no CSS, no brand tokens): the timeline, the sound and the tests read it.
 //
 //   slot     choices          what each does
-//   ground   the world        the place the film stands in (fx/world): one for the whole film, never cut, taking one
-//            (built)          step per act (closer, light, pull-back), with its key light that the glass, the rims, the
-//                             type and the product pick up. Dealt among the lit fields in the brand's light (never a
-//                             stock photograph, never a void): deepField, electric; blackField, paleSky, nearWhite and
-//                             the plates (clouds, sky, aerial, sea, nightCity, studio, macro: node scripts/assets.mjs plate
-//                             <kind>) only by PIN or the deck, when the brief names the place (a plate is graded and
-//                             stands soft behind the type)
-//   hook     roll             "[Name]" centred with the version's pill beside it; the changed numerals roll in the pill
-//            rise             the name, then the pill rising out of a mask beside it, the version in it
-//            badge            the name alone, centred; a dot lands after it and grows into the pill carrying the version
-//                             (every hook ends on the pill: the element the film hands on)
-//   place    (the lines)      how each change's line meets the element, in film order:
-//            part             the line parts round a porthole that holds the element; the words leave and the porthole
-//                             opens into the shot (around: once a film, never on a line carrying a mark)
-//            head             the line rides over the element in the shot's own space, centred above or under it
-//                             (inside: the shot's heading), arriving as the element lands
-//   end      beside           the mark's solid pulls back into the flat mark; the name slides out beside it, the pair
-//                             re-centred, and the version lands after the name on the last bar line
-//            stack            the same pull-back; the name rises under the mark and the version lands beside the name
-//   (heroes)                  each change's hero shot (HERO_META below): the deck's (src/dealt.ts hero) or dealt from the
-//                             name, each on the change it can film (heroFit) and its verb asks for (lib/spine devicesFor)
-//   (lines)  voice            the lines' moves rotate through build, open and snap from the dealt one (each builds
-//                             centred: the line re-centres on the words already there); a parted line takes mask (its
-//                             gap must hold still for the porthole); one whole-line exit
+//   palette  (10 designed)    the film's colours when the brand brings none (src/brand/tokens.ts still the starter's
+//                             stand-in): a near-black or a white ground, one strong accent, never a tinted wash, never the
+//                             starter's green, never a scene's own demo colours (acts/look.tsx takes the brand's first)
+//   hook     pill             "[Name]" builds centred; the version's pill lands beside it, the pair re-centring
+//            roll             the name with the pill beside it from the first frame; the old numerals roll to the new
+//            tag              the name lands alone, slides aside, and the version cuts on in the accent at its fastest
+//   voice    build | open | mask   the move every line arrives on (fx/TypePresets), one per film
+//   set      line | statement the size the change lines are set at: the sentence line, or a statement half again larger
+//   (scenes)                  each change's scene (HERO_META below): the deck's (src/dealt.ts hero) or dealt from the
+//                             name, the first in the film's order that films the change (sceneFit), at least one big one
 import { IDENTITY } from './brand/identity';
 import { DEALT } from './dealt';
-import { devicesFor } from './lib/spine';
 import { RECENT } from './recent';
-import { type Change, photosOf, UPDATE } from './update';
+import { type Change, photosOf, pictureOf, rowsOf, spokenChange, UPDATE } from './update';
 
-/** How a change's line meets the element: around it (part: the porthole in the line's gap) or inside its shot (head). */
-export type Place = 'part' | 'head';
-
+// ---------------------------------------------------------------------------------------------- the palettes
 /**
- * Every pattern of placements for the film's changes: the porthole once a film where a change can take it (a line
- * carrying a mark never parts round it), every other line riding over its element; a change that names its place keeps it.
+ * A designed palette: the dark and the light ground (a scene plays on the one its picture needs, the film's lines on the
+ * ground of the scene they lead into), one accent and its light end. Every accent reads on both grounds as large type.
  */
-export const placesFor = (changes: readonly Change[]): Place[][] => {
-  const n = changes.length;
-  const can = changes.map((c) => c.place !== 'head' && !c.words.includes('[]'));
-  const fixed = changes.findIndex((c) => c.place === 'part');
-  const at = fixed >= 0 ? [fixed] : can.map((ok, i) => (ok ? i : -1)).filter((i) => i >= 0);
-  const out = at.map((k) => changes.map((_, i): Place => (i === k ? 'part' : 'head')));
-  return out.length ? out : [Array.from({ length: n }, (): Place => 'head')];
-};
-const ORDERS = placesFor(UPDATE.changes).map((o) => o.join('-'));
-if (!ORDERS.length) throw new Error('deal.ts: no placement of the lines fits these changes');
+export type FilmPalette = { id: string; base: 'dark' | 'light'; dark: string; light: string; accent: string; lift: string };
+export const PALETTES: readonly FilmPalette[] = [
+  { id: 'ink-cobalt', base: 'dark', dark: '#0B0C0F', light: '#F3F4F6', accent: '#2F62FF', lift: '#9DB6FF' },
+  { id: 'paper-cobalt', base: 'light', dark: '#0E1013', light: '#F4F5F7', accent: '#2350F0', lift: '#A9BCFF' },
+  { id: 'ink-vermilion', base: 'dark', dark: '#0C0B0B', light: '#F5F4F3', accent: '#F2472C', lift: '#FFA595' },
+  { id: 'paper-vermilion', base: 'light', dark: '#111012', light: '#F6F5F4', accent: '#E33A21', lift: '#FFB0A3' },
+  { id: 'ink-tangerine', base: 'dark', dark: '#0B0B0C', light: '#F5F4F2', accent: '#FF7417', lift: '#FFC08F' },
+  { id: 'paper-tangerine', base: 'light', dark: '#121110', light: '#F6F5F3', accent: '#F06A0F', lift: '#FFC59A' },
+  { id: 'ink-azure', base: 'dark', dark: '#0A0C10', light: '#F3F5F8', accent: '#1E8BFF', lift: '#A3D0FF' },
+  { id: 'paper-azure', base: 'light', dark: '#0D1117', light: '#F3F5F8', accent: '#0A72F0', lift: '#9CCBFF' },
+  { id: 'ink-crimson', base: 'dark', dark: '#0D0B0C', light: '#F5F3F4', accent: '#F0304E', lift: '#FF9DAD' },
+  { id: 'paper-crimson', base: 'light', dark: '#120F10', light: '#F6F4F5', accent: '#D21F3C', lift: '#F7A3B0' },
+];
+export const paletteById = (id: string): FilmPalette => PALETTES.find((p) => p.id === id) ?? PALETTES[0];
 
-/** The worlds (fx/world WORLD_DEAL), written out so this file stays standalone (and scripts/deck.py reads them). */
-export const WORLDS = ['nearWhite', 'paleSky', 'blackField', 'deepField', 'electric', 'clouds', 'sky', 'aerial', 'sea', 'nightCity', 'studio', 'macro'] as const;
-/** The worlds that need no picture. */
-export const BUILT_WORLDS: readonly string[] = ['nearWhite', 'paleSky', 'blackField', 'deepField', 'electric'];
-
-/** The worlds the name deals: the lit fields in the brand's light where glass and rims read (the near-black void, the pale ones and the plates only by PIN or the deck). */
-export const DEALT_WORLDS: readonly string[] = ['deepField', 'electric'];
-
+// ---------------------------------------------------------------------------------------------- the deal
 export const DEVICES = {
-  ground: ['nearWhite', 'paleSky', 'blackField', 'deepField', 'electric', 'clouds', 'sky', 'aerial', 'sea', 'nightCity', 'studio', 'macro'],
-  hook: ['roll', 'rise', 'badge'],
-  place: ORDERS,
-  end: ['beside', 'stack'],
+  palette: PALETTES.map((p) => p.id),
+  hook: ['pill', 'roll', 'tag'],
+  voice: ['build', 'open', 'mask'],
+  set: ['line', 'statement'],
 } as const;
-
 export type Slot = keyof typeof DEVICES;
-export type Deal = { ground: string; hook: string; place: string; end: string };
+export type Deal = { palette: string; hook: string; voice: string; set: string };
 
 /**
  * What each composing slot does to the frame, in words (fx/TypeSystem compositionApart): two devices with the same words
- * are one composition. The world is the place and its palette, not a composition, and is left out.
+ * are one composition. The palette and the voice are colour and motion, not a composition, and are left out.
  */
 export const COMPOSITION: { [S in Slot]?: Record<string, string> } = {
-  hook: { roll: 'the name and the pill together from the first frame, the numerals rolling in it', rise: 'the name, then the pill rising beside it', badge: 'the name, then a dot growing into the pill beside it' },
-  place: Object.fromEntries(ORDERS.map((o) => [o, o])),
-  end: { beside: 'the name sliding out beside the mark', stack: 'the name rising under the mark' },
+  hook: { pill: 'the name, then a pill landing beside it', roll: 'the name and the pill together from the first frame, the numerals rolling in it', tag: 'the name alone, sliding aside for the version' },
+  set: { line: 'each change line at the sentence size', statement: 'each change line half again larger, a statement' },
 };
 
 /** What the template plays before the product's name is in (its name slot, '[Product]'): a product's deal never replays it. */
-export const FLOOR: Deal = { ground: 'deepField', hook: 'badge', place: ORDERS[0], end: 'beside' };
-
-/** Choose a slot by hand ({ ground: 'clouds' }); a pinned slot is not dealt. */
+export const FLOOR: Deal = { palette: 'ink-cobalt', hook: 'pill', voice: 'build', set: 'line' };
+/** Choose a slot by hand ({ hook: 'tag' }); a pinned slot is not dealt. */
 export const PIN: Partial<Deal> = {};
 /** The deal's seed: null deals from the product's name; any integer re-deals without renaming the product. */
 export const SEED: number | null = null;
@@ -113,7 +85,7 @@ const fmix = (h: number): number => {
   h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
   return (h ^ (h >>> 16)) >>> 0;
 };
-/** mulberry32 on the mixed seed: the same seed, the same deal, in any render order; every choice of a slot equally likely. */
+/** mulberry32 on the mixed seed: the same seed, the same deal, in any render order. */
 const rng = (seed: number) => {
   let a = fmix(seed) | 0;
   return () => {
@@ -126,8 +98,9 @@ const rng = (seed: number) => {
 
 /** A slot's choices without the last three films' (src/recent.ts, written by new-film.sh from the film history). */
 const fresh = (s: Slot): readonly string[] => {
-  const all = s === 'ground' ? DEALT_WORLDS : (DEVICES[s] as readonly string[]);
-  const used = ((RECENT as Partial<Record<string, readonly string[]>>)[s] ?? []).filter((c) => typeof c === 'string' && all.includes(c));
+  const all = DEVICES[s] as readonly string[];
+  const key = s === 'palette' ? 'ground' : s;
+  const used = ((RECENT as Partial<Record<string, readonly string[]>>)[key] ?? []).filter((c) => typeof c === 'string' && all.includes(c));
   const left = all.filter((c) => !used.includes(c));
   return left.length ? left : [used[used.length - 1]];
 };
@@ -135,19 +108,11 @@ const fresh = (s: Slot): readonly string[] => {
 const isPlaceholder = (name: string) => /^\[.*\]$/.test(name.trim());
 const UNNAMED = SEED === null && isPlaceholder(IDENTITY.name);
 
-/** The deck's world (src/dealt.ts deal.ground), when deck.py dealt a direction: the film stands in it. */
-const DECK_GROUND: string | undefined = (() => {
-  const g = DEALT?.deal?.ground;
-  if (!g) return undefined;
-  if (!(WORLDS as readonly string[]).includes(g)) throw new Error(`deal: src/dealt.ts deals the ground "${g}"; the update template stands in a world: ${WORLDS.join(', ')} (re-deal with scripts/deck.py)`);
-  return g;
-})();
-
 /**
  * The deal for a seed: one choice per slot, re-drawn (deterministically) until at least half the dealt slots differ from
  * the floor, and half of those that compose the frame (COMPOSITION).
  */
-export const dealApart = (seed: number, pin: Partial<Deal> = { ...(DECK_GROUND ? { ground: DECK_GROUND } : {}), ...PIN }): Deal => {
+export const dealApart = (seed: number, pin: Partial<Deal> = PIN): Deal => {
   const slots = Object.keys(DEVICES) as Slot[];
   const free = slots.filter((s) => pin[s] === undefined);
   const bearing = free.filter((s) => COMPOSITION[s]);
@@ -172,95 +137,143 @@ for (const [s, v] of Object.entries(PIN)) {
 /** This film's seed and deal: the unnamed scaffold keeps the floor; a named film is dealt from its name (or SEED). */
 export const DEAL_SEED = SEED ?? hashSeed(IDENTITY.name);
 export const DEAL: Deal = UNNAMED ? { ...FLOOR, ...PIN } : dealApart(DEAL_SEED);
-/** How each change's line meets its element, in film order. */
-export const PLACES_OF = (d: Deal): Place[] => d.place.split('-') as Place[];
-export const PLACES: Place[] = PLACES_OF(DEAL);
+/** The film's designed palette (acts/look.tsx takes the brand's own first, when src/brand/tokens.ts carries one). */
+export const PALETTE: FilmPalette = paletteById(DEAL.palette);
 
-// ---- The hero shots. The shots that carry the film's production value: each a designed 3D or light shot of the
-// product's own screen (its content from src/update.ts and src/content.ts) standing in the film's world, with one sharp
-// plane and a graded blur ladder, one camera move that has a job and lands, glass as a lens on the world, light sized
-// to its source and timed, real content at density and a jump in scale. Keep each entry on one line: scripts/deck.py
-// reads them (it deals the film's set at random with fit into src/dealt.ts `hero`). `role`: picture (a change's shot)
-// or end (the end card's); `needs`: what the film must have for the deck to deal it; `min`: the seconds its beat needs.
+// ---------------------------------------------------------------------------------------------- the scenes
+/**
+ * The house scenes this template plays (src/scenes; their own meta entries hold the same numbers: acts/scenes.tsx
+ * checks them). Keep each entry on one line: scripts/deck.py reads them (it deals a film's set with fit into
+ * src/dealt.ts `hero`). `role`: picture (a change's scene) or end (the lockup's); `needs`: what the film must have for
+ * the deck to deal it; `min`: its seconds.
+ */
 export type HeroRole = 'picture' | 'over' | 'line' | 'end';
 export type HeroMeta = { id: string; role: HeroRole; family: string; needs: readonly string[]; prefer: 'first' | 'middle' | 'proof'; min: number; dark?: boolean; fits: readonly string[]; about: string };
 export const HERO_META = [
-  { id: 'push-press', role: 'picture', family: 'press', needs: ['button'], prefer: 'proof', min: 2.4, fits: ['book', 'pay', 'send', 'join', 'merge', 'publish', 'approve', 'buy', 'order', 'confirm', 'sign', 'submit', 'share', 'invite', 'reserve', 'tap', 'one'], about: 'the change\'s screen; a pointer travels to its button with the camera following it in, landing at macro scale as it presses: a glow the size of the button blooms, the label turns and the camera rises to what the screen answers' },
-  { id: 'macro-type', role: 'picture', family: 'input', needs: [], prefer: 'first', min: 3.0, fits: ['ask', 'type', 'prompt', 'message', 'write', 'compose', 'command', 'search', 'chat', 'reply', 'draft', 'find'], about: 'the product\'s input at macro scale: the camera pushes onto the first characters and rides the caret as the request types, the world soft behind; it travels on to the send button and lands as it is pressed, a glow the size of the button blooming' },
-  { id: 'toast-stack', role: 'picture', family: 'stack', needs: [], prefer: 'proof', min: 2.4, fits: ['notif', 'alert', 'payment', 'paid', 'order', 'sale', 'booking', 'reminder', 'message', 'event', 'invoice', 'inbox', 'join', 'update', 'list'], about: 'the change\'s rows arrive as cards dropping into the front slot and pushing the stack back into depth: the front one sharp, each one further back softer (a graded blur ladder), real names, faces and times; the camera closes in once and lands as the last one drops' },
-  { id: 'fan-focus', role: 'picture', family: 'fan', needs: [], prefer: 'middle', min: 2.6, fits: ['results', 'sources', 'options', 'matches', 'listings', 'comments', 'reviews', 'picks', 'choose', 'compare', 'feedback', 'every', 'all'], about: 'the change\'s rows as cards fanned back in depth, the camera to one side closing on the one that matters while the focus racks to it' },
-  { id: 'carousel', role: 'picture', family: 'media', needs: ['pictures'], prefer: 'middle', min: 2.8, fits: ['photo', 'video', 'image', 'picture', 'gallery', 'listing', 'clip', 'album', 'room', 'place', 'portfolio', 'catalog', 'see'], about: 'a ring of the change\'s real pictures turning in depth; the camera cranes down from above to eye level as the ring slows and lands the chosen one facing the camera, which opens toward the lens; a smear only while it turns fast' },
-  { id: 'photo-develop', role: 'picture', family: 'photo', needs: [], prefer: 'middle', min: 2.6, fits: ['photo', 'picture', 'image', 'scan', 'see', 'look', 'room', 'place', 'preview', 'face', 'camera'], about: 'the change\'s picture develops from a duotone in the world\'s light to full colour while a glass card with what it says rises in front of it and the focus racks to the card; one slow push that hands over to the line' },
-  { id: 'glass-counter', role: 'picture', family: 'figure', needs: [], prefer: 'proof', min: 2.6, fits: ['fast', 'faster', 'speed', 'time', 'hours', 'minutes', 'seconds', 'save', 'saved', 'count', 'more', 'less', 'percent', 'twice'], about: 'the change\'s figure in a slab of glass catching the world\'s key: the camera pushes onto it while it counts, the bars beside it rising, and lands as the figure does; a band of light crosses the glass on the landing' },
-  { id: 'page-fly', role: 'picture', family: 'page', needs: [], prefer: 'middle', min: 2.8, fits: ['page', 'doc', 'document', 'report', 'site', 'website', 'article', 'note', 'notes', 'brief', 'plan', 'summary', 'post', 'week', 'calendar', 'schedule', 'board'], about: 'the change\'s page (a document, its site, a week) flies in lying back in perspective and the camera travels it from the headline to what changed, the far edge soft, a thin light along its near edge' },
-  { id: 'focus-swap', role: 'picture', family: 'swap', needs: [], prefer: 'proof', min: 2.4, fits: ['tidy', 'clean', 'sort', 'fix', 'before', 'after', 'final', 'clear', 'organize', 'merge', 'turn', 'change'], about: 'the screen as it was, sharp; on the change it goes soft and dims as the screen as it is now rises in front of it, the focus racking forward onto it and a light running its edge as it lands' },
-  { id: 'glass-tiles', role: 'picture', family: 'logos', needs: [], prefer: 'middle', min: 2.6, fits: ['works', 'with', 'connect', 'sync', 'import', 'integrat', 'apps', 'tools', 'slack', 'drive'], about: 'the products it works with as official marks in milky glass tiles on an arc in depth: they rise turning to face the camera while it pushes in once and lands after them' },
-  { id: 'logo-3d', role: 'end', family: 'mark', needs: [], prefer: 'proof', min: 1.6, fits: [], about: 'the end card arrives through the brand\'s mark as a solid: an extreme close-up of its bevelled edge already turning, one pull-back that turns it to face the camera and lands it exactly on the flat mark, the name and the version building beside it' },
+  { id: 'porthole-line', role: 'picture', family: 'press', needs: ['button', 'pictures'], prefer: 'proof', min: 2.6, fits: ['join', 'send', 'call', 'book', 'share', 'invite', 'open', 'meet', 'tap', 'one', 'start', 'see'], about: 'a real pointer presses send at macro scale; the button drains into a porthole holding the change\'s picture while its line, set giant on two lines, parts round it' },
+  { id: 'decode-title', role: 'picture', family: 'title', needs: ['button'], prefer: 'first', min: 1.9, dark: true, fits: ['start', 'try', 'get', 'go', 'now', 'live', 'ready', 'unlock', 'turn', 'switch'], about: 'the change\'s short line decodes out of a swirl of the accent on a dark dot grid; its button flies into the line and a real pointer clicks it' },
+  { id: 'macro-type', role: 'picture', family: 'input', needs: [], prefer: 'first', min: 2.5, fits: ['ask', 'type', 'prompt', 'message', 'write', 'search', 'chat', 'reply', 'draft', 'find', 'say', 'tell'], about: 'a giant pointer turns into a text cursor and clicks the product\'s input; the request types in at macro scale with the camera on the caret, then runs on to send and presses it' },
+  { id: 'glass-prompt', role: 'picture', family: 'glass', needs: [], prefer: 'middle', min: 1.9, dark: true, fits: ['ask', 'prompt', 'describe', 'command', 'run', 'generate', 'build', 'make', 'create'], about: 'a dark frosted prompt box rises out of blur with light running along its rims; the stage whips aside and the request types in' },
+  { id: 'toast-stack', role: 'picture', family: 'stack', needs: [], prefer: 'proof', min: 1.6, fits: ['notif', 'alert', 'payment', 'paid', 'order', 'booking', 'reminder', 'message', 'arrive', 'land', 'update', 'every', 'list', 'live'], about: 'the change\'s rows land as notifications one after another and pile into a depth stack on the accent field, the newest sharp in front' },
+  { id: 'page-fly', role: 'picture', family: 'page', needs: [], prefer: 'middle', min: 2.4, dark: true, fits: ['page', 'doc', 'document', 'report', 'note', 'notes', 'brief', 'plan', 'summary', 'write', 'draft'], about: 'the change\'s page rises in on a tilted plane out of a dark void and the camera dives onto its headline and travels down it as the rows write on' },
+  { id: 'photo-river', role: 'picture', family: 'media', needs: ['pictures'], prefer: 'middle', min: 2.7, fits: ['photo', 'video', 'image', 'picture', 'gallery', 'album', 'clip', 'every', 'all', 'library'], about: 'one card pumps through the change\'s pictures faster and faster, leaves a deck and unfolds into a row receding in depth' },
+  { id: 'photo-counters', role: 'picture', family: 'figure', needs: ['pictures'], prefer: 'proof', min: 1.7, fits: ['count', 'save', 'saved', 'earn', 'hours', 'minutes', 'faster', 'more', 'less', 'grow', 'track'], about: 'the change\'s picture develops from a duotone in the accent while glass cards over it count the figure up' },
+  { id: 'orbit-chips', role: 'picture', family: 'logos', needs: [], prefer: 'middle', min: 2.0, fits: ['works', 'with', 'connect', 'sync', 'import', 'integrat', 'apps', 'tools', 'plug'], about: 'the change\'s line sits on hairline orbits; the products it works with fly in as accent pills and land as their official marks on chips that orbit' },
+  { id: 'mark-pullback', role: 'end', family: 'mark', needs: [], prefer: 'proof', min: 2.4, fits: [], about: 'the end: the brand\'s mark as a solid pulls back from an extreme close-up with a roll, cuts to the flat mark and the lockup assembles; the version lands under it on the bar line' },
 ] as const satisfies readonly HeroMeta[];
 export type HeroId = (typeof HERO_META)[number]['id'];
 const HMETA = HERO_META as readonly HeroMeta[];
-/** A hero shot's entry. */
 export const heroMeta = (id: string): HeroMeta | undefined => HMETA.find((m) => m.id === id);
-/** The change shots (every hero shot but the end card's). */
+/** The change scenes (every scene but the end's). */
 export const PICTURE_HEROES: string[] = HMETA.filter((m) => m.role === 'picture').map((m) => m.id);
 
+/** The element a scene takes over on its first frame or hands on at its last (src/scenes meta handIn / handOut, px of 1920 x 1080). */
+export type Box = { form: string; x: number; y: number; w: number; h: number };
 /**
- * How well hero shot `id` films change c: 0 it cannot, 1 it can carry it (used when the film needs a second kind of
- * shot), 2 it shows this change. Each shot films one kind of moment: a tap's button, a typed request, a list's rows, the
- * pictures, a figure, a page or a week, a before and an after, the products it works with.
+ * Each scene's numbers as this template plays it (frames at 30 fps): `dur`, its length with the default content;
+ * `big`: one of the moments that carry a film; `carries`: it sets the change's own line inside it (no line card);
+ * `tone`: the ground its picture needs (`either`: the film's base; `field`: the accent); `rest`: a frame inside its
+ * held result where the film may give it more time (played slower, never frozen); `endless`: the prop that ends it
+ * on its element without its own last action (the next scene's pointer takes it); `exit`: the seam its own last frames
+ * make into what follows (a defocus, a whip, the page leaving at speed); a scene without one is wiped away by the next
+ * part's clean ground.
  */
-export const heroFit = (id: string, c: Change): number => {
+export type SceneSpec = { dur: number; big: boolean; carries: boolean; tone: 'dark' | 'light' | 'either' | 'field'; rest?: number; handIn: Box | null; handOut: Box; endless?: Record<string, boolean>; exit?: { kind: 'defocus' | 'whip' | 'velocity'; carry?: 'x' | 'y'; dir?: 1 | -1 } };
+export const SCENE_SPEC: Record<string, SceneSpec> = {
+  'porthole-line': { dur: 78, big: true, carries: true, tone: 'either', rest: 64, handIn: { form: 'button', x: 813, y: 340, w: 386, h: 386 }, handOut: { form: 'photo', x: 673, y: 258, w: 574, h: 574 }, exit: { kind: 'defocus' } },
+  'decode-title': { dur: 56, big: true, carries: true, tone: 'dark', handIn: null, handOut: { form: 'button', x: 1180, y: 499, w: 360, h: 80 } },
+  'macro-type': { dur: 77, big: true, carries: false, tone: 'light', handIn: { form: 'pill', x: 591, y: 568, w: 1329, h: 194 }, handOut: { form: 'button', x: 813, y: 340, w: 386, h: 386 }, endless: { click: false } },
+  'glass-prompt': { dur: 56, big: false, carries: false, tone: 'dark', handIn: null, handOut: { form: 'pill', x: 457, y: 455, w: 975, h: 182 }, exit: { kind: 'whip', carry: 'x', dir: 1 } },
+  'toast-stack': { dur: 48, big: false, carries: false, tone: 'field', rest: 40, handIn: null, handOut: { form: 'notice', x: 272, y: 110, w: 1376, h: 215 } },
+  'page-fly': { dur: 72, big: true, carries: false, tone: 'dark', handIn: { form: 'page', x: 288, y: 1080, w: 1344, h: 1740 }, handOut: { form: 'page', x: 288, y: -900, w: 1344, h: 1740 }, exit: { kind: 'velocity', carry: 'y', dir: -1 } },
+  'photo-river': { dur: 81, big: true, carries: false, tone: 'either', handIn: { form: 'photo', x: 625, y: 90, w: 670, h: 900 }, handOut: { form: 'photo', x: 744, y: 250, w: 432, h: 579 } },
+  'photo-counters': { dur: 52, big: false, carries: false, tone: 'light', handIn: { form: 'photo', x: 0, y: 0, w: 1920, h: 1080 }, handOut: { form: 'count', x: 130, y: 562, w: 650, h: 518 } },
+  'orbit-chips': { dur: 60, big: false, carries: true, tone: 'light', handIn: { form: 'word', x: 516, y: 497, w: 888, h: 86 }, handOut: { form: 'card', x: 560, y: 200, w: 800, h: 680 } },
+  'mark-pullback': { dur: 72, big: true, carries: false, tone: 'light', handIn: null, handOut: { form: 'mark', x: 630, y: 471, w: 660, h: 137 } },
+};
+/** The lockup's own frames (30 fps): the cut to the flat mark, the lockup assembling, settled. */
+export const PULLBACK30 = { cut: 38, lockup: 44, settled: 60 } as const;
+
+/** The words of a line a scene parts (porthole-line): the top line and the bottom, the key words kept on the bottom. */
+export const splitLine = (c: Change): [string, string] => {
+  const w = spokenChange(c).split(/\s+/);
+  const bare = (x: string) => x.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+  const key = (c.key ?? '').split(/\s+/).map(bare).filter(Boolean);
+  const k0 = key.length ? w.map(bare).indexOf(key[0]) : -1;
+  let n = c.split ?? Math.ceil(w.length / 2);
+  if (c.split === undefined && k0 > 0 && k0 < n) n = k0; // the key words open the bottom line
+  n = Math.min(w.length - 1, Math.max(1, n));
+  return [w.slice(0, n).join(' '), w.slice(n).join(' ')];
+};
+
+/**
+ * How well scene `id` films change c: 0 it cannot, 1 it can carry it (used when the film needs a big scene or a second
+ * kind), 2 it shows this change.
+ */
+export const sceneFit = (id: string, c: Change): number => {
   const s = c.show;
-  const photos = photosOf(c).length;
+  const n = spokenChange(c).split(/\s+/).length;
+  const pic = !!pictureOf(c);
   switch (id) {
-    case 'push-press':
-      return s.kind === 'tap' ? 2 : s.kind === 'type' ? 1 : 0;
+    case 'porthole-line':
+      return s.kind === 'tap' && pic && n >= 2 ? 2 : 0;
+    case 'decode-title':
+      return s.kind === 'tap' ? (n <= 3 ? 2 : n <= 4 ? 1 : 0) : 0;
     case 'macro-type':
+      return s.kind === 'type' && s.text.length <= 40 ? 2 : 0;
+    case 'glass-prompt':
       return s.kind === 'type' ? 2 : 0;
     case 'toast-stack':
-      return s.kind === 'fill' && s.layout === 'list' ? 2 : s.kind === 'tap' && (s.result ?? []).length + (s.you ? 1 : 0) >= 3 ? 1 : 0;
-    case 'fan-focus':
-      return s.kind === 'fill' && s.layout === 'list' && s.items.length >= 3 ? 2 : s.kind === 'swap' ? 1 : 0;
-    case 'carousel':
-      return photos >= 5 ? 2 : 0;
-    case 'photo-develop':
-      return photos >= 1 ? 2 : 0;
-    case 'glass-counter':
-      return s.kind === 'count' ? 2 : 0;
+      return s.kind === 'fill' && s.layout === 'list' ? 2 : rowsOf(c).length >= 3 ? 1 : 0;
     case 'page-fly':
-      return s.kind === 'page' || (s.kind === 'fill' && s.layout === 'week') ? 2 : 0;
-    case 'focus-swap':
-      return s.kind === 'swap' ? 2 : s.kind === 'tap' ? 1 : 0;
-    case 'glass-tiles':
+      return s.kind === 'page' ? 2 : 0;
+    case 'photo-river':
+      return photosOf(c).length >= 8 ? 2 : 0;
+    case 'photo-counters':
+      return s.kind === 'count' && pic ? 2 : 0;
+    case 'orbit-chips':
       return (c.logos?.length ?? 0) >= 3 ? 2 : 0;
     default:
       return 0;
   }
 };
 
-/** A change's verb in the session's sentence: its own, else its line's first word. */
+/** A change's verb: its own, else its line's first word. */
 export const verbOf = (c: Change): string => (c.verb ?? c.words.replace(/\[\]/g, '').trim().split(/\s+/)[0] ?? '').toLowerCase();
+/** How many of a scene's `fits` words the change's verb and line touch. */
+const asks = (id: string, c: Change): number => {
+  const words = `${verbOf(c)} ${spokenChange(c)}`.toLowerCase();
+  return (heroMeta(id)?.fits ?? []).filter((w) => words.includes(w)).length;
+};
+/** Do two scenes join on one element: the first hands on the very box the second takes over (a match cut). */
+export const joins = (a: string, b: string): boolean => {
+  const o = SCENE_SPEC[a]?.handOut;
+  const i = SCENE_SPEC[b]?.handIn;
+  if (!o || !i || o.form !== i.form) return false;
+  const ix = Math.max(0, Math.min(o.x + o.w, i.x + i.w) - Math.max(o.x, i.x));
+  const iy = Math.max(0, Math.min(o.y + o.h, i.y + i.h) - Math.max(o.y, i.y));
+  return (ix * iy) / Math.max(o.w * o.h, i.w * i.h) > 0.8;
+};
 
-/** What the unnamed scaffold plays first (its changes: a tap, a list, a count). */
-export const FLOOR_HERO: string[] = ['push-press', 'toast-stack', 'glass-counter', 'fan-focus', 'focus-swap', 'macro-type', 'page-fly', 'photo-develop', 'carousel', 'glass-tiles'];
+/** What the unnamed scaffold plays first. */
+export const FLOOR_HERO: string[] = ['macro-type', 'toast-stack', 'porthole-line', 'page-fly', 'photo-river', 'decode-title', 'glass-prompt', 'photo-counters', 'orbit-chips'];
 const RECENT_WEIGHT = [0.12, 0.3, 0.55, 0.8];
 const recentHero: readonly (readonly string[])[] = (((RECENT as { hero?: unknown }).hero ?? []) as unknown[]).filter((x): x is string[] => Array.isArray(x));
-/** The change shots in a film's own order: a weighted shuffle (each shot's key u^(1/w), largest first) seeded by the name, the last films' shots late. */
+/** The change scenes in a film's own order: a weighted shuffle seeded by the name, the last films' scenes late. */
 export const heroOrder = (name: string, recent: readonly (readonly string[])[] = []): string[] => {
-  const r = rng(hashSeed(`${name.trim().toLowerCase()}#hero`));
+  const r = rng(hashSeed(`${name.trim().toLowerCase()}#scene`));
   const w = (id: string) => recent.slice(0, RECENT_WEIGHT.length).reduce((a, s, k) => (s.includes(id) ? a * RECENT_WEIGHT[k] : a), 1);
   return PICTURE_HEROES.map((id) => ({ id, k: r() ** (1 / w(id)) })).sort((a, b) => b.k - a.k).map((x) => x.id);
 };
-/** The deck's hero shots (src/dealt.ts hero, then heroReserve), checked against HERO_META. */
+/** The deck's scenes (src/dealt.ts hero, then heroReserve), checked against HERO_META. */
 const DECK_HERO: string[] | null = (() => {
   const d = DEALT as { hero?: string[]; heroReserve?: string[] } | null;
   if (!d?.hero?.length) return null;
-  const all = [...d.hero, ...(d.heroReserve ?? [])];
-  const bad = all.filter((x) => !heroMeta(x));
-  if (bad.length) throw new Error(`deal: src/dealt.ts names ${bad.join(', ')}, not a hero shot of the update template (deal.ts HERO_META; re-deal with scripts/deck.py)`);
+  const all = [...d.hero, ...(d.heroReserve ?? [])].filter((x) => heroMeta(x));
+  if (!all.length) return null; // a direction dealt for another template's shots: the name deals
   return [...all.filter((x) => PICTURE_HEROES.includes(x)), ...PICTURE_HEROES.filter((x) => !all.includes(x))];
 })();
-/** The film's hero order (the deck's, else the name's, else the floor's) and where it came from. */
+/** The film's scene order (the deck's, else the name's, else the floor's) and where it came from. */
 export const HERO_ORDER: { order: string[]; source: string } = DECK_HERO
   ? { order: DECK_HERO, source: 'deck.py' }
   : UNNAMED
@@ -268,85 +281,78 @@ export const HERO_ORDER: { order: string[]; source: string } = DECK_HERO
     : { order: heroOrder(IDENTITY.name, recentHero), source: `the name "${IDENTITY.name}"` };
 
 /**
- * Each change's hero shot, in film order: a change that names one by hand keeps it; every other change takes the first
- * shot in the film's order that shows it (fit 2) and no other change has taken; then, when every change got the same
- * kind of shot, the change with a second shot that can carry it (fit 1, else another that shows it) takes that one, so
- * a film plays at least two different hero shots whenever its changes allow it.
+ * Each change's scene, in film order: a change that names one keeps it; the changes with the fewest scenes that show
+ * them choose first, each the first in the film's order (the ones its words ask for first) that no other change took;
+ * then a film with no big scene among its changes gives one change a big scene that can carry it; then where a change's
+ * scene takes over an element the scene before can hand on (a send button pressed), the change before takes that scene
+ * when it shows it too, so the two join on one element (a match cut, no line card between them).
  */
-export const planHeroes = (order: readonly string[], changes: readonly Change[]): string[] => {
+export const planScenes = (order: readonly string[], changes: readonly Change[]): string[] => {
   const out: (string | null)[] = changes.map((c) => {
-    if (!c.hero) return null;
-    if (!heroMeta(c.hero) || heroMeta(c.hero)!.role !== 'picture') throw new Error(`update.ts: ${c.id} names the hero shot "${c.hero}"; the change shots are ${PICTURE_HEROES.join(', ')}`);
-    if (heroFit(c.hero, c) < 1) throw new Error(`update.ts: ${c.id}'s hero shot "${c.hero}" cannot film a ${c.show.kind} (src/deal.ts heroFit)`);
-    return c.hero;
+    if (!c.scene) return null;
+    if (!heroMeta(c.scene) || heroMeta(c.scene)!.role !== 'picture') throw new Error(`update.ts: ${c.id} names the scene "${c.scene}"; the change scenes are ${PICTURE_HEROES.join(', ')}`);
+    if (sceneFit(c.scene, c) < 1) throw new Error(`update.ts: ${c.id}'s scene "${c.scene}" cannot film a ${c.show.kind} (src/deal.ts sceneFit)`);
+    return c.scene;
   });
-  // the changes with the fewest shots that show them choose first, so a change with one choice is never left without it;
-  // among the shots that show a change, the ones its verb asks for come first (lib/spine devicesFor: a device by need)
   const opts = changes.map((c) => {
-    const fit = order.filter((id) => heroFit(id, c) >= 2);
-    const asked = devicesFor(verbOf(c));
-    return [...fit.filter((id) => asked.includes(id)), ...fit.filter((id) => !asked.includes(id))];
+    const fit = order.filter((id) => sceneFit(id, c) >= 2);
+    return fit.slice().sort((a, b) => asks(b, c) - asks(a, c) || fit.indexOf(a) - fit.indexOf(b));
   });
   const turn = changes.map((_, i) => i).filter((i) => !out[i]).sort((a, b) => opts[a].length - opts[b].length || a - b);
-  for (const i of turn) out[i] = opts[i].find((id) => !out.includes(id)) ?? opts[i][0] ?? order.find((id) => heroFit(id, changes[i]) >= 1) ?? null;
-  for (let i = 0; i < out.length; i++) if (!out[i]) throw new Error(`update.ts: no hero shot can film ${changes[i].id} (a ${changes[i].show.kind}); src/deal.ts heroFit says what each one films`);
-  if (new Set(out).size === 1 && changes.length > 1) {
-    for (let i = changes.length - 1; i >= 0; i--) {
-      if (changes[i].hero) continue;
-      const alt = order.find((id) => id !== out[i] && heroFit(id, changes[i]) >= 1);
-      if (alt) {
-        out[i] = alt;
+  for (const i of turn) out[i] = opts[i].find((id) => !out.includes(id)) ?? opts[i][0] ?? order.find((id) => sceneFit(id, changes[i]) >= 1) ?? null;
+  for (let i = 0; i < out.length; i++) {
+    if (!out[i]) {
+      const c = changes[i];
+      const hint = c.show.kind === 'tap' ? 'a press opens a picture: give it `picture` (a face, a place, the product\'s shot)' : c.show.kind === 'count' ? 'a count stands on a picture: give it `picture`' : 'see src/deal.ts sceneFit';
+      throw new Error(`update.ts: no scene can film ${c.id} (a ${c.show.kind}); ${hint}`);
+    }
+  }
+  if (!out.some((id) => SCENE_SPEC[id as string].big)) {
+    for (let i = 0; i < changes.length; i++) {
+      if (changes[i].scene) continue;
+      const big = order.find((id) => SCENE_SPEC[id].big && sceneFit(id, changes[i]) >= 1 && !out.includes(id));
+      if (big) {
+        out[i] = big;
         break;
       }
     }
   }
+  for (let i = 0; i + 1 < changes.length; i++) {
+    const next = out[i + 1] as string;
+    if (changes[i].scene || !SCENE_SPEC[next].carries || joins(out[i] as string, next)) continue;
+    const link = opts[i].find((id) => joins(id, next) && !out.includes(id));
+    if (link && (SCENE_SPEC[link].big || !SCENE_SPEC[out[i] as string].big)) out[i] = link;
+  }
   return out as string[];
 };
-/** Each change's hero shot, in film order. */
-export const HEROES: string[] = planHeroes(HERO_ORDER.order, UPDATE.changes);
-/** The end card's shot: the brand's mark as a solid pulling back into the lockup. */
-export const HERO_END = 'logo-3d';
+/** Each change's scene, in film order. */
+export const HEROES: string[] = planScenes(HERO_ORDER.order, UPDATE.changes);
+/** Where change i hands its element straight into change i + 1's scene (a match cut: no line card for i + 1). */
+export const LINKED: boolean[] = HEROES.map((id, i) => i + 1 < HEROES.length && joins(id, HEROES[i + 1]) && SCENE_SPEC[HEROES[i + 1]].carries);
+/** The end's scene: the brand's mark as a solid pulling back into the lockup. */
+export const HERO_END = 'mark-pullback';
 
-// ---- The lines' voice: every line arrives on one move and leaves on one whole-line exit, dealt once per film.
-
+// ---------------------------------------------------------------------------------------------- the lines
 /**
- * The moves a line takes (fx/TypePresets): each builds CENTRED (the line re-centres on the words already there, so it is
- * never off-centre while it builds), none cuts in oversized, so no line is cut by the frame as it enters. A parted line
- * takes PART_MOVE: its gap holds still while the porthole lands in it.
+ * The moves a line takes (fx/TypePresets): each builds CENTRED (the line re-centres on the words already there), none
+ * cuts in oversized, every word full size as it shows (mask: each rises out of its own mask). One per film: every line
+ * arrives the same way, so the scenes are what change.
  */
-export const MOVES = ['build', 'open', 'snap'] as const;
-export const PART_MOVE = 'mask' as const;
-export type Move = (typeof MOVES)[number] | typeof PART_MOVE;
-/** The exits: the whole line leaves as one (lift: up 0.3 em into a 0.1 em blur; recede: back to 94 % out of focus), gone before its travel ends, never word by word. */
-export const EXITS = ['lift', 'recede'] as const;
-export type Exit = (typeof EXITS)[number];
+export const MOVES = ['build', 'open', 'mask'] as const;
+export type Move = (typeof MOVES)[number];
 /** Frames (60 fps) from a move's start until a line of n words (index n - 1, 1-8 words) is read (fx/TypePresets typeLineFrames().resolved). */
 export const RESOLVE60: Record<Move, readonly number[]> = {
   build: [20, 26, 32, 38, 44, 50, 56, 62],
   open: [22, 34, 41, 53, 65, 77, 89, 96],
-  snap: [14, 28, 34, 40, 46, 52, 58, 64],
   mask: [12, 32, 40, 48, 56, 64, 72, 80],
 };
-/** Frames (60 fps) an exit takes. */
-export const EXIT60: Record<Exit, number> = { lift: 24, recede: 26 };
-
-/** The film's change lines and its voice. */
+/** The film's lines: the hook's and one per change. */
 export const LINE_IDS = ['change1', 'change2', 'change3', 'change4'] as const;
-export const LINES = (() => {
-  const r = rng((DEAL_SEED ^ 0x5bd1e995) >>> 0);
-  const used = (RECENT as Partial<Record<string, readonly string[]>>).voice ?? [];
-  const pool = MOVES.filter((m) => !used.includes(m));
-  const moves = pool.length ? pool : MOVES;
-  const voice: Move = UNNAMED ? MOVES[0] : moves[Math.floor(r() * moves.length)];
-  const exitVoice: Exit = UNNAMED ? 'lift' : EXITS[Math.floor(r() * EXITS.length)];
-  // headline systems rotate: the dealt move is the first change line's and each line after takes the next move in turn,
-  // so no two lines in a row arrive the same way (every line on one move, one size and one accent word is the template
-  // look); the face stays the film's one pairing
-  const v0 = Math.max(0, (MOVES as readonly string[]).indexOf(voice));
-  return { voice, exitVoice, move: Object.fromEntries(LINE_IDS.map((id, i) => [id, PLACES[i] === 'part' ? PART_MOVE : MOVES[(v0 + i) % MOVES.length]])) as Record<string, Move>, exit: Object.fromEntries(LINE_IDS.map((id) => [id, exitVoice])) as Record<string, Exit> };
-})();
+export const LINES = { voice: (DEAL.voice as Move) ?? 'build', move: Object.fromEntries(LINE_IDS.map((id) => [id, DEAL.voice as Move])) as Record<string, Move> };
+/** The size the change lines are set at (px at 1080). */
+export const LINE_SIZE = DEAL.set === 'statement' ? 124 : 88;
 
 /** Where the deal came from, for the print. */
-export const DEAL_SOURCE = `${SEED !== null ? `SEED ${SEED}` : UNNAMED ? 'the floor (the name slot is still [Product])' : `the name "${IDENTITY.name}"`}${DECK_GROUND ? ', world from deck.py' : ''}${Object.keys(PIN).length ? `, pinned: ${Object.keys(PIN).join(', ')}` : ''}; hero shots from ${HERO_ORDER.source}`;
-/** The hero shots that play, in film order (the change shots and the end card's), for the print and the film history. */
+export const DEAL_SOURCE = `${SEED !== null ? `SEED ${SEED}` : UNNAMED ? 'the floor (the name slot is still [Product])' : `the name "${IDENTITY.name}"`}${Object.keys(PIN).length ? `, pinned: ${Object.keys(PIN).join(', ')}` : ''}; scenes from ${HERO_ORDER.source}`;
+/** The scenes that play, in film order (the changes' and the end's), for the print and the film history. */
 export const PLAYED: string[] = [...new Set([...HEROES, HERO_END])];

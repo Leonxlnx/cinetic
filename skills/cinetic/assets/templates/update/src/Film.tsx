@@ -1,9 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, getStaticFiles, Html5Audio, Sequence, staticFile } from 'remotion';
-import { Change } from './acts/Change';
-import { EndCard } from './acts/EndCard';
-import { Hook } from './acts/Hook';
 import { WORLD } from './acts/look';
+import { Stage } from './acts/stage';
 import { Audit } from './lib/Audit';
 import { FontGate } from './lib/FontGate';
 import type { SafeSpec } from './lib/safe';
@@ -15,17 +13,15 @@ export const SOUNDTRACK = 'audio/soundtrack.wav';
 /** audit: draw and log the layout audit; safe: its safe zone (a lib/safe.ts preset or insets; default by aspect). */
 export type FilmProps = { audit?: boolean; safe?: SafeSpec };
 
-/** The act component for an ACT entry: the hook, change1..changeN, the end card. */
+/** The act component for an ACT entry: a window onto the one stage from the act's first frame. */
 export const actComponent = (name: string): React.FC => {
-  if (name === 'hook') return Hook;
-  if (name === 'end') return EndCard;
-  const i = Number(name.replace('change', '')) - 1;
-  const C: React.FC = () => <Change i={i} />;
-  return C;
+  const from = ACT[name]?.from ?? 0;
+  const A: React.FC = () => <Stage from={from} />;
+  return A;
 };
 
-// The film: one Sequence per act, handing off on exact frames, each drawing the one stage (acts/World.tsx: the world and
-// what stands in it at that frame). No camera float: the camera moves only inside a hero shot, so a hold is a hold.
+// The film: one Sequence per act (an update film has one: it cuts on the plan's own frames), each drawing the one stage
+// (acts/stage.tsx: the hook, a line card, a house scene or the lockup at that frame, from the plan in src/timeline.ts).
 export const Film: React.FC<FilmProps> = ({ audit = false, safe }) => {
   const hasScore = getStaticFiles().some((s) => s.name === SOUNDTRACK);
   return (
