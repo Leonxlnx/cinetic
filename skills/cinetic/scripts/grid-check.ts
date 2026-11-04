@@ -140,6 +140,13 @@
  *                  declared lockup (the last shot, when CUE.lockup or REVEAL lands in it) over 2.5 s fails, and so does a
  *                  lockup that holds more than 2 s from CUE.lockup (or REVEAL) to the end of the body (errors in a
  *                  scene-bank film, SPINE_PLAN, and in a film written by hand; a film from another template: warnings)
+ *   lockup-end     (with the declared lockup, held like scene-length) the lockup stays whole and alive to the last frame:
+ *                  a fadeEnd seam or an END that stops before TOTAL fails; in a scene-bank film (SPINE_PLAN, GROUND_PLAN)
+ *                  so does a lockup whole for under 1.5 s from CUE.lockup (or REVEAL) to the last frame; over 2.2 s warns
+ *   grounds        with a GROUND_PLAN ([{from, to, ground}]): more than two ground changes fail (a flood and its return
+ *                  count as one; a template keeps one ground and changes it once at most)
+ *   subject-run    with SUBJECTS ([{subject, from, to}]): consecutive scenes about the same picture are one beat; one
+ *                  over 4.5 s fails
  *   long-take      a take over 15 s (a shot, or the whole body of a LOOK.oneTake film) holds at least two
  *                  picture changes per 10 s inside it (warning)
  *   cut-mix        5+ picture changes (act boundaries, seams, `cut` CUEs): at least 14 % of them happen
@@ -259,6 +266,19 @@ type Copy = { id: string; text: string; in: number; resolved: number; out?: numb
  */
 const LONE = { cap: 0.06, small: 0.03, read: 1.2, chunks: 3 };
 const SCENE_LEN = { max: 3.2, lockup: 2.5, lockTail: 2.0 };
+/** The complete lockup to the last frame (s); the ground changes a film may make (a flood and its return count as one); one subject in a row (s). */
+const LOCKUP_HOLD = { min: 1.5, max: 2.2 };
+const GROUND_CHANGES = 2;
+const SUBJECT_MAX_S = 4.5;
+/** Ground changes in a run of grounds: a change into a ground and straight back out to the one before counts once. */
+const groundChanges = (g: string[]): number => {
+  let n = 0;
+  for (let k = 0; k + 1 < g.length; k++) {
+    n++;
+    if (k + 2 < g.length && g[k + 2] === g[k]) k++;
+  }
+  return n;
+};
 /**
  * The script (house numbers): a line is one short sentence of 2-7 words, one clean line on screen at a time.
  * A film whose lines are mostly sentences (modeShare) reads at the script's budget: total words, words a second
@@ -1666,6 +1686,36 @@ async function main() {
       });
       if (lockF !== null && (bodyEnd - lockF) / FPS > SCENE_LEN.lockTail + 1 / FPS + 1e-9)
         sceneErr(`the lockup holds ${((bodyEnd - lockF) / FPS).toFixed(2)} s after its mark is whole (CUE.lockup or REVEAL f${lockF} to the body's end f${bodyEnd}): it ends in ${SCENE_LEN.lockTail} s at most, living (a creep, a light), then the music rings out`);
+      // lockup-end: the lockup stays whole and alive to the last frame (1.5-2.2 s from its mark): never a fade to blank
+      if (lockF !== null) {
+        const endErr = (msg: string) => (held ? err('lockup-end', msg) : warn('lockup-end', `${msg} (the ${template} template's own end: a warning)`));
+        const fade = SEAMS.find((x) => x.kind === 'fadeEnd');
+        const hold = (TOTAL - lockF) / FPS;
+        if (fade) endErr(`the lockup leaves before the last frame: a fadeEnd seam at f${fade.at} (${(fade.at / FPS).toFixed(2)} s) takes it out ${((TOTAL - fade.at) / FPS).toFixed(2)} s before the end. Keep the lockup whole and alive to the last frame (a creep, a light), never a fade to blank`);
+        else if (END && END.to < TOTAL) endErr(`the end lock stops at f${END.to}, before the last frame f${TOTAL}: the lockup holds to the last frame`);
+        // the band: a scene-bank film (SPINE_PLAN, a GROUND_PLAN, launch-simple or update); a starter's own end is not held to it
+        const bankFilm = T.SPINE_PLAN != null || T.GROUND_PLAN !== undefined || ['launch-simple', 'update'].includes(template);
+        if (!bankFilm) {
+          /* the fade and the end lock above only */
+        } else if (hold < LOCKUP_HOLD.min - 1e-9) endErr(`the lockup is whole for ${hold.toFixed(2)} s (CUE.lockup or REVEAL f${lockF} to the last frame): it holds ${LOCKUP_HOLD.min}-${LOCKUP_HOLD.max} s`);
+        else if (hold > LOCKUP_HOLD.max + 1 / FPS + 1e-9) warn('lockup-end', `the lockup is whole for ${hold.toFixed(2)} s to the last frame; ${LOCKUP_HOLD.min}-${LOCKUP_HOLD.max} s reads as an end card, longer as a wait`);
+      }
+    }
+    // grounds: one ground family a film, at most one deliberate change (a flood and its return count as one)
+    const gp = arr<{ from: number; to: number; ground: string }>('GROUND_PLAN').filter((r) => r && isNum(r.from) && isNum(r.to) && r.to > r.from);
+    if (gp.length) {
+      const runs = gp.reduce<{ from: number; to: number; ground: string }[]>((o, r) => (o.length && o[o.length - 1].ground === String(r.ground) ? (o[o.length - 1].to = r.to, o) : [...o, { from: r.from, to: r.to, ground: String(r.ground) }]), []);
+      const n = groundChanges(runs.map((r) => r.ground));
+      if (n > GROUND_CHANGES)
+        err('grounds', `the film changes ground ${n} times (${runs.map((r) => `${r.ground} ${(r.from / FPS).toFixed(1)}-${(r.to / FPS).toFixed(1)} s`).join(' > ')}; a flood and its return count as one): keep one ground for the whole film, its scenes painted on it, and change it once on purpose (a colour flood, the lockup's field)`);
+    }
+    // subject-run: one subject (consecutive scenes about the same picture) at most 4.5 s in a row
+    const sj = arr<{ subject: string; from: number; to: number }>('SUBJECTS').filter((r) => r && isNum(r.from) && isNum(r.to) && r.to > r.from);
+    if (sj.length) {
+      const runs = sj.reduce<{ subject: string; from: number; to: number }[]>((o, r) => (o.length && o[o.length - 1].subject === String(r.subject) ? (o[o.length - 1].to = r.to, o) : [...o, { subject: String(r.subject), from: r.from, to: r.to }]), []);
+      for (const r of runs)
+        if ((r.to - r.from) / FPS > SUBJECT_MAX_S + 1 / FPS + 1e-9)
+          err('subject-run', `${((r.to - r.from) / FPS).toFixed(2)} s on one subject ("${r.subject}", f${r.from}-f${r.to}): consecutive scenes about the same picture are one beat, ${SUBJECT_MAX_S} s at most; cut a scene or move to the next subject`);
     }
     if (!LOOK.oneTake && shots.length >= 3) {
       const band = SHOT_BAND[filmType] ?? [0.5, 3.0];

@@ -205,6 +205,10 @@ at 160x90, one sample per 1/30 s (landings also at the film's own rate), outside
                change is grain) take more than 10 % of the body (outside the end lock, freezes and ignored ranges);
                a film that never stops reads under 8 %          fail (a body over 60 s: warn); over 8 %  warn
                (one single near-still run up to 2.5 s, a short film's one held breath, warns at most)
+  still-run    (a film of 8 s or more) one near-still run (the motion floor's reading) over 0.8 s before the end lock: the
+               film holds still only on its end card                                                 fail
+  end-blank    a frame in the last 0.3 s is empty (under 0.3 % of its pixels 12+ levels off its median): a
+               fade to blank or an empty last frame; the lockup holds to the last frame              fail
   end-hold     the end card stands near-still for over 2.5 s (the still run that reaches into the end lock,
                counted from its start; a lockup keeps living: a slow push that lands, a light pass)   warn
   edge-cover   a frame edge shows a strip that is not the picture (the outer 1-3 px of a side, at 1080p,
@@ -3885,7 +3889,10 @@ MOTION_FLOOR = dict(w=320, h=180, chg=10, hold_chg=0.002, hold_mad=0.12, noise_r
                     # the band just inside, the level step, the share of the side, the run that fails (s); end-cut: a fade still
                     # running on the last frames
                     end_warn=2.5, edge_in=3, edge_step=25.0, edge_share=0.85, edge_sd=14.0, edge_flat=0.35, edge_s=0.25,
-                    fade_k=6, fade_min=4.0, fade_res=2.5, fade_tail=0.33, fade_dark=20.0, fade_light=235.0)
+                    fade_k=6, fade_min=4.0, fade_res=2.5, fade_tail=0.33, fade_dark=20.0, fade_light=235.0,
+                    # still-run: one near-still run over still_s before the end lock fails; end-blank: a frame in the last blank_s
+                    # where under blank_share of the pixels differ from its median level by blank_lv or more (an empty frame)
+                    still_s=0.8, blank_s=0.3, blank_lv=12, blank_share=0.003)
 
 
 def _edge_sides(g, P):
@@ -3944,13 +3951,14 @@ def motion_floor(path, info, end_from=None, freezes=(), ignore=()):
     n_all = info['frames']
     end = int(end_from) if end_from is not None else max(1, n_all - int(round(P['end_s'] * fps)))
     prev2 = prev = None
-    mad, mad2, chg, disp, edges = [], [], [], [], []
+    mad, mad2, chg, disp, edges, blank = [], [], [], [], [], []
     tail = deque(maxlen=P['fade_k'] + 2)
     grad_prev = None
     for _, y in decode(path, info, pix='gray', size=(P['w'], P['h'])):
         g = y.astype(np.int16)
         tail.append(y.copy())
         edges.append(_edge_sides(y, P))
+        blank.append(float((np.abs(g - int(np.median(y))) >= P['blank_lv']).mean()) < P['blank_share'])
         grad = np.zeros(g.shape, np.float32)  # |dI/dx| + |dI/dy| in grey levels per px
         grad[:, :-1] += np.abs(np.diff(g, axis=1))
         grad[:-1, :] += np.abs(np.diff(g, axis=0))
@@ -4047,6 +4055,11 @@ def motion_floor(path, info, end_from=None, freezes=(), ignore=()):
                         sides=sorted({s for f in bad for s, _ in edges[f]}),
                         first=dict(frame=bad[0], sides=edges[bad[0]]) if bad else None)
     res['ending'] = _fade_tail(list(tail), P)
+    # still runs over still_s before the end lock (each one fails), and an empty frame in the last blank_s
+    res['still_runs'] = [[a, b] for a, b in runs if (b - a + 1) / fps > P['still_s']]
+    k = max(1, int(np.ceil(P['blank_s'] * fps)))
+    empty = [f for f in range(max(0, n - k), n) if blank[f]]
+    res['end_blank'] = dict(frames=[empty[0], empty[-1]], count=len(empty), of=min(k, n)) if empty else None
     return res
 
 
@@ -4083,6 +4096,18 @@ def motion_floor_check(args, info, decl):
                                f"{', the last frame too' if ed.get('last') else ''}): the world, plate or plane does not cover the frame. Keep every "
                                'full-frame layer at scale 1 or more under its moves (a pull-back lands at 1, never below), overscan a plane that '
                                "travels, and give the composition a ground of the world's own colour"))
+    if m['measured'] and m.get('still_runs'):
+        sr = m['still_runs']
+        a, b = max(sr, key=lambda r: r[1] - r[0])
+        flags.append(dict(check='still-run', severity='fail', frame=f'{a}-{b}', t=round(a / fps, 3),
+                          note=f"{len(sr)} still run(s) over {P['still_s']:g} s before the lockup (longest {(b - a + 1) / fps:.2f} s, from {a / fps:.2f} s; "
+                               f"{', '.join(f'{x / fps:.1f}-{y / fps:.1f} s' for x, y in sr[:6])}): the film holds still only on its end card. Keep every hold "
+                               'moving between its moves: the decaying tail of the last move, a creep of 0.1-0.4 %/f, a light pass, a rack, the product working'))
+    eb = m.get('end_blank')
+    if eb and m['frames'] / fps >= 3:
+        flags.append(dict(check='end-blank', severity='fail', frame=f"{eb['frames'][0]}-{eb['frames'][1]}", t=round(eb['frames'][0] / fps, 3),
+                          note=f"{eb['count']} of the last {eb['of']} frames ({P['blank_s']:g} s) are empty (one flat level): the lockup stays complete and alive to "
+                               'the last frame (a creep, a light), never a fade to blank, never an empty last frame'))
     en = m.get('ending')
     if en and en.get('cut') and m['frames'] / fps >= 3:
         flags.append(dict(check='end-cut', severity='fail', frame=m['frames'] - 1, t=round((m['frames'] - 1) / fps, 3),
@@ -4754,6 +4779,11 @@ def self_test(part='all'):
         one = [warp(A, dx=1.5 * (i if i < 120 else 120 if i < 180 else i - 60)) for i in range(nf)]
         rep = run('floor-one', one, cues(nf), more=('--motion-floor',))
         check(not flags(rep, 'motion-floor', 'fail'), 'motion floor: one held breath of 2 s passes (warns at most)', str([x['severity'] for x in flags(rep, 'motion-floor')]))
+        check(bool(flags(rep, 'still-run', 'fail')), 'still-run: that 2 s held breath mid-film fails (the film holds still only on its end card)',
+              json.dumps((rep.get('checks', {}).get('motion_floor') or {}).get('still_runs')))
+        short = [warp(A, dx=1.5 * (i if i < 120 else 120 if i < 141 else i - 21)) for i in range(nf)]
+        rep = run('floor-short', short, cues(nf), more=('--motion-floor',))
+        check(not flags(rep, 'still-run'), 'still-run: a 0.7 s rest between two moves passes', json.dumps((rep.get('checks', {}).get('motion_floor') or {}).get('still_runs')))
         # the frame edges: a light strip down both sides of a dark moving world (the base showing past a shrunk ground) fails
         dark = texture(3, w, h, mean=70, amp=30)
         strip = []
@@ -4775,6 +4805,9 @@ def self_test(part='all'):
         landed = [np.clip(fr.astype(np.float32) * (1 - min(1.0, max(0, i - (nf - 24)) / 14)), 0, 255).astype(np.uint8) for i, fr in enumerate(moving)]
         rep = run('floor-endok', landed, cues(nf), more=('--motion-floor',))
         check(not flags(rep, 'end-cut'), 'end-cut: a fade that lands on black 10 frames before the end passes', json.dumps((rep.get('checks', {}).get('motion_floor') or {}).get('ending')))
+        check(bool(flags(rep, 'end-blank', 'fail')), 'end-blank: that same fade, landed on an empty black frame, fails (the lockup holds to the last frame)',
+              json.dumps((rep.get('checks', {}).get('motion_floor') or {}).get('end_blank')))
+        check(not flags(run('floor-endlive', moving, cues(nf), more=('--motion-floor',)), 'end-blank'), 'end-blank: a picture still moving on its last frame passes')
     A, B = texture(1, w, h), texture(2, w, h)
     n = 90
     if part == 'motion':
