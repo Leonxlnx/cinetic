@@ -19,7 +19,9 @@ these files over the Remotion starter. references/spine.md is the grammar; this 
    - `acts`: 3-5, each { `verb`, `scenes`, `line?`, `strings`, `world?`, `devices?` }. A scene is { `form`, `name`,
      `bank?`, `props?`, `via?`, `ui?` }: `form` the element's form as the scene hands it on (word for a line; a bank
      scene's own: macro-type a button, page-fly a page, toast-stack a notice, decode-title a button, type-flip a word, a
-     lockup the mark); `bank` the house scene, or leave it out and let the deal pick one by the act's verb; `props` its
+     lockup the mark); leave `bank` out: the deal casts every scene at random (the film's name and the last films seed
+     it, its act's verb and big scenes pull it, never one twice, two of the last film's at most); `bank` with `why`
+     redraws a dealt slot (the reason is printed in the plan; grid-check fails a redraw without one); `props` its
      content in the case's own words (each scene's props: `src/scenes/<id>.tsx`), left out it fills itself from the
      case, `ui`, the act's line and `src/content.ts`; `ui` every string it shows.
    - Lines: the promise alone on clean ground (act 1, its key word `*starred*`; `becomes: 'pill'` turns that word into
@@ -38,12 +40,16 @@ these files over the Remotion starter. references/spine.md is the grammar; this 
    brief's own subject or none: never a random stock photo).
 3. **The mark.** `scripts/brand.py <kit>` writes `src/brand/logo.ts` and the tokens; the lockup scene draws the mark.
    An invented brand gets a mark of its own (never a sparkle, a star or a letter that repeats the name).
-4. **A scene the bank lacks.** `src/product.tsx` `OWN`: a SceneDef (`Draw`, `el`: the element's box on screen,
-   `Content`: the element alone for the handover) built from `src/kit/screens`, named in the spine. It runs 1.5-3 s like
+4. **Your one own scene.** 75 % of the picture scenes or more come from the bank, so a film has one scene of its own at
+   most: `own: true` with its `seconds` (1.5-3) in the spine, drawn in `src/product.tsx` `OWN`: a SceneDef (`Draw`,
+   `el`: the element's box on screen, `Content`: the element alone for the handover) built from `src/kit/screens`
+   (grid-check `deal-own` fails a second one, or a drawing the spine does not mark `own`). It runs 1.5-3 s like
    a house scene: a complex moment is cut into two or three scenes, each handed on, never one long animation.
 5. **The deal, the music, the sound.** `deck.py` deals the direction (`src/dealt.ts`): it seeds the scene deal and the
    palette, and sets the type pairing; the track is picked and fitted to the bars (`music.mjs pick`, `get`, `track.py
-   fit`); `npm run sound` cuts the effects to the picture.
+   fit`); `node scripts/audio/sfx.mjs` fetches real licensed effects from the catalogue (a new set each film) and `npm
+   run sound` cuts them to the picture, earshot judging the takes and the mix. Every move eases (never linear: zooms in
+   log space, pans and travels on exponential curves; `lint-film.mjs` fails linear motion).
 
 ## The house scenes (src/bank.ts): what each verb asks for
 

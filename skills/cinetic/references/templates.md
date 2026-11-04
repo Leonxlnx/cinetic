@@ -39,9 +39,9 @@ stop`) adds the gap to its one element and 1 s rings out after it.
 
 | Template | Length | Use it when | Shape |
 |---|---|---|---|
-| `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing to one case, point by point | 8-12 house scenes of the scene bank (`src/scenes`, 1.5-3 s each, a scene of your own too, the lockup 2.5 s; two big at least) cast by `src/spine.ts` (one sentence as 3-5 acts, one case, one element handed on at every scene change), the rest dealt by each act's verb and varied film to film; big lines alone on clean ground (a 9 % cap, read in 1.2 s) for the promise and one point; handovers varied (no kind over 40 %); presses with a real pointer; a designed palette (one accent, white, near-black, the accent field), one ground a film (one flood at most); the lockup a house scene; the direction you pick from the deck's three seeds the deal and the type pairing (`deck.py --direction <id> --why` writes `src/dealt.ts`) |
+| `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing to one case, point by point | 8-12 house scenes dealt at random from the scene bank (`src/scenes`, 1.5-3 s each, the lockup 2.5 s; two big at least; 75 % or more from the bank, one scene of your own at most, a redraw only with its reason) into the acts of `src/spine.ts` (one sentence as 3-5 acts, one case, one element handed on at every scene change), varied film to film; big lines alone on clean ground (a 9 % cap, read in 1.2 s) for the promise and one point; handovers varied (no kind over 40 %); presses with a real pointer; a designed palette (one accent, white, near-black, the accent field), one ground a film (one flood at most); the lockup a house scene; the direction you pick from the deck's three seeds the deal and the type pairing (`deck.py --direction <id> --why` writes `src/dealt.ts`) |
 | none (the starter, `--template none`) | 15-45 s | a launch film whose idea is its own device | the dealt direction's skeleton |
-| `update` | 8-20 s (two changes run 9-12 s) | "vX is out": 2-3 changes, each understood at a glance | the hook (the name and the version on a clean ground, moving from the first frame), then each change as its line alone on the film's one ground (big, whole or in 2-3 chunks, read in 1.2 s) and one house scene from the scene bank that proves it, 2-4 s a change (a typed one 3 s, no scene over 3 s) (a pointer pressing send into a porthole holding the change's picture as its line parts round it, a request typed at macro scale, notifications stacking in depth on the accent field, a page flown, pictures pumped into a row in depth ...), at least one big scene, two scenes joined on one element where they can; the mark pulls back into the lockup (one snap, the lockup whole to the last frame) and the version lands on the bar line; every length in `src/deal.ts` LIMITS, a plan outside them fails; colours from the brand or a dealt palette |
+| `update` | 8-20 s (two changes run 9-12 s) | "vX is out": 2-3 changes, each understood at a glance | the hook (the name and the version on a clean ground, moving from the first frame), then each change as its line alone on the film's one ground (big, whole or in 2-3 chunks, read in 1.2 s) and one house scene dealt from the scene bank that proves it (never one twice, two of the last film's at most), 2-4 s a change (a typed one 3 s, no scene over 3 s) (a pointer pressing send into a porthole holding the change's picture as its line parts round it, a request typed at macro scale, notifications stacking in depth on the accent field, a page flown, pictures pumped into a row in depth ...), at least one big scene, two scenes joined on one element where they can; the mark pulls back into the lockup (one snap, the lockup whole to the last frame) and the version lands on the bar line; every length in `src/deal.ts` LIMITS, a plan outside them fails; colours from the brand or a dealt palette |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
 | `capability-reel` | 15-25 s | only when the brief asks for a wall of the product's breadth (sources, formats, integrations); never the default | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
 | `camera-teaser` | 20-25 s | a dark, fast teaser of a product's screens where the motion is the camera's: whips, pushes, one 3D turn over one layout per shot | the request box arriving tilted in the light, a whip into its close-up and the send button, the window streaming code under the one 3D turn, the proof in depth with the real marks of what it works with, the page with a modal toast, the stages, the mark; each act deals one of two or three devices |
@@ -60,16 +60,20 @@ film may end on the reel's close (rebuild its acts after your own) or open on th
 
 The default launch, assembled from the scene bank (`src/scenes`: house scenes of 1.5-3 s, each one moment that shows
 a point and is understood) and played as a spine (references/spine.md). You write `src/spine.ts` FIRST: the sentence,
-the case from the brief, one element, 3-5 acts of 1-3 scenes, 8-12 scenes in all; each scene its form, its house scene
-(`bank`, or left out for the deal) and its content (`props`: the case's own words, the brief's own pictures), the lines
+the case from the brief, one element, 3-5 acts of 1-3 scenes, 8-12 scenes in all; each scene its form and its content
+(`props`: the case's own words, the brief's own pictures; its house scene is dealt), the lines
 and the one fact under the lockup. Then `src/content.ts` fills whatever a scene's props leave out. The template's
 `README.md` walks through it. What it carries for you:
-- **Scenes by verb, varied.** A scene that names no house scene is dealt one by its act's verb (`src/bank.ts`
-  `dealScene`: asks -> macro-type, glass-prompt; writes -> page-fly; sends, presses -> decode-title, porthole-line;
-  fills, pays -> toast-stack, key-glow; sells -> word-cards; shows -> photo-river, ring-dive; connects -> orbit-chips;
-  the lockup from blobs-to-mark, line-to-wordmark, word-build-badge, bar-flood), only one whose needs the film has
-  (pictures, partner marks, a price table), never one the film already plays, seeded by the deck's direction or the
-  name, so another product deals other scenes. Two big scenes at least (the plan print stars them).
+- **Scenes dealt, varied.** Every picture scene is dealt at random (`src/bank.ts` `dealScene`: a weighted draw seeded
+  by the deck's direction or the name and the last films' scenes), pulled toward its act's verb (asks -> macro-type,
+  glass-prompt; writes -> page-fly; sends, presses -> decode-title, porthole-line; fills, pays -> toast-stack,
+  key-glow; sells -> word-cards; shows -> photo-river, ring-dive; connects -> orbit-chips; the lockup from
+  blobs-to-mark, line-to-wordmark, word-build-badge, bar-flood) and toward big scenes, away from the last films'
+  scenes; only one whose needs the film has (pictures, partner marks, a price table), never one the film already plays,
+  two of the last film's at most. 75 % of the picture scenes or more come from the bank: one scene of your own at most
+  (`own: true`, `seconds` 1.5-3, drawn in `src/product.tsx` `OWN`); a dealt slot is redrawn (`bank`) only with its
+  reason (`why`), printed in the plan. grid-check's `deal-*` rules fail the rest. Two big scenes at least (the plan
+  print stars them).
 - **Each point, then its scene.** A line alone sits on clean ground (white, near-black or the accent field: never over
   a blurred picture) for the promise and, once in a middle act, a point its key word then becomes. It is big (a cap of
   9.2 % of the frame, the claim 11.2 %, never under 7 %: a long line takes two rows) and fast (whole up to four words,

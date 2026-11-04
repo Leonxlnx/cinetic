@@ -33,8 +33,11 @@ through a defocus the stage draws: what was before racks out of focus with a pus
 cut inside the blur. A line card's line dissolves off over its scene's first frames on the shared ground. Nothing stands
 still: the hook and each card push toward the lens at a steady rate, the lockup keeps the pull-back's push.
 
-**The scenes** (`src/deal.ts` HERO_META, `sceneFit`; each change takes the first in the film's order that films it, the
-ones its words ask for first):
+**The scenes** (`src/deal.ts` HERO_META, `sceneFit`), dealt at random: the film's order is a weighted shuffle seeded by
+the name and the last films (big scenes early, the last films' scenes late); each change takes the first in that order
+that films it, its words pulling a scene a little forward; never one scene twice, two of the last film's change scenes
+at most (the lockup every update film ends on is not counted); a change names a scene by hand only with its `why`
+(grid-check `deal-*`):
 
 | the change is | scene | big | its line |
 |---|---|---|---|
@@ -74,4 +77,6 @@ forensics (its motion floor: under 10 % of the body near-still), look-audit `--l
 
 **Music.** Cut to a licensed, human-made, instrumental track (template.json `music`); `track.py fit --end auto` puts
 its final hit on the version mark. `src/sync.ts` voices each scene's own moments (its meta cues) where the film plays
-them, one soft text sound per line card, the version's arrival in the hook, the pull-back and the version mark.
+them, one soft text sound per line card, the version's arrival in the hook, the pull-back and the version mark: real
+licensed recordings from the catalogue (`node scripts/audio/sfx.mjs`, a new set each film), earshot judging the mix.
+Every move eases, never linear (zooms in log space, pans on exponential curves; `lint-film.mjs` fails linear motion).
