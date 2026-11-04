@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // scan-grid: a link is typed into a dark input bar on a black stage whose horizon glows at the bottom; the camera
 // pushes in on the bar, a pointer rises from below onto the action button and clicks it; the button flashes and the
 // camera tilts up off the input as the button turns into a busy pill and a grid of real pictures rises in from below,

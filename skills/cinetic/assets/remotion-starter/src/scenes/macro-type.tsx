@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // macro-type: the camera lands on a huge message field (a white pill on a pale field) and keeps scaling in; a giant
 // cartoon pointer flies in from the bottom, turns into a chunky text cursor, descends (its shadow far below it closing
 // in as it nears the field) and clicks: a soft light blooms where it clicked and the caret starts blinking. The request

@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // porthole-line: a pointer presses the send button at macro scale; the button's colour drains from the bottom up,
 // leaving a white circle that springs open into a porthole; the picture rises into it from below and a light catches
 // its lower rim; a giant two-line statement cuts on word by word BEHIND the porthole, the top line pushed up and the

@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // glass-prompt: a dark frosted prompt box rises out of deep blur into focus on a black stage, growing as it comes
 // toward the camera and creeping on after it lands; the overhead light runs along its rims as thin white streaks (one
 // parked on the top rim, one sliding right to left along the bottom). Then the whole stage whips left on a long build and

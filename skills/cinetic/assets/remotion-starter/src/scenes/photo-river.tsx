@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // photo-river: the pictures the product makes, one after another, faster and faster: a photo card pulls back, and at
 // every hard swap the picture changes and the card punches in larger again; the cards it leaves stay behind as a deck
 // of edge-on slivers receding to the left; then the deck unfolds into a row of face-on cards receding in depth toward

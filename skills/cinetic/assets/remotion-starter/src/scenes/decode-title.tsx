@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // decode-title: a soft swirl of the accent opens on a dark dot grid and the title decodes out of it from the centre:
 // each glyph is born at a moving front as accent pixel blocks and resolves to the ink within two frames, the newest
 // glyphs glowing hardest; crisp data dashes are thrown up the frame and thin out. After a short hold the call-to-action

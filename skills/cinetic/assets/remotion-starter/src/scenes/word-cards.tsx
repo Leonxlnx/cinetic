@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // word-cards: one huge word builds letter by letter on a dark stage, each glyph swinging down into its slot from up and
 // to the left with a small overshoot, while a dark glass card rises from below the frame into the space under the word,
 // over the bottom of the letters (they read blurred through the glass). The camera pulls back to make room, the card on

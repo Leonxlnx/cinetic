@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // line-to-wordmark: a question builds word by word inside four selection handles: each word cuts on tinted and inks
 // in from left to right along the palette's path (its last letter darkest last), the line re-centring with a jump and
 // a glide, the handles jumping wider with each word and blinking on their own; the line splits apart from its middle

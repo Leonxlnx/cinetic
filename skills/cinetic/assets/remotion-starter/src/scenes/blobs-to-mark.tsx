@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // blobs-to-mark: two solid blobs of the brand colour sweep in from the frame's edges, pass through each other,
 // shrink, come back and pass again, and merge into one small dot; the dot snaps into the product's mark (born
 // squashed, one part still swollen), which settles and slides aside as the name's letters cut on beside it one by one.

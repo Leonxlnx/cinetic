@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // key-glow: a dark wall of keycaps; one key per item is pressed into light and the camera travels from key to key.
 //
 // A flat wall of rounded keys (seen square on, no perspective) on a night ground with a deep glow along the floor. Each

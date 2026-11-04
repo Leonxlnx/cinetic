@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // prism-light: a dot pulls out a line, the line turns in space and splits into a triangle, the triangle becomes a wire
 // pyramid that rushes at the camera and fills with glass light, holds frame-filling, then rolls and flies through its
 // bright face into white.
@@ -326,6 +327,7 @@ export const PrismLight: React.FC<PrismLightProps> = ({ light, palette, exit = '
         {body}
       </svg>
       {wash > 0 && (
+        // lint-ok: a near-white sheen under the closing wash, on screen under a second; the film's grain dithers it
         <div style={{ position: 'absolute', inset: 0, opacity: Math.pow(wash, 1.4), background: `linear-gradient(60deg, ${mixColor(PRISM.white, warm, 0.18)} 0%, ${PRISM.white} 35%, #F4F3EF 48%, ${PRISM.white} 60%, #F6F5F2 74%, ${PRISM.white} 100%)` }} />
       )}
     </Stage1080>

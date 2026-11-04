@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // gloss-orbit: a glossy hero object glowing in a dark space, translucent shapes drifting round it in depth, a pointer
 // that comes to it and presses.
 //

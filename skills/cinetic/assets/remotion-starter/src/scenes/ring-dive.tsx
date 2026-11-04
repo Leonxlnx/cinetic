@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // ring-dive: a ring of the product's pictures that the camera dives through onto its name.
 //
 // A ring of ~96 cards stands on a circle like the fins of a rolodex (each card's plane holds the radius, long edge along

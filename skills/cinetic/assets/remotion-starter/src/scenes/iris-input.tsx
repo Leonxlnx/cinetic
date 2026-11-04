@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // iris-input: the product's mark is born small at the centre of a dark stage, grows fast and turns; a scalloped window
 // opens around it onto a sea of clouds (fast, then slowly, then overfilling the frame) while the mark darkens into a
 // hole in the clouds that spins away and vanishes. A frosted glass input lands over the clouds with its icons flying out

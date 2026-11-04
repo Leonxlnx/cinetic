@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // page-fly: a long white page lies on a plane in 3D, tilted back and rolled a little, on a dark void with a light
 // hugging its edge. It rises in from the bottom of the frame seen from very close, the camera dives in on its headline
 // and then travels down it in one front-loaded move (fast first, slowing), pulling back to a steady distance while the

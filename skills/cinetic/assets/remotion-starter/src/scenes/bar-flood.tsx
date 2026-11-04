@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // bar-flood: one element of the product shrinks to a bar, flips to the accent, sinks, then grows from its centre until it
 // is the whole frame; on that colour the product's lockup assembles and a small kicker lands at its lower left.
 //

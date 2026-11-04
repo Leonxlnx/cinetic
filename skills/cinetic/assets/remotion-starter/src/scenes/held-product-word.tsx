@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // held-product-word: the product stays locked dead centre while the world behind it cuts every quarter second (a
 // paper sweep, then the places it lives in), then the world settles to one lit colour and a giant line cuts on
 // BEHIND the product as a staircase (each word lower than the last) that eases into one baseline while drifting left
@@ -90,8 +91,8 @@ export const HeldProductWord: React.FC<HeldProductWordProps> = ({ product, produ
         : null}
       {/* the product, its contact shadow on the ground it stands in front of */}
       <div style={{ position: 'absolute', left: 0, top: 0, width: pw, height: ph, transformOrigin: `${pw / 2}px ${ph / 2}px`, transform: `translate(${(cx - pw / 2).toFixed(2)}px, ${(cy - ph / 2).toFixed(2)}px) scale(${grow.toFixed(4)})` }}>
-        <div style={{ position: 'absolute', left: pw * 0.08, top: ph * 0.94, width: pw * 0.84, height: ph * 0.1, borderRadius: '50%', background: `radial-gradient(closest-side, ${withAlpha(P.ink, onField ? 0.3 : 0.38)}, ${withAlpha(P.ink, 0)})` }} />
-        {slot === 0 && !onField ? <div style={{ position: 'absolute', left: pw * 0.2, top: ph * 0.08, width: pw, height: ph, borderRadius: pw * 0.18, background: withAlpha(P.ink, 0.1), filter: `blur(${(26 * u).toFixed(1)}px)` }} /> : null}
+        <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(pw * 0.08).toFixed(2)}px, ${(ph * 0.94).toFixed(2)}px)`, width: pw * 0.84, height: ph * 0.1, borderRadius: '50%', background: `radial-gradient(closest-side, ${withAlpha(P.ink, onField ? 0.3 : 0.38)}, ${withAlpha(P.ink, 0)})` }} />
+        {slot === 0 && !onField ? <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(pw * 0.2).toFixed(2)}px, ${(ph * 0.08).toFixed(2)}px)`, width: pw, height: ph, borderRadius: pw * 0.18, background: withAlpha(P.ink, 0.1), filter: `blur(${(26 * u).toFixed(1)}px)` }} /> : null}
         {product}
       </div>
     </div>

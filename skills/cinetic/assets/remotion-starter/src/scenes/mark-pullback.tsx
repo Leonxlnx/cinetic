@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // mark-pullback: the product's mark as an extruded solid, opened on an extreme close-up of one stroke, pulls back
 // fast and decelerates on a log-scale dolly while the camera rolls 17 degrees, until the whole mark stands in frame;
 // hard cut to the flat mark, small and alone; hard cut to the lockup assembling: the mark's parts slide together

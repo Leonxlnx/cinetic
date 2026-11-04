@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // toast-stack: notifications land one after another and pile into a stack seen in depth on a full colour ground: the
 // newest is always the front, top, sharp one; every older toast steps one slot back, smaller, lower, darker and more
 // blurred, like a deck seen from slightly above. The whole stack climbs from below the frame into place while they

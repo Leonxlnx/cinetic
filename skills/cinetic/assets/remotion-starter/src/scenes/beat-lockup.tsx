@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // beat-lockup: the mark settles and the name is appended beside it one letter per beat, the lockup jumping to stay
 // centred after every letter; a picture tile rides the caret, a new picture on each beat; then the ground flips to paper
 // and the lockup lands in the accent.

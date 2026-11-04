@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // type-flip: full-frame type cut on single frames: a giant word rides in on the accent, jumps into a type poster that builds
 // word by word on a paper grid, the call to act builds white on the accent, then the colours flip and it leaves.
 //

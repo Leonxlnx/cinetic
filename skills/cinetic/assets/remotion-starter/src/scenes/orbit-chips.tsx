@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // orbit-chips: the line at the centre of hairline orbits; accent pills fly in and land as the partners' logo chips, small
 // chips pop in, everything turns slowly clockwise, then the ground dips to dark, the chips go out one by one and a card opens at the centre.
 //

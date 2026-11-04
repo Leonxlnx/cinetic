@@ -220,6 +220,10 @@
  * HyperFrames project with no tokens file, the custom properties in the HTML's `:root { }` blocks
  * are the palette, and motion.js is the easing module (raw beziers are allowed there).
  *
+ * House scenes: a scene of the scene bank (src/scenes) carries `cinetic:house-scene` in its leading comment; its own
+ * colour literals are not checked against the film's tokens (the banned colours still are), and it may animate per
+ * character and turn a card in depth like the house primitives (each scene's own test gates it). A film's own scenes
+ * in the same folder carry no marker and are linted like any film code.
  * Device palettes: a device in fx/ or lib/ may carry its own stops (a spectral run, a false-colour
  * map, a luminance mask's black and white) with `cinetic:device-palette <job>` in a comment. In the
  * file's leading comment block it covers the whole file; anywhere else it covers its own line and the
@@ -1241,6 +1245,7 @@ const LIGHT_RE = /cinetic:light\b/; // a declared light field or soft shape in f
 const DEVICE_RE = /cinetic:device-palette\b/;
 const DEVICE_REASON_RE = /cinetic:device-palette\b[\s:,.;–—-]*[\w"'#(]/;
 const DEVICE_RULES = new Set(['banned-color', 'off-token-color']);
+const HOUSE_SCENE_RE = /cinetic:house-scene\b/; // a house scene of the scene bank (src/scenes): see the header
 let devicePalette = 0;
 const springUses = []; // underdamped spring uses across the film, for spring-budget
 const giantUses = []; // act files that set a giant word, for giant-once
@@ -1286,6 +1291,9 @@ for (const file of files) {
   // line through the next blank line (one palette block).
   const inDevice = /(^|\/)(fx|lib)\//.test(norm);
   const deviceFile = inDevice && DEVICE_RE.test(raw.slice(0, headEnd));
+  // a house scene (src/scenes, marked cinetic:house-scene in its leading comment) paints its own ground and stops
+  // from the palette it is given: its literals are not the film's tokens, but the banned colours still apply
+  const houseScene = /(^|\/)scenes\//.test(norm) && HOUSE_SCENE_RE.test(raw.slice(0, headEnd));
   const deviceSpans = [];
   if (inDevice)
     lines.forEach((l, k) => {
@@ -1299,7 +1307,7 @@ for (const file of files) {
     const { line, col } = pos(idx);
     const here = lines[line - 1] ?? '';
     const prev = lines[line - 2] ?? '';
-    if (DEVICE_RULES.has(rule) && (deviceFile || deviceSpans.some(([a, b]) => line >= a && line <= b))) {
+    if ((DEVICE_RULES.has(rule) && (deviceFile || deviceSpans.some(([a, b]) => line >= a && line <= b))) || (rule === 'off-token-color' && houseScene)) {
       devicePalette++;
       return;
     }
@@ -1672,7 +1680,7 @@ for (const file of files) {
   if (isScript) {
     const decls = declsOf(code);
     const isAct = /(^|\/)acts\//.test(norm) || /^(act|scene|shot)(\d|[-_.])/i.test(basename(file));
-    const house = /(^|\/)(fx|lib)\//.test(norm); // the house components animate per character on purpose
+    const house = /(^|\/)(fx|lib)\//.test(norm) || houseScene; // the house components animate per character on purpose
     const lit = (t) => `"${t.trim().replace(/\s+/g, ' ').slice(0, 40)}"`;
     const copyMsg = (t) => `${lit(t)} is on-screen text written in an act: put it in COPY (timeline.ts line() or chain()) and read it with copy() or chainOf(), so grid-check counts its words, times its hold and catches a sentence arriving at once`;
 
@@ -1911,7 +1919,7 @@ for (const file of files) {
 
   // --- grammar: curve roles, springs, exits, look, type roles, GPU cost (1.2)
   {
-    const house = /(^|\/)(fx|lib)\//.test(norm); // house primitives: their defaults are gated by the curve tests
+    const house = /(^|\/)(fx|lib)\//.test(norm) || houseScene; // house primitives and scenes: gated by their own tests
     const isActFile = /(^|\/)acts\//.test(norm) || /^(act|scene|shot)(\d|[-_.])/i.test(basename(file));
     const lineHas = (i, re) => {
       const { line } = pos(i);

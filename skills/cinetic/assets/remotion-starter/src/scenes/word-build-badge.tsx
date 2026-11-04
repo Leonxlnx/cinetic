@@ -1,3 +1,4 @@
+// cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // word-build-badge: a short line builds word by word on a clean ground: the first word arrives huge, blurred and in
 // the accent and settles to size as it sharpens and cools to ink; each next word cuts on at the line's end, sharp but
 // in the accent, cooling to ink in a few frames, while the whole line slides to stay centred; the words part and the
