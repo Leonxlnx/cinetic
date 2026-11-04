@@ -2443,7 +2443,8 @@ def dealt_body(direction, deal, creative, hero=None, palette=None):
             '// instead of a deal of its own, so the sheet and the template never disagree. Re-deal with deck.py (--redraw),\n'
             '// never by hand; launch.ts `pin` still fixes a slot, launch.ts `creative.swap` trades one creative element and\n'
             '// `heroes.swap` one hero shot (each with a reason). The direction also seeds a scene-bank deal (src/bank.ts).\n'
-            'export const DEALT: { direction: string; deal: Record<string, string>; creative?: string[]; reserve?: string[]; hero?: string[]; heroReserve?: string[]; palette?: Record<string, string> } | null = '
+            + ("// lint-ok: the deck's palette mapped onto the brand (src/palette.ts paints the scenes from it; palette.py checked it)\n" if palette else '')
+            + 'export const DEALT: { direction: string; deal: Record<string, string>; creative?: string[]; reserve?: string[]; hero?: string[]; heroReserve?: string[]; palette?: Record<string, string> } | null = '
             + json.dumps(obj, ensure_ascii=False) + ';\n')
 
 
