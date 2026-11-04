@@ -21,8 +21,8 @@ at 1920 wide; "% per frame" for scale is the per-frame scale change.
 3. **Scale lives in log space.** Interpolate `log(s)`; pushes land at 1.04-1.5, pulls at 0.65-0.96; creeps run 0.1-0.4 % per
    frame.
 4. **Accelerate exponentially, decelerate first-frame heavy.** Exits multiply the per-frame step (x1.3-x2 per frame);
-   arrivals put 55-65 % of the travel in the first quarter. A plain ease-in-out is rare for cameras.
-5. **The camera lands clean** (about 2 % of moves overshoot at all). Objects bounce; cameras do not.
+   arrivals put 55-65 % of the travel in the first quarter. Never a plain ease-in-out for a camera.
+5. **The camera lands clean** (an overshoot on 2 % of moves at most). Objects bounce; cameras do not.
 6. **Motion blur is a film-wide choice:** 0.5 x the per-frame step (or 7-25 % of the travel on cranes), or none at all.
    Never partial within a film.
 7. **The camera follows the action** (the caret, the cursor, the typing line, a growing chain) and steps with the source
@@ -36,16 +36,16 @@ at 1920 wide; "% per frame" for scale is the per-frame scale change.
 
 ## Camera numbers at a glance
 
-| move | typical size | duration | notes |
+| move | house size | duration | notes |
 |---|---|---|---|
-| fast pan | 4-40 % of the width (median 14 %) | 0.2-1.7 s (median 0.6) | peak 1.7-4.3 % of the width per frame; 40 % start at peak speed, 35 % end at it |
-| slow pan | 0.7-12 % of the width | 0.16-1 s | linear, quad-in or quad-out; often starts at speed |
-| push-in | x1.04-1.5 (median 1.115) | 0.4-1.4 s | first-frame heavy; lands clean; a creep after |
-| pull-out | x0.65-0.96 (median 0.856) | 4-36 f | lands clean, or one 0.7 % settle |
-| whip | 104-236 px per frame peak (median 130) | build 9-12 f, stop 7-30 f | blur 0.5 x step, or none |
-| roll | -38 to +63 degrees (median 0.4 s) | 0.2-1.3 s | always returns to level; nearly always paired with a zoom |
+| fast pan | 4-40 % of the width (house 14 %) | 0.2-1.7 s (house 0.6) | peak 1.7-4.3 % of the width per frame; about 40 % start at peak speed, 35 % end at it |
+| slow pan | 0.7-12 % of the width | 0.16-1 s | linear, quad-in or quad-out; it may start at speed |
+| push-in | x1.04-1.5 (house 1.115) | 0.4-1.4 s | first-frame heavy; lands clean; a creep after |
+| pull-out | x0.65-0.96 (house 0.856) | 4-36 f | lands clean, or one 0.7 % settle |
+| whip | 104-236 px per frame peak (house 130) | build 9-12 f, stop 7-30 f | blur 0.5 x step, or none |
+| roll | -38 to +63 degrees | 0.2-1.3 s (house 0.4) | always returns to level; paired with a zoom |
 
-About half of the frames carry a moving camera; the rest hold or creep.
+A moving camera on about half of the frames; the rest hold or creep.
 
 ## Camera curves
 
@@ -85,12 +85,13 @@ Per-frame laws:
 
 ## Type at a glance
 
-- One centred line in about 82 % of statements, in the middle band in about 90 %, on one line in about 85 %.
-- Statement cap height: a median 6.2 % of the frame height, up to about 15 % at the high end; caps in general 16-165 px (median 41).
-- Display tracking median -0.02 em; caps-label tracking median +0.12 em.
-- Emphasis is used on about 60 % of statements; by kind: colour most often, then an object inside the line, brackets,
-  outlines, a split, rarely a box or a scribble, never an underline.
-- Ink: dark on about 44 % of statements, light on 34 %, chromatic on 16 %.
+- Statements centred 80 % of their time or more, in the middle band 85 % or more, on one line 85 % or more.
+- Statement cap height: a line alone 9.2 % of the frame height (never under 7 %, up to about 15 %; the claim 11.2 %), read in
+  1.2 s at most; caps in general 16-165 px.
+- Display tracking about -0.02 em; caps-label tracking about +0.12 em.
+- Emphasis on 60 % of statements at most; by kind: colour first, then an object inside the line, brackets, outlines, a split;
+  a box or a scribble seldom, never an underline.
+- Ink follows the ground (dark on light, light on dark); chromatic ink on about one statement in six at most.
 
 ## Camera kit (`camtype.tsx`)
 
@@ -122,7 +123,7 @@ export const CAM = {
   tlPush:        [0.039, 0.433, 0.416, 1.008], // Push about a panel centre
   boardPush:     [0.88, 0.174, 0.475, 0.76],   // Slow S-push
   whipBuild:     [0.854, 0.06, 0.425, 0.936],  // Whip: 12 f build / 7 f stop
-  whipIntoCut:   [0.23, 0, 0.72, 0.12],        // Whip right (stated)
+  whipIntoCut:   [0.23, 0, 0.72, 0.12],        // Whip right, into the cut
   whipPan:       [0.396, -0.005, 0.107, 0.987],// Whip pan (9 f build, 30 f tail)
   whipUp:        [0.527, 0.157, 0.855, 0.206], // Vertical whip exit
   glideIn:       [0.021, 0.481, 0.353, 0.953], // Arrival after a whip
@@ -308,7 +309,7 @@ stopping; the eye keeps travelling one way, so the new picture reads as "the nex
   20-frame brake).
 - Blur at the cut: none, 0.5 x the step, or a 6-18 px pulse on the last 3 frames; the first frame after the cut may carry
   the same smear (60 px, sharp in 5 f).
-- About 40-50 % of pushes and slow pans start at peak speed; 22-35 % of moves end at peak.
+- Start 40-50 % of pushes and slow pans at peak speed; end 22-35 % of moves at peak.
 
 **Presets.**
 - *Caption keeps going.* The line keeps moving left after it is read, accelerating (left edge 985, 983, 980, 978, 976, 973,
@@ -376,7 +377,7 @@ element's point, fast at first and settling clean, then keeps a slow creep: the 
 explained before it happens (the push lands on the send button, then the cursor clicks it).
 
 **Numbers.**
-- Scale 1.04-1.07 (subtle), 1.15-1.33, 1.41-1.58; typically x1.04 / 1.115 / 1.5 at the low / middle / high end.
+- Scale 1.04-1.07 (subtle), 1.15-1.33, 1.41-1.58; house x1.04 / 1.115 / 1.5 at the low / middle / high end.
 - 12-42 f (0.4-1.4 s); a long settle of 1-5 s is possible.
 - First-frame heavy: 55-65 % of the log-scale in the first quarter (`pushLand`, progress 0.6 / 0.85 / 0.97 at 25 / 50 /
   75 %); an in-out curve only when the push travels across the UI.
@@ -573,10 +574,11 @@ makes short lines big and long lines calm without breaking the centre.
 - One primary face per film; a second only for a role (mono labels, a serif italic for emphasis, a wordmark).
 - Weight 400-600 for statements (300 for big serifs and very large light lines); 700-900 only for wordmarks and ad
   headlines.
-- Cap height: statements 46-110 px (4.3-10 % of the height); titles 120-220; giant 360-720; UI micro-text 10-30.
-- Measure: ink 35-70 % of the frame width; fit the size to it (for example cap 46-77 px by line length).
-- Tracking: display -0.005 to -0.06 em (median -0.02; heavier and bigger = tighter: 700 weight at -0.06, 205-240 px at
-  -0.045, 168 px at -0.04); text -0.01; caps labels +0.06 to +0.32 (median +0.12).
+- Cap height: a line alone 76-121 px (7-11.2 % of the height; house 9.2 %, the claim 11.2 %), other statements a size down;
+  titles 120-220; giant 360-720; UI micro-text 10-30.
+- Measure: ink 35-70 % of the frame width; fit the size to it (a long line takes two rows rather than a cap under 7 %).
+- Tracking: display -0.005 to -0.06 em (house -0.02; heavier and bigger = tighter: 700 weight at -0.06, 205-240 px at
+  -0.045, 168 px at -0.04); text -0.01; caps labels +0.06 to +0.32 (house +0.12).
 - Stacked display lines: line height 1.0 x the font size.
 
 **Presets.**
@@ -643,7 +645,7 @@ short and the text is noise.
 - Hold after the last word's onset: 0.87-1.53 s (26-46 f) for 3-5 words; a one-word flash of 0.46-0.6 s in a rhythmic list;
   1.1-1.25 s for a one-word statement.
 - A statement in all: 1.6-1.9 s for 4-5 words; 1.2 s for a fast 5-word line.
-- Film-wide: 0.26-1.54 headline words per second (median about 1.06).
+- Film-wide: 0.26-1.54 headline words per second (aim about 1.06).
 
 **Presets.**
 - *Five-word statement.* Five words 5 f apart (20 f of build), then a hold of about 28 f, then the exit.
@@ -668,7 +670,7 @@ export const statementClock = (words: string[], at: number, fps: number, stagger
   return {onsets, exitAt, total: (exitAt - at) / fps};
 };
 // Rhythmic one-word flash: >= Math.round(0.46 * fps) frames per word, only for words of <= 10 characters.
-// Film check: unique headline words / film seconds should land in 0.6-1.5 (typical 1.06).
+// Film check: unique headline words / film seconds should land in 0.6-1.5 (aim 1.06).
 ```
 
 ### 7. An accelerating push into a zoom cut or zoom-through · `push-into-cut`
@@ -832,8 +834,8 @@ the wall of apps), decelerating into a clean landing (or with a 0.7 % settle).
 breath before the next push. Open on a detail and pull out, or end a section by pulling back.
 
 **Numbers.**
-- From 1.15-2.5 back to 1.0, or from 1.0 to 0.58-0.95 (typically 0.65 / 0.86 / 0.96).
-- 4-36 f (a median of about 0.5 s).
+- From 1.15-2.5 back to 1.0, or from 1.0 to 0.58-0.95 (house 0.65 / 0.86 / 0.96).
+- 4-36 f (house about 0.5 s).
 - Curve: a landing (55-65 % in the first quarter, `pullLand`) or an in-out across the whole UI (`pullReveal`, 0.7 % settle).
 - Often combined with a pan toward the subject's new place, a re-centring type build, or a fade of the UI chrome.
 
@@ -882,7 +884,7 @@ Family: type, colour. See also `animations.md` `arrival-tint`.
 underlines do in template films.
 
 **Job.** The eye reads "new" from colour and "important" from the one coloured word. The build gains a second rhythm (a colour
-pulse per word) and the type ties to the palette. Colour is the most common emphasis; underlines are never used.
+pulse per word) and the type ties to the palette. Colour is the first emphasis; never an underline.
 
 **Numbers.**
 - Tint drain 1 f, 2 f, 3-4 f, 4-6 f, 6-8 f, 10 steps at one per frame, or 11-13 f.
@@ -944,11 +946,11 @@ longer stop, with motion blur in proportion to the step (or none, by film).
 skips ahead; between UI regions it shows they are one product.
 
 **Numbers.**
-- Peak 50-66 px per frame for small whips on a 1x UI; 150-260 px per frame for big ones (typically 104 / 130 / 236); or about
+- Peak 50-66 px per frame for small whips on a 1x UI; 150-260 px per frame for big ones (house 104 / 130 / 236); or about
   1000 px in one frame.
 - Shape: a build of 9-12 f and a stop of 7-30 f (asymmetric; a tail up to 3x the build), or no stop when it ends in a cut.
 - Blur 0.5 x the step, 60-120 px at 150-250 px per frame, a ramp 0 / 8 / 24 / 60 px, 4 sub-frame copies at 25 %, or none.
-- Mostly horizontal; vertical as a scene exit.
+- Horizontal by default; vertical as a scene exit.
 
 **Presets.**
 - *Small whip.* A box centre 961, 960, 957, 954, 950, 944, 937, 928, 916, 900, 876, 840, 790 px (peak 50 px per frame), then a
@@ -1259,7 +1261,7 @@ can hit (one tick per glyph), and the glide makes the word feel assembled.
 - Glyph interval 1.4-4 f at 30 fps.
 - Per-glyph entrance: a cut-on; a 2-4 f fade; 25 % -> 100 % in 3-4 f with a colour; a glide of 1.2 glyph widths in 8-10 f at
   85 %; a slide from the right in light grey; a tumble (scale 0.4, 20 degrees) in 7 f; a soft mask with a grey front.
-- Order: left to right (most), outside-in, or letters spaced +30 % that close up.
+- Order: left to right (the default), outside-in, or letters spaced +30 % that close up.
 - The lockup re-centres per glyph (a cut jump or continuously), under a pull-back (1.98 -> 1.0) or a slide.
 
 **Presets.**
@@ -1565,9 +1567,9 @@ spiral dive), or a moving subject arriving rolled and settling level. Rolls are 
 **Job.** A jolt of energy and disorientation that resolves: entering a new space, diving into a detail, a phone thrown into
 frame. The return to level is the landing that makes it feel controlled.
 
-**Numbers.** 1.6-3.5 degrees (footage-like), 11-15, or 26-50; typically between -38 and +63; 0.2-1.3 s (median 0.4 s); the
-return decays 0.83 per frame at 24 fps, or on an expo-out (26.6 -> 6.2 degrees in 10 f); peak 6.4-9 degrees per frame; nearly
-always paired with a zoom (x1.45, x1.89, or 0.425).
+**Numbers.** 1.6-3.5 degrees (footage-like), 11-15, or 26-50; within -38 to +63; 0.2-1.3 s (house 0.4 s); the
+return decays 0.83 per frame at 24 fps, or on an expo-out (26.6 -> 6.2 degrees in 10 f); peak 6.4-9 degrees per frame; always
+paired with a zoom (x1.45, x1.89, or 0.425).
 
 **Presets.**
 - *Hall roll* (24 fps). The camera rolls about +50 degrees and back to upright into a corridor (9 degrees per frame at its
@@ -1864,7 +1866,7 @@ a few px per frame), so the hold is alive without a new move. It is the decaying
 **Job.** The frame never freezes, but nothing wanders; the viewer's sense of direction carries into the next cut.
 
 **Numbers.** Scale creep 0.03-0.4 % per frame; position drift under 1 to 4 px per frame; the direction of the last move; a true
-still hold only as a 5-10 f beat before a big move; most creeps are short (about 0.2 s) because the next event cuts them.
+still hold only as a 5-10 f beat before a big move; a creep may run only about 0.2 s before the next event cuts it.
 
 **Presets.**
 - *After punch-ins.* A very slow creep in after each punch-in cut: 1.000 -> 1.006 -> 1.008 -> 1.009 over 20 f.
@@ -2017,7 +2019,7 @@ zoom or scroll whip.
 **Job.** A long product demo reads as one continuous shot operated by a camera person: the viewer always knows where they are in
 the app, and the camera points at each action in turn. It carries 20-40 s of UI without flying cards.
 
-**Numbers.** Canvas scale 1.0-2.1 (1.25-1.48 typical close framings, 2.1 for a detail); scroll 1 px per frame (idle) to 16 (reading)
+**Numbers.** Canvas scale 1.0-2.1 (1.25-1.48 for close framings, 2.1 for a detail); scroll 1 px per frame (idle) to 16 (reading)
 to 70-72 at a whip's peak (doubling per frame 1, 2, 2, 4, 5, 8, 15, 36, 72); zoom whips x1.6-2.4 per frame into a hidden cut; expo
 landings 1.070, 1.027, 1.014 ...; a smooth zoom and scroll on `smoothZoomScroll`.
 

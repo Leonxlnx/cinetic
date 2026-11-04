@@ -14,27 +14,27 @@ build recipe, what makes it rich or cheap, the sound, and a small Remotion 4 hel
 
 ## Pacing in numbers
 
-| measure | typical | range |
+| measure | aim | house range |
 |---|---|---|
-| film length | about 25 s | 5-123 s (launch films 15-50 s) |
-| shot length (seam to seam) | about 1.0 s | 0.17-2.7 s; 23 % under 0.5 s, 25 % 0.5-1 s, 34 % 1-2 s, 15 % 2-4 s, 4 % over 4 s |
+| film length | about 25 s | a launch 15-45 s; a sting or a teaser 5-13 s |
+| shot length (seam to seam) | about 1.0 s | 0.17-3 s, short and long mixed (about a quarter under 0.5 s, none over 3 s) |
 | cuts per 10 s | about 8 | 5-12 (launch 4-9, montage 11-15, grid or sizzle 14-18) |
 | a film's median shot | about 1.2 s | 0.55-1.6 s |
-| longest shot | about 3.7 s | 2.3-5.6 s; it is the product demo or the end card |
+| longest shot | 3 s | 2.3-3 s; it is the product demo (the lockup 2.5 s at most) |
 | shot-length variation (coefficient) | about 0.7 | 0.54-0.79: long and short alternate |
 | neighbouring shots differing by over 1.6x | about 60 % | 50-70 % |
-| share of a frame grid changing per second | about 0.26 | 0.12-0.5; first 10 % of the film 0.36, middle 0.41, last 10 % 0.04 |
+| share of a frame grid changing per second | about 0.26 | 0.12-0.5; the first 10 % of the film about 0.36, the middle 0.41, the last 10 % low (about 0.04) |
 | near-still frames | about 23 % | 12-39 % (all creeping holds, not freezes) |
-| mid-film holds of 0.8 s or more | about 2 per minute | 0-1 per 25 s, each 1.1 s typically |
-| end hold | about 1.9 s | 1.0-3.6 s |
+| mid-film holds of 0.8 s or more | 0-1 per 25 s | each about 1.1 s, 1.6 s at most |
+| end hold | 2 s at most after the mark is whole | the lockup 2.5 s at most |
 | camera moving | about 30 % of frames | 22-41 % |
 | camera moves per 10 s | about 4.8 | 3.7-6.8; each about 0.44 s |
 | visible elements changing per second | about 9 | 8-15 |
-| sound onsets per second | about 5.8 | 5.3-6.7 |
+| sound onsets per second | about 6 | 5.3-6.7 |
 | music tempo | about 120 BPM | 111-136 |
 | loudness | about -15 LUFS integrated | -19 to -14 |
-| scene changes with a sound within 1.5 f | about 62 % | |
-| cuts landing within 1 f of a beat | about 14 % | the same as chance: cut on the action, not the metronome |
+| scene changes with a sound within 1.5 f | 60 % or more | |
+| cuts on a beat | not a target | cut on the action, not the metronome |
 
 ## Shared kit (`pace.ts`)
 
@@ -80,14 +80,14 @@ export const typedCount = (text: string, f: number, start: number, cpf = 1.4,
   return text.length;
 };
 
-/** Shot-length distribution (share of shots per length band). */
+/** The house shot-length mix (share of shots per length band): short and long mixed, none over 3 s. */
 export const SHOT_BINS = [
-  {lo: 0.2, hi: 0.5, p: 0.227}, {lo: 0.5, hi: 1.0, p: 0.247}, {lo: 1.0, hi: 2.0, p: 0.337},
-  {lo: 2.0, hi: 4.0, p: 0.152}, {lo: 4.0, hi: 7.0, p: 0.037},
+  {lo: 0.2, hi: 0.5, p: 0.25}, {lo: 0.5, hi: 1.0, p: 0.25}, {lo: 1.0, hi: 2.0, p: 0.35},
+  {lo: 2.0, hi: 3.0, p: 0.15},
 ];
 
 /** Deterministic shot plan (`cut-rhythm`): durations in seconds that sum to totalS, the last one the lockup.
- *  Rule from the data: 60 % of neighbouring shots differ by more than 1.6x (film median). */
+ *  House rule: 60 % of neighbouring shots differ by more than 1.6x. */
 export function planShots(totalS: number, seed: string, endHoldS = 2.4, bins = SHOT_BINS) {
   const draw = (k: string) => {
     let r = random(k), i = 0;
@@ -165,7 +165,7 @@ of reading what it does. It also solves transitions for free: when every scene s
 element of it.
 
 **Numbers.**
-- 4 acts (5 in films of 45-50 s); the first act 15-31 % of the film (about 25 %), the last act 12-31 % (about 18 %).
+- 4 acts (5 in a film of 45-50 s); the first act 15-30 % of the film (aim 25 %), the last act 12-30 % (aim 18 %).
 - The case fills 45-90 % of the film (up to 100 % in a teaser).
 - 1-8 scenes per act (about 3).
 - The same noun or number on screen 3 times or more, across 2 acts or more.
@@ -238,10 +238,10 @@ while the eye reads, and its acceleration hands energy to the next cut, so the f
 
 **Numbers.**
 - Share of an 80 x 45 cell grid that changes in each second: 0.12 or more in every mid-film second; a film median of 0.18-0.5;
-  the first 10 % about 0.36, the middle about 0.41, the last 10 % (the lockup) about 0.04. Motion is high from frame 0.
-- Mean absolute frame difference (0-1 scale) for the film: 0.0025 or more (typical 0.0047).
+  aim about 0.36 in the first 10 %, 0.41 in the middle, low in the last 10 % (the lockup, about 0.04). Motion is high from frame 0.
+- Mean absolute frame difference (0-1 scale) for the film: 0.0025 or more (aim about 0.0047).
 - Mid-film holds of 0.8 s or more: at most one per 25 s, each 1.6 s or less unless it is the climax line.
-- End hold 1.0-3.6 s (about 1.9).
+- End hold: the film is over 2 s at most after the mark is whole (the lockup 2.5 s at most).
 - A creep during a hold: a scale change of 2-7 % over 1.5-2 s, a drift of 0.3-2 px per frame, or a light or shimmer band
   moving through.
 
@@ -629,14 +629,15 @@ the end card).
 end card lets the name land.
 
 **Numbers.**
-- A film's median shot 0.5-1.6 s (launch films 1.0-1.6 s).
+- A film's median shot 0.5-1.6 s (a launch 1.0-1.6 s).
 - Cuts per 10 s: launch 4-9, montage 11-15, grid or sizzle 14-18.
-- The longest shot 2.3-7 s: the demo or the end card, at 45-65 % of the film.
+- The longest shot 2.3-3 s: the demo, at 45-65 % of the film (no scene over 3 s, the lockup 2.5 s at most).
 - Shot-length variation 0.54-0.79; 50-70 % of neighbouring shots differ by more than 1.6x.
 - The shortest shots 0.17-0.5 s (flash frames, whip halves, beat swaps).
 
-**Build.** Lay the beats on the timeline, then check the rhythm: alternate long and short, give the one demo shot 3-7 s around the
-middle, put a few 3-6 frame accents (a flash, a whip half) at the seams, and end on a 1-3.6 s lockup. Cut where the motion still
+**Build.** Lay the beats on the timeline, then check the rhythm: alternate long and short, give the one demo shot 2.3-3 s around the
+middle (a longer demo is two scenes), put a few 3-6 frame accents (a flash, a whip half) at the seams, and end on a lockup of
+2.5 s at most. Cut where the motion still
 has speed (the cut takes it), not where an animation finished.
 
 **Rich.** An uneven rhythm with a long demo shot; shots that end on motion; a few 3-6 frame shots as accents.
@@ -773,9 +774,9 @@ understanding, the calm end lets the name stick.
 
 **Numbers.**
 - The first line by 0-1 s.
-- The turn at 22-35 % in problem-first films, marked by a word, light or silence.
+- The turn at 22-35 % in a problem-first film, marked by a word, light or silence.
 - The name early (0-17 %), after the problem (22-41 %), or late (68-92 %) (`brand-placement`).
-- The demo shot at 45-65 %; the claim at 80-92 %; the lockup in the last 6-12 % (1.0-3.6 s).
+- The demo shot at 45-65 %; the claim at 80-92 %; the lockup in the last 6-12 % (2.5 s at most).
 - Density: the first 10 % at 0.3 or more, the middle at 0.3 or more, the last 10 % low.
 
 **Build.** A worked timeline for a 50 s case film: hook 0-0.5 s; an outcome preview 0.5-6 s; a word-picture line 6-7 s; the case
@@ -811,7 +812,7 @@ element.
 **Job.** Rhythm makes a list memorable; parallel grammar lets the viewer predict the next item, and the payoff item lands harder for
 being held.
 
-**Numbers.** 2-4 items (3 most often); 0.7-1.1 s per item, the last 1.6-4.7 s; an identical build for every item (blur-in, rise,
+**Numbers.** 2-4 items (3 by default); 0.7-1.1 s per item, the last 1.6-4.7 s; an identical build for every item (blur-in, rise,
 slot roll or exit-then-enter); parallel grammar (verb + "it", "No" + noun, one word each); centre-middle, one line; under it the
 picture changes per item, or one plate keeps moving.
 
@@ -924,8 +925,8 @@ that grows out of the last element closes the case instead of pasting a logo.
 - Early: the first 0-17 % (the name is the premise; a logo build in the first frames).
 - At the turn: 22-41 % (the name is the answer; a letter swap into the name, a wordmark that slams in).
 - Late: 68-92 % (the name is the payoff; an "introducing" line, a 3D mark).
-- Showing the name twice (early or at the turn, then in the end lockup) is common.
-- Lockup build 0.5-1.5 s; end hold 1.0-3.6 s (about 1.9) with a 2-6 % scale creep or a drifting light; centred.
+- The name may show twice (early or at the turn, then in the end lockup).
+- Lockup build 0.5-1.5 s; the film over 2 s at most after the lockup is whole, with a 2-6 % scale creep or a drifting light; centred.
 
 **Build.** Decide the placement from the story (premise, answer or payoff). Build the lockup from the film's own element or animation
 (a badge spin reused from earlier, a mosaic, comets, the last UI element), with the official logo file; hold it with a slow creep.
@@ -971,8 +972,8 @@ is split"), as a question, or as an "Imagine"; it states the pain, the promise o
 **Job.** "You" puts the viewer in the case at once; a question opens a gap the film then closes; both make the next seconds feel
 necessary.
 
-**Numbers.** On screen by frame 0-30; 1-6 words; 0.5-2.3 s on screen (about 1.3); a word every 2-8 f; cap height 6-15 % of the frame
-height (it may start huge); it leaves by motion (a split, a rise, a drift, a defocus).
+**Numbers.** On screen by frame 0-30; 1-6 words; read in 1.2 s at most; a word every 2-8 f; cap height 7-15 % of the frame height
+(house 9.2 %; it may start huge); it leaves by motion (a split, a rise, a drift, a defocus).
 
 **Build.**
 - *Second person.* "You can send it now", "Your week is in pieces", "You have a stack of drafts": built word by word, leaving by moving.
@@ -1024,12 +1025,13 @@ Family: story. See the standard in `SKILL.md` and `copy-and-type.md`.
 product talking, so they show rather than tell.
 
 **Numbers.**
-- Beats: about 25 % type alone, 38 % picture alone, 30 % type with picture; type-only shots about 22 % of shots.
-- Statements centre-middle about 75 %; horizontally centred about 82 %; vertically in the middle band about 90 %; one line about
-  85 %; never left-aligned at the top or the bottom.
-- Lines on screen about half of the film's time (19-65 %); lines alone about 15 %.
-- By act: lines alone mostly in the first and last acts; middle-act lines are the product's own words or sit around the element.
-- About one headline word per second (launch films 0.4-1.5).
+- Beats: about a quarter type alone, a third or more picture alone, a line over a picture on 40 % of the beats at most; type-only
+  shots 15 % of the shots or more.
+- Statements centred 80 % of their time or more, in the middle band 85 % or more, on one line 85 % or more; never left-aligned at
+  the top or the bottom.
+- Lines on screen 20-65 % of the film's time (aim about half); lines alone about 15 %.
+- By act: lines alone in the first and last acts; middle-act lines are the product's own words or sit around the element.
+- About one headline word per second (0.4-1.5).
 
 **Build.** Put the alone-lines in the first act (the hook, the problem) and the last act (the claim); in the middle let the product's
 own UI words carry the explanation, and when a statement appears, build it around the element ("around" = one composition: the
@@ -1362,7 +1364,7 @@ boundaries, usually dark -> light at the turn, often with a flash.
 **Job.** Light is mood: darkness for the problem, light for the answer; changing the world at an act boundary says a new chapter
 began without a title.
 
-**Numbers.** One hue and 2-3 values per film; about half of the act boundaries change the world; the turn goes dark -> light, often with
+**Numbers.** One hue and 2-3 values per film; the world changes on about half of the act boundaries; the turn goes dark -> light, with
 a 1-3 frame white flash or a light rise of 12-20 f; never the same pale paper and slate for every film.
 
 **Build.**
@@ -1425,8 +1427,8 @@ Family: pacing. See `camera-type.md`.
 
 **Job.** A moving camera points: it tells the viewer where to look next; short moves keep energy without wandering.
 
-**Numbers.** A move lasts 0.23-0.8 s (about 0.44); 3.7-6.8 moves per 10 s; the camera moving on 22-41 % of frames; about half pans and
-half zooms, a few rotations; the shape is start -> travel -> land (`E.glide`, `E.front`), or an acceleration into a cut (`E.exit`); drift
+**Numbers.** A move lasts 0.23-0.8 s (aim 0.44); 3.7-6.8 moves per 10 s; the camera moving on 22-41 % of frames; pans and zooms in
+about equal share, rotations rare; the shape is start -> travel -> land (`E.glide`, `E.front`), or an acceleration into a cut (`E.exit`); drift
 is one-directional and slow (0.3-2 px per frame), never back and forth.
 
 **Build.** Give every move a target and a landing (or a cut at speed); front-load travel moves; push in on a hold that accelerates into
@@ -1618,8 +1620,8 @@ Family: story. See also `transitions.md` `end-handover`.
 
 **Job.** It ends on the action the viewer should take (send, book) or on the product working; it leaves momentum instead of a full stop.
 
-**Numbers.** Mostly teasers and stings of 13 s or less (6.5-13 s), sometimes 18-30 s films; the last frame mid-move (velocity above 0); the
-brand shown earlier (in the first 10 %) or inside the product UI.
+**Numbers.** A teaser or sting of 6.5-13 s, or a film up to 30 s; the last frame mid-move (velocity above 0); the brand shown earlier
+(in the first 10 %) or inside the product UI.
 
 **Build.**
 - *Send.* The cursor glides onto the Send button and turns into a hand; the film ends there, mid-move.

@@ -230,7 +230,7 @@ floor. A light that rises is a beat: the world switches on with the product.
 **Numbers.**
 - Base: true black `#000000`-`#0A080A`, or graphite `#101211`-`#181818`; never above `#1C1A1D`; `#090909` behind glass
   (never pure black while content is visible).
-- Light position: below the bottom edge (cy 1150-1820) most often, centred on the hero, at the top, or in the corners.
+- Light position: below the bottom edge (cy 1150-1820) by default, centred on the hero, at the top, or in the corners.
 - Light size: rx 700-2700 px, ry 450-1300 px; the peak colour is the brand hue (a blue `#1B2A9A`-`#3A6BE0`, a violet, a
   deep warm or red); the lift on the ground runs from +9 luma (a stage glow) to near white at the rim (a horizon).
 - A stage glow lifts the centre 5-9 dE; a floor light 33-68 dE.
@@ -506,7 +506,7 @@ photos or clips), never generated.
 everywhere", a forest for calm focus). The camera move through the plate is the transition and the scale cue.
 
 **Numbers.**
-- Subjects: sky and clouds most often, then landscapes, sea, space. Never an office stock photo as a world.
+- Subjects: sky and clouds first, then landscapes, sea, space. Never an office stock photo as a world.
 - Grade: saturation lowered (-20 %), shadows lifted toward the palette (`#A9B4C8`), a cast toward the brand (teal,
   blue-grey, lavender).
 - Camera: a crane of 4-16 px per frame accelerating, a slow push of 1.5 % per shot, a pull then push, a per-frame zoom;
@@ -582,7 +582,7 @@ Family: world change, transition. Starter: `fx/Grounds`, `fx/Seam`. See also `tr
 tells a viewer with the sound off that the chapter changed.
 
 **Numbers.**
-- Worlds per film: 1, 2 (most: light and dark of one hue), up to 7 when the arc is the story.
+- Worlds per film: 1, 2 (the default: light and dark of one hue), up to 7 when the arc is the story.
 - Devices: a light rise of 18-26 f; a value flip by hard cut in the middle of a motion; an iris of 4-5 f; a wash; a
   push-wipe panel in 2 stages over 48 f; a flash frame and a cut.
 - What carries across: the layout, the word, the element, the camera speed.
@@ -1436,7 +1436,7 @@ without any light effect.
 
 **Numbers.**
 - Warm papers `#F4F2EE`-`#F9F8F3`; cool papers `#F0F0F0`, `#F4F2F5`, `#F3F4F6`; cream `#F5F1E8`; grey-cream `#EBE8E3`.
-- Texture: none (most), a fibre noise with luma sd about 1.0, or grain at 4 %.
+- Texture: none (the default), a fibre noise with luma sd about 1.0, or grain at 4 %.
 - Always flat (no gradient, no vignette).
 
 **Presets.**

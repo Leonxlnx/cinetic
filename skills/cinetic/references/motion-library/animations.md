@@ -27,7 +27,7 @@ ratio to the power 1.25. Stepped animation keeps its step in source frames (on t
 9. **Every hold still moves** (a drift tail, a shimmer) but never bobs.
 10. **Stepped time (on twos) for digital content only,** never for the camera or the hero.
 
-Directions balance: things enter from the bottom most often, then the top, then the sides; exits mirror that.
+Directions balance: enter from the bottom first, then the top, then the sides; exits mirror that.
 Cascades run left-to-right and right-to-left about equally (follow the motion), top to bottom for lists.
 
 ## The curve palette
@@ -895,7 +895,7 @@ of the scene.
 
 **Numbers.**
 - Interval: 1 f (cards, cells), 2 f (UI children), 3-4 f (links, headlines), 5-7 f (statement words), 8 f (a deal).
-- Member duration 5-10 f; the whole cascade usually 0.5 s or less (a typical cascade of four or more members runs 1-5 f
+- Member duration 5-10 f; the whole cascade 0.5 s or less (a cascade of four or more members runs 1-5 f
   apart).
 - Order: left to right and right to left about equally (follow the motion), top to bottom for lists, by distance for
   fields (`radial-cascade`).
@@ -2290,7 +2290,7 @@ Family: timing. Starter: `fx/Stepped`, `fx/HardStep`.
 from camera time. It makes typing and counting feel mechanical and precise.
 
 **Numbers.**
-- Step 2 f (most), 3 f (some typing), or source-rate repeats (20 fps material on a 25 fps timeline).
+- Step 2 f (the default), 3 f (for typing), or source-rate repeats (20 fps material on a 25 fps timeline).
 - Scope: UI content, type, pixel art, grain; never the camera or a 3D hero.
 - Keep the step in source frames: on twos at 30 fps = every 4th frame at 60.
 - A film may be up to about half stepped (a pixel or editorial look) or step only a few layers.
@@ -2333,7 +2333,7 @@ Family: type.
 **Job.** Creative range (design tools, fonts, styles) inside one word, and an arrival with a crackle of energy that never
 moves the layout.
 
-**Numbers.** Hard swaps every 2-8 f (3 f is typical); 3-5 faces or colours, ending on the brand face and ink; optionally a
+**Numbers.** Hard swaps every 2-8 f (house 3 f); 3-5 faces or colours, ending on the brand face and ink; optionally a
 zoom of +3-6 % per step.
 
 **Presets.**

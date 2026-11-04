@@ -95,7 +95,7 @@ export const at = (f: number, t: Table, easing?: (x: number) => number): number 
   return interpolate(f, ks, ks.map((k) => t[k]), {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing});
 };
 
-/** 30-fps frame of the current frame (all tables in this library are given at the source film's frames; convert with k = fps/30). */
+/** 30-fps frame of the current frame (the tables in this library are given in 30 fps frames; convert with k = fps/30). */
 export const f30 = (frame: number, fps: number) => (frame * 30) / fps;
 
 /** House easing tokens (cubic-bezier control points). */
@@ -490,7 +490,7 @@ because the streak carries the eye across the seam.
 **Numbers.**
 - Shutter 90-180 degrees (the smear is 7-50 % of the per-frame displacement). 180 degrees on whips and UI flights in a
   camera-blur film; 45-90 degrees on 3D camera cranes and on type.
-- Smear lengths: most UI flights 20-120 px, whips 60-120 px, long streaks up to 400 px, rising words 6 / 3 / 0 px.
+- Smear lengths: UI flights 20-120 px, whips 60-120 px, long streaks up to 400 px, rising words 6 / 3 / 0 px.
 - Windows: 2-10 frames each, only on the listed fast frames; 4-12 samples.
 - Ceiling: above 60-80 px per frame a 180-degree shutter shows stepped copies; frame-filling edges may run 150-300 px
   per frame for a few frames only.
@@ -1013,7 +1013,7 @@ code adds an iris under the UI, a vesica window and the light rim.
 product". A shaped iris (scallop, vesica, star) makes the transition belong to the brand.
 
 **Numbers.**
-- 4-14 f (5 f is common; 36 f with a slow middle for a hero opening).
+- 4-14 f (house 5 f; 36 f with a slow middle for a hero opening).
 - Radius growth per frame: about x1.5 on the first step, decaying to x1.04 (202 -> 305 -> 396 -> 472 px: x1.51, 1.30,
   1.19, 1.14, 1.10 ...). Diameter as a share of the final: 0.37, 0.65, 0.79, 0.86, 1.
 - Edge 3-12 px soft (a white-out uses a 200 px feather); a 2-4 px light rim on dark worlds, plus a 40-80 px inner glow.
@@ -1330,7 +1330,7 @@ element flash.
 event, not as a transition.
 
 **Numbers.**
-- 1-6 frames: one full-frame white frame is the most common; 2-3 f for a matte or dissolve flash; 6 f for an
+- 1-6 frames: one full-frame white frame by default; 2-3 f for a matte or dissolve flash; 6 f for an
   overexposed capture.
 - Full-frame `#EDEDED`-`#FFFFFF`, or element-only (a button, a silhouette, tiles); +30 % luma for a material snap.
 - It often carries a ghost of the outgoing image at 10-30 % luma, an inverted band (x 21-78 % of the width), or light
@@ -1980,7 +1980,7 @@ with seeded ragged fronts and a progressive image load on twos.
 
 **Job.** "Digital, generated, loading": the picture assembles from data. It also works as a brand-coloured wipe.
 
-**Numbers.** Blocks 10-30 px (cells of 14-24 px are typical); steps on twos; 3-25 f; ragged fronts from seeded per-block
+**Numbers.** Blocks 10-30 px (house cells 14-24 px); steps on twos; 3-25 f; ragged fronts from seeded per-block
 thresholds; diamond or ring orders from a centre; the palette's accent as the block colour.
 
 **Presets.**
@@ -2375,7 +2375,7 @@ export const LensVignette: React.FC<{rgb?: string; strength?: number}> = ({rgb =
 
 Family: light, material. Starter: `fx/Rim`, `fx/Glint`.
 
-**Job.** It puts an object on a floor (it stands somewhere) and makes glass read as glass. The most common reflection is
+**Job.** It puts an object on a floor (it stands somewhere) and makes glass read as glass. The first reflection to reach for is
 a specular highlight on a rim (see `light-sweep`), not a mirror.
 
 **Numbers.** Floor reflections at 0.15-0.3 opacity, fading over 30-40 % of the object's height, blurred 2-4 px; inner

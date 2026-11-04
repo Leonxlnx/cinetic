@@ -1667,7 +1667,7 @@ downscale of an element (pixelate), or blocks stepping outward around a window. 
 
 **Job.** Digital construction; scene glue.
 
-**Numbers.** Cells 11.75-65 px (22, 24, 30 px typical); wipes 20-55 f; on twos or ones; 2-5 colour tiers.
+**Numbers.** Cells 11.75-65 px (house 22, 24, 30 px); wipes 20-55 f; on twos or ones; 2-5 colour tiers.
 
 **Presets.**
 - *Canvas mosaic.* One `<canvas>` of 30 px cells (64 x 36 = 2304 cells), deterministic from a matrix; a wipe order

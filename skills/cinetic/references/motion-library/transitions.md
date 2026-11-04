@@ -22,7 +22,7 @@ Durations are frames at 60 fps unless noted ("f60"); halve them for 30 fps.
 3. **The next shot inherits one step:** it opens at 0.5-1.15x the outgoing step and decays x0.65-0.94 per frame.
 4. **Accelerate in (x1.15-1.35 per frame at 60 fps), decelerate out.**
 5. **Smear only fast frames** (0.4-0.5 x the travel, above about 9 px per frame at 60 fps).
-6. **One house seam per film plus three or four others;** no single kind over about 45 % of the scene changes.
+6. **One house seam per film plus three or four others;** no single kind over 40 % of the scene changes.
 7. **A big change about every 2.4 s** (1.4-3.7 s); montage runs at 0.4-0.7 s per picture.
 8. **No cross-fade between unrelated pictures.** A dissolve is 2-3 frames, between versions of the same subject or under a
    wash.
@@ -30,7 +30,7 @@ Durations are frames at 60 fps unless noted ("f60"); halve them for 30 fps.
 10. **Light and dark flip only at section changes,** with a sub hit; at most twice a film.
 
 A plain hard cut is fine for about a third of the big changes, if it carries motion, a slot or an anchor (`hard-cut-right`).
-Cut points land on the beat no more often than chance; cut on the action, not on the metronome.
+A cut on the beat is not a target: cut on the action, not on the metronome.
 
 ## Picking the house seam
 
@@ -773,7 +773,7 @@ porthole under UI, black disc, pixel-mosaic ring, curtains).
 **Job.** An action becomes a place: "open this".
 
 **Numbers.** A fast iris grows x1.55-1.7 per frame at 30 fps (x1.27 at 60); a soft iris takes 13-15 f; a brand iris 36 f at
-30 fps; a vesica 4 f; edge 0-12 px soft; the motion inside runs 1-1.15x the outgoing motion; a typical opening takes 9 f.
+30 fps; a vesica 4 f; edge 0-12 px soft; the motion inside runs 1-1.15x the outgoing motion; a house opening takes 9 f.
 
 **Presets.**
 - *Word-gap iris.* Centred in a gap between words: r 22, 44, 76, 122, 190, 295, 474, 805 px, then full (r = 22 x
@@ -942,7 +942,7 @@ incoming element arrives from blur on an expo-out.
 **Job.** The next thought; the ground holds the film together.
 
 **Numbers.** Exit 12-18 f60 (8-24 px of travel, a cubic or expo-in, opacity 1 -> 0, blur 0 -> 10-12 px); a gap of 0-6 f60;
-entry 14-24 f60 from 4-12 px of blur; overshoot 6 % at most; typically 18 f in all.
+entry 14-24 f60 from 4-12 px of blur; overshoot 6 % at most; house 18 f in all.
 
 **Presets.**
 - *Standard.* Exit over 12-18 f with steps of 2, 3, 4, 5, 6, 6, 6, 8, 12, 16, 24 px per frame, opacity to 0 and blur to
@@ -1643,7 +1643,7 @@ the pictures change on a rhythm.
 
 **Job.** Rhythm and contrast: abundance or reversal.
 
-**Numbers.** Montage pictures 3-20 f each (0.4-0.7 s typical); a luma jump of about 59 is common on a contrast cut; a
+**Numbers.** Montage pictures 3-20 f each (house 0.4-0.7 s); a luma jump of about 59 on a contrast cut; a
 pre-hit gap of 2-5 f.
 
 **Presets.**

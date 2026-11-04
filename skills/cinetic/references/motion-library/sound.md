@@ -16,26 +16,26 @@ dBFS peak for one-shots, LUFS for the mix, LU for ranges and dips. "st" = semito
 
 ## Sound in numbers
 
-| measure | typical | range |
+| measure | aim | house range |
 |---|---|---|
-| integrated loudness | -14.8 LUFS | -23 to -7 (most -19 to -14) |
-| loudness range | 2.4 LU | 1.2-7.4 (arranged records 3-16) |
-| true peak | ship -1 dBTP | many masters clip above 0: never copy that |
+| integrated loudness | -15 LUFS | -19 to -14 (-23 to -7 by character) |
+| loudness range | 2.4 LU | 1.2-7.4 (an arranged record 3-16) |
+| true peak | ship -1 dBTP | never a master that clips above 0 |
 | tempo | 120 BPM | 108-148 |
-| pulse | soft | a felt groove more often than a hammered beat |
-| sound onsets per second (music + effects) | 5.9 | 4.5-7.1 |
-| onset kinds | taps and pops most, then clicks / ticks and tonal notes, then hits | risers and whooshes are rare |
-| scene changes with a sound within 1.5 f | 62 % | (chance would be 43 %); with a strong sound 20 % |
-| cut-to-sound offset | +4.5 ms | -65 to +73 ms; 62 % within 42 ms |
-| cuts within 1 f of a beat | 15 % | the same as chance: picture events are synced to cues, not to the bar grid |
-| strong hits after a dip of 8 LU or more in the 0.4 s before | about 15 % of strong hits | dip 8-19 LU (median 10), 3-11 frames under |
+| pulse | soft | a felt groove before a hammered beat |
+| sound onsets per second (music + effects) | 6 | 4.5-7.1 |
+| onset kinds | taps and pops first, then clicks / ticks and tonal notes, then hits | risers and whooshes rare |
+| scene changes with a sound within 1.5 f | 60 % or more | with a strong sound about 20 % |
+| cut-to-sound offset | on the cut (about +5 ms) | -65 to +73 ms; 60 % or more within 42 ms |
+| cuts on a beat | not a target | picture events sync to cues, not to the bar grid |
+| strong hits after a dip of 8 LU or more in the 0.4 s before | about 15 % of strong hits | dip 8-19 LU (aim 10), 3-11 frames under |
 | loudest moment | about 64 % of the way through | 14-92 % |
-| first 2 s vs the body | 0 LU | -6 to +1.6 (most soundtracks open at body level) |
-| silent tail | 0 s | up to about 1.8 s |
+| first 2 s vs the body | 0 LU (open at body level) | -6 to +1.6 |
+| silent tail | 0 s | 1.8 s at most |
 | last strong onset before the end | 0.6 s | 0-2.5 s |
-| voice-over | common | female and male alike |
+| voice-over | when the film speaks | female or male |
 
-**Which picture event gets which sound** (most common first): words and letters landing -> tick, pop, ding, hit, sub;
+**Which picture event gets which sound** (first choice first): words and letters landing -> tick, pop, ding, hit, sub;
 an element landing or snapping -> tick, pop, ding, hit; a card, pill, chip or toast -> tick, pop, ding, hit, swell; a hard
 cut -> hit, tick, pop, sub; something appearing or blooming -> tick, ding, pop, swell; a cursor click -> tick, pop, hit; a logo
 or lockup -> pop, ding, tick, hit; a flash, glow, iris or wipe -> tick, pop, ding, swell; a camera push or zoom -> pop, hit, tick,
@@ -373,8 +373,8 @@ reading them.
 - 2 to 9 sections per film; the section changes sit on a cut or a reveal, to the frame.
 - Loudness range 3-16 LU for an arranged record (vs 0.4-2.4 LU for a one-loop film).
 - Level steps between sections of 5-20 LU (for example -25 -> -10, or -12 -> -28 -> -10 -> -8).
-- 2-3 contrasting genres edited at bar lines (for example glitch hop / trap / drum and bass; future bass / trap / drum and bass;
-  tech house / corporate / funk).
+- 2-3 contrasting genres edited at bar lines (a sparse or broken one for the problem, a heavier one for the drop, a third for the
+  last call).
 
 **Presets.**
 - *Full power from frame 1* (24 fps, 140 BPM, G minor). One edited glitch hop / trap / drum and bass record: a full-band hit on
@@ -399,19 +399,19 @@ bar; a library track used from its own start with its own intro length.
 
 ```ts
 // src/sound/record.ts: the arrangement is data; the picture timeline imports the same frames
-export const FPS = 24;
+export const FPS = 30;
 export type Piece = { from: number; src: string | null; srcAt: number; gainDb?: number };
-// Shaped arc (frames are the film's): src = found track file, srcAt = seconds into it (a bar line)
+// An example arc for a 30 s film on a 120 BPM track (a bar = 2 s); frames are the film's, src = a found track file,
+// srcAt = seconds into it (a bar line). Every `from` is a picture event of the cue list.
 export const RECORD: Piece[] = [
-  { from: 1,    src: 'a_glitch.wav', srcAt: 0.0 },      // full-band hit on f1
-  { from: 85,   src: null,           srcAt: 0 },        // drop-out: only placed glitch clicks (`glitch-bursts`)
-  { from: 146,  src: 'a_glitch.wav', srcAt: 13.714 },   // beat back
-  { from: 312,  src: 'a_break.wav',  srcAt: 54.857 },   // breakdown: beat stops dead on the title
-  { from: 564,  src: 'a_trap.wav',   srcAt: 30.857 },   // THE DROP on the key line
-  { from: 640,  src: null,           srcAt: 0 },        // 1 s hole
-  { from: 680,  src: 'b_dnb.wav',    srcAt: 0.0 },      // drum and bass on the last call
-  { from: 1023, src: 'a_trap.wav',   srcAt: 89.143 },   // dark outro
-  { from: 1118, src: null,           srcAt: 0 },        // digital silence to the end
+  { from: 0,   src: 'problem.wav', srcAt: 0.0 },              // sparse problem section from the first frame
+  { from: 150, src: null,          srcAt: 0 },                // pre-hit gap: 0.5 s of room (`pre-hit-gap`)
+  { from: 165, src: 'body.wav',    srcAt: 16.0 },             // the drop on the reveal
+  { from: 405, src: 'break.wav',   srcAt: 32.0, gainDb: -3 }, // breakdown under the demo: room for clicks and voice
+  { from: 585, src: null,          srcAt: 0 },                // 0.5 s hole before the payoff
+  { from: 600, src: 'body.wav',    srcAt: 48.0 },             // second drop for the montage
+  { from: 780, src: 'outro.wav',   srcAt: 0.0 },              // outro under the lockup
+  { from: 870, src: null,          srcAt: 0 },                // digital silence to the end
 ];
 // one ffmpeg command (CPU): each piece trimmed at bar lines, 5 ms fades, delayed to its film frame, summed
 export function editCommand(rec: Piece[], fps: number, total: number, out = 'public/music.wav') {
@@ -427,7 +427,7 @@ export function editCommand(rec: Piece[], fps: number, total: number, out = 'pub
   return `ffmpeg -y ${files.map((f) => `-i audio/${f}`).join(' ')} -filter_complex "${parts.join(';')};` +
     `${labels.join('')}amix=inputs=${labels.length}:duration=longest:normalize=0,atrim=duration=${(total / fps).toFixed(4)}[m]" -map "[m]" -ar 48000 -ac 2 ${out}`;
 }
-// srcAt values must be bar lines of the found track: bar = 4 * 60 / BPM s (140 BPM: 1.7143 s); check with track.py analyze
+// srcAt values must be bar lines of the found track: bar = 4 * 60 / BPM s (120 BPM: 2 s); check with track.py analyze
 ```
 
 ### 2. The pre-hit gap: the bed falls away for 3-12 frames and comes back on the hit · `pre-hit-gap`
@@ -438,10 +438,10 @@ Family: structure.
 it gives the film breath without loudness.
 
 **Numbers.**
-- A dip of 8-19 LU (median about 10) in the 0.4 s before a strong onset; 3-11 frames more than 6 LU under the running level.
+- A dip of 8-19 LU (aim about 10) in the 0.4 s before a strong onset; 3-11 frames more than 6 LU under the running level.
 - Depth -10 to -20 dB, 7-10 dB, or to silence; 3-8 f inside a section, 6-12 f, or 0.3-1.1 s for a section drop-out; a 2-frame ramp in
   and an instant return on the hit.
-- Spacing: one every 4-10 s; six in 45 s; or three in 2.5 s as a stutter figure.
+- Spacing: one every 4-10 s, or three in 2.5 s as a stutter figure.
 
 **Presets.**
 - *Hit gap* (24 fps). The bed drops to about -36 LUFS for 3 frames and all music ducks -18 dB for 8 f; then a full-band hit (950 ms,
@@ -486,7 +486,7 @@ Family: structure.
 beat back for 2-7 s makes the arrival a reward.
 
 **Numbers.**
-- Position: 7-50 % of the runtime (sometimes as late as 80 %).
+- Position: 7-50 % of the runtime (up to 80 % for a late payoff).
 - Before it: a gap of 0.3-0.85 s, a riser of 0.4-2 s, or a 1 s build.
 - The drop hit: +20 to +43 dB over the preceding bed; a kick at 50-60 Hz with a pitch drop from 140-196 Hz in 30-40 ms, or an 808 on
   the key root.
@@ -537,12 +537,11 @@ Family: placement. See also `content-pacing.md` `sound-synced`.
 a word sounds just after it becomes readable, a moving mass (a whoosh) is loudest at its fastest.
 
 **Numbers.**
-- Strong sounds against cuts: the most common offset is on the cut or one frame after it (-2 to +2 f covers almost all).
+- Strong sounds against cuts: on the cut or one frame after it (-2 to +2 f at most).
 - Strong sounds against element landings: the contact frame, a 1 f lead allowed.
 - Cut sync overall: land cut sounds within about +-30 ms of the cut, centred on it; aim for 60 % or more within 42 ms.
-- About 62 % of cuts have some onset within 1.5 f; element starts are sounded no more than chance: arrivals are sounded, departures are
-  not.
-- Films differ: some sound nearly every cut, others leave most cuts silent and sound the elements instead.
+- 60 % or more of the cuts with an onset within 1.5 f; arrivals are sounded, departures and starts are not.
+- Or the other grammar, one per film: leave most cuts silent and sound the elements instead.
 
 **Presets (designed offsets).**
 - Word pops start 4-5 f after the word cuts on (60 fps); typing ticks 1 f after the letter.
@@ -590,7 +589,7 @@ Family: structure. See also `transitions.md` `end-handover`.
 **Job.** The ending is the brand's signature: the last accent is the lockup. Ringing out says settled and confident; a hard cut says loop
 or social; music stopping under a held lockup says calm, done.
 
-**Numbers.** A silent tail of 0 s typically (up to about 1.8 s); the last strong onset about 0.6 s before the end (0-2.5 s); a ring-out of
+**Numbers.** A silent tail of 0 s by default (1.8 s at most); the last strong onset about 0.6 s before the end (0-2.5 s); a ring-out of
 0.6-6 s after the last accent; fades of 0.5-3 s, linear in dB; the final hit +27 to +49 dB over the gap before it; the end sting narrower
 than the body.
 
@@ -643,8 +642,7 @@ Family: structure.
 **Job.** The first sound is the promise of the record. A hit says confident, no warm-up (social, launch); a swell says a world is opening
 (3D, brand). Either way the first sound and the first picture event are one event.
 
-**Numbers.** The first sound on frames 0-7 in almost every film; about two thirds of films are at body level by 0.5 s, a third open quiet
-(5-12 LU under for 1-3 s); swells of 0.4 s, 0.5 s, 0.8 s or 2 s; sparse intros of 1.5-8 s.
+**Numbers.** The first sound on frames 0-7; body level by 0.5 s by default, or a quiet open (5-12 LU under for 1-3 s); swells of 0.4 s, 0.5 s, 0.8 s or 2 s; sparse intros of 1.5-8 s.
 
 **Presets.**
 - *Hit from silence.* A hard full-band hit on frame 1 (a kick plus a bright click), +48 dB over silence.
@@ -692,9 +690,9 @@ Family: one-shot.
 the arrival that matters.
 
 **Numbers.**
-- f0 300-1800 Hz (mostly 500-900); a start ratio of 1.1-2.0 (1.6 typical, 3-12 st above); a glide of 12-60 ms; attack 1-3 ms; decay
+- f0 300-1800 Hz (house 500-900); a start ratio of 1.1-2.0 (house 1.6, 3-12 st above); a glide of 12-60 ms; attack 1-3 ms; decay
   20-235 ms (tau 9-25 ms); a click of 2-10 ms band- or high-passed at 2-5 kHz, 10-20 dB under the body.
-- Typical pops: a peak partial around 210 / 510 / 1370 Hz (low / middle / high), 10-130 ms long, 1-12 ms attack, peaking about -25 /
+- House pops: a peak partial around 210 / 510 / 1370 Hz (low / middle / high), 10-130 ms long, 1-12 ms attack, peaking about -25 /
   -16 / -10 dBFS; most of the energy in the low-mid and mid bands.
 - Chat-message pops around 200-1800 Hz and 10-200 ms; bubble pops around 150-720 Hz and 70-200 ms.
 - Level over the bed 6-12 dB, 10-20 dB inside the bed, 15-35 dB in bare passages.
@@ -815,9 +813,9 @@ Family: structure. See `music.md`.
 **Job.** When the picture is cut to the music, every accent feels inevitable and the film sounds like one piece; nothing is added on. The
 most musical way, and the cheapest to produce well, if the track is right.
 
-**Numbers.** A music-led film may carry no separate effects at all: every accent is in the music or the voice. Even these do not cut
-on beats in general: they choose accents (40-60 % of big changes on an accent in the most music-led films). Accent pitches repeat (the same
-tonal hit, for example F5, in 9 of the first 12 tonal hits; accents on E5 / C5 / G5 / E6).
+**Numbers.** A music-led film may carry no separate effects at all: every accent is in the music or the voice. Even then, do not cut
+on every beat: choose accents (40-60 % of the big changes on an accent at most). Repeat the accent pitch (the same tonal hit, for example
+F5, on most tonal hits; other accents on E5 / C5 / G5 / E6).
 
 **Presets.**
 - *Bed only.* No voice and no separate effects track: every accent is in the music, the picture's downbeats on its strong onsets.
@@ -859,8 +857,8 @@ Family: one-shot.
 
 **Job.** Suspense with a known landing: the riser says something is about to arrive; the abrupt end on the hit is the arrival.
 
-**Numbers.** Typical risers and swells run 360-620 ms, peaking at 60-100 % of their length, centroid 0.6-2.4 kHz, a sweep of -17 to +3 st.
-Stated: risers 0.3-2.0 s (UI films 0.3-0.9 s; drops 1.2-2.0 s), band-pass 400 Hz -> 3-8 kHz; swells 90-220 ms rise + 40 ms fall; reverse
+**Numbers.** House risers and swells run 360-620 ms, peaking at 60-100 % of their length, centroid 0.6-2.4 kHz, a sweep of -17 to +3 st.
+The full range: risers 0.3-2.0 s (0.3-0.9 s in a UI film; 1.2-2.0 s before a drop), band-pass 400 Hz -> 3-8 kHz; swells 90-220 ms rise + 40 ms fall; reverse
 swells 230 ms-2 s. Levels -26 dBFS (a reverse swell) to about 0 dBFS (a drop riser); +15 to +20 dB over the bed.
 
 **Presets.**
@@ -919,9 +917,9 @@ Family: one-shot. See also `transitions.md` `whip`.
 
 **Job.** Mass moving through air: a camera whip, a flight, a zoom-through, a card leaving. It glues two shots into one motion.
 
-**Numbers.** 120-660 ms (typically 200-450); a band of 300 Hz-7 kHz; rising (400 -> 4000 Hz) for pushes, lifts and arrivals, falling
+**Numbers.** 120-660 ms (house 200-450); a band of 300 Hz-7 kHz; rising (400 -> 4000 Hz) for pushes, lifts and arrivals, falling
 (2 kHz -> 600 Hz, 4 kHz -> 1 kHz) for exits and landings, rise-then-fall (500 -> 4k -> 1k) for a pass-by; the peak at 50-70 % of the
-length; -21 to -6 dBFS (the one big pass about -1 dBFS), +14 to +34 dB over the bed. Whooshes are rare: a few per film.
+length; -21 to -6 dBFS (the one big pass about -1 dBFS), +14 to +34 dB over the bed. Keep whooshes rare: a few per film.
 
 **Presets.**
 - *The big pass.* A 410 ms noise whoosh band-passed 500 Hz -> 4 kHz -> 1 kHz, starting 4 f before the cut and peaking 3 f after it,
@@ -976,8 +974,8 @@ Family: one-shot.
 marks its single most satisfying moment.
 
 **Numbers.** Fundamentals 445 Hz-3.1 kHz (bells 445-1575, glocks 1318-2400, chimes 3.5-9.1 kHz); partials at 2x, 1.5x + 3x, 2.76x (a bell),
-2.96x / 3.9x / 4.2x (a glock), or FM ratio 3.5 index 1.5; attack 1-3 ms (37 ms for a soft bell); decay 90 ms-1.6 s, typically 300-800 ms;
--2 dB (the brightest accent, used once) to -17 dBFS. Typical tonal hits: 110-250 ms long, a partial at 300-1500 Hz.
+2.96x / 3.9x / 4.2x (a glock), or FM ratio 3.5 index 1.5; attack 1-3 ms (37 ms for a soft bell); decay 90 ms-1.6 s, house 300-800 ms;
+-2 dB (the brightest accent, used once) to -17 dBFS. House tonal hits: 110-250 ms long, a partial at 300-1500 Hz.
 
 **Presets.**
 - *Ding.* Two sines 980 + 1960 Hz, 2 ms attack, 300 ms exponential decay, -10 dBFS.
@@ -1029,7 +1027,7 @@ Family: one-shot.
 = felt with a tail.
 
 **Numbers.** A body of 60-240 Hz (UI thumps 95-178 Hz, world hits 40-73 Hz); a pitch drop of 20 % to 45 st over 30-80 ms; 20-160 ms dry (UI) or
-0.35-1.25 s (world scale); a click top of 2-3.7 kHz, 10-76 ms; -4 to -15 dBFS, +22 to +46 dB over the bed. Typical hits: a partial at 66-225
+0.35-1.25 s (world scale); a click top of 2-3.7 kHz, 10-76 ms; -4 to -15 dBFS, +22 to +46 dB over the bed. House hits: a partial at 66-225
 Hz, 10-130 ms, most of the added energy below 250 Hz.
 
 **Presets.**
@@ -1127,8 +1125,8 @@ Family: placement.
 **Job.** A cascade of tiny sounds makes a fast UI gesture legible (you hear how many items arrived) without making it loud; the single strong
 sound tells you which one matters.
 
-**Numbers.** 3.4-8.7 onsets per second (music and effects together), about 6 typically; designed cues per 10 s about 10-22 in voice or UI films,
-up to about 58 in a sound-design score, 0 in a music-only film; runs of 4-11 micro-sounds 2-5 f apart at -20 to -31 dBFS; one strong sound per
+**Numbers.** 3.4-8.7 onsets per second (music and effects together), aim about 6; designed cues per 10 s about 10-22 in a voice or UI film,
+up to about 58 in a sound-design score, none in a music-only film; runs of 4-11 micro-sounds 2-5 f apart at -20 to -31 dBFS; one strong sound per
 gesture (at the start or end of the run) at -6 to -16 dBFS; variation: pitch random within the scale, +/-15 % seeded, a pitch range over a
 conveyor, pan alternating +/-40 %; never two identical in a row.
 
@@ -1176,15 +1174,15 @@ Family: music. See `music.md` for licensing and cutting.
 **Job.** The genre is the brand's voice: tech house = confident product, glitch hop = edgy developer tool, inspirational corporate = trust, funk
 and pizzicato = playful consumer app. The vocal chop is the genre's signature colour.
 
-**Numbers.** Tempo 90-171 BPM, about 120 typically; keys mostly minor (G, F#, D, F, Bb, G#, A, C minor), sometimes major (G, A, C, B, E); a soft
-pulse in many films (the groove is felt), a clear pulse in a few.
+**Numbers.** Tempo 90-171 BPM (aim about 120); a minor key by default, a major one for a bright, warm film; a soft pulse by default (the
+groove is felt), a clear pulse when the film rides the beat.
 
 **Presets.**
 - *Tech house / house.* 118-138 BPM; four-on-the-floor, a rolling bass, offbeat hats, a vocal chop; a confident product film.
 - *Glitch hop / trap.* 108-140 BPM (or 75 / 150 half and double time); an 808 sub, vocal chops, stutters; developer tools, edgy launches.
 - *Inspirational corporate.* 107-150 BPM; pizzicato, celesta, glockenspiel, soft piano, claps; trust, health, enterprise.
-- *Funk / playful.* Slap bass around 116 BPM; pizzicato at 112; brass and sax at 95; pizzicato and celesta at 107; consumer apps.
-- *Lo-fi hip hop.* 112 BPM in Bb minor, a 16-beat loop; 136 BPM in G minor with foley percussion; creative tools, calm films.
+- *Funk / playful.* 95-116 BPM; slap bass, pizzicato and celesta, brass and sax; consumer apps.
+- *Lo-fi hip hop.* 112-136 BPM in a minor key, a 16-beat loop, foley percussion; creative tools, calm films.
 
 **Rich.** A found, licensed track (for example Pixabay Content License, Uppbeat free tier, Free Music Archive CC-BY, royalty-free loops) of the
 right genre, tempo and key, cut at bar lines to the story; name the record you want, not just the accents.
@@ -1216,14 +1214,14 @@ Family: mix. See `music.md` and `content-pacing.md` `vo-explainer`.
 
 **Job.** The voice carries the argument; the picture shows its words; the music steps aside without pumping.
 
-**Numbers.** Voice-over is common, female and male alike (F0 about 190-250 Hz female, 110-150 Hz male); a pace of 2.4-2.6 words
+**Numbers.** A voice-over, female or male (F0 about 190-250 Hz female, 110-150 Hz male); a pace of 2.4-2.6 words
 per second (4.6-5 syllables per second); the voice -16 to -18 LUFS short-term alone, 6-8 dB over the bed; peaks -3 to -7 dBFS; the bed ducked 3-4
-dB with a 30 ms attack and a 200-250 ms release (8 dB or 14 dB in some films, none when the bed is kept low and constant); processing: high-pass
+dB with a 30 ms attack and a 200-250 ms release (8 dB or 14 dB for a deeper duck, none when the bed is kept low and constant); processing: high-pass
 90 Hz, +3 dB at 4 kHz, 4:1 compression, de-ess, a plate at 0-5 % wet; mono centre; a phone voice band-passed 300-3400 Hz.
 
 **Presets.**
 - *Warm narrator.* A warm mid-register voice, clear neutral diction, confident and friendly, a medium pace (about 2.4 words per second).
-- *Bright narrator.* A bright mid-high register (median F0 about 247 Hz), close-miked and dry.
+- *Bright narrator.* A bright mid-high register (F0 about 247 Hz), close-miked and dry.
 - *Processing chain.* High-pass 90 Hz, presence +3 dB at 4 kHz, 4:1 compression, de-ess, a short plate (5 % wet); the voice about 6-8 dB over
   the bed.
 - *Constant bed.* A close, dry voice at about 2.6 words per second over a constant low bed with no ducking.
@@ -1256,9 +1254,9 @@ Family: mix. See `finishing.md` (the loudness pass and the mux).
 **Job.** Loudness and range are part of the character: a quiet, dark master reads premium and calm; a loud, narrow master reads social and
 aggressive. The range should come from the arrangement (gaps, breakdowns), not from unlimited peaks.
 
-**Numbers.** Integrated -23 to -7 LUFS (about -15 typically, most -19 to -14); loudness range 0.4-16 LU (about 2.4); ship -1 dBTP; side/mid -21 to
--4 dB (typically -12 to -15; wide films -5 to -8.5); brightness (spectral centroid) dark 280-450 Hz to bright 1.8-3.4 kHz; effects 6-20 dB over the
-bed typically, 15-35 dB in bare passages, 20-49 dB for strong accents after gaps.
+**Numbers.** Integrated -19 to -14 LUFS (aim -15; -23 to -7 by character); loudness range 0.4-16 LU (aim about 2.4); ship -1 dBTP; side/mid -21
+to -4 dB (aim -12 to -15; a wide mix -5 to -8.5); brightness (spectral centroid) dark 280-450 Hz to bright 1.8-3.4 kHz; effects 6-20 dB over the
+bed, 15-35 dB in bare passages, 20-49 dB for strong accents after gaps.
 
 **Presets.**
 - *Huge range.* -10 LUFS integrated with a 15.7 LU range from a long quiet breakdown in the middle.
@@ -1291,8 +1289,8 @@ Family: one-shot.
 
 **Job.** Precision and "digital": small steps, checks, snaps, marker jumps. A rising sequence of ticks accelerates a move before it happens.
 
-**Numbers.** 3-60 ms (typically 8-15); a centre of 2.6-14.7 kHz; 1 ms attack; -10 dB under the bed to -31 dBFS (in runs); pan alternating +/-40 %,
-or centred. Typical clicks: a centroid of 2.7 / 4.1 / 7.9 kHz (low / middle / high), 10-65 ms, peaking -31 / -21 / -13 dBFS; most energy at 4-10
+**Numbers.** 3-60 ms (house 8-15); a centre of 2.6-14.7 kHz; 1 ms attack; -10 dB under the bed to -31 dBFS (in runs); pan alternating +/-40 %,
+or centred. House clicks: a centroid of 2.7 / 4.1 / 7.9 kHz (low / middle / high), 10-65 ms, peaking -31 / -21 / -13 dBFS; most energy at 4-10
 kHz.
 
 **Presets.**
@@ -1422,7 +1420,7 @@ Family: one-shot.
 **Job.** Pitch draws direction: up = appear, grow, rise, yes; down = shrink, vanish, exit, no. A single motion gets a character without a melody.
 
 **Numbers.** Sweeps of -58 to +49 st; 40-210 ms; starts from 370 Hz to 14 kHz; exponential in pitch; a soft attack (60 ms) for falls into silence,
-1-2 ms for pops; typical tonal sweeps -14 to +20 st, clicks -4.5 to +12 st.
+1-2 ms for pops; house tonal sweeps -14 to +20 st, clicks -4.5 to +12 st.
 
 **Presets.**
 - *Falling pew.* A sine starting at 1.9 kHz and falling about 58 st (to about 65 Hz) in 210 ms, with a 60 ms attack, as an element shrinks
@@ -1507,8 +1505,8 @@ films.
 **Presets.**
 - *Three textures.* A sound-design track, not a song: no steady beat, long stretches of nothing; chimes, clicks and thumps return as motifs; silences
   planned as picture holds.
-- *Bare passages inside music films.* 7 s of voice with UI plops, ticks and chimes and no beat at the start; an almost bare passage in the middle of a
-  music film.
+- *Bare passage inside a music film.* Up to 7 s of voice with UI plops, ticks and chimes and no beat at the start, or an almost bare passage in the
+  middle.
 
 **Rich.** Motifs (the same three textures returning); a key centre for every tonal sound; true silences; nothing on the bed; density following the
 picture.
@@ -1573,7 +1571,7 @@ Family: one-shot.
 
 **Job.** Authority and punctuation: a title lands, a montage tears, a section ends. Repeated, it becomes the brand's sonic logo.
 
-**Numbers.** 137 ms (typical) to 1.1 s; a centroid of 0.94-2.0 kHz; 6 voices; low-pass 3 kHz; +18 to +36 dB over the bed; repeated as a signature 7-8
+**Numbers.** 137 ms (house) to 1.1 s; a centroid of 0.94-2.0 kHz; 6 voices; low-pass 3 kHz; +18 to +36 dB over the bed; repeated as a signature 7-8
 times in a film.
 
 **Presets.**
@@ -1660,7 +1658,7 @@ Family: music.
 playful exclamation.
 
 **Numbers.** 80-150 ms; formants F1 700, F2 1200-1220, F3 2600 Hz; notes from the key (for example D4 F4 A4, C#4 F#4, F#4 A4); pan +/-0.3; ping-pong 1/8 at
-20 %; accent sweeps pitched down 8-30 st over 250 ms; the bed's chops at -20 to -30 dB. The vocal chop colours about half of all music sections.
+20 %; accent sweeps pitched down 8-30 st over 250 ms; the bed's chops at -20 to -30 dB. Let the vocal chop colour about half of the music sections.
 
 **Presets.**
 - *Chop sweeps on cues.* Vocal-chop sweeps pitched down -20, -23, -30, -9 st on the cue frames of a sizzle.
@@ -1698,7 +1696,7 @@ Family: mix.
 
 **Job.** Width is space and air (a world opening, a breath); narrow is punch and focus (the drop, the logo).
 
-**Numbers.** Side/mid -21 to -4.3 dB, typically -12 to -15; wide sections -5 to +1 dB (intros, breakdowns); narrow -12 to -20 (drops, stings, voice films).
+**Numbers.** Side/mid -21 to -4.3 dB, aim -12 to -15; wide sections -5 to +1 dB (intros, breakdowns); narrow -12 to -20 (drops, stings, a voice film).
 Pans: plucks +/-30-40 %, clicks alternating +/-40 %, chops +/-0.3, whooshes along the motion; Haas 8-15 ms; kick, sub, bass, voice and pops mono centre.
 
 **Presets.**
@@ -1721,7 +1719,7 @@ export function width(s: Stereo, k: number): Stereo {
   return { L, R };
 }
 export const panFromX = (x: number, frameW: number, limit = 0.6) => Math.max(-limit, Math.min(limit, (x / frameW) * 2 - 1));
-// side/mid in dB, to check a mix against the targets (-12..-15 typical)
+// side/mid in dB, to check a mix against the targets (aim -12..-15)
 export function sideMid(s: Stereo) { let m = 0, d = 0; for (let i = 0; i < s.L.length; i++) { const a = (s.L[i] + s.R[i]) / 2, b = (s.L[i] - s.R[i]) / 2; m += a * a; d += b * b; } return 10 * Math.log10((d + 1e-12) / (m + 1e-12)); }
 ```
 
