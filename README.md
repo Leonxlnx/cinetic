@@ -150,7 +150,7 @@ npx skills add Leonxlnx/cinetic -g -a claude-code -y
 Pin a version:
 
 ```bash
-npx skills add Leonxlnx/cinetic#v1.5.0
+npx skills add Leonxlnx/cinetic#v1.5.1
 ```
 
 For Claude Code the skill lands in `.claude/skills/cinetic` (project) or `~/.claude/skills/cinetic` (with `-g`). The same command installs it for the other agents the skills CLI supports, such as Codex and Cursor; choose them with `-a`.
