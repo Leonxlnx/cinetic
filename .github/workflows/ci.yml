@@ -254,8 +254,10 @@ jobs:
       - name: Music track tests (track.py on test beds made in code)
         run: python3 "skills/$SKILL/scripts/test/track.test.py"
 
-      - name: Sound library tests (signals made in code, no earshot)
-        run: python3 "skills/$SKILL/scripts/test/library.test.py"
+      - name: Sound library and effects catalogue tests (signals made in code, no earshot; sfx.mjs on fixtures, no network)
+        run: |
+          python3 "skills/$SKILL/scripts/test/library.test.py"
+          node "skills/$SKILL/scripts/test/sfx.test.mjs"
 
       - name: Copy check tests (copy-check.py)
         run: python3 "skills/$SKILL/scripts/test/copy-check.test.py"

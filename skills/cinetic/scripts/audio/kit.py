@@ -22,6 +22,8 @@ Usage (from the project root):
                                    # give each action of the film (out/cues.json) its own sound (bank or library)
   python3 scripts/audio/kit.py real FILE --action ACTION [--licence RECORD]
                                    # a free real effect (music.mjs get --kind sfx) as the takes of an action
+  python3 scripts/audio/kit.py real FILE --role ROLE[,ROLE] [--licence RECORD]
+                                   # the same for kit roles (sfx.mjs place: the catalogue's effect per role)
   python3 scripts/audio/kit.py trim                 # trim the lead-in of recorded takes placed before cast/real did
   python3 scripts/audio/kit.py tune                 # retune the tonal roles to score.json's key
   python3 scripts/audio/kit.py render [--force]     # audio/kit/*.wav + kit.lock.json (cached)
@@ -1648,8 +1650,8 @@ def cmd_real(a):
         print(f'kit.py: real needs the effect file (music.mjs get --kind sfx downloads one): {a.file}', file=sys.stderr)
         return 1
     act = AC.ALIASES.get(a.action or '', a.action)
-    if act not in AC.ACTIONS:
-        print(f"kit.py: --action is one of {', '.join(AC.ACTIONS)}", file=sys.stderr)
+    if not a.role and act not in AC.ACTIONS:
+        print(f"kit.py: --action is one of {', '.join(AC.ACTIONS)} (or --role ROLE[,ROLE])", file=sys.stderr)
         return 1
     rec_path = a.licence or os.path.splitext(a.file)[0] + '.licence.json'
     try:
@@ -1669,7 +1671,15 @@ def cmd_real(a):
         return 1
     kit = read_json(a.kit, 'kit')
     cast = kit.get('cast') or {}
-    names = [n for n, r in (cast.get('roles') or {}).items() if r.get('action') == act]
+    if a.role:  # the roles named (sfx.mjs place: a catalogue effect per role), each kit role that is not off
+        names = [n.strip() for n in a.role.split(',') if n.strip()]
+        bad = [n for n in names if not (kit.get('roles') or {}).get(n)]
+        if bad:
+            print(f"kit.py: real --role: {', '.join(bad)} not a role of the kit that is on", file=sys.stderr)
+            return 1
+        act = act or ((cast.get('roles') or {}).get(names[0]) or {}).get('action') or names[0]
+    else:
+        names = [n for n, r in (cast.get('roles') or {}).items() if r.get('action') == act]
     if not names:
         have = sorted({r.get('action') for r in (cast.get('roles') or {}).values()})
         print(f"kit.py: no role of the cast plays {act}: cast the kit first (kit.py cast)"
@@ -1758,6 +1768,7 @@ def main(argv=None):
                     '~/.cinetic/sfx-library.json)')
     ap.add_argument('--no-library', action='store_true', help='cast: the bank alone')
     ap.add_argument('--action', help='real: the action the effect plays (actions.py)')
+    ap.add_argument('--role', help='real: the kit roles it plays instead of the roles of an action (comma-separated; sfx.mjs place)')
     ap.add_argument('--licence', help='real: its licence record (default: <file stem>.licence.json)')
     a = ap.parse_args(argv)
     a.takes = takes_dir_for(a.kit, a.takes)
