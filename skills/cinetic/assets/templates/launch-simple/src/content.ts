@@ -533,3 +533,31 @@ export const CONTENT: FilmContent = {
     ]
   }
 };
+
+/**
+ * What the newer house scenes take beyond CONTENT (acts/bank.tsx fillOf reads it; a film without this export plays the
+ * scenes' own defaults): the phone app phone-pullback opens (its feed cards, the two rows its "+" opens, the search
+ * field and the tabs), and the real photographs some scenes stand on, fetched at film time with scripts/assets.mjs
+ * (open collections, no credit needed) and written here with their corners in the photograph's own pixels, read off a
+ * gridded copy: `street` 1-4 street or wall photographs with the four corners of each board (street-poster puts the
+ * product's output on them), `room` a room photograph with the four corners of its screen (room-push pushes into it),
+ * `clouds` a cloud-sea plate (`node scripts/assets.mjs plate clouds`) for cloud-dome. Empty `street` / null `room`: the
+ * deal never plays those scenes (src/bank.ts CONTENT_HAVE); no `clouds`: cloud-dome paints its own cloud sea.
+ */
+type Pt = readonly [number, number];
+export const SCENE_CONTENT: {
+  phone: { search?: string; tabs?: readonly [string, string]; menu: readonly [string, string]; nav?: readonly [string, string, string, string]; cards: readonly { who: string; meta?: string; photo?: string; title: string; body?: string; tags?: readonly string[]; action?: string }[] };
+  plates: { clouds?: string; street: readonly { src: string; w: number; h: number; boards: readonly (readonly [Pt, Pt, Pt, Pt])[]; night?: boolean }[]; room: { src: string; w: number; h: number; screen: readonly [Pt, Pt, Pt, Pt] } | null };
+} = {
+  phone: {
+    search: '[Search]',
+    tabs: ['[For you]', '[Recent]'],
+    menu: ['[New request]', '[New list]'],
+    nav: ['[Home]', '[Search]', '[Inbox]', '[You]'],
+    cards: [
+      { who: '[a person]', meta: '[2m]', title: '[the result it makes]', body: '[one line about it]', tags: ['[tag]', '[tag]'] },
+      { who: '[a person]', meta: '[1h]', title: '[the request, in the user\'s own words]' },
+    ],
+  },
+  plates: { street: [], room: null },
+};

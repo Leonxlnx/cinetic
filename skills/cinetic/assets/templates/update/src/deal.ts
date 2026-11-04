@@ -162,6 +162,16 @@ export const HERO_META = [
   { id: 'photo-river', role: 'picture', family: 'media', needs: ['pictures'], prefer: 'middle', min: 2.7, fits: ['photo', 'video', 'image', 'picture', 'gallery', 'album', 'clip', 'every', 'all', 'library'], about: 'one card pumps through the change\'s pictures faster and faster, leaves a deck and unfolds into a row receding in depth' },
   { id: 'photo-counters', role: 'picture', family: 'figure', needs: ['pictures'], prefer: 'proof', min: 1.7, fits: ['count', 'save', 'saved', 'earn', 'hours', 'minutes', 'faster', 'more', 'less', 'grow', 'track'], about: 'the change\'s picture develops from a duotone in the accent while glass cards over it count the figure up' },
   { id: 'orbit-chips', role: 'picture', family: 'logos', needs: [], prefer: 'middle', min: 2.0, fits: ['works', 'with', 'connect', 'sync', 'import', 'integrat', 'apps', 'tools', 'plug'], about: 'the change\'s line sits on hairline orbits; the products it works with fly in as accent pills and land as their official marks on chips that orbit' },
+  { id: 'photo-orbit', role: 'picture', family: 'media', needs: ['pictures'], prefer: 'first', min: 2.3, dark: true, fits: ['photo', 'picture', 'image', 'gallery', 'album', 'share', 'see', 'every', 'all', 'shoot'], about: 'the change\'s line builds word by word in caps at the centre of a near-black ground while square tiles of its pictures dive in and orbit it in depth, flaring to white' },
+  { id: 'card-rivers', role: 'picture', family: 'media', needs: ['pictures'], prefer: 'middle', min: 2.9, fits: ['photo', 'picture', 'library', 'collect', 'sort', 'find', 'browse', 'save', 'all', 'every'], about: 'one word at the centre of two curved rivers of the change\'s picture cards streaming past in depth; the word swaps mid-flow and the rivers accelerate into streaks' },
+  { id: 'site-flip', role: 'picture', family: 'page', needs: [], prefer: 'middle', min: 2.1, dark: true, fits: ['page', 'site', 'website', 'publish', 'design', 'build', 'landing', 'store', 'shop', 'live'], about: 'two white blocks step in and turn into the product\'s page in 3D on a dotted black stage; it orbits round while it builds section by section, then whips out' },
+  { id: 'ribbon-ring', role: 'picture', family: 'title', needs: [], prefer: 'proof', min: 1.9, fits: ['now', 'one', 'every', 'always', 'never', 'just', 'simple', 'clean', 'quiet', 'calm'], about: 'white on white: the change\'s words cut on in the hole of a pleated paper ring seen from above; the camera rises and whips up to a sunflower of rays that fades, leaving the line' },
+  { id: 'phone-pullback', role: 'picture', family: 'press', needs: ['button'], prefer: 'middle', min: 2.8, fits: ['tap', 'add', 'new', 'create', 'post', 'open', 'phone', 'mobile', 'app', 'menu', 'start'], about: 'a macro on the product\'s name in its phone app pulls back into the whole phone tilted in 3D; a chunky pointer presses the + and the change\'s two-row menu pops' },
+  { id: 'object-window', role: 'picture', family: 'press', needs: ['button'], prefer: 'proof', min: 2.8, dark: true, fits: ['pick', 'choose', 'mark', 'select', 'place', 'pin', 'save', 'edit', 'confirm', 'done'], about: 'a glass app window rises holding the brand\'s mark as a solid; it turns to face us, the camera pushes in, a pointer marks a spot on it and presses the change\'s confirm pill' },
+  { id: 'crystal-hall', role: 'picture', family: 'mark', needs: [], prefer: 'first', min: 2.6, dark: true, fits: ['new', 'launch', 'start', 'unlock', 'live', 'ready', 'turn', 'faster', 'power', 'open'], about: 'a sphere in the accent flies into a dark hall of glowing grid walls and lands; a glass octahedron forms round it under a cone of light and fills with light, the mark inside' },
+  { id: 'cloud-dome', role: 'picture', family: 'logos', needs: ['logos'], prefer: 'middle', min: 2.8, fits: ['works', 'with', 'connect', 'sync', 'apps', 'tools', 'integrat', 'everywhere', 'cloud', 'plug'], about: 'the change\'s line on a pale sky; the camera tilts down through a rushing cloud onto the product under a glass dome above a cloud sea, the tools it works with orbiting as glass tiles' },
+  { id: 'street-poster', role: 'picture', family: 'world', needs: ['picture', 'street'], prefer: 'proof', min: 2.0, dark: true, fits: ['publish', 'share', 'print', 'poster', 'post', 'everywhere', 'world', 'city', 'out', 'promote'], about: 'real street photographs cut one after another, each pulling back, every billboard carrying the change\'s picture in its perspective' },
+  { id: 'room-push', role: 'picture', family: 'world', needs: ['picture', 'room'], prefer: 'middle', min: 2.2, fits: ['see', 'show', 'screen', 'present', 'meet', 'room', 'tv', 'big', 'share', 'open'], about: 'a real room appears as a render pass in the brand\'s colours and resolves to the photograph; the camera punches in and pushes into its screen until the change\'s picture is the frame' },
   { id: 'mark-pullback', role: 'end', family: 'mark', needs: [], prefer: 'proof', min: 2.0, fits: [], about: 'the end: the brand\'s mark as a solid pulls back from an extreme close-up with a roll, one snap cut to the lockup assembling, which keeps a slow push; the version lands under it on the bar line' },
 ] as const satisfies readonly HeroMeta[];
 export type HeroId = (typeof HERO_META)[number]['id'];
@@ -193,6 +203,16 @@ export const SCENE_SPEC: Record<string, SceneSpec> = {
   'photo-river': { dur: 81, big: true, carries: false, tone: 'either', handIn: { form: 'photo', x: 625, y: 90, w: 670, h: 900 }, handOut: { form: 'photo', x: 744, y: 250, w: 432, h: 579 } },
   'photo-counters': { dur: 52, big: false, carries: false, tone: 'light', rest: 40, handIn: { form: 'photo', x: 0, y: 0, w: 1920, h: 1080 }, handOut: { form: 'count', x: 550, y: 260, w: 820, h: 560 } },
   'orbit-chips': { dur: 60, big: false, carries: true, tone: 'light', handIn: { form: 'word', x: 516, y: 497, w: 888, h: 86 }, handOut: { form: 'card', x: 560, y: 200, w: 800, h: 680 } },
+  'photo-orbit': { dur: 69, big: true, carries: false, tone: 'dark', handIn: null, handOut: { form: 'world', x: 0, y: 0, w: 1920, h: 1080 } },
+  'card-rivers': { dur: 87, big: true, carries: false, tone: 'light', handIn: null, handOut: { form: 'word', x: 836, y: 516, w: 249, h: 50 }, exit: { kind: 'velocity', carry: 'x', dir: 1 } },
+  'site-flip': { dur: 62, big: true, carries: false, tone: 'dark', handIn: null, handOut: { form: 'page', x: -114, y: 79, w: 1346, h: 980 }, exit: { kind: 'whip', carry: 'x', dir: -1 } },
+  'ribbon-ring': { dur: 56, big: false, carries: false, tone: 'light', handIn: null, handOut: { form: 'word', x: 683, y: 504, w: 553, h: 72 } },
+  'phone-pullback': { dur: 84, big: true, carries: false, tone: 'light', handIn: { form: 'mark', x: 534, y: 469, w: 173, h: 118 }, handOut: { form: 'card', x: 649, y: 491, w: 575, h: 222 } },
+  'object-window': { dur: 84, big: true, carries: false, tone: 'dark', handIn: { form: 'window', x: 440, y: 311, w: 1031, h: 687 }, handOut: { form: 'window', x: 270, y: 82, w: 1390, h: 926 } },
+  'crystal-hall': { dur: 78, big: true, carries: false, tone: 'dark', handIn: null, handOut: { form: 'mark', x: 765, y: 338, w: 390, h: 524 } },
+  'cloud-dome': { dur: 84, big: true, carries: false, tone: 'light', handIn: { form: 'word', x: 330, y: 430, w: 1260, h: 202 }, handOut: { form: 'world', x: 0, y: 0, w: 1920, h: 1080 }, exit: { kind: 'defocus' } },
+  'street-poster': { dur: 60, big: true, carries: false, tone: 'dark', handIn: null, handOut: { form: 'photo', x: 0, y: 0, w: 1920, h: 1080 } },
+  'room-push': { dur: 66, big: true, carries: false, tone: 'either', handIn: null, handOut: { form: 'window', x: 0, y: 0, w: 1920, h: 1080 } },
   'mark-pullback': { dur: 60, big: true, carries: false, tone: 'either', rest: 21, handIn: null, handOut: { form: 'mark', x: 630, y: 471, w: 660, h: 137 } },
 };
 /** The lockup's own frames (30 fps, scenes/mark-pullback PULLBACK): the one snap cut to the lockup assembling, settled. */
@@ -268,6 +288,29 @@ export const sceneFit = (id: string, c: Change): number => {
       return s.kind === 'count' && pic ? 2 : 0;
     case 'orbit-chips':
       return (c.logos?.length ?? 0) >= 3 ? 2 : 0;
+    // the newer scenes: a grid of 4 or more photos orbits the line, 8 or more stream as rivers; a page plays as the
+    // product's site; a press opens the app's menu or marks a spot and confirms; tools orbit a dome; a picture goes on
+    // the street's boards or into a room's screen (PLATES); the ring and the hall carry any short change
+    case 'photo-orbit':
+      return photosOf(c).length >= 4 && n <= 6 ? (s.kind === 'fill' && s.layout === 'grid' ? 2 : 1) : 0;
+    case 'card-rivers':
+      return photosOf(c).length >= 8 ? 2 : 0;
+    case 'site-flip':
+      return s.kind === 'page' ? 2 : 0;
+    case 'ribbon-ring':
+      return n >= 2 && n <= 7 ? 1 : 0;
+    case 'phone-pullback':
+      return s.kind === 'tap' ? 2 : 0;
+    case 'object-window':
+      return s.kind === 'tap' && n <= 6 ? 2 : 0;
+    case 'crystal-hall':
+      return n <= 6 ? (asks('crystal-hall', c) ? 2 : 1) : 0;
+    case 'cloud-dome':
+      return (c.logos?.length ?? 0) >= 3 ? 2 : n <= 7 ? 1 : 0;
+    case 'street-poster':
+      return pic && PLATES.street.length ? 2 : 0;
+    case 'room-push':
+      return pic && PLATES.room ? 2 : 0;
     default:
       return 0;
   }
@@ -289,6 +332,17 @@ export const joins = (a: string, b: string): boolean => {
   const iy = Math.max(0, Math.min(o.y + o.h, i.y + i.h) - Math.max(o.y, i.y));
   return (ix * iy) / Math.max(o.w * o.h, i.w * i.h) > 0.8;
 };
+
+/**
+ * The real photographs street-poster and room-push stand on, fetched at film time (scripts/assets.mjs: open
+ * collections, no credit needed) and written here with their corners in the photograph's own pixels, read off a gridded
+ * copy: `street` 1-4 street or wall photographs with the four corners of each board (the change's picture goes on
+ * them), `room` a room photograph with the four corners of its screen (the change's picture fills it). Empty: neither
+ * scene is dealt. `clouds`: a cloud-sea plate for cloud-dome (`node scripts/assets.mjs plate clouds`); none: it paints
+ * its own.
+ */
+type Pt = readonly [number, number];
+export const PLATES: { clouds?: string; street: readonly { src: string; w: number; h: number; boards: readonly (readonly [Pt, Pt, Pt, Pt])[]; night?: boolean }[]; room: { src: string; w: number; h: number; screen: readonly [Pt, Pt, Pt, Pt] } | null } = { street: [], room: null };
 
 /** What the unnamed scaffold plays first. */
 export const FLOOR_HERO: string[] = ['macro-type', 'toast-stack', 'porthole-line', 'page-fly', 'photo-river', 'decode-title', 'glass-prompt', 'photo-counters', 'orbit-chips'];

@@ -7,6 +7,7 @@
 // Kept free of React, the brand tokens and the scene modules (the timeline imports it; the scenes import the timeline
 // through the tokens): the numbers mirror each scene's meta entry, and acts/bank.tsx checks them against the real metas
 // and fits each scene to its slot at draw time, so a scene always plays whole, never cut and never frozen early.
+import * as CONTENT_FILE from './content';
 import { DEAL_SOURCE } from './deal';
 import { DEALT } from './dealt';
 import { RECENT } from './recent';
@@ -15,8 +16,12 @@ import { stemVerb } from './lib/spine';
 
 /** The value a scene was designed on (its source's ground): the film's palette fills it, adapted to the brand. */
 export type Ground = 'light' | 'dark' | 'field';
-/** What a scene needs from the film before it can be dealt: pictures of the brief's own subject, official partner marks, a price table, a cut-out product. */
-export type Need = 'picture' | 'pictures' | 'logos' | 'plans' | 'product' | 'hero';
+/**
+ * What a scene needs from the film before it can be dealt: pictures of the brief's own subject, official partner marks, a
+ * price table, a cut-out product, the product's site (src/content.ts CONTENT.site), street photographs with the corners of
+ * their boards or a room photograph with the corners of its screen (src/content.ts SCENE_CONTENT.plates).
+ */
+export type Need = 'picture' | 'pictures' | 'logos' | 'plans' | 'product' | 'hero' | 'site' | 'street' | 'room';
 export type Box = { form: Form; x: number; y: number; w: number; h: number; r?: number };
 export type BankEntry = {
   id: string;
@@ -69,6 +74,21 @@ export const BANK: Record<string, BankEntry> = {
   'ring-dive': { id: 'ring-dive', dur: 78, big: true, ground: 'light', verbs: ['show', 'browse', 'find', 'choose', 'collect'], needs: ['pictures'], handIn: null, handOut: { form: 'word', x: 820, y: 503, w: 280, h: 74 } },
   'orbit-chips': { id: 'orbit-chips', dur: 60, big: false, ground: 'light', verbs: ['connect', 'integrate', 'sync', 'link', 'import', 'work'], needs: ['logos'], handIn: { form: 'word', x: 516, y: 497, w: 888, h: 86 }, handOut: { form: 'card', x: 560, y: 200, w: 800, h: 680, r: 64 } },
   'type-flip': { id: 'type-flip', dur: 56, big: true, ground: 'light', verbs: ['line', 'claim', 'start'], handIn: null, handOut: { form: 'word', x: 110, y: 70, w: 1700, h: 910 } },
+  // the newer scenes: each one point of the body, filled from the line, the pictures and src/content.ts (acts/bank.tsx fillOf)
+  'cloud-dome': { id: 'cloud-dome', dur: 84, big: true, ground: 'light', verbs: ['line', 'connect', 'integrate', 'sync', 'work', 'run', 'automate', 'launch', 'open'], handIn: { form: 'word', x: 330, y: 430, w: 1260, h: 202 }, handOut: { form: 'world', x: 0, y: 0, w: 1920, h: 1080 } },
+  'photo-orbit': { id: 'photo-orbit', dur: 69, big: true, ground: 'dark', verbs: ['line', 'show', 'see', 'shoot', 'picture', 'browse', 'collect', 'share'], needs: ['pictures'], handIn: null, handOut: { form: 'world', x: 0, y: 0, w: 1920, h: 1080 } },
+  'card-rivers': { id: 'card-rivers', dur: 87, big: true, ground: 'light', verbs: ['show', 'browse', 'find', 'collect', 'sort', 'organize', 'search', 'save', 'curate'], needs: ['pictures'], handIn: null, handOut: { form: 'word', x: 836, y: 516, w: 249, h: 50 } },
+  'site-flip': { id: 'site-flip', dur: 62, big: true, ground: 'dark', verbs: ['build', 'make', 'design', 'publish', 'launch', 'create', 'generate', 'ship', 'write'], needs: ['site'], handIn: null, handOut: { form: 'page', x: -114, y: 79, w: 1346, h: 980 } },
+  'ribbon-ring': { id: 'ribbon-ring', dur: 56, big: false, ground: 'light', verbs: ['line', 'claim', 'say', 'tell', 'write', 'promise'], handIn: null, handOut: { form: 'word', x: 683, y: 504, w: 553, h: 72 } },
+  'phone-pullback': { id: 'phone-pullback', dur: 84, big: true, ground: 'light', verbs: ['tap', 'open', 'add', 'create', 'start', 'use', 'book', 'plan', 'post'], handIn: { form: 'mark', x: 534, y: 469, w: 173, h: 118 }, handOut: { form: 'card', x: 649, y: 491, w: 575, h: 222, r: 24 } },
+  'street-poster': {
+    id: 'street-poster', dur: 60, big: true, ground: 'dark', verbs: ['publish', 'launch', 'ship', 'share', 'show', 'print', 'promote', 'sell', 'advertise', 'reach'], needs: ['picture', 'street'], handIn: null, handOut: { form: 'photo', x: 0, y: 0, w: 1920, h: 1080 },
+    // 18 f a plate, the last 24, never under 45 f (scenes/street-poster streetPosterDur)
+    durOf: (p) => Math.max(45, 18 * (Math.max(1, Array.isArray(p.plates) && p.plates.length ? p.plates.length : 3) - 1) + 24),
+  },
+  'room-push': { id: 'room-push', dur: 66, big: true, ground: 'light', verbs: ['show', 'open', 'see', 'use', 'work', 'view', 'present', 'meet', 'run'], needs: ['picture', 'room'], handIn: null, handOut: { form: 'window', x: 0, y: 0, w: 1920, h: 1080 } },
+  'crystal-hall': { id: 'crystal-hall', dur: 78, big: true, ground: 'dark', verbs: ['launch', 'start', 'ship', 'turn', 'open', 'make', 'unlock'], handIn: null, handOut: { form: 'mark', x: 765, y: 338, w: 390, h: 524 } },
+  'object-window': { id: 'object-window', dur: 84, big: true, ground: 'dark', verbs: ['choose', 'pick', 'mark', 'select', 'edit', 'design', 'make', 'save', 'place'], handIn: { form: 'window', x: 440, y: 311, w: 1031, h: 687, r: 82 }, handOut: { form: 'window', x: 270, y: 82, w: 1390, h: 926, r: 110 } },
   'blobs-to-mark': { id: 'blobs-to-mark', dur: 74, big: true, ground: 'light', verbs: ['end'], lock: 0.49, name: 0.74, handIn: null, handOut: { form: 'mark', x: 596, y: 431, w: 728, h: 217 } },
   'line-to-wordmark': {
     id: 'line-to-wordmark', dur: 76, big: false, ground: 'light', verbs: ['end'], lock: 0.53, name: 0.58, handIn: null, handOut: { form: 'mark', x: 660, y: 474, w: 600, h: 138 },
@@ -103,6 +123,20 @@ const hash = (s: string) => {
   h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
   return (h ^ (h >>> 16)) >>> 0;
 };
+/**
+ * What the film's content gives beyond the spine's pictures and props (src/timeline.ts HAVE): the product's site
+ * (CONTENT.site), the street photographs with their boards' corners and the room photograph with its screen's corners
+ * (SCENE_CONTENT.plates: scripts/assets.mjs at film time). A brief without them never deals the scenes that stand on them.
+ */
+export const CONTENT_HAVE: readonly Need[] = (() => {
+  const f = CONTENT_FILE as unknown as { CONTENT?: { site?: unknown }; SCENE_CONTENT?: { plates?: { street?: readonly unknown[]; room?: unknown } } };
+  const plates = f.SCENE_CONTENT?.plates;
+  const out: Need[] = [];
+  if (f.CONTENT?.site) out.push('site');
+  if (Array.isArray(plates?.street) && plates.street.length) out.push('street');
+  if (plates?.room) out.push('room');
+  return out;
+})();
 /** The deal's rules: most of a film's scenes from the bank, one of its own at most, two shared with the last film at most. */
 export const DEAL_RULES = { bankShare: 0.75, ownMax: 1, sharedMax: 2, ownSeconds: [1.5, 3] } as const;
 /**
@@ -142,7 +176,8 @@ export const dealWeight = (e: BankEntry, stem: string, form: Form | undefined, h
 export const dealScene = (q: DealAsk): string => {
   const history = q.history ?? HISTORY;
   const stem = q.last ? 'end' : q.line ? 'line' : stemVerb(q.verb);
-  const fits = (e: BankEntry) => (e.needs ?? []).every((n) => q.have.includes(n));
+  const have = [...q.have, ...CONTENT_HAVE];
+  const fits = (e: BankEntry) => (e.needs ?? []).every((n) => have.includes(n));
   const all = Object.values(BANK).filter((e) => fits(e) && (q.last ? e.verbs.includes('end') : !e.verbs.includes('end')));
   const lines = q.line && !q.last ? all.filter((e) => e.verbs.includes('line')) : all;
   const pool0 = lines.length ? lines : all;
