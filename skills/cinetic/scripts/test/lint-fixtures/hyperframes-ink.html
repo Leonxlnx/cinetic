@@ -1,0 +1,14 @@
+<!doctype html>
+<!-- Fixture. expect: pure-ink:warn=1 (the brand's own black is supplied and passes; a pure white ground warns) -->
+<html>
+  <head>
+    <style>
+      :root {
+        --paper: #ffffff;
+        --accent: #08965a;
+        --ink: #000000; /* cinetic:brand-supplied the brand's black wordmark ink */
+      }
+    </style>
+  </head>
+  <body><div style="background: var(--paper); color: var(--ink)"></div></body>
+</html>

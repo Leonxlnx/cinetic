@@ -1,0 +1,2 @@
+Fixture for scripts/test/lint-film.test.mjs (a whole film folder, linted as one). expect: snap-step:warn=1
+A starter-shaped film: src/sync.ts imports Chain's declares() and the timeline's comments name fx/Chain and LineSnap. Neither declares a LineSnap, so the line snap in Act1 still warns.

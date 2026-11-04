@@ -1,0 +1,34 @@
+{
+ "_shape": "the Pexels API v1 search response (documented fields; not a live recording)",
+ "page": 1,
+ "per_page": 2,
+ "photos": [
+  {
+   "id": 1001,
+   "width": 6000,
+   "height": 4000,
+   "url": "https://www.pexels.com/photo/grey-rock-formation-1001/",
+   "photographer": "A. Photographer",
+   "photographer_url": "https://www.pexels.com/@a-photographer",
+   "avg_color": "#5A6B70",
+   "src": {
+    "original": "https://images.pexels.com/photos/1001/pexels-photo-1001.jpeg",
+    "large2x": "https://images.pexels.com/photos/1001/pexels-photo-1001.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "medium": "https://images.pexels.com/photos/1001/pexels-photo-1001.jpeg?auto=compress&cs=tinysrgb&h=350"
+   },
+   "alt": "Grey rock formation by the sea"
+  },
+  {
+   "id": 1002,
+   "width": 1200,
+   "height": 800,
+   "url": "https://www.pexels.com/photo/small-1002/",
+   "photographer": "B. Photographer",
+   "src": {
+    "original": "https://images.pexels.com/photos/1002/pexels-photo-1002.jpeg",
+    "medium": "https://images.pexels.com/photos/1002/m.jpeg"
+   },
+   "alt": "A small picture"
+  }
+ ]
+}

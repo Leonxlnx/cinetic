@@ -1,0 +1,100 @@
+{
+ "name": "launch-simple",
+ "about": "The default launch film, 15-25 s, assembled from the scene bank (src/scenes: house scenes of 1.5-3 s, each one moment that shows a point and is understood) and played as a spine: one sentence as 3-5 acts, one case (the brief's request, names and numbers in every act), 8-12 scenes of 1.5-3 s (the lockup 2.5 s), two big at least, each dealt at random from the bank (src/bank.ts dealScene: the 28 house scenes that carry a point, the lockup from its four, a seeded weighted draw by the deck's direction or the name and the films before it, leaning to the act's verb; never a scene twice, two of the last film's at most, a scene that needs pictures, the site or street and room photographs only when the film has them; a slot redrawn by hand in src/spine.ts only with its reason), each point a big line on clean ground, read in 1.2 s, and then its scene, presses with a real pointer, one element handed on at every scene change (src/timeline.ts HANDOVER_PLAN, drawn by fx/Handover with the scene's own patch), a designed palette (src/palette.ts: one accent, white, near-black, the accent field) with one ground a film (src/timeline.ts FILM_GROUND, one flood at most), one subject 4.5 s at most, the lockup a house scene whole and alive to the last frame. The agent writes src/spine.ts first (the scenes' content in `props`), then src/content.ts for what the props leave out; the timeline, the handovers, the palette and the sound plan follow.",
+ "engine": "remotion",
+ "pace": "crisp",
+ "type_family": "bold",
+ "bpm": 120,
+ "end_hold": [
+  1,
+  2
+ ],
+ "beats": {
+  "acts": "3-5 acts of 1-3 scenes, 8-12 scenes in all, each at its own length (1.5-3 s: a scene of your own too; the timeline refuses a longer one by name) eased (at most 5 % faster, 1.2 x slower) onto the track's 8ths, the body on whole bars; the median shot 1.5-2.5 s",
+  "handover": "every scene change: the element carried, dealt per film (the form table's recipe, a converge, a flight, a porthole, an iris, a grow, a swell): no kind on more than 40 % of the changes, pinned or not; the element never left as a speck alone on an empty ground; never a bare cut inside an act",
+  "lines": "alone on clean ground for the promise (its key word becoming the element), once for a middle point and for the claim; set big (a cap of 9 % of the frame, the claim 11 %, never under 7 %: a long line takes two rows), arriving whole or in 2-3 chunks and read in 1.2 s at most, then its scene; the scenes carry the other statements; at most four",
+  "end": "the lockup is a house scene (blobs-to-mark, line-to-wordmark, word-build-badge, bar-flood), 2.5 s at most: the fact under it (a cap of 3.6 % of the frame) as its name is read, creeping and lit, gone about 2 s after its mark is whole"
+ },
+ "deal": {
+  "file": "src/deal.ts",
+  "seed": "the deck's direction (deck.py --direction <id> --why: src/dealt.ts), else the product's name",
+  "print": "npx tsx -e \"import { PLAN_PRINT } from './src/timeline'; console.log(PLAN_PRINT)\"",
+  "slots": {
+   "voice": [
+    "build",
+    "blur",
+    "ink"
+   ],
+   "ground": [
+    "paleSky",
+    "nearWhite",
+    "electric",
+    "blackField",
+    "deepField",
+    "clouds",
+    "sky",
+    "aerial",
+    "sea",
+    "nightCity",
+    "studio",
+    "macro"
+   ]
+  }
+ },
+ "music": {
+  "required": true,
+  "slot": "audio/music/",
+  "about": "Every launch is cut to a licensed, human-made, instrumental track (references/music.md): the track carries the film, the effects are cut to the picture (src/sync.ts: every handover by its kind, the keys, the press, the notices, the turn, one hit on the lockup). Any tempo from 90 to 140 BPM fits: the acts sit on whole bars of the track.",
+  "pick": "node scripts/music.mjs pick --mood \"<the film's mood words>\" --length <s> (a launch here: 115-136 BPM and the film's energy preferred; the curated library; with none, music.mjs search --bpm 115-136), then music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track)",
+  "add": "bash scripts/new-film.sh <dir> --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL --ai-generated no --vocals no, or later: python3 scripts/audio/track.py add <file> ...",
+  "then": [
+   "python3 scripts/audio/track.py fit   (after launch.ts is written: the film's bars, the lockup's bar and the cuts read from the timeline at the track's tempo; the edit plays exactly those bars, lands the entry on the lockup, keeps sections from changing mid-shot, ends on a hit; then src/music.ts)",
+   "python3 scripts/audio/track.py check",
+   "npm run music fits again after a change to the script or the track"
+  ]
+ },
+ "next": [
+  "simple launch: write the spine first in src/spine.ts (the sentence, the case from the brief, one element, 3-5 acts each with its verb and 1-3 scenes: form, bank or none for the deal, props in the case's own words, ui; the promise line; PICTURES; CLOSE); say it as a chain (A becomes B becomes C) and print the plan (template.json deal.print): 8-12 scenes, two big, a median shot of 1.5-2.5 s",
+  "  deal: deck.py here (three directions into out/OPTIONS.md), pick the one that fits with --direction <id> --why \"<one line>\" (src/dealt.ts: it seeds the scene deal and the palette, and sets the type pairing),",
+  "  the content: node scripts/content.mjs --brief BRIEF.md --fetch --force, then read src/content.ts and keep only what is true (look at every picture: the brief's own subject or none),",
+  "  the mark: scripts/brand.py with the brand's kit (an invented brand's own mark); real companies' marks from scripts/logos.mjs get,",
+  "  a scene the bank lacks: src/product.tsx OWN (a SceneDef from src/kit/screens),",
+  "  then the music (below), npm run check and grid-check --part spine, npm run sound, the draft (render.sh --draft) and forensics --spine, look-audit --look on it, one review round on its sheet (no line over a busy ground, presses with a pointer, the brand's palette)"
+ ],
+ "copy": [
+  "src/spine.ts",
+  "src/launch.ts",
+  "src/product.tsx",
+  "src/deal.ts",
+  "src/dealt.ts",
+  "src/recent.ts",
+  "src/world.tsx",
+  "src/content.ts",
+  "src/timeline.ts",
+  "src/Film.tsx",
+  "src/Root.tsx",
+  "src/sync.ts",
+  "src/bank.ts",
+  "src/palette.ts",
+  "src/acts/bank.tsx",
+  "src/acts/stage.tsx",
+  "src/acts/scenes.tsx",
+  "src/acts/line.tsx",
+  "src/acts/cam.ts",
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "keep_if_present": [
+  "src/brand/identity.ts",
+  "src/brand/logo.ts",
+  "src/content.ts"
+ ],
+ "remove": [
+  "src/acts/Act1.tsx",
+  "src/acts/Act2.tsx",
+  "src/acts/Act3.tsx",
+  "src/acts/Act4.tsx",
+  "src/acts/ground.tsx",
+  "src/acts/plate.tsx"
+ ]
+}

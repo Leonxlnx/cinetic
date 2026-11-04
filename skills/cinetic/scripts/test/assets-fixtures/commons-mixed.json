@@ -1,0 +1,238 @@
+{
+ "_shape": "the Commons API query for a plain search: public domain, CC0, CC BY and share-alike files, hand-written (not a recording)",
+ "query": {
+  "pages": [
+   {
+    "pageid": 2001,
+    "title": "File:Example cliff public domain.jpg",
+    "index": 1,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/5e/Example_cliff_public_domain.jpg",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Example_cliff_public_domain.jpg",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Example_cliff_public_domain.jpg/2400px-Example_cliff_public_domain.jpg",
+      "width": 3600,
+      "height": 2400,
+      "size": 8640000,
+      "mime": "image/jpeg",
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Example cliff public domain"
+       },
+       "Artist": {
+        "value": "A. Creator"
+       },
+       "LicenseShortName": {
+        "value": "Public domain"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "pd"
+       }
+      }
+     }
+    ]
+   },
+   {
+    "pageid": 2002,
+    "title": "File:Example coast cc0.jpg",
+    "index": 2,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/6/6f/Example_coast_cc0.jpg",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Example_coast_cc0.jpg",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Example_coast_cc0.jpg/2400px-Example_coast_cc0.jpg",
+      "width": 3000,
+      "height": 2000,
+      "size": 6000000,
+      "mime": "image/jpeg",
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Example coast cc0"
+       },
+       "Artist": {
+        "value": "A. Creator"
+       },
+       "LicenseShortName": {
+        "value": "CC0"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "cc0"
+       }
+      }
+     }
+    ]
+   },
+   {
+    "pageid": 2003,
+    "title": "File:Example rock by sa 3.jpg",
+    "index": 3,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/7/70/Example_rock_by_sa_3.jpg",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Example_rock_by_sa_3.jpg",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/7/70/Example_rock_by_sa_3.jpg",
+      "width": 600,
+      "height": 600,
+      "size": 360000,
+      "mime": "image/jpeg",
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Example rock by sa 3"
+       },
+       "Artist": {
+        "value": "A. Creator"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 3.0"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "cc-by-sa-3.0"
+       }
+      }
+     }
+    ]
+   },
+   {
+    "pageid": 2004,
+    "title": "File:Example causeway by 3.jpg",
+    "index": 4,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/81/Example_causeway_by_3.jpg",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Example_causeway_by_3.jpg",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Example_causeway_by_3.jpg/2400px-Example_causeway_by_3.jpg",
+      "width": 3840,
+      "height": 2543,
+      "size": 9765120,
+      "mime": "image/jpeg",
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Example causeway by 3"
+       },
+       "Artist": {
+        "value": "A. Creator"
+       },
+       "LicenseShortName": {
+        "value": "CC BY 3.0"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "cc-by-3.0"
+       }
+      }
+     }
+    ]
+   },
+   {
+    "pageid": 2005,
+    "title": "File:Example columns by sa 3.jpg",
+    "index": 5,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/92/Example_columns_by_sa_3.jpg",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Example_columns_by_sa_3.jpg",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Example_columns_by_sa_3.jpg/2400px-Example_columns_by_sa_3.jpg",
+      "width": 4256,
+      "height": 2832,
+      "size": 12052992,
+      "mime": "image/jpeg",
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Example columns by sa 3"
+       },
+       "Artist": {
+        "value": "A. Creator"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 3.0"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "cc-by-sa-3.0"
+       }
+      }
+     }
+    ]
+   },
+   {
+    "pageid": 2006,
+    "title": "File:Example pillars by 2.jpg",
+    "index": 6,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a3/Example_pillars_by_2.jpg",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Example_pillars_by_2.jpg",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Example_pillars_by_2.jpg/2400px-Example_pillars_by_2.jpg",
+      "width": 4752,
+      "height": 3168,
+      "size": 15054336,
+      "mime": "image/jpeg",
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Example pillars by 2"
+       },
+       "Artist": {
+        "value": "A. Creator"
+       },
+       "LicenseShortName": {
+        "value": "CC BY 2.0"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "cc-by-2.0"
+       }
+      }
+     }
+    ]
+   },
+   {
+    "pageid": 2007,
+    "title": "File:Example beach by sa 4.jpg",
+    "index": 7,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/b/b4/Example_beach_by_sa_4.jpg",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Example_beach_by_sa_4.jpg",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Example_beach_by_sa_4.jpg/2400px-Example_beach_by_sa_4.jpg",
+      "width": 5015,
+      "height": 2738,
+      "size": 13731070,
+      "mime": "image/jpeg",
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Example beach by sa 4"
+       },
+       "Artist": {
+        "value": "A. Creator"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 4.0"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "cc-by-sa-4.0"
+       }
+      }
+     }
+    ]
+   }
+  ]
+ }
+}

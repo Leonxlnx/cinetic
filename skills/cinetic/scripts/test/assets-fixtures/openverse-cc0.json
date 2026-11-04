@@ -1,0 +1,70 @@
+{
+ "_shape": "the Openverse /v1/images/ search response, hand-written with the fields assets.mjs reads (not a recording)",
+ "result_count": 4,
+ "results": [
+  {
+   "id": "00000000-0000-4000-8000-000000000001",
+   "title": "Basalt columns at dusk",
+   "creator": "A. Creator",
+   "creator_url": "https://example.org/creators/a",
+   "license": "pdm",
+   "license_version": "1.0",
+   "url": "https://example.org/images/1.jpg",
+   "thumbnail": "https://api.openverse.org/v1/images/00000000-0000-4000-8000-000000000001/thumb/",
+   "foreign_landing_url": "https://example.org/photos/1",
+   "source": "flickr",
+   "provider": "flickr",
+   "width": 1024,
+   "height": 661,
+   "filesize": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-000000000002",
+   "title": "Grey shore with surf",
+   "creator": "B. Creator",
+   "creator_url": "https://example.org/creators/b",
+   "license": "cc0",
+   "license_version": "1.0",
+   "url": "https://example.org/images/2.jpg",
+   "thumbnail": "https://api.openverse.org/v1/images/00000000-0000-4000-8000-000000000002/thumb/",
+   "foreign_landing_url": "https://example.org/photos/2",
+   "source": "wikimedia",
+   "provider": "wikimedia",
+   "width": 3000,
+   "height": 2000,
+   "filesize": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-000000000003",
+   "title": "Lava field under cloud",
+   "creator": "A. Creator",
+   "creator_url": "https://example.org/creators/a",
+   "license": "pdm",
+   "license_version": "1.0",
+   "url": "https://example.org/images/3.jpg",
+   "thumbnail": "https://api.openverse.org/v1/images/00000000-0000-4000-8000-000000000003/thumb/",
+   "foreign_landing_url": "https://example.org/photos/3",
+   "source": "smithsonian_example",
+   "provider": "smithsonian_example",
+   "width": 1024,
+   "height": 684,
+   "filesize": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-000000000004",
+   "title": "Ice cave wall",
+   "creator": "B. Creator",
+   "creator_url": "https://example.org/creators/b",
+   "license": "cc0",
+   "license_version": "1.0",
+   "url": "https://example.org/images/4.jpg",
+   "thumbnail": "https://api.openverse.org/v1/images/00000000-0000-4000-8000-000000000004/thumb/",
+   "foreign_landing_url": "https://example.org/photos/4",
+   "source": "stocksnap",
+   "provider": "stocksnap",
+   "width": 378,
+   "height": 500,
+   "filesize": null
+  }
+ ]
+}

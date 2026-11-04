@@ -1,0 +1,46 @@
+{
+ "_shape": "the Pexels API v1 video search response (documented fields; not a live recording)",
+ "videos": [
+  {
+   "id": 2001,
+   "width": 3840,
+   "height": 2160,
+   "duration": 14,
+   "url": "https://www.pexels.com/video/waves-on-rocks-2001/",
+   "image": "https://images.pexels.com/videos/2001/pictures/preview-0.jpg",
+   "user": {
+    "name": "C. Filmmaker",
+    "url": "https://www.pexels.com/@c-filmmaker"
+   },
+   "video_files": [
+    {
+     "id": 1,
+     "quality": "uhd",
+     "file_type": "video/mp4",
+     "width": 3840,
+     "height": 2160,
+     "fps": 25,
+     "link": "https://videos.pexels.com/video-files/2001/uhd.mp4"
+    },
+    {
+     "id": 2,
+     "quality": "hd",
+     "file_type": "video/mp4",
+     "width": 1920,
+     "height": 1080,
+     "fps": 25,
+     "link": "https://videos.pexels.com/video-files/2001/hd.mp4"
+    },
+    {
+     "id": 3,
+     "quality": "sd",
+     "file_type": "video/mp4",
+     "width": 960,
+     "height": 540,
+     "fps": 25,
+     "link": "https://videos.pexels.com/video-files/2001/sd.mp4"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,39 @@
+# Every text file is stored and checked out with LF line endings, whatever core.autocrlf says.
+# A CRLF checkout (the Git for Windows default) breaks the scripts under WSL's bash
+# ("set: pipefail: invalid option name") and in a plugin install made with that git config.
+* text=auto eol=lf
+
+# Scripts: always text, always LF, even if a future file confuses the binary detection.
+*.sh   text eol=lf
+*.py   text eol=lf
+*.mjs  text eol=lf
+*.cjs  text eol=lf
+*.js   text eol=lf
+*.ts   text eol=lf
+*.tsx  text eol=lf
+
+# Binaries: never converted, never diffed or merged as text.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.wav   binary
+*.mp3   binary
+*.flac  binary
+*.ogg   binary
+*.m4a   binary
+*.mp4   binary
+*.mov   binary
+*.webm  binary
+*.mkv   binary
+*.pdf   binary
+*.zip   binary
+*.gz    binary
+*.skill binary
+*.npy   binary

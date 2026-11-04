@@ -1,0 +1,15 @@
+{
+ "template": "camera-teaser",
+ "about": "The template as it ships: what its unnamed scaffold plays (src/deal.ts FLOOR). film-diff.mjs holds a film made from it to at least half its slots apart.",
+ "deal": {
+  "voice": "land",
+  "input": "rise",
+  "cut": "smear",
+  "launch": "dive",
+  "window": "pitch",
+  "cards": "stack",
+  "page": "cascade",
+  "stages": "brackets",
+  "end": "comets"
+ }
+}

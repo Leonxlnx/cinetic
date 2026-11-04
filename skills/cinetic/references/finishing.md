@@ -1,8 +1,8 @@
 # Finishing: motion blur, banding, colour, encode, mux and deliverables
 
-Covers everything between "the picture code is done" and "the files are shipped": the render modes, true motion blur as a render pass, banding, BT.709 colour, encoder settings, the audio mux, splicing, and every deliverable format. Read it before Step 6 (Render and finish) and Step 8 (Deliver), and whenever a render looks different from the Studio.
+Covers everything between "the picture code is done" and "the files are shipped": the render modes, true motion blur as a render pass, banding, BT.709 colour, encoder settings, the audio mux, splicing, and every deliverable format. Read it before Step 9 (Render and finish) and Step 11 (Deliver), and whenever a render looks different from the Studio.
 
-The numbers here are proven defaults from shipped films, Tessel among them. Start from them; change one when a measurement tells you to.
+The numbers here are house defaults with normal ranges. Start from them; change one when a measurement tells you to.
 
 **Contents**
 1. [Render modes at a glance](#1-render-modes-at-a-glance)
@@ -23,16 +23,53 @@ Remotion always renders the picture muted; ffmpeg attaches the sound; two script
 
 | Mode | Command | What happens | Relative cost |
 |---|---|---|---|
-| Preview | `bash scripts/render.sh Film out/preview.mp4 --preview` | CRF 20, x264 veryfast, BT.709 tags | 1× |
-| Sharp master | `bash scripts/render.sh Film out/film.mp4` | CRF 14, x264 slow, BT.709 tags | ~1.2× |
+| Draft | `bash scripts/render.sh Film out/draft.mp4 --draft` | the whole film early: half size, CRF 23 on x264 superfast, JPEG frames, parts of up to 450 f, the current soundtrack (with a track picked and no mix yet, the track alone through `sound.mjs --bed-only`; silent only with no track, said at the end and marked `out/qa/SILENT`), then `out/qa/draft-sheet.png` (16 tiles cut from the video) | ~0.3× |
+| Preview | `bash scripts/render.sh Film out/preview.mp4 --preview` | CRF 20, x264 veryfast, BT.709 tags, full size | 1× |
+| Sharp master | `bash scripts/render.sh Film out/film.mp4` | CRF 14, x264 slow, BT.709 tags, lossless PNG frames (`--jpeg` for a film with no soft grounds); parts of up to 240 f from a kept bundle, each starting on a cut where one falls in its last half, joined with `-c copy` (a stopped run resumes; `--max-min 9` under a job limit, exit 75 = rerun) | ~1.5× |
+| Draft as delivery | `bash scripts/render.sh Film out/film.mp4 --from-draft out/draft.mp4` | the whole draft scaled to the composition's size (lanczos, CRF 16), BT.709 tags, the soundtrack muxed: the delivery when the final cannot finish in the time left | seconds |
 | Blurred master | `bash scripts/render.sh Film out/film.mp4 --blur` | sharp pass → speed → sub-frames → float accumulate | 3–8× typical; `--budget` caps it |
 | One act | `... --blur --frames 600-839` | the same, on a film-frame range; audio from the same range | per act |
 | Chunked | `bash scripts/render-chunks.sh Film out/film.mp4 4` | N browsers at concurrency 1, joined with `-c copy` | often faster on GPU-heavy scenes |
 
 Useful flags: `--loop` for seamless loops (lossless PNG intermediates, so the seam survives the encode), `--no-audio` for silent loops, `--audio FILE`, `--build-audio` (reruns `scripts/export-cues.ts` and `scripts/audio/score.py` first, stems included), `--concurrency N`, `--keep` (keeps `sharp.mp4`, `sub.mp4` and `picture.mp4` for inspection), and `-- <args>` to pass anything through to every `remotion render` call (for example `-- --image-format=png`). `render.sh` warns when a file in `src/` is newer than the soundtrack, because a retimed picture with an old WAV is the most common sync bug.
 
-**Spend the blur once.** A blurred master costs tens of minutes; a preview costs a few.
-- **Iterate on `--preview` renders.** Every critique round reviews a preview (`references/review-loop.md` §1).
+### The whole film first
+
+A run delivers a complete film inside its budget, on a busy laptop too. The order that guarantees it:
+1. **The ending early.** `node scripts/frames.mjs end` renders the last seconds as stills (the lockup's landing, its
+   hold, the last frame) at half size, before any draft: the name, the mark and the one fact must read there.
+2. **A whole draft by 45 % of the budget.** `render.sh --draft` renders every frame at half size with a fast encode and
+   the sound as it is; a new mix later never rebuilds the bundle (`public/audio` is outside its key). Every later look
+   is cut from the draft by ffmpeg in seconds: `frames.mjs sheet --from out/draft.mp4` (16 tiles; `--frames A-B
+   --every N` for one act), `frames.mjs grab --from out/draft.mp4 120,480` (full frames). After a fix, the draft again:
+   only the parts whose source changed re-render (`--redo A-B` when the edit touches one act).
+3. **The final by 70 %.** `render.sh Film out/film.mp4 --max-min 9`: parts that resume, rerun until exit 0.
+4. **Never a cut film.** When the final cannot finish, `--from-draft out/draft.mp4` is the delivery (the whole film,
+   scaled up); a final that stops halfway is never shipped, and neither is a draft cut short.
+
+### Fast by default
+
+Renders on an ordinary laptop are the slowest step of a film. The scripts take the fast path on their own; these are the choices behind it, measured on an 8-core laptop with an integrated GPU (AMD 780M), quiet and while other jobs kept its CPU at 100 % (the same command runs 3-8x slower then):
+
+| Look or render | Command | What makes it fast | Measured, quiet (busy) |
+|---|---|---|---|
+| a scaffold | `bash scripts/new-film.sh films/<name> --name "<Product>"` | one node process per stage (each shell call costs 1-4 s on a busy Windows laptop; the scaffold made about a hundred) | 25 s busy, against 4-7 min |
+| the bundle | `node scripts/frames.mjs bundle` (every look and render builds it once) | Rspack (`remotion.config.ts`; it ships with Remotion), the same frames bit for bit as webpack | 6-25 s busy, against 47-264 s for webpack (warm 39-101 s) |
+| stills, any number of frames | `node scripts/frames.mjs still 120,480,1000` | one bundle per state of the source (`out/.bundle/<hash>/`, reused in under a second while `src/`, `public/` but its audio, and the config are unchanged), the Remotion CLI run by node (no npm start-up), every frame in one browser | one still 6-8 s against 15-17 s for `npx remotion still src/index.ts` (18-48 s against 157-204 s; back to back on software GL, 24 s against 101 s); 7 stills 7.5 s in one call (10 busy: 21 s, against 28-152 s for each `npx remotion still`); the same pixels (identical, at most one level in a few pixels) |
+| a sheet from the draft (the look of a round) | `node scripts/frames.mjs sheet --from out/draft.mp4` / `--frames 840-1079 --every 4` | ffmpeg cuts the frames from the video: no bundle, no browser; 16 tiles labelled with frame and seconds | seconds |
+| contact sheet from the bundle | `node scripts/frames.mjs sheet` / `--every 30` / `--frames 840-1079 --every 4` | the same bundle; 16 tiles by default; no Python needed | 36 tiles 16 s, 70 tiles 20 s (35 tiles 30 s against 137 s for `sheet.py --comp`); what it saves is the bundle and the npm start, so with a warm webpack cache and slow frames (software GL, busy) `sheet.py` comes close: 50 s against 55 s |
+| master in parts | `bash scripts/render.sh Film out/film.mp4` | its frozen bundle and composition list come from the same cache (no second bundle after a round of stills), the CLI through node for each part, the GL backend picked once per machine, parts joined by stream copy | 60 frames at 1080p 26 s against 65 s for the 1.2 script (busy: 48-52 s against 250 s); the whole 35 s film at 60 fps, 2100 frames in 9 parts, 9 min busy over two runs of `--max-min 8`; the first render on a machine adds the GL probe (30-90 s busy) |
+
+- **GL backend.** `node scripts/frames.mjs gl` renders the same frames with each backend the platform offers (angle and swangle; angle-egl and egl on Linux), refuses one whose pixels differ from software GL (swangle) below 32 dB PSNR, and keeps the fastest; `render.sh` asks it before a render (the probe runs once per machine, 30-90 s on a busy laptop, cached in `out/.bundle/gl.json` and `~/.cinetic/gl.json`, so the next film on the machine skips it). It ranks the backends from the first frame written to the last, because the start-up of a call (10-30 s busy, the same for every backend) decided the race by noise: on the busy laptop whole calls put swangle ahead of angle (24 s against 29 s for 8 frames) and the master then rendered at 1.6 s a frame instead of 0.4. Angle stays unless another backend is 1.25x faster, and software GL that wins against a GPU path drawing the right pixels counts as a busy GPU: swangle for an hour, the GPU path again after that. When the picked backend fails on the GPU path (the browser or its GPU process dies, a GL context is lost, a frame hangs), `frames.mjs` and `render.sh` run that call once more on swangle; `render.sh` stays on it for the rest of the run, `frames.mjs` for an hour (`fallback` in `gl.json`), then the GPU path gets another try, so one failure on a busy machine does not leave every later render 5-8x slower; an error in the film's own code fails at once. Here: angle 0.19 s a 1080p frame, swangle 1.4 s (egl 0.8 s), and angle draws the same picture as swangle (52.8 dB). `CINETIC_GL=swangle` or `-- --gl=X` overrides; a backend pinned with `-- --gl=X` never falls back.
+- **Concurrency.** Remotion's default, half the cores, at most 8, and never above the cores Remotion sees: it counts them with `nproc`, which `OMP_NUM_THREADS` lowers, and refuses a higher `--concurrency` outright, so `frames.mjs` and `render.sh` lower theirs to it. At 1080p on the 780M, 2 tabs rendered a frame in 0.19 s against 0.25 s for 1 (0.90 against 1.37 s while busy). Lower it (`--concurrency 2`) on a machine that is busy with other work.
+- **Encoder.** The browser is the bottleneck, not x264: x264 `slow` and `veryfast` at CRF 14 rendered within noise of each other (0.42 and 0.68 s a frame, same frames, busy), so masters keep `slow`. JPEG q95 intermediates cost 0.42 s a frame where PNG cost 0.70 s, but the lit grounds band through JPEG (plateaus over a tenth of a pale frame), so a master renders through PNG and the draft, the preview and the stills through JPEG.
+- **Per frame.** A finished launch film renders a 1080p frame in 0.45 s on the GPU path once the browser runs (0.31 s at half size), and 0.4-0.8 s on software GL: the frames are cheap; the waits are the fixed costs (a bundle, a browser start per call, a wait for a shared GPU), which is why the draft renders in long parts and every look is cut from it.
+- **Parts.** A master renders in parts of up to 240 frames, each starting on its own keyframe, joined by stream copy: no frame dropped or repeated, the timestamps even, and no seam at a join (measured across one: the same PSNR against a one-part render on both sides; across all 8 joins of a 2100-frame master, every frame matched its own still and the change across each join matched the source's). A part starts on an I-frame, so inside a still hold its first frame sits 0.2-0.4 levels closer to the source than the frame before (the refresh x264 makes at every keyframe, the size of the frame-to-frame encoder noise: invisible); the boundaries move onto act lines and seams only when `out/cues.json` exists, so build the cues before the master. A part that stopped (a job limit, a crash) resumes on the next run.
+- **Frame rate.** `new-film.sh` scaffolds at 30 fps (`--fps 60` for another rate). At 30 fps a film renders half the frames of 60 at the same cost per frame, the largest saving there is: a 30 s film is 900 frames, about 3 min at 0.19 s per 1080p frame on that laptop when it is quiet and 6-14 min when it is busy (twice that at 60 fps). Most launch films ship at 24-30 fps. The cost is smoothness on fast moves: on the same template the moving frames step 1.5x as far per frame at 30 fps (median 8.0 against 5.6 px per frame at half size), three times as many frames pass 12 px per frame, and the fastest move reaches the too-fast list. A 30 fps film keeps sharp moves under about 25 px per frame at 1080p, or renders its master `--blur` (the blur pass then needs about 43 % fewer sub-frames than at 60 fps, because it has half the frames to sample). Choose 60 fps when the film is mostly fast camera travel or scrolling UI, or the brief asks for it.
+- **Never in a loop:** `npx remotion still src/index.ts` (npm start, webpack bundle and browser per frame) and `npx remotion render src/index.ts` for a check (a bundle each time): use the commands above.
+
+**Spend the blur once.** A blurred master costs tens of minutes; a draft costs a few.
+- **Iterate on drafts.** Every critique round reviews the draft (`references/review-loop.md` §1).
 - **Render the blurred master once, at the end,** after the last critique round. It then gets a check (forensics, av-audit, the fastest frames at full size), not another round.
 - **Run long renders in the background** when the harness allows it, logging to a file you read now and then (`render.sh ... > out/qa/render.log 2>&1`), and write the delivery notes or the brand kit meanwhile. A foreground call that waits on a 15-minute render times out, and a `sleep` loop wastes the wait.
 - **A small fix re-renders only its range.** Render the changed act with `--blur --frames A-B` and splice it (§7) instead of re-blurring the film.
@@ -43,9 +80,19 @@ Useful flags: `--loop` for seamless loops (lossless PNG intermediates, so the se
 
 ## 2. Motion blur is a render pass
 
-Anything that moves faster than about 12 px per frame at 60 fps strobes without blur: the eye sees discrete copies instead of motion. Launch films almost always have such moments (whips, floods, flying cards, drops). `measure-speed.py` prints the peak speed, so you do not have to guess.
+**Blur is a declared policy.** `LOOK.blur` in `timeline.ts` says what the film is: `'crisp'` (the default) renders flat
+graphics sharp at any speed, one sample a frame, and only the frames inside a declared `CAMERA_BLUR` range (a flick, a
+whip, a camera-real moment) get shutter samples; `'camera'` puts a 180° shutter on every frame moving faster than
+about 900-1200 px/s, as a camera would. Declared steps (a snap zoom's jump, a stepped layer, a make-room jump),
+flashes, hard seams and act starts always render from one sample in either policy. `measure-speed.py --policy auto`
+(the default) reads the declaration from `out/cues.json`; `render.sh --blur` follows it (with no frame needing
+samples it renders the sharp master directly) and caps the samples at 8 a frame in a declared film; `--policy
+crisp|camera` overrides. Defocus is a separate tool (`references/camera.md` §5), never a stand-in for motion blur.
 
-Blur has a ceiling too. Past about 60–80 px/f a 240° shutter smears an element into a streak 40–50+ px long, and the samples that fit in one frame show as stepped copies along it: the "artificial smear" a viewer reads as a glitch. Keep any one element under that speed and redesign faster moves (a cut on the beat, a match cut, a mask wipe, a shorter distance; `references/transitions.md`). `measure-speed.py` lists the frames over 80 px/f as `too_fast`, and `render.sh --blur` stops before the sub-frame pass while any are left. A frame-filling edge (a wipe, a flood, an iris, a zoom-through) may run 150–300 px/f for a few frames without stepped copies; check it at full size, then waive it with `--accept-fast A-B`.
+Under the camera policy, anything that moves faster than about 12 px per frame at 60 fps strobes without blur: the eye
+sees discrete copies instead of motion. `measure-speed.py` prints the peak speed, so you do not have to guess.
+
+Blur has a ceiling too. Past about 60–80 px/f a 180° shutter smears an element into a streak 40–50+ px long, and the samples that fit in one frame show as stepped copies along it: the "artificial smear" a viewer reads as a glitch. Keep any one element under that speed and redesign faster moves (a cut on the beat, a match cut, a mask wipe, a shorter distance; `references/transitions.md`). Under the camera policy `measure-speed.py` lists the frames over 80 px/f as `too_fast` (a crisp film instead gets the `speed-ceiling` warning for a frame over 3000 px/s for more than 14 f), and `render.sh --blur` stops before the sub-frame pass while any are left. A frame-filling edge (a wipe, a flood, an iris, a zoom-through) may run 150–300 px/f for a few frames without stepped copies; check it at full size, then waive it with `--accept-fast A-B`.
 
 **Cuts are act boundaries.** An output frame averages sub-frames from a third of a frame before and after its time, so a hard cut inside an act turns its frame into a 50/50 double exposure of the two shots, and on a payoff beat that reads as a glitch. `src/blur.ts` clamps samples inside an act, so a cut at an act boundary stays crisp. `measure-speed.py` renders the hard cuts it can measure with one sample; any other unexplained full-frame change away from an act boundary stops `render.sh --blur` before the sub-frame pass. Make a real cut an ACT boundary in `src/timeline.ts`; for a flood, a flash or a zoom-through you checked at full size, pass `--accept-cut A-B`.
 
@@ -69,9 +116,9 @@ Average outside the browser, in float, and quantise once.
 `FilmSub` and `src/blur.ts` ship in the starter. The core of it:
 
 ```ts
-export const SHUTTER = 240; // degrees; measure-speed.py --shutter must match
+export const SHUTTER = 180; // degrees; measure-speed.py assumes the same
 export const sampleTimes = (f: number, n: number): number[] => {
-  if (n <= 1) return [f];
+  if (n <= 1 || policyAt(f) === 'crisp' || isDiscrete(f)) return [f]; // the declared policy and steps
   const a = ACTS.find((x) => f >= x.from && f < x.from + x.dur) ?? { from: 0, dur: TOTAL };
   const span = SHUTTER / 360, lo = a.from, hi = a.from + a.dur - 1e-3;
   return Array.from({ length: n }, (_, i) => Math.min(hi, Math.max(lo, f + span * ((i + 0.5) / n - 0.5))));
@@ -80,20 +127,20 @@ export const sampleTimes = (f: number, n: number): number[] => {
 <Freeze frame={subs[j].t}><Film /></Freeze>
 ```
 
-The shutter is centred on the frame (a 240° shutter spans f ± 1/3). Samples are clamped inside the frame's act, so the frame before a cut never averages in the next shot.
+The shutter is centred on the frame (a 180° shutter spans f ± 1/4). Samples are clamped inside the frame's act, so the frame before a cut never averages in the next shot.
 
 ### How many samples
 
 ```
 n = 1                                             if speed < 2 px/f   (renders once)
-n = clamp(ceil((shutter/360) · speed / step), 4, 48)   otherwise; shutter 240°, step 3 px
+n = clamp(ceil((shutter/360) · speed / step), 4, 48)   otherwise; shutter 180°, step 3 px (8 at most in a declared film)
 ```
 
 | Peak speed (px/f) | 2–18 | 30 | 60 | 80 | 120 | ≥ 144 |
 |---|---|---|---|---|---|---|
 | Samples | 4 | 7 | 14 | 18 | 27 | 32 (cap) |
 
-Above the cap (144 px/f with a 3 px step), 32 samples can't stay 3 px apart across a 240° shutter. Those frames get a **shorter shutter** instead (`shutters` in the samples JSON, read by `src/blur.ts`), just long enough that the samples stay 3 px apart: a shorter, clean streak rather than a long one with stepped copies. `--no-short-shutter` keeps the full shutter. Either way the move is over the ceiling above and wants a redesign.
+Above the cap (144 px/f with a 3 px step), 32 samples can't stay 3 px apart across the shutter. Those frames get a **shorter shutter** instead (`shutters` in the samples JSON, read by `src/blur.ts`), just long enough that the samples stay 3 px apart: a shorter, clean streak rather than a long one with stepped copies. `--no-short-shutter` keeps the full shutter. Either way the move is over the ceiling above and wants a redesign.
 
 ### Measuring speed (`measure-speed.py`)
 
@@ -137,7 +184,7 @@ Still frames cost one render, so the ratio depends on how much of the film moves
 
 ### HyperFrames
 
-HyperFrames seeks `t = frame/fps` and has no adaptive sub-frame stream, so render at `fps × K` and average uniformly: `python3 scripts/accumulate.py 'frames/*.png' out/picture.mp4 --uniform 4 --in-fps 240`. Each output frame averages the `ceil(K·240/360)` sub-frames centred on it (K = 4 gives 3 samples, 0.25 f apart). HyperFrames renders at most 240 fps, so at 60 fps K ≤ 4; that is clean to roughly 12–18 px/f. Faster films belong in the Remotion path. `scripts/hf-finish.sh --blur 4` wires this up; see `references/hyperframes-engine.md`.
+HyperFrames seeks `t = frame/fps` and has no adaptive sub-frame stream, so render at `fps × K` and average uniformly: `python3 scripts/accumulate.py 'frames/*.png' out/picture.mp4 --uniform 4 --in-fps 240`. Each output frame averages the `ceil(K·240/360)` sub-frames centred on it (K = 4 gives 3 samples, 0.25 f apart). HyperFrames renders at most 240 fps, so at 60 fps K ≤ 4; that is clean to roughly 12–18 px/f. Faster films belong in the Remotion path. `scripts/hf-finish.sh --blur 4` wires this up; with `--policy` (or a crisp `LOOK`) a crisp HyperFrames film ignores `--blur K`, because per-range camera blur is a Remotion feature; see `references/hyperframes-engine.md`.
 
 ## 3. Banding
 
@@ -165,6 +212,7 @@ python3 scripts/dither-gradient.py --spec backdrops.json --out public/fx --previ
 
 - `type` follows CSS: `radial` is `ellipse RX RY at CX CY` in fractions of the frame; `linear` takes a CSS angle (180 = top to bottom). `space` is `srgb` (CSS default), `linear` or `oklab` (the smoothest ramp between two neutrals).
 - With `base` the PNG is opaque RGB. Without it, it is RGBA, and the alpha carries the dither (a white pool of light over ink is one alpha step per output level).
+- **A dithered plate keeps its dither only at full strength.** At opacity `a` its ±1 LSB becomes ±`a` LSB and Chromium rounds most of it away; a `multiply`, `soft-light` or `overlay` blend scales it the same way, so a plate at 0.3 or a multiplied shadow plate bands again. Bake the strength into the plate (its stops at the alpha it shows at, drawn at opacity 1), and for a light that rises and falls cross-fade two baked plates at their own full strength (the starter's paper does this: `acts/ground.tsx`), so some dither is always on screen. Defocused footage and blurred photos make their own smooth ramps: render the deliverable with `--blur`, whose single quantise in `accumulate.py` adds the ±1 LSB TPDF dither to smooth ramps (§2); `--preview` and `--master` encode Chromium's 8-bit frames as they are.
 - **Detection:** the `--preview` folder holds a ×12 contrast-stretched copy of each backdrop; bands are obvious there. On renders, the banding sheet from `scripts/forensics.py` does the same stretch on dark frames.
 - Slow colour ramps done with `interpolateColors` step for a different reason (gamma sRGB with integer rounding); see `references/brand-and-color.md`.
 
@@ -185,9 +233,11 @@ Verified on the starter demo: paper, ink and accent pixels decode within 1 code 
 - **In your own ffmpeg encodes** (accumulate, splices, re-encodes), convert and tag explicitly:
 
 ```bash
--vf scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int \
+-vf scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv \
 -pix_fmt yuv420p -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv
 ```
+
+  Keep the `setparams` step. From ffmpeg 7.1 on, the stream takes its colour tags from the frames, over `-color_primaries` and `-color_trc`, and `scale` sets only the matrix and range on them: without `setparams` the file has no primaries or transfer tag (`probe.py` reports `bt709/None/None/tv` and fails it). It only labels, so on older ffmpeg the file is the same. Planes you quantised yourself and pipe in raw (`accumulate.py`) get `-vf setparams=...` alone: unlabelled, ffmpeg 7.1+ inserts its own matrix conversion and the colours shift.
 
 - **When decoding for QA or stills,** convert with the file's own matrix and accurate rounding, not ffmpeg's implicit conversion: `-vf scale=in_color_matrix=auto:in_range=auto:flags=accurate_rnd+full_chroma_int,format=rgb24`. Measured on a Tessel frame against a PNG still, the explicit path is within 0.2–0.4 code values; the implicit one is off by about 0.6.
 - `bt2020-ncl` in Remotion tags HLG (`arib-std-b67`), which is wrong for SDR graphics. Do not use it.
@@ -235,13 +285,14 @@ ffmpeg -i picture.mp4 -ss <offset> -i public/audio/soundtrack.wav -map 0:v:0 -ma
   -af apad -c:a aac -b:a 320k -ar 48000 -ac 2 -t <frames/fps> -movflags +faststart out/film.mp4
 ```
 
-- `-af apad -t` makes the audio exactly as long as the picture: padded with silence if the WAV is short, trimmed if it is long. `-shortest` alone would cut the *picture* when the WAV is short.
+- `-af apad -t` makes the audio exactly as long as the picture: padded with silence if the WAV is short, trimmed if it is long. `-shortest` alone would cut the *picture* when the WAV is short. A trim cuts the music's ring-out: the picture is timed on the track's bars (`src/music.ts`, written before the timeline) so the film ends where the music decays; a draft rendered before the track was fitted is stale (`forensics.py` audio-end warns when the last 0.25 s sit under 12 dB below the loudest 2 s).
 - `-ss <offset>` takes the audio from the matching point for excerpt and per-act renders (`render.sh` sets it from `--frames` or `--audio-offset`).
 - **Check after the encode.** AAC raises peaks by 0.5–1 dB (a WAV at −1.41 dBTP measured −0.5 dBTP after encoding), so `check-sync.py` measures true peak on the decoded MP4 (4× oversampled) and cross-correlates the decoded audio with the WAV at 12%, 45% and 85% of the film. The gates are ≤ 48 samples of lag (1 ms) and ≤ −1 dBTP. The mastering chain that keeps the peak there lives in `references/sound.md`.
 - `+faststart` puts the index at the front so web players start before the download finishes.
 
 ## 7. Chunked renders and splices
 
+- **`render.sh` parts** (the master and `--preview`): the bundle is copied once into `out/render/<name>/` from the cache `scripts/frames.mjs` keeps (`out/.bundle/`, so the stills and sheets of the round already built it) and replaced only when the source of the composition changes (`render-key.cjs` follows its imports from the entry, Root.tsx and remotion.config.ts; public/ by path and size): an edit to `src/sync.ts`, a still or another composition keeps the bundle and every part. When an edit does change it, render.sh names the files that changed and drops the parts, unless `--redo A-B` says the edit changes only frames A..B (a fix inside one act's file): the parts outside A..B stay, the overlapping ones re-render and must match the old ones outside A..B, or the run stops and the kept parts re-render on the next one. The composition list is cached beside the bundle, so a rerun starts its first part without `remotion compositions`. `--join-only` joins the parts already there and muxes and gates, with no bundle and no Remotion call (a CPU-only job while the GPU is busy; a missing part stops it with its `--part K`). The frames render in parts of up to `--chunk-frames` (240, under x264's keyframe interval of 250, so a part's one I-frame is its first; each boundary moves back onto the latest act line or seam in its part's last half, so that I-frame's quality step lands on a cut, not in a still hold) one Remotion call at a time, each finished part kept, so a render stopped by a 10-minute job limit, a crash or `--max-min M` (exit 75) resumes on the next run; `--part K` renders one part as its own job; the join is a stream copy that writes the BT.709 tags into the stream (`h264_metadata`) and the container. The bundle and the parts stay after the join until every gate has passed (render.sh's own, then the film's), so a gate failing later costs no re-render while `src/` and `public/` are unchanged; `deliver.sh` removes them when its checks pass, `--clean` removes them by hand, `--keep` keeps them always. `--bundle DIR` renders from a bundle you built; `--single` is the one-call route. On a slow machine the parts are rendered on two paths at once, never spliced by hand: `--split` runs a software-GL worker (`--gl=swangle`, on the CPU, from the last part backward) beside the GPU worker (from the first part forward), each claiming a part before it starts (an atomic folder holding its pid; a claim whose worker is gone is cleared), both from the one bundle with one encode, so the join stays a lossless stream copy; without `--split`, a master whose first part shows the rest would take more than 4 minutes (`--split-after M`) starts that worker by itself (`--no-split` never does). `--worker gpu` and `--worker cpu` run one worker each, so two jobs on a shared machine (one holding the GPU, one the CPU) split one master, and the last to finish joins.
 - **`render-chunks.sh <Comp> <out> [chunks] [crf]`** bundles once, renders N frame ranges as N separate browsers at concurrency 1, and joins them with the concat demuxer (`-c copy`, lossless, since each chunk starts on a keyframe with identical settings). On scenes limited by the GPU or compositor this often beats one browser with N tabs. Sharp renders only.
 - **Re-render only what changed.** Render the master as act-sized parts with no audio, join them, and mux once. After a late fix, re-render only that part. Act boundaries are safe splice points by construction, because blur samples never cross them.
 
@@ -258,7 +309,12 @@ python3 scripts/check-sync.py out/film.mp4 && python3 scripts/probe.py out/film.
 
 ## 8. Deliverables
 
-`scripts/deliver.sh <master>` writes the set into `out/deliver/` and exits 1 if a check fails. The top level holds only deliverables, because a client opens the folder before the film; the reports (`manifest.json` with every file's probe facts and check results, `loop-seam.json`) go in `out/deliver/qa/`, and the script warns if it finds sheets or reports at the top level.
+`scripts/deliver.sh <master>` writes the set into `out/deliver/` and exits 1 if a check fails. For a film with a track
+it runs `scripts/audio/credits.py` first: it refuses without a valid licence record (an allowed licence,
+`licence_seen`, the file unchanged) or a required credit line, writes `CREDITS.md` and `CREDITS_description.txt`, and
+never delivers a stem, the bed or the decoded track; a `--draft` soundtrack is refused. Credits never appear in the
+picture (`references/music.md` §8). Imagery licence records (`assets/licences.json`) stay private with the project and
+are not delivered. The top level holds only deliverables, because a client opens the folder before the film; the reports (`manifest.json` with every file's probe facts and check results, `loop-seam.json`) go in `out/deliver/qa/`, and the script warns if it finds sheets or reports at the top level.
 
 | Deliverable | How | Spec and budget |
 |---|---|---|
@@ -284,7 +340,7 @@ python3 scripts/check-sync.py out/film.mp4 && python3 scripts/probe.py out/film.
 |---|---|---|
 | Size, fps, frame count | `probe.py --spec 1920x1080@60 --frames N` (or `--dur s`) | exact size and fps; ±1 frame |
 | Pixel format and tags | `probe.py` | `yuv420p`; `bt709/bt709/bt709/tv` |
-| Audio stream | `probe.py` (`--audio none` for silent loops) | AAC, 48 kHz, stereo, length within one frame plus one AAC frame of the picture |
+| Audio stream | `probe.py` (`--audio none` for silent loops); `forensics.py` audio on the draft and the master | AAC, 48 kHz, stereo, length within one frame plus one AAC frame of the picture; never a film with no sound (`--from-draft` refuses a silent draft) |
 | Sync | `check-sync.py film.mp4 soundtrack.wav` | ≤ 48 samples at every sample point, correlation ≥ 0.5 |
 | True peak | `check-sync.py` | ≤ −1 dBTP after decode |
 | Loudness (optional) | `probe.py --lufs <target> --tp-max -1` or `check-sync.py --lufs <target>`; `av-audit.py` reads the target from `audio/score.json` | the film's target ± 1 LUFS integrated: `master.lufs`, −14 by default, −16 for a calm brand or a sting (`references/sound.md`) |

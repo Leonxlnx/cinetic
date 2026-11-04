@@ -1,0 +1,139 @@
+{
+ "_shape": "the Commons API query (generator=search, prop=imageinfo, extmetadata) for a Cc-zero template search, hand-written (not a recording); two originals smaller than the asked width keep their own URL",
+ "query": {
+  "pages": [
+   {
+    "pageid": 1001,
+    "title": "File:Example basalt columns.jpg",
+    "index": 3,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/1a/Example_basalt_columns.jpg",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Example_basalt_columns.jpg",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Example_basalt_columns.jpg/2400px-Example_basalt_columns.jpg",
+      "width": 4000,
+      "height": 3000,
+      "size": 12000000,
+      "mime": "image/jpeg",
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Example basalt columns"
+       },
+       "Artist": {
+        "value": "A. Creator"
+       },
+       "LicenseShortName": {
+        "value": "CC0"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "cc0"
+       }
+      }
+     }
+    ]
+   },
+   {
+    "pageid": 1002,
+    "title": "File:Example grey shore.png",
+    "index": 1,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/2b/Example_grey_shore.png",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Example_grey_shore.png",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/2/2b/Example_grey_shore.png",
+      "width": 570,
+      "height": 600,
+      "size": 342000,
+      "mime": "image/png",
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Example grey shore"
+       },
+       "Artist": {
+        "value": "A. Creator"
+       },
+       "LicenseShortName": {
+        "value": "CC0"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "cc0"
+       }
+      }
+     }
+    ]
+   },
+   {
+    "pageid": 1003,
+    "title": "File:Example lava field.jpg",
+    "index": 2,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Example_lava_field.jpg",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Example_lava_field.jpg",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Example_lava_field.jpg/2400px-Example_lava_field.jpg",
+      "width": 4288,
+      "height": 2416,
+      "size": 10359808,
+      "mime": "image/jpeg",
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Example lava field"
+       },
+       "Artist": {
+        "value": "A. Creator"
+       },
+       "LicenseShortName": {
+        "value": "CC0"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "cc0"
+       }
+      }
+     }
+    ]
+   },
+   {
+    "pageid": 1004,
+    "title": "File:Example ice wall.jpg",
+    "index": 4,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/4d/Example_ice_wall.jpg",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Example_ice_wall.jpg",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/4/4d/Example_ice_wall.jpg",
+      "width": 510,
+      "height": 455,
+      "size": 232050,
+      "mime": "image/jpeg",
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Example ice wall"
+       },
+       "Artist": {
+        "value": "A. Creator"
+       },
+       "LicenseShortName": {
+        "value": "CC0"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "cc0"
+       }
+      }
+     }
+    ]
+   }
+  ]
+ }
+}

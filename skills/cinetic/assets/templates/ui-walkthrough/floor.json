@@ -1,0 +1,15 @@
+{
+ "template": "ui-walkthrough",
+ "about": "The template as it ships: what its unnamed scaffold plays (src/deal.ts FLOOR). film-diff.mjs holds a film made from it to at least half its slots apart.",
+ "deal": {
+  "stage": "mixed",
+  "open": "push",
+  "turn": "sheen",
+  "proof": "river",
+  "claim": "accent",
+  "read": "ticker",
+  "build": "assemble",
+  "page": "stack",
+  "end": "side"
+ }
+}

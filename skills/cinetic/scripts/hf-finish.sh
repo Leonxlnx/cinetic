@@ -1,25 +1,31 @@
 #!/usr/bin/env bash
 # hf-finish.sh: render and finish a HyperFrames film the cinetic way.
 #
-#   preflight -> lint (0 errors) -> check -> PNG-sequence render -> one BT.709 encode
-#   -> mux the mastered WAV -> check-sync.py -> probe.py
+#   preflight (hf-preflight.cjs) -> lint (0 errors) -> check -> PNG-sequence render
+#   -> one BT.709 encode -> mux the mastered WAV -> check-sync.py -> probe.py
 #
 # Why not `hyperframes render` straight to MP4: that path captures JPEG q95 and then encodes
 # again (two lossy steps, visible on dark gradients), defaults to CRF 16 and AAC 192k, and has
 # no loudness stage and no motion blur in the CLI. Rendering PNGs and encoding once here fixes
 # the picture; the soundtrack comes in already mastered from scripts/audio/ and is muxed here.
-# --blur K renders at fps*K and averages the sub-frames with accumulate.py --uniform K.
+# --blur K renders at fps*K and averages the sub-frames with accumulate.py --uniform K, when the film's
+# blur policy allows it (--policy; timeline.js LOOK.blur): a crisp film stays sharp (the house default).
 #
 # Usage:
 #   bash scripts/hf-finish.sh <project> <out.mp4> [--audio wav] [--fps 60] [--blur K]
-#        [--shutter 240] [--crf 14] [--preview] [--composition file.html] [--workers 2]
-#        [--skip-check] [--keep] [--allow-transparent] [--variables JSON] [--json report.json]
+#        [--shutter 180] [--policy auto] [--build-audio] [--crf 14] [--preview] [--composition file.html]
+#        [--workers 2] [--skip-check] [--keep] [--allow-transparent] [--variables JSON] [--json report.json]
 #   bash scripts/hf-finish.sh <project> --export-cues out/cues.json
 #
 #   --audio WAV        mastered soundtrack to mux (AAC 320k, 48 kHz); checked with check-sync.py
 #   --fps N            output fps (default: root data-fps, else motion.js FPS)
 #   --blur K           render at fps*K (<= 240) and accumulate K sub-frames per frame
-#   --shutter DEG      shutter for --blur (default 240; accumulate.py centres the samples)
+#   --shutter DEG      shutter for --blur (default 180, as src/blur.ts; accumulate.py centres the samples)
+#   --policy P         auto (default: LOOK.blur in timeline.js, else camera), crisp (--blur is ignored:
+#                      flat graphics stay sharp) or camera (--blur K applies to the whole film; per-range
+#                      camera blur is a Remotion feature)
+#   --build-audio      rebuild the soundtrack first through the project's npm scripts (music with a track,
+#                      cues, kit, audio, credits with a track) and mux public/audio/soundtrack.wav
 #   --crf N            x264 CRF (default 14; --preview uses 20 and preset veryfast)
 #   --preview          fast iteration: skips check, no blur, CRF 20
 #   --composition F    render this file instead of index.html (passed to render -c)
@@ -37,19 +43,26 @@
 # HyperFrames downloads its own. Telemetry is off unless HYPERFRAMES_NO_TELEMETRY is set to 0.
 # Exit: 0 every gate passed, 1 a gate failed, 2 usage error.
 set -euo pipefail
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Python: $PYTHON when it is set (the interpreter of a full environment; new-film.sh and npm's scripts/py.mjs
+# honour it too), else the one scripts/py.mjs picks (python3, python or py -3, one that imports numpy first),
+# so the Microsoft Store alias is never run
+PYCMD=()
+if [[ -n "${PYTHON:-}" ]]; then PYCMD=("$PYTHON")
+else read -r -a PYCMD <<< "$(node "$SCRIPT_DIR/py.mjs" --which 2>/dev/null || echo python3)"; fi
+python3() { "${PYCMD[@]}" "$@"; }
 die() { echo "hf-finish: $*" >&2; exit 1; }
 usage() {  # usage [status]: help on stdout for --help (exit 0), on stderr for misuse (exit 2)
-  if [ "${1:-2}" = 0 ]; then sed -n '2,38p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0; fi
-  sed -n '2,38p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2; exit 2
+  if [ "${1:-2}" = 0 ]; then sed -n '2,/^set -euo/p' "${BASH_SOURCE[0]}" | sed '$d' | sed 's/^# \{0,1\}//'; exit 0; fi
+  sed -n '2,/^set -euo/p' "${BASH_SOURCE[0]}" | sed '$d' | sed 's/^# \{0,1\}//' >&2; exit 2
 }
 log() { echo "hf-finish: $*" >&2; }
+ESC="$(printf '\033')"  # strips colour codes from logs; BSD sed has no \x1b
 
 [ $# -ge 1 ] || usage
 case "$1" in -h|--help) usage 0 ;; esac
 PROJ="$1"; shift
-OUT=""; AUDIO=""; FPS=""; BLUR=1; SHUTTER=240; CRF=""; PREVIEW=0; COMP=""; WORKERS=2
+OUT=""; AUDIO=""; FPS=""; BLUR=1; SHUTTER=180; CRF=""; PREVIEW=0; COMP=""; WORKERS=2; POLICY=auto; BUILD_AUDIO=0
 SKIP_CHECK=0; KEEP=0; JSON=""; CUES_OUT=""; ALLOW_ALPHA=0; VARS=""
 if [ $# -ge 1 ] && [ "${1#--}" = "$1" ]; then OUT="$1"; shift; fi
 while [ $# -gt 0 ]; do
@@ -58,6 +71,8 @@ while [ $# -gt 0 ]; do
     --fps) FPS="${2:?}"; shift 2 ;;
     --blur) BLUR="${2:?}"; shift 2 ;;
     --shutter) SHUTTER="${2:?}"; shift 2 ;;
+    --policy) POLICY="${2:?--policy needs auto, crisp or camera}"; shift 2 ;;
+    --build-audio) BUILD_AUDIO=1; shift ;;
     --crf) CRF="${2:?}"; shift 2 ;;
     --preview) PREVIEW=1; shift ;;
     --composition) COMP="${2:?}"; shift 2 ;;
@@ -77,78 +92,46 @@ PROJ="$(cd "$PROJ" && pwd)"
 ENTRY="${COMP:-index.html}"
 [ -f "$PROJ/$ENTRY" ] || { echo "hf-finish: missing $PROJ/$ENTRY" >&2; exit 2; }
 command -v node >/dev/null || die "node is required"
+case "$POLICY" in auto|crisp|camera) ;; *) echo "hf-finish: --policy is auto, crisp or camera" >&2; exit 2 ;; esac
 
 # ---- preflight: timeline vs root, fonts and local scripts on disk, cue export -------------
-PRE="$(PROJ="$PROJ" ENTRY="$ENTRY" CUES_OUT="$CUES_OUT" node - <<'JS'
-const fs = require('fs'), path = require('path'), vm = require('vm');
-const dir = process.env.PROJ, entry = process.env.ENTRY, cuesOut = process.env.CUES_OUT;
-const errs = [], warn = [];
-const html = fs.readFileSync(path.join(dir, entry), 'utf8');
-const rootTag = (html.match(/<[a-z][^>]*\bdata-composition-id\s*=[^>]*>/is) || [''])[0];
-const attr = (n) => { const m = rootTag.match(new RegExp('\\b' + n + '\\s*=\\s*["\']([^"\']*)["\']', 'i')); return m ? m[1] : ''; };
-const v = { dur: attr('data-duration'), rootFps: attr('data-fps'), w: attr('data-width'), h: attr('data-height') };
-if (!rootTag) errs.push(`${entry}: no element with data-composition-id`);
-let film = null, motion = null;
-const mj = path.join(dir, 'motion.js'), tj = path.join(dir, 'timeline.js');
-if (fs.existsSync(mj) && fs.existsSync(tj)) {
-  const ctx = {}; ctx.window = ctx; vm.createContext(ctx);
-  try {
-    vm.runInContext(fs.readFileSync(mj, 'utf8'), ctx, { filename: mj });
-    vm.runInContext(fs.readFileSync(tj, 'utf8'), ctx, { filename: tj });
-    film = ctx.FILM; motion = ctx.MOTION;
-  } catch (e) { errs.push(`timeline.js/motion.js failed to load: ${e.message}`); }
-}
-if (film && motion) {
-  const want = film.TOTAL / motion.FPS;
-  if (v.dur === '') errs.push(`root data-duration is missing; set it to ${want} (TOTAL ${film.TOTAL} f / ${motion.FPS} fps)`);
-  else if (Math.abs(+v.dur - want) > 1e-6) errs.push(`root data-duration="${v.dur}" but TOTAL/FPS = ${want} s; the render would cut or freeze. Make them equal.`);
-  if (v.rootFps && +v.rootFps !== motion.FPS) errs.push(`root data-fps="${v.rootFps}" but motion.js FPS = ${motion.FPS}`);
-  if (v.w && +v.w !== motion.W || v.h && +v.h !== motion.H) warn.push(`root is ${v.w}x${v.h} but motion.js says ${motion.W}x${motion.H}`);
-  if (cuesOut) {
-    if (typeof film.cues !== 'function') errs.push('timeline.js has no FILM.cues()');
-    else {
-      fs.mkdirSync(path.dirname(path.resolve(cuesOut)), { recursive: true });
-      fs.writeFileSync(path.resolve(cuesOut), JSON.stringify(film.cues(), null, 1));
-    }
-  }
-} else if (cuesOut) errs.push('--export-cues needs motion.js and timeline.js in the project');
-// every html the render mounts: the entry plus compositions/**
-const files = [path.join(dir, entry)];
-const walk = (d) => { if (!fs.existsSync(d)) return; for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (e.name.endsWith('.html')) files.push(p); } };
-walk(path.join(dir, 'compositions'));
-for (const f of files) {
-  const src = fs.readFileSync(f, 'utf8');
-  for (const face of src.match(/@font-face\s*\{[^}]*\}/gi) || []) {
-    for (const m of face.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/gi)) {
-      const u = m[1];
-      if (/^(data:|https?:|local\()/i.test(u)) { if (/^https?:/i.test(u)) warn.push(`${path.relative(dir, f)}: remote font ${u} fails offline; ship a local woff2`); continue; }
-      if (!fs.existsSync(path.join(dir, u.replace(/^\//, '')))) errs.push(`${path.relative(dir, f)}: font file ${u} is missing (see fonts/README.md; npm install runs setup.mjs)`);
-    }
-  }
-  for (const m of src.matchAll(/<script[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi)) {
-    const u = m[1];
-    if (/^https?:|^\/\//i.test(u)) { warn.push(`${path.relative(dir, f)}: remote script ${u}; renders need network (vendor it locally)`); continue; }
-    if (!fs.existsSync(path.join(dir, u.replace(/^\//, '')))) errs.push(`${path.relative(dir, f)}: script ${u} is missing (npm install runs setup.mjs)`);
-  }
-}
-for (const w of warn) console.error('hf-finish: warning: ' + w);
-for (const e of errs) console.error('hf-finish: ' + e);
-const num = (x) => (x === '' || x === undefined || x === null || isNaN(+x) ? '' : String(+x));
-console.log(`P_DUR=${num(v.dur)} P_ROOTFPS=${num(v.rootFps)} P_W=${num(v.w || (motion && motion.W))} P_H=${num(v.h || (motion && motion.H))} P_TLFPS=${num(motion && motion.FPS)} P_TOTAL=${num(film && film.TOTAL)} P_ERR=${errs.length}`);
-JS
-)" || die "preflight crashed"
+# in its own file: bash 3.2 (macOS) cannot parse a heredoc inside $( )
+[ -f "$SCRIPT_DIR/hf-preflight.cjs" ] || die "missing $SCRIPT_DIR/hf-preflight.cjs: copy scripts/ from the skill into the project again"
+PRE="$(PROJ="$PROJ" ENTRY="$ENTRY" CUES_OUT="$CUES_OUT" node "$SCRIPT_DIR/hf-preflight.cjs")" || die "preflight crashed"
 eval "$PRE"
 [ "$P_ERR" = 0 ] || die "preflight failed ($P_ERR problem(s) above)"
 if [ -n "$CUES_OUT" ]; then log "wrote $CUES_OUT"; exit 0; fi
 [ -n "$OUT" ] || usage
 
 FPS="${FPS:-${P_ROOTFPS:-${P_TLFPS:-60}}}"
+# the blur policy: LOOK.blur in timeline.js (a timeline written before the declarations: camera)
+if [ "$POLICY" = auto ]; then
+  POLICY="$(node -e "const s=require('fs').readFileSync(process.argv[1],'utf8');const m=s.match(/\bLOOK\s*=\s*\{[^}]*\bblur\s*:\s*'(\w+)'/);console.log(m?m[1]:'camera')" "$PROJ/timeline.js" 2>/dev/null || echo camera)"
+fi
+if [ "$BLUR" != 1 ] && [ "$POLICY" = crisp ]; then
+  log "note: --blur $BLUR ignored: the film's blur policy is crisp (flat graphics stay sharp); pass --policy camera to blur it"
+  BLUR=1
+fi
 [ "$PREVIEW" = 1 ] && { BLUR=1; SKIP_CHECK=1; CRF="${CRF:-20}"; PRESET=veryfast; } || PRESET=slow
 CRF="${CRF:-14}"
 case "$BLUR" in ''|*[!0-9]*) die "--blur takes a whole number" ;; esac
 RFPS=$((FPS * BLUR))
 [ "$RFPS" -le 240 ] || die "--blur $BLUR at $FPS fps needs $RFPS fps; HyperFrames caps at 240 (use K <= $((240 / FPS)), or Remotion for faster motion)"
 [ -n "$P_TLFPS" ] && [ "$FPS" != "$P_TLFPS" ] && log "warning: rendering at $FPS fps but the grid in motion.js is $P_TLFPS fps"
+if [ "$BUILD_AUDIO" = 1 ]; then
+  # the soundtrack through the project's own npm scripts, before anything renders
+  has_script() { node -e "const p=require(process.argv[2]);process.exit(p.scripts&&p.scripts[process.argv[1]]?0:1)" "$1" "$PROJ/package.json" 2>/dev/null; }
+  has_script cues && has_script audio || die "--build-audio needs the npm scripts cues and audio in $PROJ/package.json"
+  MUSIC_LED=0
+  if [ -f "$PROJ/audio/score.json" ] && node -e "const s=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));process.exit(s.music&&typeof s.music==='object'?0:1)" "$PROJ/audio/score.json"; then MUSIC_LED=1; fi
+  log "build-audio: npm run$([ "$MUSIC_LED" = 1 ] && echo ' music,') cues, kit, audio$([ "$MUSIC_LED" = 1 ] && echo ', credits')"
+  if [ "$MUSIC_LED" = 1 ]; then (cd "$PROJ" && npm run --silent music) >&2 || die "npm run music failed"; fi
+  (cd "$PROJ" && npm run --silent cues) >&2 || die "npm run cues failed"
+  if [ -f "$PROJ/audio/kit.json" ] && has_script kit; then (cd "$PROJ" && npm run --silent kit) >&2 || log "the kit was not rendered (above)"; fi
+  (cd "$PROJ" && npm run --silent audio) >&2 || die "npm run audio failed"
+  if [ "$MUSIC_LED" = 1 ]; then (cd "$PROJ" && npm run --silent credits) >&2 || die "the licence gate refused the music (npm run credits)"; fi
+  AUDIO="${AUDIO:-$PROJ/public/audio/soundtrack.wav}"
+fi
 if [ -n "$AUDIO" ]; then [ -f "$AUDIO" ] || die "missing audio $AUDIO"; AUDIO="$(cd "$(dirname "$AUDIO")" && pwd)/$(basename "$AUDIO")"; fi
 command -v ffmpeg >/dev/null || die "ffmpeg is required"
 
@@ -176,7 +159,7 @@ STEPS=""
 step() { STEPS="$STEPS\"$1\":\"$2\","; }
 report() {
   local ok="$1"
-  local r="{\"ok\":$ok,\"out\":\"$OUT\",\"fps\":$FPS,\"blur\":$BLUR,\"render_fps\":$RFPS,\"crf\":$CRF,\"steps\":{${STEPS%,}}}"
+  local r="{\"ok\":$ok,\"out\":\"$OUT\",\"fps\":$FPS,\"blur\":$BLUR,\"policy\":\"$POLICY\",\"render_fps\":$RFPS,\"crf\":$CRF,\"steps\":{${STEPS%,}}}"
   echo "$r"
   if [ -n "$JSON" ]; then mkdir -p "$(dirname "$JSON")"; echo "$r" > "$JSON"; fi
 }
@@ -202,7 +185,7 @@ if [ "$SKIP_CHECK" = 0 ]; then
   if ${HF[@]+"${HF[@]}"} check "$PROJ" > "$QA/hf-check.log" 2>&1; then
     step check pass; log "check: pass ($QA/hf-check.log)"
   else
-    sed 's/\x1b\[[0-9;]*m//g' "$QA/hf-check.log" | tail -n 40 >&2
+    sed "s/${ESC}\[[0-9;]*m//g" "$QA/hf-check.log" | tail -n 40 >&2
     fail_step check "hyperframes check failed; fix the issues above or mark intentional ones (data-layout-allow-overflow / -occlusion)"
   fi
 else
@@ -215,14 +198,14 @@ RARGS=(render "$PROJ" --format png-sequence --fps "$RFPS" -o "$WORK/frames" --wo
 [ -n "$VARS" ] && RARGS+=(--variables "$VARS" --strict-variables)
 log "render: $RFPS fps PNG sequence ($WORKERS workers)"
 if ! ${HF[@]+"${HF[@]}"} ${RARGS[@]+"${RARGS[@]}"} > "$QA/hf-render.log" 2>&1; then
-  sed 's/\x1b\[[0-9;]*m//g' "$QA/hf-render.log" | tail -n 30 >&2
+  sed "s/${ESC}\[[0-9;]*m//g" "$QA/hf-render.log" | tail -n 30 >&2
   fail_step render "hyperframes render failed; see $QA/hf-render.log"
 fi
-NF=$(find "$WORK/frames" -maxdepth 1 -name 'frame_*.png' | wc -l)
+NF=$(find "$WORK/frames" -maxdepth 1 -name 'frame_*.png' | wc -l | tr -d '[:space:]')  # BSD wc pads
 [ "$NF" -gt 0 ] || fail_step render "render wrote no frames"
 if [ -n "$P_TOTAL" ] && [ -n "$P_TLFPS" ]; then
   WANT=$(( (P_TOTAL * RFPS + P_TLFPS / 2) / P_TLFPS ))
-  [ "$NF" = "$WANT" ] || fail_step render "render wrote $NF frames, expected $WANT (TOTAL $P_TOTAL f at $RFPS fps)"
+  [ "$NF" -eq "$WANT" ] || fail_step render "render wrote $NF frames, expected $WANT (TOTAL $P_TOTAL f at $RFPS fps)"
 fi
 # PNG capture keeps alpha and drops the html/body background: uncovered pixels would encode black.
 for F1 in "$WORK/frames/frame_000001.png" "$WORK/frames/$(printf 'frame_%06d.png' "$NF")"; do
@@ -245,8 +228,10 @@ if [ "$BLUR" -gt 1 ]; then
     --shutter "$SHUTTER" --crf "$CRF" --preset "$PRESET" --quiet > /dev/null || fail_step encode "accumulate.py failed"
   step encode "pass (blur K=$BLUR, shutter $SHUTTER, crf $CRF)"
 else
+  # ffmpeg 7.1 and newer tag the stream from the frames, over -color_primaries/-color_trc, and scale
+  # sets only the matrix and range on them: setparams sets all four (references/finishing.md, section 4)
   ffmpeg -v error -y -framerate "$FPS" -start_number 1 -i "$WORK/frames/frame_%06d.png" \
-    -vf "scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int,format=yuv420p" \
+    -vf "scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv" \
     -c:v libx264 -preset "$PRESET" -crf "$CRF" -pix_fmt yuv420p \
     -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv \
     -movflags +faststart "$PIC" || fail_step encode "ffmpeg encode failed"

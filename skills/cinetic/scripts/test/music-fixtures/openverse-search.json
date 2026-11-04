@@ -1,0 +1,9 @@
+{"_about": "Hand-written in the shape of an Openverse audio search answer; every value is invented.",
+ "result_count": 2, "page_count": 1, "page_size": 20, "page": 1, "results": [
+  {"id": "0b5e0000-0000-4000-8000-000000000001", "title": "paper slide on desk.wav", "creator": "ada_example", "license": "cc0", "license_version": "1.0",
+   "source": "freesound", "provider": "freesound", "url": "https://cdn.freesound.org/previews/1/1001_1-hq.mp3", "foreign_landing_url": "https://freesound.org/people/ada_example/sounds/1001",
+   "duration": 1240, "tags": [{"name": "paper"}, {"name": "slide"}, {"name": "desk"}], "genres": null},
+  {"id": "0b5e0000-0000-4000-8000-000000000002", "title": "Sheet swipe", "creator": "ben_sample", "license": "by", "license_version": "4.0",
+   "source": "freesound", "url": "https://cdn.freesound.org/previews/1/1002_2-hq.mp3", "foreign_landing_url": "https://freesound.org/people/ben_sample/sounds/1002",
+   "duration": 900, "tags": [{"name": "paper"}, {"name": "swipe"}]}
+ ]}

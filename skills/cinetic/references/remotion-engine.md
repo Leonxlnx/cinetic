@@ -1,6 +1,6 @@
 # Remotion engine: the starter project, verified API facts, config and CLI
 
-What the Remotion side of cinetic looks like: the starter's files and compositions, the Remotion 4.0.529 APIs a film actually uses (checked against the installed type definitions and source), the `remotion.config.ts` template, render recipes and the traps. Read it when you start a Remotion film (after `scripts/new-film.sh`), and again whenever an API behaves differently from what you expected. Numbers here are proven defaults and starting points, not dogma.
+What the Remotion side of cinetic looks like: the starter's files and compositions, the Remotion 4.0.529 APIs a film actually uses (checked against the installed type definitions and source), the `remotion.config.ts` template, render recipes and the traps. Read it when you start a Remotion film (after `scripts/new-film.sh`), and again whenever an API behaves differently from what you expected. Numbers here are house defaults and starting points, not dogma.
 
 ## Contents
 
@@ -13,17 +13,18 @@ What the Remotion side of cinetic looks like: the starter's files and compositio
 
 ## 1. The starter project
 
-`bash scripts/new-film.sh <dir> [--fps 60] [--bpm 120] [--size 1920x1080] [--name x] [--link-modules <node_modules>] [--font <name>]` copies `assets/remotion-starter`, sets FPS, BPM, W and H in `src/timeline.ts`, copies every cinetic script into `<dir>/scripts`, and installs (or symlinks) `node_modules`. It refuses a BPM whose beat is not a whole number of frames and lists the ones that are. `--font` vendors a family into the project (below).
+`bash scripts/new-film.sh <dir> [--fps 60] [--bpm N] [--pace calm|crisp] [--size 1920x1080] [--name x] [--link-modules <node_modules>] [--font <name>]` copies `assets/remotion-starter`, sets FPS, BPM, W, H and PACE_NAME in `src/timeline.ts` (without `--bpm` it keeps the starter's 100 BPM, or 120 with `--pace crisp`; either way the demo passes `grid-check.ts` as it comes), copies every cinetic script into `<dir>/scripts`, and installs `node_modules` (or links an existing one: a symlink, a directory junction on Windows). It refuses a BPM whose beat is not a whole number of frames and lists the ones that are. `--font` vendors a family into the project (below).
 
 The starter's palette, mark and demo name carry `// cinetic:placeholder` markers, and `npm run check` fails (`lint-film.mjs` rule `placeholder`) until they are replaced by the film's own brand (`references/brand-and-color.md`). That is deliberate: the demo renders as is, but a film cannot ship on the starter's look.
 
 | Path | Job | Change it? |
 |---|---|---|
-| `src/timeline.ts` | `FPS BPM W H BEAT BAR b() f60() TAIL ACT TOTAL CUE COPY copy()`: the only source of time | always: your acts, cues and copy |
+| `src/timeline.ts` | `FPS BPM PACE_NAME W H BEAT BAR b() f60() TAIL ACT TOTAL CUE Copy line() chain() COPY READ copy() chainOf()`: the only source of time; `COPY` holds one entry per fragment, `chain()` writes a thought as a build or replace chain, `READ` is when each entry is being read (the windows every check uses) | always: your acts, cues, copy and pace |
 | `src/brand/tokens.ts` | `C` colours, `FONT`, `FACES`, `TYPE`, `typeStyle()`, `U`, `SAFE`, `safeArea()` | always: the brand (placeholder palette: ink/paper, one signal-green accent `#08965A`; marked `cinetic:placeholder`) |
 | `src/brand/Mark.tsx` | `MARK` geometry (100-unit box), `<Mark>` with per-piece poses, `placeMark()` | always: your mark (the starter's is a marked placeholder); keep the per-piece API |
-| `src/brand/fonts.ts` | the font CSS imports (browser-only): the starter's `@fontsource-variable/geist*`, or the vendored `./fonts/<name>/index.css` that `scripts/add-font.mjs` writes | when the family changes (`node scripts/add-font.mjs <name>`) |
-| `src/lib/anim.ts` | `E` easings, `SPR` springs, `tw prog mix lmix clamp spr hitPulse squash blurIn blurOut arrive depart rand fd` | add named tokens; never inline curves in acts |
+| `src/brand/fonts.ts` | the font CSS imports (browser-only): the starter's `@fontsource-variable/inter/opsz.css` and `geist-mono`, or the vendored `./fonts/<name>/index.css` that `scripts/add-font.mjs` writes | when the family changes (`node scripts/add-font.mjs <name>`) |
+| `src/lib/anim.ts` | `E` easings (with `E.expo`), `SPR` springs (with `SPR.calm` for type), `pace` (the film's `PACE` profile) and `easeOf`, `durFor`, `tw prog mix lmix clamp spr hitPulse squash blurIn blurOut arrive depart rand fd` | add named tokens; never inline curves in acts |
+| `src/lib/pace.ts` | `PACE.calm` and `PACE.crisp` (text timing, holds, limits, component defaults), `holdFor`, `revealFor`, `wordCount`, `readingWindows` (the reading-window rule behind `READ`); pure data, Node-safe | rarely; pick the profile with `PACE_NAME` in `timeline.ts` |
 | `src/lib/sync.ts` | `peak delayTo hit settleOf`: sync frames computed from curves | rarely |
 | `src/lib/camera.ts` | `Shot`, `lc`, `camera()`, `toScreen`, `breath`, `dip` (`references/camera.md`) | rarely |
 | `src/lib/measure.ts` | `measureTracked fitSize inkBox baselineOf` (DOM/canvas, after fonts) | rarely |
@@ -31,7 +32,8 @@ The starter's palette, mark and demo name carry `// cinetic:placeholder` markers
 | `src/lib/FontGate.tsx` | blocks rendering until every face in `FACES` is decoded | never (edit `FACES`) |
 | `src/lib/Audit.tsx` | `audit` prop: logs and draws text boxes against the safe zone (`safe` prop), overlaps, minimum size, and text covered by a `data-mover` | never |
 | `src/lib/safe.ts` | safe-zone presets (`wide16x9`, `feed9x16`, `feed9x16Strict`, `square1x1`, `portrait4x5`, `title`), `safeInsets()`, `safeBox()`, `presetFor()`; Node-safe | rarely (a destination with other overlays) |
-| `src/fx/RackFocus.tsx` `Words.tsx` `Cursor.tsx` | rack focus without stepped blur; word reveal; transform-only cursor with `cursorArc`, `pressAt` | use as needed |
+| `src/fx/Chain.tsx` `Words.tsx` | a fragment chain in build or replace mode, with the frame each fragment visibly lands for its sound (`chainResolves(id, { size })`); the word reveal inside a fragment, timed from `pace` | for every statement |
+| `src/fx/RackFocus.tsx` `Cursor.tsx` | rack focus without stepped blur; transform-only cursor with `cursorArc`, `pressAt` | use as needed |
 | `src/acts/Act1.tsx`, `Act2.tsx` | the demo (below): replace with your acts | always |
 | `src/Film.tsx` | one `<Sequence>` per act, `<FontGate>`, optional `<Audit>`, the soundtrack in the Studio | per act added |
 | `src/FilmSub.tsx`, `src/blur.ts` | sub-frame stream for the motion-blurred master | never |
@@ -50,13 +52,13 @@ Compositions registered in `src/Root.tsx`:
 
 npm scripts: `studio`, `check` (tsc + `lint-film.mjs` + `grid-check.ts`), `stills`, `cues` (`export-cues.ts`), `audio` (`score.py`, writing `out/stems/` and `out/qa/score.json` too), `render` (`render.sh --blur`), `render:preview`, `qa` (probe, forensics, `av-audit --stems`, sheet on `out/film.mp4`).
 
-**The demo** is a 4-bar placeholder that exercises the system; replace every act, keep the patterns. Its dot, dome and block are the placeholder's vocabulary, not a template for your device or mark (`references/brand-and-color.md` §4). Act 1: the accent dot waits where the period will be and ticks on each beat of bar 1, each tick calling in one word (it pops on the beat, arrives in the accent and relaxes to ink); the spread line closes on `E.contact` and locks on the downbeat of bar 2 with the dot seated as its period; after the read hold the words leave last-first and the dot flies to its slot in the mark, its velocity peak on a beat (`CUE.fly`) and arriving at rest on the act seam. Act 2 opens on exactly that pose; the dome and the block are born on their first frames of travel and land on beats 2 and 3 (springs started `delayTo()` early, stopped dead at contact, squashed against the contact edge, and kept under about 70 px/f); the mark settles into the lockup while the name rides out from behind its moving edge and locks on the downbeat of bar 4; a 20% dolly and the dot's clock ticks keep the hold alive to the last frame. The words rise on `arrive()` so they do not settle in whole-pixel ticks (`references/chromium-rendering.md` §15).
+**The demo** is a 5-bar placeholder at 100 BPM and the calm pace that exercises the system; replace every act, keep the patterns. Its dot, dome and block are the placeholder's vocabulary, not a template for your device or mark (`references/brand-and-color.md` §4). Act 1 is a two-fragment build chain around a picture beat: "Built on" rises alone into the frame while the camera creeps in from frame 0, and is read in the quiet; only once that read is over (`CUE.drop`) does the picture take its turn, as the accent dot is born above the line, falls on `E.contact` and lands on the baseline where the finished line will end, on the downbeat (`CUE.land`); the line glides left to make room and "the beat" rises into the opening on the off-beat with the dot seated as its period. After a long read the whole line leaves together; the dot stays a moment, then sets off on a beat (`CUE.depart`) and flies to its slot in the mark on `E.smooth`, its velocity peak half-way, on the grid (`CUE.fly`), arriving at rest on the act seam. Each fragment's soft `text` sound sits on the frame its last word visibly stops (`chainResolves('statement', { size: STATEMENT_SIZE })` in `src/sync.ts`). Act 2 opens on exactly that pose; the dome and the block are born on their first frames of travel and land on beats 2 and 3 of bar 4 (springs started `delayTo()` early, stopped dead at contact, squashed against the contact edge, and kept under about 70 px/f); the mark settles into the lockup while the name rides out from behind its moving edge and locks on the downbeat of bar 5; a slow 15% dolly keeps the hold alive to the last frame, with no tick planted in it. The words rise on `arrive()` so they do not settle in whole-pixel ticks (`references/chromium-rendering.md` §15).
 
 ## 2. How a film is wired
 
 - **Acts are pure functions of `useCurrentFrame()`.** Inside an act, convert cues once: `const L = (abs: number) => abs - ACT.mark.from`. Inside a `<Sequence>` the frame is local (it starts at 0).
 - **Durations inside a move use `f60()`**, cues use `b()`. `f60(22)` is 22 frames at 60 fps and 11 at 30, so choreography keeps its timing if the fps changes; `hitPulse` attack and decay are in 60 fps frames for the same reason.
-- **Text reads its words from `COPY`** (`copy('statement').text`), never a second literal, so `grid-check.ts` counts what is on screen.
+- **Text reads its words from `COPY`** (`copy('statement').text`, or `<Chain>` for a chain), never a second literal, so `grid-check.ts` counts and times what is on screen (`lint-film.mjs` flags a literal as `copy-literal`).
 - **Everything the sound needs is exported from the act** (`DOT_TRAVEL`, `LOCKUP_MOVE`, `HERO` in the demo) and `src/sync.ts` computes events from it (`references/timing-grid.md`, `references/sound.md`).
 - **Seams are designed inside the acts**: the outgoing act ends on the pose the incoming act opens with, computed from shared constants (`DOT_SLOT`, `HERO`), never a crossfade in `Film.tsx`.
 - **Tag readable text** with `data-text="<id>"` on the element whose box is the text, so `layout-audit.sh` can check it.
@@ -161,9 +163,12 @@ Encoder defaults you override per render: h264 CRF 18 and x264 preset `medium` (
 | Task | Command |
 |---|---|
 | Studio | `npx remotion studio` (`--no-open` prints the URL; open `/<CompositionId>`) |
-| one still | `npx remotion still src/index.ts Film out/f120.png --frame=120` |
-| several exact frames, one browser | `npx remotion render src/index.ts Film out/frames --sequence --frames=0,45,120,239 --image-format=png` (a comma list; cannot be combined with `--every-nth-frame`) |
-| every Nth frame of a range | `... --sequence --frames=240-479 --every-nth-frame=5` (or `python3 scripts/sheet.py --comp Act2 --every 2`) |
+| stills (one or several frames, one call) | `node scripts/frames.mjs still 120,480,1000` (PNGs in `out/stills/`, half size; `--scale 1` for full size) |
+| contact sheet of the film or a range | `node scripts/frames.mjs sheet` (about 36 labelled tiles), `--every 30`, `--frames 840-1079 --every 4` |
+| the bundle every call reuses | `node scripts/frames.mjs bundle` (out/.bundle/<source hash>/: rebuilt only when src/, public/ or the config changed) |
+| the GL backend for this machine | `node scripts/frames.mjs gl` (fastest backend whose frames match software GL; cached; `CINETIC_GL` overrides) |
+| raw CLI: several exact frames | `npx remotion render <bundle> Film out/frames --sequence --frames=0,45,120,239 --image-format=png` (a comma list; cannot be combined with `--every-nth-frame`; the output folder's path may hold no dot) |
+| raw CLI: every Nth frame of a range | `... --sequence --frames=240-479 --every-nth-frame=5` (files are numbered 0, 1, 2 ... in output order, not by film frame) |
 | props from a file | `--props=out/samples.json` (a JSON string works too) |
 | muted picture for ffmpeg muxing | `--muted --crf=14 --x264-preset=slow` (what `scripts/render.sh` does) |
 | bundle once, render many | `npx remotion bundle` (writes `build/`, or `--out-dir`), then pass the bundle folder instead of `src/index.ts` (`scripts/render-chunks.sh`) |
@@ -174,6 +179,8 @@ Encoder defaults you override per render: h264 CRF 18 and x264 preset `medium` (
 | see browser console output | `--log=verbose` (the layout audit reads `CINETIC_AUDIT` lines this way) |
 
 Keep test renders short on a shared machine: frame lists and ranges, `--concurrency=2`.
+
+**Why not `npx remotion still src/index.ts` per look.** Each such call starts npm (5-20 s), bundles the whole project with webpack (20-25 s with a warm cache, 1.5-8 min cold on a busy laptop), opens a browser and evaluates the composition list, all for one frame. `frames.mjs` hashes the source (well under a second), reuses the bundle, runs the Remotion CLI through node directly and renders every frame asked for in one browser. Measured on an 8-core laptop (AMD 780M iGPU), same scaffold, same frame: one still 15-17 s the old way and 6-8 s with `frames.mjs` when the laptop is quiet, 157-204 s and 18-48 s while other jobs keep its CPU at 100 %; seven stills cost one call (7.5 s); a 35-tile sheet 137 s with `sheet.py --comp`, 30 s with `frames.mjs sheet` (busy; with a warm webpack cache and software GL the two come within 10 %, since the frames then dominate). The stills match `npx remotion still`'s (identical, or one level in a few pixels).
 
 ## 6. Traps
 
@@ -189,5 +196,28 @@ Keep test renders short on a shared machine: frame lists and ranges, `--concurre
 - **`npm install` in a project whose `node_modules` is a symlink** (`new-film.sh --link-modules`) writes into the shared folder, changing every film that links it, and can break its pinned Remotion versions. Add a font family with `node scripts/add-font.mjs <name>` (it vendors the files into `src/brand/fonts/` via `npm pack`, `references/copy-and-type.md` §6); for any other package, give the project its own install (`rm node_modules && npm install`).
 - **The timeline must stay Node-loadable.** `grid-check.ts`, `export-cues.ts` and `layout-audit.sh` import `src/timeline.ts` with tsx: no React, CSS or `staticFile` imports in it. `src/sync.ts` may import acts, which import React, since tsx handles TSX, but never CSS: keep font imports in `brand/fonts.ts`, which only `FontGate` loads.
 - **Upstream doc slips** to ignore: trim values are frames, not seconds; a transparent-video example sets `defaultCodec: 'vp8'` while its CLI uses `vp9`; "always premount" is a no-op in renders.
+
+## 7. The film context, primitives and the 1.2 starter
+
+- **The film context** (`src/lib/film.ts`): `FilmProvider` gives every primitive the film's fps, size, pace and copy;
+  `useFilm()` reads them; `filmDefaults()` falls back to the timeline's constants. Primitives in `fx/` and `lib/` never
+  import `FPS`, `W`, `H` or `COPY` from the timeline (`timeline-constant` is a lint error), so a 24, 25 or 30 fps
+  comp, or a second film in the same project, uses them unchanged. Durations are written in 60 fps frames and converted
+  (`f60(frames, fps)`, `f60x` for fractional frames); starts are whole frames; discrete state decides on `fd()`.
+- **Pure state plus a thin component.** Every primitive exports `xxxState(frame, props, film)` (the animated numbers,
+  closed form, any frame in any order) and a component that draws them with transforms and opacity, and
+  `declares(props, film)` for the steps, flashes, blur ranges and seams it makes on purpose. List the instances the
+  acts use in `src/sync.ts` `declares()`.
+- **Footage on the film's clock:** `<Freeze frame={sourceFrame}>` around `<OffthreadVideo>` with the source frame
+  computed in closed form (`fx/Footage`, `fx/FootageRamp`): no playback clock, so any frame renders the same in any
+  order and the cut points are exact.
+- **Stepped layers** (`fx/Stepped`) shift a `<Sequence>` by the hold instead of wrapping children in `<Freeze>`: a
+  Freeze adds only its direct parent's offset before clamping to the composition, so under an outer Sequence that
+  starts a scene mid-way its children see the wrong frame. Stepped ranges render from one sample.
+- **The product kit** (`src/kit/`) and the device primitives (`src/fx/`) are part of the starter; `assets/directions/`
+  and the technique library are copied into `scripts/` by `new-film.sh`.
+- **`new-film.sh` flags for 1.2:** `--format update` (the update template), `--brand <kit>` (`brand.py`), `--like
+  <clip>` (`like.py measure`), `--music <file>` with its licence flags (`track.py add`, the launch kit), `--profile
+  calm|crisp|punchy`.
 
 Related: `references/chromium-rendering.md` (rasterisation traps and detection), `references/finishing.md` (blur, colour, encode, mux), `references/timing-grid.md` (the timeline pattern), `scripts/render.sh`, `scripts/lint-film.mjs`, `scripts/grid-check.ts`, `scripts/layout-audit.sh`.

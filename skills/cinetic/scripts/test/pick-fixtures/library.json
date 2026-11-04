@@ -1,6 +1,68 @@
 {
- "version": 1,
- "note": "Fixture for pick.test.py; not a real library.",
+ "version": 2,
+ "note": "Fixture for pick.test.py; not a real library. Entries keep the old name 'evidence' for the house weight (pick.py reads both).",
+ "families": [
+  {
+   "name": "Fam opening hook",
+   "about": "Fixture family Fam opening hook."
+  },
+  {
+   "name": "Shared seams",
+   "about": "Fixture family Shared seams."
+  },
+  {
+   "name": "Fam camera",
+   "about": "Fixture family Fam camera."
+  },
+  {
+   "name": "Fam typography motion",
+   "about": "Fixture family Fam typography motion."
+  },
+  {
+   "name": "Fam ui choreography",
+   "about": "Fixture family Fam ui choreography."
+  },
+  {
+   "name": "Fam data and numbers",
+   "about": "Fixture family Fam data and numbers."
+  },
+  {
+   "name": "Fam product demo",
+   "about": "Fixture family Fam product demo."
+  },
+  {
+   "name": "Fam logo and end card",
+   "about": "Fixture family Fam logo and end card."
+  },
+  {
+   "name": "Fam color and light",
+   "about": "Fixture family Fam color and light."
+  },
+  {
+   "name": "Fam texture and finish",
+   "about": "Fixture family Fam texture and finish."
+  },
+  {
+   "name": "Fam layout and composition",
+   "about": "Fixture family Fam layout and composition."
+  },
+  {
+   "name": "Fam pacing structure",
+   "about": "Fixture family Fam pacing structure."
+  },
+  {
+   "name": "Fam micro interaction",
+   "about": "Fixture family Fam micro interaction."
+  },
+  {
+   "name": "Fam depth and 3d",
+   "about": "Fixture family Fam depth and 3d."
+  },
+  {
+   "name": "Fam transition",
+   "about": "Fixture family Fam transition."
+  }
+ ],
  "techniques": [
   {
    "id": "fx-opening-hook",
@@ -17,7 +79,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Fam opening hook",
+   "primitive": []
   },
   {
    "id": "fx-transition",
@@ -34,7 +98,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Shared seams",
+   "primitive": []
   },
   {
    "id": "fx-camera",
@@ -51,7 +117,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Fam camera",
+   "primitive": []
   },
   {
    "id": "fx-typography-motion",
@@ -68,7 +136,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Fam typography motion",
+   "primitive": []
   },
   {
    "id": "fx-ui-choreography",
@@ -85,7 +155,11 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Fam ui choreography",
+   "primitive": [
+    "fx/Cards.press"
+   ]
   },
   {
    "id": "fx-data-and-numbers",
@@ -102,7 +176,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Fam data and numbers",
+   "primitive": []
   },
   {
    "id": "fx-product-demo",
@@ -119,7 +195,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Fam product demo",
+   "primitive": []
   },
   {
    "id": "fx-logo-and-end-card",
@@ -136,7 +214,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Fam logo and end card",
+   "primitive": []
   },
   {
    "id": "fx-color-and-light",
@@ -153,7 +233,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Fam color and light",
+   "primitive": []
   },
   {
    "id": "fx-texture-and-finish",
@@ -170,7 +252,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Fam texture and finish",
+   "primitive": []
   },
   {
    "id": "fx-layout-and-composition",
@@ -187,7 +271,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Fam layout and composition",
+   "primitive": []
   },
   {
    "id": "fx-pacing-structure",
@@ -204,7 +290,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Fam pacing structure",
+   "primitive": []
   },
   {
    "id": "fx-micro-interaction",
@@ -221,7 +309,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Fam micro interaction",
+   "primitive": []
   },
   {
    "id": "fx-depth-and-3d",
@@ -238,7 +328,9 @@
    "energy": "any",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Fam depth and 3d",
+   "primitive": []
   },
   {
    "id": "fx-tr-workhorse",
@@ -255,7 +347,9 @@
    "energy": "medium",
    "role": "workhorse",
    "ban_safe": true,
-   "evidence": 8
+   "evidence": 8,
+   "family": "Shared seams",
+   "primitive": []
   },
   {
    "id": "fx-tr-accent",
@@ -272,7 +366,9 @@
    "energy": "high",
    "role": "accent",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Shared seams",
+   "primitive": []
   },
   {
    "id": "fx-tr-sig-a",
@@ -289,7 +385,9 @@
    "energy": "high",
    "role": "signature",
    "ban_safe": true,
-   "evidence": 0
+   "evidence": 0,
+   "family": "Fam transition",
+   "primitive": []
   },
   {
    "id": "fx-tr-sig-b",
@@ -306,7 +404,9 @@
    "energy": "high",
    "role": "signature",
    "ban_safe": true,
-   "evidence": 0
+   "evidence": 0,
+   "family": "Fam transition",
+   "primitive": []
   },
   {
    "id": "fx-tr-sig-c",
@@ -323,7 +423,9 @@
    "energy": "calm",
    "role": "signature",
    "ban_safe": true,
-   "evidence": 0
+   "evidence": 0,
+   "family": "Fam transition",
+   "primitive": []
   },
   {
    "id": "fx-tr-loop-only",
@@ -340,7 +442,9 @@
    "energy": "calm",
    "role": "accent",
    "ban_safe": true,
-   "evidence": 4
+   "evidence": 4,
+   "family": "Fam transition",
+   "primitive": []
   },
   {
    "id": "fx-cam-sig",
@@ -357,7 +461,9 @@
    "energy": "high",
    "role": "signature",
    "ban_safe": true,
-   "evidence": 2
+   "evidence": 2,
+   "family": "Fam camera",
+   "primitive": []
   },
   {
    "id": "fx-type-sig",
@@ -374,7 +480,9 @@
    "energy": "medium",
    "role": "signature",
    "ban_safe": true,
-   "evidence": 2
+   "evidence": 2,
+   "family": "Fam typography motion",
+   "primitive": []
   },
   {
    "id": "fx-glass-panel",
@@ -395,7 +503,28 @@
    "bans": [
     "glass"
    ],
-   "ban_safe_variant": "Opaque raised panel, 1 px hairline border, soft drop shadow."
+   "ban_safe_variant": "Opaque raised panel, 1 px hairline border, soft drop shadow.",
+   "family": "Fam ui choreography",
+   "primitive": []
+  },
+  {
+   "id": "fx-type-slam",
+   "name": "Fx type slam",
+   "category": "typography_motion",
+   "family": "Fam typography motion",
+   "summary": "Fixture entry fx-type-slam: a high-energy word slam.",
+   "recipe": "Build fx-type-slam.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "any"
+   ],
+   "energy": "high",
+   "role": "workhorse",
+   "ban_safe": true,
+   "evidence": 8,
+   "primitive": []
   }
  ]
 }

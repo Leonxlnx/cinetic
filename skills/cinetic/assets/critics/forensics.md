@@ -26,7 +26,7 @@ You hunt technical artifacts: anything a viewer would read as broken, glitchy or
    - Grab full-resolution stills where detail matters: `bash scripts/grab.sh {{VIDEO}} 1739 1740 --out {{WORKDIR}}/full`, or crop with `--crop w:h:x:y`.
    - For each flag, decide one of three:
      - **real**: report it;
-     - **designed**: the lead should declare it (`--cuts`, `--freeze-ok`, or a `qa` block in cues.json);
+     - **designed**: the lead should declare it: in the timeline (`SEAMS`, `STEPPED`, `FLASHES`, `CAMERA_BLUR`, `END`) for a film with cues, or `--cuts`, `--freeze-ok` for a file without; a primitive's own `declares()` must be covered by the timeline;
      - **false positive**: say why in one clause in `overall`.
    - What the classes mean:
 
@@ -35,12 +35,17 @@ You hunt technical artifacts: anything a viewer would read as broken, glitchy or
    | `spike` pop / seam-pop | a 1-2 frame change that motion does not explain | a property flipping at a cut; a fade collapsing into 1-2 frames; expo-out on a fade-out |
    | `spike` hit | the same, on a cue | fine if the hit is designed; a pop if it is a reveal that finishes too fast |
    | `stall` | a repeated frame inside motion | a duplicated rest pose at a seam; two moves easing to rest back to back |
-   | `hold` frozen / quiet | more than 48 f with (almost) nothing changing | a dead hold; a locked-off shot |
+   | `dead-stretch` / `hold` | a run over 2.5 s outside `END` where nothing changes at all | a dead stretch. Fix with a product change in the hold or a sooner cut; a still hold shorter than that is fine (the camera moves only with a purpose) |
+   | `camera-wander` | inside one shot the camera pans or pushes one way and back at slow speed; or it never rests | the old aimless float. Fix: hold the camera still, or one declared move that starts, travels and lands |
+   | `carried-cut` | a declared velocity seam whose direction or speed breaks (cosine under 0.7, incoming outside 0.4-1.4× the outgoing, no decay) | the incoming shot opened from rest or the wrong way; use `carry()` / `handoffShot()` |
+   | `dissolve-detect` | a rising mix of two different images, or a fade to black before the last 2 s | a crossfade between scenes; build a carried seam, or declare `dissolveUi` / `fadeEnd` where it belongs |
+   | `still-cut`, `static-share`, `hold-into-exit` | cuts from still to still, too much of the body standing still, holds that do not accelerate into their cut | the camera parks; `intoCut()`, `launch()` |
+   | `end-card` | nothing assembles in the 1.5 s before the end lock, or the card fades in | a lockup that is not a physical story |
    | `ghost` | a one-frame image neither neighbour has | `will-change` on a layer with an animated blur; a stale layer |
    | `border` | a 1-3 px sliver at an edge for several frames | a camera that exposes the stage edge; layers without overscan |
    | `judder` | whole-pixel stairs in a slow move | fractional left/top with a transform; text snapping at the tail of an ease |
-   | `sharpness` | a one-frame blur step | an animated CSS blur on a large layer |
-   | `banding` | smooth gradients drawn as 8-bit plateaus | CSS gradients; use dithered PNG backdrops |
+   | `sharpness` | a one-frame blur step | an animated CSS blur on a large layer; use fixed defocus levels (`lib/defocus.ts`) |
+   | `banding` | smooth gradients drawn as 8-bit plateaus | CSS gradients; use baked, dithered plates (`scripts/dither-gradient.py`, `ditherPlate()`) |
    | `smear` | compression smear: blotches of 1-level texture next to clean blocks on a flat field | an 8-bit dither the encoder half kept; re-run the blur with the current `accumulate.py` (`references/finishing.md` §5) |
 
 2. **Hunt what the scripts cannot see.** Scan the watch sheets, then check suspects at full resolution:
@@ -49,7 +54,8 @@ You hunt technical artifacts: anything a viewer would read as broken, glitchy or
    - elements that appear or vanish without a transition;
    - thin lines and small text that crawl or alias at small scale or under perspective;
    - faux italics from 3D shear;
-   - motion-blur stamping and smears: visible discrete copies, or a streak longer than the object, on the fastest frames. On a blurred master, `fastest_frames` and `too_fast` in `out/samples.json` name them (so do `stats.mad_max_frame` and the biggest `burst` spikes); grab each at full size and crop 1:1. A move over about 60–80 px/f is a redesign (a cut on the beat, a match cut, a mask wipe, a shorter distance), not a sample-count fix.
+   - motion-blur stamping and smears: visible discrete copies, or a streak longer than the object, on the fastest frames. On a blurred master, `fastest_frames` and `too_fast` in `out/samples.json` name them (so do `stats.mad_max_frame` and the biggest `burst` spikes); grab each at full size and crop 1:1. Check the blur policy first (`LOOK.blur`, `CAMERA_BLUR`): a crisp film's flat graphics are sharp on purpose; a move the camera policy cannot carry is a redesign (a cut on the accent, a match cut, a mask wipe, a shorter distance), not a sample-count fix.
+   - designed artifacts that are not declared: a stepped layer, a one-frame flash, a jump frame; and declared ones that do not match the frames;
    - blur windows that cross a hard cut;
    - UI chrome cross-faded over a different shape (a double exposure);
    - colour shifts between preview and master: `probe.json` must show BT.709, tv range.

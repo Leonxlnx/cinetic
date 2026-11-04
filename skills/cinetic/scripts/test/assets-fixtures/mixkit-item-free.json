@@ -1,0 +1,5 @@
+{
+ "_shape": "a Mixkit item page reduced to the strings parseMixkitItem reads (licence notice, the 720p file's address, duration, the licence line beside the download, a 1080p download), hand-written (not their markup)",
+ "id": "44370",
+ "html": "<h1>Example waves on dark rocks</h1>\n<script type=\"application/ld+json\">{\"copyrightNotice\":\"Free\",\"duration\":\"PT0M30S\",\"contentUrl\":\"https://assets.mixkit.co/active_storage/video_items/44370/1700000000/44370-video-720.mp4\"}</script>\n<p class=\"download-copy\"><span>Free Download</span> Example licence line, under the <a href=\"/license/#videoFree\" data-action=\"click->licence#open\">example free licence</a>.</p>\n<a href=\"?download=1&type=1080p\">1080p</a>"
+}

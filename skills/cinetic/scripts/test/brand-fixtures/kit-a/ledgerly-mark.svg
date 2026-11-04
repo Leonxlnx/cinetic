@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- Ledgerly mark: a ledger page, a fold and the tick -->
+  <rect id="page" x="10" y="10" width="70" height="100" rx="8" fill="#0F1A2B"/>
+  <path id="fold" d="M80 10 L110 40 L80 40 Z" fill="#0F1A2B"/>
+  <circle id="tick" cx="92" cy="88" r="18" fill="#1F6FEB" onclick="alert(1)"/>
+  <script>alert('x')</script>
+</svg>

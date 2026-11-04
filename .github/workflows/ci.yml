@@ -21,7 +21,7 @@ jobs:
   check:
     name: Lint and test
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     defaults:
       run:
         shell: bash
@@ -150,6 +150,20 @@ jobs:
           done
           exit "$status"
 
+      - name: Line endings (.gitattributes)
+        run: |
+          # LF in the index, LF in every checkout (a CRLF script fails under WSL's bash with
+          # "set: pipefail: invalid option name"), and binaries never converted
+          status=0
+          crlf="$(git ls-files --eol | awk '$1 ~ /crlf|mixed/ {print $NF}')"
+          for f in $crlf; do echo "::error file=$f::stored with CRLF line endings"; status=1; done
+          notlf="$(git ls-files -z -- '*.sh' '*.py' '*.mjs' '*.cjs' '*.js' '*.ts' '*.tsx' | xargs -0 -r git check-attr eol -- | awk -F': ' '$3 != "lf" {print $1}')"
+          for f in $notlf; do echo "::error file=$f::not checked out with LF; add its type to .gitattributes"; status=1; done
+          text="$(git ls-files -z -- '*.png' '*.jpg' '*.gif' '*.woff2' '*.wav' '*.mp4' | xargs -0 -r git check-attr text -- | awk -F': ' '$3 != "unset" {print $1}')"
+          for f in $text; do echo "::error file=$f::a binary file is not marked binary in .gitattributes"; status=1; done
+          echo "$(git ls-files | wc -l | tr -d ' ') files: LF in the index, scripts check out with LF, binaries marked"
+          exit "$status"
+
       - name: Plugin manifests agree
         run: |
           python3 - <<'PY'
@@ -189,11 +203,149 @@ jobs:
             exit 1
           fi
 
-      - name: Lint-film regression tests
-        run: node "skills/$SKILL/scripts/test/lint-film.test.mjs"
+      - name: No audio and no video in git
+        run: |
+          # A film's licensed track and everything mixed from it stay out of git, and demo films live on the
+          # media branch: this branch carries no audio file and no video file at all.
+          bad="$(git ls-files | grep -iE '\.(wav|mp3|flac|ogg|m4a|aac|aif|aiff|opus|mp4|mov|m4v|webm|mkv)$' || true)"
+          if [ -n "$bad" ]; then
+            while IFS= read -r f; do echo "::error file=$f::audio or video tracked by git"; done <<< "$bad"
+            exit 1
+          fi
+          echo "$(git ls-files | wc -l | tr -d ' ') tracked files, no audio and no video"
+
+      - name: Set up Python and ffmpeg for the tests
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends ffmpeg > /dev/null
+          ffmpeg -version | head -n 1
+          # a venv: the runner's system Python is externally managed (PEP 668); first on PATH for every later step
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet numpy scipy soundfile pyloudnorm librosa opencv-python-headless pillow fonttools brotli
+          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
+
+      - name: Provenance (house wording, no audio in git; release mode)
+        run: node "skills/$SKILL/scripts/test/provenance.test.mjs" --release
+
+      - name: Lint-film regression tests (static part)
+        run: node "skills/$SKILL/scripts/test/lint-film.test.mjs" --part static
+
+      - name: UI layout tests (ui-layout.cjs on audit boxes made in code)
+        run: node "skills/$SKILL/scripts/test/ui-layout.test.mjs"
 
       - name: Technique library and pick.py tests
         run: python3 "skills/$SKILL/scripts/test/pick.test.py"
+
+      - name: Direction deck tests (deck.py)
+        run: python3 "skills/$SKILL/scripts/test/deck.test.py"
+
+      - name: Brand kit intake tests (brand.py)
+        run: python3 "skills/$SKILL/scripts/test/brand.test.py"
+
+      - name: Raster logo trace tests (trace-logo.py)
+        run: python3 "skills/$SKILL/scripts/test/trace-logo.test.py"
+
+      - name: Clip match tests (like.py)
+        run: python3 "skills/$SKILL/scripts/test/like.test.py"
+
+      - name: Imagery tests (assets.mjs, offline fixtures)
+        run: node "skills/$SKILL/scripts/test/assets.test.mjs"
+
+      - name: Music track tests (track.py on test beds made in code)
+        run: python3 "skills/$SKILL/scripts/test/track.test.py"
+
+      - name: Sound library and effects catalogue tests (signals made in code, no earshot; sfx.mjs on fixtures, no network)
+        run: |
+          python3 "skills/$SKILL/scripts/test/library.test.py"
+          node "skills/$SKILL/scripts/test/sfx.test.mjs"
+
+      - name: Copy check tests (copy-check.py)
+        run: python3 "skills/$SKILL/scripts/test/copy-check.test.py"
+
+      - name: Cast, detail-pair, sheet and check-sync tests (audio/kit.py cast, detail-pair.py, sheet.py and forensics.py without opencv, check-sync.py's frames gate)
+        run: |
+          python3 "skills/$SKILL/scripts/test/cast.test.py"
+          python3 "skills/$SKILL/scripts/test/detail-pair.test.py"
+          python3 "skills/$SKILL/scripts/test/sheet.test.py"
+          python3 "skills/$SKILL/scripts/test/check-sync.test.py"
+          python3 "skills/$SKILL/scripts/test/av-level.test.py"
+
+      - name: Real marks and music finder tests (logos.mjs, music.mjs; offline fixtures, no network)
+        run: |
+          node "skills/$SKILL/scripts/test/logos.test.mjs"
+          node "skills/$SKILL/scripts/test/music.test.mjs"
+
+      - name: Forensics self-test (the checks and the motion gates on clips made in code)
+        run: python3 "skills/$SKILL/scripts/forensics.py" --self-test
+
+      - name: Install the Remotion starter (for its type check and the tests that run its src through tsx)
+        run: cd "skills/$SKILL/assets/remotion-starter" && npm install --no-audit --no-fund --loglevel=error
+
+      - name: Remotion starter type check (tsc --noEmit)
+        run: cd "skills/$SKILL/assets/remotion-starter" && npx tsc --noEmit
+
+      - name: Music fit test (track.py fit reads launch-simple's beat plan through the starter's tsx)
+        run: python3 "skills/$SKILL/scripts/test/fit.test.py"
+
+      - name: Token tests (type roles, curves, springs, colour)
+        run: node "skills/$SKILL/scripts/test/tokens.test.mjs"
+
+      - name: HyperFrames mirror tests (motion.js against the Remotion core)
+        run: node "skills/$SKILL/scripts/test/mirror.test.mjs"
+
+      - name: Grid-check regression tests (fixtures, both starters, new-film.sh --pace crisp)
+        run: |
+          node "skills/$SKILL/scripts/test/grid-check.test.mjs" | tee "$RUNNER_TEMP/grid.log"
+          if grep -q '^skip  the Remotion starter' "$RUNNER_TEMP/grid.log"; then
+            echo "::error::the Remotion starter cases were skipped (its npm install did not take)"
+            exit 1
+          fi
+
+      - name: Starter primitive tests (continuity, depth and light, kit, type, transitions, seams, drift, data, precheck, film-diff, frames, the one deal; through the starter's tsx)
+        run: |
+          fail=0
+          for t in continuity depth-light kit-dense type-moves type-presets type-systems type-emphasis transitions seam handoff primitives moment wordmark logo-kit drift details kit-real pictures placeholder data-check timing precheck film-diff frames deal-source; do
+            echo "::group::$t.test.mjs"
+            node "skills/$SKILL/scripts/test/$t.test.mjs" || { echo "::error::$t.test.mjs failed"; fail=1; }
+            echo "::endgroup::"
+          done
+          exit "$fail"
+
+      - name: Spine, scene bank and launch template tests (the spine and its handovers, the house scenes against their contracts and tables, launch-simple, creative and cue checks; through the starter's tsx)
+        run: |
+          fail=0
+          for t in spine handover moves depth-shots screen-forms world-step stock-plate logo-standins render-key creative cues launch-simple house-scenes ui-scenes scene-tables bank-d bank-e; do
+            echo "::group::$t.test.mjs"
+            node "skills/$SKILL/scripts/test/$t.test.mjs" || { echo "::error::$t.test.mjs failed"; fail=1; }
+            echo "::endgroup::"
+          done
+          exit "$fail"
+
+      - name: Type family tests (type-family.mjs, and new-film.sh --template and --type on a temp folder)
+        run: node "skills/$SKILL/scripts/test/type-family.test.mjs"
+
+      - name: Score regression tests (the effects-only path bit for bit against main's score.py)
+        run: |
+          base=()
+          # main's score.py and its siblings: the effects-only path must render the same WAV bit for bit
+          if git fetch --no-tags --depth=1 origin main 2>/dev/null; then
+            mkdir -p "$RUNNER_TEMP/main"
+            git archive FETCH_HEAD "skills/$SKILL/scripts/audio" | tar -x -C "$RUNNER_TEMP/main"
+            if [ -f "$RUNNER_TEMP/main/skills/$SKILL/scripts/audio/score.py" ]; then
+              base=(--baseline "$RUNNER_TEMP/main/skills/$SKILL/scripts/audio/score.py")
+            fi
+          fi
+          [ "${#base[@]}" -gt 0 ] || echo "::notice::main could not be fetched; score.test.py runs without --baseline"
+          python3 "skills/$SKILL/scripts/test/score.test.py" "${base[@]}"
+
+      - name: Script --help contract and docs tests
+        run: node "skills/$SKILL/scripts/test/scripts-docs.test.mjs"
+
+      - name: add-font.mjs --add tests (a font package written in code)
+        run: node "skills/$SKILL/scripts/test/add-font.test.mjs"
+
+      - name: Render parts tests (render.sh and deliver.sh with a stand-in for Remotion)
+        run: python3 "skills/$SKILL/scripts/test/render-parts.test.py"
 
       - name: Python syntax (py_compile)
         run: |
@@ -205,6 +357,25 @@ jobs:
           fi
           printf 'compile %s\n' "${files[@]}"
           PYTHONPYCACHEPREFIX="$RUNNER_TEMP/pycache" python3 -m py_compile "${files[@]}"
+
+      - name: Node script syntax (node --check)
+        run: |
+          shopt -s globstar nullglob
+          files=(skills/"$SKILL"/scripts/**/*.mjs skills/"$SKILL"/scripts/**/*.cjs)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "::error::no .mjs or .cjs files under skills/$SKILL/scripts"
+            exit 1
+          fi
+          status=0
+          for f in "${files[@]}"; do
+            if node --check "$f"; then
+              echo "ok   $f"
+            else
+              echo "::error file=$f::node --check failed"
+              status=1
+            fi
+          done
+          exit "$status"
 
       - name: Shell syntax (bash -n)
         run: |
@@ -223,3 +394,252 @@ jobs:
           done
           echo "$count shell scripts checked"
           exit "$status"
+
+  bash32:
+    # macOS ships bash 3.2.57 as /bin/bash, and its parser accepts less than the bash 5 above: it
+    # scans the text of a $( ) for the closing paren as shell code, heredoc bodies included (#2).
+    name: bash 3.2 (macOS)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    env:
+      BASH32: bash:3.2.57
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: No heredoc inside $( ), backticks or <( )
+        run: |
+          # a multi-line scan (quotes, comments, heredoc bodies, nesting); it reports each heredoc
+          # with the fix: move it into a shell function and call that inside the substitution
+          git ls-files -z '*.sh' | xargs -0 python3 "skills/$SKILL/scripts/test/bash32.test.py"
+
+      - name: Shell syntax under bash 3.2 (bash -n)
+        run: |
+          mapfile -t files < <(git ls-files '*.sh')
+          docker run --rm -v "$PWD:/w:ro" -w /w --entrypoint bash "$BASH32" -c '
+            echo "bash $BASH_VERSION"
+            status=0
+            for f in "$@"; do
+              if bash -n "$f"; then
+                echo "ok   $f"
+              else
+                echo "::error file=$f::bash 3.2 -n failed"
+                status=1
+              fi
+            done
+            echo "$# shell scripts checked"
+            exit "$status"' bash32 "${files[@]}"
+
+      - name: HyperFrames preflight under bash 3.2 (npm run cues)
+        run: |
+          # A fresh starter has no fonts or vendor/gsap.min.js yet: the preflight writes the cues and
+          # then reports those files missing (exit 1). A script bash 3.2 cannot parse writes nothing.
+          docker run --rm -v "$PWD:/w:ro" -w /w -e SKILL --entrypoint bash "$BASH32" -c '
+            apk add --no-cache nodejs > /dev/null || exit 1
+            echo "bash $BASH_VERSION, node $(node --version)"
+            out=$(mktemp -d)
+            bash "skills/$SKILL/scripts/hf-finish.sh" "skills/$SKILL/assets/hyperframes-starter" \
+              --export-cues "$out/cues.json" 2> "$out/err"
+            rc=$?
+            cat "$out/err"
+            if [ "$rc" -gt 1 ] || ! grep -qE "^hf-finish: (wrote|preflight failed)" "$out/err"; then
+              echo "::error::hf-finish.sh did not get through its preflight under bash 3.2 (exit $rc)"
+              exit 1
+            fi
+            node -e "const c = require(process.argv[1]); if (!(c.total > 0 && c.events.length)) process.exit(1); console.log(c.total + \" frames, \" + c.events.length + \" events\")" "$out/cues.json" \
+              || { echo "::error::hf-finish.sh --export-cues wrote no valid cues under bash 3.2"; exit 1; }'
+
+  macos:
+    # The platform of #2, for real: Apple's /bin/bash 3.2.57, BSD sed/tar/wc, and Homebrew's ffmpeg
+    # (7.1 or newer, which takes a file's colour tags from the frames). The bash32 job above only
+    # emulates the shell in a Linux container, and Ubuntu's ffmpeg 6.1 passes the encodes either way.
+    name: macOS (bash 3.2, BSD tools, current ffmpeg)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      HOMEBREW_NO_INSTALL_CLEANUP: '1'
+      HOMEBREW_NO_ENV_HINTS: '1'
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install ffmpeg and numpy
+        run: |
+          brew install ffmpeg > /dev/null
+          python -m pip install --quiet numpy
+
+      - name: Tool versions
+        run: |
+          v="$(/bin/bash -c 'echo "$BASH_VERSION"')"
+          echo "/bin/bash $v, node $(node --version), $(python --version), $(ffmpeg -version | head -n 1)"
+          case "$v" in
+            3.2.*) ;;
+            *) echo "::error::/bin/bash is $v, not 3.2: this job no longer tests macOS's stock bash"; exit 1 ;;
+          esac
+          ff="$(ffmpeg -version | head -n 1 | awk '{print $3}')"
+          case "$ff" in
+            [0-6].*|7.0|7.0.*) echo "::warning::ffmpeg $ff is older than 7.1: the encode checks pass with or without setparams" ;;
+            [0-9]*) ;;
+            *) echo "::warning::could not read the ffmpeg version ('$ff')" ;;
+          esac
+
+      - name: Shell syntax under /bin/bash (bash -n)
+        run: |
+          status=0
+          count=0
+          while IFS= read -r f; do
+            count=$((count + 1))
+            if /bin/bash -n "$f"; then
+              echo "ok   $f"
+            else
+              echo "::error file=$f::/bin/bash -n failed"
+              status=1
+            fi
+          done < <(git ls-files '*.sh')
+          echo "$count shell scripts checked with /bin/bash $(/bin/bash -c 'echo "$BASH_VERSION"')"
+          exit "$status"
+
+      - name: HyperFrames preflight under /bin/bash (npm run cues)
+        run: |
+          # As in the bash32 job: a fresh starter has no fonts or vendor/gsap.min.js, so the preflight
+          # writes the cues and then reports those files missing (exit 1).
+          out="$RUNNER_TEMP/hf"
+          mkdir -p "$out"
+          rc=0
+          /bin/bash "skills/$SKILL/scripts/hf-finish.sh" "skills/$SKILL/assets/hyperframes-starter" \
+            --export-cues "$out/cues.json" 2> "$out/err" || rc=$?
+          cat "$out/err"
+          if [ "$rc" -gt 1 ] || ! grep -qE '^hf-finish: (wrote|preflight failed)' "$out/err"; then
+            echo "::error::hf-finish.sh did not get through its preflight under /bin/bash (exit $rc)"
+            exit 1
+          fi
+          node -e 'const c = require(process.argv[1]); if (!(c.total > 0 && c.events.length)) process.exit(1); console.log(c.total + " frames, " + c.events.length + " events")' "$out/cues.json" \
+            || { echo "::error::hf-finish.sh --export-cues wrote no valid cues under /bin/bash"; exit 1; }
+
+      - name: Scaffold and script refresh with BSD tools (new-film.sh, docs/setup.md)
+        run: |
+          film="$RUNNER_TEMP/film"
+          /bin/bash "skills/$SKILL/scripts/new-film.sh" "$film" --engine hyperframes --no-install
+          [ ! -e "$film/scripts/test" ] || { echo "::error::new-film.sh copied the skill's tests into the project"; exit 1; }
+          # the refresh command docs/setup.md gives, run from the project root with BSD tar
+          rm "$film/scripts/hf-finish.sh"  # the refresh must bring it back
+          SKILL="$PWD/skills/$SKILL"
+          (cd "$film" && (cd "$SKILL/scripts" && tar --exclude=__pycache__ --exclude='*.pyc' --exclude=./test -cf - .) | (cd scripts && tar -xf -))
+          [ ! -e "$film/scripts/test" ] || { echo "::error::the docs/setup.md refresh copied scripts/test into the project"; exit 1; }
+          cmp "$SKILL/scripts/hf-finish.sh" "$film/scripts/hf-finish.sh"
+          rc=0
+          (cd "$film" && /bin/bash scripts/hf-finish.sh . --export-cues out/cues.json) 2> "$RUNNER_TEMP/film-err" || rc=$?
+          cat "$RUNNER_TEMP/film-err"
+          if [ "$rc" -gt 1 ] || [ ! -s "$film/out/cues.json" ]; then
+            echo "::error::the scaffolded project's hf-finish.sh did not export cues under /bin/bash (exit $rc)"
+            exit 1
+          fi
+
+      - name: Encode tags test (Homebrew ffmpeg)
+        run: python "skills/$SKILL/scripts/test/encode-tags.test.py"
+
+  windows:
+    # Windows through Git Bash, the route docs/setup.md gives: no python3 on the PATH (the runner's Python is
+    # python.exe), so every step finds it through scripts/py.mjs; the packages come from scripts/requirements.txt;
+    # new-film.sh scaffolds a project, and the Remotion starter's timeline runs through grid-check with its tsx
+    # (npx through a shell, paths as Windows sees them).
+    name: Windows (Git Bash, py.mjs, requirements.txt)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install the Python packages (scripts/requirements.txt)
+        run: python -m pip install --quiet -r "skills/$SKILL/scripts/requirements.txt"
+
+      - name: py.mjs finds that Python, and it imports every package
+        run: |
+          node "skills/$SKILL/scripts/py.mjs" --which
+          node "skills/$SKILL/scripts/py.mjs" --check
+
+      - name: Script --help contract and docs tests (py.mjs, requirements.txt)
+        run: node "skills/$SKILL/scripts/test/scripts-docs.test.mjs"
+
+      - name: Scaffold a film under Git Bash (new-film.sh) and check its Python
+        run: |
+          film="$(cygpath -u "$RUNNER_TEMP")/film"
+          bash "skills/$SKILL/scripts/new-film.sh" "$film" --no-install
+          [ -f "$film/scripts/requirements.txt" ] || { echo "::error::new-film.sh did not copy scripts/requirements.txt"; exit 1; }
+          (cd "$film" && node scripts/py.mjs --check)
+
+      - name: Deck, pick and copy-check tests
+        run: |
+          python "skills/$SKILL/scripts/test/pick.test.py"
+          python "skills/$SKILL/scripts/test/deck.test.py"
+          python "skills/$SKILL/scripts/test/copy-check.test.py"
+
+      - name: Install the Remotion starter
+        run: cd "skills/$SKILL/assets/remotion-starter" && npm install --no-audit --no-fund --loglevel=error
+
+      - name: Grid-check regression tests (fixtures, both starters, new-film.sh on Windows)
+        run: |
+          node "skills/$SKILL/scripts/test/grid-check.test.mjs" | tee "$RUNNER_TEMP/grid.log"
+          if grep -q '^skip  the Remotion starter' "$RUNNER_TEMP/grid.log"; then
+            echo "::error::the Remotion starter cases were skipped (its npm install did not take)"
+            exit 1
+          fi
+
+  encode-tags:
+    # ffmpeg 7.1 and newer take a file's colour tags from the frames (#2). The test's static part
+    # checks every BT.709-tagged encode for setparams; its encodes run on the runner's ffmpeg.
+    name: BT.709 encode tags
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install ffmpeg and numpy
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends ffmpeg python3-numpy > /dev/null
+          ffmpeg -version | head -n 1
+
+      - name: Encode tags test
+        run: python3 "skills/$SKILL/scripts/test/encode-tags.test.py"

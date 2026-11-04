@@ -140,12 +140,21 @@ jobs:
 
       - name: Fetch the demo films from the media branch
         if: steps.tag.outputs.prerelease != 'true'
+        env:
+          # The films the README gallery shows, as named on the media branch. A film cut to a licensed track goes
+          # there only when its licence record quotes a clause that covers a public video; a credit the licence
+          # asks for sits next to it as <stem>.credits.md and is attached with it.
+          # TODO(gallery): the 1.2 example films (E1-E5), in gallery order.
+          DEMOS: ''
         run: |
           mkdir -p dist/demos
           base="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/media"
-          for f in kiln-launch-teaser.mp4 quire-streaks-vertical.mp4 ledgerly-feature-loop.mp4 halden-logo-sting.mp4; do
+          [ -n "$DEMOS" ] || echo "::warning::no demo films listed; releasing without them"
+          for f in $DEMOS; do
             if curl -fsSL --retry 3 -o "dist/demos/$f" "$base/$f"; then
               echo "ok   $f ($(du -h "dist/demos/$f" | cut -f1))"
+              c="${f%.*}.credits.md"
+              if curl -fsSL --retry 3 -o "dist/demos/$c" "$base/$c" 2>/dev/null; then echo "ok   $c"; else rm -f "dist/demos/$c"; fi
             else
               echo "::warning::$f not found on the media branch; releasing without it"
               rm -f "dist/demos/$f"
@@ -223,7 +232,7 @@ jobs:
         run: |
           asset="dist/$SKILL.skill"
           shopt -s nullglob
-          demos=(dist/demos/*.mp4)
+          demos=(dist/demos/*.mp4 dist/demos/*.credits.md)
           title="$SKILL $TAG"
           if [ "$PRERELEASE" = "true" ]; then
             flags=(--prerelease --latest=false)

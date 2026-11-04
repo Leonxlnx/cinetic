@@ -1,0 +1,25 @@
+{
+ "_shape": "The Met collection API: a search id list and one /objects/{id} record, hand-written (not a recording)",
+ "objectIDs": [
+  9001,
+  9002,
+  9003
+ ],
+ "objects": [
+  {
+   "objectID": 9001,
+   "isPublicDomain": true,
+   "primaryImage": "https://images.metmuseum.org/CRDImages/example/original/EX9001.jpg",
+   "primaryImageSmall": "https://images.metmuseum.org/CRDImages/example/web-large/EX9001.jpg",
+   "title": "Example wave bowl",
+   "objectName": "Bowl",
+   "artistDisplayName": "A. Maker",
+   "culture": "",
+   "medium": "Glazed earthenware",
+   "classification": "Ceramics",
+   "department": "Example Department",
+   "objectURL": "https://www.metmuseum.org/art/collection/search/9001",
+   "tags": null
+  }
+ ]
+}
