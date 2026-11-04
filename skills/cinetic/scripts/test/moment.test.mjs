@@ -8,14 +8,15 @@
  *   2. momentState(): a part is off before its frame and cuts on whole on it, its entrance runs 0..1, the
  *      state is done from the hit frame on.
  *   3. The window covers most of the frame (MOMENT.width x MOMENT.height) and a moment has at least
- *      MOMENT.minParts parts in the house wording of the docs (references/update-films.md names the kit).
+ *      MOMENT.minParts parts. references/update-films.md tells what the update template plays: the kit's moment
+ *      while the template uses it, otherwise a line and a house scene from the scene bank per change.
  *
  * It runs src/kit through the starter's own tsx (npm install in assets/remotion-starter first).
  * Usage (from the skill root):  node scripts/test/moment.test.mjs [--verbose]
  * Exit codes: 0 all pass, 1 a test failed (or the starter is not installed).
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -91,7 +92,14 @@ result(P.enter.opacity === 1 && P.off.opacity === 0 && /translateY\(12\.00px\)/.
 result(P.MOMENT.width >= 0.8 && P.MOMENT.height >= 0.7 && P.MOMENT.minParts >= 3 && P.MOMENT.band[0] <= 2 && P.MOMENT.band[1] >= 2,
   'the window covers most of the frame; a moment has 3+ parts at about 2 starts a second');
 const doc = readFileSync(join(SKILL, 'references', 'update-films.md'), 'utf8');
-result(/ProductMoment/.test(doc) && /momentPlan/.test(doc), 'references/update-films.md documents the product moment and its kit');
+const updSrc = join(SKILL, 'assets', 'templates', 'update', 'src');
+const upd = readdirSync(updSrc, { recursive: true }).filter((f) => /\.tsx?$/.test(f)).map((f) => readFileSync(join(updSrc, f), 'utf8')).join('\n');
+if (/ProductMoment|momentPlan/.test(upd)) {
+  result(/ProductMoment/.test(doc) && /momentPlan/.test(doc), 'references/update-films.md documents the product moment and its kit (the update template plays it)');
+} else {
+  result(/one line and one house scene/.test(doc) && /`src\/scenes`/.test(doc) && !/ProductMoment|momentPlan/.test(doc),
+    'references/update-films.md tells what the update template plays: one line and one house scene from the scene bank per change, no product moment');
+}
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }
 console.log('\nall pass');
