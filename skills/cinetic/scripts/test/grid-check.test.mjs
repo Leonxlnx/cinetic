@@ -7,7 +7,9 @@
  *      (`expect: check=N check:warn=N`, or `expect: (none)`); every other check must stay silent.
  *      A fixture may add arguments on an `args:` line (files resolve next to the fixture), e.g.
  *      `args: --cues declares-cover.cues.json`. Music mode: music-124 (a 124 BPM track whose first
- *      downbeat is at 0.37 s) passes clean; music-errors and music-metronome fail and warn as declared.
+ *      downbeat is at 0.37 s) passes every music check (it fails only scene-length: its lockup holds 7.7 s, the house
+ *      2 s); music-errors and music-metronome fail and warn as declared. A film that declares its LOOK is held to
+ *      scene-length (no shot over 3.2 s, the lockup 2.5 s and gone 2 s after its mark); the bare timing fixtures are not.
  *      The script: script-pile (a keyword pile) and script-lines (two lines at once, a declared swap, a
  *      sentence on two lines, the script's reading budget) warn and fail as declared. The spine (SPINE_PLAN, most
  *      with `args: --part spine`): spine-flow (one action, one case, one element carrying every change) passes clean;
@@ -293,7 +295,9 @@ if (calm?.error === 'skipped') {
       if (!stub.includes('export const MUSIC: Music | null = null;')) throw new Error('src/music.ts no longer carries the stub line');
       writeFileSync(join(sw, 'music.ts'), stub.replace('export const MUSIC: Music | null = null;', M));
       const g = run('npx', ['tsx', GRID, join(sw, 'timeline.ts'), '--json'], STARTER);
-      const errs = (g.findings ?? []).filter((x) => x.severity === 'error');
+      // the starter's demo is bar-locked (its shots are bars of the track): slower than its own 120 BPM a shot runs past
+      // 3.2 s, which scene-length fails in a real film (checked on the scaffolds above and below); this run checks the music
+      const errs = (g.findings ?? []).filter((x) => x.severity === 'error' && !(x.check === 'scene-length' && bpm < 120));
       const total = Math.ceil(endF) + 60;
       result(!g.error && !errs.length && g.summary?.bpm === bpm && g.summary?.total === total,
         `the starter with a ${bpm} BPM track and a stop ending: acts on downbeats, no error, the tail holds the stop (TOTAL ${total})`,

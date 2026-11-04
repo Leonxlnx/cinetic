@@ -89,8 +89,8 @@ export const TOTAL = BODY + TAIL;
 // Picture code reads these; src/sync.ts turns them into sound events.
 export const CUE = {
   fragA: b(1, 1, 2), // "plinth cuts" rises on the off-beat after the second beat into a frame that is already moving (the rule drawing, the creep, the key on the paper)
-  drop: b(2), // once "plinth cuts" stands: the accent dot is born above the line and falls...
-  land: b(2, 1), // ...and lands where the line will end, off the downbeat: the camera punches in on the contact
+  drop: b(2, 1), // once "plinth cuts" stands: the accent dot is born above the line and falls...
+  land: b(2, 2), // ...and lands where the line will end, off the downbeat: the camera punches in on the contact (each shot 3 s at most)
   fragB: b(2, 2, 2), // "to music" answers on the off-beat; the line jumps to make room, the dot is its period
   exit: b(3, 3, 2), // the read is over: the line (dot and all) accelerates out to the left...
   cut: b(4), // ...cut on its fastest frame, on the downbeat: the plate (the film's real imagery) arrives already moving left

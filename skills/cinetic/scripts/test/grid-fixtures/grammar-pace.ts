@@ -1,4 +1,4 @@
-// Fixture for scripts/test/grid-check.test.mjs. expect: exit-length:warn=1 recentre:warn=3 accent-time:warn=3 stagger-shape:warn=4
+// Fixture for scripts/test/grid-check.test.mjs. expect: exit-length:warn=1 recentre:warn=3 accent-time:warn=3 stagger-shape:warn=4 scene-length=1
 // A pace whose motion knobs drift from the house grammar: an exit nearly as long as the entrance, a
 // slow re-centre with a long lead (only 33 % home after 1/30 s), an accent held 1.5 s and cooled
 // over 40 f on an eased curve, words staggered 5 f; and three CUE lists: even starts not tagged as a

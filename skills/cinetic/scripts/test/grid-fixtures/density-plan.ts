@@ -1,4 +1,4 @@
-// Fixture for scripts/test/grid-check.test.mjs. expect: density-plan:warn=3
+// Fixture for scripts/test/grid-check.test.mjs. expect: density-plan:warn=3 scene-length=1
 // A MOTION registry of a sparse picture: 6 moves in 10 s before the end lock (0.6 starts/s, under 1.4),
 // at most one running at a time (0.6 on average, under 1.3), and a stretch of 2 s where nothing starts.
 export const FPS = 60;

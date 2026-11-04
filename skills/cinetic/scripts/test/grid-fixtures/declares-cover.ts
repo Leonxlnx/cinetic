@@ -1,4 +1,4 @@
-// Fixture for scripts/test/grid-check.test.mjs. expect: declares-cover=4
+// Fixture for scripts/test/grid-check.test.mjs. expect: declares-cover=4 scene-length=1
 // args: --cues declares-cover.cues.json
 // What the primitives declare about themselves (cues.json declared.fx) against what the timeline
 // declares: a snap zoom's seam and flash are covered; a collage stepping at 16 fps inside a 12 fps

@@ -7,10 +7,15 @@
  * to the film's fps:
  *   beat-whole     one beat is a whole number of frames (60*FPS/BPM)
  *   acts           acts are contiguous from 0 to TOTAL with positive lengths
- *   acts-on-bar    every act starts on a bar line (warning)
+ *   acts-on-bar    every act starts on a bar line (warning); in a spine film an act change the element carries may sit on
+ *                  the music's 8th (so in music mode, structural-on-music)
  *   cue-grid       every CUE is a frame in [0, TOTAL) on the 16th grid, or its line carries a
  *                  trailing `// offgrid: <reason>` comment (or an entry in an exported OFFGRID map)
  *   copy           every COPY entry has in <= resolved <= out inside the film
+ *   lone-line      a COPY entry marked `place: 'alone'` (a line alone on its ground): its declared `cap` (cap height as a
+ *                  share of the frame height) at least 6 %, its `chunks` (the parts it arrives in) at most 3, on screen
+ *                  1.2 s at most from its first chunk to its exit (errors); its text-hold is counted from its first chunk
+ *   type-size      any other film text that declares its `cap` (a kicker, the fact under the lockup) at least 3 % (error)
  *   text-hold      resolved text holds >= max(holdMin, holdBase + holdPerWord * words) before it
  *                  leaves (calm: 52 f, or 36 f + 7 f/word; crisp: 36 f, or 28 f + 6 f/word); a build chain's
  *                  line holds that long for all its words after its last fragment resolves
@@ -131,6 +136,10 @@
  *                  0.8-1.6 s, explainer 2.0-3.0 s, reel and social 0.5-1.0 s), q75/q25 >= 1.6 (not
  *                  metronomic; aim for 1.9-3.1), longest >= 2x shortest, shots under 0.25 s only as declared punches, few
  *                  shots over 4 s (launch <= 15 %, others <= 30 %) (warnings)
+ *   scene-length   (a film that declares its LOOK) each scene is one point shown in 1.5-3 s: a shot over 3.2 s fails, the
+ *                  declared lockup (the last shot, when CUE.lockup or REVEAL lands in it) over 2.5 s fails, and so does a
+ *                  lockup that holds more than 2 s from CUE.lockup (or REVEAL) to the end of the body (errors in a
+ *                  scene-bank film, SPINE_PLAN, and in a film written by hand; a film from another template: warnings)
  *   long-take      a take over 15 s (a shot, or the whole body of a LOOK.oneTake film) holds at least two
  *                  picture changes per 10 s inside it (warning)
  *   cut-mix        5+ picture changes (act boundaries, seams, `cut` CUEs): at least 14 % of them happen
@@ -192,6 +201,8 @@
  *   checklist      a device with no verb, or not drawing its act's form; more devices than acts + 1; two signatures;
  *                  devices in adjacent acts with no element handover between them (errors); fewer than 3 handover kinds,
  *                  one kind over 60 % of them (warnings)
+ *   seam-variety   one join (a handover kind, a cut counted as one) on more than 40 % of 5 or more scene changes (error;
+ *                  a film over 35 s: a warning)
  *   text-then-cards  an alone line in a middle act that is an island (no element, anchor or speed carries it in or out),
  *                  three alone lines or more while the element carries under half the changes (errors); an island in the
  *                  first or last act (warning)
@@ -240,7 +251,14 @@ import { createContext, runInContext } from 'node:vm';
 import { findPython } from './py.mjs';
 
 type Act = { from: number; dur: number };
-type Copy = { id: string; text: string; in: number; resolved: number; out?: number | null; kind?: string; chain?: string; mode?: string; reveal?: string; swap?: string | boolean };
+type Copy = { id: string; text: string; in: number; resolved: number; out?: number | null; kind?: string; chain?: string; mode?: string; reveal?: string; swap?: string | boolean; place?: string; cap?: number; chunks?: number };
+/**
+ * Lines that read (house numbers): a line alone sets at a cap of 6 % of the frame height or more and is read in 1.2 s at
+ * most, arriving whole or in 3 chunks at most; other read text (a kicker, the fact under a lockup) 3 % or more.
+ * Scenes: none over 3.2 s on screen (house 1.5-3 s), the lockup 2.5 s at most and gone 2 s after its mark is whole.
+ */
+const LONE = { cap: 0.06, small: 0.03, read: 1.2, chunks: 3 };
+const SCENE_LEN = { max: 3.2, lockup: 2.5, lockTail: 2.0 };
 /**
  * The script (house numbers): a line is one short sentence of 2-7 words, one clean line on screen at a time.
  * A film whose lines are mostly sentences (modeShare) reads at the script's budget: total words, words a second
@@ -411,6 +429,7 @@ const SPINE = {
   aloneCarry: 0.5, // ... while the element carries under this share of the changes: text then cards
   kinds: 3, // fewer handover kinds warns
   kindShare: 0.6, // one kind over this share of the handovers warns
+  kindFail: 0.4, // one kind over this share of 5+ scene changes (a cut counted as a kind) fails
   longFilm: 35, // seconds
   tol: 0.05, // seconds: a change this near an act's start is that act's boundary; a line's edge meets a change as near
 };
@@ -700,6 +719,15 @@ function spineFindings(raw: unknown, ctx: { fps: number; total: number; format: 
   const top = [...tally.entries()].sort((a, b) => b[1] - a[1])[0];
   if (n && tally.size < SPINE.kinds) warn('checklist', `${tally.size} handover kind${tally.size === 1 ? '' : 's'} (${[...tally.keys()].join(', ') || 'none'}): three or more a film, dealt by the form pair (grow, shrink, swell and swap, fly, zoom into, iris, converge, word, part, stay, same surface)`);
   else if (top && top[1] > SPINE.kindShare * kindsUsed.length) warn('checklist', `one handover kind (${top[0]}) takes ${top[1]} of ${kindsUsed.length} handovers: one house kind may lead, up to 60 %`);
+  {
+    // the seams vary: no kind (a cut counted as one) on more than 40 % of 5 or more scene changes
+    const joins = changes.filter((c) => SPINE_H.includes(c.kind) || c.kind === 'cut');
+    const t2 = new Map<string, number>();
+    for (const c of joins) t2.set(c.kind, (t2.get(c.kind) ?? 0) + 1);
+    const top2 = [...t2.entries()].sort((a, b) => b[1] - a[1])[0];
+    if (joins.length >= 5 && top2 && top2[1] > SPINE.kindFail * joins.length + 1e-9)
+      carryErr('seam-variety', `one join (${top2[0]}) takes ${top2[1]} of ${joins.length} scene changes (${pctOf(top2[1], joins.length)} %): no kind on more than ${SPINE.kindFail * 100} %; vary the handovers (a converge, a flight, a porthole, an iris, a grow, a swell, a whip, one cut at most)${longNote}`);
+  }
   const devIn = list(['devices']);
   if (devIn.length) {
     const actOf = (d: Record<string, unknown>): number => {
@@ -1009,6 +1037,11 @@ async function main() {
 
   // --- acts
   const acts = Object.entries(ACT!).sort((a, b) => a[1].from - b[1].from);
+  // a spine film's act changes carried by the element (SPINE_PLAN changes that are no cut): such a change may land on
+  // the music's 8th when the scenes' house lengths (1.5-3 s, a line read in 1.2 s) leave no downbeat in reach
+  const carriedAt = new Set<number>(
+    ((T.SPINE_PLAN as { changes?: { at?: number; kind?: string }[] } | undefined)?.changes ?? []).filter((c) => isNum(c.at) && c.kind && c.kind !== 'cut' && c.kind !== 'entry').map((c) => c.at as number),
+  );
   let at = 0;
   for (const [name, a] of acts) {
     if (!(a.dur > 0)) err('acts', `ACT.${name} has dur ${a.dur}`);
@@ -1017,7 +1050,8 @@ async function main() {
         ? `ACT.${name} starts on the track's first downbeat (f${a.from}), expected 0: the first act starts on frame 0 and only its cues wait for b(1) (from = i === 0 ? 0 : bt(...))`
         : `ACT.${name} starts at ${a.from}, expected ${at} (${a.from > at ? 'gap' : 'overlap'} of ${Math.abs(a.from - at)} f)`);
     const off = Math.abs(a.from - Math.round(a.from / BAR) * BAR);
-    if (!MUSIC && off > 0.5 && !offgrid.has(name)) warn('acts-on-bar', `ACT.${name} starts at ${a.from}, ${off.toFixed(1)} f off a bar line`);
+    const off8 = Math.abs(a.from - Math.round(a.from / (BAR / 8)) * (BAR / 8));
+    if (!MUSIC && off > 0.5 && !offgrid.has(name) && !(carriedAt.has(a.from) && off8 <= 0.5)) warn('acts-on-bar', `ACT.${name} starts at ${a.from}, ${off.toFixed(1)} f off a bar line`);
     at = a.from + a.dur;
   }
   if (acts.length && at !== TOTAL) err('acts', `acts end at ${at} but TOTAL is ${TOTAL}`);
@@ -1082,9 +1116,22 @@ async function main() {
     if (!(c.in <= c.resolved && c.resolved <= o)) err('copy', `COPY ${id}: needs in <= resolved <= out (got ${c.in}, ${c.resolved}, ${o}); unresolved text never exits`);
     if (c.in < 0 || o > TOTAL) err('copy', `COPY ${id}: [${c.in}, ${o}] is outside the film [0, ${TOTAL}]`);
     valid.push({ ...c, out: o, n, nNew, ui });
-    const hold = o - c.resolved;
+    // a line alone (place 'alone', arriving whole or in 2-3 chunks) is read from its first chunk; any other from resolved
+    const alone = c.place === 'alone';
+    const hold = alone ? o - c.in : o - c.resolved;
     if (hold < holdNeed(n) && ui) warn('text-hold', `COPY ${id} (ui) "${c.text}" holds ${hold} f resolved; ${n} word(s) want >= ${holdNeed(n)} f if it must be read`);
-    else if (hold < holdNeed(n)) err('text-hold', `COPY ${id} "${c.text}" holds ${hold} f resolved; ${n} word(s) need >= ${holdNeed(n)} f`);
+    else if (hold < holdNeed(n)) err('text-hold', `COPY ${id} "${c.text}" holds ${hold} f ${alone ? 'from its first chunk' : 'resolved'}; ${n} word(s) need >= ${holdNeed(n)} f`);
+    // type that reads: a line alone big (a cap of 6 % of the frame or more), fast (whole or in 2-3 chunks, read in 1.2 s at
+    // most before its scene); any other text that declares its size (a kicker, a fact) 3 % at least
+    if (alone && !ui) {
+      if (isNum(c.cap) && c.cap < LONE.cap - 1e-9)
+        err('lone-line', `COPY ${id} "${c.text}" is a line alone at a cap of ${(100 * c.cap).toFixed(1)} % of the frame: a line alone on its ground sets at ${LONE.cap * 100} % or more (house 9 %, the hero bigger; a long line takes two rows), never a small line in a wide empty frame`);
+      if (isNum(c.chunks) && c.chunks > LONE.chunks)
+        err('lone-line', `COPY ${id} "${c.text}" arrives in ${c.chunks} parts: a line alone arrives whole or in ${LONE.chunks} chunks at most, never typed word by word`);
+      if (o - c.in > LONE.read * FPS + 1)
+        err('lone-line', `COPY ${id} "${c.text}" is on screen ${((o - c.in) / FPS).toFixed(2)} s before it leaves: a line alone is read in ${LONE.read} s at most, then its scene shows the point`);
+    } else if (!ui && isNum(c.cap) && c.cap < LONE.small - 1e-9)
+      err('type-size', `COPY ${id} "${c.text}" sets at a cap of ${(100 * c.cap).toFixed(1)} % of the frame: text a viewer must read (a kicker, the fact under the lockup) sets at ${LONE.small * 100} % or more, or is left out`);
     if (ui) continue; // UI strings keep the product's own layout
     if (!c.chain) {
       // a line that is not a chain: the script rule holds it to 2-7 words
@@ -1093,7 +1140,7 @@ async function main() {
     const lines = String(c.text).split('\n');
     if (lines.length > 2) warn('copy-lines', `COPY ${id}: ${lines.length} lines on screen at once (keep <= 2)`);
     const rate = (c.resolved - c.in) / Math.max(1, nNew - 1);
-    if (nNew >= 3 && rate < 8 * s && c.reveal !== 'focus') warn('reveal-rate', `COPY ${id} "${c.text}" reveals ${nNew} ${nNew < n ? 'new ' : ''}words in ${c.resolved - c.in} f (${rate.toFixed(1)} f per word < ${8 * s}): a block, not a read; stagger the words or split the line`);
+    if (nNew >= 3 && rate < 8 * s && c.reveal !== 'focus' && !(c.place === 'alone' && isNum(c.chunks) && c.chunks <= LONE.chunks)) warn('reveal-rate', `COPY ${id} "${c.text}" reveals ${nNew} ${nNew < n ? 'new ' : ''}words in ${c.resolved - c.in} f (${rate.toFixed(1)} f per word < ${8 * s}): a block, not a read; stagger the words or split the line`);
   }
   // --- script: every line one short sentence (2-7 words); one clean line on screen at a time
   for (const l of lines) {
@@ -1555,7 +1602,9 @@ async function main() {
       if (Math.abs(f - n) > 1 + 1e-9)
         err('structural-on-music', `${what} at f${f} is ${(f - n).toFixed(2)} f from the nearest music event (f${n.toFixed(2)}): structure lands within 1 f of a downbeat attack, an entry, a stop's end or the ending`);
     };
-    for (const [name, a] of acts) if (a.from > 0) check(a.from, `ACT.${name}`);
+    const eighths: number[] = [];
+    for (let i = 0; i + 1 < mDown.length; i++) for (let k = 0; k < 8; k++) eighths.push(mDown[i] + ((mDown[i + 1] - mDown[i]) * k) / 8);
+    for (const [name, a] of acts) if (a.from > 0 && !(carriedAt.has(a.from) && eighths.length && Math.abs(a.from - nearest(eighths, a.from)) <= 1 + 1e-9)) check(a.from, `ACT.${name}`);
     for (const q of cueFrames) if (structuralNames.includes(baseName(q.name))) check(q.f, `CUE.${q.name} (STRUCTURAL)`);
     if (!['reel', 'social'].includes(filmType)) {
       const ordinary = cuts.filter((f) => !structuralFrames.has(f));
@@ -1583,13 +1632,41 @@ async function main() {
 
   // ---- grammar: only for timelines that declare what they do
   const s60 = (f60n: number) => f60n * s; // a 60 fps number at this film's fps
-  let shotInfo: { shots: number; median: number } | null = null;
+  let shotInfo: { shots: number; median: number; longest: number } | null = null;
   if (declared) {
     // shot-length
     const bounds = [0, ...cuts, bodyEnd];
     const shots = bounds.slice(1).map((f, i) => f - bounds[i]).filter((d) => d > 0);
     const sec = shots.map((d) => d / FPS);
-    shotInfo = { shots: shots.length, median: +median(sec).toFixed(3) };
+    shotInfo = { shots: shots.length, median: +median(sec).toFixed(3), longest: +Math.max(0, ...sec).toFixed(3) } as typeof shotInfo;
+    // scene-length: every scene is a point shown and understood in 1.5-3 s (any film, a template's or one written by
+    // hand; a one-take declares its scene changes as seams): none over 3.2 s, the declared lockup (the last shot when
+    // CUE.lockup or REVEAL lands in it) at most 2.5 s and gone 2 s after its mark is whole. A film declares its LOOK; a
+    // bare fixture of the timing rules does not and is not held to it
+    if (T.LOOK !== undefined) {
+      // a scene-bank film (SPINE_PLAN: launch-simple, update) or a film written by hand (--template none) fails; a film
+      // from another template keeps that template's own scenes and is warned
+      let template = '';
+      try {
+        template = String(JSON.parse(readFileSync(resolve(dirname(tlPath), '..', 'film.json'), 'utf8')).template ?? '');
+      } catch {
+        /* no film.json: a film made without a template */
+      }
+      const held = T.SPINE_PLAN != null || ['', 'none', 'null', 'launch-simple', 'update'].includes(template);
+      const sceneErr = (msg: string) => (held ? err('scene-length', msg) : warn('scene-length', `${msg} (the ${template} template's own scenes: a warning)`));
+      const lockF = CUE && isNum(CUE.lockup) ? (CUE.lockup as number) : REVEAL;
+      const segs = bounds.slice(1).map((f, i) => [bounds[i], f] as [number, number]).filter(([a, b]) => b > a);
+      segs.forEach(([a, b], i) => {
+        const len = (b - a) / FPS;
+        const lockup = i === segs.length - 1 && lockF !== null && lockF >= a && lockF <= b;
+        if (lockup && len > SCENE_LEN.lockup + 1 / FPS + 1e-9)
+          sceneErr(`the lockup runs ${len.toFixed(2)} s (f${a}-f${b}): a lockup lands, lives (a creep, a light) and is gone in 2.5 s at most`);
+        else if (!lockup && len > SCENE_LEN.max + 1e-9)
+          sceneErr(`the scene f${a}-f${b} runs ${len.toFixed(2)} s: each scene is one point shown in 1.5-3 s (a complex animation is cut into scenes of 1.5-3 s, each handed on; a scene of your own too); declare its changes as seams if it cuts inside`);
+      });
+      if (lockF !== null && (bodyEnd - lockF) / FPS > SCENE_LEN.lockTail + 1 / FPS + 1e-9)
+        sceneErr(`the lockup holds ${((bodyEnd - lockF) / FPS).toFixed(2)} s after its mark is whole (CUE.lockup or REVEAL f${lockF} to the body's end f${bodyEnd}): it ends in ${SCENE_LEN.lockTail} s at most, living (a creep, a light), then the music rings out`);
+    }
     if (!LOOK.oneTake && shots.length >= 3) {
       const band = SHOT_BAND[filmType] ?? [0.5, 3.0];
       const med = median(sec);

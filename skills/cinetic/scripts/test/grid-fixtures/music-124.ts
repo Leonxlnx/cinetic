@@ -1,4 +1,4 @@
-// Fixture for scripts/test/grid-check.test.mjs. expect: (none)
+// Fixture for scripts/test/grid-check.test.mjs. expect: scene-length=1
 // Music mode, clean: a track at 124 BPM whose first downbeat is at 0.37 s (f22.2 at 60 fps), 8 bars.
 // b() follows the music (rounded), acts start on measured downbeats, two hard cuts land on analysed
 // accents off the 16th grid (the picture 0.5 and 1.6 f ahead of the sound), the reveal comes on the

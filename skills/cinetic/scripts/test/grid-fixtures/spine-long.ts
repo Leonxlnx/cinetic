@@ -1,4 +1,4 @@
-// Fixture for scripts/test/grid-check.test.mjs. expect: spine-carry:warn=2 spine-bare:warn=1 spine-momentum:warn=1
+// Fixture for scripts/test/grid-check.test.mjs. expect: spine-carry:warn=2 spine-bare:warn=1 spine-momentum:warn=1 seam-variety:warn=1
 // args: --part spine
 // A 40 s film that leans on speed: the element carries 4 of 10 changes (2 of 7 inside the acts), 4 runs are joined by
 // speed alone and one cut inside an act is bare. Past 35 s the carry family warns instead of failing; everything else

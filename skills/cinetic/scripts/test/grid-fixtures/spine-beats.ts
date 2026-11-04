@@ -1,4 +1,4 @@
-// Fixture for scripts/test/grid-check.test.mjs. expect: spine-carry=2 spine-bare=1 spine-lines=1 text-then-cards=2 spine-case=1
+// Fixture for scripts/test/grid-check.test.mjs. expect: spine-carry=2 spine-bare=1 spine-lines=1 text-then-cards=2 spine-case=1 seam-variety=1
 // args: --part spine
 // expect: spine-end=1 checklist=1 spine-boundary:warn=1 spine-lines:warn=1 text-then-cards:warn=1 checklist:warn=1
 // A beat film, not a spine: a line alone, a card, a cut, four times. Nothing of the element crosses a scene change (one

@@ -1,4 +1,4 @@
-// Fixture for scripts/test/grid-check.test.mjs. expect: declarations=10 declarations:warn=1 seam-plan=2 end-lock:warn=1
+// Fixture for scripts/test/grid-check.test.mjs. expect: declarations=10 declarations:warn=1 seam-plan=2 end-lock:warn=1 scene-length=2
 // Declarations that do not hold: a seam on frame 0, a seam of an unknown kind, two seams on one frame,
 // a step range that ends before it starts and one at the film's own 60 fps, a 3-frame "flash", a
 // camera-blur range past the end, STRUCTURAL and SALIENCE naming what is not there, a LOOK.blur that
