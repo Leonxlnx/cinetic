@@ -38,6 +38,14 @@ seconds at 24, 25, 30 or 60 fps.
   speed: exits, ideally cut on their last frame) and **linear** (colour lerps, flash decays, drifts, counters,
   log-scale zooms). `enter()`, `leave()` and `move()` refuse a curve of the wrong family (`ease-family`). Most
   arrivals are front-loaded and most moves into a cut end at speed: grammar-score wants ≥ 71 % of each.
+- **Nothing on screen moves at a constant rate.** Every transform, position, scale, rotation, camera, blur and opacity
+  rides a curve, and most of them an exponential one (`lib/anim.ts`, p = the time share of the move, k = its rate):
+  a zoom runs in log space, `zoomAt(f, a, b, from, to, ease)` = from · (to / from)^ease(p), so a push or a dive reads as
+  one constant move to the eye; an arrival lands on expo out, `panTo()` = (1 - e^(-k p)) / (1 - e^(-k)); an exit leaves
+  on expo in, `exitTo()` = (e^(k p) - 1) / (e^k - 1), cut on its last frame; a pan or a travel inside a shot runs expo
+  in-out, `travel()` / `XP.travel`. `interpolate()` without an `easing`, `E.linear`, a raw `frame / n` ramp or a scale
+  tweened in value space on any of those properties fails `linear-motion`; only a true live rate (a clock, a real-time
+  progress bar, a counter's rate, a constant ambient drift) keeps a linear ramp, with `// lint-ok: <reason>`.
 - **Entrances decay, exits accelerate; never fade a statement out.** A statement leaves at speed (into a cut or a
   mask at full opacity, or with a short fade in the last half of a moving exit). A standalone opacity fade of more
   than 12 f@60 on a line is a tell (`fade-exit`). Opacity on type never runs on `E.linear` (`linear-opacity`).
@@ -81,7 +89,10 @@ seconds at 24, 25, 30 or 60 fps.
 | `softIn` | leave | .05 | 28 f | gentle exits, a logo shrinking before a cut |
 | `buildIn` | leave | .02 | 26 f | **the exit**: speed about ×1.11 a frame at the end |
 | `launchIn` | leave | .01 | 29 f | into a cut: speed about ×1.16 a frame at the end (×1.34 at 30 fps) |
-| `linear` | linear | .10 | | colour lerps, flash decays, drifts, counters, log-scale zooms (with `lmix`) |
+| `linear` | linear | .10 | | colour lerps and true live rates only (a clock, a real-time bar, a counter's rate, a constant ambient drift, each with `// lint-ok: <reason>`); never a move, a fade or a zoom (`linear-motion`) |
+| `XP.arrive` | arrive | .50 | | `expOut(7)`: pans landing, cards sliding home (`panTo()`) |
+| `XP.leave` | leave | .00 | | `expIn(6)`: exits and dives into a cut (`exitTo()`) |
+| `XP.travel` | reposition | .00 | | `expInOut(7)`: pans, travels, camera reframes, the default zoom curve (`travel()`, `zoomAt()`) |
 
 - **A film's role mix** sits near 55 % arrive, 16 % reposition, 19 % leave, 8 % linear, 2 % spring (grammar-score
   `role-mix`). A film where every move is an in-out S reads as a slideshow; a film with no leave curves never cuts on
@@ -243,7 +254,9 @@ const t = tail(F, CUE.land, { angle: 0 });                                   // 
 
 ## 7. Scale: log space, oversized landings, breath
 
-- **Scale and zoom interpolate in log space**: `lmix(a, b, t) = exp(mix(log a, log b, t))`. Remotion's
+- **Scale and zoom interpolate in log space**: `lmix(a, b, t) = exp(mix(log a, log b, t))`, and `zoomAt(f, a, b, from,
+  to, ease = XP.travel)` = from · (to / from)^ease(p) is the house zoom: equal eased time buys an equal ratio. A scale
+  tweened in value space over a ratio of 1.6 or more fails `linear-motion` (it slows on screen as it grows). Remotion's
   `perceptual-scale` output is area-linear, not log space.
 - **Oversized landing** (`OVERSIZE`, `fx/Oversize`): start at 1.28-1.9× and settle in 22-56 f on `M.oversize`, often
   with a defocused start; this replaces every scale-from-zero.
@@ -336,7 +349,7 @@ use (`deprecated-token`):
 ## 12. Checks
 
 - `lint-film.mjs`: `raw-easing`, `spring-config`, `ease-family`, `token-drift`, `whip-shape`, `spring-budget`,
-  `spring-range`, `scale-from-zero`, `fade-exit`, `linear-opacity`, `deprecated-token`, `interpolate-clamp`, and the
+  `spring-range`, `scale-from-zero`, `fade-exit`, `linear-opacity`, `linear-motion` (error), `deprecated-token`, `interpolate-clamp`, and the
   continuous-motion rules `snap-step`, `camera-float`, `idle-bob`, `card-tilt`, `unmount-moving`, `move-queue`.
 - `grammar-score.mjs`: `role-mix`, `front-loaded`, `into-cuts`, `durations`, `staggers`, `holds`, `velocity-seams`,
   `overlap` (`references/checks.md`).

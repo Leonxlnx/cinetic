@@ -39,7 +39,7 @@ at 1920 wide; "% per frame" for scale is the per-frame scale change.
 | move | house size | duration | notes |
 |---|---|---|---|
 | fast pan | 4-40 % of the width (house 14 %) | 0.2-1.7 s (house 0.6) | peak 1.7-4.3 % of the width per frame; about 40 % start at peak speed, 35 % end at it |
-| slow pan | 0.7-12 % of the width | 0.16-1 s | linear, quad-in or quad-out; it may start at speed |
+| slow pan | 0.7-12 % of the width | 0.16-1 s | expo out (`panTo`) or expo in (`exitTo`), never linear; it may start at speed |
 | push-in | x1.04-1.5 (house 1.115) | 0.4-1.4 s | first-frame heavy; lands clean; a creep after |
 | pull-out | x0.65-0.96 (house 0.856) | 4-36 f | lands clean, or one 0.7 % settle |
 | whip | 104-236 px per frame peak (house 130) | build 9-12 f, stop 7-30 f | blur 0.5 x step, or none |
