@@ -10,7 +10,7 @@
 import { DEAL, HEROES } from './deal';
 import { E } from './lib/anim';
 import { settleOf } from './lib/sync';
-import { ACT, CHANGES, CLOSE, copy, type Declares, END_MOMENTS30, f60, HOOK, INTO, K30, N, type Salience, SCENE_MOMENTS, TOTAL } from './timeline';
+import { ACT, CHANGES, CLOSE, copy, type Declares, END_MOMENTS30, endAt, f60, HOOK, INTO, N, type Salience, SCENE_MOMENTS, TOTAL } from './timeline';
 
 export type Kind =
   | 'tick' | 'tock' | 'hit' | 'land' | 'pop' | 'whoosh' | 'riser'
@@ -48,8 +48,8 @@ export default function cues(): SoundEvent[] {
   if (DEAL.hook === 'roll') ev.push({ f: HOOK.version + f60(16), kind: 'tick', weight: 0.75, pan: 0.2, action: 'detent', id: 'version-locks' });
   else if (DEAL.hook === 'tag') ev.push({ f: HOOK.version + f60(8), kind: 'pop', weight: 0.7, pan: 0.2, action: 'appear', id: 'version-tag' });
   else ev.push({ f: HOOK.version + f60(6), kind: 'pop', weight: 0.7, pan: 0.2, action: 'appear', id: 'version-pill' });
-  // each wipe: a soft swipe under the clean ground sweeping in
-  for (const x of INTO) if (x.kind === 'wipe' && x.at > 0) ev.push({ f: x.at - f60(3), kind: 'whoosh', weight: 0.35, pan: x.dir === 1 ? 0.25 : 0, dur: f60(16), apexFrac: 0.3, action: 'swipe', id: x.id ?? 'wipe' });
+  // each defocus into a change: a soft swipe whose apex sits on the cut inside the blur
+  for (const x of INTO) if (x.kind === 'defocus' && x.at > 0) ev.push({ f: x.at - f60(5), kind: 'whoosh', weight: 0.35, pan: 0, dur: f60(16), apexFrac: 0.3, action: 'swipe', id: x.id ?? 'defocus' });
   // each change: its line read (a soft text sound), its scene's own moments
   CHANGES.forEach((c) => {
     const line = copy(`change${c.i + 1}`);
@@ -62,9 +62,9 @@ export default function cues(): SoundEvent[] {
     if (LONG[x.kind]) Object.assign(e, { dur: f60(LONG[x.kind]), apexFrac: x.kind === 'whoosh' ? 0.35 : 0.85 });
     ev.push(e);
   }
-  // the end: the mark's pull-back, the cut to the flat mark, the lockup assembling, the version mark on its bar line
+  // the end: the mark's pull-back, the one snap to the lockup assembling, the version mark on its bar line
   for (const x of END_MOMENTS30) {
-    const e: SoundEvent = { f: CLOSE.markIn + Math.round(x.f * K30), kind: x.kind as Kind, weight: x.w, pan: 0, action: x.id === 'lockup' ? 'logo-lock' : ACTION[x.kind] ?? 'appear', id: `mark-${x.id}` };
+    const e: SoundEvent = { f: endAt(x.f), kind: x.kind as Kind, weight: x.w, pan: 0, action: x.id === 'lockup' ? 'logo-lock' : ACTION[x.kind] ?? 'appear', id: `mark-${x.id}` };
     if (LONG[x.kind]) Object.assign(e, { dur: f60(LONG[x.kind]), apexFrac: 0.3 });
     ev.push(e);
   }

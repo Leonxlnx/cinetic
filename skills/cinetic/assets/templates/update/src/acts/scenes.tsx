@@ -13,7 +13,7 @@ import {
   DecodeTitle, decodeTitleMeta, GlassPrompt, glassPromptMeta, MacroType, macroTypeDur, macroTypeMeta, MarkPullback, markPullbackMeta, OrbitChips, orbitChipsMeta,
   PageFly, pageFlyMeta, PhotoCounters, photoCountersMeta, PhotoRiver, photoRiverMeta, PortholeLine, portholeLineMeta, type SceneMeta, ToastStack, toastStackMeta,
 } from '../scenes';
-import { CHANGES, CLOSE, END_MOMENTS30, K30, MOMENTS30, sceneDur30, sceneFrame } from '../timeline';
+import { CHANGES, END_MOMENTS30, K30, MOMENTS30, pullbackFrame, sceneDur30, sceneFrame } from '../timeline';
 import { pictureOf, photosOf, rowsOf, spokenChange, UPDATE } from '../update';
 import { srcOf } from '../scenes/stage1080';
 import { scenePalette } from './look';
@@ -60,7 +60,8 @@ export const SceneOf: React.FC<{ i: number; f: number }> = ({ i, f }) => {
     case 'toast-stack': {
       const rows = rowsOf(c).slice(0, 5);
       const ago = ['now', '1m', '2m', '4m', '9m'];
-      const items = rows.map((r, k) => ({ title: r.label, body: r.meta ?? c.title, ago: ago[rows.length - 1 - k] ?? 'now', glyph: 'bell' as const }));
+      // each toast its row's real face or picture when it has one (a person who paid, the place booked), else a bell
+      const items = rows.map((r, k) => ({ title: r.label, body: r.meta ?? c.title, ago: ago[rows.length - 1 - k] ?? 'now', glyph: 'bell' as const, photo: r.photo ? srcOf(r.photo) : undefined }));
       return <ToastStack items={items} palette={palette} frame={frame} />;
     }
     case 'page-fly': {
@@ -72,8 +73,11 @@ export const SceneOf: React.FC<{ i: number; f: number }> = ({ i, f }) => {
       return <PhotoRiver photos={photosOf(c).slice(0, 14).map(srcOf)} palette={palette} frame={frame} />;
     case 'photo-counters': {
       const unit = show.kind === 'count' ? show.unit ?? '' : '';
-      const card = show.kind === 'count' ? { title: show.label, sub: show.sub ?? c.title, from: show.from, to: show.to, format: (v: number) => `${Math.round(v).toLocaleString('en-US')}${unit ? ` ${unit}` : ''}` } : { title: c.title, sub: c.sub ?? '', from: 0, to: 1 };
-      return <PhotoCounters photo={srcOf(pictureOf(c) as string)} cards={[card]} palette={palette} frame={frame} />;
+      // a currency sign leads the figure ("£1,180"), any other unit follows it ("46 hours")
+      const lead = /^[$£€¥₹₩]$/.test(unit);
+      const card = show.kind === 'count' ? { title: show.label, sub: show.sub ?? c.title, from: show.from, to: show.to, format: (v: number) => `${lead ? unit : ''}${Math.round(v).toLocaleString('en-US')}${unit && !lead ? ` ${unit}` : ''}` } : { title: c.title, sub: c.sub ?? '', from: 0, to: 1 };
+      // one card, large and centred on the picture (scenes/photo-counters cardLayout): the figure is the frame's subject
+      return <PhotoCounters photo={srcOf(pictureOf(c) as string)} cards={[card]} place="centre" palette={palette} frame={frame} />;
     }
     case 'orbit-chips':
       return <OrbitChips line={spokenChange(c)} chips={(c.logos ?? []).map((logo) => ({ logo }))} palette={palette} frame={frame} />;
@@ -82,9 +86,9 @@ export const SceneOf: React.FC<{ i: number; f: number }> = ({ i, f }) => {
   }
 };
 
-/** The lockup: the mark's solid pulling back into the flat mark and the lockup, played from the mark's cut in to the last frame (it keeps creeping). */
+/** The lockup: the mark's solid pulling back, the one snap to the lockup, played from the mark's cut in to the last frame (it keeps pushing). */
 export const EndScene: React.FC<{ f: number }> = ({ f }) => {
   checkMeta('mark-pullback', markPullbackMeta.dur);
-  return <MarkPullback name={UPDATE.name} logo={brandLogo} palette={scenePalette('mark-pullback')} frame={Math.max(0, f - CLOSE.markIn)} />;
+  return <MarkPullback name={UPDATE.name} logo={brandLogo} palette={scenePalette('mark-pullback')} frame={Math.max(0, pullbackFrame(f)) * K30} />;
 };
 void macroTypeDur;

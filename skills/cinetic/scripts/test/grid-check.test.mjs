@@ -479,11 +479,15 @@ console.log(JSON.stringify(out));
       const z = H?.[`${h.name}-stop`];
       const s = (x) => (x.total - x.whole) / x.fps;
       const gap = z ? (Math.ceil(h.endF) - z.body) / z.fps : NaN;
-      // a template may state its own hold (template.json end_hold: [lo, hi] s; the simple launch holds its lockup 2-3 s)
-      const band = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', h.name, 'template.json'), 'utf8')).end_hold ?? [1.2, 1.8];
+      // a template may state its own hold (template.json end_hold: [lo, hi] s; the simple launch holds its lockup 2-3 s), and
+      // that a provisional stop ending is not held (end_stop: the update film's lockup ends 2 s after it forms, whatever
+      // the track; track.py fit writes its real ending, a hit on the version mark faded under the tail)
+      const tpl = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', h.name, 'template.json'), 'utf8'));
+      const band = tpl.end_hold ?? [1.2, 1.8];
+      const holdStop = tpl.end_stop === undefined;
       const [lo, hi] = band;
-      const ok = !!a && !!z && !a.error && !z.error && s(a) >= lo - 1e-9 && s(a) <= hi + 1e-9 && s(z) >= lo - 1e-9 && s(z) <= hi + gap + 1e-9 && z.total - Math.ceil(h.endF) >= z.fps;
-      result(ok, `--template ${h.name}: the end card holds ${lo}-${hi} s (a stop ending's gap more at most), the stop's element 1 s or more before the end`,
+      const ok = !!a && !!z && !a.error && !z.error && s(a) >= lo - 1e-9 && s(a) <= hi + 1e-9 && s(z) >= lo - 1e-9 && s(z) <= hi + (holdStop ? gap : 0) + 1e-9 && (!holdStop || z.total - Math.ceil(h.endF) >= z.fps);
+      result(ok, holdStop ? `--template ${h.name}: the end card holds ${lo}-${hi} s (a stop ending's gap more at most), the stop's element 1 s or more before the end` : `--template ${h.name}: the end card holds ${lo}-${hi} s, a provisional stop ending or not (its lockup's limit wins)`,
         a?.error ?? z?.error ?? (a && z ? `${s(a).toFixed(2)} s; with the stop ${s(z).toFixed(2)} s (gap ${gap.toFixed(2)} s, ${z.total - Math.ceil(h.endF)} f after the element)` : (hp.stderr || hp.stdout).trim().slice(0, 300)));
     }
   }

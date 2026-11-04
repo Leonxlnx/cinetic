@@ -1,7 +1,7 @@
 // The update film's choices, dealt per film. The structure never changes: the hook (the name and the version on a clean
-// ground), then each change as a line and its house scene (src/scenes: one moment each, 1.5-3 s, filled with this
-// product's words, pictures and mark) in 2-4 s, then the mark pulling back into the lockup and the version landing on the
-// bar line that ends the body. How each part looks is dealt. The seed is the product's name (src/brand/identity.ts: the
+// ground), then each change as a line (in and read in 1.2 s at most) and its house scene (src/scenes: one moment each,
+// 1.5-3 s, filled with this product's words, pictures and mark) in 2-4 s (a typed change in 3 s), then the mark pulling
+// back into the lockup (2 s at most to the last frame) and the version landing on the bar line that ends the body. How each part looks is dealt. The seed is the product's name (src/brand/identity.ts: the
 // same name, the same deal, on any machine); SEED re-deals without renaming, PIN fixes a slot by hand. The unnamed
 // scaffold ('[Product]') plays the floor; a named film never replays it. When scripts/deck.py dealt a direction in this
 // project (src/dealt.ts) the film takes its scenes (`hero`) first. Print what this film plays: the command in
@@ -15,11 +15,14 @@
 //   hook     pill             "[Name]" builds centred; the version's pill lands beside it, the pair re-centring
 //            roll             the name with the pill beside it from the first frame; the old numerals roll to the new
 //            tag              the name lands alone, slides aside, and the version cuts on in the accent at its fastest
-//   voice    build | open | mask   the move every line arrives on (fx/TypePresets), one per film
-//   set      line | statement the size the change lines are set at: the sentence line, or a statement half again larger
+//   voice    whole | chunks | track   the move every line arrives on (acts/type.tsx), one per film: the line lands
+//                             whole (a focus pull), in 2-3 phrase chunks (each rising out of its mask), or whole with
+//                             its tracking closing; never word by word, read in 1.2 s at most
+//   set      line | statement the size the change lines are set at: big (cap 8 % of the frame), or a statement (11 %)
 //   (scenes)                  each change's scene (HERO_META below): the deck's (src/dealt.ts hero) or dealt from the
 //                             name, the first in the film's order that films the change (sceneFit), at least one big one
 import { IDENTITY } from './brand/identity';
+import { holdFor, PACE } from './lib/pace';
 import { DEALT } from './dealt';
 import { RECENT } from './recent';
 import { type Change, photosOf, pictureOf, rowsOf, spokenChange, UPDATE } from './update';
@@ -48,7 +51,7 @@ export const paletteById = (id: string): FilmPalette => PALETTES.find((p) => p.i
 export const DEVICES = {
   palette: PALETTES.map((p) => p.id),
   hook: ['pill', 'roll', 'tag'],
-  voice: ['build', 'open', 'mask'],
+  voice: ['whole', 'chunks', 'track'],
   set: ['line', 'statement'],
 } as const;
 export type Slot = keyof typeof DEVICES;
@@ -60,11 +63,11 @@ export type Deal = { palette: string; hook: string; voice: string; set: string }
  */
 export const COMPOSITION: { [S in Slot]?: Record<string, string> } = {
   hook: { pill: 'the name, then a pill landing beside it', roll: 'the name and the pill together from the first frame, the numerals rolling in it', tag: 'the name alone, sliding aside for the version' },
-  set: { line: 'each change line at the sentence size', statement: 'each change line half again larger, a statement' },
+  set: { line: 'each change line big, a cap of 8 % of the frame', statement: 'each change line a statement, a cap of 11 % of the frame' },
 };
 
 /** What the template plays before the product's name is in (its name slot, '[Product]'): a product's deal never replays it. */
-export const FLOOR: Deal = { palette: 'ink-cobalt', hook: 'pill', voice: 'build', set: 'line' };
+export const FLOOR: Deal = { palette: 'ink-cobalt', hook: 'pill', voice: 'whole', set: 'line' };
 /** Choose a slot by hand ({ hook: 'tag' }); a pinned slot is not dealt. */
 export const PIN: Partial<Deal> = {};
 /** The deal's seed: null deals from the product's name; any integer re-deals without renaming the product. */
@@ -152,14 +155,14 @@ export type HeroMeta = { id: string; role: HeroRole; family: string; needs: read
 export const HERO_META = [
   { id: 'porthole-line', role: 'picture', family: 'press', needs: ['button', 'pictures'], prefer: 'proof', min: 2.6, fits: ['join', 'send', 'call', 'book', 'share', 'invite', 'open', 'meet', 'tap', 'one', 'start', 'see'], about: 'a real pointer presses send at macro scale; the button drains into a porthole holding the change\'s picture while its line, set giant on two lines, parts round it' },
   { id: 'decode-title', role: 'picture', family: 'title', needs: ['button'], prefer: 'first', min: 1.9, dark: true, fits: ['start', 'try', 'get', 'go', 'now', 'live', 'ready', 'unlock', 'turn', 'switch'], about: 'the change\'s short line decodes out of a swirl of the accent on a dark dot grid; its button flies into the line and a real pointer clicks it' },
-  { id: 'macro-type', role: 'picture', family: 'input', needs: [], prefer: 'first', min: 2.5, fits: ['ask', 'type', 'prompt', 'message', 'write', 'search', 'chat', 'reply', 'draft', 'find', 'say', 'tell'], about: 'a giant pointer turns into a text cursor and clicks the product\'s input; the request types in at macro scale with the camera on the caret, then runs on to send and presses it' },
+  { id: 'macro-type', role: 'picture', family: 'input', needs: [], prefer: 'first', min: 1.8, fits: ['ask', 'type', 'prompt', 'message', 'write', 'search', 'chat', 'reply', 'draft', 'find', 'say', 'tell'], about: 'a giant pointer turns into a text cursor and clicks the product\'s input; a short request types in at macro scale with the camera on the caret, then runs on to send and presses it' },
   { id: 'glass-prompt', role: 'picture', family: 'glass', needs: [], prefer: 'middle', min: 1.9, dark: true, fits: ['ask', 'prompt', 'describe', 'command', 'run', 'generate', 'build', 'make', 'create'], about: 'a dark frosted prompt box rises out of blur with light running along its rims; the stage whips aside and the request types in' },
   { id: 'toast-stack', role: 'picture', family: 'stack', needs: [], prefer: 'proof', min: 1.6, fits: ['notif', 'alert', 'payment', 'paid', 'order', 'booking', 'reminder', 'message', 'arrive', 'land', 'update', 'every', 'list', 'live'], about: 'the change\'s rows land as notifications one after another and pile into a depth stack on the accent field, the newest sharp in front' },
   { id: 'page-fly', role: 'picture', family: 'page', needs: [], prefer: 'middle', min: 2.4, dark: true, fits: ['page', 'doc', 'document', 'report', 'note', 'notes', 'brief', 'plan', 'summary', 'write', 'draft'], about: 'the change\'s page rises in on a tilted plane out of a dark void and the camera dives onto its headline and travels down it as the rows write on' },
   { id: 'photo-river', role: 'picture', family: 'media', needs: ['pictures'], prefer: 'middle', min: 2.7, fits: ['photo', 'video', 'image', 'picture', 'gallery', 'album', 'clip', 'every', 'all', 'library'], about: 'one card pumps through the change\'s pictures faster and faster, leaves a deck and unfolds into a row receding in depth' },
   { id: 'photo-counters', role: 'picture', family: 'figure', needs: ['pictures'], prefer: 'proof', min: 1.7, fits: ['count', 'save', 'saved', 'earn', 'hours', 'minutes', 'faster', 'more', 'less', 'grow', 'track'], about: 'the change\'s picture develops from a duotone in the accent while glass cards over it count the figure up' },
   { id: 'orbit-chips', role: 'picture', family: 'logos', needs: [], prefer: 'middle', min: 2.0, fits: ['works', 'with', 'connect', 'sync', 'import', 'integrat', 'apps', 'tools', 'plug'], about: 'the change\'s line sits on hairline orbits; the products it works with fly in as accent pills and land as their official marks on chips that orbit' },
-  { id: 'mark-pullback', role: 'end', family: 'mark', needs: [], prefer: 'proof', min: 2.4, fits: [], about: 'the end: the brand\'s mark as a solid pulls back from an extreme close-up with a roll, cuts to the flat mark and the lockup assembles; the version lands under it on the bar line' },
+  { id: 'mark-pullback', role: 'end', family: 'mark', needs: [], prefer: 'proof', min: 2.0, fits: [], about: 'the end: the brand\'s mark as a solid pulls back from an extreme close-up with a roll, one snap cut to the lockup assembling, which keeps a slow push; the version lands under it on the bar line' },
 ] as const satisfies readonly HeroMeta[];
 export type HeroId = (typeof HERO_META)[number]['id'];
 const HMETA = HERO_META as readonly HeroMeta[];
@@ -176,23 +179,55 @@ export type Box = { form: string; x: number; y: number; w: number; h: number };
  * held result where the film may give it more time (played slower, never frozen); `endless`: the prop that ends it
  * on its element without its own last action (the next scene's pointer takes it); `exit`: the seam its own last frames
  * make into what follows (a defocus, a whip, the page leaving at speed); a scene without one is wiped away by the next
- * part's clean ground.
+ * part's clean ground; `skip`: the frames the film enters it after (it cuts into the scene's move already travelling:
+ * macro-type's pointer already turned to a text cursor and nearing the field, so a typed change runs 3 s at most).
  */
-export type SceneSpec = { dur: number; big: boolean; carries: boolean; tone: 'dark' | 'light' | 'either' | 'field'; rest?: number; handIn: Box | null; handOut: Box; endless?: Record<string, boolean>; exit?: { kind: 'defocus' | 'whip' | 'velocity'; carry?: 'x' | 'y'; dir?: 1 | -1 } };
+export type SceneSpec = { dur: number; big: boolean; carries: boolean; tone: 'dark' | 'light' | 'either' | 'field'; rest?: number; skip?: number; handIn: Box | null; handOut: Box; endless?: Record<string, boolean>; exit?: { kind: 'defocus' | 'whip' | 'velocity'; carry?: 'x' | 'y'; dir?: 1 | -1 } };
 export const SCENE_SPEC: Record<string, SceneSpec> = {
   'porthole-line': { dur: 78, big: true, carries: true, tone: 'either', rest: 64, handIn: { form: 'button', x: 813, y: 340, w: 386, h: 386 }, handOut: { form: 'photo', x: 673, y: 258, w: 574, h: 574 }, exit: { kind: 'defocus' } },
   'decode-title': { dur: 56, big: true, carries: true, tone: 'dark', handIn: null, handOut: { form: 'button', x: 1180, y: 499, w: 360, h: 80 } },
-  'macro-type': { dur: 77, big: true, carries: false, tone: 'light', handIn: { form: 'pill', x: 591, y: 568, w: 1329, h: 194 }, handOut: { form: 'button', x: 813, y: 340, w: 386, h: 386 }, endless: { click: false } },
+  'macro-type': { dur: 77, big: true, carries: false, tone: 'light', skip: 20, handIn: { form: 'pill', x: 591, y: 568, w: 1329, h: 194 }, handOut: { form: 'button', x: 813, y: 340, w: 386, h: 386 }, endless: { click: false } },
   'glass-prompt': { dur: 56, big: false, carries: false, tone: 'dark', handIn: null, handOut: { form: 'pill', x: 457, y: 455, w: 975, h: 182 }, exit: { kind: 'whip', carry: 'x', dir: 1 } },
-  'toast-stack': { dur: 48, big: false, carries: false, tone: 'field', rest: 40, handIn: null, handOut: { form: 'notice', x: 272, y: 110, w: 1376, h: 215 } },
+  'toast-stack': { dur: 48, big: false, carries: false, tone: 'field', rest: 40, skip: 4, handIn: null, handOut: { form: 'notice', x: 272, y: 110, w: 1376, h: 215 } },
   'page-fly': { dur: 72, big: true, carries: false, tone: 'dark', handIn: { form: 'page', x: 288, y: 1080, w: 1344, h: 1740 }, handOut: { form: 'page', x: 288, y: -900, w: 1344, h: 1740 }, exit: { kind: 'velocity', carry: 'y', dir: -1 } },
   'photo-river': { dur: 81, big: true, carries: false, tone: 'either', handIn: { form: 'photo', x: 625, y: 90, w: 670, h: 900 }, handOut: { form: 'photo', x: 744, y: 250, w: 432, h: 579 } },
-  'photo-counters': { dur: 52, big: false, carries: false, tone: 'light', handIn: { form: 'photo', x: 0, y: 0, w: 1920, h: 1080 }, handOut: { form: 'count', x: 130, y: 562, w: 650, h: 518 } },
+  'photo-counters': { dur: 52, big: false, carries: false, tone: 'light', rest: 40, handIn: { form: 'photo', x: 0, y: 0, w: 1920, h: 1080 }, handOut: { form: 'count', x: 550, y: 260, w: 820, h: 560 } },
   'orbit-chips': { dur: 60, big: false, carries: true, tone: 'light', handIn: { form: 'word', x: 516, y: 497, w: 888, h: 86 }, handOut: { form: 'card', x: 560, y: 200, w: 800, h: 680 } },
-  'mark-pullback': { dur: 72, big: true, carries: false, tone: 'light', handIn: null, handOut: { form: 'mark', x: 630, y: 471, w: 660, h: 137 } },
+  'mark-pullback': { dur: 60, big: true, carries: false, tone: 'either', rest: 21, handIn: null, handOut: { form: 'mark', x: 630, y: 471, w: 660, h: 137 } },
 };
-/** The lockup's own frames (30 fps): the cut to the flat mark, the lockup assembling, settled. */
-export const PULLBACK30 = { cut: 38, lockup: 44, settled: 60 } as const;
+/** The lockup's own frames (30 fps, scenes/mark-pullback PULLBACK): the one snap cut to the lockup assembling, settled. */
+export const PULLBACK30 = { cut: 28, lockup: 28, settled: 43 } as const;
+
+// ---------------------------------------------------------------------------------------------- the limits
+/**
+ * The film's hard limits (seconds): a lone line is in and read in LINE_S, a scene runs SCENE_S at most, a change (its
+ * line and its scene) CHANGE_S, a typed change TYPE_S, the hook HOOK_S, the lockup (its first frame to the film's last)
+ * LOCK_S with TAIL_S at least after the version mark, the film FILM_S. src/timeline.ts builds the plan inside them and
+ * fails loudly (grid-check, the Studio, the render) on a plan outside them.
+ */
+export const LIMITS = { LINE_S: 1.2, SCENE_S: 3.0, CHANGE_S: 4.0, TYPE_S: 3.0, HOOK_S: 1.6, LOCK_S: 2.0, TAIL_S: 1.0, FILM_S: [8, 20] as const } as const;
+/** A lone line of n words holds this long once read (60 fps frames, the crisp pace's read: grid-check's text-hold). */
+export const readHold60 = (n: number): number => holdFor(n, PACE.crisp);
+/**
+ * macro-type's length for a request (frames at 30 fps): the house scene's own formula (scenes/macro-type macroTypeDur:
+ * its last key lands (n - 1) / cps seconds after the first, whatever the cadence's jitter).
+ */
+export const macroTypeDur30 = (text: string) => {
+  const cps = Math.min(40, Math.max(24, text.length / 1.05));
+  const last = Math.max(0, text.length - 1) * (60 / cps);
+  return Math.ceil(37 + last / 2 + 2 + 11 + 6);
+};
+/** The fastest a lone line arrives (60 fps frames): whole in 4 f. */
+export const LINE_MIN60 = 4;
+/**
+ * Whether a typed change fits macro-type: its line (the read of its words, arriving whole) and the scene entered at its
+ * skip run TYPE_S at most (about 20 characters). A longer request types in glass-prompt.
+ */
+export const macroFits = (c: Change): boolean => {
+  if (c.show.kind !== 'type') return false;
+  const scene60 = (macroTypeDur30(c.show.text) - (SCENE_SPEC['macro-type'].skip ?? 0)) * 2;
+  return scene60 + readHold60(spokenChange(c).split(/\s+/).length) + LINE_MIN60 + 8 <= LIMITS.TYPE_S * 60;
+};
 
 /** The words of a line a scene parts (porthole-line): the top line and the bottom, the key words kept on the bottom. */
 export const splitLine = (c: Change): [string, string] => {
@@ -220,7 +255,7 @@ export const sceneFit = (id: string, c: Change): number => {
     case 'decode-title':
       return s.kind === 'tap' ? (n <= 3 ? 2 : n <= 4 ? 1 : 0) : 0;
     case 'macro-type':
-      return s.kind === 'type' && s.text.length <= 40 ? 2 : 0;
+      return macroFits(c) ? 2 : 0;
     case 'glass-prompt':
       return s.kind === 'type' ? 2 : 0;
     case 'toast-stack':
@@ -334,23 +369,31 @@ export const HERO_END = 'mark-pullback';
 
 // ---------------------------------------------------------------------------------------------- the lines
 /**
- * The moves a line takes (fx/TypePresets): each builds CENTRED (the line re-centres on the words already there), none
- * cuts in oversized, every word full size as it shows (mask: each rises out of its own mask). One per film: every line
- * arrives the same way, so the scenes are what change.
+ * The moves a line takes (acts/type.tsx LineText): each sets the line CENTRED and big, and brings it whole or in 2-3
+ * chunks, never word by word: `whole` lands the line at once on a focus pull, `chunks` raises its 2-3 phrases out of
+ * their masks a few frames apart, `track` lands it whole as its tracking closes. One per film: every line arrives the
+ * same way, so the scenes are what change.
  */
-export const MOVES = ['build', 'open', 'mask'] as const;
+export const MOVES = ['whole', 'chunks', 'track'] as const;
 export type Move = (typeof MOVES)[number];
-/** Frames (60 fps) from a move's start until a line of n words (index n - 1, 1-8 words) is read (fx/TypePresets typeLineFrames().resolved). */
-export const RESOLVE60: Record<Move, readonly number[]> = {
-  build: [20, 26, 32, 38, 44, 50, 56, 62],
-  open: [22, 34, 41, 53, 65, 77, 89, 96],
-  mask: [12, 32, 40, 48, 56, 64, 72, 80],
+/** The phrases a line arrives in on `chunks`: 1 for one word, 2 for 2-4 words, 3 for 5-6. */
+export const chunkCount = (n: number): number => (n <= 1 ? 1 : n <= 4 ? 2 : 3);
+/** Frames (60 fps) from a move's start until a line of n words is read, at its natural speed (the plan may make it faster, never slower). */
+export const RESOLVE60: Record<Move, (n: number) => number> = {
+  whole: () => 10,
+  chunks: (n) => 10 + 7 * (chunkCount(n) - 1),
+  track: () => 14,
 };
 /** The film's lines: the hook's and one per change. */
 export const LINE_IDS = ['change1', 'change2', 'change3', 'change4'] as const;
-export const LINES = { voice: (DEAL.voice as Move) ?? 'build', move: Object.fromEntries(LINE_IDS.map((id) => [id, DEAL.voice as Move])) as Record<string, Move> };
-/** The size the change lines are set at (px at 1080). */
-export const LINE_SIZE = DEAL.set === 'statement' ? 124 : 88;
+export const LINES = { voice: (DEAL.voice as Move) ?? 'whole', move: Object.fromEntries(LINE_IDS.map((id) => [id, DEAL.voice as Move])) as Record<string, Move> };
+/**
+ * The size the change lines are set at (px at 1080): big, a cap of 8.4 % of the frame's height (a statement 11.4 %); a
+ * line too wide for 84 % of the frame breaks onto two lines before it would shrink under LINE_MIN.
+ */
+export const LINE_SIZE = DEAL.set === 'statement' ? 168 : 124;
+/** The smallest a line may be set (px at 1080): a cap of 6.5 % of the frame's height. */
+export const LINE_MIN = 96;
 
 /** Where the deal came from, for the print. */
 export const DEAL_SOURCE = `${SEED !== null ? `SEED ${SEED}` : UNNAMED ? 'the floor (the name slot is still [Product])' : `the name "${IDENTITY.name}"`}${Object.keys(PIN).length ? `, pinned: ${Object.keys(PIN).join(', ')}` : ''}; scenes from ${HERO_ORDER.source}`;
