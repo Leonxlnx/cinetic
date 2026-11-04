@@ -42,7 +42,7 @@ node scripts/film-diff.mjs --record                           # after the ship g
 shots and two a film, a line over a picture on at most 40 % of the beats, the first line by 1 s, in a film that
 declares its beat plan; its spine rules in a film that plays the spine: one action in 3-5 acts, the element carrying
 most scene changes, one case, lines alone only at the ends, the lockup grown from the last form; in a film that declares
-its look: a line alone read in 1.2 s at most at a cap of 7 % or more, every scene 1.5-3 s, the lockup 2.5 s at most and
+its look: a line alone read in 1.2 s at most at a cap of 6 % or more (the templates set 9.2 %), every scene 1.5-3 s, the lockup 2.5 s at most and
 held 2 s at most after its mark, no seam kind over 40 % of five or more changes); forensics `--spine`
 on the draft (`--grammar-only` runs it when the cues declare handovers) and `look-audit.py --look` on it (no flat
 void, no plain card slab); precheck `--ship`; layout-audit passing with its placeholder floor and its placement gate

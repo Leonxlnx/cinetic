@@ -40,7 +40,7 @@ Every film is held to these rules and numbers; the gates in brackets measure the
    (`copy-check.py`, `--ui src`.)
 5. **Text with love: one face, voices that rotate, events.** Lines arrive in the film's one face, the voice turning
    line by line (build, blur-in, ink-in: never two lines in a row alike, [catalogue.md](references/catalogue.md) §1),
-   big (a line alone at a 9.2 % cap, never under 7 %; the claim bigger), whole or in 2-3 chunks, never word by word.
+   big (a line alone at a 9.2 % cap, never under 6.5 %; the claim bigger), whole or in 2-3 chunks, never word by word.
    One type event a film (a giant word with the product rising behind it, a line an object pushes apart, a
    decode, a build that re-centres). Emphasis is quiet: the key word in the accent on at most two lines, not always the
    last word; a box, marker, pill, underline or knockout only as the one signature. Every line reads at 3:1 against
@@ -76,7 +76,7 @@ Every film is held to these rules and numbers; the gates in brackets measure the
     scale jump (macro to wide, a giant word); smear only on fast moves; transitions made of focus and light. Cards face
     the camera (a 3D turn is a designed move). A flat field with small type and a still card fails.
 11. **Simple and finished.** The path below, one review round, on the time plan; a gate that costs more than 5 minutes
-    on a 30 s film is advisory. A film is delivered whole, with its ending, never cut.
+    on a 30 s film is advisory. A film is delivered whole, never cut.
 
 ## Hard bans
 
@@ -85,9 +85,9 @@ In a look you invent, none of these appear (`lint-film.mjs` checks the code, the
   seamless, elevate, unlock, the future of, magic) and slogan shapes ("X, reimagined", "Less X. More Y."); keyword
   piles; two lines readable at once (a declared swap excepted); eyebrow labels, stacked taglines, "Introducing…";
   filler text, fake metrics.
-- **Type:** serif faces, italic or oblique (or a skew faking one). One clean sans, plus a mono for code or numbers.
+- **Type:** serif faces, italic or oblique (or a skew faking one). One clean sans, plus a mono for code.
 - **Colour:** orange, amber, beige, cream, tan or sand as an accent, a paper or a glow; neon; purple, violet or
-  indigo; a monochrome accent wash; glassmorphism as a UI style.
+  indigo; green in a brand you invent; a monochrome accent wash; glassmorphism as a UI style.
 - **Decoration:** emoji and stock icons; an accent bar down a card's side; sparkles for "AI", confetti, lens flares,
   code rain; bounce on anything that is not landing; a springy overshoot on copy.
 - **Pictures:** a person, place or product drawn in SVG where a photo belongs; grey cards standing in for pictures;
