@@ -39,9 +39,9 @@ stop`) adds the gap to its one element and 1 s rings out after it.
 
 | Template | Length | Use it when | Shape |
 |---|---|---|---|
-| `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing to one case, act by act | a spine (`src/spine.ts`: one sentence as 3-5 acts, one case from the brief, one element whose form changes act to act and is handed on at every scene change), a designed world lit in the brand's hue taking one step per act and turning once, the device each act's verb asks for (macro-type, page-fly, push-press, toast-stack, glass-counter ...), lines alone only for the promise and the claim, the lockup grown out of the last form; the direction you pick from the deck's three sets the world, the voice and the type pairing (`deck.py --direction <id> --why` writes `src/dealt.ts`), never the last films' (`src/recent.ts`) |
+| `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing to one case, point by point | 8-12 house scenes of the scene bank (`src/scenes`, 1.5-3 s each, two big at least) cast by `src/spine.ts` (one sentence as 3-5 acts, one case, one element handed on at every scene change), the rest dealt by each act's verb and varied film to film; lines alone on clean ground for the promise and one point; presses with a real pointer; a designed palette (one accent, white, near-black, the accent field) painted on each scene's own ground; the lockup a house scene; the direction you pick from the deck's three seeds the deal and the type pairing (`deck.py --direction <id> --why` writes `src/dealt.ts`) |
 | none (the starter, `--template none`) | 15-45 s | a launch film whose idea is its own device | the dealt direction's skeleton |
-| `update` | 8-20 s (two changes; three run 20-23 s) | "vX is out": 2-3 changes, played as one session that uses each in turn | a spine: the version's pill is the element, handed from the hook into each change's hero shot (a press at macro scale with the camera following the pointer, a typed request ridden by the camera, notices stacking in depth, a picture developing under glass, a figure counting in glass, a page travelled ...) by a handover at every change (grow, fly, swell, converge through a spark), the same case in every act, each line parted round a porthole holding the element or riding over it, one lit world stepping per act; the last form converges into the brand's mark as a solid pulling back into the lockup with the version |
+| `update` | 8-20 s (two changes run 11-15 s) | "vX is out": 2-3 changes, each understood at a glance | the hook (the name and the version on a clean ground), then each change as its line alone on the ground of its scene and one house scene from the scene bank that proves it, 2-4 s a change (a pointer pressing send into a porthole holding the change's picture as its line parts round it, a request typed at macro scale, notifications stacking in depth on the accent field, a page flown, pictures pumped into a row in depth ...), at least one big scene, two scenes joined on one element where they can; the mark pulls back into the lockup and the version lands on the bar line; colours from the brand or a dealt palette |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
 | `capability-reel` | 15-25 s | only when the brief asks for a wall of the product's breadth (sources, formats, integrations); never the default | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
 | `camera-teaser` | 20-25 s | a dark, fast teaser of a product's screens where the motion is the camera's: whips, pushes, one 3D turn over one layout per shot | the request box arriving tilted in the light, a whip into its close-up and the send button, the window streaming code under the one 3D turn, the proof in depth with the real marks of what it works with, the page with a modal toast, the stages, the mark; each act deals one of two or three devices |
@@ -58,68 +58,63 @@ film may end on the reel's close (rebuild its acts after your own) or open on th
 
 ## launch-simple
 
-The default launch, played as a spine (references/spine.md): you write `src/spine.ts` FIRST (the sentence, the case
-from the brief, one element, 3-5 acts each with its verb, the forms the element takes and the scenes that draw them,
-the lines, `BARS` and the one fact under the lockup), then `src/content.ts` (`node scripts/content.mjs --brief BRIEF.md
---fetch --force`, kept to what is true) and `src/product.tsx` (each scene name given its house scene filled with the
-case, or a scene of your own); the template's `README.md` walks through all three. What it carries for you:
-- **Every change carried.** `HANDOVER_PLAN` gives each scene change its handover (the scene's `via`, else the form
-  table's recipe, varied: grow, swell, fly, converge, same-surface ...); `acts/stage.tsx` draws the element across the
-  cut (fx/Handover), each side under its own camera, the scenes hiding their own copy while it flies; nothing cuts from
-  a line to a card. `grid-check.ts --part spine` and `forensics.py --spine` hold it.
-- **Lines where they live.** A line alone for the promise (its starred word glides to the centre as a chip and becomes
-  the element) and the claim; between them inside the product's own words (a status pill) or around the element (the
-  giant line with the element stepping back behind it, then taking the frame again); whole on the music's 16ths.
-- **A designed world.** `src/world.tsx`: a stage lit in the brand's hue with a floor glow (`paleSky`, `nearWhite`), the
-  brand's colour field with its rings (`electric`), a dark stage (`blackField`, `deepField`); a photograph only of the
-  brief's own subject (`studio`, `clouds` ...: `assets.mjs plate`). It takes one step per act (enter, closer, turn,
-  pull-back), each move landing on its act's end, the planes in parallax; the turn floods out of the element into the
-  opposite world (a light stage turns into the brand's field) as the film's one colour event.
-- **Devices by verb.** `src/acts/scenes.tsx`: `wordScene`, `promptScene` (macro-type), `siteScene` (page-fly, then
-  push-press on the same surface), `liveScene`, `noticeScene` (toast-stack with its depth ladder), `countScene`
-  (glass-counter), `lockupScene`; each with one sharp plane, the kit's cards lit by the key (`Lit`), one camera move a
-  scene, front-loaded and still travelling the same way to the scene's end (`acts/cam.ts` `holdEase`, `creep`: never
-  still over 0.8 s, never a float, never there and back), its own sounds (`moments`). The page is filmed whole with its
-  toolbar while it writes, then one push in toward the toolbar that the button scene carries on to the button: the
-  cursor arrives on a decelerating move once that push has landed and presses right before the handover's lead (the
-  press is the cause of what follows, never a cursor parked on the button). Notices recede up and back behind the front
-  card (frontal depth, rows large enough to read). Lines alone at a cap of 8.6 % of the frame, the claim at 10.8 %.
-  Other moves and their numbers: `references/motion-library/`.
-- **The end.** The last form converges (or swells, or pulls out) into the brand's mark (`scripts/brand.py`; an invented
-  brand gets its own mark, never a sparkle) large and alone (`LOCK.solo`), which pulls back into the lockup as the name
-  slides out from behind it (drawn under the mark, never through it), the fact under it, a band of light crossing it once
-  it is whole, the whole creeping in to the last frame at the hold rate (`LOCK.creep`); the frame settles into the
-  world's deep tone with the music's ring-out, from just after the final hit to the last frame, and completes there
-  (never cut mid-fade). Every moving plane of the world overscans the frame, so a pull-back never shows an edge.
-- **Sound cut to the picture.** `src/sync.ts`: every handover sounds by its kind (a swell into its cut, a whoosh 4 f
-  before a fly, a suck and a spark on a converge), the keys typed, the press (a `touch` moment: the music breathes before
-  it), each notice, the turn's sub drop at weight 1 (a stop-down before the film's biggest change), one hit on the
-  lockup; `npm run sound` mixes it over the fitted track.
+The default launch, assembled from the scene bank (`src/scenes`: house scenes of 1.5-3 s, each one moment that shows
+a point and is understood) and played as a spine (references/spine.md). You write `src/spine.ts` FIRST: the sentence,
+the case from the brief, one element, 3-5 acts of 1-3 scenes, 8-12 scenes in all; each scene its form, its house scene
+(`bank`, or left out for the deal) and its content (`props`: the case's own words, the brief's own pictures), the lines
+and the one fact under the lockup. Then `src/content.ts` fills whatever a scene's props leave out. The template's
+`README.md` walks through it. What it carries for you:
+- **Scenes by verb, varied.** A scene that names no house scene is dealt one by its act's verb (`src/bank.ts`
+  `dealScene`: asks -> macro-type, glass-prompt; writes -> page-fly; sends, presses -> decode-title, porthole-line;
+  fills, pays -> toast-stack, key-glow; sells -> word-cards; shows -> photo-river, ring-dive; connects -> orbit-chips;
+  the lockup from blobs-to-mark, line-to-wordmark, word-build-badge, bar-flood), only one whose needs the film has
+  (pictures, partner marks, a price table), never one the film already plays, seeded by the deck's direction or the
+  name, so another product deals other scenes. Two big scenes at least (the plan print stars them).
+- **Each point, then its scene.** A line alone sits on clean ground (white, near-black or the accent field: never over
+  a blurred picture) for the promise and, once in a middle act, a point its key word then becomes; the scenes carry the
+  other statements themselves (a decoding title, a two-line statement parting round a porthole, a type poster) and the
+  product's own words. A press is a real pointer on the button, inside the scene.
+- **Fast, on the track.** Each scene plays at its own length (eased 0.9-1.1 so every change lands on the track's 8th);
+  the lockup holds, creeping, to the bar line that ends the body. The plan print gives the scene count, the median shot
+  (aim at 1.5-2.5 s) and the big scenes.
+- **Every change carried.** `HANDOVER_PLAN` pins each change to a handover the stage draws: the form table's drawn
+  recipe, else, into a scene that opens on its own picture, the way the element becomes that screen (a button drains
+  into a porthole, a pill or a page opens an iris, anything with a face grows into it), else a converge through a point.
+  `acts/bank.tsx` carries the element as a patch of the scene itself, scaled like a picture, the scene cutting its own
+  copy out while it flies; the surroundings fade under the leaving element and arrive round the landing one, and the
+  ground holds through the change. `grid-check.ts --part spine` and `forensics.py --spine` hold it.
+- **A designed palette.** `src/palette.ts`: one accent (the deck's, else the brand's, else a house accent dealt by the
+  seed when the tokens still hold the starter's stand-in), a white ground, a near-black in the accent's hue and the
+  accent as the one solid field; each house scene is painted on the value its source was designed on (`src/bank.ts`
+  `ground`), so it keeps its contrast with the brand's colour in it. Never a tinted wash, never a scene's demo colours.
+- **The end.** The lockup is a house scene (the mark born from two blobs, a line splitting round the wordmark, a bar
+  flooding the frame) with the brand's mark (`scripts/brand.py`; an invented brand gets its own); the one fact arrives
+  under it once its move is done, the whole creeps in to the last frame and settles into its ground with the music's
+  ring-out (never cut mid-fade).
+- **Sound cut to the picture.** `src/sync.ts`: every handover by its kind, each scene's own sounds (the keys, the
+  click, the toasts, the snaps) on its fitted clock, one hit on the lockup; `npm run sound` mixes it over the fitted
+  track.
 
 ## update
 
-"vX is out", told by the product itself (`references/update-films.md`), played as a spine (`references/spine.md`):
-one session (`src/update.ts` `session`, its `case`) in 3-4 acts, the hook and one act per change in the order the session
-meets them. The version's pill in the hook (`hook`: roll, rise or badge) is the film's element: every change of scene
-hands it on (`src/timeline.ts` HANDS, drawn by fx/Handover with each side under its own shot's camera: grow, fly,
-swell, shrink, or converge through a spark; a two-form shot reaches its button on its own surface), the shot before
-gone by the cut and the next racking in behind the landing element. Each change is filmed by a hero shot that draws the
-element in its form (`src/acts/heroes.tsx`; `src/deal.ts` HERO_META, `heroFit` and the change's `verb`: push-press,
-macro-type, toast-stack, fan-focus, carousel, photo-develop, glass-counter, page-fly, focus-swap, glass-tiles). Its
-line meets the element (`place`: `part`, once, the line parted round a rounded window holding the shot itself that opens
-into the frame; `head`, the line riding over the element as the shot's heading); every line builds centred (build, open,
-snap re-centre on the words already there; a parted line takes mask). The pill is a solid lit accent face, the type
-never haloed. The lockup grows out of the last form:
-it converges into the mark as a solid (fx/three Logo3D; a CSS-3D solid on software GL) pulling back onto the flat mark,
-the name beside or under it (`end`: under it, the name rises into its own slot as the mark lifts) and the version
-landing on the bar line. One lit world (`ground`: deepField or electric dealt; blackField, the pale fields and the plates
-by PIN or the deck) steps once per act; from the element's landing each shot creeps on the tail of its move at the hold
-rate (the hook at half of it, the lockup to the last frame), never still. `SPINE_PLAN` is exported for grid-check `--part spine` and the cues (with each handover's
-box track for forensics `--spine`). Acts in whole bars; a two-form shot's button lands on the first beat its element is in, never the act's middle beat (two changes run 16-19 s at 112-128 BPM, inside the spec's 8-20 s; three run 20-23 s: write that length in the spec line, or keep two). The deal (`src/deal.ts`,
-template.json "slots"): ground, hook, place, end, the hero shots (the deck's `src/dealt.ts`, else the name's) and the
-lines' voice. Slots: `src/content.ts` (`scripts/content.mjs --brief BRIEF.md --fetch --force`) and `src/update.ts` (the
-version, the one before it, the session and its case, the changes: `words`, `key`, `verb`, the screen and its moment
-`tap` / `type` / `fill` / `swap` / `count` / `page`, and `photos`, `logos`, `hero` when the change has them).
+"vX is out", told by the product itself (`references/update-films.md`), assembled from the scene bank (`src/scenes`):
+the hook (`hook`: the version's pill lands beside the name, `roll`s from the old numerals, or cuts on as a `tag`),
+then each change in the order the session meets it as its line alone on the ground of its scene and the house scene
+that proves it, 2-4 s a change (`src/deal.ts` HERO_META and `sceneFit`: porthole-line for a press that opens a picture,
+decode-title for a short press, macro-type or glass-prompt for a typed request, toast-stack for a list, page-fly for a
+page, photo-river for 8+ pictures, photo-counters for a figure on a picture, orbit-chips for 3+ partners), at least one
+big scene a film; where a scene hands on the very element the next takes over (macro-type's send button, pressed by
+porthole-line's pointer) the two join on a match cut and the second sets its own line. Every press is a real pointer;
+text stands only on a clean ground. The end is always the mark-pullback, the version landing under the lockup as a pill
+on the bar line that ends the body (STRUCTURAL); the hook, the cards and the scenes with a rest take the time that bar
+line leaves, so the lockup never waits. Colours: the brand's (`src/brand/tokens.ts`) or a palette dealt per film
+(`palette`: a near-black or a white ground and one accent; never a tinted wash, never the starter's green, never a
+scene's demo colours), each scene on the ground its picture needs. The deal (`src/deal.ts`, template.json "slots"):
+palette, hook, voice (the lines' move), set (their size) and the scenes (the deck's `src/dealt.ts`, else the name's).
+Slots: `src/content.ts` (`scripts/content.mjs --brief BRIEF.md --fetch --force`) and `src/update.ts` (the version, the
+one before it, the session and its case, the changes: `words`, `key`, `verb`, the screen and its moment `tap` /
+`type` / `fill` / `count` / `page`, and `picture`, `photos`, `logos`, `scene` when the change has them). Print the
+plan: `npx tsx -e "import { PLAN_LINE } from './src/timeline'; console.log(PLAN_LINE)"`.
 
 ## ui-walkthrough
 

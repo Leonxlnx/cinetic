@@ -141,12 +141,12 @@ only for the promise and the claim. In launch-simple it is `src/spine.ts`: print
 spine`. Its lines go in [TREATMENT.md](assets/TREATMENT.md) (the idea sentence fails with a competitor's name in it);
 `copy-check.py TREATMENT.md` passes before any picture work ([copy-and-type.md](references/copy-and-type.md)).
 
-**3. World and devices.** The deal (`src/dealt.ts`) holds the **world**: a designed place lit in the brand's hue that
-takes one step per act and turns once, out of the element; a photograph only of the brief's own subject (`node
-scripts/assets.mjs plate <kind>`, then `--pick <n> --to public/plates --accent '<accent>'`). Each act's **device** comes
-from its verb (types: macro-type; writes: page-fly; presses: push-press; fills: toast-stack; counts: glass-counter),
-drawn by launch-simple's house scenes (`src/acts/scenes.tsx`); for other moves and their numbers read the
-[motion library](references/motion-library/README.md) and build them into a scene. Parts: `fx/world`, `fx/light`
+**3. World and scenes.** The deal (`src/dealt.ts`) holds the **world** where a template lights one: a designed place in
+the brand's hue; a photograph only of the brief's own subject (`node scripts/assets.mjs plate <kind>`, then `--pick <n>
+--to public/plates --accent '<accent>'`). Launch-simple casts 8-12 **house scenes** (`src/scenes`,
+1.5-3 s each, two big at least): named in the spine or dealt by the act's verb (`src/bank.ts`), painted
+in one designed palette (`src/palette.ts`), each point a line on clean ground and then its scene; for other
+moves read the [motion library](references/motion-library/README.md). Parts: `fx/world`, `fx/light`
 ([lighting.md](references/lighting.md) §8), `fx/depth` ([camera.md](references/camera.md) §13), `fx/three`
 ([three.md](references/three.md)), `kit/screens` ([product-ui.md](references/product-ui.md) §15). Content: `node
 scripts/content.mjs --brief BRIEF.md --fetch --force`; keep what is true, look at every picture. Other templates pick
@@ -159,9 +159,9 @@ scripts/audio/track.py analyze` and, once the script is written, `fit` (the time
 the track's own ending: never a cut), `check`. The track plays only through `score.py` (`--bed-only` before the kit
 exists); never cut it by hand.
 
-**5. The product's scenes.** In launch-simple you write `src/product.tsx`: one entry per scene of the spine, a house
-scene filled with the product's real content, or a scene of your own from the kit (`Draw`; `el`, the element's box;
-`Content`, the element alone for the handover). Something purposeful moves in every frame (a hold is a move's landing
+**5. The product's scenes.** In launch-simple each scene's content is its `props` in `src/spine.ts` (the case's own
+words; the rest from `src/content.ts`); a scene the bank lacks is your own in `src/product.tsx` from the kit (`Draw`;
+`el`, the element's box; `Content`, the element alone for the handover). Something purposeful moves in every frame (a hold is a move's landing
 tail, never still over 0.8 s, the lockup too); cards are lit or glass, never plain slabs. The kit shows only the film's own content (a part given nothing draws a dashed box and fails precheck;
 [product-ui.md](references/product-ui.md)). Real people, places and objects are real photos or clips with a studio
 finish, never drawn (`node scripts/assets.mjs recipe "<product>"`; [imagery.md](references/imagery.md)). Other products' marks: `node scripts/logos.mjs get <name> --film .`. Before a look:
@@ -194,7 +194,7 @@ with the format's variants (it runs `credits.py`: credits go into `CREDITS.md`, 
 | Format | Length | Template | Script | Deliverables |
 |---|---|---|---|---|
 | Launch film | 15-30 s (to 45) | `launch-simple` | what it is, 2-5 things it does, the close | 16:9 master, 9:16 and 1:1 variants, poster |
-| Update film ("vX is out") | 8-20 s | `update` | one session; the version pill handed on into the 3D mark | master, poster, 9:16 |
+| Update film ("vX is out") | 8-20 s | `update` | a line and a house scene per change; the mark pulls back | master, poster, 9:16 |
 | Product or feature video | 8-30 s | `launch-simple` or `ui-walkthrough` | 3-6 lines | master, poster |
 | UI walkthrough | 20-90 s | `ui-walkthrough` | what it is, one line per step | master, SRT captions |
 | Feature loop | 4-15 s, whole bars | `--template none` | 1-2 lines, reads muted | MP4, WebM, GIF, seamless seam |
