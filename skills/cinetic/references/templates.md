@@ -77,7 +77,7 @@ and the one fact under the lockup. Then `src/content.ts` fills whatever a scene'
   other statements themselves (a decoding title, a two-line statement parting round a porthole, a type poster) and the
   product's own words. A press is a real pointer on a button that reads (decode-title's at 1.22 x its title's cap).
 - **Fast, on the track.** Every scene runs 1.5-3 s, a scene of your own too (the lockup 2.5 s): the timeline refuses a
-  longer one by name and length, and fits the body to the track as a whole (each house scene eased at most 1.2 x, the
+  longer one by name and length, and fits the body to the track as a whole (each house scene at most 5 % faster, up to 1.2 x slower, the
   changes on the 8th, the acts on their downbeats where the lengths allow, the body on whole bars). The plan print gives
   the scene count, the median and longest shot, each line's read and cap, and every seam's kind.
 - **Every change carried, the seams varied.** `HANDOVER_PLAN` deals each change a handover the stage draws: the form

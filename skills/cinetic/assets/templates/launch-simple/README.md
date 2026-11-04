@@ -69,7 +69,7 @@ scene's demo colours.
 
 - `CAST`: each scene's house scene (named or dealt), its content, its ground. `BANK_DUR`: its own length.
 - The body, fitted as a whole (a dynamic programme over the music's 8ths): every scene inside its band (`SPANS`: a
-  house scene 1.5-3 s, eased at most 1.2 x, slower than that it holds its last frame, creeping; a line alone read in
+  house scene 1.5-3 s, at most 5 % faster than its own clock, up to 1.2 x slower and then held, creeping; a line alone read in
   1.2 s; the lockup 2.5 s at most), as near its own length as the music allows, the body on whole bars, each act on its
   downbeat wherever the bands allow (else on the 8th, carried like any change). A scene over its band is refused by
   name (`SCENE_MAX`, `LOCKUP_MAX`; `BARS`, `FIT_K`, `MEDIAN_SHOT`, `LONGEST_SHOT`).
