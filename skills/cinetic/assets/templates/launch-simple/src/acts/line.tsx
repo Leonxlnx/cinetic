@@ -38,11 +38,12 @@ export const setLine = (raw: string, cap: number, frameH: number): SetLine => {
     });
     return { words, width: x, space };
   };
-  let L = lay(size);
-  if (L.width > W * LINE_SET.maxW) {
-    size *= (W * LINE_SET.maxW) / L.width;
-    L = lay(size);
-  }
+  // the fit to the frame from a deterministic estimate (0.62 em a character, a wide face's advance), never from the
+  // measured widths: the size, and with it the key word's chip and the element's box, is the same in the browser and
+  // in Node (the sound and the checks read the boxes there), so the element the checks follow is the one drawn
+  const est = kw.reduce((t, k, i) => t + k.word.length * 0.62 * size + (i ? size * 0.27 : 0), 0);
+  if (est > W * LINE_SET.maxW) size *= (W * LINE_SET.maxW) / est;
+  const L = lay(size);
   return { size, weight: LINE_SET.weight, ...L, h: size * 1.12 };
 };
 
@@ -62,11 +63,14 @@ export const lineLeft = (L: SetLine, t: number, fps: number, cx = W / 2) => {
 
 /** The key word's box (the first starred word, else the last word) at t, centred on (cx, cy), scaled by `s` about (cx, cy). */
 export const keyBox = (L: SetLine, t: number, fps: number, cx: number, cy: number, s = 1) => {
-  const k = L.words.find((w) => w.key) ?? L.words[L.words.length - 1];
+  // the key phrase: from its first starred word to its last (one word, or a phrase like *one line*)
+  const keys = L.words.filter((w) => w.key);
+  const k0 = keys[0] ?? L.words[L.words.length - 1];
+  const k1 = keys[keys.length - 1] ?? k0;
   const left = lineLeft(L, t, fps, cx);
-  const x = left + k.x;
+  const x = left + k0.x;
   const y = cy - L.h / 2;
-  return { x: cx + (x - cx) * s, y: cy + (y - cy) * s, w: k.w * s, h: L.h * s };
+  return { x: cx + (x - cx) * s, y: cy + (y - cy) * s, w: (k1.x + k1.w - k0.x) * s, h: L.h * s };
 };
 
 /**

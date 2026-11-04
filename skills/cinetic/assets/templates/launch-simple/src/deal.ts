@@ -1,4 +1,5 @@
-// The choices this film is dealt. The structure never changes (the spine: one case, one element handed on at every
+// The choices this film is dealt (its house scenes are dealt by each act's verb in src/bank.ts, from the same seed).
+// The structure never changes (the spine: one case, one element handed on at every
 // scene change, lines alone only for the promise and the claim, one world step per act, the lockup out of the last
 // form); how it looks does: the text voice and the world. ONE source: when scripts/deck.py has dealt a direction in this
 // project it writes src/dealt.ts and the film plays that deal (out/DIRECTION.md says why); with none dealt, the seed is
@@ -51,8 +52,14 @@ export const DEAL_SOURCE = DEALT ? `deck.py direction ${DEALT.direction}` : `the
 const seed = IDENTITY.name;
 const dealt = (DEALT?.deal ?? {}) as Partial<Record<Slot, string>>;
 const valid = <S extends Slot>(s: S, v: string | undefined): v is Deal[S] => !!v && (DEVICES[s] as readonly string[]).includes(v);
+// a deck deal naming a device this template lacks is a mistake to say, never a silent fallback
+for (const [slot, v] of Object.entries(dealt))
+  if (slot in DEVICES && !valid(slot as Slot, v))
+    throw new Error(`deal: ${slot} "${v}" (src/dealt.ts) is not one of this template's ${slot}s (${(DEVICES[slot as Slot] as readonly string[]).join(', ')}): re-deal with deck.py`);
+/** The deal a name gets (never the last films' voice or ground while another is free): the film's own when nothing is dealt. */
+export const dealOf = (name: string): Deal => ({ voice: pick(name, 'voice', DEVICES.voice, RECENT.voice ?? []), ground: pick(name, 'ground', BUILT, RECENT.ground ?? []) });
 /** The film's deal: the deck's, else from the name (never the last films' voice or ground while another is free). */
 export const DEAL: Deal = {
-  voice: valid('voice', dealt.voice) ? dealt.voice : /^\[/.test(seed) ? FLOOR.voice : pick(seed, 'voice', DEVICES.voice, RECENT.voice ?? []),
-  ground: valid('ground', dealt.ground) ? dealt.ground : /^\[/.test(seed) ? FLOOR.ground : pick(seed, 'ground', BUILT, RECENT.ground ?? []),
+  voice: valid('voice', dealt.voice) ? dealt.voice : /^\[/.test(seed) ? FLOOR.voice : dealOf(seed).voice,
+  ground: valid('ground', dealt.ground) ? dealt.ground : /^\[/.test(seed) ? FLOOR.ground : dealOf(seed).ground,
 };

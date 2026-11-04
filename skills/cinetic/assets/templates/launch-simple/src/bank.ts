@@ -1,0 +1,126 @@
+// The scene bank as this template plays it: each house scene (src/scenes) is one moment of 1.5-3 s that shows a point
+// and is understood (a request typed at macro scale, a page that writes itself, a send pressed with a pointer, a stack of
+// payments, a title that decodes, a mark born from two blobs ...). A film is 8-12 of them, each point a line on clean
+// ground and then its scene, the spine's one element carried from each scene's last form into the next. This file is
+// the timeline's side of the bank: what each scene takes and hands on, how long it runs, which verbs ask for it, what it
+// needs, the ground it was designed on, and the deal that picks a scene for an act's verb when the spine names none.
+// Kept free of React, the brand tokens and the scene modules (the timeline imports it; the scenes import the timeline
+// through the tokens): the numbers mirror each scene's meta entry, and acts/bank.tsx checks them against the real metas
+// and fits each scene to its slot at draw time, so a scene always plays whole, never cut and never frozen early.
+import { DEAL_SOURCE } from './deal';
+import { DEALT } from './dealt';
+import { RECENT } from './recent';
+import type { Form } from './lib/spine';
+import { stemVerb } from './lib/spine';
+
+/** The value a scene was designed on (its source's ground): the film's palette fills it, adapted to the brand. */
+export type Ground = 'light' | 'dark' | 'field';
+/** What a scene needs from the film before it can be dealt: pictures of the brief's own subject, official partner marks, a price table, a cut-out product. */
+export type Need = 'picture' | 'pictures' | 'logos' | 'plans' | 'product' | 'hero';
+export type Box = { form: Form; x: number; y: number; w: number; h: number; r?: number };
+export type BankEntry = {
+  id: string;
+  dur: number; // frames at 30 fps with the default content (acts/bank.tsx reads the real length from the scene)
+  handIn: Box | null; // the element it takes over on its first frame (null: it opens on its own picture)
+  handOut: Box; // the element it hands on at its last frame
+  big: boolean; // a big moment (a film plays two at least)
+  ground: Ground;
+  verbs: readonly string[]; // the verb stems that ask for it ('line': it carries a statement; 'end': it is the lockup)
+  needs?: readonly Need[];
+  /** a lockup: where its mark lands whole and where its name is read, as shares of its length */
+  lock?: number;
+  name?: number;
+  /** the scene's text read from its props for a length that depends on it (frames at 30 fps) */
+  durOf?: (p: Record<string, unknown>) => number;
+};
+
+const str = (v: unknown, d = '') => (typeof v === 'string' ? v : d);
+const words = (s: string) => s.split(/\s+/).filter(Boolean).length;
+
+/**
+ * Every house scene the template deals, by id. Boxes are px of 1920 x 1080 at the scene's first or last frame; the
+ * verbs are lib/spine stems (`asks` -> 'ask'). A scene that needs pictures is dealt only when the spine lists them.
+ */
+export const BANK: Record<string, BankEntry> = {
+  'macro-type': {
+    id: 'macro-type', dur: 87, big: true, ground: 'light', verbs: ['ask', 'type', 'prompt', 'request', 'tell', 'describe', 'message', 'chat'],
+    handIn: { form: 'pill', x: 591, y: 568, w: 1329, h: 194, r: 97 }, handOut: { form: 'button', x: 813, y: 340, w: 386, h: 386, r: 193 },
+    // the typing sets it: about 1.05 s for 25-42 characters, at 24 a second under it and 40 over it
+    durOf: (p) => {
+      const n = str(p.text).length || 31;
+      const cps = Math.min(40, Math.max(24, n / 1.05));
+      return Math.ceil(58 + (n / cps) * 30);
+    },
+  },
+  'glass-prompt': { id: 'glass-prompt', dur: 56, big: false, ground: 'dark', verbs: ['ask', 'type', 'prompt', 'request', 'tell', 'describe'], handIn: null, handOut: { form: 'pill', x: 457, y: 455, w: 975, h: 182, r: 42 } },
+  'iris-input': { id: 'iris-input', dur: 86, big: true, ground: 'dark', verbs: ['ask', 'search', 'find', 'plan'], needs: ['picture'], handIn: null, handOut: { form: 'pill', x: 320, y: 470, w: 1290, h: 144, r: 72 } },
+  'page-fly': { id: 'page-fly', dur: 72, big: true, ground: 'dark', verbs: ['write', 'make', 'build', 'create', 'generate', 'draft', 'design', 'turn', 'summarize', 'plan'], handIn: { form: 'page', x: 288, y: 1080, w: 1344, h: 1740, r: 14 }, handOut: { form: 'page', x: 288, y: -900, w: 1344, h: 1740, r: 14 } },
+  'scan-grid': { id: 'scan-grid', dur: 66, big: false, ground: 'dark', verbs: ['find', 'search', 'scan', 'import', 'collect', 'choose', 'pick'], needs: ['pictures'], handIn: { form: 'pill', x: 264, y: 460, w: 1392, h: 156, r: 78 }, handOut: { form: 'list', x: 588, y: 252, w: 744, h: 540, r: 12 } },
+  'decode-title': { id: 'decode-title', dur: 56, big: true, ground: 'dark', verbs: ['send', 'press', 'publish', 'ship', 'launch', 'submit', 'book', 'join', 'tap', 'start', 'line'], handIn: null, handOut: { form: 'button', x: 1180, y: 499, w: 360, h: 80 } },
+  'porthole-line': { id: 'porthole-line', dur: 78, big: true, ground: 'light', verbs: ['send', 'press', 'publish', 'ship', 'submit', 'book', 'meet', 'call', 'line'], needs: ['picture'], handIn: { form: 'button', x: 813, y: 340, w: 386, h: 386, r: 193 }, handOut: { form: 'photo', x: 673, y: 258, w: 574, h: 574, r: 287 } },
+  'gloss-orbit': { id: 'gloss-orbit', dur: 54, big: true, ground: 'dark', verbs: ['launch', 'ship', 'press', 'start'], needs: ['hero'], handIn: null, handOut: { form: 'mark', x: 787, y: 337, w: 390, h: 465 } },
+  'prism-light': { id: 'prism-light', dur: 84, big: true, ground: 'dark', verbs: ['launch', 'ship', 'start', 'open', 'turn'], handIn: { form: 'button', x: 884, y: 464, w: 152, h: 152, r: 76 }, handOut: { form: 'world', x: 0, y: 0, w: 1920, h: 1080 } },
+  'toast-stack': { id: 'toast-stack', dur: 48, big: false, ground: 'field', verbs: ['fill', 'arrive', 'notify', 'collect', 'land', 'report', 'pay', 'get', 'earn', 'sell', 'grow', 'count', 'tell'], handIn: null, handOut: { form: 'notice', x: 272, y: 110, w: 1376, h: 215, r: 72 } },
+  'key-glow': { id: 'key-glow', dur: 72, big: true, ground: 'dark', verbs: ['connect', 'work', 'run', 'automate', 'do', 'handle', 'fill'], handIn: null, handOut: { form: 'world', x: 0, y: 0, w: 1920, h: 1080 } },
+  'word-cards': { id: 'word-cards', dur: 64, big: true, ground: 'dark', verbs: ['sell', 'price', 'choose', 'pick', 'start', 'count'], needs: ['plans'], handIn: null, handOut: { form: 'card', x: 737, y: 322, w: 444, h: 601, r: 32 } },
+  'photo-counters': { id: 'photo-counters', dur: 52, big: false, ground: 'light', verbs: ['count', 'grow', 'measure', 'track', 'earn', 'save'], needs: ['picture'], handIn: { form: 'photo', x: 0, y: 0, w: 1920, h: 1080 }, handOut: { form: 'count', x: 130, y: 562, w: 650, h: 518 } },
+  'photo-river': { id: 'photo-river', dur: 81, big: true, ground: 'light', verbs: ['show', 'see', 'shoot', 'picture', 'view', 'preview', 'browse', 'find'], needs: ['pictures'], handIn: { form: 'photo', x: 625, y: 90, w: 670, h: 900 }, handOut: { form: 'photo', x: 744, y: 250, w: 432, h: 579 } },
+  'held-product-word': { id: 'held-product-word', dur: 64, big: true, ground: 'light', verbs: ['show', 'carry', 'hold', 'wear', 'use'], needs: ['product', 'pictures'], handIn: { form: 'photo', x: 790, y: 200, w: 340, h: 680 }, handOut: { form: 'photo', x: 770, y: 160, w: 380, h: 760 } },
+  'ring-dive': { id: 'ring-dive', dur: 78, big: true, ground: 'light', verbs: ['show', 'browse', 'find', 'choose', 'collect'], needs: ['pictures'], handIn: null, handOut: { form: 'word', x: 820, y: 503, w: 280, h: 74 } },
+  'orbit-chips': { id: 'orbit-chips', dur: 60, big: false, ground: 'light', verbs: ['connect', 'integrate', 'sync', 'link', 'import', 'work'], needs: ['logos'], handIn: { form: 'word', x: 516, y: 497, w: 888, h: 86 }, handOut: { form: 'card', x: 560, y: 200, w: 800, h: 680, r: 64 } },
+  'type-flip': { id: 'type-flip', dur: 56, big: true, ground: 'light', verbs: ['line', 'claim', 'start'], handIn: null, handOut: { form: 'word', x: 110, y: 70, w: 1700, h: 910 } },
+  'blobs-to-mark': { id: 'blobs-to-mark', dur: 74, big: true, ground: 'light', verbs: ['end'], lock: 0.49, name: 0.74, handIn: null, handOut: { form: 'mark', x: 596, y: 431, w: 728, h: 217 } },
+  'line-to-wordmark': {
+    id: 'line-to-wordmark', dur: 76, big: false, ground: 'light', verbs: ['end'], lock: 0.53, name: 0.58, handIn: null, handOut: { form: 'mark', x: 660, y: 474, w: 600, h: 138 },
+    durOf: (p) => 1 + (Math.max(1, words(str(p.line, 'What if your team'))) - 1) * 9 + 10 + 2 + (p.tag ? 36 : 24),
+  },
+  'word-build-badge': {
+    id: 'word-build-badge', dur: 82, big: false, ground: 'light', verbs: ['end'], lock: 0.61, name: 0.7, handIn: { form: 'word', x: 800, y: 471, w: 320, h: 151 }, handOut: { form: 'mark', x: 630, y: 450, w: 660, h: 163 },
+    durOf: (p) => (words(str(p.line)) ? 82 + (words(str(p.line)) - 3) * 12 : 45),
+  },
+  'bar-flood': { id: 'bar-flood', dur: 51, big: true, ground: 'light', verbs: ['end'], lock: 0.61, name: 0.67, handIn: { form: 'card', x: 747, y: 724, w: 412, h: 229, r: 18 }, handOut: { form: 'mark', x: 637, y: 355, w: 653, h: 369 } },
+};
+
+/** A scene's length in frames at 30 fps for the props it plays (the default content's when it has no text rule). */
+export const durOf = (id: string, props: Record<string, unknown> = {}) => {
+  const e = BANK[id];
+  if (!e) throw new Error(`bank: no house scene "${id}" (src/bank.ts BANK: ${Object.keys(BANK).join(', ')})`);
+  return Math.max(30, e.durOf ? e.durOf(props) : e.dur);
+};
+/** True when a box shows enough of itself on screen to hand an element over (a page rising in from below does not). */
+export const onScreen = (b: Box | null, W = 1920, H = 1080) => {
+  if (!b) return false;
+  const vis = Math.max(0, Math.min(b.x + b.w, W) - Math.max(b.x, 0)) * Math.max(0, Math.min(b.y + b.h, H) - Math.max(b.y, 0));
+  return vis >= 0.3 * b.w * b.h && vis > 0.01 * W * H;
+};
+
+// ---------------------------------------------------------------------------------------------------- the deal
+
+const hash = (s: string) => {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return h >>> 0;
+};
+/** The scenes the last films played (new-film.sh writes RECENT; empty for a first film): the deal leaves them out while another fits. */
+const recentScenes = ((RECENT as Record<string, readonly string[] | undefined>).scenes ?? []) as readonly string[];
+/** The seed every scene deal starts from: the deck's direction when one is dealt, else the product's name. */
+export const SCENE_SEED = DEALT ? `direction:${DEALT.direction}` : DEAL_SOURCE;
+
+export type DealAsk = { act: number; k: number; verb: string; form?: Form; last: boolean; line?: boolean; have: readonly Need[]; used: readonly string[] };
+/**
+ * The house scene an act's verb asks for, dealt: the scenes whose verbs hold the act's verb (the lockup: the 'end'
+ * scenes; a scene that carries the act's line: the 'line' scenes), whose needs the film has, of the scene's form when
+ * one is written; never one this film already plays, never one of the last films' while another fits. The same seed
+ * and the same spine deal the same scenes; another product (or another direction) deals others.
+ */
+export const dealScene = (q: DealAsk): string => {
+  const stem = q.last ? 'end' : q.line ? 'line' : stemVerb(q.verb);
+  const fits = (e: BankEntry) => (e.needs ?? []).every((n) => q.have.includes(n));
+  const byVerb = Object.values(BANK).filter((e) => e.verbs.some((v) => v === stem || stem.startsWith(v)) && fits(e));
+  const pool0 = byVerb.length ? byVerb : Object.values(BANK).filter((e) => !e.verbs.includes('end') && fits(e));
+  const sameForm = q.form ? pool0.filter((e) => e.handOut.form === q.form) : [];
+  const pool1 = (sameForm.length ? sameForm : pool0).filter((e) => !q.used.includes(e.id));
+  const pool2 = pool1.filter((e) => !recentScenes.includes(e.id));
+  const pool = pool2.length ? pool2 : pool1.length ? pool1 : pool0;
+  return pool[hash(`${SCENE_SEED}:${q.act}:${q.k}:${stem}`) % pool.length].id;
+};

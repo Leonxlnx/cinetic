@@ -6,7 +6,7 @@
 // One strong sound per gesture; micro-sounds (keys, ticks) come in cascades, quiet. Every handover sounds by its kind,
 // the world's turn takes the sub drop (the film's colour event), the lockup ONE clean hit.
 import { HANDOVERS } from './lib/spine';
-import { ACT, type Declares, f60, FPS, HANDOVER_PLAN, LINES, LOCKUP_AT, NAME_AT, type Salience, SCENES, SPINE_PLAN, TOTAL } from './timeline';
+import { ACT, type Declares, f60, FPS, HANDOVER_PLAN, LINES, LOCKUP_AT, NAME_AT, type Salience, SCENES, type Seam, SPINE_PLAN, TOTAL } from './timeline';
 import { ctxOf, defOf, specs } from './acts/stage';
 import { handoverDeclares } from './lib/handover';
 import { stepsFromPlan, worldStepDeclares } from './fx/world/Step';
@@ -44,6 +44,9 @@ export const declares = (): (Declares & { id?: string })[] => {
     }
   });
   out.push({ id: 'world-steps', ...worldStepDeclares(stepsFromPlan(SPINE_PLAN), film), colour: [] });
+  // the house scenes' own designed cuts (a poster jumping in, a colour flip): hard seams, never an undeclared swap
+  const cuts: Seam[] = SCENES.flatMap((s) => (defOf(s.i).cuts?.() ?? []).map((f) => ({ at: s.from + f, kind: 'hard' as const, id: `scene-cut:${s.name}:${f}` }))).filter((x) => x.at < TOTAL);
+  if (cuts.length) out.push({ id: 'scene-cuts', seams: cuts });
   return out;
 };
 

@@ -1,10 +1,11 @@
-// The one stage every act is a window on: at film frame F it draws the world (src/world.tsx: its step for the act, the
-// turn flooding out of the element), the scene on screen (src/product.tsx SCENE_DRAW: the house scene for its form or the
-// product's own) and, across every scene change, the element itself carried by its handover (fx/Handover: the out
-// scene's box at its hand-over frame becoming the in scene's, each under its own camera; content never scaled; the
-// scenes hide their own copy while it flies). Scene-internal handovers (same-surface, stay, part) and the camera kinds
-// are drawn by the scenes themselves; the handover still declares its track. Nothing here is a cut from a line to a
-// card: a change with nothing carried does not exist in this template.
+// The one stage every act is a window on: at film frame F it draws the ground (the scene's own value from the film's
+// palette: white, near-black or the accent field, a clean solid), the scene on screen (src/product.tsx SCENE_DRAW: a
+// house scene of the bank, or a line on clean ground) and, across every scene change, the element itself carried by its
+// handover (fx/Handover: the out scene's box at its hand-over frame becoming the in scene's, each under its own camera;
+// a bank scene's element is a patch of the scene, scaled like a picture; the scenes cut their own copy out while it
+// flies). The ground holds through a change: a scene that opens on its own picture arrives inside the element (it grows,
+// opens or converges into it) over the leaving scene's ground; another's ground crosses under its landing element.
+// Nothing here is a cut from a line to a card: a change with nothing carried does not exist in this template.
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import { Handover } from '../fx/Handover';
@@ -12,8 +13,8 @@ import { clamp, E } from '../lib/anim';
 import { useFilm } from '../lib/film';
 import { type BoxAt, type HandoverSpec, ownOpacity } from '../lib/handover';
 import { SCENE_DRAW } from '../product';
-import { ACT, FADE_FROM, FPS, H, HANDOVER_PLAN, type HandoverPlan, handIn, handOut, lineOf, sceneAt, SCENES, SPINE_PLAN, TOTAL, W } from '../timeline';
-import { FilmWorld, lookAt, LOOK_A, toneAt } from '../world';
+import { ACT, CAST, FADE_FROM, FPS, H, HANDOVER_PLAN, type HandoverPlan, handIn, handOut, lineOf, sceneAt, SCENES, SPINE_PLAN, TOTAL, W } from '../timeline';
+import { GROUNDS, lookFor } from '../palette';
 import type { SceneCtx, SceneDef } from './scenes';
 
 /** The drawing of plan scene i (by its name in src/product.tsx SCENE_DRAW). */
@@ -38,8 +39,8 @@ export const ctxOf = (i: number, F: number, own = 1): SceneCtx => {
     F,
     dur,
     fps: FPS,
-    tone: toneAt(F),
-    look: lookAt(F),
+    tone: lookFor(CAST[i].ground).tone,
+    look: lookFor(CAST[i].ground),
     land,
     leadAt,
     inP: land ? clamp(f / land) : 1,
@@ -62,8 +63,8 @@ export const specOf = (h: HandoverPlan): HandoverSpec | null => {
     kind: h.kind,
     at: h.at,
     element: SPINE_PLAN.element,
-    from: { form: h.forms[0], box: (F: number) => A.el(ctxOf(h.from, F)).box, r: a0.r, fill: a0.fill, rim: a0.rim, shadow: a0.shadow, ...(many && many.length > 1 ? { many } : {}) },
-    to: { form: h.forms[1], box: (F: number) => B.el(ctxOf(h.to, F)).box, r: b1.r, fill: b1.fill, rim: b1.rim, shadow: b1.shadow },
+    from: { form: h.forms[0], box: (F: number) => A.el(ctxOf(h.from, F)).box, r: a0.r, fill: a0.fill, rim: a0.rim, shadow: a0.shadow, ...(a0.picture ? { picture: true } : {}), ...(many && many.length > 1 ? { many } : {}) },
+    to: { form: h.forms[1], box: (F: number) => B.el(ctxOf(h.to, F)).box, at: h.span[1], r: b1.r, fill: b1.fill, rim: b1.rim, shadow: b1.shadow, ...(b1.picture ? { picture: true } : {}) },
     ...(h.dir ? { dir: h.dir } : {}),
     id: `${h.forms[0]}>${h.forms[1]}`,
   };
@@ -108,14 +109,26 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
       />
     );
   }
-  // the settle-out: the whole frame into the world's deep tone with the music's ring-out, complete on the last frame
+  // the ground: the scene's own; through a landing the leaving scene's stays under an element that opens into the whole
+  // frame, and under any other the arriving ground crosses in with its surroundings
+  const gOf = (i: number) => GROUNDS[CAST[i].ground];
+  const landing = h && F >= h.at && F < h.span[1] ? h : null;
+  const ffIn = landing ? (() => {
+    const b = defOf(landing.to).el(ctxOf(landing.to, landing.span[1])).box;
+    return b.x <= 1 && b.y <= 1 && b.w >= W - 2 && b.h >= H - 2;
+  })() : false;
+  const base = landing ? gOf(landing.from) : gOf(s.i);
+  const cross = landing && !ffIn && gOf(landing.to) !== base ? E.glideOut(clamp((F - landing.at) / Math.max(1, landing.span[1] - landing.at))) : 0;
+  // the settle-out: the whole frame into its own ground with the music's ring-out, complete on the last frame
   const fade = E.softIn(clamp((F - FADE_FROM) / Math.max(1, TOTAL - 1 - FADE_FROM)));
+  const FULLD: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: W, height: H };
   return (
-    <FilmWorld F={F}>
+    <div style={{ ...FULLD, overflow: 'hidden', background: base }} data-ground={CAST[s.i].ground}>
+      {cross > 0.001 && landing ? <div style={{ ...FULLD, background: gOf(landing.to), opacity: cross }} /> : null}
       <D.Draw c={c} />
       {carried}
-      {fade > 0.001 ? <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, background: lookAt(F).bottom, opacity: fade }} /> : null}
-    </FilmWorld>
+      {fade > 0.001 ? <div style={{ ...FULLD, background: gOf(SCENES.length - 1), opacity: fade }} /> : null}
+    </div>
   );
 };
 
@@ -125,5 +138,5 @@ export const actOf = (name: string): React.FC => {
   Act.displayName = `Act ${name}`;
   return Act;
 };
-/** The film's page colour under everything (the first world's ground). */
-export const PAGE = { ground: LOOK_A.bottom };
+/** The film's page colour under everything (the first scene's ground). */
+export const PAGE = { ground: GROUNDS[CAST[0].ground] };

@@ -1,6 +1,6 @@
 {
  "name": "launch-simple",
- "about": "The default launch film, 15-30 s, played as a spine: one sentence as 3-5 acts, one case (the brief's request, names and numbers in every act), one element whose form changes act to act and is handed on at every scene change (src/timeline.ts HANDOVER_PLAN, drawn by fx/Handover), lines alone only for the promise and the claim (inside the product's words or around the element between), a designed world lit in the brand's hue that takes one step per act and turns once (src/world.tsx), the lockup grown out of the last form. The agent writes src/spine.ts first, then src/content.ts (scripts/content.mjs) and src/product.tsx (house scenes from src/acts/scenes.tsx: macro-type, page-fly, push-press, toast-stack, glass-counter, the lockup); the timeline, the handovers, the world steps and the sound plan follow.",
+ "about": "The default launch film, 15-25 s, assembled from the scene bank (src/scenes: house scenes of 1.5-3 s, each one moment that shows a point and is understood) and played as a spine: one sentence as 3-5 acts, one case (the brief's request, names and numbers in every act), 8-12 scenes, two big at least, each named in src/spine.ts or dealt by its act's verb (src/bank.ts dealScene, seeded by the deck's direction or the name, never a scene the film already plays), each point a line on clean ground and then its scene, presses with a real pointer, one element handed on at every scene change (src/timeline.ts HANDOVER_PLAN, drawn by fx/Handover with the scene's own patch), a designed palette (src/palette.ts: one accent, white, near-black, the accent field) painted on each scene's own ground, the lockup a house scene. The agent writes src/spine.ts first (the scenes' content in `props`), then src/content.ts for what the props leave out; the timeline, the handovers, the palette and the sound plan follow.",
  "engine": "remotion",
  "pace": "crisp",
  "type_family": "bold",
@@ -10,10 +10,10 @@
   3
  ],
  "beats": {
-  "acts": "3-5 acts on whole bars (first 20-32 %, last 12-31 %), each one verb of the sentence with 1-3 states of the element (src/spine.ts)",
-  "handover": "every scene change: the element carried (grow, swell, fly, converge, same-surface ...; lib/spine FORM_PAIRS), never a bare cut inside an act",
-  "lines": "alone only for the promise (act 1, its key word becoming the element) and the claim; inside the product's own words or around the element between; at most four",
-  "end": "the mark grows out of the last form (a converge, a swell, a pull-out), the name slides out from behind it, the one fact under it; held 2-2.5 s, creeping"
+  "acts": "3-5 acts of 1-3 scenes, 8-12 scenes in all, each at its own length (1.5-3 s) eased 0.9-1.1 onto the track's 8ths; the median shot 1.5-2.5 s",
+  "handover": "every scene change: the element carried (the form table's drawn recipe; into a scene that opens on its own picture a porthole, an iris or a grow; else a converge), never a bare cut inside an act",
+  "lines": "alone on clean ground for the promise (its key word becoming the element), once for a middle point and for the claim; the scenes carry the other statements; at most four",
+  "end": "the lockup is a house scene (blobs-to-mark, line-to-wordmark, word-build-badge, bar-flood); the fact under it once its move is done; held to the body's last bar line, creeping"
  },
  "deal": {
   "file": "src/deal.ts",
@@ -54,12 +54,12 @@
   ]
  },
  "next": [
-  "simple launch: write the spine first in src/spine.ts (the sentence, the case from the brief, one element, 3-5 acts each with its verb, its forms and scenes, the lines alone only for the promise and the claim, BARS and CLOSE); say it as a chain (A becomes B becomes C) and print the plan (template.json deal.print),",
-  "  deal: deck.py here (three directions into out/OPTIONS.md), pick the one that fits with --direction <id> --why \"<one line>\" (src/dealt.ts: the world and the voice),",
+  "simple launch: write the spine first in src/spine.ts (the sentence, the case from the brief, one element, 3-5 acts each with its verb and 1-3 scenes: form, bank or none for the deal, props in the case's own words, ui; the promise line; PICTURES; CLOSE); say it as a chain (A becomes B becomes C) and print the plan (template.json deal.print): 8-12 scenes, two big, a median shot of 1.5-2.5 s",
+  "  deal: deck.py here (three directions into out/OPTIONS.md), pick the one that fits with --direction <id> --why \"<one line>\" (src/dealt.ts: it seeds the scene deal and the palette, and sets the type pairing),",
   "  the content: node scripts/content.mjs --brief BRIEF.md --fetch --force, then read src/content.ts and keep only what is true (look at every picture: the brief's own subject or none),",
-  "  the scenes: src/product.tsx gives every scene of the spine its house scene (src/acts/scenes.tsx) filled with the case, or a scene of your own from src/kit/screens; real companies' marks from scripts/logos.mjs get,",
-  "  the mark: scripts/brand.py with the brand's SVG (an invented brand's own mark),",
-  "  then the music (below), npm run check and grid-check --part spine, npm run sound, the draft (render.sh --draft) and forensics --spine, look-audit --look on it, one review round on its sheet"
+  "  the mark: scripts/brand.py with the brand's kit (an invented brand's own mark); real companies' marks from scripts/logos.mjs get,",
+  "  a scene the bank lacks: src/product.tsx OWN (a SceneDef from src/kit/screens),",
+  "  then the music (below), npm run check and grid-check --part spine, npm run sound, the draft (render.sh --draft) and forensics --spine, look-audit --look on it, one review round on its sheet (no line over a busy ground, presses with a pointer, the brand's palette)"
  ],
  "copy": [
   "src/spine.ts",
@@ -74,6 +74,9 @@
   "src/Film.tsx",
   "src/Root.tsx",
   "src/sync.ts",
+  "src/bank.ts",
+  "src/palette.ts",
+  "src/acts/bank.tsx",
   "src/acts/stage.tsx",
   "src/acts/scenes.tsx",
   "src/acts/line.tsx",

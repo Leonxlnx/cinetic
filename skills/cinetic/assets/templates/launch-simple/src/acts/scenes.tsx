@@ -30,7 +30,7 @@ import { TYPE_FEATURES } from '../fx/TypePairs';
 import { BrowserWindow, browserWindowLayout, type BrowserWindowProps, Face, Icon, type NoticeItem, NoticeStack, noticeStackLayout, Panel, PromptBar, promptBarLayout, type PromptBarProps, type Site, type Skin, skinOf, textW, typedAt } from '../kit/screens';
 import { KIT_FONT } from '../kit/parts';
 import { clamp, E, mix } from '../lib/anim';
-import { mixColor } from '../lib/color';
+import { mixColor, toOklch } from '../lib/color';
 import { withAlpha } from '../lib/handover';
 import { measureTracked } from '../lib/measure';
 import { f60x, FACT_AT, FPS, GATHER, H, type LineTime, LOCK, LOCKUP_AT, NAME_AT, W } from '../timeline';
@@ -57,7 +57,7 @@ export type SceneCtx = {
   line?: LineTime; // the line this scene draws (alone, inside, around)
   prev?: { dur: number }; // the scene before it (a same-surface scene picks its camera up where that one left it)
 };
-export type ElementLook = { box: Box; r?: number; fill?: string; rim?: { color: string; a: number; w: number }; shadow?: { y: number; blur: number; a: number } };
+export type ElementLook = { box: Box; r?: number; fill?: string; rim?: { color: string; a: number; w: number }; shadow?: { y: number; blur: number; a: number }; picture?: boolean };
 export type MomentKind = 'tick' | 'tock' | 'hit' | 'land' | 'pop' | 'whoosh' | 'riser' | 'drop' | 'key' | 'click' | 'snap' | 'swell' | 'bell' | 'suck' | 'text';
 /** A sound the scene's own action makes, frames from the scene's start. */
 export type Moment = { f: number; kind: MomentKind; weight: number; action: string; id: string; dur?: number; apexFrac?: number; pan?: number };
@@ -72,6 +72,8 @@ export type SceneDef = {
   /** converge: the many that collapse to the point */
   many?: (c: SceneCtx) => Box[];
   moments?: (m: MomentCtx) => Moment[];
+  /** the scene's own designed cuts, frames from its start (a house scene's snaps and hits: declared, never a swap) */
+  cuts?: () => number[];
 };
 
 const FULL: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: W, height: H };
@@ -127,24 +129,29 @@ export const wordScene = (): SceneDef => {
     Draw: ({ c }) => {
       if (!c.line) return null;
       const { line, L, t, s, g } = lay(c);
-      return <LineWords L={L} t={t} fps={c.fps} cx={W / 2} cy={H / 2} ink={c.look.ink} accent={c.look.accent} out={Math.max(c.outP, E.strongInOut(g))} keyOpacity={c.own} s={s} id={line.id} gather={g} chip={line.claim ? undefined : C.accent} />;
+      return <LineWords L={L} t={t} fps={c.fps} cx={W / 2} cy={H / 2} ink={c.look.ink} accent={c.look.accent} out={Math.max(c.outP, E.strongInOut(g))} keyOpacity={c.own} s={s} id={line.id} gather={g} chip={line.claim ? undefined : c.look.accent} />;
     },
     el: (c) => {
       if (!c.line) return { box: { x: W / 2 - 60, y: H / 2 - 40, w: 120, h: 80 } };
       const { L, t, s, g } = lay(c);
       const k = keyBox(L, t, c.fps, W / 2, H / 2, s);
-      if (g <= 0) return { box: k, fill: 'rgba(255, 255, 255, 0)' };
+      // the chip is a lit object in flight: a contact shadow on a light ground, an edge light on a dark one
+      const lit = { shadow: { y: 6, blur: 30, a: c.look.tone === 'light' ? 0.3 : 0 }, rim: { color: C.white, a: c.look.tone === 'light' ? 0 : 0.32, w: 2 } };
+      if (g <= 0) return c.f < c.dur / 2 && c.land ? { box: k, r: k.h / 2, fill: c.look.accent, ...lit } : { box: k, fill: 'rgba(255, 255, 255, 0)' };
       // gathered: the chip at the centre (its place does not hang on the face's exact widths)
       const pad = CHIP.pad * L.size * s;
       const e = E.strongInOut(g);
       const cx = k.x + k.w / 2 + (W / 2 - (k.x + k.w / 2)) * e;
-      return { box: { x: cx - k.w / 2 - pad, y: H / 2 - k.h / 2 - pad * 0.4, w: k.w + 2 * pad, h: k.h + pad * 0.8 }, r: (k.h + pad) / 2, fill: C.accent };
+      return { box: { x: cx - k.w / 2 - pad, y: H / 2 - k.h / 2 - pad * 0.4, w: k.w + 2 * pad, h: k.h + pad * 0.8 }, r: (k.h + pad) / 2, fill: c.look.accent, ...lit };
     },
     Content: ({ c, w, h }) => {
       if (!c.line) return null;
       const { L, s } = lay(c);
-      const k = L.words.find((x) => x.key) ?? L.words[L.words.length - 1];
-      return <div style={{ width: w, height: h, display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'pre', fontFamily: FONT.text, fontSize: L.size * s, fontWeight: Math.min(860, L.weight + LINE_SET.keyGain), letterSpacing: `${LINE_SET.track}em`, lineHeight: 1.12, color: C.white, ...TYPE_FEATURES }}>{k.word}</div>;
+      const keys = L.words.filter((x) => x.key);
+      const k = { word: keys.length ? keys.map((x) => x.word).join(' ') : L.words[L.words.length - 1].word };
+      // white on the chip, ink on a light chip (a yellow accent, the white chip of a colour field)
+      const onChip = toOklch(c.look.accent)[0] > 0.78 ? C.ink : C.white;
+      return <div style={{ width: w, height: h, display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'pre', fontFamily: FONT.text, fontSize: L.size * s, fontWeight: Math.min(860, L.weight + LINE_SET.keyGain), letterSpacing: `${LINE_SET.track}em`, lineHeight: 1.12, color: onChip, ...TYPE_FEATURES }}>{k.word}</div>;
     },
   };
 };
