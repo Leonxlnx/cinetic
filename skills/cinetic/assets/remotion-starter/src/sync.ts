@@ -1,6 +1,6 @@
 // The sound events of the film, computed from the picture code. scripts/export-cues.ts calls the
 // default export and writes out/cues.json; scripts/audio/score.py voices each event with the
-// film's sound kit (audio/kit.json: the earshot take for its kind) on its exact frame, levelled over
+// film's sound kit (audio/kit.json: the recorded take scripts/audio/sfx.mjs placed for its kind, the earshot take as the fallback) on its exact frame, levelled over
 // the film's licensed music track (audio/score.json "music"; schema, roles and levels: references/sound.md).
 //
 // The rules this file follows:
