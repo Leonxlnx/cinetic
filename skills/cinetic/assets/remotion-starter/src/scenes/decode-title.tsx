@@ -2,12 +2,15 @@
 // decode-title: a soft swirl of the accent opens on a dark dot grid and the title decodes out of it from the centre:
 // each glyph is born at a moving front as accent pixel blocks and resolves to the ink within two frames, the newest
 // glyphs glowing hardest; crisp data dashes are thrown up the frame and thin out. After a short hold the call-to-action
-// button flies in on an arc from the lower right, a pointer riding its top edge, while the title slides left to make
-// room; the button lands at the end of the line and the pointer clicks it.
+// button flies in on an arc from the lower right, a real pointer riding its top edge, while the title rises to make room;
+// the button lands centred under the title, sized to it (its height 1.22 x the title's cap: a press that reads, never a
+// chip beside a giant title), and the pointer clicks it.
 // Numbers (frames at 30 fps, px at 1080): the white span opens over 18 f, centre-out with the right front a glyph
 // behind; blocks 13 px; glow 18 px with a 40 px skirt, hardest 2 f after a glyph is born, a quarter by 4 f; dashes
 // 17-24 px tall, 20-100 wide, 8-15 px/f to the right, living 3-8 f, never inside the title band; hold 8 f; the button
-// flies 18 f (x lands on an ease-out, y lags, scale 0.75 -> 1, roll -8.3 -> 0 deg) and is clicked on its landing.
+// flies 18 f (x lands on an ease-out, y lags, scale 0.75 -> 1, roll -8.3 -> 0 deg) and is clicked on its landing. The
+// button's seat is computed from the words alone (decodeTitleOut: a deterministic width estimate), so the element the
+// film hands on is the same box in the browser and in Node.
 import React from 'react';
 import { C, FONT } from '../brand/tokens';
 import { Cursor, pressAt } from '../fx/Cursor';
@@ -16,7 +19,6 @@ import { clamp, rand } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { withAlpha } from '../lib/handover';
 import { measureTracked } from '../lib/measure';
-import { pressSquash } from '../lib/moves';
 import { paletteOf, perFrame, type Palette, type SceneMeta, span, tab, useClock } from './parts';
 import { Stage1080 } from './stage1080';
 
@@ -33,14 +35,46 @@ export type DecodeTitleProps = {
 };
 
 export const DECODE = {
-  dur: 56,
+  dur: 50,
   decode: [0, 18] as const,
   fly: [26, 44] as const,
   click: 44,
-  cap: 123, // the title's cap height, px at 1080 (it shrinks to fit a long title)
+  cap: 150, // the title's cap height, px at 1080 (it shrinks to fit a long title): the scene's subject, filling the frame
   block: 13,
   baseline: 600,
+  maxW: 1680, // the title's widest, px
+  btn: 1.22, // the button's height as a share of the title's cap (a press that reads: 40 % of 3 caps or more)
+  label: 0.32, // the label's size as a share of the button's height
+  gap: 0.55, // title to button, a share of the cap
 } as const;
+
+/** A deterministic width estimate (px) of a string at a size: the em a character of the face (a wide advance), tracking included. */
+const estW = (s: string, size: number, em: number, track = 0) => s.length * size * (em + track);
+/**
+ * The layout from the words alone (no measuring: the same in the browser and in Node): the title's cap (it shrinks to
+ * fit DECODE.maxW), the button's size (DECODE.btn x the cap, its label DECODE.label of its height, uppercase, tracked
+ * 0.14 em) and both seats once the button has joined the title, centred on the frame.
+ */
+export const decodeLayout = (title: string, cta: string) => {
+  const fit = Math.min(1, DECODE.maxW / Math.max(1, estW(title, DECODE.cap / 0.727, 0.58, -0.012)));
+  const cap = DECODE.cap * fit;
+  const btnH = Math.round(DECODE.btn * cap);
+  const label = DECODE.label * btnH;
+  const labelW = estW(cta.toUpperCase(), label, 0.7, 0.14);
+  const btnW = Math.round(0.42 * btnH + labelW + 0.28 * btnH + 0.3 * btnH + 0.38 * btnH);
+  const gap = DECODE.gap * cap;
+  const group = cap + gap + btnH;
+  const baseline = 540 - group / 2 + cap; // the title's baseline once the button has joined it
+  const btnCy = baseline + gap + btnH / 2;
+  return { fit, cap, btnH, btnW, label, gap, baseline, alone: 540 + cap / 2, btnCy };
+};
+/** The button the scene hands on, for its words (film px at 1920 x 1080, its last frame). */
+export const decodeTitleOut = (title: string, cta: string) => {
+  const L = decodeLayout(title || DECODE_SAMPLE.title, cta || DECODE_SAMPLE.cta);
+  return { form: 'button' as const, x: Math.round(960 - L.btnW / 2), y: Math.round(L.btnCy - L.btnH / 2), w: L.btnW, h: L.btnH };
+};
+/** The words the meta's box is measured on (another title or call moves the button: decodeTitleOut). */
+export const DECODE_SAMPLE = { title: 'Ship it.', cta: 'Start free' } as const;
 
 // The white ink of the title per frame, as shares of its ink box (left, right): centre-out, the right front lagging.
 const SPAN_PX: [number, number, number][] = [
@@ -111,31 +145,21 @@ export const DecodeTitle: React.FC<DecodeTitleProps> = ({ title, cta, palette, p
   const family = FONT.text;
   const weight = 700;
   const track = -0.012;
-  // ---- the title's size and the line it shares with the button at the end
-  let size = DECODE.cap / 0.727;
-  const btnK0 = 1;
-  const labelSize0 = 31.6;
-  const labelW0 = measureTracked(cta.toUpperCase(), labelSize0, 400, 0.14, family);
-  const btnW0 = 25 + labelW0 + 45 + 20 + 24;
-  const gap0 = 44;
-  const tw0 = measureTracked(title, size, weight, track, family);
-  const fit = Math.min(1, 1560 / (tw0 + gap0 + btnW0 * btnK0));
-  size *= fit;
-  const k = fit; // the button and the gap scale with the title
-  const tw = tw0 * fit;
-  const cap = DECODE.cap * fit;
-  const btnW = btnW0 * k;
-  const btnH = 80 * k;
-  const gap = gap0 * k;
-  const capMid = DECODE.baseline - cap / 2;
-  const left0 = 960 - tw / 2; // the title's left edge alone
-  const groupLeft = 960 - (tw + gap + btnW) / 2; // and once the button has joined it
+  // ---- the title's size (measured, to fit) and the stacked layout it shares with the button at the end
+  const lay = decodeLayout(title, cta);
+  const tw0 = measureTracked(title, DECODE.cap / 0.727, weight, track, family);
+  const size = (DECODE.cap / 0.727) * Math.min(1, DECODE.maxW / Math.max(1, tw0));
+  const tw = tw0 * Math.min(1, DECODE.maxW / Math.max(1, tw0));
+  const k = lay.btnH / 80; // the button's parts at the size the title asks for
+  const btnW = lay.btnW;
+  const btnH = lay.btnH;
+  const left0 = 960 - tw / 2; // the title's left edge, centred
   // ---- clocks
   const tf = t - DECODE.fly[0];
   const flying = tf >= 0;
   const dx = flying ? tab(tf, FLY_X) : 693;
-  const room = 1 - dx / 693; // the title is pushed left as the button arrives
-  const shift = (groupLeft - left0) * room;
+  const room = 1 - dx / 693; // the title rises as the button arrives under it
+  const baseNow = lay.alone + (lay.baseline - lay.alone) * room;
   const L = tab(t, SPAN_L);
   const R = tab(t, SPAN_R);
   const band = 0.075; // the block band at each front, a share of the title (about a glyph)
@@ -182,21 +206,26 @@ export const DecodeTitle: React.FC<DecodeTitleProps> = ({ title, cta, palette, p
   // ---- the button and the pointer
   const sx = flying ? tab(tf, FLY_S) : 0.75;
   const rotB = flying ? tab(tf, FLY_R) : -8.3;
-  const seatX = groupLeft + tw + gap + btnW / 2;
-  const bx = seatX + dx * k;
-  const by = capMid + (flying ? tab(tf, FLY_Y) : 353) * k;
-  const press = pointer ? pressSquash(t, DECODE.click, { fps: 30 }, { kind: 'button' }) : 1;
+  const seatX = 960;
+  // the flight from the lower right, in sight from its first frame (offsets as measured, from the button's seat)
+  const bx = seatX + dx;
+  const by = lay.btnCy + (flying ? tab(tf, FLY_Y) : 353);
+  // the press: the button dips 8 % over 2 frames under the pointer and springs back over 6 (never a one-frame jump)
+  const pt = t - DECODE.click;
+  const dip = (q: number) => q * q * (3 - 2 * q);
+  const press = pointer ? 1 - 0.08 * (pt < -2 || pt > 6 ? 0 : pt <= 0 ? dip((pt + 2) / 2) : 1 - dip(pt / 6)) : 1;
   const ptrOn = pointer && flying && tf >= 1;
+  const ptrA = span(tf, 1, 3); // the pointer comes in with the button, over 2 frames
   const toClick = span(t, DECODE.click - 3, DECODE.click - 0.5);
   const edge = { x: bx + btnW * 0.2 * sx, y: by - (btnH / 2) * sx + 6 };
-  const hit = { x: seatX + btnW * 0.12, y: capMid + btnH * 0.08 };
+  const hit = { x: seatX - btnW * 0.16, y: lay.btnCy + btnH * 0.12 };
   const ease = (q: number) => q * q * (3 - 2 * q);
   const ptr = { x: edge.x + (hit.x - edge.x) * ease(toClick), y: edge.y + (hit.y - edge.y) * ease(toClick) };
   const tiers = [mixColor(P.accent, P.ground, 0.62), mixColor(P.accent, P.ground, 0.3), P.accent];
   const titleStyle: React.CSSProperties = { position: 'absolute', left: 0, top: 0, whiteSpace: 'pre', fontFamily: family, fontWeight: weight, fontSize: size, letterSpacing: `${track}em`, lineHeight: 1 };
   const blockInk = mixColor(P.accent, P.ink, 0.12);
   const blocks: React.CSSProperties = { color: blockInk, WebkitTextStroke: `${(size * 0.05).toFixed(1)}px ${blockInk}`, WebkitMaskImage: CELLS, maskImage: CELLS, WebkitMaskSize: '13px 13px', maskSize: '13px 13px' };
-  const lineTop = DECODE.baseline - size * 0.864; // Inter at line-height 1 sets its baseline 0.864 em down
+  const lineTop = baseNow - size * 0.864; // Inter at line-height 1 sets its baseline 0.864 em down
   const clipSpan = (a: number, b: number) => `inset(-30% ${Math.max(0, (1 - b) * tw)}px -30% ${Math.max(0, a * tw)}px)`;
   return (
     <Stage1080 W={W} H={H} ground={P.ground}>
@@ -215,9 +244,10 @@ export const DecodeTitle: React.FC<DecodeTitleProps> = ({ title, cta, palette, p
       )}
       {/* the dashes thrown out of the swirl */}
       {t < 22 &&
-        dashesAt(t).map((d, i) => <div key={i} style={{ position: 'absolute', left: 0, top: 0, width: d.w, height: d.h, background: tiers[d.tier], transform: `translate(${d.x.toFixed(1)}px, ${d.y.toFixed(1)}px)` }} />)}
+        // the field thins out and fades over its last frames (a dash never stops dead in one frame)
+        dashesAt(t).map((d, i) => <div key={i} style={{ position: 'absolute', left: 0, top: 0, width: d.w, height: d.h, background: tiers[d.tier], opacity: 1 - span(t, 15, 21.5), transform: `translate(${d.x.toFixed(1)}px, ${d.y.toFixed(1)}px)` }} />)}
       {/* the title */}
-      <div style={{ position: 'absolute', left: 0, top: 0, width: tw, height: size * 1.2, transform: `translate(${(left0 + shift).toFixed(2)}px, ${lineTop.toFixed(2)}px)` }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, width: tw, height: size * 1.2, transform: `translate(${left0.toFixed(2)}px, ${lineTop.toFixed(2)}px)` }}>
         {/* the decode glow: a soft copy of the glyphs being born, in the accent */}
         {glowLevel > 0 && (
           <>
@@ -253,16 +283,14 @@ export const DecodeTitle: React.FC<DecodeTitleProps> = ({ title, cta, palette, p
       </div>
       {/* the button flying into the line */}
       {flying && (
-        <div style={{ position: 'absolute', left: 0, top: 0, width: btnW, height: btnH, transform: `translate(${(bx - btnW / 2).toFixed(2)}px, ${(by - btnH / 2).toFixed(2)}px) rotate(${rotB}deg) scale(${(sx * press).toFixed(4)})`, transformOrigin: '50% 50%', background: P.accent, display: 'flex', alignItems: 'center' }}>
-          <span data-text="decode-cta" style={{ marginLeft: 25 * k, fontFamily: family, fontWeight: 400, fontSize: labelSize0 * k, letterSpacing: '0.14em', color: P.paper, whiteSpace: 'pre', lineHeight: 1 }}>{cta.toUpperCase()}</span>
-          <span style={{ position: 'absolute', right: 22 * k, top: (btnH - 26 * k) / 2 }}>
-            <Icon name="arrowRight" size={26 * k} color={P.paper} weight="bold" />
-          </span>
+        <div style={{ position: 'absolute', left: 0, top: 0, width: btnW, height: btnH, transform: `translate(${(bx - btnW / 2).toFixed(2)}px, ${(by - btnH / 2).toFixed(2)}px) rotate(${rotB}deg) scale(${(sx * press).toFixed(4)})`, transformOrigin: '50% 50%', background: P.accent, borderRadius: btnH * 0.12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: btnH * 0.28 }}>
+          <span data-text="decode-cta" style={{ fontFamily: family, fontWeight: 500, fontSize: lay.label, letterSpacing: '0.14em', color: P.paper, whiteSpace: 'pre', lineHeight: 1 }}>{cta.toUpperCase()}</span>
+          <Icon name="arrowRight" size={btnH * 0.3} color={P.paper} weight="bold" />
         </div>
       )}
       {ptrOn && (
-        <div style={{ position: 'absolute', left: 0, top: 0, transform: `rotate(${(rotB * (1 - toClick)).toFixed(2)}deg)`, transformOrigin: `${ptr.x}px ${ptr.y}px` }}>
-          <Cursor x={ptr.x} y={ptr.y} scale={1.25 * k} shape="arrow" shadow="drop" fill={P.ink} outline={P.ground} press={pressAt(t, DECODE.click, 30)} pressDepth={0.14} />
+        <div style={{ position: 'absolute', left: 0, top: 0, transform: `rotate(${(rotB * (1 - toClick)).toFixed(2)}deg)`, transformOrigin: `${ptr.x}px ${ptr.y}px`, opacity: ptrA }}>
+          <Cursor x={ptr.x} y={ptr.y} scale={Math.min(2.4, Math.max(1.5, 0.9 * k))} shape="arrow" shadow="drop" fill={P.ink} outline={P.ground} press={pressAt(t, DECODE.click, 30)} pressDepth={0.14} />
         </div>
       )}
     </Stage1080>
@@ -275,7 +303,7 @@ export const decodeTitleMeta: SceneMeta = {
   dur: DECODE.dur,
   props: ['title', 'cta', 'palette?', 'pointer?'],
   handIn: null,
-  handOut: { form: 'button', x: 1180, y: 499, w: 360, h: 80 },
+  handOut: decodeTitleOut(DECODE_SAMPLE.title, DECODE_SAMPLE.cta),
   klass: 'big',
   cues: [
     { f: 0, kind: 'suck', id: 'swirl', weight: 0.6 },

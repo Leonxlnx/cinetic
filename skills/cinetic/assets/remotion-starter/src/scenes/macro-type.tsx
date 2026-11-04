@@ -1,9 +1,12 @@
 // cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // macro-type: the camera lands on a huge message field (a white pill on a pale field) and keeps scaling in; a giant
 // cartoon pointer flies in from the bottom, turns into a chunky text cursor, descends (its shadow far below it closing
-// in as it nears the field) and clicks: a soft light blooms where it clicked and the caret starts blinking. The request
-// types in at macro scale, each new word arriving in the accent and settling to ink, the camera following the caret to
-// the right. Then the camera runs on to the send button at the field's right end, the pointer comes back and clicks it.
+// in as it nears the field; the placeholder has faded before it lands, so the cursor never sits on words) and clicks: a
+// soft light blooms where it clicked and the caret starts blinking. The request types in at macro scale, each new word
+// arriving in the accent and settling to ink, the camera following the caret to the right; the text lives inside its
+// field (the mic and the send button sit past its measured width, and the text is clipped to the field before them,
+// so it never prints over the mic or the cursor). Then the camera runs on to the send button at the field's right end,
+// the pointer comes back and clicks it.
 // Numbers (frames at 30 fps, px at 1080): the pill grows x0.47 -> 1 (410 px tall) over 50 f; the pointer is 250 px
 // tall with an 8 px outline; the text cursor 339 px tall descends 24 f with its shadow closing from (+170, +120) to
 // (+13, +33), clicks at 0.72; the bloom's half radius 150 px, gone 17 f later; the caret blinks 12.5 f on / 12.5 off;
@@ -11,11 +14,10 @@
 // button (radius 193) squeezes to 0.88 on the click.
 import React from 'react';
 import { C, FONT } from '../brand/tokens';
-import { GlowPool } from '../fx/light';
+import { withAlpha } from '../lib/handover';
 import { typedAt, wordsOf } from '../kit/screens/typing';
 import { clamp, E } from '../lib/anim';
 import { mixColor } from '../lib/color';
-import { withAlpha } from '../lib/handover';
 import { measureTracked } from '../lib/measure';
 import { paletteOf, type Palette, type SceneMeta, span, tab, useClock } from './parts';
 import { Stage1080 } from './stage1080';
@@ -81,7 +83,10 @@ export const MacroType: React.FC<MacroTypeProps> = ({ placeholder, text, palette
   const doneAt = MACRO_TYPE.type + (typed.keys[typed.keys.length - 1] ?? 0) / 2;
   const caretX = measureTracked(typed.shown, size, 400, -0.01, family, { trailing: false });
   const fullW = measureTracked(text, size, 400, -0.01, family, { trailing: false });
-  const micX = M.text + Math.max(fullW, 1500) + 260; // the field runs on past the frame until the camera goes there
+  // the field runs on past the frame until the camera goes there; the mic sits past the text's measured width (the
+  // text is clipped to that room, so it can never print over the mic or the send button)
+  const textRoom = Math.max(fullW, 1500);
+  const micX = M.text + textRoom + 260;
   const sendX = micX + 330;
   const pillW = sendX + M.r;
   // ---- the camera: scale in, follow the caret, run on to the send button
@@ -101,15 +106,21 @@ export const MacroType: React.FC<MacroTypeProps> = ({ placeholder, text, palette
   const cam = `translate(${left.toFixed(2)}px, ${topY.toFixed(2)}px) scale(${s.toFixed(4)})`;
   // ---- the cursor, the bloom, the caret
   const clickT = MACRO_TYPE.click;
-  const beam = t >= 5 && t < clickT + 2;
-  const beamS = t >= clickT && t < clickT + 1 ? 0.72 : 1;
+  // every state change glides over a few frames (the pointer turning into the text cursor, its click squash, its leaving,
+  // the caret's blink): nothing in this scene jumps in one frame
+  const swap = span(t, 4, 6); // the arrow hands over to the text cursor
+  const beam = t >= 4 && t < clickT + 6;
+  const beamS = 1 - 0.28 * Math.sin(Math.PI * span(t, clickT - 1, clickT + 2));
+  const beamA = swap * (1 - span(t, clickT + 1, clickT + 6));
   const bx = tab(t, BEAM_X);
   const by = tab(t, BEAM_Y);
   const shx = tab(t, SHADOW_X);
   const shy = tab(t, SHADOW_Y);
   const bloom = t >= clickT + 2 ? span(t, clickT + 2, clickT + 8) * (1 - span(t, clickT + 10, clickT + 18)) : 0;
-  const caretOn = t >= clickT + 1 && Math.floor((t - clickT - 1) / 12.5) % 2 === 0 && run < 0.5;
-  const phA = t < clickT + 1 ? 1 : t < clickT + 2 ? 0.4 : 0;
+  const caretA = t >= clickT + 1 && run < 0.5 ? clamp(0.5 + 1.6 * Math.cos((2 * Math.PI * (t - clickT - 1)) / 25)) * (1 - span(run, 0.2, 0.5)) : 0;
+  const caretOn = caretA > 0.01;
+  // the placeholder fades as the text cursor descends: gone before it lands (it never sits on the words)
+  const phA = 1 - span(t, 13, 21);
   // the pointer's return for the send button
   const pIn = span(t, runFrom + 3, runFrom + 10);
   const pClick = runFrom + 11;
@@ -139,13 +150,14 @@ export const MacroType: React.FC<MacroTypeProps> = ({ placeholder, text, palette
         {/* the bloom where it clicked */}
         {bloom > 0 && (
           <div style={{ position: 'absolute', inset: 0, opacity: bloom }}>
-            <GlowPool x={M.text + 20} y={110} r={420} ry={380} color={mixColor(P.accent, C.white, 0.35)} strength={1} />
+            {/* a soft pool drawn in plain CSS (no blend mode, no baked sprite): the same on every frame of every render tab */}
+            <div style={{ position: 'absolute', left: M.text + 20 - 420, top: 110 - 380, width: 840, height: 760, borderRadius: '50%', background: `radial-gradient(closest-side, ${withAlpha(mixColor(P.accent, C.white, 0.7), 0.55)} 0%, ${withAlpha(mixColor(P.accent, C.white, 0.5), 0.32)} 14%, ${withAlpha(mixColor(P.accent, C.white, 0.5), 0.12)} 42%, ${withAlpha(mixColor(P.accent, C.white, 0.5), 0.03)} 72%, ${withAlpha(mixColor(P.accent, C.white, 0.5), 0)} 100%)` }} />
           </div>
         )}
         {/* the text line */}
-        <div style={{ position: 'absolute', left: M.text, top: M.h / 2 - size * 0.6, height: size * 1.2, display: 'flex', alignItems: 'center', fontFamily: family, fontSize: size, fontWeight: 400, letterSpacing: '-0.01em', whiteSpace: 'pre', lineHeight: 1 }}>
+        <div style={{ position: 'absolute', left: M.text, top: M.h / 2 - size * 0.6, height: size * 1.2, width: textRoom + 120, overflow: 'hidden', display: 'flex', alignItems: 'center', fontFamily: family, fontSize: size, fontWeight: 400, letterSpacing: '-0.01em', whiteSpace: 'pre', lineHeight: 1 }}>
           {phA > 0 && <span style={{ color: mixColor(ink, pill, 0.5), opacity: phA }}>{placeholder}</span>}
-          {phA === 0 && (
+          {phA <= 0 && t >= clickT + 1 && (
             <span data-text="macro-type">
               {words.map((w, i) => (
                 <span key={i} style={{ color: mixColor(P.accent, ink, settle(w.end)) }}>{w.text}</span>
@@ -153,7 +165,7 @@ export const MacroType: React.FC<MacroTypeProps> = ({ placeholder, text, palette
             </span>
           )}
         </div>
-        {caretOn && <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(M.text + (phA === 0 ? caretX : 0) + 6).toFixed(2)}px, ${M.h / 2 - 56}px)`, width: 10, height: 113, borderRadius: 3, background: ink }} />}
+        {caretOn && <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(M.text + (phA === 0 ? caretX : 0) + 6).toFixed(2)}px, ${M.h / 2 - 56}px)`, width: 10, height: 113, borderRadius: 3, background: ink, opacity: caretA }} />}
         {/* the mic and the send button at the far end */}
         <svg width={120} height={170} style={{ position: 'absolute', left: micX - 60, top: M.h / 2 - 85 }}>
           <g stroke={mixColor(ink, pill, 0.45)} strokeWidth={7} fill="none" strokeLinecap="round">
@@ -168,24 +180,24 @@ export const MacroType: React.FC<MacroTypeProps> = ({ placeholder, text, palette
         </div>
       </div>
       {/* the giant pointer flying in, the text cursor descending and clicking (with its shadow far below it) */}
-      {t < 5 && (
+      {t < 6 && (
         <>
           {/* lint-ok: the cursor shadows are small sprites (170 x 260), one at a time */}
-          <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${560 + 130 + 127}px, ${tab(t, ARROW_T) + 133}px)`, opacity: 0.6, filter: 'blur(7px)' }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${560 + 130 + 127}px, ${tab(t, ARROW_T) + 133}px)`, opacity: 0.6 * (1 - swap), filter: 'blur(7px)' }}>
             <Cartoon w={170} h={260} fill={shadowC} line={shadowC} stroke={8}>{(p) => <path d={ARROW} {...p} />}</Cartoon>
           </div>
-          <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${560 + 130}px, ${tab(t, ARROW_T)}px)` }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${560 + 130}px, ${tab(t, ARROW_T)}px)`, opacity: 1 - swap }}>
             <Cartoon w={170} h={260} fill={C.white} line={C.ink} stroke={8}>{(p) => <path d={ARROW} {...p} />}</Cartoon>
           </div>
         </>
       )}
       {beam && (
         <>
-          <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${bx - 60 + shx}px, ${by - 170 + shy}px)`, opacity: 0.6 * (t < clickT + 1 ? 1 : 0), filter: 'blur(7px)' }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${bx - 60 + shx}px, ${by - 170 + shy}px)`, opacity: 0.6 * swap * (1 - span(t, clickT - 1, clickT + 1)), filter: 'blur(7px)' }}>
             <Cartoon w={120} h={339} fill={shadowC} line={shadowC} stroke={8}>{beamParts}</Cartoon>
           </div>
-          <div style={{ position: 'absolute', left: 0, top: 0, transformOrigin: '60px 170px', transform: `translate(${bx - 60}px, ${by - 170}px) rotate(${(15 * (1 - span(t, 5, 8))).toFixed(2)}deg) scale(${beamS})`, opacity: t < clickT + 1 ? 1 : 0.3 }}>
-            <Cartoon w={120} h={339} fill={t < clickT + 1 ? C.white : withAlpha(C.white, 0)} line={t < clickT + 1 ? C.ink : mixColor(field, C.ink, 0.3)} stroke={t >= clickT ? 5 : 8}>{beamParts}</Cartoon>
+          <div style={{ position: 'absolute', left: 0, top: 0, transformOrigin: '60px 170px', transform: `translate(${bx - 60}px, ${by - 170}px) rotate(${(15 * (1 - span(t, 5, 8))).toFixed(2)}deg) scale(${beamS.toFixed(4)})`, opacity: beamA }}>
+            <Cartoon w={120} h={339} fill={C.white} line={C.ink} stroke={8}>{beamParts}</Cartoon>
           </div>
         </>
       )}
