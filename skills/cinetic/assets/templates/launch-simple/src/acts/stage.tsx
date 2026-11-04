@@ -13,7 +13,7 @@ import { clamp, E } from '../lib/anim';
 import { useFilm } from '../lib/film';
 import { type BoxAt, type HandoverSpec, ownOpacity } from '../lib/handover';
 import { SCENE_DRAW } from '../product';
-import { ACT, CAST, FADE_FROM, FADE_TO, FPS, H, HANDOVER_PLAN, type HandoverPlan, handIn, handOut, lineOf, sceneAt, SCENES, SPINE_PLAN, W } from '../timeline';
+import { ACT, CAST, f60, FADE_FROM, FADE_TO, FPS, H, HANDOVER_PLAN, type HandoverPlan, handIn, handOut, lineOf, sceneAt, SCENES, SPINE_PLAN, W } from '../timeline';
 import { GROUNDS, lookFor } from '../palette';
 import type { SceneCtx, SceneDef } from './scenes';
 
@@ -111,14 +111,20 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
   }
   // the ground: the scene's own; through a landing the leaving scene's stays under an element that opens into the whole
   // frame, and under any other the arriving ground crosses in with its surroundings
+  // (a change of ground crosses over at least 18 f@60 from half the lead on, eased in and out: never a frame-wide flip)
   const gOf = (i: number) => GROUNDS[CAST[i].ground];
-  const landing = h && F >= h.at && F < h.span[1] ? h : null;
+  const win = (x: HandoverPlan) => [x.at - Math.round((x.at - x.span[0]) / 2), x.at + Math.max(x.span[1] - x.at, f60(18))] as const;
+  const landing = HANDOVER_PLAN.find((x) => x.draws === 'handover' && F >= win(x)[0] && F < win(x)[1] && gOf(x.from) !== gOf(x.to)) ?? null;
   const ffIn = landing ? (() => {
     const b = defOf(landing.to).el(ctxOf(landing.to, landing.span[1])).box;
     return b.x <= 1 && b.y <= 1 && b.w >= W - 2 && b.h >= H - 2;
   })() : false;
-  const base = landing ? gOf(landing.from) : gOf(s.i);
-  const cross = landing && !ffIn && gOf(landing.to) !== base ? E.glideOut(clamp((F - landing.at) / Math.max(1, landing.span[1] - landing.at))) : 0;
+  const base = landing && (ffIn ? F < landing.span[1] : true) ? gOf(landing.from) : gOf(s.i);
+  const [w0, w1] = landing ? win(landing) : [0, 1];
+  const cross = landing && !ffIn ? (() => {
+    const q = clamp((F - w0) / Math.max(1, w1 - w0));
+    return q * q * (3 - 2 * q);
+  })() : 0;
   // the settle-out: the whole frame into its own ground with the music's ring-out, complete by FADE_TO (the deep
   // ground then holds while the music rings out: the lockup is gone about 2 s after its mark is whole)
   const fade = E.softIn(clamp((F - FADE_FROM) / Math.max(1, FADE_TO - FADE_FROM)));

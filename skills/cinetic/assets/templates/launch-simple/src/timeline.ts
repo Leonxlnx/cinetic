@@ -207,7 +207,7 @@ export const CAST: CastEntry[] = (() => {
 export const SEAM_SHARE = 0.4;
 /**
  * The handovers a change may take here (the stage draws each with fx/Handover): the form table's drawn recipes of the
- * pair, a converge through a point (always), a shrink into a chip; into a scene that opens on its own picture the
+ * pair, a converge through a point (always), a shrink into a chip (a pill, a line's key word); into a scene that opens on its own picture the
  * element also grows into that whole screen or opens onto it as an iris (a pressed button as a porthole); into a scene
  * whose first element is on screen it may fly there. Never 'word' into a scene that opens on its own picture (its kept
  * content would hide that picture). The scene-internal kinds (stay, part, same-surface, zoom-into, pull-out, momentum)
@@ -217,7 +217,8 @@ export const viaOptions = (A: Form, B: Form, ff: boolean, inForm?: Form, outInSi
   // a kept word ('word') lands only where the next scene takes a word: never into a house scene's own element (it would
   // stand in that element's box with the element hidden)
   const table = handoversFor(A, B).filter((k) => HANDOVERS[k].draws === 'handover' && !(k === 'word' && (ff || (inForm !== undefined && inForm !== 'word'))));
-  const extra: HandoverKind[] = ['converge', ...(COL_OF[B] === 'pill' ? (['shrink'] as HandoverKind[]) : []), ...(ff ? (['grow', 'iris', ...(COL_OF[A] === 'button' ? ['press-open'] : [])] as HandoverKind[]) : (['fly'] as HandoverKind[]))];
+  // a shrink into a chip: a pill, or the key word of a line (it arrives as a chip and fades into its word)
+  const extra: HandoverKind[] = ['converge', ...(COL_OF[B] === 'pill' || B === 'word' ? (['shrink'] as HandoverKind[]) : []), ...(ff ? (['grow', 'iris', ...(COL_OF[A] === 'button' ? ['press-open'] : [])] as HandoverKind[]) : (['fly'] as HandoverKind[]))];
   // an iris or a porthole opens from the element: only from one wholly in sight (never a page leaving through the top)
   return [...new Set([...table, ...extra])].filter((k) => outInSight || (k !== 'iris' && k !== 'press-open'));
 };
@@ -232,8 +233,8 @@ const vhash = (s: string) => {
 const VIA_NOTES: string[] = [];
 /**
  * Each change pinned to a handover the stage draws: the script's `via` while its kind stays under SEAM_SHARE of the
- * changes; else the least used of viaOptions (the form table's own recipe first, then the one-move kinds in an order
- * dealt by the film's seed, a converge last), never a kind past its share while another fits. So the seams vary: a converge, a flight, a
+ * changes; else from viaOptions the form table's own recipe first, then the one-move kinds (the least used first, in
+ * an order dealt by the film's seed), a converge last, never a kind past its share while another fits. So the seams vary: a converge, a flight, a
  * porthole, an iris and a grow join, and no film is one handover played ten times.
  */
 const VIA: (HandoverKind | 'cut' | undefined)[] = (() => {
@@ -259,7 +260,7 @@ const VIA: (HandoverKind | 'cut' | undefined)[] = (() => {
     const opts = viaOptions(A, B, ff, inForm, outInSight).sort((x, y) => rank(x) - rank(y) || vhash(`${SCENE_SEED}:via:${i}:${x}`) - vhash(`${SCENE_SEED}:via:${i}:${y}`));
     const free = opts.filter((k) => (used[k] ?? 0) < cap);
     const pool = free.length ? free : opts;
-    const pick = pool.slice().sort((x, y) => (used[x] ?? 0) - (used[y] ?? 0) || pool.indexOf(x) - pool.indexOf(y))[0];
+    const pick = pool.slice().sort((x, y) => rank(x) - rank(y) || (used[x] ?? 0) - (used[y] ?? 0) || pool.indexOf(x) - pool.indexOf(y))[0];
     if (pinned) VIA_NOTES.push(`scene "${s.name}": via ${pinned} dealt again as ${pick} (one kind on ${Math.round(SEAM_SHARE * 100)} % of the changes at most)`);
     used[pick] = (used[pick] ?? 0) + 1;
     return pick;
@@ -317,7 +318,9 @@ const SPANS: Span[] = FLAT.map((_, i): Span => {
   }
   if (CAST[i].bank) {
     const own = BANK_DUR[i];
-    return { nat: Math.min(SCENE_MAX, own + out), min: Math.min(SCENE_MAX - EIGHTH, Math.round(own * EASE[0]) + out), max: SCENE_MAX, w: 1 };
+    // a house scene's moves are tuned to its own clock: it plays at most 5 % faster (slower, it holds and creeps), unless
+    // its length near the 3 s cap asks for more
+    return { nat: Math.min(SCENE_MAX, own + out), min: Math.min(SCENE_MAX - EIGHTH, Math.round(own * 0.95) + out), max: SCENE_MAX, w: 1 };
   }
   const n = lineWords(i);
   const base = lineLead(i) + f60(GATHER.lead) + out;
