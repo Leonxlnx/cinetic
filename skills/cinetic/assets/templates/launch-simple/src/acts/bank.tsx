@@ -15,13 +15,13 @@ import { CONTENT } from '../content';
 import { TYPE_FEATURES } from '../fx/TypePairs';
 import { clamp, E } from '../lib/anim';
 import { BANK, type Box as BankBox, onScreen } from '../bank';
-import { lookFor, paletteFor } from '../palette';
+import { ACCENT, lookFor, paletteFor } from '../palette';
 import { CLOSE, SPINE } from '../spine';
-import { CAST, FACT_AT, f60x, FPS, H, handOut, lineOf, SCENE_DEF, SCENES, SPINE_PLAN, W } from '../timeline';
+import { CAST, CLOSE_CAP, EASE, FACT_AT, f60x, FPS, H, handOut, lineOf, LOCK_RATE, SCENE_DEF, SCENES, SPINE_PLAN, W } from '../timeline';
 import type { ElementLook, Moment, MomentKind, SceneDef } from './scenes';
-import { BarFlood, barFloodMeta } from '../scenes/bar-flood';
+import { BarFlood, barFloodMeta, floodBox, floodInk } from '../scenes/bar-flood';
 import { BlobsToMark, blobsToMarkMeta } from '../scenes/blobs-to-mark';
-import { DecodeTitle, decodeTitleMeta } from '../scenes/decode-title';
+import { DecodeTitle, decodeTitleMeta, decodeTitleOut } from '../scenes/decode-title';
 import { GlassPrompt, glassPromptMeta } from '../scenes/glass-prompt';
 import { GlossOrbit, glossOrbitMeta } from '../scenes/gloss-orbit';
 import { HeldProductWord, heldProductWordMeta } from '../scenes/held-product-word';
@@ -45,14 +45,15 @@ import type { SceneMeta } from '../scenes/parts';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
-/** Each bank scene's component, its meta entry and its real length for the props it plays (frames at 30 fps). */
-const SCENE: Record<string, { C: React.FC<Any>; meta: SceneMeta; dur?: (p: Any) => number }> = {
+/** Each bank scene's component, its meta entry, its real length for the props it plays (frames at 30 fps) and, where
+ * its layout follows its words, the element it hands on for those props (`out`). */
+const SCENE: Record<string, { C: React.FC<Any>; meta: SceneMeta; dur?: (p: Any) => number; out?: (p: Any) => BankBox; inAt?: (t30: number) => BankBox }> = {
   'macro-type': { C: MacroType, meta: macroTypeMeta, dur: (p) => macroTypeDur(String(p.text ?? '')) },
   'glass-prompt': { C: GlassPrompt, meta: glassPromptMeta },
   'iris-input': { C: IrisInput, meta: irisInputMeta },
   'page-fly': { C: PageFly, meta: pageFlyMeta },
   'scan-grid': { C: ScanGrid, meta: scanGridMeta },
-  'decode-title': { C: DecodeTitle, meta: decodeTitleMeta },
+  'decode-title': { C: DecodeTitle, meta: decodeTitleMeta, out: (p) => decodeTitleOut(String(p.title ?? ''), String(p.cta ?? '')) as BankBox },
   'porthole-line': { C: PortholeLine, meta: portholeLineMeta },
   'gloss-orbit': { C: GlossOrbit, meta: glossOrbitMeta },
   'prism-light': { C: PrismLight, meta: prismLightMeta },
@@ -68,7 +69,8 @@ const SCENE: Record<string, { C: React.FC<Any>; meta: SceneMeta; dur?: (p: Any) 
   'blobs-to-mark': { C: BlobsToMark, meta: blobsToMarkMeta },
   'line-to-wordmark': { C: LineToWordmark, meta: lineToWordmarkMeta, dur: (p) => lineToWordmarkDur(String(p.line ?? ''), p.tag) },
   'word-build-badge': { C: WordBuildBadge, meta: wordBuildBadgeMeta, dur: (p) => wordBuildBadgeDur(p.line) },
-  'bar-flood': { C: BarFlood, meta: barFloodMeta },
+  // its element moves as it lands (the card shrinks to the bar, sinks, floods): the handover lands on the live box
+  'bar-flood': { C: BarFlood, meta: barFloodMeta, inAt: (t) => ({ form: 'card', ...floodBox(t) }) },
 };
 // src/bank.ts mirrors the metas for the timeline (it may not import the scenes): a drift is a bug, said at load
 for (const [id, e] of Object.entries(BANK)) {
@@ -145,7 +147,8 @@ const fillOf = (i: number, id: string): Record<string, unknown> => {
     case 'word-build-badge':
       return { line, name, logo: LOGO };
     case 'bar-flood':
-      return { name, logo: LOGO, kicker: CLOSE };
+      // the template sets the fact under the lockup itself (CLOSE, at CLOSE_CAP): the scene's own kicker stays empty
+      return { name, logo: LOGO, kicker: '', cellAccent: true }; // the chip it is handed is already the accent
     default:
       return {};
   }
@@ -166,25 +169,31 @@ export const bankScene = (i: number): SceneDef => {
   const sc = SCENES[i];
   const last = i === SCENES.length - 1;
   const raw = { ...fillOf(i, id), ...resolvePics(CAST[i].props) };
-  const pal = { ...paletteFor(CAST[i].ground), ...((CAST[i].props.palette as object) ?? {}) };
+  // a colour flood floods with the brand's own accent (never the lifted one a dark ground reads its accents in)
+  const pal = { ...paletteFor(CAST[i].ground), ...(id === 'bar-flood' ? { accent: ACCENT } : {}), ...((CAST[i].props.palette as object) ?? {}) };
   const props = { ...raw, palette: pal };
   const D = Math.max(2, Math.round((S.dur ? S.dur(raw) : S.meta.dur) * k30));
   const ho = handOut(i);
   const lead = ho && ho.kind !== 'cut' && ho.kind !== 'entry' && ho.draws === 'handover' ? ho.at - ho.span[0] : 0;
   const slot = sc.to - sc.from;
-  // the clock: the whole scene inside its slot less the leaving element's lead (the lockup at its own speed, then held)
-  const rate = last ? 1 : D / Math.max(1, slot - lead);
+  // the clock: the whole scene inside its slot less the leaving element's lead, eased at most 1.2 x (slower than that
+  // it plays at 1/1.2 and holds its last frame, creeping); the lockup at its own speed (timeline LOCK_RATE), then held
+  const rate = last ? LOCK_RATE : Math.max(EASE[0], D / Math.max(1, slot - lead));
   const local = (f: number) => clamp(f * rate, 0, D - 1);
   const inBox = onScreen(S.meta.handIn) ? (S.meta.handIn as BankBox) : FULL_BOX;
-  const outBox = S.meta.handOut as BankBox;
+  const outBox = (S.out ? S.out(raw) : S.meta.handOut) as BankBox;
   const look = lookFor(CAST[i].ground);
   const C0 = S.C;
-  const holdT30 = (f: number) => (last ? Math.max(0, f - D) / k30 : 0);
+  const holdT30 = (f: number) => Math.max(0, f - (D - 1) / rate) / k30;
   const scaleBox = (b: { x: number; y: number; w: number; h: number }, s: number) => ({ x: W / 2 + (b.x - W / 2) * s, y: H / 2 + (b.y - H / 2) * s, w: b.w * s, h: b.h * s });
   const side = (f: number): 'in' | 'out' => (f < slot / 2 ? 'in' : 'out');
   const boxAt = (f: number) => {
+    if (side(f) === 'in' && S.inAt && inBox !== FULL_BOX) {
+      const live = S.inAt(local(f) / k30);
+      return { x: live.x, y: live.y, w: live.w, h: live.h };
+    }
     const b = side(f) === 'in' ? inBox : outBox;
-    return last && side(f) === 'out' ? scaleBox(b, creep(holdT30(f))) : { x: b.x, y: b.y, w: b.w, h: b.h };
+    return side(f) === 'out' && holdT30(f) > 0 ? scaleBox(b, creep(holdT30(f))) : { x: b.x, y: b.y, w: b.w, h: b.h };
   };
   const radius = (b: BankBox) => b.r ?? (b.form === 'world' ? 0 : Math.min(28, Math.min(b.w, b.h) * 0.12));
   /** The scene at a frame of its own clock, full frame (the patch translates it under its box). */
@@ -213,13 +222,15 @@ export const bankScene = (i: number): SceneDef => {
       const b = boxAt(c.f);
       const whole = b.x <= 1 && b.y <= 1 && b.w >= W - 2 && b.h >= H - 2;
       if (c.own < 0.999 && whole) return null; // the element is the whole frame: the handover draws all of it
-      // the surroundings arrive round the landing element and leave under the leaving one (the ground stays)
-      const op = (c.land ? E.glideOut(clamp(c.inP)) : 1) * (1 - E.buildIn(clamp(c.outP)));
+      // the surroundings arrive round the landing element and leave under the leaving one (the ground stays): they
+      // arrive fast (most of the way in the first third of the landing) and leave late, so the two overlap at the cut
+      // and the element is never a speck alone on an empty ground
+      const op = (c.land ? E.glideOut(clamp(c.inP * 1.6)) : 1) * (1 - E.buildIn(clamp(c.outP)));
       const hole =
         c.own < 0.999
           ? `path(evenodd, "M0 0H${W}V${H}H0Z M${b.x.toFixed(1)} ${b.y.toFixed(1)}h${b.w.toFixed(1)}v${b.h.toFixed(1)}h${(-b.w).toFixed(1)}Z")`
           : undefined;
-      const s = last ? creep(holdT30(c.f)) : 1;
+      const s = holdT30(c.f) > 0 ? creep(holdT30(c.f)) : 1;
       const fact = last ? E.glideOut(clamp((c.F - FACT_AT) / f60x(18))) : 0;
       return (
         <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, overflow: 'hidden' }}>
@@ -227,7 +238,7 @@ export const bankScene = (i: number): SceneDef => {
             <Frame fr={fr} />
           </div>
           {fact > 0.001 ? (
-            <div data-text="close" style={{ position: 'absolute', left: 0, width: W, top: scaleBox(outBox, s).y + outBox.h * s + 54 + (1 - fact) * 16, textAlign: 'center', fontFamily: FONT.text, fontSize: 46, fontWeight: 480, color: look.mute, opacity: fact, whiteSpace: 'pre', ...TYPE_FEATURES }}>
+            <div data-text="close" style={{ position: 'absolute', left: 0, width: W, top: scaleBox(outBox, s).y + outBox.h * s + 54 + (1 - fact) * 16, textAlign: 'center', fontFamily: FONT.text, fontSize: Math.round((CLOSE_CAP * H) / 0.72), fontWeight: 520, color: id === 'bar-flood' ? floodInk(pal) : look.mute, opacity: fact, whiteSpace: 'pre', ...TYPE_FEATURES }}>
               {CLOSE}
             </div>
           ) : null}
@@ -237,7 +248,7 @@ export const bankScene = (i: number): SceneDef => {
     el,
     Content: ({ c, w, h }) => {
       const out = side(c.f) === 'out';
-      const b = out ? outBox : inBox;
+      const b = out ? outBox : S.inAt && inBox !== FULL_BOX ? S.inAt(local(c.f) / k30) : inBox;
       const fr = out ? D - 1 : local(c.f);
       return (
         <div style={{ position: 'relative', width: w, height: h, overflow: 'hidden' }}>
@@ -249,7 +260,8 @@ export const bankScene = (i: number): SceneDef => {
         </div>
       );
     },
-    cuts: () => S.meta.cues.filter((q) => q.kind === 'snap' || q.kind === 'hit' || q.kind === 'drop').map((q) => Math.round((q.f * k30) / rate)),
+    // the scene's own designed cuts (its snaps, drops and hits); the lockup's hit is the film's one sound, never a cut
+    cuts: () => S.meta.cues.filter((q) => q.kind === 'snap' || q.kind === 'drop' || (q.kind === 'hit' && !last)).map((q) => Math.round((q.f * k30) / rate)),
     // the scene's own sounds (its meta's cues) on its fitted clock; the lockup's hit is the film's one (src/sync.ts)
     moments: () =>
       S.meta.cues

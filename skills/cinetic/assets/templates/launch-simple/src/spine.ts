@@ -2,8 +2,9 @@
 // request, the record, the person: the brief's real words, names and numbers, the same in every act) by ONE element
 // whose form changes from scene to scene. The scenes are house scenes from the bank (src/bank.ts, src/scenes): each one
 // moment of 1.5-3 s that shows its point and is understood (the request typed at macro scale, the page writing itself,
-// send pressed with a pointer, the payments stacking up, the mark born). A film is 8-12 scenes, at least two of them
-// big; each point is a line on clean ground, then its scene. Every change of scene hands the element on (the out scene's
+// send pressed with a pointer, the payments stacking up, the mark born). Each scene 1.5-3 s, a scene of your own too
+// (the timeline refuses a longer one by name; the lockup 2.5 s at most). A film is 8-12 scenes, at least two of them
+// big; each point is a line on clean ground (big, read in 1.2 s at most), then its scene. Every change of scene hands the element on (the out scene's
 // last form becomes the in scene's first: src/timeline.ts HANDOVER_PLAN, drawn by fx/Handover), so the film never cuts
 // from a line to a card. references/spine.md is the guide; lib/spine.ts the grammar.
 //
@@ -22,9 +23,11 @@
 //                 bank   the house scene that draws it (src/bank.ts BANK), or leave it out and let the deal pick one
 //                 props  the scene's content, the case's own words (its props: src/scenes/<id>.tsx); left out, the
 //                        scene fills itself from the case, `ui`, the act's line and src/content.ts
-//                 via    pin the handover that brings it in (else the form table's drawn recipe, else a converge)
+//                 via    pin the handover that brings it in; left out it is dealt (the form table's recipe, a converge, a
+//                        flight, a porthole, an iris, a grow): no kind on more than 40 % of the changes, pinned or not
 //                 ui     every string it shows (the checks follow the case through them)
-//     line      { text, place?, becomes? }: alone for the promise (act 1: a line on clean ground whose starred key word
+//     line      { text, place?, becomes? }: 2-7 words, set big (a cap of 9 % of the frame, two rows when long) and read
+//               in 1.2 s, arriving whole or in 2-3 chunks, never typed word by word; alone for the promise (act 1: a line on clean ground whose starred key word
 //               becomes the next scene's element: `becomes: 'pill'`) and the claim; between them the scenes carry the
 //               statements themselves (a decoding title, a two-line statement round a porthole, a type poster: place
 //               'around', the line given to the scene) or the product's own words ('inside'). At most four lines.
@@ -50,7 +53,7 @@ export const SPINE: FilmSpine = {
       verb: 'asks',
       scenes: [
         { form: 'word', name: 'promise' },
-        { form: 'button', name: 'ask', bank: 'macro-type', via: 'converge', ui: ['[the request, in the user\'s own words]'] },
+        { form: 'button', name: 'ask', bank: 'macro-type', ui: ['[the request, in the user\'s own words]'] },
       ],
       line: { text: '[Name] makes your *result*.', becomes: 'pill' },
       strings: ['[the request, in the user\'s own words]'],
@@ -60,8 +63,8 @@ export const SPINE: FilmSpine = {
     {
       verb: 'writes',
       scenes: [
-        { form: 'page', name: 'result', bank: 'page-fly', via: 'converge', ui: ['[the result it makes]'] },
-        { form: 'button', name: 'press', bank: 'decode-title', via: 'converge', ui: ['[Send it.]', '[the button]'] },
+        { form: 'page', name: 'result', bank: 'page-fly', ui: ['[the result it makes]'] },
+        { form: 'button', name: 'press', bank: 'decode-title', ui: ['[Send it.]', '[the button]'] },
       ],
       strings: ['[the result it makes]'],
       devices: [{ id: 'page-fly' }],
@@ -71,7 +74,7 @@ export const SPINE: FilmSpine = {
       verb: 'fills',
       scenes: [
         { form: 'notice', name: 'arrivals', bank: 'toast-stack', ui: ['[a person]', '[the count]'] },
-        { form: 'mark', name: 'lockup', bank: 'blobs-to-mark', via: 'converge' },
+        { form: 'mark', name: 'lockup', bank: 'blobs-to-mark' },
       ],
       line: { text: '[a person] answered', place: 'inside' },
       strings: ['[a person]', '[the count]'],

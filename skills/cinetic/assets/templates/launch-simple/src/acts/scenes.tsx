@@ -120,16 +120,21 @@ export const wordScene = (): SceneDef => {
     const L = setLine(line.raw, line.claim ? LINE_SET.claim : LINE_SET.alone, H);
     const t = c.F - line.in;
     const s = 1 + 0.06 * (c.f / Math.max(1, c.dur)); // the held line creeps (a slow push), never a still frame
-    // once read, the key word takes the centre as a chip (the element) while the other words part away from it
-    const g = c.leadAt < c.dur ? clamp((c.f - (c.leadAt - k60(GATHER.lead, c.fps))) / k60(GATHER.dur, c.fps)) : 0;
-    return { line, L, t, s, g };
+    // once read, the key word takes the centre as a chip (the element) while the other words part away from it; they
+    // stay in sight (parting, fading) until the cut, so the chip is never alone on an empty ground
+    const from = Math.min(c.leadAt - k60(GATHER.lead, c.fps), line.out - (c.F - c.f)); // once read (1.2 s at most)
+    const g = c.leadAt < c.dur ? clamp((c.f - from) / k60(GATHER.dur, c.fps)) : 0;
+    const part = c.leadAt < c.dur ? clamp((c.f - from) / Math.max(1, c.dur - from)) : 0;
+    return { line, L, t, s, g, part };
   };
   return {
     form: 'word',
     Draw: ({ c }) => {
       if (!c.line) return null;
-      const { line, L, t, s, g } = lay(c);
-      return <LineWords L={L} t={t} fps={c.fps} cx={W / 2} cy={H / 2} ink={c.look.ink} accent={c.look.accent} out={Math.max(c.outP, E.strongInOut(g))} keyOpacity={c.own} s={s} id={line.id} gather={g} chip={line.claim ? undefined : c.look.accent} />;
+      const { line, L, t, s, g, part } = lay(c);
+      // a chip that landed in the line stays a chip on the key word and fades to the plain word over 14 f@60
+      const chipK = c.land && c.f >= c.land ? 1 - clamp((c.f - c.land) / k60(14, c.fps)) : 0;
+      return <LineWords L={L} t={t} fps={c.fps} cx={W / 2} cy={H / 2} ink={c.look.ink} accent={c.look.accent} out={Math.max(c.outP, part)} keyOpacity={c.own} s={s} id={line.id} gather={g} chip={c.look.accent} chipK={chipK} />;
     },
     el: (c) => {
       if (!c.line) return { box: { x: W / 2 - 60, y: H / 2 - 40, w: 120, h: 80 } };
@@ -138,11 +143,9 @@ export const wordScene = (): SceneDef => {
       // the chip is a lit object in flight: a contact shadow on a light ground, an edge light on a dark one
       const lit = { shadow: { y: 6, blur: 30, a: c.look.tone === 'light' ? 0.3 : 0 }, rim: { color: C.white, a: c.look.tone === 'light' ? 0 : 0.32, w: 2 } };
       if (g <= 0) return c.f < c.dur / 2 && c.land ? { box: k, r: k.h / 2, fill: c.look.accent, ...lit } : { box: k, fill: 'rgba(255, 255, 255, 0)' };
-      // gathered: the chip at the centre (its place does not hang on the face's exact widths)
+      // gathered: the chip where the key word stands (it leaves from there: the handover carries it, no move of its own)
       const pad = CHIP.pad * L.size * s;
-      const e = E.strongInOut(g);
-      const cx = k.x + k.w / 2 + (W / 2 - (k.x + k.w / 2)) * e;
-      return { box: { x: cx - k.w / 2 - pad, y: H / 2 - k.h / 2 - pad * 0.4, w: k.w + 2 * pad, h: k.h + pad * 0.8 }, r: (k.h + pad) / 2, fill: c.look.accent, ...lit };
+      return { box: { x: k.x - pad, y: k.y - pad * 0.4, w: k.w + 2 * pad, h: k.h + pad * 0.8 }, r: (k.h + pad) / 2, fill: c.look.accent, ...lit };
     },
     Content: ({ c, w, h }) => {
       if (!c.line) return null;

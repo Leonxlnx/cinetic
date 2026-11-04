@@ -5,8 +5,10 @@ verb done to ONE case (the request typed, the record, the person: the brief's re
 in every act) by ONE element whose form changes from scene to scene. The scenes are house scenes from the bank
 (`src/scenes`): each is one moment of 1.5-3 s that shows a point and is understood (the request typed at macro scale,
 the page writing itself, send pressed with a pointer, the payments stacking up, a title decoding, the mark born from
-two blobs). A film is 8-12 scenes, two big ones at least, about 15-25 s. Each point is a line on clean ground and then
-its scene; every scene change hands the element on, so the film never cuts from a line to a card. `new-film.sh` lays
+two blobs). A film is 8-12 scenes, two big ones at least, about 15-25 s. Each scene runs 1.5-3 s, a scene of your own
+too (the lockup 2.5 s at most): the timeline refuses a longer one with an error naming the scene and its length, and
+grid-check fails a shot over 3.2 s. Each point is a big line on clean ground, read in 1.2 s, and then its scene; every
+scene change hands the element on, so the film never cuts from a line to a card. `new-film.sh` lays
 these files over the Remotion starter. references/spine.md is the grammar; this file is how the template plays it.
 
 ## What you write (in this order)
@@ -22,7 +24,9 @@ these files over the Remotion starter. references/spine.md is the grammar; this 
      case, `ui`, the act's line and `src/content.ts`; `ui` every string it shows.
    - Lines: the promise alone on clean ground (act 1, its key word `*starred*`; `becomes: 'pill'` turns that word into
      the next scene's element), once in a middle act a point its key word becomes (`place: 'alone'`, `becomes`), the
-     claim alone at the end if the film needs one. The other statements are the scenes' own (a decoding title, a
+     claim alone at the end if the film needs one. A line is 2-7 words, set big (a cap of 9.2 % of the frame, the claim
+     11.2 %, never under 7 %: a long line takes two rows), arriving whole (up to four words) or in two or three chunks,
+     never typed word by word, and read in 1.2 s at most before its key word becomes the element. The other statements are the scenes' own (a decoding title, a
      two-line statement round a porthole, a type poster): give them the words in `props`.
    - `PICTURES` (the brief's own pictures, public/ paths: a scene that needs pictures is dealt only with them) and
      `CLOSE` (the one fact under the lockup, 2-6 words, only what the brief says).
@@ -35,7 +39,8 @@ these files over the Remotion starter. references/spine.md is the grammar; this 
 3. **The mark.** `scripts/brand.py <kit>` writes `src/brand/logo.ts` and the tokens; the lockup scene draws the mark.
    An invented brand gets a mark of its own (never a sparkle, a star or a letter that repeats the name).
 4. **A scene the bank lacks.** `src/product.tsx` `OWN`: a SceneDef (`Draw`, `el`: the element's box on screen,
-   `Content`: the element alone for the handover) built from `src/kit/screens`, named in the spine.
+   `Content`: the element alone for the handover) built from `src/kit/screens`, named in the spine. It runs 1.5-3 s like
+   a house scene: a complex moment is cut into two or three scenes, each handed on, never one long animation.
 5. **The deal, the music, the sound.** `deck.py` deals the direction (`src/dealt.ts`): it seeds the scene deal and the
    palette, and sets the type pairing; the track is picked and fitted to the bars (`music.mjs pick`, `get`, `track.py
    fit`); `npm run sound` cuts the effects to the picture.
@@ -63,22 +68,30 @@ scene's demo colours.
 ## What is derived (src/timeline.ts)
 
 - `CAST`: each scene's house scene (named or dealt), its content, its ground. `BANK_DUR`: its own length.
-- The body: every scene at its own length, eased 0.9-1.1 so each change lands on the track's 8th; the lockup plays at
-  its own speed and holds, creeping, to the bar line that ends the body (`BARS`, `FIT_K`, `MEDIAN_SHOT`).
+- The body, fitted as a whole (a dynamic programme over the music's 8ths): every scene inside its band (`SPANS`: a
+  house scene 1.5-3 s, eased at most 1.2 x, slower than that it holds its last frame, creeping; a line alone read in
+  1.2 s; the lockup 2.5 s at most), as near its own length as the music allows, the body on whole bars, each act on its
+  downbeat wherever the bands allow (else on the 8th, carried like any change). A scene over its band is refused by
+  name (`SCENE_MAX`, `LOCKUP_MAX`; `BARS`, `FIT_K`, `MEDIAN_SHOT`, `LONGEST_SHOT`).
 - `SPINE_PLAN` (lib/spine planSpine, retimed on the scenes): the contract the checks read. `HANDOVER_PLAN`: one
-  handover per change, pinned to a kind the stage draws: the form table's drawn recipe; into a scene that opens on its
-  own picture, the way the element becomes that screen (a button drains into a porthole, a pill or a page opens an
-  iris, anything with a face grows into it); else a converge through a point. `acts/stage.tsx` draws it with
+  handover per change, dealt per film (`viaOptions`: the form table's recipe first, then a flight, a grow, an iris or a
+  porthole from an element in sight, a swell, a converge last): no kind on more than 40 % of the changes (`SEAM_SHARE`;
+  a pinned `via` past it is dealt again and the print says so); the element is never left a speck on an empty ground
+  (the leaving scene's surroundings go late, the arriving one's come early, a line's parting words stay in sight until
+  the cut, a chip landing in a line fades into its word). `acts/stage.tsx` draws it with
   fx/Handover; `acts/bank.tsx` gives each house scene its element as a patch of the scene itself, scaled like a
   picture, cuts the scene's own copy out while it flies, fades its surroundings out under the leaving element and in
   round the arriving one; the ground holds through the change.
-- `LINES` (frames, whole on the music's 16th), `COPY`, `CUE`, `SEAMS`, `ACT`, the lockup's `LOCKUP_AT`, `NAME_AT`,
-  `FACT_AT` (from the lockup scene's own beats), the settle-out into its ground with the music's ring-out.
+- `LINES` (frames, whole on the music's 16th; `fit` the size and rows, `chunks`), `COPY` (a line alone carries `place`,
+  `cap`, `chunks` for grid-check lone-line; the fact its `cap`), `CUE`, `SEAMS`, `ACT`, the lockup's `LOCKUP_AT`,
+  `NAME_AT`, `FACT_AT` (from the lockup scene's own beats: the fact at a cap of 3.6 % or left out), the settle-out into
+  its ground with the music's ring-out, complete within 0.7 s: the lockup is gone about 2 s after its mark is whole.
 
 ## The checks
 
-`npm run check` (tsc, lint-film, grid-check), `grid-check.ts --part spine`, then on the draft (`render.sh --draft`,
-with the sound): `forensics.py out/draft.mp4 --cues out/cues.json --spine` (the element in its box across every
-handover, no undeclared swap, no text-then-cards) and `look-audit.py out/draft.mp4 --look`. On the draft's sheet: no
+`npm run check` (tsc, lint-film, grid-check: scene-length, lone-line, seam-variety), `grid-check.ts --part spine`, then
+on the draft (`render.sh --draft`, with the sound): `forensics.py out/draft.mp4 --cues out/cues.json` (full: the element
+in its box across every handover, no speck at a scene change, no small lone line, no undeclared swap, no text-then-cards,
+the motion gates) and `look-audit.py out/draft.mp4 --look`. On the draft's sheet: no
 line over a busy or blurred picture, every press a pointer, two big scenes, the palette the brand's (never the
 starter's green, never a scene's demo colours).

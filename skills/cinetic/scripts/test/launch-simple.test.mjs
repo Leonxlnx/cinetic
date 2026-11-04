@@ -4,10 +4,12 @@
  *
  *   1. the spine   the scaffold's src/spine.ts plans with no error (SPINE_PLAN.issues.errors empty): one element, 3-5
  *                  acts on whole bars, the lockup as the last scene; one change per scene boundary, every one carried
- *                  (no bare cut: a handover from the form table for its two forms, or the mark's own entry); the
- *                  handover plan is the changes (HANDOVER_PLAN, one per change, scenes - 1).
+ *                  (no bare cut: a handover its two forms allow, by the form table or the template's viaOptions, or the
+ *                  mark's own entry), no kind on more than 40 % of the changes; the handover plan is the changes
+ *                  (HANDOVER_PLAN, one per change, scenes - 1); no scene over 3 s, the lockup 2.5 s at most.
  *   2. lines       at most four; alone only for the promise (the first act) and the claim; each arrives, is whole and
- *                  leaves inside its scene (in < resolved < out), whole on the music's 16th.
+ *                  leaves inside its scene (in < resolved < out), whole on the music's 16th; a line alone at a cap of 6 %
+ *                  of the frame or more, in 3 chunks at most, read in 1.2 s at most.
  *   3. stage       every drawn handover's spec (acts/stage specAt) has finite boxes of positive size on both sides on
  *                  every frame of its span, and the element's state there is finite (lib/handover handoverState).
  *   4. sound       src/sync.ts: every cue inside the film, every handover sounds by its kind (the scene-internal ones
@@ -86,7 +88,15 @@ try {
   out.errors = sp.issues.errors; out.element = sp.element; out.fps = T.FPS; out.total = T.TOTAL; out.bodyEnd = T.BODY_END; out.bar = T.BAR;
   out.acts = sp.acts.map((a: any) => ({ from: a.from, to: a.to, bars: a.bars, world: a.world }));
   out.scenes = T.SCENES.map((s: any) => ({ i: s.i, act: s.act, form: s.form, name: s.name, from: s.from, to: s.to }));
-  out.changes = T.CHANGES.map((c: any) => ({ kind: c.kind, at: c.at, from: c.from, to: c.to, allowed: c.kind === 'cut' || c.kind === 'entry' ? null : L.allows(c.from.form, c.to.form, c.kind) }));
+  // a change is allowed by the grammar's recipes, or by the template's own viaOptions (into a scene that opens on its own
+  // picture the element grows into it or opens onto it; into an element on screen it may fly there)
+  out.changes = T.CHANGES.map((c: any) => ({ kind: c.kind, at: c.at, from: c.from, to: c.to, allowed: c.kind === 'cut' || c.kind === 'entry' ? null : T.viaAllows ? T.viaAllows(c.from.form, c.to.form, c.kind, !!T.CAST[c.to.scene]?.ff) : L.allows(c.from.form, c.to.form, c.kind) }));
+  const kinds: Record<string, number> = {};
+  for (const c of T.CHANGES) kinds[c.kind] = (kinds[c.kind] ?? 0) + 1;
+  out.seamShare = Math.max(...Object.values(kinds)) / Math.max(1, T.CHANGES.length);
+  out.longest = Math.max(...T.SCENES.map((s: any) => s.to - s.from)) / T.FPS;
+  out.lockupLen = (T.SCENES[T.SCENES.length - 1].to - T.SCENES[T.SCENES.length - 1].from) / T.FPS;
+  out.alone = T.COPY.filter((c: any) => c.place === 'alone').map((c: any) => ({ cap: c.cap, chunks: c.chunks, read: (c.out - c.in) / T.FPS }));
   out.plan = T.HANDOVER_PLAN.map((h: any) => ({ kind: h.kind, at: h.at, span: h.span, from: h.from, to: h.to, draws: h.draws }));
   out.end = sp.end;
   out.lines = T.LINES.map((l: any) => ({ id: l.id, place: l.place, act: l.act, claim: l.claim, scene: l.scene, in: l.in, resolved: l.resolved, out: l.out, q16: T.q16(l.resolved) === l.resolved }));
@@ -127,6 +137,10 @@ try {
       JSON.stringify(P.changes.map((c) => [c.from.form, c.to.form, c.kind, c.allowed])));
     result(P.plan.length === P.changes.length && P.plan.every((h, i) => h.kind === P.changes[i].kind && h.at === P.changes[i].at && h.span[0] <= h.at && h.at < h.span[1]),
       'spine: the handover plan is the changes, each span around its cut', JSON.stringify(P.plan));
+    result(P.changes.length < 5 || P.seamShare <= 0.4 + 1e-9, `spine: no handover kind on more than 40 % of the changes (${Math.round(P.seamShare * 100)} %)`);
+    result(P.longest <= 3 + 1e-9 && P.lockupLen <= 2.5 + 1e-9, `scenes: none over 3 s (longest ${P.longest.toFixed(2)} s), the lockup 2.5 s at most (${P.lockupLen.toFixed(2)} s)`);
+    result(P.alone.length > 0 && P.alone.every((l) => l.cap >= 0.06 && l.chunks <= 3 && l.read <= 1.2 + 1 / 30),
+      'lines: a line alone sets at a cap of 6 % of the frame or more, arrives in 3 chunks at most and is read in 1.2 s at most', JSON.stringify(P.alone));
 
     // 2. lines
     const alone = P.lines.filter((l) => l.place === 'alone');

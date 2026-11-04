@@ -56,7 +56,7 @@ export const BANK: Record<string, BankEntry> = {
   'iris-input': { id: 'iris-input', dur: 86, big: true, ground: 'dark', verbs: ['ask', 'search', 'find', 'plan'], needs: ['picture'], handIn: null, handOut: { form: 'pill', x: 320, y: 470, w: 1290, h: 144, r: 72 } },
   'page-fly': { id: 'page-fly', dur: 72, big: true, ground: 'dark', verbs: ['write', 'make', 'build', 'create', 'generate', 'draft', 'design', 'turn', 'summarize', 'plan'], handIn: { form: 'page', x: 288, y: 1080, w: 1344, h: 1740, r: 14 }, handOut: { form: 'page', x: 288, y: -900, w: 1344, h: 1740, r: 14 } },
   'scan-grid': { id: 'scan-grid', dur: 66, big: false, ground: 'dark', verbs: ['find', 'search', 'scan', 'import', 'collect', 'choose', 'pick'], needs: ['pictures'], handIn: { form: 'pill', x: 264, y: 460, w: 1392, h: 156, r: 78 }, handOut: { form: 'list', x: 588, y: 252, w: 744, h: 540, r: 12 } },
-  'decode-title': { id: 'decode-title', dur: 56, big: true, ground: 'dark', verbs: ['send', 'press', 'publish', 'ship', 'launch', 'submit', 'book', 'join', 'tap', 'start', 'line'], handIn: null, handOut: { form: 'button', x: 1180, y: 499, w: 360, h: 80 } },
+  'decode-title': { id: 'decode-title', dur: 50, big: true, ground: 'dark', verbs: ['send', 'press', 'publish', 'ship', 'launch', 'submit', 'book', 'join', 'tap', 'start', 'line'], handIn: null, handOut: { form: 'button', x: 588, y: 565, w: 744, h: 183 } }, // its words move it: acts/bank.tsx reads decodeTitleOut
   'porthole-line': { id: 'porthole-line', dur: 78, big: true, ground: 'light', verbs: ['send', 'press', 'publish', 'ship', 'submit', 'book', 'meet', 'call', 'line'], needs: ['picture'], handIn: { form: 'button', x: 813, y: 340, w: 386, h: 386, r: 193 }, handOut: { form: 'photo', x: 673, y: 258, w: 574, h: 574, r: 287 } },
   'gloss-orbit': { id: 'gloss-orbit', dur: 54, big: true, ground: 'dark', verbs: ['launch', 'ship', 'press', 'start'], needs: ['hero'], handIn: null, handOut: { form: 'mark', x: 787, y: 337, w: 390, h: 465 } },
   'prism-light': { id: 'prism-light', dur: 84, big: true, ground: 'dark', verbs: ['launch', 'ship', 'start', 'open', 'turn'], handIn: { form: 'button', x: 884, y: 464, w: 152, h: 152, r: 76 }, handOut: { form: 'world', x: 0, y: 0, w: 1920, h: 1080 } },
@@ -78,7 +78,7 @@ export const BANK: Record<string, BankEntry> = {
     id: 'word-build-badge', dur: 82, big: false, ground: 'light', verbs: ['end'], lock: 0.61, name: 0.7, handIn: { form: 'word', x: 800, y: 471, w: 320, h: 151 }, handOut: { form: 'mark', x: 630, y: 450, w: 660, h: 163 },
     durOf: (p) => (words(str(p.line)) ? 82 + (words(str(p.line)) - 3) * 12 : 45),
   },
-  'bar-flood': { id: 'bar-flood', dur: 51, big: true, ground: 'light', verbs: ['end'], lock: 0.61, name: 0.67, handIn: { form: 'card', x: 747, y: 724, w: 412, h: 229, r: 18 }, handOut: { form: 'mark', x: 637, y: 355, w: 653, h: 369 } },
+  'bar-flood': { id: 'bar-flood', dur: 54, big: true, ground: 'dark', verbs: ['end'], lock: 0.6, name: 0.64, handIn: { form: 'card', x: 540, y: 305, w: 840, h: 470, r: 18 }, handOut: { form: 'mark', x: 637, y: 355, w: 653, h: 369 } },
 };
 
 /** A scene's length in frames at 30 fps for the props it plays (the default content's when it has no text rule). */
