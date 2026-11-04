@@ -1,0 +1,93 @@
+{
+ "name": "prompt-run",
+ "about": "An 18-20 s demo of a product that does work from a request, one object through many states: a pill holding what it is among the real marks of the tools it connects; on the kick the label swaps; into the request box out of the pill, where the request types; a punch-in and the send; a whip up into the run (the request as a bubble with the people it is for, the steps checking in under the film's one 3D turn); the result; the lockup. The lines land on a dealt confident voice (mask, land or fall), the grounds are clean lit pages, and each act deals one of two or three devices per film from a seed (src/deal.ts), so no two films play one sequence. new-film.sh --template prompt-run lays these files over the Remotion starter.",
+ "engine": "remotion",
+ "pace": "crisp",
+ "type_family": "bold",
+ "bpm": 120,
+ "music": {
+  "required": true,
+  "slot": "audio/music/",
+  "about": "Every demo is cut to a licensed, human-made, instrumental track (references/music.md): its kick carries the swap and the act lines; earshot effects mark the product's state changes (the click, the checks, the result); never effects only.",
+  "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 110-136 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track); a clear kick suits the swap on the kick",
+  "add": "bash scripts/new-film.sh <dir> --template prompt-run --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
+  "then": [
+   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end auto  (its own ending, else a fade: never a cut)",
+   "python3 scripts/audio/track.py grid",
+   "python3 scripts/audio/track.py check"
+  ]
+ },
+ "deal": {
+  "about": "Each act is a slot with two or three devices on the same cues and words. src/deal.ts deals one per slot from a seed (the product's name, or SEED) under its RULES (one colour event per film); PIN chooses one by hand. The timeline's declarations follow the deal (the iris's field or the claim's flood as the colour event, the seams).",
+  "slots": {
+   "voice": {
+    "mask": "each word rises out of a mask on its baseline",
+    "land": "the line lands from oversized on a glide",
+    "fall": "each word drops into place, the last in the accent"
+   },
+   "open": {
+    "ring": "the tools' tiles tumble in round the pill, orbit and fly off on the kick",
+    "dock": "the tiles fly into the pill on the kick and dock as a row of marks beside the second label",
+    "wall": "the tiles stand on the far plane of a depth stack behind the pill, the camera pushing through"
+   },
+   "ask": {
+    "iris": "the iris opens out of the pill onto the accent (the colour event) and the field wipes up off the frame",
+    "stretch": "the pill itself stretches into the request box, no cut"
+   },
+   "click": {
+    "pointer": "the pointer glides in on an arc and clicks",
+    "tap": "a tap lands on the send button, a press ring opening from its rim"
+   },
+   "run": {
+    "list": "the run in one lit panel the camera swings round to face",
+    "stack": "each step a card landing in a depth stack, the camera pushing through on a turn",
+    "split": "the run beside the product's own dense screen, its lens moving to the row each step touches"
+   },
+   "done": {
+    "morph": "the running row grows into the result card",
+    "claim": "the accent rises over the run and the result line is the claim on it (the colour event)"
+   },
+   "end": {
+    "pop": "the mark lands and the name slides out from behind it",
+    "assemble": "the mark's parts glide in from three sides and lock"
+   }
+  }
+ },
+ "next": [
+  "prompt run: fill src/run.ts (the script in plain words: line 1 says what the product is, 2-7 words a line, and the product's own",
+  "  request, model, people, status, steps and result in every [slot]); the tools it really connects as real marks:",
+  "  node scripts/logos.mjs get <name> --film . for each, their slugs in run.ts tools;",
+  "  real portraits of the people the work is for (run.ts photos.people) and the result's picture when it is one (photos.result): node scripts/assets.mjs search \"<subject>\" --kind photo --people --fit 1:1, sheet, get '#n' --to public/assets, grade; never a drawn face;",
+  "  rebuild the product's real request box and run view where the kit stands in, then deal its direction:",
+  "  python3 scripts/deck.py --brief \"<one line>\" --format launch --have ui --options 3"
+ ],
+ "copy": [
+  "src/run.ts",
+  "src/deal.ts",
+  "src/timeline.ts",
+  "src/Film.tsx",
+  "src/Root.tsx",
+  "src/sync.ts",
+  "src/acts/stage.tsx",
+  "src/acts/Pill.tsx",
+  "src/acts/Ask.tsx",
+  "src/acts/Click.tsx",
+  "src/acts/Run.tsx",
+  "src/acts/Done.tsx",
+  "src/acts/End.tsx",
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "keep_if_present": [
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "remove": [
+  "src/acts/Act1.tsx",
+  "src/acts/Act2.tsx",
+  "src/acts/Act3.tsx",
+  "src/acts/Act4.tsx",
+  "src/acts/ground.tsx",
+  "src/acts/plate.tsx"
+ ]
+}

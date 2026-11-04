@@ -21,6 +21,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { findPython } from './py.mjs';
 
 const args = process.argv.slice(2);
 const opt = (name: string, dflt?: string) => {
@@ -88,8 +89,9 @@ const main = async () => {
   const L = (tokens as { LOCKUP?: { ratio?: number; gap?: number; weight?: number; track?: number } }).LOCKUP ?? {};
   const weight = L.weight ?? TYPE.display.weight;
   const track = L.track ?? TYPE.display.track;
+  const [py, ...pre] = findPython() ?? die('no Python 3.10+ found for outline-text.py: set PYTHON to the interpreter of an environment with scripts/requirements.txt installed (node scripts/py.mjs --check)');
   const text = JSON.parse(
-    execFileSync('python3', [join(here, 'outline-text.py'), '--font', font, '--text', name, '--size', String(size), '--weight', String(weight), '--track', String(track)], { encoding: 'utf8' }),
+    execFileSync(py, [...pre, join(here, 'outline-text.py'), '--font', font, '--text', name, '--size', String(size), '--weight', String(weight), '--track', String(track)], { encoding: 'utf8' }),
   );
   const M = text.ascent * (L.ratio ?? 1); // mark height = the name's ink ascent x LOCKUP.ratio (as in the film's lockup)
   const gap = (L.gap ?? 0.3) * M;

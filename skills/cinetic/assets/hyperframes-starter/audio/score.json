@@ -1,17 +1,16 @@
 {
   "key": "G major",
-  "bpm": 120,
-  "music": "none",
+  "music": {
+    "track": "audio/music/track.mp3",
+    "edit": "audio/music/edit.json",
+    "licence": "audio/music/track.licence.json",
+    "gain_db": 0
+  },
   "sfx": { "engine": "auto", "kit": "audio/kit.json", "python": null },
-  "chords": ["Em9", "Gadd9", "-"],
-  "sections": [
-    { "bars": [1, 1], "style": "intro" },
-    { "bars": [2, 2], "style": "resolve" },
-    { "bars": [3, 3], "style": "hold" }
-  ],
-  "signature": { "tick": "G6", "tock": "D6", "motif": [0, 7, 14], "rhythm": [0, 0.5, 1.5] },
+  "stopdowns": { "auto": "kit", "add": [], "skip": [], "quiet_db": -7 },
+  "ending": { "mode": "stop", "at": "@word2" },
   "typing": "auto",
   "payoff": "@hit",
-  "mix": { "music": 1.0, "sfx": 1.0, "reverb": 1.0, "sidechain": 0.55, "duck_db": 3 },
-  "master": { "ceiling": 0.77, "fade": 1.3 }
+  "mix": { "music": 1.0, "sfx": 1.0 },
+  "master": { "lufs": -14, "ceiling": 0.77, "fade": 1.3 }
 }

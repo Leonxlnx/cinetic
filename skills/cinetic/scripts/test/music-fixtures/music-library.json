@@ -1,0 +1,56 @@
+{
+ "library": 1,
+ "kind": "music",
+ "date": "2026-10-27",
+ "about": "A hand-written stand-in music library for music.test.mjs: every title, artist, id, tempo and cut point is invented.",
+ "root": "lib",
+ "tracks": [
+  {
+   "ref": "mixkit:9101", "source": "mixkit", "id": "9101", "kind": "music", "title": "Glass Pulse", "artist": "Ada Example",
+   "seconds": 124, "file": "glass_pulse.mp3", "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+   "file_url": "https://assets.mixkit.co/music/9101/9101.mp3", "page": "https://mixkit.co/free-stock-music/tech-house/",
+   "licence": "mixkit-music", "notice": "Mixkit Stock Music Free License",
+   "tags": { "genre": ["tech-house"], "mood": ["mechanical", "driving"], "instrument": ["drums"], "tag": [] },
+   "genre": "tech-house", "mood": "driving", "moods": ["driving", "elegant"], "mood_fit": { "driving": 1.3, "elegant": 0.4 },
+   "bpm": 124, "key": "A minor", "contrast_db": 9.5,
+   "energy": { "curve": [-12, -10, -6, -3, -2, -2, -3, -9, -10, -2, -1, -1, -2, -3, -14, -30], "intro_s": 15.5, "ending": "ring" },
+   "cuts": { "intro_bars": 8, "phase": null, "body_bar": 9, "reveal": { "kind": "drop", "bar": 33, "t": 62.0, "jump_db": 7.1 }, "ending": { "kind": "ring", "last_hit_t": 110.2 } },
+   "quality": 7.0
+  },
+  {
+   "ref": "mixkit:9102", "source": "mixkit", "id": "9102", "kind": "music", "title": "Soft Harbour", "artist": "Bo Placeholder",
+   "seconds": 140, "file_url": "https://assets.mixkit.co/music/9102/9102.mp3", "page": "https://mixkit.co/free-stock-music/chillout/",
+   "licence": "mixkit-music", "tags": { "genre": ["chillout"], "mood": ["relaxed"], "instrument": ["synth", "drums"], "tag": [] },
+   "genre": "chillout", "mood": "calm", "moods": ["calm"], "bpm": 92, "key": "F major", "contrast_db": 7.0,
+   "energy": { "curve": [-14, -12, -9, -8, -7, -7, -10, -6, -5, -5, -6, -20], "intro_s": 10.4, "ending": "fade" },
+   "cuts": { "intro_bars": 4, "phase": 2, "body_bar": 5, "reveal": { "kind": "entry", "bar": 25, "t": 62.6, "jump_db": 5.0 }, "ending": { "kind": "fade", "last_hit_t": null } },
+   "quality": 5.5
+  },
+  {
+   "ref": "mixkit:9103", "source": "mixkit", "id": "9103", "kind": "music", "title": "Short Spark", "artist": "Cy Invented",
+   "seconds": 28, "file_url": "https://assets.mixkit.co/music/9103/9103.mp3", "page": "https://mixkit.co/free-stock-music/electropop/",
+   "licence": "mixkit-music", "tags": { "genre": ["electropop"], "mood": ["positive"] }, "mood": "uplifting", "moods": ["uplifting"],
+   "bpm": 120, "cuts": { "reveal": { "kind": "lift", "bar": 5, "t": 8.0 } }, "quality": 6.0
+  },
+  {
+   "ref": "commons:99990001", "source": "commons", "id": "99990001", "kind": "music", "title": "Night Grid", "artist": "Di Sample",
+   "seconds": 180, "file_url": "https://upload.wikimedia.org/wikipedia/commons/0/00/Night_Grid.ogg", "page": "https://commons.wikimedia.org/wiki/File:Night_Grid.ogg",
+   "licence": "cc0", "tags": { "genre": ["electronic"] }, "mood": "dark", "moods": ["dark", "driving"], "bpm": 61, "key": "E minor",
+   "cuts": { "reveal": { "kind": "return", "bar": 40, "t": 150.0 } }, "quality": 5.0
+  },
+  {
+   "ref": "mixkit:9104", "source": "mixkit", "id": "9104", "kind": "music", "title": "Bright Steps", "artist": "Ed Fiction",
+   "seconds": 115, "file_url": "https://assets.mixkit.co/music/9104/9104.mp3", "page": "https://mixkit.co/free-stock-music/electropop/",
+   "licence": "mixkit-music", "tags": { "genre": ["electropop"], "mood": ["positive", "hopeful"] }, "mood": "uplifting", "moods": ["uplifting", "playful"],
+   "bpm": 118, "cuts": { "reveal": { "kind": "drop", "bar": 17, "t": 32.5 } }, "quality": 6.5
+  },
+  {
+   "ref": "pixabay:1", "source": "pixabay", "id": "1", "kind": "music", "title": "Not Usable", "artist": "Fi Nobody",
+   "seconds": 120, "file_url": "https://example.invalid/1.mp3", "licence": "pixabay", "mood": "driving", "bpm": 120, "quality": 9
+  },
+  {
+   "ref": "mixkit:9105", "source": "mixkit", "id": "9105", "kind": "music", "title": "Sung Line", "artist": "Gi Voice",
+   "seconds": 120, "file_url": "https://assets.mixkit.co/music/9105/9105.mp3", "licence": "mixkit-music", "vocals": true, "mood": "uplifting", "bpm": 120, "quality": 9
+  }
+ ]
+}

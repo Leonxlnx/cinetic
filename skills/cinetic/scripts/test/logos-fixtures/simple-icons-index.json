@@ -1,0 +1,7 @@
+[
+ { "title": "Tidepool", "slug": "tidepool", "hex": "1A73E8", "source": "https://tidepool.example/brand", "guidelines": "https://tidepool.example/brand" },
+ { "title": "Sharecrop", "slug": "sharecrop", "hex": "00AA55", "source": "https://sharecrop.example", "license": { "type": "CC-BY-SA-4.0" } },
+ { "title": "Squarecap", "slug": "squarecap", "hex": "E5484D", "source": "https://squarecap.example" },
+ { "title": "Glowbox", "slug": "glowbox", "hex": "C23C8F", "source": "https://glowbox.example/brand" },
+ { "title": "Slatework", "slug": "slatework", "hex": "000000", "source": "https://slatework.example" }
+]

@@ -1,0 +1,14 @@
+{
+ "template": "update",
+ "about": "The template as it ships: what its unnamed scaffold plays (src/deal.ts FLOOR and FLOOR_HERO). film-diff.mjs holds a film made from it to at least half its slots apart.",
+ "deal": {
+  "palette": "ink-cobalt",
+  "hook": "pill",
+  "voice": "whole",
+  "set": "line"
+ },
+ "heroes": [
+  "macro-type",
+  "toast-stack"
+ ]
+}

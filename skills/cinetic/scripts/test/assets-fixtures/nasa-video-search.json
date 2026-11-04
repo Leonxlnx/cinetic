@@ -1,0 +1,55 @@
+{
+ "_shape": "the NASA Image and Video Library /search response for video, hand-written (not a recording)",
+ "collection": {
+  "items": [
+   {
+    "href": "https://images-assets.nasa.gov/video/example-aurora-video-1/collection.json",
+    "data": [
+     {
+      "nasa_id": "example-aurora-video-1",
+      "title": "Aurora time-lapse",
+      "description": "A time-lapse of an aurora seen from orbit.",
+      "center": "GSFC",
+      "date_created": "2020-01-01T00:00:00Z",
+      "keywords": [
+       "aurora",
+       "time-lapse"
+      ],
+      "media_type": "video"
+     }
+    ],
+    "links": [
+     {
+      "href": "https://images-assets.nasa.gov/video/example-aurora-video-1/example-aurora-video-1~thumb.jpg",
+      "rel": "preview",
+      "render": "image"
+     }
+    ]
+   },
+   {
+    "href": "https://images-assets.nasa.gov/video/example-aurora-video-2/collection.json",
+    "data": [
+     {
+      "nasa_id": "example-aurora-video-2",
+      "title": "Aurora and city lights",
+      "description": "An aurora above city lights.",
+      "center": "GSFC",
+      "date_created": "2020-01-01T00:00:00Z",
+      "keywords": [
+       "aurora",
+       "Earth"
+      ],
+      "media_type": "video"
+     }
+    ],
+    "links": [
+     {
+      "href": "https://images-assets.nasa.gov/video/example-aurora-video-2/example-aurora-video-2~thumb.jpg",
+      "rel": "preview",
+      "render": "image"
+     }
+    ]
+   }
+  ]
+ }
+}

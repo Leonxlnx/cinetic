@@ -37,7 +37,8 @@ For each issue, try to refute it. Treat it as a claim, not a fact.
 
 - Evidence means frame numbers plus a measurement or a clearly described image. "Looks fine" is not evidence either way.
 - You may lower or raise a priority when the evidence shows it: **P0** is visible on a key beat or breaks the story, **P1** is noticeable on a normal viewing, **P2** is visible only on pause.
-- **Hard-ban issues** (IDs HB1–HB11) stay P0 wherever they show: do not reject or lower one because it is brief, small or off a key beat. Reject it only when the frames don't show it, or when `BRIEF.md` lists that exact thing as brand-supplied.
+- **Hard-ban issues** (IDs HB1–HB11) stay P0 wherever they show: do not reject or lower one because it is brief, small or off a key beat. Reject it only when the frames don't show it, when `BRIEF.md` lists that exact thing as brand-supplied, or when it is light, glow, a spectral accent, a dithered gradient or glass that is part of a device doing a job (`references/lighting.md` §5).
+- **Floor issues** (a failed motion or picture floor in `look.json`) stay P0 unless the measurement is shown to be wrong on the frames (an imagery box the audit misread: the fix is `--imagery`, not a lower priority).
 - Do not add new issues. List anything new you notice in `overall`.
 
 ## Return
@@ -52,7 +53,7 @@ Return JSON only, in the lens schema. `issues` holds only the confirmed issues, 
       "priority": "P0",
       "frame": "1920-1922",
       "problem": "VERIFIED: MAD 0.1 -> 31.7 -> 0.2 at f1921; the whole lockup is gone in 2 frames on the last beat",
-      "fix": { "file": "src/acts/Act6.tsx", "change": "exit by reversing the reveal over 20 f on E.in instead of the 6 f opacity fade" }
+      "fix": { "file": "src/acts/Act6.tsx", "change": "end on the lock: hold the assembled lockup in END with a 4 % creep instead of the 6 f opacity fade" }
     }
   ],
   "overall": "rejected: hook-too-slow — the line starts at f45 and reads by f60; seam-flash-a3 — a declared cut at f600",

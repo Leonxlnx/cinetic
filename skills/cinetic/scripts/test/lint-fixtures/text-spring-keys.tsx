@@ -1,4 +1,4 @@
-// Fixture for scripts/test/lint-film.test.mjs. expect: (none)
+// Fixture for scripts/test/lint-film.test.mjs. expect: scale-from-zero:warn=2 deprecated-token:warn=2 spring-budget:warn=1 (text-spring stays silent)
 // A spring is followed by name, never through object keys, strings or .property names: a dot's true
 // landing on SPR.land does not make a chain timed from MOVES.read "sprung", nor does an object with
 // a key (or a string) named like a spring variable elsewhere.

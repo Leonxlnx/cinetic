@@ -1,0 +1,14 @@
+{
+ "template": "type-explainer",
+ "about": "The template as it ships: what its unnamed scaffold plays (src/deal.ts FLOOR). film-diff.mjs holds a film made from it to at least half its slots apart.",
+ "deal": {
+  "open": "band",
+  "voice": "mask",
+  "pain": "push",
+  "promise": "roll",
+  "picture": "turn",
+  "system": "sheet",
+  "grid": "ring",
+  "end": "claim"
+ }
+}

@@ -1,0 +1,29 @@
+{
+ "_shape": "the Pixabay API video search response (documented fields; not a live recording)",
+ "total": 1,
+ "hits": [
+  {
+   "id": 4001,
+   "pageURL": "https://pixabay.com/videos/sea-4001/",
+   "tags": "sea, waves",
+   "duration": 21,
+   "user": "f_filmmaker",
+   "videos": {
+    "large": {
+     "url": "https://cdn.pixabay.com/video/4001_large.mp4",
+     "width": 1920,
+     "height": 1080,
+     "size": 9000000,
+     "thumbnail": "https://cdn.pixabay.com/video/4001_large.jpg"
+    },
+    "medium": {
+     "url": "https://cdn.pixabay.com/video/4001_medium.mp4",
+     "width": 1280,
+     "height": 720,
+     "size": 4000000,
+     "thumbnail": "https://cdn.pixabay.com/video/4001_medium.jpg"
+    }
+   }
+  }
+ ]
+}

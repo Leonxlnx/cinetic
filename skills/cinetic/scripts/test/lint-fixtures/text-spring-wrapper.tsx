@@ -1,4 +1,4 @@
-// Fixture for scripts/test/lint-film.test.mjs. expect: text-spring:warn=2
+// Fixture for scripts/test/lint-film.test.mjs. expect: text-spring:warn=2 deprecated-token:warn=4 spring-budget:warn=1
 // A custom text wrapper handed an overshooting preset as its spring (cfg={SPR.word}, or config= an
 // alias of SPR.pop) around text warns; the same wrapper on SPR.firm, or around a shape, does not.
 import React from 'react';

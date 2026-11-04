@@ -1,0 +1,2 @@
+Fixture for scripts/test/lint-film.test.mjs (a whole film folder, linted as one). expect: snap-step:warn=1
+src/sync.ts declares both the hard list and the snap zoom, so neither warns on its own; but a film keeps one snap device, so the second device (the snap zoom in Act2) warns.

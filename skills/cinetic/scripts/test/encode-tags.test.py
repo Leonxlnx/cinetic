@@ -51,14 +51,16 @@ def tags(path):
     return '/'.join(str(s.get(k)) for k in ('color_space', 'color_primaries', 'color_transfer', 'color_range'))
 
 
-# 1. static: one setparams per encode that writes the primaries tag
+# 1. static: one setparams per encode that writes the primaries tag; a stream copy (-c copy) cannot run a filter, so
+#    it stamps the tags into the H.264 stream itself with the h264_metadata bitstream filter instead
 TAG_WRITE = re.compile(r"""-color_primaries['", ]+bt709""")
+BSF_STAMP = 'h264_metadata=colour_primaries=1:transfer_characteristics=1:matrix_coefficients=1:video_full_range_flag=0'
 for path in sorted(glob.glob(os.path.join(SCRIPTS, '*.sh')) + glob.glob(os.path.join(SCRIPTS, '*.py'))):
     src = open(path, encoding='utf-8').read()
-    writes, stamps = len(TAG_WRITE.findall(src)), src.count(SETPARAMS)
+    writes, stamps = len(TAG_WRITE.findall(src)), src.count(SETPARAMS) + src.count(BSF_STAMP)
     if writes:
-        result(stamps >= writes, f'{os.path.basename(path)}: setparams in every BT.709-tagged encode',
-               f'{writes} encode(s), {stamps} setparams')
+        result(stamps >= writes, f'{os.path.basename(path)}: setparams (or, on a stream copy, h264_metadata) in every BT.709-tagged encode',
+               f'{writes} encode(s), {stamps} setparams or h264_metadata stamps')
 
 # 2. the encodes themselves, when ffmpeg is here
 if not (shutil.which('ffmpeg') and shutil.which('ffprobe')):

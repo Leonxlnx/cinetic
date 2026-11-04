@@ -1,0 +1,2 @@
+Fixture for scripts/test/lint-film.test.mjs (a film folder with a supplied brand kit). expect: (nothing: the brand's own orange is supplied, so the bans pass; it is still the one accent)
+palette.py --check-tokens reads the same file: the supplied orange skips the bans and is checked for contrast and the one-accent rule.

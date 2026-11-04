@@ -2,7 +2,7 @@
 
 This is the story of one finished film, from idea to measured master, including the mistakes. It shows what each rule in SKILL.md looks like in a real film. Read it once before your first film, and come back when a rule seems arbitrary.
 
-Tessel is a fictional product: *the calendar that plans itself*. Its launch film runs 33 s at 1920×1080 and 60 fps. It was built in Remotion 4.0.529, and the soundtrack was synthesized in Python. The numbers here are Tessel's. They became the skill's defaults because they held up, but they remain starting points.
+Tessel is a fictional product: *the calendar that plans itself*. Its launch film runs 33 s at 1920×1080 and 60 fps. It was built in Remotion 4.0.529 and cut to a licensed instrumental track with code-made effects from the earshot kit. The numbers here are Tessel's; many became house defaults, and they remain starting points.
 
 **Study the method, not the surface.** Tessel's red now-dot, its cool paper-and-ink palette, its geometric sans and its block-and-dot mark belong to Tessel: they came out of its name (pieces that tile) and its product (a calendar with a "now"). Reusing the red dot as a device, or a block mark with an accent dot, is the most common way a film made with this skill fails to be its own. Take the process (inventory, device path, grid, sound from picture, measurement) and let your brand's name, product and personality produce a different look.
 
@@ -22,7 +22,7 @@ Tessel is a fictional product: *the calendar that plans itself*. Its launch film
 ## 1. Brand
 
 - **Name.** Tessel, from *tessellation*: pieces that fit together with no gaps. The name holds the film's idea, so the finale can literally tessellate.
-- **Mark.** Three primitives tile one square in a 100-unit box: a tall block, a square block and a red dot. The gap is 8 units and the corner radius 13, and one fully rounded corner lets it read at 16 px. It was built as a component (`Mark.tsx`) and studied as one-frame stills: the mark alone, the app before planning, and the app after.
+- **Mark.** Three primitives tile one square in a 100-unit box: a tall block, a square block and a red dot. The gap is 8 units and the corner radius 13, and one fully rounded corner lets it read at 16 px. It was built as a component (`Mark.tsx`) and checked as one-frame stills: the mark alone, the app before planning, and the app after.
 - **Palette.** Ink `#0B0B0C`, paper `#FFFFFF`, and cool neutrals (mist `#F4F5F7`, line `#E3E4E8`, mute `#8A8D96`). One accent, red `#EC2A3A`, means only **"now" or "just happened"**. It is the now-dot, the now-line, each newly typed letter, and the send button, and nothing else. Two slightly different reds in early code were merged into one token.
 - **Type.** Geist and Geist Mono, shipped as local variable fonts. The roles were: headline 128 px / 600 / −0.05 em; wordmark 190 / 620 / −0.055; feature lines 120 / 600; descriptor 44 / 460 in grey; payoff 176 / 600. Tabular figures were used everywhere.
 
@@ -59,6 +59,22 @@ The typed prompt is product UI rather than film copy: *"Protect my mornings. Gym
 - they set up the refrain that the finale resolves ("fit too" becomes "Everything fits.");
 - a viewer who reads only the big type still gets the story.
 
+**The script, written plain today.** Tessel's weak point was the copy, not the craft: the descriptor that says
+what the product is arrived only at the turn, about 5 s in, after a hook a stranger could not place. A viewer who
+left at 4 s had seen a clever line and no product. Written to today's formula (`references/copy-and-type.md` §1),
+what it is comes first and every next line says one thing it does while the week shows it; `copy-check.py` passes it:
+
+| # | Role | Line | Words |
+|---|---|---|---|
+| 1 | what it is | Tessel is a calendar that plans itself. | 7 |
+| 2 | does (the typed request) | You type what matters this week. | 6 |
+| 3 | does (the meetings slide aside) | It moves meetings out of the way. | 7 |
+| 4 | does (the mornings stay grey) | Your mornings stay free. | 4 |
+| 5 | close (under the mark) | Tessel is out now at tessel.app. | 6 |
+
+The overbooked week still opens the film as the picture, and the callback lives in the product's own strings (the
+typed "Protect my mornings." becomes the free mornings on screen).
+
 ## 3. The device: the red now-dot
 
 One red dot, the calendar's *now* marker, is handed from shot to shot and never leaves the screen. Colour carries its meaning, so the film reads muted.
@@ -88,12 +104,12 @@ The film runs at 120 BPM and 60 fps: a beat is 30 f, a bar is 120 f (2 s), an 8t
 
 | Act | Bars | Frames | Time | Picture | Copy | Sound |
 |---|---|---|---|---|---|---|
-| fit | 1–3 | 0–359 | 0–6 s | Iris onto the dot (f30), day line (f45), grid (f60), accelerating rain (f90 on), headline slam (f240), implosion (f330) | Your week / doesn't fit. | tick-tock alone, then intro chords; rain tocks panned to their day column; a "suck" to silence at f345 |
-| mark | 4–5 | 360–599 | 6–10 s | Ink flood, the mark assembles (drop 1, f360), lockup (f405), dolly and beat punches, the mark opens into the app (f540) | Tessel / The calendar that plans itself. | drop 1; the clock keeps time through the hold (hats removed on those beats) |
-| prompt | 6–7 | 600–839 | 10–14 s | Clashes flash day by day on the downbeat, the camera pushes to the command bar (f630), typing (f660–780), click (f810), red flood (f814) | the typed prompt (UI) | key clicks with accented word starts; hats thinned under the typing |
-| plan | 8–9 | 840–1079 | 14–18 s | Shutter into the now-line (drop 2, f840); tabletop: 34 blocks lift, fly and land on an accelerating schedule (f870–990); straighten (f990); "Week planned" (f1050) | UI toast | drop 2; landing tocks climb chord-tone ladders |
-| feat | 10–12 | 1080–1439 | 18–24 s | The window splits on its sidebar seam; one line clicks home per bar (f1080, f1200, f1320); each payoff lands on the clap (+60 f) and its consequence on the kick (+75 f) | the three consequence lines | whips peak on the kick; check pips in key |
-| end | 13–16 + 60 f | 1440–1979 | 24–33 s | Pull-back, neighbouring weeks tessellate in a wave (f1560), "Everything" (f1620), "fits." (f1680), lockup (f1740), URL (f1800), tick-tock and return home (f1890) | Everything fits. / tessel.app | breakdown, resolution on "fits.", bookend tick-tock, 1 s tail to digital zero |
+| fit | 1–3 | 0–359 | 0–6 s | Iris onto the dot (f30), day line (f45), grid (f60), accelerating rain (f90 on), headline slam (f240), implosion (f330) | Your week / doesn't fit. | the track's intro with a tuned tick-tock from the kit; rain tocks panned to their day column; the track's own stop at f345 |
+| mark | 4–5 | 360–599 | 6–10 s | Ink flood, the mark assembles on the entry (f360), lockup (f405), dolly and beat punches, the mark opens into the app (f540) | Tessel / The calendar that plans itself. | the track's first entry; the kit's tick keeps time through the hold |
+| prompt | 6–7 | 600–839 | 10–14 s | Clashes flash day by day on the downbeat, the camera pushes to the command bar (f630), typing (f660–780), click (f810), red flood (f814) | the typed prompt (UI) | key clicks with accented word starts, levelled over the bed |
+| plan | 8–9 | 840–1079 | 14–18 s | Shutter into the now-line on the second entry (f840); tabletop: 34 blocks lift, fly and land on an accelerating schedule (f870–990); straighten (f990); "Week planned" (f1050) | UI toast | the second entry; landing tocks in the track's key, at most two pitched in any 4 s |
+| feat | 10–12 | 1080–1439 | 18–24 s | The window splits on its sidebar seam; one line clicks home per bar (f1080, f1200, f1320); each payoff lands on the clap (+60 f) and its consequence on the kick (+75 f) | the three consequence lines | whips peak on the track's accents; check pips in key |
+| end | 13–16 + 60 f | 1440–1979 | 24–33 s | Pull-back, neighbouring weeks tessellate in a wave (f1560), "Everything" (f1620), "fits." (f1680), lockup (f1740), URL (f1800), tick-tock and return home (f1890) | Everything fits. / tessel.app | the track's break, its entry on "fits.", a stop before the lockup, one element on the wordmark, 1 s tail to digital zero |
 
 **Budgets as shipped** (the crisp profile)
 - 8–10 story beats.
@@ -101,34 +117,27 @@ The film runs at 120 BPM and 60 fps: a beat is 30 f, a bar is 120 f (2 s), an 8t
 - About 22 words.
 - 15 velocity peaks, each with its sound on the apex.
 - Section changes on downbeats.
-- Two drops, at 6 s and 14 s.
+- Two entries of the track, at 6 s and 14 s.
 
 ## 5. Sound
 
-Everything was synthesized with numpy and scipy at 48 kHz from `cues.json`, with deterministic seeds. There are no samples.
+The soundtrack is the house route (`references/music.md`, `references/sound.md`): music first, effects from the kit,
+levelled over the track.
 
-- **Harmony.** A♭ major, one chord per bar:
-  - intro: Fm Fm G♭;
-  - then D♭ – A♭/C – Fm9 – E♭ (IV – I/3 – vi – V), twice;
-  - breakdown: D♭ Fm9 E♭;
-  - resolution: A♭ on "fits."
-
-  The V-chord pads end at the bar + 0.08 s, so they are gone before the chord they resolve into.
-- **Signature.** A tuned clock: a tick on A♭7 and a tock on E♭7. It opens the film, keeps time through the logo hold and closes the film. The final tick-tock bypasses the master fade.
-- **Everything pitched is in key:**
-  - check pips E♭7 F7 G7 A♭7;
-  - landing tocks on chord-tone ladders;
-  - quilt tocks that rise with distance from the centre;
-  - the kick settles on A♭1 (51.9 Hz);
-  - snaps are tuned to the chord root with integrated-phase oscillators.
-- **Mix.**
-  - Sidechain at depth 0.55, τ 0.14 s. Reverb sends are high-passed at 250 Hz.
-  - The music bus sits at 0.8 under typing and 0.72 under the feature UI, rising to 1.0 at the resolution.
-  - Drop 1 lands on true silence, with everything (including reverb) ducked 97%. Everything below 120 Hz is mono.
-  - Bus compression is 2:1 above −14 dBFS.
-  - Mastering ran three loudness passes to −14 LUFS, then a 4× oversampled lookahead limiter with a 0.77 ceiling, and zeroed the last 480 samples.
-
-The skill's version of this toolchain is in `references/sound.md` and `scripts/audio/`.
+- **The track.** A licensed, human-made, instrumental track at 120 BPM from a library whose licence needs no credit,
+  recorded with `track.py add` (the licence quoted as read on its page), analysed, and edited at bar lines with
+  `track.py edit --bars 16 --reveal-bar 15 --end stop`: its intro under the hook, its own stop before bar 4, an entry
+  on the mark, a second entry on the plan, its break under the features, the entry on "fits.", and a stop before the
+  lockup. `track.py grid` wrote `src/music.ts`, and the timeline's `b()` follows its measured downbeats.
+- **The effects.** The earshot `launch` kit, with the calm kit's tick and tock swapped in for the clock: a tuned
+  tick-tock opens the film, keeps time through the logo hold and closes the film; rain tocks panned to their day
+  column; landing tocks and check pips tuned to the track's key (`kit.py tune`), never more than two pitched effects in
+  any 4 s; key clicks with accented word starts; whooshes only on the camera-scale moves, apex on the velocity peak.
+- **The mix.** Each effect at its `bed_db` over the bed as it plays; no ducking anywhere; a stop-down before the hero
+  reveal and the payoff, both on the track's own breaks; one clean element on the wordmark after the stop; everything
+  below 120 Hz mono; the master at −14 LUFS with a 4× oversampled lookahead limiter at a 0.77 ceiling, the last 480
+  samples zeroed.
+- **Delivery.** `credits.py` checked the licence record; nothing credits the music on screen.
 
 ## 6. Pipeline
 
@@ -137,7 +146,7 @@ One command rendered the master from source. The skill's scripts generalise each
 | Step | Tessel | cinetic |
 |---|---|---|
 | Cue export | `export-cues.ts` imports the act modules and computes `peak()` / `hit()` | `scripts/export-cues.ts` + `src/sync.ts` |
-| Soundtrack | `soundtrack.py` | `scripts/audio/score.py`, `synth.py`, `master.py` |
+| Soundtrack | the track, the kit, the plan and the mix | `scripts/audio/track.py`, `kit.py`, `plan.py`, `score.py`, `master.py`, `credits.py` |
 | Sharp render | `remotion render --muted`, JPEG q95, ANGLE | `scripts/render.sh` |
 | Speed | optical flow → samples per frame | `scripts/measure-speed.py` |
 | Sub-frames | a `Freeze` wrapper composition sized by `calculateMetadata` | `FilmSub` in the starter |
@@ -259,19 +268,18 @@ Each lesson is now a default somewhere in the skill; the file named after "Now i
       - readable UI ≥ 20–22 px after camera scale.
     - *Now in:* `references/product-ui.md`.
 
-14. **Sound craft is harmony plus room.**
+14. **Sound sits in the track, not on top of it.**
     - *First attempt:*
-      - booms and snaps were untuned, and a 60 Hz sub partial sat under the 51.9 Hz tonic;
-      - a V-chord pad smeared over the resolution;
-      - hats masked the typing;
-      - drop 1 did not land on silence.
+      - effects at one fixed level: lost under the full groove, too loud over the intro;
+      - booms and snaps untuned against the track's key;
+      - the hero reveal landed in the middle of a phrase;
+      - a whoosh into the lockup on top of the track's final hit.
     - *Fix:*
-      - tune every sound to the chord and use integrated-phase oscillators;
-      - end the V pads at the bar + 0.08 s;
-      - thin the hats under typing (`score.py` now stops them in bars with 4+ sounded keys);
-      - duck everything 97% before the drop;
-      - verify each effect's audibility by mute-and-subtract, at ≥ +6 dB in its own band.
-    - *Now in:* `references/sound.md`.
+      - level each effect over the bed as it plays (`bed_db`), checked against the bed stem;
+      - tune the kit's tonal roles to the track's key, at most two pitched effects in any 4 s;
+      - edit the track so the reveal lands on its entry after its own stop;
+      - one element at the lockup after a stop, nothing before it.
+    - *Now in:* `references/sound.md`, `references/music.md`.
 
 15. **Delivery is part of the film.**
     - *First attempt:*
@@ -302,7 +310,7 @@ All measured on the shipped file.
 | Motion blur | 19,841 sub-frames for 1,980 frames; 420 still frames at 1 sample; up to 48 samples per frame; peak measured speed about 690 px/f |
 | Master render cost | 3,387 s at concurrency 4 (the preview skipped this pass) |
 | Copy | 22 words on screen outside the product UI |
-| Critique | 5 rounds; overall scores rose from 6.5–7 to 7.6–8.3 (out of 10, against top-tier launch films) |
+| Critique | 5 rounds; overall scores rose from 6.5–7 to 7.6–8.3 (out of 10) |
 
 ## 9. What the skill does differently now
 

@@ -1,0 +1,21 @@
+[
+ {"_about": "Hand-written in the shape of a ccMixter query API answer (f=json); every value is invented.",
+  "upload_id": 7101, "upload_name": "Steady Hands", "user_name": "ada_ex", "user_real_name": "Ada Example",
+  "upload_tags": ",media,cczero,audio,mp3,44k,stereo,CBR,bpm_120_125,electronic,instrumental,synthesizer,",
+  "upload_extra": {"usertags": "electronic,instrumental,synthesizer,drums", "bpm": 122},
+  "file_page_url": "https://ccmixter.org/files/ada_ex/7101", "license_url": "http://creativecommons.org/publicdomain/zero/1.0/", "license_name": "CC0 (CC Zero)",
+  "files": [{"file_nicname": "zip", "file_format_info": {"media-type": "archive", "default-ext": "zip"}, "download_url": "https://ccmixter.org/content/ada_ex/ada_ex_-_Steady_Hands.zip"},
+            {"file_nicname": "mp3", "file_format_info": {"media-type": "audio", "default-ext": "mp3", "ps": "3:12"}, "download_url": "https://ccmixter.org/content/ada_ex/ada_ex_-_Steady_Hands.mp3"}]},
+ {"upload_id": 7102, "upload_name": "Hum Along", "user_name": "ben_s", "user_real_name": "",
+  "upload_tags": ",media,cczero,audio,mp3,acappella,female_vocals,", "upload_extra": {"usertags": "acappella,female_vocals"},
+  "file_page_url": "https://ccmixter.org/files/ben_s/7102", "license_url": "http://creativecommons.org/publicdomain/zero/1.0/", "license_name": "CC0 (CC Zero)",
+  "files": [{"file_format_info": {"media-type": "audio", "default-ext": "mp3", "ps": "2:40"}, "download_url": "https://ccmixter.org/content/ben_s/ben_s_-_Hum_Along.mp3"}]},
+ {"upload_id": 7103, "upload_name": "Borrowed Light", "user_name": "cleo_d", "user_real_name": "Cleo Demo",
+  "upload_tags": ",media,audio,mp3,bpm_095_100,ambient,", "upload_extra": {"usertags": "ambient,piano"},
+  "file_page_url": "https://ccmixter.org/files/cleo_d/7103", "license_url": "http://creativecommons.org/licenses/by/3.0/", "license_name": "Attribution (3.0)",
+  "files": [{"file_format_info": {"media-type": "audio", "default-ext": "mp3", "ps": "4:05"}, "download_url": "https://ccmixter.org/content/cleo_d/cleo_d_-_Borrowed_Light.mp3"}]},
+ {"upload_id": 7104, "upload_name": "Drum Machine Preset Loops", "user_name": "dee_p", "user_real_name": "Dee Placeholder",
+  "upload_tags": ",sample,media,cczero,audio,mp3,loops,electronic,", "upload_extra": {"usertags": "loops,electronic"},
+  "file_page_url": "https://ccmixter.org/files/dee_p/7104", "license_url": "http://creativecommons.org/publicdomain/zero/1.0/", "license_name": "CC0 (CC Zero)",
+  "files": [{"file_format_info": {"media-type": "audio", "default-ext": "mp3", "ps": "6:01"}, "download_url": "https://ccmixter.org/content/dee_p/dee_p_-_Loops.mp3"}]}
+]

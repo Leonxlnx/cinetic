@@ -1,0 +1,9 @@
+{
+ "template": "launch-simple",
+ "about": "The template as it ships: what its unnamed scaffold plays (src/deal.ts FLOOR; its house scenes, src/spine.ts, dealt in src/bank.ts). film-diff.mjs holds a film made from it to at least half its slots apart.",
+ "deal": {
+  "voice": "build",
+  "ground": "paleSky",
+  "scenes": "macro-type page-fly decode-title toast-stack blobs-to-mark"
+ }
+}

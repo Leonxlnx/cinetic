@@ -1,0 +1,103 @@
+{
+ "name": "camera-teaser",
+ "about": "A 22 s product teaser told by the camera on a dark stage: every shot is one layout under one camera path (lib/camera camPath) on a clean lit ground of its own, one carrying move per shot with its secondaries riding it. The request box arriving tilted in the film's light, a whip into its close-up and the send button, the app window streaming code under the film's one 3D turn, the proof in depth with the real marks of the products it works with, the page it made with a modal toast, the product's stages, the end mark. The lines land on a dealt confident voice (mask, land or fall), and each act deals one of two or three devices per film from a seed (src/deal.ts), so no two films play one sequence. new-film.sh --template camera-teaser lays these files over the Remotion starter.",
+ "engine": "remotion",
+ "pace": "crisp",
+ "type_family": "bold",
+ "bpm": 120,
+ "music": {
+  "required": true,
+  "slot": "audio/music/",
+  "about": "Every teaser is cut to a licensed, human-made, instrumental track (references/music.md): its hits carry the whips and the act lines, designed whooshes ride the camera; never effects only.",
+  "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 110-136 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track); dark and driving, with hits to cut on",
+  "add": "bash scripts/new-film.sh <dir> --template camera-teaser --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
+  "then": [
+   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end auto  (its own ending, else a fade: never a cut)",
+   "python3 scripts/audio/track.py grid",
+   "python3 scripts/audio/track.py check"
+  ]
+ },
+ "deal": {
+  "about": "Each act is a slot with two or three devices on the same cues and words. src/deal.ts deals one per slot from a seed (the product's name, or teaser.ts deal.seed) under the rules in RULES; teaser.ts deal.devices pins one. The timeline's declarations follow the deal (the flash frame only with the flash cut, the colour event only with the claim).",
+  "slots": {
+   "voice": {
+    "mask": "each line rises out of a mask on its baseline and leaves dropping",
+    "land": "each line lands from x1.35 on a glide and leaves sliding",
+    "fall": "each word drops into place, the last in the accent, and the line leaves dropping"
+   },
+   "input": {
+    "rise": "the box settles up out of a steeper tilt, focus trailing position",
+    "drop": "the camera starts close on the send corner, soft, and pulls back to the whole box on one long glide",
+    "track": "the camera trucks in from the left past three soft near tiles of the products it works with, cropped by the frame edge"
+   },
+   "cut": {
+    "flash": "the whip right cuts through one near-white frame (the film's one declared snap)",
+    "smear": "the whip right cuts on its blur peak, no flash"
+   },
+   "launch": {
+    "jcurve": "the send button launches on a J-curve; the cut takes it while it still accelerates out of the frame",
+    "dive": "the camera dives into the send button; the window opens from inside it (a zoom-through)"
+   },
+   "window": {
+    "yaw": "the window arrives on the one 3D turn round a vertical hinge",
+    "pitch": "the camera rises over the desk: a tabletop turn",
+    "split": "the code beside the live app it is building (a dense screen, one row readable), on the yaw"
+   },
+   "cards": {
+    "stack": "the notifications stacked in perspective in a depth stack, one tile per product on the far wall",
+    "wall": "the notifications in front of a wall of large tiles that keeps the centre column clear",
+    "ring": "the notifications inside a ring of eight tiles that orbit"
+   },
+   "page": {
+    "cascade": "the title's letters on an arc, the cards cascading up under it",
+    "panel": "the page in one lit browser panel, the title on the crisp entry"
+   },
+   "stages": {
+    "brackets": "one stage at a time in corner brackets, rolling on glides",
+    "push": "the three stages in a row, the camera pushing through it (TypePush)",
+    "claim": "each stage as the claim on the accent, rolling on glides (the colour event)"
+   },
+   "end": {
+    "comets": "two comets collapse at full speed and the cut lands as they meet, onto the mark turning in",
+    "assemble": "the mark's parts glide in from three sides and lock"
+   }
+  }
+ },
+ "next": [
+  "camera teaser: fill src/teaser.ts (the script in plain words: line 1 says what the product is, 2-7 words a line, and the product's",
+  "  own request, code, cards, page, toast and stages in every [slot]); the products it really works with as real marks:",
+  "  node scripts/logos.mjs get <name> --film . for each, their slugs in teaser.ts integrations and on the cards;",
+  "  rebuild the product's real screens where the kit stands in, then deal its direction:",
+  "  python3 scripts/deck.py --brief \"<one line>\" --format launch --have ui --options 3 (a dark direction keeps the stage)"
+ ],
+ "copy": [
+  "src/teaser.ts",
+  "src/deal.ts",
+  "src/timeline.ts",
+  "src/Film.tsx",
+  "src/Root.tsx",
+  "src/sync.ts",
+  "src/acts/stage.tsx",
+  "src/acts/Input.tsx",
+  "src/acts/Launch.tsx",
+  "src/acts/Window.tsx",
+  "src/acts/Cards.tsx",
+  "src/acts/Page.tsx",
+  "src/acts/Stages.tsx",
+  "src/acts/End.tsx",
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "keep_if_present": [
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "remove": [
+  "src/acts/Act1.tsx",
+  "src/acts/Act2.tsx",
+  "src/acts/Act3.tsx",
+  "src/acts/Act4.tsx",
+  "src/acts/ground.tsx",
+  "src/acts/plate.tsx"
+ ]
+}

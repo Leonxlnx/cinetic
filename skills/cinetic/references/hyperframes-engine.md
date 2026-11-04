@@ -1,8 +1,8 @@
 # HyperFrames engine
 
-Covers HyperFrames 0.8.79 as cinetic uses it: how it renders, the composition and timeline contract, the CLI, the traps its linter misses, and how to carry the beat grid, easing tokens, springs, sync and finishing over from the Remotion kit. Read it at Step 4 when the film is built in HyperFrames (HTML plus one paused GSAP timeline), and before the first render.
+Covers HyperFrames 0.8.79 as cinetic uses it: how it renders, the composition and timeline contract, the CLI, the traps its linter misses, and how to carry the beat grid, easing tokens, springs, sync and finishing over from the Remotion kit. Read it at Step 6 when the film is built in HyperFrames (HTML plus one paused GSAP timeline), and before the first render.
 
-Everything here was checked against the 0.8.79 source and by rendering `assets/hyperframes-starter/` with a sandbox headless Chromium. The numbers are proven defaults and starting points; the craft rules in the other references apply unchanged.
+Everything here was checked against the 0.8.79 source and by rendering `assets/hyperframes-starter/` with a sandbox headless Chromium. The numbers are house defaults and starting points; the craft rules in the other references apply unchanged.
 
 **Contents**
 1. [Render model](#1-render-model)
@@ -45,7 +45,7 @@ Nothing ever plays. For every output frame the engine seeks every registered tim
 | `index.html` | the composition: root, clips, one paused timeline registered last |
 | `motion.js` | grid (`FPS`, `BPM`, `b`, `sec`, `at`), `E`, `SPR` (with `SPR.calm`), `PACE` and `pace`, `spring()`, `pulse()`, `hitPulse`, `squash`, `arrive`/`depart` and their GSAP-ease forms `arriving`/`departing`, sync helpers, `rand`; same names and numbers as the Remotion kit |
 | `timeline.js` | the film's `ACT`, `DUR`, `CUE`, `COPY` (one entry per fragment, with `chain()` for a thought in several), `READ` (when each entry is read), `TOTAL` in frames, `WORD_EASE`, `PACE_NAME`/`PACE` (from `motion.js`), and `FILM.cues()` for the sound; `node scripts/grid-check.ts timeline.js` checks it |
-| `audio/score.json` | the demo's music (key, chords, sections) for `scripts/audio/score.py` |
+| `audio/score.json`, `audio/kit.json` | the soundtrack for `scripts/audio/score.py`: the licensed track (`audio/music/`, git-ignored), its edit and licence record, the key, the stop-downs and the payoff; the earshot `launch` kit, whose effects sit at their level over the track |
 | `setup.mjs`, `package.json` | local GSAP and fonts; `npm run` scripts `lint`, `check`, `snapshot`, `cues`, `audio`, `render:preview`, `render` |
 | `fonts/README.md` | how to add or swap faces |
 
@@ -136,7 +136,7 @@ A single-file film works (the starter is one), but lint then warns `nested_struc
 
 - **Ship every face as a local `.woff2` with an `@font-face`**, in the file that uses it (inside the `<template>` for acts). The renderer embeds a small set of common families and silently aliases well-known system names to one of them, so a family you name but don't ship can render as a different face with no warning. A hosted web-font link is fetched at build time and fails offline.
 - **Lint errors** on any `font-family` it cannot resolve (`font_family_without_font_face`). It skips `var(...)` values, so write family names literally in `font-family`.
-- **Load before you measure.** `document.fonts.ready` can resolve before a face has even started loading; call `document.fonts.load('600 144px "Geist"')` first, as the starter does, or measurements use the fallback's widths.
+- **Load before you measure.** `document.fonts.ready` can resolve before a face has even started loading; call `document.fonts.load('600 144px "Inter Variable"')` first, as the starter does, or measurements use the fallback's widths.
 - Swapping faces, variable fonts and brand files: `assets/hyperframes-starter/fonts/README.md`. Type choice: `references/copy-and-type.md`.
 
 ## 7. Media and audio
@@ -312,3 +312,19 @@ bash scripts/hf-finish.sh . out/film.mp4 --audio public/audio/soundtrack.wav --b
 - **K is capped at 240 / fps** (4 at 60 fps), so the samples always sit a quarter frame apart and a moving edge becomes a few bands `speed / 4` px wide. Measured on the starter: at 14 px/f the three 3.5 px bands read as a soft edge at speed but show on pause; at 27 px/f they separate into three distinct copies. Treat about 18 px/f as the ceiling, and build faster films in Remotion, whose adaptive sampling (`render.sh --blur`) adds samples with speed.
 - **Under about 12 px/f, skip blur**: the sharp master reads clean at 60 fps. The starter keeps its fastest move, the 277 px glide, at 11 px/f by giving it 72 f.
 - Measure speed on a sharp render with `scripts/measure-speed.py` before deciding.
+
+### 11.10 What carries over in 1.2
+
+- **Tokens and pace are mirrored:** `motion.js` carries the same `E`, `M`, `SPR`, `PACE` and tables as `lib/anim.ts` and
+  `lib/pace.ts` (`scripts/test/mirror.test.mjs` keeps them equal; `scripts/gen-pace.mjs` copies the pace after an
+  edit). The curve-by-role rules, the canonical word reveal, the jump re-centre, exits at speed and the transient
+  accent apply as written.
+- **The timeline contract is mirrored:** `timeline.js` takes the declarations (`LOOK`, `SEAMS`, `STEPPED`, `FLASHES`,
+  `END`, `REVEAL`, `STRUCTURAL`, `SALIENCE`) and `music.js` (written by `track.py grid`) gives the music grid;
+  `grid-check.ts` runs on it.
+- **The rich primitives are Remotion-first.** The device primitives, imagery primitives, the product kit, KeyLight,
+  LightField, camera-moves and the transitions built from content live in the Remotion starter. A film that leans on
+  them belongs in Remotion; in HyperFrames, build the device from its recipe in the device book with GSAP `fromTo`
+  tweens on the same numbers.
+- **Blur policy:** `hf-finish.sh --policy` (or a crisp `LOOK`) ignores `--blur K` for a crisp film; per-range camera
+  blur is a Remotion feature.

@@ -9,3 +9,6 @@ __pycache__/
 .DS_Store
 dist/
 out/
+
+# working drafts: merged into references/ and the library before a release, never committed
+_drafts/

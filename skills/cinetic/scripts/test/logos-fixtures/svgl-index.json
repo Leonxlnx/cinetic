@@ -1,0 +1,6 @@
+[
+ { "id": 7, "title": "Tidepool", "category": "Software", "route": { "light": "https://svgl.app/library/tidepool.svg", "dark": "https://svgl.app/library/tidepool_dark.svg" }, "wordmark": "https://svgl.app/library/tidepool_wordmark.svg", "url": "https://www.tidepool.example", "brandUrl": "https://tidepool.example/brand" },
+ { "id": 9, "title": "Sharecrop", "category": "Software", "route": "https://svgl.app/library/sharecrop.svg", "url": "https://sharecrop.example" },
+ { "id": 11, "title": "Glowbox", "category": "Social", "route": "https://svgl.app/library/glowbox.svg", "url": "https://glowbox.example" },
+ { "id": 12, "title": "Slatework", "category": "Software", "route": "https://svgl.app/library/slatework.svg", "url": "https://slatework.example" }
+]

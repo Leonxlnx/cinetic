@@ -1,0 +1,107 @@
+{
+ "name": "update",
+ "about": "An 8-20 s update film (\"vX is out\": two changes run 9-12 s, three 12-15 s) assembled from the house scenes (src/scenes): the hook (the name and the version on a clean ground, moving from the first frame: a pill landing, the old numerals rolling to the new, or a tag cutting on; 1.6 s at most), then each change as its line alone on the ground of its scene (big, a cap of 8 % of the frame, arriving whole or in 2-3 chunks, in and read in 1.2 s) and the scene that proves it, 2-4 s a change and a typed change 3 s (a real pointer pressing send at macro scale and a porthole opening onto the change's picture while its line parts round it; a short request typed at macro scale with the camera on the caret; notifications with real faces stacking in depth, centred on the accent field; a page flying in and travelled; a card pumping through the pictures into a row in depth; a title decoding and its button clicked; a figure counting on a large glass card centred on its picture; partner marks landing on orbits), no scene over 3 s, a scene that takes over the element the one before hands on following it on a match cut, the other changes coming in through a defocus, at least one big scene a film, then the mark-pullback (the brand's mark as a solid pulling back, one snap to the lockup) with the version landing under it on the bar line that ends the body, the lockup alive and whole to the last frame, 1.5-2 s after the version lands. src/deal.ts LIMITS holds every length; src/timeline.ts builds the plan inside them and throws on a plan outside them (grid-check, the Studio and the render stop on it). Text only on a clean ground; every press a real pointer; colours from the brand or a palette dealt per film (never the starter's green, never a scene's demo colours). The film fills src/update.ts (and src/content.ts from the brief); every slot is dealt per film (src/deal.ts), the scenes from the deck (src/dealt.ts) or the name. new-film.sh --format update lays these files over the Remotion starter.",
+ "engine": "remotion",
+ "pace": "crisp",
+ "type_family": "bold",
+ "bpm": 120,
+ "end_hold": [
+  1.5,
+  2.2
+ ],
+ "end_stop": "not held: the lockup ends 2.5 s after it forms (src/deal.ts LIMITS.LOCK_S), at least 1.5 s after the version mark; track.py fit writes the track's real ending (a hit on the version mark, faded under the tail by score.py)",
+ "music": {
+  "required": true,
+  "slot": "audio/music/",
+  "about": "Every update film is cut to a licensed, human-made, instrumental track (references/music.md): the track carries the film, its final hit on the version mark (the bar line that ends the body); the scenes' own moments (the press, the porthole, the keys, the notifications, the page) and the line cards' text sounds are cut to the picture; never effects only.",
+  "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 112-128 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track)",
+  "add": "bash scripts/new-film.sh <dir> --format update --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
+  "then": [
+   "python3 scripts/audio/track.py fit --end auto  (once update.ts is written: the edit is fitted to the film's bars, its own ending, else one ringing hit, on the version mark)",
+   "python3 scripts/audio/track.py check"
+  ]
+ },
+ "copy": [
+  "src/update.ts",
+  "src/content.ts",
+  "src/deal.ts",
+  "src/dealt.ts",
+  "src/recent.ts",
+  "src/timeline.ts",
+  "src/Film.tsx",
+  "src/Root.tsx",
+  "src/sync.ts",
+  "src/acts/look.tsx",
+  "src/acts/stage.tsx",
+  "src/acts/scenes.tsx",
+  "src/acts/type.tsx",
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "keep_if_present": [
+  "src/brand/identity.ts",
+  "src/brand/logo.ts",
+  "src/content.ts"
+ ],
+ "remove": [
+  "src/acts/Act1.tsx",
+  "src/acts/Act2.tsx",
+  "src/acts/Act3.tsx",
+  "src/acts/Act4.tsx",
+  "src/acts/ground.tsx",
+  "src/acts/plate.tsx"
+ ],
+ "next": [
+  "update film: write the content first: node scripts/content.mjs --brief BRIEF.md --fetch --force (the people with real faces, pictures, the product's screens; read src/content.ts, keep what is true, node scripts/content.mjs --check),",
+  "  then src/update.ts, the one file the film fills: the version and the one before it; the session (one person doing one task that uses each change in turn) and its case (the names and numbers its screens show);",
+  "  2-3 changes in the order the session meets them, each one plain sentence (2-6 words, a result the user sees) with its key words (`key`), its verb, its screen's title and the moment that proves it:",
+  "  tap (an action and what it says after; with `picture`, a face, a place or the product's shot, the press opens a porthole onto it), type (a request typed and sent: about 20 characters type in macro-type inside the change's 3 s, a longer one in glass-prompt), fill (a list, or a grid of 8+ photos), count (a figure, on a `picture`) or page (a document), in the product's own words;",
+  "  the deal picks each change's scene from the house scenes that film it (src/deal.ts sceneFit, HERO_META), at least one big one, and joins two scenes on one element where it can (a send button typed to, then pressed);",
+  "  print the plan: npx tsx -e \"import { PLAN_LINE } from './src/timeline'; console.log(PLAN_LINE)\" (each change 2-4 s, a typed one 3 s, the lockup 2 s: a plan outside src/deal.ts LIMITS throws and names what to shorten; never raise a limit), and the deal: the command in template.json deal.print (PIN a slot, or SEED to re-deal);",
+  "  the type pairing: npx tsx scripts/type-deal.ts --seed \"<name>\" (fx/TypePairs), unless the brand brings its own face; the colours: the brand's in src/brand/tokens.ts, else the dealt palette (never the starter's green);",
+  "  look at the end first: node scripts/frames.mjs end, then a sheet of the whole film (--every 24), then the track (track.py fit --end auto), npm run sound and bash scripts/render.sh Film out/draft.mp4 --draft,",
+  "  then the gates: npx tsx scripts/grid-check.ts src/timeline.ts, python3 scripts/forensics.py out/draft.mp4 --cues out/cues.json, python3 scripts/look-audit.py out/draft.mp4 --look"
+ ],
+ "deal": {
+  "file": "src/deal.ts",
+  "seed": "the product's name (IDENTITY.name), or SEED in src/deal.ts; PIN chooses a slot by hand; a change's `scene` (with `why`) chooses its scene",
+  "scaffold": true,
+  "print": "npx tsx -e \"import { DEAL, DEAL_SOURCE, HEROES, LINKED, PALETTE } from './src/deal'; console.log(DEAL_SOURCE, JSON.stringify(DEAL), 'scenes', JSON.stringify(HEROES), 'joined', JSON.stringify(LINKED), 'palette', JSON.stringify(PALETTE))\""
+ },
+ "slots": {
+  "palette": {
+   "about": "the film's colours when the brand brings none: ten designed palettes, a near-black (ink-) or a white (paper-) ground with one accent (cobalt, vermilion, tangerine, azure, crimson); the brand's own palette always wins",
+   "rule": "never a tinted wash, never the starter's green, never a scene's demo colours; each scene takes the ground its picture needs, each line card the ground of its scene"
+  },
+  "hook": {
+   "pill": "the name builds centred; the version's accent pill lands beside it, the pair centred",
+   "roll": "the name with the pill beside it from the first frame; the old numerals roll up to the new",
+   "tag": "the name lands alone, slides aside, and the version cuts on in the accent at the slide's fastest",
+   "rule": "the name and the version together within the first 1.5 s, on a clean ground"
+  },
+  "voice": {
+   "whole": "the line lands whole on a focus pull",
+   "chunks": "the line rises in 2-3 phrase chunks out of their masks, a few frames apart",
+   "track": "the line lands whole as its tracking closes",
+   "rule": "one move for every line of the film, never word by word: a lone line is in and read in 1.2 s (src/deal.ts LIMITS.LINE_S); the scenes are what change"
+  },
+  "set": {
+   "line": "each change line big, a cap of 8 % of the frame's height",
+   "statement": "each change line a statement, a cap of 11 %",
+   "rule": "a line too wide for 84 % of the frame breaks onto two lines before it would shrink under a cap of 6.5 %"
+  },
+  "scenes": {
+   "porthole-line": "a press that opens a picture: a real pointer presses send at macro scale; the button drains into a porthole holding the picture while the line, giant on two lines that each land whole, parts round it",
+   "decode-title": "a press, 2-4 words: the line decodes out of a swirl of the accent on a dark dot grid; its button flies into the line and a real pointer clicks it",
+   "macro-type": "a short typed request (about 20 characters, so the change runs 3 s): the film enters as the giant pointer, already a text cursor, nears the input; the request types at macro scale with the camera on the caret, then it runs on to send (pressed here, or by the next scene's pointer)",
+   "glass-prompt": "a typed request: a dark frosted prompt box rises out of blur, light running its rims; the stage whips aside and the request types in",
+   "toast-stack": "a list: its rows land as notifications (each row's real face when it has one) and pile into a depth stack centred on the accent field, the newest sharp in front",
+   "page-fly": "a page: it rises in on a tilted plane out of a dark void and the camera dives onto its headline and travels down it",
+   "photo-river": "8+ pictures: one card pumps through them faster and faster, leaves a deck and unfolds into a row receding in depth",
+   "photo-counters": "a figure on a picture: the picture develops from a duotone in the accent while one large glass card, centred on it, counts the figure up and holds it",
+   "orbit-chips": "3+ products it works with: the line on hairline orbits, the partners' official marks landing as chips that orbit",
+   "mark-pullback": "the end, always: the mark as a solid pulls back from an extreme close-up with a roll, one snap to the lockup assembling, which keeps pushing to the last frame; the version lands under it on the bar line, the film over 2 s after the lockup forms",
+   "rule": "each change takes the first scene in the film's order that films it (src/deal.ts sceneFit), the ones its words ask for first; at least one big scene a film; where a scene hands on the very element the next takes over, the two join on a match cut"
+  }
+ }
+}

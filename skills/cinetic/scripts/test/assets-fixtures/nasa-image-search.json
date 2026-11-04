@@ -1,0 +1,103 @@
+{
+ "_shape": "the NASA Image and Video Library /search response, hand-written with the fields assets.mjs reads (not a recording)",
+ "collection": {
+  "items": [
+   {
+    "href": "https://images-assets.nasa.gov/image/example-aurora-1/collection.json",
+    "data": [
+     {
+      "nasa_id": "example-aurora-1",
+      "title": "Aurora over the polar night",
+      "description": "An aurora seen from orbit.",
+      "center": "GSFC",
+      "date_created": "2020-01-01T00:00:00Z",
+      "keywords": [
+       "aurora",
+       "Earth"
+      ],
+      "media_type": "image"
+     }
+    ],
+    "links": [
+     {
+      "href": "https://images-assets.nasa.gov/image/example-aurora-1/example-aurora-1~thumb.jpg",
+      "rel": "preview",
+      "render": "image"
+     }
+    ]
+   },
+   {
+    "href": "https://images-assets.nasa.gov/image/example-aurora-2/collection.json",
+    "data": [
+     {
+      "nasa_id": "example-aurora-2",
+      "title": "Green aurora ring",
+      "description": "The auroral oval from a weather satellite.",
+      "center": "GSFC",
+      "date_created": "2020-01-01T00:00:00Z",
+      "keywords": [
+       "aurora",
+       "satellite"
+      ],
+      "media_type": "image"
+     }
+    ],
+    "links": [
+     {
+      "href": "https://images-assets.nasa.gov/image/example-aurora-2/example-aurora-2~thumb.jpg",
+      "rel": "preview",
+      "render": "image"
+     }
+    ]
+   },
+   {
+    "href": "https://images-assets.nasa.gov/image/example-aurora-3/collection.json",
+    "data": [
+     {
+      "nasa_id": "example-aurora-3",
+      "title": "Aurora on a gas giant",
+      "description": "Auroras at the poles of a planet.",
+      "center": "GSFC",
+      "date_created": "2020-01-01T00:00:00Z",
+      "keywords": [
+       "aurora",
+       "planet"
+      ],
+      "media_type": "image"
+     }
+    ],
+    "links": [
+     {
+      "href": "https://images-assets.nasa.gov/image/example-aurora-3/example-aurora-3~thumb.jpg",
+      "rel": "preview",
+      "render": "image"
+     }
+    ]
+   },
+   {
+    "href": "https://images-assets.nasa.gov/image/example-coast-4/collection.json",
+    "data": [
+     {
+      "nasa_id": "example-coast-4",
+      "title": "Coastline at night",
+      "description": "City lights along a coast.",
+      "center": "GSFC",
+      "date_created": "2020-01-01T00:00:00Z",
+      "keywords": [
+       "Earth",
+       "night"
+      ],
+      "media_type": "image"
+     }
+    ],
+    "links": [
+     {
+      "href": "https://images-assets.nasa.gov/image/example-coast-4/example-coast-4~thumb.jpg",
+      "rel": "preview",
+      "render": "image"
+     }
+    ]
+   }
+  ]
+ }
+}

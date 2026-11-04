@@ -1,0 +1,136 @@
+{
+ "_shape": "the Commons API query for a video search (prop=imageinfo|videoinfo, viprop=derivatives), hand-written (not a recording)",
+ "query": {
+  "pages": [
+   {
+    "pageid": 3001,
+    "title": "File:Example waves on rocks.webm",
+    "index": 1,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c5/Example_waves_on_rocks.webm",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Example_waves_on_rocks.webm",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Example_waves_on_rocks.webm/1280px--Example_waves_on_rocks.webm.jpg",
+      "width": 1920,
+      "height": 1080,
+      "size": 41000000,
+      "mime": "video/webm",
+      "duration": 38.6,
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Example waves on rocks"
+       },
+       "Artist": {
+        "value": "A. Creator"
+       },
+       "LicenseShortName": {
+        "value": "CC0"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "cc0"
+       }
+      }
+     }
+    ],
+    "videoinfo": [
+     {
+      "derivatives": [
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c5/Example_waves_on_rocks.webm/Example_waves_on_rocks.webm.240p.vp9.webm?download",
+        "type": "video/webm; codecs=\"vp9, opus\"",
+        "width": 426,
+        "height": 240,
+        "bandwidth": 102240
+       },
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c5/Example_waves_on_rocks.webm/Example_waves_on_rocks.webm.360p.mpeg4.mov?download",
+        "type": "video/quicktime; codecs=\"mp4v\"",
+        "width": 640,
+        "height": 360,
+        "bandwidth": 230400
+       },
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c5/Example_waves_on_rocks.webm/Example_waves_on_rocks.webm.480p.vp9.webm?download",
+        "type": "video/webm; codecs=\"vp9, opus\"",
+        "width": 854,
+        "height": 480,
+        "bandwidth": 409920
+       },
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c5/Example_waves_on_rocks.webm/Example_waves_on_rocks.webm.1080p.vp9.webm?download",
+        "type": "video/webm; codecs=\"vp9, opus\"",
+        "width": 1920,
+        "height": 1080,
+        "bandwidth": 2073600
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "pageid": 3002,
+    "title": "File:Example archive reel.ogv",
+    "index": 2,
+    "imageinfo": [
+     {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/d6/Example_archive_reel.ogv",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Example_archive_reel.ogv",
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/Example_archive_reel.ogv/400px--Example_archive_reel.ogv.jpg",
+      "width": 400,
+      "height": 300,
+      "size": 9000000,
+      "mime": "application/ogg",
+      "duration": 120.5,
+      "extmetadata": {
+       "ObjectName": {
+        "value": "Example archive reel"
+       },
+       "Artist": {
+        "value": "A. Creator"
+       },
+       "LicenseShortName": {
+        "value": "Public domain"
+       },
+       "Restrictions": {
+        "value": ""
+       },
+       "License": {
+        "value": "pd"
+       }
+      }
+     }
+    ],
+    "videoinfo": [
+     {
+      "derivatives": [
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/d/d6/Example_archive_reel.ogv/Example_archive_reel.ogv?download",
+        "type": "video/ogg; codecs=\"theora, vorbis\"",
+        "width": 400,
+        "height": 300,
+        "bandwidth": 120000
+       },
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/d/d6/Example_archive_reel.ogv/Example_archive_reel.ogv.240p.vp9.webm?download",
+        "type": "video/webm; codecs=\"vp9, opus\"",
+        "width": 320,
+        "height": 240,
+        "bandwidth": 76800
+       },
+       {
+        "src": "https://upload.wikimedia.org/wikipedia/commons/transcoded/d/d6/Example_archive_reel.ogv/Example_archive_reel.ogv.360p.mpeg4.mov?download",
+        "type": "video/quicktime; codecs=\"mp4v\"",
+        "width": 400,
+        "height": 300,
+        "bandwidth": 120000
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

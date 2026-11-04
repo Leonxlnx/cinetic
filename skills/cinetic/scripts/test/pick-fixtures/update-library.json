@@ -1,0 +1,385 @@
+{
+ "about": "Fixture library for pick.py's update format: entries for update films, entries an update film borrows (launch, feature, sting) and entries it never draws (loop, walkthrough, vertical only).",
+ "techniques": [
+  {
+   "id": "up-opening-hook",
+   "name": "Up opening hook",
+   "category": "opening_hook",
+   "summary": "Fixture entry up-opening-hook.",
+   "recipe": "Build up-opening-hook.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "update"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam opening hook",
+   "primitive": []
+  },
+  {
+   "id": "up-transition",
+   "name": "Up transition",
+   "category": "transition",
+   "summary": "Fixture entry up-transition.",
+   "recipe": "Build up-transition.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "update"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam transition",
+   "primitive": []
+  },
+  {
+   "id": "up-camera",
+   "name": "Up camera",
+   "category": "camera",
+   "summary": "Fixture entry up-camera.",
+   "recipe": "Build up-camera.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "update"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam camera",
+   "primitive": []
+  },
+  {
+   "id": "up-typography-motion",
+   "name": "Up typography motion",
+   "category": "typography_motion",
+   "summary": "Fixture entry up-typography-motion.",
+   "recipe": "Build up-typography-motion.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "update"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam typography motion",
+   "primitive": []
+  },
+  {
+   "id": "up-ui-choreography",
+   "name": "Up ui choreography",
+   "category": "ui_choreography",
+   "summary": "Fixture entry up-ui-choreography.",
+   "recipe": "Build up-ui-choreography.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "update"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam ui choreography",
+   "primitive": []
+  },
+  {
+   "id": "up-data-and-numbers",
+   "name": "Up data and numbers",
+   "category": "data_and_numbers",
+   "summary": "Fixture entry up-data-and-numbers.",
+   "recipe": "Build up-data-and-numbers.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "update"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam data and numbers",
+   "primitive": []
+  },
+  {
+   "id": "up-product-demo",
+   "name": "Up product demo",
+   "category": "product_demo",
+   "summary": "Fixture entry up-product-demo.",
+   "recipe": "Build up-product-demo.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "update"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam product demo",
+   "primitive": []
+  },
+  {
+   "id": "up-logo-and-end-card",
+   "name": "Up logo and end card",
+   "category": "logo_and_end_card",
+   "summary": "Fixture entry up-logo-and-end-card.",
+   "recipe": "Build up-logo-and-end-card.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "update"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam logo and end card",
+   "primitive": []
+  },
+  {
+   "id": "up-color-and-light",
+   "name": "Up color and light",
+   "category": "color_and_light",
+   "summary": "Fixture entry up-color-and-light.",
+   "recipe": "Build up-color-and-light.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "update"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam color and light",
+   "primitive": []
+  },
+  {
+   "id": "up-texture-and-finish",
+   "name": "Up texture and finish",
+   "category": "texture_and_finish",
+   "summary": "Fixture entry up-texture-and-finish.",
+   "recipe": "Build up-texture-and-finish.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "update"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam texture and finish",
+   "primitive": []
+  },
+  {
+   "id": "up-layout-and-composition",
+   "name": "Up layout and composition",
+   "category": "layout_and_composition",
+   "summary": "Fixture entry up-layout-and-composition.",
+   "recipe": "Build up-layout-and-composition.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "update"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam layout and composition",
+   "primitive": []
+  },
+  {
+   "id": "up-pacing-structure",
+   "name": "Up pacing structure",
+   "category": "pacing_structure",
+   "summary": "Fixture entry up-pacing-structure.",
+   "recipe": "Build up-pacing-structure.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "update"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam pacing structure",
+   "primitive": []
+  },
+  {
+   "id": "up-micro-interaction",
+   "name": "Up micro interaction",
+   "category": "micro_interaction",
+   "summary": "Fixture entry up-micro-interaction.",
+   "recipe": "Build up-micro-interaction.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "update"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam micro interaction",
+   "primitive": []
+  },
+  {
+   "id": "up-depth-and-3d",
+   "name": "Up depth and 3d",
+   "category": "depth_and_3d",
+   "summary": "Fixture entry up-depth-and-3d.",
+   "recipe": "Build up-depth-and-3d.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "update"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam depth and 3d",
+   "primitive": []
+  },
+  {
+   "id": "up-hook-launch",
+   "name": "Up hook launch",
+   "category": "opening_hook",
+   "summary": "Fixture entry up-hook-launch.",
+   "recipe": "Build up-hook-launch.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "launch"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam opening hook",
+   "primitive": []
+  },
+  {
+   "id": "up-demo-feature",
+   "name": "Up demo feature",
+   "category": "product_demo",
+   "summary": "Fixture entry up-demo-feature.",
+   "recipe": "Build up-demo-feature.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "feature"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam product demo",
+   "primitive": []
+  },
+  {
+   "id": "up-end-sting",
+   "name": "Up end sting",
+   "category": "logo_and_end_card",
+   "summary": "Fixture entry up-end-sting.",
+   "recipe": "Build up-end-sting.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "sting"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam logo and end card",
+   "primitive": []
+  },
+  {
+   "id": "up-hook-loop-only",
+   "name": "Up hook loop only",
+   "category": "opening_hook",
+   "summary": "Fixture entry up-hook-loop-only.",
+   "recipe": "Build up-hook-loop-only.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "loop"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam opening hook",
+   "primitive": []
+  },
+  {
+   "id": "up-demo-walkthrough-only",
+   "name": "Up demo walkthrough only",
+   "category": "product_demo",
+   "summary": "Fixture entry up-demo-walkthrough-only.",
+   "recipe": "Build up-demo-walkthrough-only.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "walkthrough"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam product demo",
+   "primitive": []
+  },
+  {
+   "id": "up-end-vertical-only",
+   "name": "Up end vertical only",
+   "category": "logo_and_end_card",
+   "summary": "Fixture entry up-end-vertical-only.",
+   "recipe": "Build up-end-vertical-only.",
+   "timing": "12 f in, 18 f hold.",
+   "use_when": "Tests.",
+   "avoid_when": "Never in a real film.",
+   "formats": [
+    "vertical"
+   ],
+   "energy": "any",
+   "role": "workhorse",
+   "ban_safe": true,
+   "weight": 4,
+   "family": "Fam logo and end card",
+   "primitive": []
+  }
+ ]
+}

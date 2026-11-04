@@ -3,24 +3,47 @@
 #
 # Copies assets/remotion-starter (or assets/hyperframes-starter) into <dir>, sets the frame rate,
 # tempo, pace, size and name, copies every cinetic script into <dir>/scripts so the project runs on
-# its own, then installs dependencies (or symlinks an existing node_modules with --link-modules).
+# its own, then installs dependencies (or symlinks an existing node_modules with --link-modules) and
+# deals the type pairing from the name (scripts/type-deal.ts). The work runs in scripts/new-film.mjs,
+# one node process per stage, so a scaffold takes seconds even on a busy laptop.
 #
 # Usage:
-#   bash scripts/new-film.sh <dir> [--engine remotion|hyperframes] [--fps 60] [--bpm N]
-#                            [--pace calm|crisp] [--size 1920x1080] [--name my-film]
+#   bash scripts/new-film.sh <dir> [--engine remotion|hyperframes] [--fps 30] [--bpm N]
+#                            [--pace calm|crisp] [--type calm|bold] [--size 1920x1080] [--name "Product"] [--mood m]
 #                            [--link-modules <node_modules>]
 #                            [--font <name>]... [--browser <chromium path>] [--no-install] [--force]
+#                            [--format launch|update] [--template <name>] [--brand <kit folder or file>]... [--like <clip>]
+#                            [--music <track file> --title T --artist A --source S --page URL --licence L
+#                             --seen-quote Q --seen-url URL --ai-generated no --vocals no [--credit C]
+#                             [--file-url URL] [--content-id X] [--certificate C] [--modifications M]
+#                             [--profile calm|crisp|punchy] | --music <file> --record <licence.json>]
 #
-#   --fps, --bpm   one beat must be a whole number of frames (60*fps/bpm). At 60 fps:
+#   --fps, --bpm   30 fps by default (half the frames of 60 to render; keep sharp moves under about
+#                  25 px a frame at 1080p, or render the master with --blur); --fps 60 for a film of
+#                  fast camera travel or scrolling UI. One beat must be a whole number of frames
+#                  (60*fps/bpm). At 30 fps: 90 -> 20 f, 100 -> 18, 120 -> 15, 150 -> 12; at 60 fps
 #                  90 -> 40 f, 100 -> 36, 120 -> 30, 144 -> 25, 150 -> 24. Without --bpm the
-#                  starter keeps its own tempo (Remotion 100, HyperFrames 120), or 120 with
-#                  --pace crisp. The project's audio/score.json gets the same bpm.
-#   --pace         calm (default): text arrives as short fragments that take turns with the
-#                  picture and holds about 1-1.5 s; crisp: the denser launch-film tempo. Sets
+#                  starter keeps its own 120 BPM, a placeholder until track.py grid writes the
+#                  track's grid; at an fps where 120 gives no whole beat (25 fps) the nearest tempo
+#                  that does (125). A bpm in audio/score.json follows it.
+#   --pace         calm (default): the script's lines arrive one at a time with reading holds of
+#                  about 1-1.5 s between picture beats; crisp: the denser launch-film tempo. Sets
 #                  PACE_NAME (src/timeline.ts, or motion.js), which the components, grid-check
 #                  and lint-film read.
+#   --type         the type family (lib/look.ts TYPE_LOOK): calm, the starter's (small airy sentence lines at the
+#                  face's own letter fit), or bold (big semibold lines, tracking tightening with size). Default: the
+#                  template's type_family (template.json), else calm. scripts/type-family.mjs writes TYPE_FAMILY, the
+#                  six roles of TYPE and the FACES weights into src/brand/tokens.ts; run it later to switch.
+#                  Remotion only.
 #   --size         WxH, e.g. 1920x1080, 1080x1920 (9:16), 1080x1080. The demo lays out from the short side.
-#   --engine       remotion (default): sets FPS/BPM/W/H in src/timeline.ts. hyperframes: sets them in
+#   --name         the product's name as it is written: the package name, and in a template the name slot
+#                  (src/brand/identity.ts, which deals the film and sets its name), with or without --brand.
+#                  Give it here: it is written first, so the type pairing and the template's deal follow it
+#                  (without it they follow the folder's name).
+#   --mood         the type pairing's mood (type-deal.ts --mood: calm, technical, friendly, editorial, bold,
+#                  consumer, finance, creative, ai). Without --brand the pairing is dealt from the name and
+#                  written into src/brand/tokens.ts; npx tsx scripts/type-deal.ts --pair <id> changes it.
+#   --engine      remotion (default): sets FPS/BPM/W/H in src/timeline.ts. hyperframes: sets them in
 #                  motion.js and rewrites index.html's root data-fps/-width/-height/-duration (TOTAL/FPS),
 #                  viewport and html/body size to match. Either way the starter's brand (palette,
 #                  typeface, mark, name) is marked cinetic:placeholder and lint-film.mjs fails
@@ -34,195 +57,84 @@
 #   --browser      bake a Chromium/headless-shell path into remotion.config.ts (env REMOTION_BROWSER
 #                  or CHROMIUM_PATH at render time also works, and wins).
 #   --force        allow a non-empty <dir> (starter files overwrite same-named files).
+#   --format       launch (default, the main case, 15-45 s): the launch-simple template (a line alone in the
+#                  middle of a clean ground, the product acting, the next line, the product again, the centred
+#                  lockup built from the last picture; the agent writes src/launch.ts and src/product.tsx, the
+#                  timeline fits every beat to the track; --template none keeps the starter's own acts; the
+#                  HyperFrames starter has no template) or update: a 15-23 s
+#                  "vX is out" film laid over the starter from assets/templates/update (src/update.ts holds
+#                  the version and 2-4 changes; a hook on the version, one act per change shown as a product
+#                  moment, the payoff, the end card with the version). update defaults to --pace crisp and
+#                  the template's 120 BPM. Remotion only. The same as --template update.
+#   --template     a film template from assets/templates/<name> laid over the starter: its timeline, acts,
+#                  film and sound (template.json lists the files it copies and the starter files it removes;
+#                  its pace and tempo become the defaults). launch-simple (the default launch: a line, a
+#                  picture, a line, a picture, the lockup), none (the starter's own acts), update (a "vX is out"
+#                  film), ui-walkthrough (a
+#                  product's flow in steps: the promise, the input becoming the output, proof, a claim, then
+#                  input -> the product reads -> insight -> choice -> output, the end card), capability-reel
+#                  (a launch close: a ring of sources, one real record, a statement, a capability ticker, the
+#                  big claim on the accent, a transition out of its full stop, the end card), camera-teaser (a
+#                  dark teaser where the camera is the animator: one layout per shot under camPath, whips with a
+#                  flash frame, a launch, code streaming, cards fanning, a modal, the stages, comets onto the
+#                  mark), prompt-run (a
+#                  request in, the work in steps, the result out: a pill among the tools, an iris onto the request
+#                  box, the click, the steps, the row becoming the result), social-ad (a 15 s
+#                  ad: the opener built word by word onto a pile of pictures, the mark spinning in, a wall round
+#                  the claim, two rivers of pictures, two imperatives, the lockup) and type-explainer
+#                  (one short sentence at a time on a white page: the name as a giant word, what it is said at
+#                  the pace of speech, a picture inside a line that becomes the shot, one soft wipe, the mark as
+#                  the hub of the product's parts, the close). A template keeps its own tempo (template.json
+#                  bpm) unless --bpm is given. Remotion only.
+#   --brand        a supplied brand kit (a folder, or files: logo SVG or PNG, colours, licensed fonts,
+#                  screenshots, product photos): scripts/brand.py writes brand/brand.json, the colour and type
+#                  roles in src/brand/tokens.ts (supplied colours marked cinetic:brand-supplied), the logo's
+#                  parts in src/brand/logo.ts and the screenshots into public/brand/; a Google font name in the
+#                  kit is vendored with add-font.mjs. With --name the product's name goes to src/brand/identity.ts.
+#                  Then deal the direction with: node scripts/py.mjs scripts/deck.py ... --brand brand/brand.json
+#   --like         a clip the user supplies to borrow grammar from (never content): scripts/like.py measures it
+#                  into out/like.json (grammar-score.mjs --target) and out/LIKE.md (the rules); the finished
+#                  film is checked with: node scripts/py.mjs scripts/like.py guard --film out/film.mp4 --clip <clip>.
+#                  A clip it cannot measure ends the run with exit 1 (the project is made; measure it again).
+#   --music        a film cut to a licensed, human-made, instrumental track (references/music.md): the file is
+#                  copied into <dir>/audio/music/ (git-ignored; never committed), its licence record written
+#                  (scripts/audio/track.py add with the flags above: the licence as read on the item's own page
+#                  now, never from memory, --ai-generated and --vocals included: the gate refuses a record that
+#                  leaves either unknown, so the scaffold asks for both before it starts; or --record, an existing
+#                  record for the same file), the track
+#                  analysed (track.py analyze; an analysis of the same file beside it, <name>.track.json,
+#                  is reused), the launch kit set up (kit.py init --preset launch, with earshot 0.4+) and
+#                  audio/score.json pointed at the track. The tempo comes from the track, so the whole-beat
+#                  check below is skipped. Then: track.py edit, track.py grid (printed).
+#                  Python (every step here): $PYTHON, else the interpreter scripts/py.mjs picks (python3, python,
+#                  then py -3 on Windows: the first 3.10+ that imports numpy); the steps need numpy, scipy,
+#                  soundfile, librosa and ffmpeg. node scripts/py.mjs --which prints the one it uses.
+#   --no-analyze   with --music: leave the analysis (the longest step) for its own job; the command is
+#                  printed. The key in audio/score.json is set when the analysis is there.
+#   --profile      with --music: the tempo prior the beat tracker starts from (track.py analyze --profile):
+#                  calm 100 BPM, crisp 120 (the default), punchy 128.
 #
 # Exit codes: 0 created, 1 bad arguments or a failed step (the message says which).
 set -euo pipefail
 
 usage() { sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; }
 die() { echo "new-film: $*" >&2; exit 1; }
+for a in "$@"; do case "$a" in -h|--help) usage; exit 0 ;; esac; done
 
-SKILL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FONTS=()
-DIR=""; ENGINE=remotion; FPS=60; BPM=""; PACE=""; SIZE=1920x1080; NAME=""; LINK=""; BROWSER="${CHROMIUM_PATH:-}"; INSTALL=1; FORCE=0
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    -h|--help) usage; exit 0 ;;
-    --engine) ENGINE="${2:?--engine needs a value}"; shift 2 ;;
-    --fps) FPS="${2:?--fps needs a value}"; shift 2 ;;
-    --bpm) BPM="${2:?--bpm needs a value}"; shift 2 ;;
-    --pace) PACE="${2:?--pace needs calm or crisp}"; shift 2 ;;
-    --size) SIZE="${2:?--size needs a value}"; shift 2 ;;
-    --name) NAME="${2:?--name needs a value}"; shift 2 ;;
-    --link-modules) LINK="${2:?--link-modules needs a path}"; shift 2 ;;
-    --browser) BROWSER="${2:?--browser needs a path}"; shift 2 ;;
-    --font) FONTS+=("${2:?--font needs a family name or package}"); shift 2 ;;
-    --no-install) INSTALL=0; shift ;;
-    --force) FORCE=1; shift ;;
-    -*) die "unknown option $1 (see --help)" ;;
-    *) [[ -z "$DIR" ]] || die "one target directory only (got '$DIR' and '$1')"; DIR="$1"; shift ;;
-  esac
-done
-
-[[ -n "$DIR" ]] || { usage; die "missing <dir>"; }
-[[ "$ENGINE" == remotion || "$ENGINE" == hyperframes ]] || die "--engine must be remotion or hyperframes"
-[[ "$FPS" =~ ^[0-9]+$ && "$FPS" -gt 0 ]] || die "--fps must be a positive integer"
-[[ -z "$PACE" || "$PACE" == calm || "$PACE" == crisp ]] || die "--pace must be calm or crisp"
-SRC="$SKILL/assets/$ENGINE-starter"
-[[ -d "$SRC" ]] || die "starter not found: $SRC"
-if [[ -z "$BPM" ]]; then
-  # the starter's own tempo, unless the pace asks for the crisp one
-  GRID="$SRC/src/timeline.ts"; [[ "$ENGINE" == hyperframes ]] && GRID="$SRC/motion.js"
-  BPM=$(sed -nE 's/^[[:space:]]*(export )?const BPM = ([0-9.]+);.*/\2/p' "$GRID" | head -n 1)
-  [[ "$PACE" == crisp ]] && BPM=120
-  [[ -n "$BPM" ]] || die "could not read BPM from $GRID; pass --bpm"
-fi
-[[ "$BPM" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "--bpm must be a number"
-[[ "$SIZE" =~ ^([0-9]+)x([0-9]+)$ ]] || die "--size must look like 1920x1080"
-W="${BASH_REMATCH[1]}"; H="${BASH_REMATCH[2]}"
-(( W % 2 == 0 && H % 2 == 0 )) || die "--size must be even in both dimensions (yuv420p needs it)"
-
-# The whole system assumes a beat is a whole number of frames: cues on the grid, sound on the frame.
-if ! node -e "const b=60*$FPS/$BPM; process.exit(Math.abs(b-Math.round(b))<1e-9?0:1)"; then
-  OK=$(node -e "const r=[];for(let b=60;b<=200;b++){const f=60*$FPS/b;if(Number.isInteger(f))r.push(b+' ('+f+' f)')}console.log(r.join(', '))")
-  die "at $FPS fps, $BPM BPM gives a beat of $(node -e "console.log((60*$FPS/$BPM).toFixed(3))") frames. Pick a BPM with a whole beat: $OK"
-fi
-
-if [[ -e "$DIR" ]]; then
-  [[ -d "$DIR" ]] || die "$DIR exists and is not a directory"
-  if [[ -n "$(ls -A "$DIR" 2>/dev/null)" && "$FORCE" != 1 ]]; then die "$DIR is not empty (use --force to copy into it anyway)"; fi
-fi
-[[ -z "$NAME" ]] && NAME="$(basename "$DIR")"
-PKG=$(echo "$NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^[-._]+//; s/-+$//')
-[[ -n "$PKG" ]] || PKG=film
-
-mkdir -p "$DIR"
-DIR="$(cd "$DIR" && pwd)"
-# Copy the starter, leaving out anything installed or rendered.
-(cd "$SRC" && tar --exclude=node_modules --exclude=out --exclude=__pycache__ -cf - .) | (cd "$DIR" && tar -xf -)
-
-# Substitute a `const NAME = value;` line; fail loudly if the starter no longer has it.
-set_const() { # file name value
-  local file="$1" name="$2" value="$3"
-  grep -Eq "^(export )?const $name(: [^=]+)? = [^;]+;" "$file" || die "$file has no 'const $name = ...;' line to set"
-  sed -i.bak -E "s|^((export )?const $name(: [^=]+)? = )[^;]+;|\1$value;|" "$file" && rm -f "$file.bak"
-}
-
-if [[ "$ENGINE" == remotion ]]; then
-  TL="$DIR/src/timeline.ts"
-  set_const "$TL" FPS "$FPS"; set_const "$TL" BPM "$BPM"; set_const "$TL" W "$W"; set_const "$TL" H "$H"
-  [[ -n "$PACE" ]] && set_const "$TL" PACE_NAME "'$PACE'"
-  sed -i.bak -E "s|\"name\": \"[^\"]*\"|\"name\": \"$PKG\"|; s|[0-9]+x[0-9]+@[0-9]+|${W}x${H}@${FPS}|g" "$DIR/package.json" && rm -f "$DIR/package.json.bak"
-  if [[ -n "$BROWSER" ]]; then
-    [[ -x "$BROWSER" ]] || echo "new-film: warning: --browser $BROWSER is not an executable file here" >&2
-    set_const "$DIR/remotion.config.ts" PINNED_BROWSER "'$BROWSER'"
-  fi
-else
-  # HyperFrames: the grid lives in motion.js (FPS, BPM, W, H); index.html repeats the size, fps and
-  # length on the root element, the viewport meta and the html/body box. Set all of them, then
-  # derive data-duration from timeline.js (TOTAL / FPS) so the render neither cuts nor freezes.
-  MJ="$DIR/motion.js"
-  [[ -f "$MJ" && -f "$DIR/timeline.js" && -f "$DIR/index.html" ]] || die "HyperFrames starter needs motion.js, timeline.js and index.html"
-  for kv in "FPS=$FPS" "BPM=$BPM" "W=$W" "H=$H" ${PACE:+"PACE_NAME='$PACE'"}; do
-    k="${kv%%=*}"; v="${kv#*=}"
-    grep -Eq "^[[:space:]]*const $k = [^;]+;" "$MJ" || die "motion.js has no 'const $k = ...;' line to set"
-    sed -i.bak -E "s|^([[:space:]]*const $k = )[^;]+;|\1$v;|" "$MJ" && rm -f "$MJ.bak"
-  done
-  DIR="$DIR" W="$W" H="$H" node - <<'JS' || die "could not update index.html from motion.js/timeline.js"
-const fs = require('fs'), path = require('path'), vm = require('vm');
-const dir = process.env.DIR, W = +process.env.W, H = +process.env.H;
-const ctx = {}; ctx.window = ctx; vm.createContext(ctx);
-for (const f of ['motion.js', 'timeline.js']) vm.runInContext(fs.readFileSync(path.join(dir, f), 'utf8'), ctx, { filename: f });
-const { FPS } = ctx.MOTION, { TOTAL } = ctx.FILM;
-const dur = +(TOTAL / FPS).toFixed(6);
-const file = path.join(dir, 'index.html');
-let html = fs.readFileSync(file, 'utf8');
-const root = (html.match(/<[a-z][^>]*\bdata-composition-id\s*=[^>]*>/is) || [])[0];
-if (!root) throw new Error('index.html: no element with data-composition-id');
-const old = (root.match(/\bdata-duration\s*=\s*"([^"]*)"/) || [])[1];
-const setAttr = (tag, name, v) => (new RegExp(`\\b${name}\\s*=\\s*"[^"]*"`).test(tag) ? tag.replace(new RegExp(`\\b${name}\\s*=\\s*"[^"]*"`), `${name}="${v}"`) : tag.replace(/\s*\/?>$/, ` ${name}="${v}">`));
-let tag = root;
-for (const [n, v] of [['data-fps', FPS], ['data-width', W], ['data-height', H], ['data-duration', dur]]) tag = setAttr(tag, n, v);
-html = html.replace(root, tag);
-// clips that ran the whole film (same data-duration as the old root) keep running the whole film
-if (old !== undefined) html = html.replace(new RegExp(`(\\bdata-duration\\s*=\\s*")${old.replace('.', '\\.')}(")`, 'g'), `$1${dur}$2`);
-html = html.replace(/(<meta\s+name="viewport"\s+content=")[^"]*(")/i, `$1width=${W}, height=${H}$2`);
-html = html.replace(/(html,\s*body\s*\{[^}]*?\bwidth:\s*)\d+px/, `$1${W}px`).replace(/(html,\s*body\s*\{[^}]*?\bheight:\s*)\d+px/, `$1${H}px`);
-fs.writeFileSync(file, html);
-console.log(`new-film: index.html root ${W}x${H} @ ${FPS} fps, data-duration ${dur} s (TOTAL ${TOTAL} f)`);
-JS
-  [[ -f "$DIR/package.json" ]] && sed -i.bak -E "s|\"name\": \"[^\"]*\"|\"name\": \"$PKG\"|" "$DIR/package.json" && rm -f "$DIR/package.json.bak"
-fi
-
-# score.py refuses a score whose bpm differs from the timeline's: keep audio/score.json on the grid.
-if [[ -f "$DIR/audio/score.json" ]]; then
-  sed -i.bak -E "s|(\"bpm\"[[:space:]]*:[[:space:]]*)[0-9.]+|\1$BPM|" "$DIR/audio/score.json" && rm -f "$DIR/audio/score.json.bak"
-fi
-
+# The work is scripts/new-film.mjs: one node process per stage. A shell call (a subshell, sed, grep, node -e) costs one
+# to four seconds on a busy Windows laptop, and the scaffold made about a hundred of them; it now makes six.
+case "${BASH_SOURCE[0]}" in */*) HERE="${BASH_SOURCE[0]%/*}" ;; *) HERE=. ;; esac
+cd "$HERE/.." || die "cannot find the skill folder from $HERE"
+SKILL=$PWD
+cd "$OLDPWD" || die "cannot return to $OLDPWD"
+ST="${TMPDIR:-/tmp}/cinetic-new-film.$$"
+export CINETIC_NF_T0="${EPOCHREALTIME:-}"
+# stage 1: check the arguments, copy the starter and the template, the name, film.json, the grid, the data files
+node "$SKILL/scripts/new-film.mjs" --stage 1 --state "$ST" "$@"
+. "$ST"   # DIR, the project folder stage 1 made
 # The project carries its own copy of every script, so npm scripts use local paths (not the
 # skill's own tests in scripts/test/).
-mkdir -p "$DIR/scripts"
 (cd "$SKILL/scripts" && tar --exclude=__pycache__ --exclude='*.pyc' --exclude=./test -cf - .) | (cd "$DIR/scripts" && tar -xf -)
-chmod +x "$DIR"/scripts/*.sh 2>/dev/null || true
-# pick.py draws from the technique library; the project keeps a copy so it runs from here too
-LIB="$SKILL/assets/library/techniques.json"; [[ -f "$LIB" ]] || LIB="$SKILL/scripts/library/techniques.json"
-if [[ -f "$LIB" ]]; then mkdir -p "$DIR/scripts/library" && cp "$LIB" "$DIR/scripts/library/"; fi
-
-if [[ -n "$LINK" ]]; then
-  [[ -d "$LINK" ]] || die "--link-modules: $LINK is not a directory"
-  rm -rf "$DIR/node_modules"
-  TARGET="$(cd "$LINK" && pwd)"
-  case "$(uname -s)" in
-    MINGW*|MSYS*|CYGWIN*)
-      # ln -s copies here (hundreds of MB) unless Windows symlinks are enabled: make a junction,
-      # which needs no rights and acts like a symlink for node and npm.
-      MSYS_NO_PATHCONV=1 cmd /c mklink /J "$(cygpath -w "$DIR/node_modules")" "$(cygpath -w "$TARGET")" >/dev/null \
-        || die "--link-modules: could not make a junction node_modules -> $TARGET (cmd /c mklink /J)"
-      ;;
-    *) ln -s "$TARGET" "$DIR/node_modules" ;;
-  esac
-  [[ -d "$DIR/node_modules" ]] || die "--link-modules: $DIR/node_modules was not created"
-  echo "new-film: linked node_modules -> $LINK"
-  # npm's postinstall does not run for a linked folder; run the starter's setup step directly
-  if [[ -f "$DIR/setup.mjs" ]]; then
-    (cd "$DIR" && node setup.mjs) || echo "new-film: warning: setup.mjs could not copy its files from the linked node_modules (npm install in $DIR fixes it)" >&2
-  fi
-elif [[ "$INSTALL" == 1 && -f "$DIR/package.json" ]]; then
-  (cd "$DIR" && npm install --no-audit --no-fund) || die "npm install failed in $DIR (rerun it there, or use --link-modules)"
-fi
-
-for font in ${FONTS[@]+"${FONTS[@]}"}; do
-  node "$DIR/scripts/add-font.mjs" "$font" --dir "$DIR" || die "--font $font: could not vendor it (see above)"
-done
-
-BEAT=$(node -e "console.log(60*$FPS/$BPM)")
-echo "new-film: created $DIR ($ENGINE, ${W}x${H} @ $FPS fps, $BPM BPM = $BEAT f per beat${PACE:+, $PACE pace})"
-if [[ "$ENGINE" == remotion ]]; then
-  cat <<EOF
-next:
-  cd $DIR
-  npm run check             # tsc, lint-film, grid-check: fails on purpose until the placeholder brand
-                            # (palette, typeface, mark and name: cinetic:placeholder in src/brand and
-                            # COPY) is replaced; see brand-and-color.md
-  npm run stills            # style frames in out/stills/ - look at them
-  npm run studio            # iterate act by act (Acts folder)
-  npm run cues && npm run kit && npm run audio && npm run render:preview
-  npm run listen            # earshot's ears on the soundtrack: out/qa/listen.json + sound_sheet.png
-EOF
-else
-  cat <<EOF
-next:
-  cd $DIR
-  node scripts/lint-film.mjs .   # cinetic bans; fails on purpose until the placeholder palette
-                                 # and font in index.html are replaced (references/brand-and-color.md)
-  node scripts/grid-check.ts timeline.js   # the grid, the reads and the text flow (Node 22.18+;
-                                           # else npx -y tsx scripts/grid-check.ts timeline.js)
-  npm run preview                # HyperFrames Studio
-  npm run cues && npm run kit && npm run audio && npm run render:preview   # then: npm run render
-  npm run listen                 # earshot's ears on the soundtrack: out/qa/listen.json + sound_sheet.png
-EOF
-fi
-# the effects come from earshot's kit (audio/kit.json): say now whether this machine can render it
-if [[ -f "$DIR/audio/kit.json" ]] && command -v python3 >/dev/null; then
-  (cd "$DIR" && python3 scripts/audio/kit.py where 2>/dev/null | tail -n 1 | sed 's/^kit:/sound:/') || true
-fi
+# stage 2: node_modules, fonts, the type family and the pairing dealt from the name, a brand kit, a clip, the music,
+# then the next steps
+exec node "$SKILL/scripts/new-film.mjs" --stage 2 --state "$ST" "$@"

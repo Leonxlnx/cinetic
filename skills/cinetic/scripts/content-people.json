@@ -1,0 +1,469 @@
+{
+ "about": "The cast: open-licence portraits for the people inside product screens (a commenter, a customer, a teammate, a channel owner). Each is a Burst photo (Shopify's free stock photos; licence \"Burst Some Rights Reserved\": free for commercial use, no credit needed; never sold as a file, never compiled into a similar collection; recognisable people stay in a good light and never endorse anything by name). scripts/content.mjs downloads the ones a film casts from the CDN, crops each to its face (crop: x, y, side as shares of the photo's width and height) into public/people/<id>.jpg at 512 px, and writes the licence record into assets/licences.json. p: how the person presents (it picks a fitting first name); age: adult or older. A person in a screen is a user of the product, never a named testimonial or a quote presented as real.",
+ "licence": {
+  "id": "burst",
+  "name": "Burst Some Rights Reserved",
+  "url": "https://www.shopify.com/stock-photos/licenses/shopify-some-rights-reserved",
+  "credit": false,
+  "checked": "2026-11-01"
+ },
+ "cdn": "https://burst.shopifycdn.com/photos/{slug}.jpg?width={width}&format=pjpg&exif=0&iptc=0",
+ "page": "https://www.shopify.com/stock-photos/photos/{slug}",
+ "people": [
+  {
+   "id": "p01",
+   "slug": "close-up-portrait-of-young-man-in-hoodie",
+   "p": "m",
+   "age": "adult",
+   "crop": [
+    0.0,
+    0.1783,
+    1.0,
+    0.6667
+   ],
+   "aspect": 0.6667
+  },
+  {
+   "id": "p02",
+   "slug": "close-up-portrait-of-young-man",
+   "p": "m",
+   "age": "adult",
+   "crop": [
+    0.0,
+    0.1273,
+    1.0,
+    0.8351
+   ],
+   "aspect": 0.8351
+  },
+  {
+   "id": "p03",
+   "slug": "portrait-rugged-young-man",
+   "p": "m",
+   "age": "adult",
+   "crop": [
+    0.22,
+    0.0,
+    0.5625,
+    1.0
+   ],
+   "aspect": 1.7778
+  },
+  {
+   "id": "p04",
+   "slug": "business-woman-morning-in-the-city",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.0575,
+    0.1018,
+    0.8675,
+    0.6196
+   ],
+   "aspect": 0.7143
+  },
+  {
+   "id": "p05",
+   "slug": "young-man-smirking",
+   "p": "m",
+   "age": "adult",
+   "crop": [
+    0.06,
+    0.0,
+    0.6675,
+    1.0
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p06",
+   "slug": "side-grin-on-man",
+   "p": "m",
+   "age": "older",
+   "crop": [
+    0.125,
+    0.1867,
+    0.7625,
+    0.5083
+   ],
+   "aspect": 0.6667
+  },
+  {
+   "id": "p07",
+   "slug": "business-woman-looking-to-the-side-portrait",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.1675,
+    0.0,
+    0.6675,
+    1.0
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p08",
+   "slug": "woman-dressed-in-purple-smiling",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.15,
+    0.1667,
+    0.6725,
+    0.4483
+   ],
+   "aspect": 0.6667
+  },
+  {
+   "id": "p09",
+   "slug": "portrait-of-male-model",
+   "p": "m",
+   "age": "adult",
+   "crop": [
+    0.33,
+    0.0337,
+    0.625,
+    0.9363
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p10",
+   "slug": "portrait-of-a-woman-in-a-blue-and-white-suit",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.1875,
+    0.15,
+    0.6025,
+    0.4017
+   ],
+   "aspect": 0.6667
+  },
+  {
+   "id": "p11",
+   "slug": "smiling-model-surrounded-by-plants",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.225,
+    0.1683,
+    0.5975,
+    0.3983
+   ],
+   "aspect": 0.6667
+  },
+  {
+   "id": "p12",
+   "slug": "portrait-young-man-smiling",
+   "p": "m",
+   "age": "adult",
+   "crop": [
+    0.1725,
+    0.0,
+    0.5675,
+    0.8502
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p13",
+   "slug": "business-woman-vertical-crop-portrait",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.25,
+    0.1233,
+    0.5625,
+    0.375
+   ],
+   "aspect": 0.6667
+  },
+  {
+   "id": "p14",
+   "slug": "woman-with-braids-looks-off-to-horizon",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.3275,
+    0.1086,
+    0.5325,
+    0.7978
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p15",
+   "slug": "professional-man-portrait",
+   "p": "m",
+   "age": "adult",
+   "crop": [
+    0.37,
+    0.0637,
+    0.515,
+    0.7715
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p16",
+   "slug": "smiling-man-in-blue",
+   "p": "m",
+   "age": "adult",
+   "crop": [
+    0.235,
+    0.0637,
+    0.4925,
+    0.7378
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p17",
+   "slug": "casual-urban-menswear",
+   "p": "m",
+   "age": "adult",
+   "crop": [
+    0.195,
+    0.0717,
+    0.4475,
+    0.2983
+   ],
+   "aspect": 0.6667
+  },
+  {
+   "id": "p18",
+   "slug": "woman-with-arms-crossed-smiling",
+   "p": "f",
+   "age": "older",
+   "crop": [
+    0.375,
+    0.0449,
+    0.4125,
+    0.618
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p19",
+   "slug": "older-man-looking",
+   "p": "m",
+   "age": "older",
+   "crop": [
+    0.135,
+    0.1049,
+    0.4025,
+    0.603
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p20",
+   "slug": "business-woman-portrait",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.225,
+    0.1311,
+    0.385,
+    0.5768
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p21",
+   "slug": "grey-woman-on-steps",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.365,
+    0.2117,
+    0.3775,
+    0.2517
+   ],
+   "aspect": 0.6667
+  },
+  {
+   "id": "p22",
+   "slug": "business-woman-smiling-in-office",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.3925,
+    0.1086,
+    0.3725,
+    0.5581
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p23",
+   "slug": "a-woman-in-a-plain-green-shirt-against-a-blue-backdrop",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.5,
+    0.1322,
+    0.3675,
+    0.6074
+   ],
+   "aspect": 1.6529
+  },
+  {
+   "id": "p24",
+   "slug": "senior-woman-in-park",
+   "p": "f",
+   "age": "older",
+   "crop": [
+    0.4375,
+    0.2509,
+    0.3275,
+    0.4906
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p25",
+   "slug": "happy-woman-at-work",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.23,
+    0.1199,
+    0.31,
+    0.4644
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p26",
+   "slug": "business-woman-laptop-meeting",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.275,
+    0.0936,
+    0.2975,
+    0.4457
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p27",
+   "slug": "smiling-woman-poses",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.475,
+    0.0187,
+    0.2925,
+    0.4382
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p28",
+   "slug": "young-man-working-at-startup",
+   "p": "m",
+   "age": "adult",
+   "crop": [
+    0.2425,
+    0.1049,
+    0.285,
+    0.427
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p29",
+   "slug": "professional-woman",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.3,
+    0.1423,
+    0.28,
+    0.4195
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p30",
+   "slug": "professional-man-smiling",
+   "p": "m",
+   "age": "adult",
+   "crop": [
+    0.2525,
+    0.1124,
+    0.275,
+    0.412
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p31",
+   "slug": "professional-smiling-woman",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.2775,
+    0.1985,
+    0.275,
+    0.412
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p32",
+   "slug": "business-woman-in-office-smiles",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.17,
+    0.2172,
+    0.2625,
+    0.3933
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p33",
+   "slug": "man-in-blue-jacket",
+   "p": "m",
+   "age": "adult",
+   "crop": [
+    0.225,
+    0.0712,
+    0.2575,
+    0.3858
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p34",
+   "slug": "smiling-woman-portrait",
+   "p": "f",
+   "age": "adult",
+   "crop": [
+    0.32,
+    0.2022,
+    0.2525,
+    0.3783
+   ],
+   "aspect": 1.4981
+  },
+  {
+   "id": "p35",
+   "slug": "smiling-man-and-yellow-door",
+   "p": "m",
+   "age": "adult",
+   "crop": [
+    0.37,
+    0.2659,
+    0.2525,
+    0.3783
+   ],
+   "aspect": 1.4981
+  }
+ ]
+}

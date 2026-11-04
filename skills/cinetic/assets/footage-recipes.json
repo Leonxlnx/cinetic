@@ -1,0 +1,4926 @@
+{
+ "about": "Footage recipes for the first picture beat: the product's core transformation shown literally (input -> output), with a real person where the input is human. Each input: the shot, its framing, the screen that takes the UI plate built in code, the searches (footage first, then photos) and the picks, clips and photos looked at on a contact sheet and kept. An input without picks carries its searches only: recipe runs them at once. Read with: node scripts/assets.mjs recipe \"<input>\"; the compositing is in references/imagery.md, \"Show the core action\".",
+ "version": 1,
+ "checked": "2026-10-30",
+ "licences": "every pick needs no credit (coverr: the Coverr licence for free clips; mixkit-video: the Mixkit Stock Video Free License; burst: Burst Some Rights Reserved; cc0). get reads each licence again at its source before it downloads.",
+ "inputs": [
+  {
+   "id": "speak-phone",
+   "label": "speaking into a phone",
+   "aliases": [
+    "voice memo",
+    "voice note",
+    "voice message",
+    "dictation",
+    "dictate",
+    "speech to text",
+    "talking to a phone",
+    "voice recording",
+    "phone call"
+   ],
+   "apps": [
+    "voice notes",
+    "transcription",
+    "dictation",
+    "voice assistants",
+    "voice messaging",
+    "language learning",
+    "meeting recorders"
+   ],
+   "action": "a person speaks into a phone held near the mouth -> the words land as text, a note or a reply in the app",
+   "framing": [
+    "face in profile or three-quarter, the phone a hand from the mouth, lips moving: the voice must read with the sound off",
+    "hands close-up, the phone held low with the screen toward the lens: the words appear on it",
+    "walking outdoors with the phone at the mouth (a voice message on the go), the street soft behind"
+   ],
+   "screen": "phone: in a hands shot with the screen toward the lens, pin the UI plate on the screen (quadMatrix on its four corners); where the screen faces away or moves fast, cut to the kit Phone at the same angle with the UI receiving the input",
+   "queries": [
+    {
+     "q": "voice message",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "talking on phone",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "talking on the phone",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "talking on phone",
+     "kind": "photo",
+     "source": "isorepublic"
+    },
+    {
+     "q": "man on phone",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "coverr:AuTL2emwji",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Close-Up of Woman Recording Voice Message on Smartphone",
+     "shows": "close profile: a woman records a voice message, the phone at her mouth",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/casual-chat-on-smartphone-voice-message",
+     "thumb": "https://cdn.coverr.co/videos/coverr-casual-chat-on-smartphone-voice-message/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-casual-chat-on-smartphone-voice-message/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 13
+    },
+    {
+     "ref": "coverr:HHTIM2UdJD",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Woman recording voice messages",
+     "shows": "a woman holds the phone in front of her and speaks into it (voice message), the screen half toward the lens (a violet top: grade it down or the colour check flags it)",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/woman-recording-voice-messages-hhtim2udjd",
+     "thumb": "https://cdn.coverr.co/videos/coverr-woman-recording-voice-messages-802/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-woman-recording-voice-messages-802/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 11
+    },
+    {
+     "ref": "coverr:aOXPr5dSHE",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Young Woman Talking on Phone During Walk Outdoors",
+     "shows": "a woman walks outdoors on a phone call, three-quarter, city soft behind",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/urban-call-woman-on-the-phone",
+     "thumb": "https://cdn.coverr.co/videos/coverr-urban-call-woman-on-the-phone/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-urban-call-woman-on-the-phone/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 21
+    },
+    {
+     "ref": "mixkit:232",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Woman walks through the city speaking on the phone",
+     "shows": "a woman walks through the city speaking on the phone, tracking",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/woman-walks-through-the-city-speaking-on-the-phone-232/",
+     "thumb": "https://assets.mixkit.co/videos/232/232-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/232/232-360.mp4",
+     "image": "https://assets.mixkit.co/videos/232/232-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 11
+    },
+    {
+     "ref": "isorepublic:businesswoman-on-phone",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Businesswoman on Phone",
+     "shows": "close profile, phone at the ear, shallow depth",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/businesswoman-on-phone/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/talking-450x300.jpg",
+     "w": 4200,
+     "h": 2800
+    },
+    {
+     "ref": "isorepublic:rain-check-nyc",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Businessman on Phone",
+     "shows": "a man on the phone crossing a rainy street, the city behind",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/rain-check-nyc/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/rain-check-nyc-450x300.jpg",
+     "w": 5000,
+     "h": 3333
+    }
+   ]
+  },
+  {
+   "id": "type-laptop",
+   "label": "typing on a laptop",
+   "aliases": [
+    "typing",
+    "keyboard",
+    "writing on a laptop",
+    "writing an email",
+    "working on a laptop",
+    "laptop"
+   ],
+   "apps": [
+    "writing tools",
+    "AI writing assistants",
+    "docs",
+    "email",
+    "chat",
+    "note taking",
+    "productivity"
+   ],
+   "action": "hands type on a laptop -> the draft, the reply or the answer forms in the product's UI",
+   "framing": [
+    "hands close-up on the keys from the side, the screen out of frame or soft",
+    "over the shoulder at the screen: the screen takes the UI plate",
+    "a face lit by the screen, three-quarter, eyes on the work"
+   ],
+   "screen": "laptop: over the shoulder or from the side, pin the UI plate on the screen (quadMatrix on its four corners, the plate a touch dimmer than the clip's brightest white); from the front the screen faces away, so cut to the kit Laptop with the UI",
+   "queries": [
+    {
+     "q": "typing laptop",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "typing on laptop",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "laptop typing",
+     "kind": "photo",
+     "source": "isorepublic"
+    },
+    {
+     "q": "typing laptop",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "coverr:knfy0YNbMP",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Young man typing on a laptop",
+     "shows": "hands typing on a laptop on the knees, from above, a wooden table",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/young-man-typing-on-a-laptop-knfy0ynbmp",
+     "thumb": "https://cdn.coverr.co/videos/coverr-young-man-typing-on-a-laptop-1550/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-young-man-typing-on-a-laptop-1550/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 18
+    },
+    {
+     "ref": "coverr:WY1Qd1RW2K",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Typing on a laptop keyboard",
+     "shows": "hands typing from the side, the screen bright beyond them",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/typing-on-a-laptop-keyboard-wy1qd1rw2k",
+     "thumb": "https://cdn.coverr.co/videos/coverr-typing-on-a-laptop-keyboard-8013/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-typing-on-a-laptop-keyboard-8013/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 13
+    },
+    {
+     "ref": "mixkit:1808",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Close up shot of a person typing on a laptop",
+     "shows": "close: fingers on the keys, shallow depth",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/close-up-shot-of-a-person-typing-on-a-laptop-1808/",
+     "thumb": "https://assets.mixkit.co/videos/1808/1808-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/1808/1808-360.mp4",
+     "image": "https://assets.mixkit.co/videos/1808/1808-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 14
+    },
+    {
+     "ref": "coverr:aTeyvBvTIE",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "A man working on a laptop at the office",
+     "shows": "a young man at an office desk typing, face three-quarter, glasses",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/a-man-working-on-a-laptop-at-the-office-ateyvbvtie",
+     "thumb": "https://cdn.coverr.co/videos/coverr-a-man-working-on-a-laptop-at-the-office-9085/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-a-man-working-on-a-laptop-at-the-office-9085/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 14
+    },
+    {
+     "ref": "isorepublic:laptop-typing-working",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Laptop Typing Working",
+     "shows": "a laptop on a white desk from above and the side, the screen toward the lens, a hand with a pen",
+     "screen": "pin",
+     "page": "https://isorepublic.com/photo/laptop-typing-working/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2021/04/iso-republic-business-worker-laptop-desk-8-free-stock-photo-450x300.jpg",
+     "w": 2048,
+     "h": 1365
+    },
+    {
+     "ref": "isorepublic:laptop-typing-woman-desk",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Laptop Typing Woman",
+     "shows": "a woman typing at a pale desk by a window, phone beside the laptop",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/laptop-typing-woman-desk/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2021/04/iso-republic-laptop-work-phone-woman-free-stock-photo-450x300.jpg",
+     "w": 2048,
+     "h": 1365
+    }
+   ]
+  },
+  {
+   "id": "video-call",
+   "label": "a video call",
+   "aliases": [
+    "video meeting",
+    "video chat",
+    "online call",
+    "webcam",
+    "remote meeting",
+    "zoom call",
+    "call on a laptop",
+    "facetime",
+    "online meeting"
+   ],
+   "apps": [
+    "video meetings",
+    "remote work",
+    "interviews",
+    "online tutoring",
+    "telehealth",
+    "meeting notes"
+   ],
+   "action": "a person talks to faces on a laptop screen -> the notes, the summary or the next steps appear",
+   "framing": [
+    "a person talks and waves to a phone or a tablet held up, the face on its screen visible: the screen takes the UI plate",
+    "over the shoulder at a laptop or tablet with the call on it (faces as real photos in tiles)",
+    "the other side of the call: a person speaking straight to the lens, as the face inside the product"
+   ],
+   "screen": "phone, tablet or laptop: where the call faces the lens, pin the UI plate on it (quadMatrix on its four corners) with the other person as a real clip inside; from behind the phone, cut to the kit Phone",
+   "queries": [
+    {
+     "q": "video call",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "video conference",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "video call",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "video call",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:39781",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Woman on a video call with a man by tablet",
+     "shows": "over the shoulder: a woman on a video call, the man's face on the tablet she holds toward the lens",
+     "screen": "pin",
+     "page": "https://mixkit.co/free-stock-video/woman-on-a-video-call-with-a-man-by-tablet-39781/",
+     "thumb": "https://assets.mixkit.co/videos/39781/39781-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/39781/39781-360.mp4",
+     "image": "https://assets.mixkit.co/videos/39781/39781-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 13
+    },
+    {
+     "ref": "mixkit:39798",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Young woman waving at her cell phone on a video call",
+     "shows": "a woman smiles and waves at the phone in her hand, kitchen soft behind",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/young-woman-waving-at-her-cell-phone-on-a-video-39798/",
+     "thumb": "https://assets.mixkit.co/videos/39798/39798-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/39798/39798-360.mp4",
+     "image": "https://assets.mixkit.co/videos/39798/39798-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 11
+    },
+    {
+     "ref": "mixkit:4833",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Female doctor talking on a video call",
+     "shows": "a doctor at a white desk on a video call with a tablet (telehealth)",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/female-doctor-talking-on-a-video-call-4833/",
+     "thumb": "https://assets.mixkit.co/videos/4833/4833-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4833/4833-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4833/4833-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "coverr:scD8tNzZ8p",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Young Man Making a Video Call on iPhone 15 Indoors",
+     "shows": "a young man talks to the phone he holds up, the window soft behind (the screen faces him)",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/young-man-making-a-video-call-on-iphone-15-indoors",
+     "thumb": "https://cdn.coverr.co/videos/coverr-a-man-makes-a-videocall-on-iphone-15/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-a-man-makes-a-videocall-on-iphone-15/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 19
+    },
+    {
+     "ref": "burst:video-call-new-year",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Video Call New Year",
+     "shows": "a laptop on a dark desk with a grid of faces on the call, a man beside it (replace the grid with the product)",
+     "screen": "pin",
+     "page": "https://burst.shopify.com/photos/video-call-new-year",
+     "thumb": "https://burst.shopifycdn.com/photos/video-call-new-year.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2048,
+     "h": 1365,
+     "author": "Shopify Partners"
+    }
+   ]
+  },
+  {
+   "id": "meeting",
+   "label": "a meeting around a table",
+   "aliases": [
+    "team meeting",
+    "conference room",
+    "meeting room",
+    "discussion",
+    "standup",
+    "board meeting",
+    "sales meeting"
+   ],
+   "apps": [
+    "meeting notes",
+    "transcription",
+    "collaboration",
+    "scheduling",
+    "CRM",
+    "decision logs"
+   ],
+   "action": "people talk round a table -> the decisions, the notes or the tasks appear",
+   "framing": [
+    "a wide of the table from the end, people mid-talk (never posed at the lens)",
+    "a close of one speaker, the others soft in the foreground",
+    "hands on the table, a laptop open: its screen takes the UI plate"
+   ],
+   "screen": "none in the shot: the output follows on a cut to the kit Phone or Laptop (the same light, the same side) with the UI showing what the input became",
+   "queries": [
+    {
+     "q": "business meeting",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "team meeting",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "business meeting",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "meeting",
+     "kind": "photo",
+     "source": "isorepublic"
+    },
+    {
+     "q": "meeting",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "coverr:MT5mYrtdGd",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "A young woman asking questions and making notes in a meeting",
+     "shows": "a woman asks a question and makes notes across a meeting table, a colleague's shoulder soft in the foreground",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/a-young-woman-asking-questions-and-making-notes-in-a-meeting-mt5myrtdgd",
+     "thumb": "https://cdn.coverr.co/videos/coverr-a-young-woman-asking-questions-and-making-notes-in-a-meeting-1297/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-a-young-woman-asking-questions-and-making-notes-in-a-meeting-1297/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 14
+    },
+    {
+     "ref": "mixkit:4809",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Business people at work meeting",
+     "shows": "top-down on a meeting table: laptops, papers, hands moving",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/business-people-at-work-meeting-4809/",
+     "thumb": "https://assets.mixkit.co/videos/4809/4809-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4809/4809-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4809/4809-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 37
+    },
+    {
+     "ref": "coverr:W5ya1wtAv4",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "A male worker conducts a meeting by showing statistics",
+     "shows": "a man presents on a wall screen while a woman takes notes (the wall screen takes the UI plate)",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/a-male-worker-conducts-a-meeting-by-showing-statistics-w5ya1wtav4",
+     "thumb": "https://cdn.coverr.co/videos/coverr-a-male-worker-conducts-a-meeting-by-showing-statistics-9981/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-a-male-worker-conducts-a-meeting-by-showing-statistics-9981/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 13
+    },
+    {
+     "ref": "coverr:Sf189e49k5",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Teamwork in the office",
+     "shows": "two colleagues talk over a tablet at a desk",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/teamwork-in-the-office-sf189e49k5",
+     "thumb": "https://cdn.coverr.co/videos/coverr-teamwork-in-the-office-7943/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-teamwork-in-the-office-7943/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 16
+    },
+    {
+     "ref": "isorepublic:colleagues-meeting",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Colleagues Meeting",
+     "shows": "three colleagues at laptops round a table, mid-talk",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/colleagues-meeting/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2020/11/iso-republic-people-having-meeting-outside-450x300.jpg",
+     "w": 2048,
+     "h": 1365
+    },
+    {
+     "ref": "burst:woman-taking-notes-during-team-meeting",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Woman Taking Notes During Team Meeting",
+     "shows": "a team at a long table with laptops and notes, one woman writing",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/woman-taking-notes-during-team-meeting",
+     "thumb": "https://burst.shopifycdn.com/photos/woman-taking-notes-during-team-meeting.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Matthew Henry"
+    }
+   ]
+  },
+  {
+   "id": "whiteboard",
+   "label": "planning at a whiteboard",
+   "aliases": [
+    "brainstorm",
+    "sticky notes",
+    "post-it",
+    "workshop",
+    "planning session",
+    "kanban wall",
+    "whiteboard",
+    "team at a whiteboard",
+    "flowchart",
+    "diagram"
+   ],
+   "apps": [
+    "project management",
+    "planning",
+    "brainstorming",
+    "roadmaps",
+    "online whiteboards",
+    "retrospectives"
+   ],
+   "action": "a team writes and moves notes on a wall -> the plan becomes a board, a roadmap or tasks in the product",
+   "framing": [
+    "a person writes or draws on a whiteboard, three-quarter from behind, the marker moving",
+    "a hand with a marker close on the board",
+    "a wall of sticky notes with a hand moving one: the wall is the ground the UI lands on"
+   ],
+   "screen": "none in the shot: the output follows on a cut to the kit Phone or Laptop (the same light, the same side) with the UI showing what the input became",
+   "queries": [
+    {
+     "q": "whiteboard",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "sticky notes",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "whiteboard",
+     "kind": "photo",
+     "source": "isorepublic"
+    },
+    {
+     "q": "whiteboard",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "coverr:LR5VaZILDP",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "A guy is typing something on the whiteboard",
+     "shows": "a young man writes on a whiteboard, three-quarter from behind",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/a-guy-is-typing-something-on-the-whiteboard-lr5vazildp",
+     "thumb": "https://cdn.coverr.co/videos/coverr-a-guy-is-typing-something-on-the-whiteboard-426/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-a-guy-is-typing-something-on-the-whiteboard-426/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 12
+    },
+    {
+     "ref": "coverr:cjBymT9h8N",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Someone types on the whiteboard.",
+     "shows": "close: a hand with a marker writing on a whiteboard",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/someone-types-on-the-whiteboard-cjbymt9h8n",
+     "thumb": "https://cdn.coverr.co/videos/coverr-someone-types-on-the-whiteboard-5162/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-someone-types-on-the-whiteboard-5162/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 11
+    },
+    {
+     "ref": "coverr:qLBTsfxYoI",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Organizing flashcards",
+     "shows": "a wall of sticky notes, a hand moving them (some notes orange: crop or grade)",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/organizing-flashcards-qlbtsfxyoi",
+     "thumb": "https://cdn.coverr.co/videos/coverr-organizing-flashcards-4670/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-organizing-flashcards-4670/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 13
+    },
+    {
+     "ref": "isorepublic:whiteboard-flowchart",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Whiteboard Flowchart",
+     "shows": "a man draws a flowchart on a whiteboard, profile, bright office",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/whiteboard-flowchart/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/picography-man-whiteboard-flowchart-1-450x300.jpg",
+     "w": 6000,
+     "h": 4004
+    },
+    {
+     "ref": "burst:woman-uses-whiteboard-in-office",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Woman Uses Whiteboard In Office",
+     "shows": "a woman writes on an office whiteboard, from behind",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/woman-uses-whiteboard-in-office",
+     "thumb": "https://burst.shopifycdn.com/photos/woman-uses-whiteboard-in-office.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Sarah Pflug"
+    },
+    {
+     "ref": "isorepublic:man-writing-whiteboard",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Man Writing on Whiteboard",
+     "shows": "a man in a beanie sketches a diagram on a whiteboard",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/man-writing-whiteboard/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/picography-man-writing-whiteboard-1-450x300.jpg",
+     "w": 3000,
+     "h": 2000
+    }
+   ]
+  },
+  {
+   "id": "handwriting",
+   "label": "writing on paper",
+   "aliases": [
+    "notebook",
+    "writing notes",
+    "pen and paper",
+    "journal",
+    "handwritten",
+    "handwriting",
+    "signing a document",
+    "paper form"
+   ],
+   "apps": [
+    "note taking",
+    "handwriting to text",
+    "scanning",
+    "journaling",
+    "e-signature",
+    "forms"
+   ],
+   "action": "a hand writes in a notebook -> the writing becomes clean text, a task or a signed document",
+   "framing": [
+    "the hand and the pen close, from the side, the line being written",
+    "top-down on the page and the hand, the desk round it",
+    "a person writing at a desk by a window, the page soft"
+   ],
+   "screen": "none in the shot: the output follows on a cut to the kit Phone or Laptop (the same light, the same side) with the UI showing what the input became",
+   "queries": [
+    {
+     "q": "writing notebook",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "writing in a notebook",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "writing notebook",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "writing",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:99890",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Close up a hand writing notes on a notebook with a pen",
+     "shows": "top-down close: a hand writes in a spiral notebook beside a laptop",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/close-up-a-hand-writing-notes-on-a-notebook-with-99890/",
+     "thumb": "https://assets.mixkit.co/active_storage/video_items/99890/1717186770/99890-video-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/active_storage/video_items/99890/1717186770/99890-video-360.mp4",
+     "image": "https://assets.mixkit.co/active_storage/video_items/99890/1717186770/99890-video-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 8
+    },
+    {
+     "ref": "coverr:pgvNsUoRMJ",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Close-up of a Woman Writing in a Notebook Using a Pencil",
+     "shows": "close from the side: a hand writes with a pencil in a notebook",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/close-up-of-handwriting-in-notebook",
+     "thumb": "https://cdn.coverr.co/videos/coverr-close-up-of-handwriting-in-notebook/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-close-up-of-handwriting-in-notebook/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 9
+    },
+    {
+     "ref": "mixkit:28326",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Student in a classroom writing in her notebook",
+     "shows": "a student writes in her notebook at a classroom desk, face three-quarter",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/student-in-a-classroom-writing-in-her-notebook-28326/",
+     "thumb": "https://assets.mixkit.co/videos/28326/28326-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/28326/28326-360.mp4",
+     "image": "https://assets.mixkit.co/videos/28326/28326-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 14
+    },
+    {
+     "ref": "mixkit:1737",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Writing notes at a cafe",
+     "shows": "a hand writes notes at a café table, a glass beside the page",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/writing-notes-at-a-cafe-1737/",
+     "thumb": "https://assets.mixkit.co/videos/1737/1737-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/1737/1737-360.mp4",
+     "image": "https://assets.mixkit.co/videos/1737/1737-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 22
+    },
+    {
+     "ref": "isorepublic:writing-notepad",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Writing on Notepad",
+     "shows": "close: a hand writes in a spiral notepad with a fountain pen",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/writing-notepad/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/picography-woman-writing-notepad-1-400x300.jpg",
+     "w": 4608,
+     "h": 3456
+    },
+    {
+     "ref": "isorepublic:writing-hand",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Writing Hand",
+     "shows": "a woman writes in a notebook at a desk, top-down and the side",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/writing-hand/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2020/03/iso-republic-notebook-write-desk-hands-450x300.jpg",
+     "w": 2048,
+     "h": 1365
+    }
+   ]
+  },
+  {
+   "id": "texting",
+   "label": "texting on a phone",
+   "aliases": [
+    "messaging",
+    "chat",
+    "tapping a phone",
+    "scrolling a phone",
+    "using a smartphone",
+    "social media",
+    "thumb typing",
+    "smartphone"
+   ],
+   "apps": [
+    "messaging",
+    "social apps",
+    "dating",
+    "mobile apps",
+    "notifications",
+    "mobile banking"
+   ],
+   "action": "thumbs type or tap on a phone -> the message, the match or the result appears in the app",
+   "framing": [
+    "hands close-up, the phone in both hands, the screen toward the lens: the screen takes the UI plate",
+    "over the shoulder at the phone, the room soft",
+    "a face lit by the phone, three-quarter, a small reaction"
+   ],
+   "screen": "phone: in a hands shot with the screen toward the lens, pin the UI plate on the screen (quadMatrix on its four corners); where the screen faces away or moves fast, cut to the kit Phone at the same angle with the UI receiving the input",
+   "queries": [
+    {
+     "q": "texting",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "smartphone hands",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "texting",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "texting",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "smartphone",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:4915",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Hands of a person typing on a cell phone",
+     "shows": "close: two hands type on a phone, the screen toward the person",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/hands-of-a-person-typing-on-a-cell-phone-4915/",
+     "thumb": "https://assets.mixkit.co/videos/4915/4915-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4915/4915-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4915/4915-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "coverr:QSQk84ZESV",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Close-Up of Young Man Using iPhone 15 in Hands",
+     "shows": "close: a young man scrolls a phone held in both hands",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/close-up-of-young-man-using-iphone-15-in-hands",
+     "thumb": "https://cdn.coverr.co/videos/coverr-close-up-of-iphone-15/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-close-up-of-iphone-15/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "coverr:Hlty0TGEBF",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Close-Up of Young Woman Texting By The Marina in the Evening",
+     "shows": "a young woman texts by a marina at dusk",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/young-woman-texting-by-the-marina",
+     "thumb": "https://cdn.coverr.co/videos/coverr-young-woman-texting-by-the-marina/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-young-woman-texting-by-the-marina/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 10
+    },
+    {
+     "ref": "mixkit:31405",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Responding to messages in the morning upon waking",
+     "shows": "a woman answers messages sitting on a bed by a window, morning light",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/responding-to-messages-in-the-morning-upon-waking-31405/",
+     "thumb": "https://assets.mixkit.co/videos/31405/31405-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/31405/31405-360.mp4",
+     "image": "https://assets.mixkit.co/videos/31405/31405-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 11
+    },
+    {
+     "ref": "isorepublic:browsing-smartphone",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Browsing Smartphone",
+     "shows": "hands hold a phone over a table, the screen toward the lens, a coffee cup beside",
+     "screen": "pin",
+     "page": "https://isorepublic.com/photo/browsing-smartphone/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2021/12/iso-republic-hands-phone-nails-coffee-450x300.jpg",
+     "w": 2048,
+     "h": 1365
+    },
+    {
+     "ref": "burst:woman-texting-in-india",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Woman Texting In India",
+     "shows": "a woman texts in a street, two men talking behind",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/woman-texting-in-india",
+     "thumb": "https://burst.shopifycdn.com/photos/woman-texting-in-india.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Sajjad Hussain M"
+    }
+   ]
+  },
+  {
+   "id": "phone-photo",
+   "label": "photographing something with a phone",
+   "aliases": [
+    "scan",
+    "scanning a document",
+    "receipt scan",
+    "taking a picture",
+    "phone camera",
+    "qr code",
+    "camera"
+   ],
+   "apps": [
+    "document scanning",
+    "receipt capture",
+    "expense apps",
+    "plant and object identification",
+    "camera translation",
+    "photo editing"
+   ],
+   "action": "a phone is raised and a picture taken -> the thing photographed becomes data: a scan, a row, a translation, an answer",
+   "framing": [
+    "over the shoulder: the phone's screen frames the subject (the screen takes the UI plate: the viewfinder, then the result)",
+    "hands raising the phone toward a document, a plate or a plant, close"
+   ],
+   "screen": "phone: in a hands shot with the screen toward the lens, pin the UI plate on the screen (quadMatrix on its four corners); where the screen faces away or moves fast, cut to the kit Phone at the same angle with the UI receiving the input",
+   "queries": [
+    {
+     "q": "taking photo phone",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "taking photo with phone",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "taking photo with phone",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "taking photo",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:5106",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Taking a picture of a birthday table with a smartphone",
+     "shows": "over the shoulder: a phone held sideways frames a table, the scene on its screen",
+     "screen": "pin",
+     "page": "https://mixkit.co/free-stock-video/taking-a-picture-of-a-birthday-table-with-a-smartphone-5106/",
+     "thumb": "https://assets.mixkit.co/videos/5106/5106-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/5106/5106-360.mp4",
+     "image": "https://assets.mixkit.co/videos/5106/5106-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 10
+    },
+    {
+     "ref": "mixkit:4853",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Couple in a restaurant taking photos of the dessert",
+     "shows": "a hand photographs a plate of dessert, the subject on the phone's screen",
+     "screen": "pin",
+     "page": "https://mixkit.co/free-stock-video/couple-in-a-restaurant-taking-photos-of-the-dessert-4853/",
+     "thumb": "https://assets.mixkit.co/videos/4853/4853-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4853/4853-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4853/4853-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 7
+    },
+    {
+     "ref": "coverr:9HwcGjil4s",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Close-Up of a Man Taking a Photo on the Phone",
+     "shows": "close: a man raises a phone and takes a photo, profile",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/close-up-of-a-man-taking-a-photo-on-the-phone",
+     "thumb": "https://cdn.coverr.co/videos/coverr-close-up-of-a-man-taking-a-photo-on-the-phone-6261/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-close-up-of-a-man-taking-a-photo-on-the-phone-6261/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 9
+    },
+    {
+     "ref": "burst:phone-taking-photo-of-museum",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Phone Taking Photo Of Museum",
+     "shows": "a hand holds a phone up to a building, the building on its screen",
+     "screen": "pin",
+     "page": "https://burst.shopify.com/photos/phone-taking-photo-of-museum",
+     "thumb": "https://burst.shopifycdn.com/photos/phone-taking-photo-of-museum.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Matthew Henry"
+    },
+    {
+     "ref": "isorepublic:taking-photo-iphone",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Taking Photo with iPhone",
+     "shows": "a hand holds a phone toward a scene, the viewfinder on its screen",
+     "screen": "pin",
+     "page": "https://isorepublic.com/photo/taking-photo-iphone/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/taking-picture-450x300.jpg",
+     "w": 5000,
+     "h": 3333
+    },
+    {
+     "ref": "isorepublic:taking-photo-with-iphone",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Taking Photo With iPhone",
+     "shows": "two hands frame a scene with a phone held sideways, the picture on its screen",
+     "screen": "pin",
+     "page": "https://isorepublic.com/photo/taking-photo-with-iphone/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/photo-capture-450x300.jpg",
+     "w": 5000,
+     "h": 3333
+    }
+   ]
+  },
+  {
+   "id": "cooking",
+   "label": "cooking at home",
+   "aliases": [
+    "kitchen",
+    "recipe",
+    "chopping",
+    "meal prep",
+    "frying",
+    "baking",
+    "cook"
+   ],
+   "apps": [
+    "recipes",
+    "meal planning",
+    "grocery lists",
+    "nutrition",
+    "food delivery",
+    "smart kitchen"
+   ],
+   "action": "hands cook at a counter -> the recipe, the step or the shopping list follows in the app",
+   "framing": [
+    "hands close-up chopping or stirring, the counter round them",
+    "a person at the stove from the side, a phone or tablet propped on the counter (its screen takes the UI plate)",
+    "top-down on the board and the ingredients"
+   ],
+   "screen": "a phone or tablet propped on the counter takes the UI plate; else cut to the kit Phone with the step",
+   "queries": [
+    {
+     "q": "kitchen",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "kitchen",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "cooking",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "cooking",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "cooking at home",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "cooking",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:43925",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Preparing a bowl with yogurt and fruit",
+     "shows": "close: hands cut strawberries on a board, a bowl beside",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/preparing-a-bowl-with-yogurt-and-fruit-43925/",
+     "thumb": "https://assets.mixkit.co/videos/43925/43925-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/43925/43925-360.mp4",
+     "image": "https://assets.mixkit.co/videos/43925/43925-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 25
+    },
+    {
+     "ref": "mixkit:40522",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Washing a lettuce in the kitchen",
+     "shows": "close: hands wash lettuce under a running tap",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/washing-a-lettuce-in-the-kitchen-40522/",
+     "thumb": "https://assets.mixkit.co/videos/40522/40522-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/40522/40522-360.mp4",
+     "image": "https://assets.mixkit.co/videos/40522/40522-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 13
+    },
+    {
+     "ref": "coverr:LZPEO03EJ4",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Putting kitchen utensils on the table",
+     "shows": "a woman cooks at a tiled kitchen counter, a wide from the side",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/putting-kitchen-utensils-on-the-table-lzpeo03ej4",
+     "thumb": "https://cdn.coverr.co/videos/coverr-putting-kitchen-utensils-on-the-table-9800/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-putting-kitchen-utensils-on-the-table-9800/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 21
+    },
+    {
+     "ref": "coverr:PToi63GmOm",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Evening out the cake batter",
+     "shows": "close: hands spread batter into cake tins on a steel counter",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/evening-out-the-cake-batter-ptoi63gmom",
+     "thumb": "https://cdn.coverr.co/videos/coverr-evening-out-the-cake-batter-4697/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-evening-out-the-cake-batter-4697/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 27
+    },
+    {
+     "ref": "burst:kitchen-ready-for-cooking",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Kitchen Ready For Cooking",
+     "shows": "top-down: a board, a knife, tomatoes and a bowl ready on a counter",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/kitchen-ready-for-cooking",
+     "thumb": "https://burst.shopifycdn.com/photos/kitchen-ready-for-cooking.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Sarah Pflug"
+    },
+    {
+     "ref": "isorepublic:vegan-pasta-cooking",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Vegan Pasta Cooking",
+     "shows": "top-down: a pot of pasta, tomatoes and basil on a board",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/vegan-pasta-cooking/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2019/05/iso-republic-vegan-pasta-with-veggie-ground-round-and-fresh-veg-450x300.jpg",
+     "w": 4460,
+     "h": 2973
+    }
+   ]
+  },
+  {
+   "id": "running",
+   "label": "running outdoors",
+   "aliases": [
+    "jogging",
+    "runner",
+    "run",
+    "marathon",
+    "workout outdoors",
+    "jog"
+   ],
+   "apps": [
+    "fitness tracking",
+    "running",
+    "wearables",
+    "health",
+    "coaching"
+   ],
+   "action": "a person runs -> the distance, the pace or the plan lands in the app",
+   "framing": [
+    "feet and stride low and close, tracking along",
+    "a runner from the side on a path, the light low",
+    "a glance at the wrist or the phone mid-run (its screen takes the UI plate)"
+   ],
+   "screen": "none in the shot: the output follows on a cut to the kit Phone or Laptop (the same light, the same side) with the UI showing what the input became",
+   "queries": [
+    {
+     "q": "running",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "jogging",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "running",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "running",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "running",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:722",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Runner training in a park",
+     "shows": "low and close: a runner's feet on a park path, tracking",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/runner-training-in-a-park-722/",
+     "thumb": "https://assets.mixkit.co/videos/722/722-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/722/722-360.mp4",
+     "image": "https://assets.mixkit.co/videos/722/722-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 30
+    },
+    {
+     "ref": "coverr:lWxIsgzJom",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Close-Up of Woman's Legs as She is Running on Cobblestone",
+     "shows": "close: legs running on cobblestones, from the side",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/active-morning-jog-on-cobblestone",
+     "thumb": "https://cdn.coverr.co/videos/coverr-active-morning-jog-on-cobblestone/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-active-morning-jog-on-cobblestone/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 18
+    },
+    {
+     "ref": "coverr:NsSGdKtfmT",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Close-up of Young Woman with Ponytail Jogging on the Sidewalk",
+     "shows": "close: a young woman jogging on a sidewalk, profile, tracking",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/contemplative-woman-by-modern-building",
+     "thumb": "https://cdn.coverr.co/videos/coverr-contemplative-woman-by-modern-building/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-contemplative-woman-by-modern-building/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 17
+    },
+    {
+     "ref": "mixkit:606",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Sportsman doing cardio training ",
+     "shows": "a man runs across a bridge, from behind, city ahead",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/sportsman-doing-cardio-training-606/",
+     "thumb": "https://assets.mixkit.co/videos/606/606-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/606/606-360.mp4",
+     "image": "https://assets.mixkit.co/videos/606/606-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 12
+    },
+    {
+     "ref": "burst:man-running-at-the-track",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Man Running At The Track",
+     "shows": "a man sprints along a track, from the side",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/man-running-at-the-track",
+     "thumb": "https://burst.shopifycdn.com/photos/man-running-at-the-track.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Sarah Pflug"
+    },
+    {
+     "ref": "isorepublic:woman-running-in-the-city",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Woman Running in the City",
+     "shows": "a woman runs on a ridge, the city skyline far behind",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/woman-running-in-the-city/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2019/07/iso-republic-running-cloudy-day-451x300.jpg",
+     "w": 4460,
+     "h": 2968
+    }
+   ]
+  },
+  {
+   "id": "gym",
+   "label": "a workout at the gym",
+   "aliases": [
+    "weights",
+    "workout",
+    "training",
+    "fitness class",
+    "lifting",
+    "exercise",
+    "gym",
+    "fitness tracker",
+    "fitness"
+   ],
+   "apps": [
+    "fitness",
+    "personal training",
+    "gym booking",
+    "workout logs",
+    "wearables"
+   ],
+   "action": "a person trains -> the set, the rep count or the plan updates in the app",
+   "framing": [
+    "hands on a bar or a dumbbell, close",
+    "a person mid-exercise from the side, the gym dark round them",
+    "a phone on the bench between sets (its screen takes the UI plate)"
+   ],
+   "screen": "none in the shot: the output follows on a cut to the kit Phone or Laptop (the same light, the same side) with the UI showing what the input became",
+   "queries": [
+    {
+     "q": "gym workout",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "gym",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "gym",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "gym",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:52112",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "A young woman clad in snugly black sportswear doing lunges at the gym",
+     "shows": "a woman does lunges in a dark gym, a wide",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/a-young-woman-clad-in-snugly-black-sportswear-doing-lunges-52112/",
+     "thumb": "https://assets.mixkit.co/videos/52112/52112-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/52112/52112-360.mp4",
+     "image": "https://assets.mixkit.co/videos/52112/52112-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 8
+    },
+    {
+     "ref": "mixkit:52104",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "A young woman wearing black leggins exercises by launching a black ball towards the wall",
+     "shows": "a woman throws a wall ball against a concrete wall, from behind",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/a-young-woman-wearing-black-leggins-exercises-by-launching-a-52104/",
+     "thumb": "https://assets.mixkit.co/videos/52104/52104-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/52104/52104-360.mp4",
+     "image": "https://assets.mixkit.co/videos/52104/52104-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 16
+    },
+    {
+     "ref": "coverr:qXikexFXUr",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Athletic Woman Recording her Workout Session at the Park",
+     "shows": "a woman on a mat in a park records her workout on a phone",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/relaxing-post-workout-smartphone-break",
+     "thumb": "https://cdn.coverr.co/videos/coverr-relaxing-post-workout-smartphone-break/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-relaxing-post-workout-smartphone-break/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "coverr:ytXsRJrICv",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Battle rope workout",
+     "shows": "close: hands whipping battle ropes, dark gym",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/battle-rope-workout-ytxsrjricv",
+     "thumb": "https://cdn.coverr.co/videos/coverr-battle-rope-workout-9563/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-battle-rope-workout-9563/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 12
+    },
+    {
+     "ref": "burst:fitness-weight-lifting",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Fitness Weight Lifting",
+     "shows": "a man curls a barbell, studio light",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/fitness-weight-lifting",
+     "thumb": "https://burst.shopifycdn.com/photos/fitness-weight-lifting.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1601,
+     "author": "Shopify Photos"
+    },
+    {
+     "ref": "isorepublic:gym-training",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Gym Training",
+     "shows": "a woman does crunches on a mat, top light",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/gym-training/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/gym-training-450x300.jpg",
+     "w": 5472,
+     "h": 3648
+    }
+   ]
+  },
+  {
+   "id": "meditation",
+   "label": "meditation and yoga",
+   "aliases": [
+    "yoga",
+    "mindfulness",
+    "breathing",
+    "calm",
+    "stretching",
+    "sleep",
+    "relax"
+   ],
+   "apps": [
+    "meditation",
+    "mindfulness",
+    "sleep",
+    "wellness",
+    "mental health",
+    "breathing"
+   ],
+   "action": "a person breathes, eyes closed, still -> the session, the streak or the calm state shows in the app",
+   "framing": [
+    "a face in profile, eyes closed, soft window light",
+    "a person seated on a mat from the side, a wide with room",
+    "hands resting on the knees, close"
+   ],
+   "screen": "none in the shot: the output follows on a cut to the kit Phone or Laptop (the same light, the same side) with the UI showing what the input became",
+   "queries": [
+    {
+     "q": "meditation",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "yoga",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "meditation",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "meditation",
+     "kind": "photo",
+     "source": "isorepublic"
+    },
+    {
+     "q": "yoga",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "coverr:w8AcPjsBsK",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Seaside Meditation",
+     "shows": "a woman meditates on a pier by the sea, eyes closed, hands together",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/seaside-meditation-for-serenity",
+     "thumb": "https://cdn.coverr.co/videos/coverr-seaside-meditation-for-serenity/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-seaside-meditation-for-serenity/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 11
+    },
+    {
+     "ref": "mixkit:43786",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Woman meditating in nature",
+     "shows": "a woman sits cross-legged meditating on a hill, a wide",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/woman-meditating-in-nature-43786/",
+     "thumb": "https://assets.mixkit.co/videos/43786/43786-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/43786/43786-360.mp4",
+     "image": "https://assets.mixkit.co/videos/43786/43786-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "coverr:Fm8kIo8PuY",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Athletic Woman Performing a Yoga Exercise at the Park",
+     "shows": "a woman does a yoga stretch on a mat in a park",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/post-workout-serenity-in-the-park",
+     "thumb": "https://cdn.coverr.co/videos/coverr-post-workout-serenity-in-the-park/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-post-workout-serenity-in-the-park/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 19
+    },
+    {
+     "ref": "coverr:EsfDDZaweZ",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Woman Rolls Out a Yoga Mat, Preparing for her Exercise Routine",
+     "shows": "close: hands roll out a yoga mat on grass",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/rolling-out-a-yoga-mat-in-the-park",
+     "thumb": "https://cdn.coverr.co/videos/coverr-rolling-out-a-yoga-mat-in-the-park/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-rolling-out-a-yoga-mat-in-the-park/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "isorepublic:yoga-mom-child-indoors",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Yoga Mom Child",
+     "shows": "a mother meditates on a mat beside her toddler and a laptop, bright room",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/yoga-mom-child-indoors/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2021/08/iso-republic-family-life-0408-450x300.jpg",
+     "w": 2048,
+     "h": 1365
+    },
+    {
+     "ref": "isorepublic:yoga-woman-pose",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Yoga Woman Pose",
+     "shows": "a person in a yoga pose on rocks by the water, framed by leaves",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/yoga-woman-pose/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2020/10/iso-republic-yoga-poses-on-seaside-rocks-450x300.jpg",
+     "w": 2048,
+     "h": 1366
+    }
+   ]
+  },
+  {
+   "id": "hiking",
+   "label": "hiking a trail",
+   "aliases": [
+    "hike",
+    "trail",
+    "trekking",
+    "mountains",
+    "backpacking",
+    "walking in nature"
+   ],
+   "apps": [
+    "maps",
+    "outdoor navigation",
+    "trail guides",
+    "weather",
+    "travel"
+   ],
+   "action": "a person walks a trail -> the route, the place or the weather shows in the app",
+   "framing": [
+    "boots on the trail, low and close",
+    "a hiker small in a wide landscape, from behind",
+    "a hand holding a phone with the map against the view (its screen takes the UI plate)"
+   ],
+   "screen": "phone: in a hands shot with the screen toward the lens, pin the UI plate on the screen (quadMatrix on its four corners); where the screen faces away or moves fast, cut to the kit Phone at the same angle with the UI receiving the input",
+   "queries": [
+    {
+     "q": "hiking",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "hiker",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "hiking",
+     "kind": "photo",
+     "source": "isorepublic"
+    },
+    {
+     "q": "hiking",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:43148",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Couple walking in the forest",
+     "shows": "a couple walks into a forest, from behind, backpacks",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/couple-walking-in-the-forest-43148/",
+     "thumb": "https://assets.mixkit.co/videos/43148/43148-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/43148/43148-360.mp4",
+     "image": "https://assets.mixkit.co/videos/43148/43148-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 7
+    },
+    {
+     "ref": "mixkit:43159",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Hiker looking at the sky",
+     "shows": "a hiker in a cap looks up at the sky, profile, forest soft",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/hiker-looking-at-the-sky-43159/",
+     "thumb": "https://assets.mixkit.co/videos/43159/43159-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/43159/43159-360.mp4",
+     "image": "https://assets.mixkit.co/videos/43159/43159-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 6
+    },
+    {
+     "ref": "mixkit:114",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Two people hiking",
+     "shows": "low: two hikers' boots and poles on a rocky trail",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/two-people-hiking-114/",
+     "thumb": "https://assets.mixkit.co/videos/114/114-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/114/114-360.mp4",
+     "image": "https://assets.mixkit.co/videos/114/114-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 19
+    },
+    {
+     "ref": "burst:two-people-hiking-on-a-rustic-trail",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Two People Hiking On A Rustic Trail",
+     "shows": "two hikers small on a canyon trail, a wide",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/two-people-hiking-on-a-rustic-trail",
+     "thumb": "https://burst.shopifycdn.com/photos/two-people-hiking-on-a-rustic-trail.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 3000,
+     "author": "Shantanu Suri"
+    },
+    {
+     "ref": "burst:people-hiking-by-waterfall",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "People Hiking By Waterfall",
+     "shows": "hikers on a path below a waterfall, a wide",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/people-hiking-by-waterfall",
+     "thumb": "https://burst.shopifycdn.com/photos/people-hiking-by-waterfall.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1350,
+     "author": "Matthew Henry"
+    },
+    {
+     "ref": "isorepublic:people-hiking-fall",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "People Hiking Nature",
+     "shows": "a hiker with a backpack on an autumn trail, from behind",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/people-hiking-fall/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2023/06/iso-republic-camping-trail-hiking-backpack-450x300.jpg",
+     "w": 2048,
+     "h": 1366
+    }
+   ]
+  },
+  {
+   "id": "cycling",
+   "label": "cycling",
+   "aliases": [
+    "bike",
+    "bicycle",
+    "cyclist",
+    "commute by bike",
+    "bike ride"
+   ],
+   "apps": [
+    "navigation",
+    "mobility",
+    "bike sharing",
+    "fitness tracking",
+    "delivery couriers"
+   ],
+   "action": "a person rides through a city or a road -> the route, the ride or the ride stats show in the app",
+   "framing": [
+    "a cyclist from the side tracking along, the street soft",
+    "hands on the handlebars, a phone mounted on them (its screen takes the UI plate)",
+    "wheels and pedals close"
+   ],
+   "screen": "phone: in a hands shot with the screen toward the lens, pin the UI plate on the screen (quadMatrix on its four corners); where the screen faces away or moves fast, cut to the kit Phone at the same angle with the UI receiving the input",
+   "queries": [
+    {
+     "q": "bicycle",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "cycling",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "bicycle",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "bicycle",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:40867",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "A person on a bike just before pedaling off",
+     "shows": "close: a rider on a bike just before pedalling off, wheels and legs",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/a-person-on-a-bike-just-before-pedaling-off-40867/",
+     "thumb": "https://assets.mixkit.co/videos/40867/40867-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/40867/40867-360.mp4",
+     "image": "https://assets.mixkit.co/videos/40867/40867-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 10
+    },
+    {
+     "ref": "mixkit:40868",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Outdoor cycling track with some cyclists",
+     "shows": "cyclists ride an outdoor track, one close in the foreground",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/outdoor-cycling-track-with-some-cyclists-40868/",
+     "thumb": "https://assets.mixkit.co/videos/40868/40868-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/40868/40868-360.mp4",
+     "image": "https://assets.mixkit.co/videos/40868/40868-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "coverr:SsU2iNHgcx",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "A young man rents a bike with an app",
+     "shows": "a young man unlocks a rental bike with an app on his phone, a city street",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/a-young-man-rents-a-bike-with-an-app-ssu2inhgcx",
+     "thumb": "https://cdn.coverr.co/videos/coverr-a-young-man-rents-a-bike-with-an-app-9058/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-a-young-man-rents-a-bike-with-an-app-9058/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 24
+    },
+    {
+     "ref": "coverr:5I3XQM2uPB",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "A young man rents a bicycle with an app",
+     "shows": "a young man rents a bike with his phone at a docking station",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/a-young-man-rents-a-bicycle-with-an-app-5i3xqm2upb",
+     "thumb": "https://cdn.coverr.co/videos/coverr-a-young-man-rents-a-bicycle-with-an-app-4615/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-a-young-man-rents-a-bicycle-with-an-app-4615/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 23
+    },
+    {
+     "ref": "burst:bicycle-handlebars",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Bicycle Handlebars",
+     "shows": "a man walks a bike by its handlebars through a bright tunnel",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/bicycle-handlebars",
+     "thumb": "https://burst.shopifycdn.com/photos/bicycle-handlebars.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Matthew Henry"
+    },
+    {
+     "ref": "isorepublic:person-on-bicycle",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Person on Bicycle",
+     "shows": "top-down: a cyclist rides across pale paving",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/person-on-bicycle/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2019/09/iso-republic-bike-from-above-450x300.jpg",
+     "w": 4460,
+     "h": 2973
+    }
+   ]
+  },
+  {
+   "id": "driving",
+   "label": "driving a car",
+   "aliases": [
+    "car",
+    "road trip",
+    "behind the wheel",
+    "commuting by car",
+    "driver",
+    "dashboard"
+   ],
+   "apps": [
+    "navigation",
+    "ride hailing",
+    "car apps",
+    "insurance",
+    "EV charging",
+    "fleet management"
+   ],
+   "action": "a person drives -> the route, the trip or the car's state shows in the app",
+   "framing": [
+    "hands on the wheel, close, the road soft through the windscreen",
+    "the driver in profile from the passenger seat",
+    "a phone in a dashboard mount (its screen takes the UI plate)"
+   ],
+   "screen": "phone: in a hands shot with the screen toward the lens, pin the UI plate on the screen (quadMatrix on its four corners); where the screen faces away or moves fast, cut to the kit Phone at the same angle with the UI receiving the input",
+   "queries": [
+    {
+     "q": "driving",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "driving car",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "driving",
+     "kind": "photo",
+     "source": "isorepublic"
+    },
+    {
+     "q": "driving",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:4521",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Blonde woman driving on road",
+     "shows": "a woman drives on an open road, from the back seat, hands on the wheel",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/blonde-woman-driving-on-road-4521/",
+     "thumb": "https://assets.mixkit.co/videos/4521/4521-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4521/4521-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4521/4521-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 17
+    },
+    {
+     "ref": "mixkit:72",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Dashboard of a car",
+     "shows": "close: a hand on the steering wheel, the car's dashboard screen beside it",
+     "screen": "pin",
+     "page": "https://mixkit.co/free-stock-video/dashboard-of-a-car-72/",
+     "thumb": "https://assets.mixkit.co/videos/72/72-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/72/72-360.mp4",
+     "image": "https://assets.mixkit.co/videos/72/72-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 18
+    },
+    {
+     "ref": "coverr:mtkqDH8xXu",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "A person driving around Panama City",
+     "shows": "through the windscreen of a car driving a city street",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/a-person-driving-around-panama-city-mtkqdh8xxu",
+     "thumb": "https://cdn.coverr.co/videos/coverr-a-person-driving-around-panama-city-4070/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-a-person-driving-around-panama-city-4070/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 11
+    },
+    {
+     "ref": "coverr:zWLVK5D3QQ",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Looking in the side mirror",
+     "shows": "a car's side mirror on an empty road, the land moving",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/looking-in-the-side-mirror-zwlvk5d3qq",
+     "thumb": "https://cdn.coverr.co/videos/coverr-looking-in-the-side-mirror-6394/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-looking-in-the-side-mirror-6394/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 43
+    },
+    {
+     "ref": "isorepublic:man-driving-with-gps",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Man Driving With GPS",
+     "shows": "a man drives at dusk, the dashboard navigation screen glowing",
+     "screen": "pin",
+     "page": "https://isorepublic.com/photo/man-driving-with-gps/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/trading-1-1-449x300.jpg",
+     "w": 1920,
+     "h": 1282
+    },
+    {
+     "ref": "isorepublic:woman-driving-car",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Woman Driving Car",
+     "shows": "top-down: hands on the wooden wheel of an old car",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/woman-driving-car/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/woman-driving-car-450x300.jpg",
+     "w": 4896,
+     "h": 3264
+    }
+   ]
+  },
+  {
+   "id": "train",
+   "label": "commuting by train or bus",
+   "aliases": [
+    "train",
+    "commute",
+    "metro",
+    "subway",
+    "rail",
+    "public transport",
+    "tram",
+    "commuter",
+    "bus",
+    "bus ride",
+    "transit"
+   ],
+   "apps": [
+    "travel",
+    "commuting",
+    "tickets",
+    "offline reading",
+    "podcasts",
+    "journey planners"
+   ],
+   "action": "a passenger rides a train, a phone or a book in hand -> the ticket, the journey or the read shows in the app",
+   "framing": [
+    "a passenger by the window checking a phone, the street or the land moving behind, three-quarter",
+    "passengers stepping into a train, feet and doors, close",
+    "a train arriving on a platform, a person waiting"
+   ],
+   "screen": "phone: in a hands shot with the screen toward the lens, pin the UI plate on the screen (quadMatrix on its four corners); where the screen faces away or moves fast, cut to the kit Phone at the same angle with the UI receiving the input",
+   "queries": [
+    {
+     "q": "commuter",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "subway",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "train passenger",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "subway",
+     "kind": "photo",
+     "source": "isorepublic"
+    },
+    {
+     "q": "train",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "coverr:CWX5chvPc3",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "A young man riding the bus",
+     "shows": "a young man rides a bus checking his phone, the street passing in the window",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/a-young-man-riding-the-bus-cwx5chvpc3",
+     "thumb": "https://cdn.coverr.co/videos/coverr-a-young-man-riding-the-bus-6814/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-a-young-man-riding-the-bus-6814/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 23
+    },
+    {
+     "ref": "mixkit:1623",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "People getting into the subway train",
+     "shows": "feet of passengers stepping into a subway train",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/people-getting-into-the-subway-train-1623/",
+     "thumb": "https://assets.mixkit.co/videos/1623/1623-thumb-360-1.jpg",
+     "preview": "https://assets.mixkit.co/videos/1623/1623-360.mp4",
+     "image": "https://assets.mixkit.co/videos/1623/1623-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 21
+    },
+    {
+     "ref": "mixkit:4449",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Fisheye lens shot of the subway arriving",
+     "shows": "a train pulls into a subway platform, people waiting (fisheye)",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/fisheye-lens-shot-of-the-subway-arriving-4449/",
+     "thumb": "https://assets.mixkit.co/videos/4449/4449-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4449/4449-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4449/4449-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 8
+    },
+    {
+     "ref": "mixkit:3026",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Looking out the window of a passenger train",
+     "shows": "the view from a passenger train's window, green hills passing",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/looking-out-the-window-of-a-passenger-train-3026/",
+     "thumb": "https://assets.mixkit.co/videos/3026/3026-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/3026/3026-360.mp4",
+     "image": "https://assets.mixkit.co/videos/3026/3026-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 10
+    },
+    {
+     "ref": "isorepublic:city-subway-commuter",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "City Subway Commuter",
+     "shows": "commuters wait as a subway train arrives, from behind",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/city-subway-commuter/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2021/02/iso-republic-subway-commuters-urban-free-stock-photo-457x300.jpg",
+     "w": 2048,
+     "h": 1344
+    },
+    {
+     "ref": "isorepublic:subway-commuter",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Subway Commuter",
+     "shows": "a commuter stands on a platform as a train blurs past",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/subway-commuter/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2019/02/iso-republic-commuter-at-a-subway-platform-200x300.jpg",
+     "w": 2973,
+     "h": 4460
+    }
+   ]
+  },
+  {
+   "id": "airport",
+   "label": "travelling by plane",
+   "aliases": [
+    "airport",
+    "flight",
+    "luggage",
+    "boarding",
+    "suitcase",
+    "travel",
+    "plane",
+    "boarding pass",
+    "check-in"
+   ],
+   "apps": [
+    "travel booking",
+    "flights",
+    "itineraries",
+    "hotels",
+    "currency",
+    "travel insurance"
+   ],
+   "action": "a traveller moves through an airport with a bag -> the booking, the gate or the plan shows in the app",
+   "framing": [
+    "a traveller from behind pulling a case through a terminal, the light from the windows",
+    "hands with a phone and a boarding queue soft behind (its screen takes the UI plate)",
+    "a plane passing beyond the glass, a person watching"
+   ],
+   "screen": "phone: in a hands shot with the screen toward the lens, pin the UI plate on the screen (quadMatrix on its four corners); where the screen faces away or moves fast, cut to the kit Phone at the same angle with the UI receiving the input",
+   "queries": [
+    {
+     "q": "suitcase",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "airport",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "airport",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "airport",
+     "kind": "photo",
+     "source": "isorepublic"
+    },
+    {
+     "q": "airport",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "coverr:xxJoOcQSab",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Close-Up of Young Woman With Suitcase Walking Outdoors",
+     "shows": "close: a young woman walks pulling a suitcase, from behind and low",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/close-up-of-young-woman-with-suitcase-walking-outdoors",
+     "thumb": "https://cdn.coverr.co/videos/coverr-ready-for-takeoff-traveler-with-suitcase/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-ready-for-takeoff-traveler-with-suitcase/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 18
+    },
+    {
+     "ref": "mixkit:4642",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Rolling corridor at an airport",
+     "shows": "travellers with bags on a moving walkway in a bright terminal",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/rolling-corridor-at-an-airport-4642/",
+     "thumb": "https://assets.mixkit.co/videos/4642/4642-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4642/4642-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4642/4642-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 18
+    },
+    {
+     "ref": "mixkit:4065",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Flight getting ready for departure",
+     "shows": "a plane at the gate, the jet bridge and the apron, a wide",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/flight-getting-ready-for-departure-4065/",
+     "thumb": "https://assets.mixkit.co/videos/4065/4065-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4065/4065-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4065/4065-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 26
+    },
+    {
+     "ref": "coverr:1sIDYfKteT",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Picking up suitcase from carousel",
+     "shows": "a traveller lifts a suitcase off a baggage carousel, the steel belt filling the frame",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/picking-up-suitcase-from-carousel-1sidyfktet",
+     "thumb": "https://cdn.coverr.co/videos/coverr-picking-up-suitcase-from-carousel-871/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-picking-up-suitcase-from-carousel-871/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 16
+    },
+    {
+     "ref": "coverr:gqufqfxmoa",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Man using phone at airport",
+     "shows": "over the shoulder: a traveller scrolls a phone by the baggage hall, the screen toward the lens (a mask strap at the ear)",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/man-using-phone-at-airport-gqufqfxmoa",
+     "thumb": "https://cdn.coverr.co/videos/coverr-man-using-phone-at-airport-2719/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-man-using-phone-at-airport-2719/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "isorepublic:airport-passengers",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Airport Passengers",
+     "shows": "silhouettes of travellers against a terminal's tall windows",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/airport-passengers/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/airport-passengers-450x300.jpg",
+     "w": 5000,
+     "h": 3334
+    },
+    {
+     "ref": "isorepublic:airport-travel",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Airport Travel",
+     "shows": "a traveller with a backpack looks up at a departures board, from behind",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/airport-travel/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/airport-travel-450x300.jpg",
+     "w": 5000,
+     "h": 3333
+    }
+   ]
+  },
+  {
+   "id": "city-map",
+   "label": "finding the way in a city with a phone",
+   "aliases": [
+    "navigation",
+    "maps",
+    "directions",
+    "walking in the city",
+    "tourist",
+    "city walk",
+    "map"
+   ],
+   "apps": [
+    "maps",
+    "local discovery",
+    "city guides",
+    "travel",
+    "couriers"
+   ],
+   "action": "a person walks a street checking a phone -> the way, the place or the plan shows on it",
+   "framing": [
+    "a person on a street looking down at a phone, the city soft behind",
+    "over the shoulder at the phone with the street ahead (its screen takes the UI plate)",
+    "a tourist turning to look up at a building, phone in hand"
+   ],
+   "screen": "phone: in a hands shot with the screen toward the lens, pin the UI plate on the screen (quadMatrix on its four corners); where the screen faces away or moves fast, cut to the kit Phone at the same angle with the UI receiving the input",
+   "queries": [
+    {
+     "q": "tourist",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "city phone",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "tourist",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "tourist",
+     "kind": "photo",
+     "source": "isorepublic"
+    },
+    {
+     "q": "tourist phone",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "coverr:RsepVqgoaS",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Joyous Woman Texting on her Phone by the Harbour",
+     "shows": "close: a woman texts on her phone by a harbour, the phone toward the lens",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/texting-by-the-marina",
+     "thumb": "https://cdn.coverr.co/videos/coverr-texting-by-the-marina/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-texting-by-the-marina/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 12
+    },
+    {
+     "ref": "coverr:GbPUXbLrqX",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Close-Up of Woman Capturing Marina Views on Smartphone",
+     "shows": "close: hands hold a phone up to frame the marina, the view on its screen",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/capturing-marina-views-on-smartphone",
+     "thumb": "https://cdn.coverr.co/videos/coverr-capturing-marina-views-on-smartphone/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-capturing-marina-views-on-smartphone/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 13
+    },
+    {
+     "ref": "mixkit:4657",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Lovers with a map in the middle of the street",
+     "shows": "a couple read a map in the middle of a busy street",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/lovers-with-a-map-in-the-middle-of-the-street-4657/",
+     "thumb": "https://assets.mixkit.co/videos/4657/4657-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4657/4657-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4657/4657-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 28
+    },
+    {
+     "ref": "mixkit:4437",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "People walking in the street in Japan",
+     "shows": "people walk a busy shopping street, a wide",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/people-walking-in-the-street-in-japan-4437/",
+     "thumb": "https://assets.mixkit.co/videos/4437/4437-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4437/4437-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4437/4437-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 37
+    },
+    {
+     "ref": "isorepublic:tourist-nyc",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Tourist, NYC",
+     "shows": "a tourist photographs a skyline with his phone beside a viewing scope",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/tourist-nyc/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/tourist-nyc-450x300.jpg",
+     "w": 4000,
+     "h": 2666
+    },
+    {
+     "ref": "burst:person-uses-their-cell-phone-to-talk-a-picture-of-a-building",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Person Uses Their Cell Phone To Talk A Picture Of A Building",
+     "shows": "a person photographs a building with a phone in a narrow street (portrait)",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/person-uses-their-cell-phone-to-talk-a-picture-of-a-building",
+     "thumb": "https://burst.shopifycdn.com/photos/person-uses-their-cell-phone-to-talk-a-picture-of-a-building.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 3360,
+     "author": "Thom Bradley"
+    }
+   ]
+  },
+  {
+   "id": "shopping",
+   "label": "shopping in a store",
+   "aliases": [
+    "grocery",
+    "supermarket",
+    "retail",
+    "store",
+    "shopping cart",
+    "groceries",
+    "boutique",
+    "shop"
+   ],
+   "apps": [
+    "shopping lists",
+    "price comparison",
+    "loyalty",
+    "retail",
+    "grocery delivery"
+   ],
+   "action": "a person picks things off a shelf -> the list, the basket or the price shows in the app",
+   "framing": [
+    "a hand taking a product from a shelf, close (no readable brand: crop or defocus labels)",
+    "a person with a basket in an aisle, from the side",
+    "a phone with a list in one hand, the shelves soft (its screen takes the UI plate)"
+   ],
+   "screen": "phone: in a hands shot with the screen toward the lens, pin the UI plate on the screen (quadMatrix on its four corners); where the screen faces away or moves fast, cut to the kit Phone at the same angle with the UI receiving the input",
+   "queries": [
+    {
+     "q": "grocery shopping",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "supermarket",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "shopping",
+     "kind": "photo",
+     "source": "isorepublic"
+    },
+    {
+     "q": "grocery",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "coverr:syaBiCXKms",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Woman Shopping for Fresh Apples at Modern Supermarket",
+     "shows": "a woman shops for apples in a bright supermarket aisle, from the side",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/shopping-for-fresh-fruits",
+     "thumb": "https://cdn.coverr.co/videos/coverr-shopping-for-fresh-fruits/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-shopping-for-fresh-fruits/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 12
+    },
+    {
+     "ref": "coverr:5sqftUinue",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Close-Up of Woman Selecting Apples at Grocery Store",
+     "shows": "close: a hand chooses apples from a display",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/fresh-green-apples-on-display",
+     "thumb": "https://cdn.coverr.co/videos/coverr-fresh-green-apples-on-display/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-fresh-green-apples-on-display/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 10
+    },
+    {
+     "ref": "coverr:ObxURmSSau",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Woman Taking Plastic Bag while Shopping at Supermarket",
+     "shows": "a woman tears off a produce bag at a supermarket shelf",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/shopping-for-fresh-produce",
+     "thumb": "https://cdn.coverr.co/videos/coverr-shopping-for-fresh-produce/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-shopping-for-fresh-produce/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 13
+    },
+    {
+     "ref": "mixkit:40176",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Woman picking up groceries after shopping ",
+     "shows": "close: a woman lifts groceries in a woven bag",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/woman-picking-up-groceries-after-shopping-40176/",
+     "thumb": "https://assets.mixkit.co/videos/40176/40176-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/40176/40176-360.mp4",
+     "image": "https://assets.mixkit.co/videos/40176/40176-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 6
+    },
+    {
+     "ref": "isorepublic:grocery-shopping",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Grocery Shopping",
+     "shows": "a woman looks along shelves of bottles, from behind (labels: defocus them)",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/grocery-shopping/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/shopping-450x300.jpg",
+     "w": 4896,
+     "h": 3264
+    },
+    {
+     "ref": "burst:small-urban-grocery",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Small Urban Grocery",
+     "shows": "a small urban grocery from the door, shelves and produce",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/small-urban-grocery",
+     "thumb": "https://burst.shopifycdn.com/photos/small-urban-grocery.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1596,
+     "author": "Shopify Partners"
+    }
+   ]
+  },
+  {
+   "id": "online-shopping",
+   "label": "buying online with a card",
+   "aliases": [
+    "e-commerce",
+    "checkout",
+    "credit card",
+    "online order",
+    "buy now",
+    "online store",
+    "online payment"
+   ],
+   "apps": [
+    "e-commerce",
+    "payments",
+    "checkout",
+    "subscriptions",
+    "marketplaces"
+   ],
+   "action": "a card in one hand, a phone or laptop in the other -> the order, the payment or the receipt goes through in the app",
+   "framing": [
+    "hands with a card and a laptop, close, the screen to the side (its screen takes the UI plate)",
+    "a person on a sofa with a phone and a card"
+   ],
+   "screen": "phone: in a hands shot with the screen toward the lens, pin the UI plate on the screen (quadMatrix on its four corners); where the screen faces away or moves fast, cut to the kit Phone at the same angle with the UI receiving the input",
+   "queries": [
+    {
+     "q": "online shopping",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "credit card",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "online shopping",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "online shopping",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "credit card",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "coverr:lUU3bmV8Uh",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Close-Up of Online Shopping on Tablet with Credit Card",
+     "shows": "close: a hand holds a card beside a tablet showing a shop, a laptop behind",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/online-shopping-with-credit-card",
+     "thumb": "https://cdn.coverr.co/videos/coverr-online-shopping-with-credit-card/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-online-shopping-with-credit-card/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 13
+    },
+    {
+     "ref": "mixkit:42121",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Man and woman buying online on a laptop",
+     "shows": "over the shoulder: a man buys on a laptop, a card in his hand",
+     "screen": "pin",
+     "page": "https://mixkit.co/free-stock-video/man-and-woman-buying-online-on-a-laptop-42121/",
+     "thumb": "https://assets.mixkit.co/videos/42121/42121-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/42121/42121-360.mp4",
+     "image": "https://assets.mixkit.co/videos/42121/42121-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 9
+    },
+    {
+     "ref": "mixkit:42123",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Checking an item on a sales site on a cell phone",
+     "shows": "over the shoulder: a woman checks an item on a shop page on her phone",
+     "screen": "pin",
+     "page": "https://mixkit.co/free-stock-video/checking-an-item-on-a-sales-site-on-a-cell-42123/",
+     "thumb": "https://assets.mixkit.co/videos/42123/42123-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/42123/42123-360.mp4",
+     "image": "https://assets.mixkit.co/videos/42123/42123-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "coverr:Rq94oGouZU",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Woman Enters Credit Card Info on Laptop in Park",
+     "shows": "top-down: a woman types card details into a laptop at a park table",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/focused-outdoor-study-session",
+     "thumb": "https://cdn.coverr.co/videos/coverr-focused-outdoor-study-session/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-focused-outdoor-study-session/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 17
+    },
+    {
+     "ref": "burst:online-shopping",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Online Shopping",
+     "shows": "top-down: hands with a card over a laptop, a wallet and a phone beside",
+     "screen": "pin",
+     "page": "https://burst.shopify.com/photos/online-shopping",
+     "thumb": "https://burst.shopifycdn.com/photos/online-shopping.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Shopify Partners"
+    },
+    {
+     "ref": "burst:couple-smile-while-online-shopping-together",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Couple Smile While Online Shopping Together",
+     "shows": "a couple on a sofa smile at a laptop while shopping",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/couple-smile-while-online-shopping-together",
+     "thumb": "https://burst.shopifycdn.com/photos/couple-smile-while-online-shopping-together.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 3600,
+     "author": "Thom Bradley"
+    }
+   ]
+  },
+  {
+   "id": "pay-counter",
+   "label": "paying at a counter",
+   "aliases": [
+    "tap to pay",
+    "card payment",
+    "contactless",
+    "point of sale",
+    "cashier",
+    "card reader",
+    "pay",
+    "payment terminal"
+   ],
+   "apps": [
+    "payments",
+    "point of sale",
+    "fintech",
+    "banking",
+    "wallets",
+    "loyalty"
+   ],
+   "action": "a card or a phone taps a reader at a counter -> the payment lands, the balance or the receipt updates",
+   "framing": [
+    "the tap itself, close: the card or phone meeting the reader",
+    "over the counter: the customer pays, the person serving soft",
+    "the reader on the counter with a hand reaching in"
+   ],
+   "screen": "the reader or the phone takes the UI plate where it faces the lens; else cut to the kit Phone with the payment",
+   "queries": [
+    {
+     "q": "pay with phone",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "credit card payment",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "cashier",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "card payment",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "payment",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "coverr:4gPFPneW9Q",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "A Customer Pays with Apple Pay at the Café",
+     "shows": "close: a customer taps a phone on a card reader at a café counter (the phone's own wallet screen: cut or replace it)",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/a-customer-pays-with-apple-pay-at-the-cafe-4gpfpnew9q",
+     "thumb": "https://cdn.coverr.co/videos/coverr-a-customer-pays-with-apple-pay-at-the-café-6240/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-a-customer-pays-with-apple-pay-at-the-café-6240/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 7
+    },
+    {
+     "ref": "coverr:DfP6PtRDZ3",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Transferring card details",
+     "shows": "close: hands with a phone and a card, card details going into the phone",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/transferring-card-details-dfp6ptrdz3",
+     "thumb": "https://cdn.coverr.co/videos/coverr-transferring-card-details-5376/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-transferring-card-details-5376/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 18
+    },
+    {
+     "ref": "coverr:BSBBA7eSWB",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Man buying a jacket",
+     "shows": "a man pays for a jacket at a shop counter (masks: an older clip)",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/man-buying-a-jacket-bsbba7eswb",
+     "thumb": "https://cdn.coverr.co/videos/coverr-man-buying-a-jacket-7159/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-man-buying-a-jacket-7159/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 16
+    },
+    {
+     "ref": "burst:products-are-paid",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Products Are Paid",
+     "shows": "across a counter: a customer taps a phone on the reader the seller holds, a parcel between them",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/products-are-paid",
+     "thumb": "https://burst.shopifycdn.com/photos/products-are-paid.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Matthew Henry"
+    },
+    {
+     "ref": "burst:card-reader-payment",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Card Reader Payment",
+     "shows": "close: a card goes into a handheld reader, a hand holding it",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/card-reader-payment",
+     "thumb": "https://burst.shopifycdn.com/photos/card-reader-payment.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Sarah Pflug"
+    },
+    {
+     "ref": "burst:pos-card-reader",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "POS Card Reader",
+     "shows": "close: a card in a small white reader on a wooden counter",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/pos-card-reader",
+     "thumb": "https://burst.shopifycdn.com/photos/pos-card-reader.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Sarah Pflug"
+    },
+    {
+     "ref": "isorepublic:shopping-payment",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Shopping Payment",
+     "shows": "close: a card in a reader on a counter, a hand typing the code",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/shopping-payment/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/shopping-payment-450x300.jpg",
+     "w": 5000,
+     "h": 3333
+    }
+   ]
+  },
+  {
+   "id": "cafe-order",
+   "label": "ordering at a café",
+   "aliases": [
+    "coffee shop",
+    "barista",
+    "ordering coffee",
+    "takeaway",
+    "cafe",
+    "coffee",
+    "counter service"
+   ],
+   "apps": [
+    "food ordering",
+    "loyalty",
+    "point of sale",
+    "restaurant tools",
+    "pre-ordering"
+   ],
+   "action": "a barista makes the order across a counter -> the order, the queue or the points show in the app",
+   "framing": [
+    "the barista's hands making the drink, close",
+    "across the counter: the cup handed over",
+    "a customer at the counter with a phone (its screen takes the UI plate)"
+   ],
+   "screen": "none in the shot: the output follows on a cut to the kit Phone or Laptop (the same light, the same side) with the UI showing what the input became",
+   "queries": [
+    {
+     "q": "barista",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "barista",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "customer service",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "barista",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "coffee shop",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:41856",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Skilled employee working in a coffee shop",
+     "shows": "a barista works the espresso machine, hands and cups, close",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/skilled-employee-working-in-a-coffee-shop-41856/",
+     "thumb": "https://assets.mixkit.co/videos/41856/41856-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/41856/41856-360.mp4",
+     "image": "https://assets.mixkit.co/videos/41856/41856-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 8
+    },
+    {
+     "ref": "mixkit:810",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Latte art",
+     "shows": "close: milk poured into a cup, latte art forming",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/latte-art-810/",
+     "thumb": "https://assets.mixkit.co/videos/810/810-thumb-360-4.jpg",
+     "preview": "https://assets.mixkit.co/videos/810/810-360.mp4",
+     "image": "https://assets.mixkit.co/videos/810/810-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 34
+    },
+    {
+     "ref": "coverr:yGMSErpSlw",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Tattooed Hand with a Ring and a Tablet",
+     "shows": "close: a tattooed hand taps an order tablet on the counter",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/tattooed-hand-with-a-ring-and-a-tablet-ygmserpslw",
+     "thumb": "https://cdn.coverr.co/videos/coverr-tattooed-hand-with-a-ring-and-a-tablet-2017/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-tattooed-hand-with-a-ring-and-a-tablet-2017/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 11
+    },
+    {
+     "ref": "mixkit:3574",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Serving coffee in a cup at a coffee shop",
+     "shows": "a barista serves a coffee across the counter",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/serving-coffee-in-a-cup-at-a-coffee-shop-3574/",
+     "thumb": "https://assets.mixkit.co/videos/3574/3574-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/3574/3574-360.mp4",
+     "image": "https://assets.mixkit.co/videos/3574/3574-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 11
+    },
+    {
+     "ref": "coverr:o0V2lI1o0w",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Barista Gives Coffee to a Customer",
+     "shows": "a barista hands a coffee to a customer across the counter",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/barista-gives-coffee-to-a-customer-o0v2li1o0w",
+     "thumb": "https://cdn.coverr.co/videos/coverr-barista-hands-the-coffee-to-the-customer-7194/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-barista-hands-the-coffee-to-the-customer-7194/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 9
+    },
+    {
+     "ref": "coverr:pIV7apZWor",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Close-Up of Barista Taking Money from a Customer",
+     "shows": "close: a barista takes payment from a customer at the counter",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/close-up-of-barista-taking-money-from-a-customer-piv7apzwor",
+     "thumb": "https://cdn.coverr.co/videos/coverr-close-up-of-barista-taking-money-from-a-customer-3270/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-close-up-of-barista-taking-money-from-a-customer-3270/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 6
+    },
+    {
+     "ref": "burst:fresh-double-espresso-being-made-by-barista",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Fresh Double Espresso Being Made By Barista",
+     "shows": "close: a barista pulls a double espresso into a small cup",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/fresh-double-espresso-being-made-by-barista",
+     "thumb": "https://burst.shopifycdn.com/photos/fresh-double-espresso-being-made-by-barista.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Brodie"
+    },
+    {
+     "ref": "burst:barrista-holding-latte",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Barrista Holding Latte",
+     "shows": "close: a barista holds out a latte on a wooden counter",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/barrista-holding-latte",
+     "thumb": "https://burst.shopifycdn.com/photos/barrista-holding-latte.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Matthew Henry"
+    }
+   ]
+  },
+  {
+   "id": "dining",
+   "label": "dinner with friends",
+   "aliases": [
+    "restaurant",
+    "dinner",
+    "friends eating",
+    "splitting the bill",
+    "table",
+    "eating out",
+    "friends"
+   ],
+   "apps": [
+    "reservations",
+    "bill splitting",
+    "social",
+    "food reviews",
+    "group payments"
+   ],
+   "action": "friends round a table share a meal -> the booking, the split or the plan shows in the app",
+   "framing": [
+    "a table seen from above, hands passing dishes",
+    "friends mid-laugh round the table, a long lens, the room warm-dark",
+    "a phone on the table between the plates (its screen takes the UI plate)"
+   ],
+   "screen": "none in the shot: the output follows on a cut to the kit Phone or Laptop (the same light, the same side) with the UI showing what the input became",
+   "queries": [
+    {
+     "q": "friends dinner",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "restaurant",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "dinner",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "dinner friends",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "restaurant",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "coverr:UzQvsmmUUi",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Friends talking at a restaurant",
+     "shows": "two friends talk and laugh at a restaurant table, light from a window",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/friends-talking-at-a-restaurant-uzqvsmmuui",
+     "thumb": "https://cdn.coverr.co/videos/coverr-friends-talking-at-a-restaurant-8705/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-friends-talking-at-a-restaurant-8705/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 17
+    },
+    {
+     "ref": "coverr:Q3u61EZefN",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Friends at a cafe",
+     "shows": "two friends share food at a café table, mid-laugh",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/friends-at-a-cafe-q3u61ezefn",
+     "thumb": "https://cdn.coverr.co/videos/coverr-friends-at-a-cafe-5939/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-friends-at-a-cafe-5939/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 12
+    },
+    {
+     "ref": "mixkit:51644",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "A young couple having dinner and wine in a table decorated with rose petals for Valentine's Day",
+     "shows": "a couple at dinner by candlelight, a long lens",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/a-young-couple-having-dinner-and-wine-in-a-table-51644/",
+     "thumb": "https://assets.mixkit.co/videos/51644/51644-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/51644/51644-360.mp4",
+     "image": "https://assets.mixkit.co/videos/51644/51644-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 16
+    },
+    {
+     "ref": "coverr:WhW6U5Qx4R",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "A man joining his friend at a table outside",
+     "shows": "a man joins his friend at a table outside",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/a-man-joining-his-friend-at-a-table-outside-whw6u5qx4r",
+     "thumb": "https://cdn.coverr.co/videos/coverr-a-man-joining-his-friend-at-a-table-outside-6818/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-a-man-joining-his-friend-at-a-table-outside-6818/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 25
+    },
+    {
+     "ref": "burst:a-person-gets-ready-to-eat-a-beautiful-bowl-of-pasta",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "A Person Gets Ready To Eat A Beautiful Bowl Of Pasta",
+     "shows": "top-down: a person about to eat a bowl of pasta, glasses and plates",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/a-person-gets-ready-to-eat-a-beautiful-bowl-of-pasta",
+     "thumb": "https://burst.shopifycdn.com/photos/a-person-gets-ready-to-eat-a-beautiful-bowl-of-pasta.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 3600,
+     "author": "Farah"
+    },
+    {
+     "ref": "isorepublic:dinner-in-restaurant",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Cuisine Dinner in Restaurant",
+     "shows": "top-down: a table spread with dishes in a restaurant",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/dinner-in-restaurant/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/isorepublic-restaurant-dinners-1-450x300.jpg",
+     "w": 3300,
+     "h": 2200
+    }
+   ]
+  },
+  {
+   "id": "bills",
+   "label": "paying bills and receipts at home",
+   "aliases": [
+    "budget",
+    "finances",
+    "receipts",
+    "expenses",
+    "invoices",
+    "taxes",
+    "calculator",
+    "paperwork",
+    "bills",
+    "accounting"
+   ],
+   "apps": [
+    "budgeting",
+    "accounting",
+    "invoicing",
+    "expense tracking",
+    "tax",
+    "banking"
+   ],
+   "action": "hands sort receipts and papers with a calculator or a laptop -> the numbers become a budget, a report or a paid bill",
+   "framing": [
+    "hands with receipts and a calculator, close, top-down or from the side",
+    "a person at a desk with papers and a laptop (its screen takes the UI plate)"
+   ],
+   "screen": "laptop: over the shoulder or from the side, pin the UI plate on the screen (quadMatrix on its four corners, the plate a touch dimmer than the clip's brightest white); from the front the screen faces away, so cut to the kit Laptop with the UI",
+   "queries": [
+    {
+     "q": "calculator",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "calculator",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "expenses",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "budget",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "receipts",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "calculator",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:4533",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Woman doing accounts on a calculator",
+     "shows": "close: a woman does accounts on a calculator, papers on the desk",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/woman-doing-accounts-on-a-calculator-4533/",
+     "thumb": "https://assets.mixkit.co/videos/4533/4533-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4533/4533-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4533/4533-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 21
+    },
+    {
+     "ref": "coverr:3fJfi4ShuV",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Woman Calculating Expenses Using Smartphone and Notepad",
+     "shows": "close: a woman calculates expenses on a phone over a tablet and a notepad",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/calculating-expenses-with-smartphone",
+     "thumb": "https://cdn.coverr.co/videos/coverr-calculating-expenses-with-smartphone/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-calculating-expenses-with-smartphone/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "coverr:d1TlvfGhEe",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Close-Up of Woman Calculating Expenses on Tablet",
+     "shows": "close: hands count bills beside a tablet with expenses",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/calculating-finances-close-up",
+     "thumb": "https://cdn.coverr.co/videos/coverr-calculating-finances-close-up/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-calculating-finances-close-up/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 11
+    },
+    {
+     "ref": "coverr:nojvsP2t9b",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "A girl using a calculator while sitting at her desk",
+     "shows": "top-down: a young woman works a calculator at her desk",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/a-girl-using-a-calculator-while-sitting-at-her-desk-nojvsp2t9b",
+     "thumb": "https://cdn.coverr.co/videos/coverr-a-girl-using-a-calculator-while-sitting-at-her-desk-553/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-a-girl-using-a-calculator-while-sitting-at-her-desk-553/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 18
+    },
+    {
+     "ref": "burst:bills-and-receipts",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Bills And Receipts",
+     "shows": "top-down: bills, receipts, a pen and a phone calculator on wood",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/bills-and-receipts",
+     "thumb": "https://burst.shopifycdn.com/photos/bills-and-receipts.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Sarah Pflug"
+    },
+    {
+     "ref": "isorepublic:computer-calculator",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Computer & Calculator",
+     "shows": "a man works a calculator beside a laptop showing a spreadsheet (the screen takes the UI plate)",
+     "screen": "pin",
+     "page": "https://isorepublic.com/photo/computer-calculator/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/picography-macbook-air-calculator-1-452x300.jpg",
+     "w": 3785,
+     "h": 2514
+    },
+    {
+     "ref": "burst:finances-and-budget",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Finances And Budget",
+     "shows": "top-down: a hand writes figures in a notebook beside a laptop",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/finances-and-budget",
+     "thumb": "https://burst.shopifycdn.com/photos/finances-and-budget.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Shopify Partners"
+    }
+   ]
+  },
+  {
+   "id": "support-call",
+   "label": "a support call with a headset",
+   "aliases": [
+    "call center",
+    "customer service",
+    "headset",
+    "helpdesk",
+    "support agent",
+    "customer support",
+    "call centre"
+   ],
+   "apps": [
+    "customer support",
+    "help desks",
+    "call centre software",
+    "CRM",
+    "AI support agents"
+   ],
+   "action": "an agent with a headset helps a caller -> the ticket, the answer or the resolution shows in the product",
+   "framing": [
+    "an agent in three-quarter speaking into a headset mic, a screen soft beside",
+    "a row of agents, one sharp",
+    "over the shoulder at the agent's screen (it takes the UI plate)"
+   ],
+   "screen": "laptop: over the shoulder or from the side, pin the UI plate on the screen (quadMatrix on its four corners, the plate a touch dimmer than the clip's brightest white); from the front the screen faces away, so cut to the kit Laptop with the UI",
+   "queries": [
+    {
+     "q": "call center",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "headset",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "customer service",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:4658",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Man and woman working in a call center",
+     "shows": "two agents with headsets at their desks, both speaking, a wide",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/man-and-woman-working-in-a-call-center-4658/",
+     "thumb": "https://assets.mixkit.co/videos/4658/4658-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4658/4658-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4658/4658-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 16
+    },
+    {
+     "ref": "mixkit:4610",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Woman and man working at a call center",
+     "shows": "an agent with a headset speaks, a colleague beside her soft, three-quarter",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/woman-and-man-working-at-a-call-center-4610/",
+     "thumb": "https://assets.mixkit.co/videos/4610/4610-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4610/4610-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4610/4610-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "burst:call-centre-staff-with-headset",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Call Centre Staff With Headset",
+     "shows": "close: a support agent with a headset in profile, a colleague soft behind",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/call-centre-staff-with-headset",
+     "thumb": "https://burst.shopifycdn.com/photos/call-centre-staff-with-headset.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Sarah Pflug"
+    },
+    {
+     "ref": "burst:customer-support-staff-ready-for-work",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Customer Support Staff Ready For Work",
+     "shows": "from behind: an agent puts on a headset at a white desk",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/customer-support-staff-ready-for-work",
+     "thumb": "https://burst.shopifycdn.com/photos/customer-support-staff-ready-for-work.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Sarah Pflug"
+    }
+   ]
+  },
+  {
+   "id": "parcel",
+   "label": "a parcel arriving at the door",
+   "aliases": [
+    "delivery",
+    "package",
+    "courier",
+    "doorstep",
+    "box",
+    "shipping",
+    "parcel",
+    "food delivery",
+    "takeaway"
+   ],
+   "apps": [
+    "delivery tracking",
+    "e-commerce",
+    "logistics",
+    "couriers",
+    "returns"
+   ],
+   "action": "a courier hands over or sets down a parcel at a door -> the tracking closes, the order is delivered in the app",
+   "framing": [
+    "the hand-over at the door, two pairs of hands and the box, close",
+    "a courier walking up to a door with a box, from behind",
+    "a box on a doorstep, a hand picking it up"
+   ],
+   "screen": "none in the shot: the output follows on a cut to the kit Phone or Laptop (the same light, the same side) with the UI showing what the input became",
+   "queries": [
+    {
+     "q": "delivery",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "package delivery",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "package delivery",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "package arrived",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:31155",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Delivering a package to the door of a house",
+     "shows": "a courier with a parcel knocks at a front door, from behind",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/delivering-a-package-to-the-door-of-a-house-31155/",
+     "thumb": "https://assets.mixkit.co/videos/31155/31155-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/31155/31155-360.mp4",
+     "image": "https://assets.mixkit.co/videos/31155/31155-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 10
+    },
+    {
+     "ref": "mixkit:31297",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Woman at the door of her house receives a parcel by mail",
+     "shows": "a woman at her door receives a parcel from a courier",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/woman-at-the-door-of-her-house-receives-a-parcel-31297/",
+     "thumb": "https://assets.mixkit.co/videos/31297/31297-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/31297/31297-360.mp4",
+     "image": "https://assets.mixkit.co/videos/31297/31297-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 9
+    },
+    {
+     "ref": "mixkit:42130",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Delivering a package to a woman at home",
+     "shows": "close: a courier's gloved hands pass a box over at a door",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/delivering-a-package-to-a-woman-at-home-42130/",
+     "thumb": "https://assets.mixkit.co/videos/42130/42130-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/42130/42130-360.mp4",
+     "image": "https://assets.mixkit.co/videos/42130/42130-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 11
+    },
+    {
+     "ref": "mixkit:31136",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Delivery man looking for an address on the street",
+     "shows": "a courier walks a leafy street with a box, checking addresses",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/delivery-man-looking-for-an-address-on-the-street-31136/",
+     "thumb": "https://assets.mixkit.co/videos/31136/31136-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/31136/31136-360.mp4",
+     "image": "https://assets.mixkit.co/videos/31136/31136-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 11
+    },
+    {
+     "ref": "burst:package-delivered",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Package Delivered",
+     "shows": "close: a hand lifts a box from a doorstep",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/package-delivered",
+     "thumb": "https://burst.shopifycdn.com/photos/package-delivered.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Matthew Henry"
+    },
+    {
+     "ref": "burst:package-arrived",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Package Arrived",
+     "shows": "a woman stands in her doorway holding a parcel",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/package-arrived",
+     "thumb": "https://burst.shopifycdn.com/photos/package-arrived.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Matthew Henry"
+    }
+   ]
+  },
+  {
+   "id": "packing",
+   "label": "packing orders",
+   "aliases": [
+    "warehouse",
+    "shipping boxes",
+    "small business",
+    "inventory",
+    "fulfilment",
+    "packaging",
+    "packing"
+   ],
+   "apps": [
+    "e-commerce for sellers",
+    "inventory",
+    "shipping labels",
+    "logistics",
+    "small business"
+   ],
+   "action": "hands pack an order into a box -> the order ships, the stock and the label update in the product",
+   "framing": [
+    "hands taping or filling a box, close",
+    "a seller at a table of boxes, a laptop open (its screen takes the UI plate)",
+    "shelves of a small warehouse, a person picking"
+   ],
+   "screen": "none in the shot: the output follows on a cut to the kit Phone or Laptop (the same light, the same side) with the UI showing what the input became",
+   "queries": [
+    {
+     "q": "packaging",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "cardboard box",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "packing orders",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "packing box",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:31218",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Man in his living room finishes packing a box to ship",
+     "shows": "a man in his living room closes a packed box to ship, front, window light behind",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/man-in-his-living-room-finishes-packing-a-box-to-31218/",
+     "thumb": "https://assets.mixkit.co/videos/31218/31218-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/31218/31218-360.mp4",
+     "image": "https://assets.mixkit.co/videos/31218/31218-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 18
+    },
+    {
+     "ref": "mixkit:2812",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Hands selecting and packaging handmade soaps",
+     "shows": "top-down: a seller's hands choose handmade soaps on a wooden table and pack them (small handmade tags on a few: keep it short or crop them out)",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/hands-selecting-and-packaging-handmade-soaps-2812/",
+     "thumb": "https://assets.mixkit.co/videos/2812/2812-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/2812/2812-360.mp4",
+     "image": "https://assets.mixkit.co/videos/2812/2812-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 20
+    },
+    {
+     "ref": "burst:young-man-fills-a-box-with-packing",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Young Man Fills A Box With Packing",
+     "shows": "hands fill a box with packing paper on a white table, close",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/young-man-fills-a-box-with-packing",
+     "thumb": "https://burst.shopifycdn.com/photos/young-man-fills-a-box-with-packing.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1602,
+     "author": "Samantha Hurley"
+    },
+    {
+     "ref": "burst:packaged-with-care",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Packaged With Care",
+     "shows": "a seller's table without a person: a small box, twine, a stamp and tape on a map",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/packaged-with-care",
+     "thumb": "https://burst.shopifycdn.com/photos/packaged-with-care.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Matthew Henry"
+    }
+   ]
+  },
+  {
+   "id": "doctor",
+   "label": "a doctor's visit",
+   "aliases": [
+    "doctor",
+    "clinic",
+    "patient",
+    "nurse",
+    "medical appointment",
+    "healthcare",
+    "stethoscope",
+    "hospital"
+   ],
+   "apps": [
+    "health",
+    "telemedicine",
+    "appointment booking",
+    "patient records",
+    "insurance"
+   ],
+   "action": "a doctor and a patient talk across a desk or an exam -> the record, the prescription or the next visit shows in the app",
+   "framing": [
+    "the doctor listening, three-quarter, the patient soft in the foreground",
+    "hands: a stethoscope, a tablet, a pen on a chart, close",
+    "a patient in a waiting room with a phone (its screen takes the UI plate)"
+   ],
+   "screen": "none in the shot: the output follows on a cut to the kit Phone or Laptop (the same light, the same side) with the UI showing what the input became",
+   "queries": [
+    {
+     "q": "doctor consultation",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "doctor",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "nurse",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "doctor patient",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "doctor",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "coverr:RHkdRwlHPs",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Checking blood pressure",
+     "shows": "a doctor's hands fit a blood-pressure cuff on a patient's arm across a table, a phone lying beside them, close",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/checking-blood-pressure-rhkdrwlhps",
+     "thumb": "https://cdn.coverr.co/videos/coverr-checking-blood-pressure-6184/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-checking-blood-pressure-6184/360p.mp4",
+     "image": "https://cdn.coverr.co/videos/coverr-checking-blood-pressure-6184/1080p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 13
+    },
+    {
+     "ref": "burst:doctor-holds-chart",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Doctor Holds Chart",
+     "shows": "a doctor in a white coat with a stethoscope holds a chart, the patient's shoulder soft in the foreground: the listening three-quarter the input asks for",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/doctor-holds-chart",
+     "thumb": "https://burst.shopifycdn.com/photos/doctor-holds-chart.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Shopify Partners"
+    },
+    {
+     "ref": "burst:patient-receives-some-good-news",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Patient Receives Some Good News",
+     "shows": "a patient in a gown listens across from the doctor, the doctor's head soft in the foreground, a clinic room behind",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/patient-receives-some-good-news",
+     "thumb": "https://burst.shopifycdn.com/photos/patient-receives-some-good-news.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Shopify Partners"
+    },
+    {
+     "ref": "mixkit:4582",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Doctor at home consultation",
+     "shows": "a home visit: a doctor in a mask kneels by an elderly patient under a blanket on a sofa while a relative sits beside them, a wide, window light",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/doctor-at-home-consultation-4582/",
+     "thumb": "https://assets.mixkit.co/videos/4582/4582-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4582/4582-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4582/4582-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 11
+    },
+    {
+     "ref": "mixkit:4833",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Female doctor talking on a video call",
+     "shows": "telehealth: a doctor at a white desk talks into a tablet held in both hands, front (the tablet faces her: cut to the product)",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/female-doctor-talking-on-a-video-call-4833/",
+     "thumb": "https://assets.mixkit.co/videos/4833/4833-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4833/4833-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4833/4833-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "burst:a-doctor-checks-a-chart-as-the-patient-watches-on",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "A Doctor Checks A Chart As The Patient Watches On",
+     "shows": "a hospital bed: a doctor writes on a chart while the patient watches, three-quarter, soft window light",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/a-doctor-checks-a-chart-as-the-patient-watches-on",
+     "thumb": "https://burst.shopifycdn.com/photos/a-doctor-checks-a-chart-as-the-patient-watches-on.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Matthew Henry"
+    },
+    {
+     "ref": "isorepublic:nurse-doctor",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Nurse Doctor",
+     "shows": "hands close: a doctor in a white coat lifts a stethoscope, bright and clean (a touch posed: keep it short)",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/nurse-doctor/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2018/11/nurse-health-450x300.jpg",
+     "w": 5000,
+     "h": 3333
+    }
+   ]
+  },
+  {
+   "id": "health-home",
+   "label": "checking health at home",
+   "aliases": [
+    "pills",
+    "medication",
+    "blood pressure",
+    "smartwatch",
+    "glucose",
+    "symptoms",
+    "health tracking",
+    "medicine"
+   ],
+   "apps": [
+    "medication reminders",
+    "health tracking",
+    "wearables",
+    "chronic care",
+    "pharmacy"
+   ],
+   "action": "a person takes a pill or reads a watch at home -> the dose, the reading or the trend logs in the app",
+   "framing": [
+    "hands with a pill and a glass of water, close",
+    "a wrist with a smartwatch turned toward the face (its screen takes the UI plate)",
+    "a person at a kitchen table with a pill box and a phone"
+   ],
+   "screen": "phone: in a hands shot with the screen toward the lens, pin the UI plate on the screen (quadMatrix on its four corners); where the screen faces away or moves fast, cut to the kit Phone at the same angle with the UI receiving the input",
+   "queries": [
+    {
+     "q": "vitamins",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "blood pressure",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "smart watch",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "pills",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "smart watch",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:39779",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Hand of a man looking at his smart watch",
+     "shows": "a man turns his wrist to read a smartwatch, seated, close",
+     "screen": "pin",
+     "page": "https://mixkit.co/free-stock-video/hand-of-a-man-looking-at-his-smart-watch-39779/",
+     "thumb": "https://assets.mixkit.co/videos/39779/39779-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/39779/39779-360.mp4",
+     "image": "https://assets.mixkit.co/videos/39779/39779-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 13
+    },
+    {
+     "ref": "coverr:YgRlgEBe7r",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Taking vitamins",
+     "shows": "hands open a vitamin bottle at a kitchen sink, close (a printed label: keep it soft or out of focus)",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/taking-vitamins-ygrlgebe7r",
+     "thumb": "https://cdn.coverr.co/videos/coverr-taking-vitamins-230/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-taking-vitamins-230/360p.mp4",
+     "image": "https://cdn.coverr.co/videos/coverr-taking-vitamins-230/1080p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "burst:wrists-of-a-person-in-a-blue-suit-with-a-smart-watch",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Wrists Of A Person In A Blue Suit With A Smart Watch",
+     "shows": "a wrist in a navy sleeve, the watch face toward the lens, a finger on it",
+     "screen": "pin",
+     "page": "https://burst.shopify.com/photos/wrists-of-a-person-in-a-blue-suit-with-a-smart-watch",
+     "thumb": "https://burst.shopifycdn.com/photos/wrists-of-a-person-in-a-blue-suit-with-a-smart-watch.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Farah"
+    }
+   ]
+  },
+  {
+   "id": "studying",
+   "label": "studying",
+   "aliases": [
+    "student",
+    "homework",
+    "learning",
+    "books",
+    "exam",
+    "revision",
+    "library",
+    "study"
+   ],
+   "apps": [
+    "education",
+    "flashcards",
+    "language learning",
+    "tutoring",
+    "study planners"
+   ],
+   "action": "a student works through books and a laptop -> the lesson, the card or the progress shows in the app",
+   "framing": [
+    "a student at a desk with books and a laptop, three-quarter, window light",
+    "hands with a highlighter on a page, close",
+    "over the shoulder at the laptop (its screen takes the UI plate)"
+   ],
+   "screen": "laptop: over the shoulder or from the side, pin the UI plate on the screen (quadMatrix on its four corners, the plate a touch dimmer than the clip's brightest white); from the front the screen faces away, so cut to the kit Laptop with the UI",
+   "queries": [
+    {
+     "q": "studying",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "student laptop",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "studying",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "studying",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "studying",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "coverr:7bjDCRqq0j",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Woman sitting at her desk and studying at home",
+     "shows": "over the shoulder: a laptop open beside a book, a hand turning the page",
+     "screen": "pin",
+     "page": "https://coverr.co/videos/woman-sitting-at-her-desk-and-studying-at-home-7bjdcrqq0j",
+     "thumb": "https://cdn.coverr.co/videos/coverr-woman-sitting-at-her-desk-and-studying-at-home-3564/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-woman-sitting-at-her-desk-and-studying-at-home-3564/360p.mp4",
+     "image": "https://cdn.coverr.co/videos/coverr-woman-sitting-at-her-desk-and-studying-at-home-3564/1080p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 25
+    },
+    {
+     "ref": "mixkit:4761",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Concentrated boy studying at home",
+     "shows": "a boy at a desk with a stack of books writes in a notebook, front, window light",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/concentrated-boy-studying-at-home-4761/",
+     "thumb": "https://assets.mixkit.co/videos/4761/4761-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/4761/4761-360.mp4",
+     "image": "https://assets.mixkit.co/videos/4761/4761-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 6
+    },
+    {
+     "ref": "mixkit:50109",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "A student making notes and mathematical charts on the notebook",
+     "shows": "hands write notes and a chart with a ruler in a squared notebook, close",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/a-student-making-notes-and-mathematical-charts-on-the-notebook-50109/",
+     "thumb": "https://assets.mixkit.co/videos/50109/50109-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/50109/50109-360.mp4",
+     "image": "https://assets.mixkit.co/videos/50109/50109-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 8
+    },
+    {
+     "ref": "coverr:28UWcggRf7",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Focused Student Studying with Laptop and Tablet at Park",
+     "shows": "a student at a park table with a laptop and a tablet, three-quarter, trees soft behind",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/focused-student-with-digital-devices",
+     "thumb": "https://cdn.coverr.co/videos/coverr-focused-student-with-digital-devices/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-focused-student-with-digital-devices/360p.mp4",
+     "image": "https://cdn.coverr.co/videos/coverr-focused-student-with-digital-devices/1080p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 11
+    },
+    {
+     "ref": "burst:students-study-and-prepare-as-team",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Students Study And Prepare As Team",
+     "shows": "top-down: students at a table with folders, notes and a phone",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/students-study-and-prepare-as-team",
+     "thumb": "https://burst.shopifycdn.com/photos/students-study-and-prepare-as-team.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Sarah Pflug"
+    }
+   ]
+  },
+  {
+   "id": "reading",
+   "label": "reading",
+   "aliases": [
+    "book",
+    "e-reader",
+    "reading a book",
+    "magazine",
+    "news",
+    "kindle",
+    "read"
+   ],
+   "apps": [
+    "reading apps",
+    "ebooks",
+    "audiobooks",
+    "news",
+    "read later"
+   ],
+   "action": "a person reads -> the highlight, the summary or the next chapter shows in the app",
+   "framing": [
+    "hands holding an open book, close, a page turning",
+    "a reader by a window, three-quarter, the light on the page",
+    "a reader with a phone or e-reader (its screen takes the UI plate)"
+   ],
+   "screen": "none in the shot: the output follows on a cut to the kit Phone or Laptop (the same light, the same side) with the UI showing what the input became",
+   "queries": [
+    {
+     "q": "reading book",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "reading a book",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "reading",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "reading",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": []
+  },
+  {
+   "id": "headphones",
+   "label": "listening with headphones",
+   "aliases": [
+    "music",
+    "podcast listening",
+    "earbuds",
+    "audiobook",
+    "listening",
+    "headphones"
+   ],
+   "apps": [
+    "music",
+    "podcasts",
+    "audiobooks",
+    "language learning",
+    "audio"
+   ],
+   "action": "a person listens, headphones on -> the track, the episode or the lesson plays in the app",
+   "framing": [
+    "a face in profile with headphones, eyes half closed, a small movement to the beat",
+    "a hand touching an earbud or the cup of a headphone, close",
+    "a person on a street or a train with headphones, a phone in hand (its screen takes the UI plate)"
+   ],
+   "screen": "phone: in a hands shot with the screen toward the lens, pin the UI plate on the screen (quadMatrix on its four corners); where the screen faces away or moves fast, cut to the kit Phone at the same angle with the UI receiving the input",
+   "queries": [
+    {
+     "q": "headphones",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "headphones",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "headphones",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "headphones",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "coverr:zn5vK7SrUV",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Serene Evening with Headphones in a Quiet Park",
+     "shows": "dusk in a park: a young woman in over-ear headphones looks down at her phone, then adjusts a cup, low key",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/serene-evening-music-session",
+     "thumb": "https://cdn.coverr.co/videos/coverr-serene-evening-music-session/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-serene-evening-music-session/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 16
+    },
+    {
+     "ref": "coverr:FPM0KJU1Br",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "Man Enjoying Music on Smartphone at Dusk in City",
+     "shows": "a man in headphones scrolls a phone on a city street at dusk, front, the street lights soft behind (the same shoot as a man putting the headphones on)",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/man-enjoying-music-on-smartphone-at-dusk",
+     "thumb": "https://cdn.coverr.co/videos/coverr-man-enjoying-music-on-smartphone-at-dusk/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-man-enjoying-music-on-smartphone-at-dusk/360p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 22
+    },
+    {
+     "ref": "mixkit:2983",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Woman wearing active wear puts on headphones",
+     "shows": "a woman sits on stone steps in a wood and puts on over-ear headphones, front",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/woman-wearing-active-wear-puts-on-headphones-2983/",
+     "thumb": "https://assets.mixkit.co/videos/2983/2983-thumb-360-1.jpg",
+     "preview": "https://assets.mixkit.co/videos/2983/2983-360.mp4",
+     "image": "https://assets.mixkit.co/videos/2983/2983-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "mixkit:52121",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "A young runner woman puts on her in-ear headphones before her morning run",
+     "shows": "a runner puts in her earbuds before a run, low angle against an office tower, the sky behind",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/a-young-runner-woman-puts-on-her-in-ear-headphones-before-52121/",
+     "thumb": "https://assets.mixkit.co/videos/52121/52121-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/52121/52121-360.mp4",
+     "image": "https://assets.mixkit.co/videos/52121/52121-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 7
+    },
+    {
+     "ref": "mixkit:99904",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "A young man wearing headphones sits in front of his laptop computer at the cafe table then takes a sip of coffee",
+     "shows": "a young man in headphones at a café table with a laptop, sips a coffee, three-quarter",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/a-young-man-wearing-headphones-sits-in-front-of-his-99904/",
+     "thumb": "https://assets.mixkit.co/active_storage/video_items/99904/1717706816/99904-video-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/active_storage/video_items/99904/1717706816/99904-video-360.mp4",
+     "image": "https://assets.mixkit.co/active_storage/video_items/99904/1717706816/99904-video-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 8
+    },
+    {
+     "ref": "burst:relaxing-in-headphones",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Relaxing In Headphones",
+     "shows": "a young woman in headphones smiles at a laptop by a keyboard, chin on her hand, soft daylight (a touch posed: keep it short)",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/relaxing-in-headphones",
+     "thumb": "https://burst.shopifycdn.com/photos/relaxing-in-headphones.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Sarah Pflug"
+    }
+   ]
+  },
+  {
+   "id": "podcast-mic",
+   "label": "recording into a microphone",
+   "aliases": [
+    "podcast",
+    "microphone",
+    "recording",
+    "studio",
+    "voice over",
+    "streaming",
+    "mic"
+   ],
+   "apps": [
+    "podcast tools",
+    "audio editing",
+    "transcription",
+    "voice over",
+    "streaming"
+   ],
+   "action": "a person speaks into a microphone -> the recording becomes a waveform, a transcript or a clip in the product",
+   "framing": [
+    "a face in profile at the mic, close, mouth moving",
+    "two hosts across a table with mics, from the side",
+    "a laptop beside the mic (its screen takes the UI plate)"
+   ],
+   "screen": "laptop: over the shoulder or from the side, pin the UI plate on the screen (quadMatrix on its four corners, the plate a touch dimmer than the clip's brightest white); from the front the screen faces away, so cut to the kit Laptop with the UI",
+   "queries": [
+    {
+     "q": "podcast",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "microphone",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "podcast",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "microphone",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "microphone",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:2955",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Man speaking into the microphone at record studio",
+     "shows": "a man in headphones speaks into a studio mic, three-quarter, wood panels soft behind",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/man-speaking-into-the-microphone-at-record-studio-2955/",
+     "thumb": "https://assets.mixkit.co/videos/2955/2955-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/2955/2955-360.mp4",
+     "image": "https://assets.mixkit.co/videos/2955/2955-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 13
+    },
+    {
+     "ref": "mixkit:2957",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Female broadcaster speaking to the microphone",
+     "shows": "a woman in headphones speaks at a mic, near profile, her hands moving",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/female-broadcaster-speaking-to-the-microphone-2957/",
+     "thumb": "https://assets.mixkit.co/videos/2957/2957-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/2957/2957-360.mp4",
+     "image": "https://assets.mixkit.co/videos/2957/2957-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "mixkit:2948",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "People recording a podcast in a studio",
+     "shows": "two hosts across a desk at mics, a laptop open between them, from the side",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/people-recording-a-podcast-in-a-studio-2948/",
+     "thumb": "https://assets.mixkit.co/videos/2948/2948-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/2948/2948-360.mp4",
+     "image": "https://assets.mixkit.co/videos/2948/2948-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 10
+    },
+    {
+     "ref": "coverr:ZL6EP1Rmn3",
+     "kind": "video",
+     "licence": "coverr",
+     "title": "A guy fixes a flexible desk stand for his studio microphone",
+     "shows": "a man sets up a mic on a desk arm in a home studio, front, soft daylight",
+     "screen": "cut",
+     "page": "https://coverr.co/videos/a-guy-fixes-a-flexible-desk-stand-for-his-studio-microphone-zl6ep1rmn3",
+     "thumb": "https://cdn.coverr.co/videos/coverr-a-guy-fixes-a-flexible-desk-stand-for-his-studio-microphone-5761/thumbnail?width=640",
+     "preview": "https://cdn.coverr.co/videos/coverr-a-guy-fixes-a-flexible-desk-stand-for-his-studio-microphone-5761/360p.mp4",
+     "image": "https://cdn.coverr.co/videos/coverr-a-guy-fixes-a-flexible-desk-stand-for-his-studio-microphone-5761/1080p.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 12
+    }
+   ]
+  },
+  {
+   "id": "creator",
+   "label": "filming yourself with a phone",
+   "aliases": [
+    "vlog",
+    "selfie video",
+    "content creator",
+    "influencer",
+    "filming",
+    "livestream",
+    "selfie",
+    "vlogger"
+   ],
+   "apps": [
+    "video editing",
+    "social video",
+    "creator tools",
+    "livestreaming",
+    "captions"
+   ],
+   "action": "a person films themselves talking to a phone -> the clip, the captions or the post appear in the app",
+   "framing": [
+    "the creator talking to a phone held out, from the side or behind the phone",
+    "over the shoulder at the phone filming (its screen takes the UI plate: the creator on screen)",
+    "a phone on a small tripod, the person speaking to it"
+   ],
+   "screen": "phone: in a hands shot with the screen toward the lens, pin the UI plate on the screen (quadMatrix on its four corners); where the screen faces away or moves fast, cut to the kit Phone at the same angle with the UI receiving the input",
+   "queries": [
+    {
+     "q": "vlogger",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "selfie",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "vlogger",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "selfie",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "selfie",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": []
+  },
+  {
+   "id": "drawing-tablet",
+   "label": "drawing on a tablet",
+   "aliases": [
+    "stylus",
+    "tablet",
+    "design",
+    "illustration",
+    "sketching",
+    "ipad",
+    "drawing"
+   ],
+   "apps": [
+    "design tools",
+    "drawing",
+    "pen note taking",
+    "creative apps"
+   ],
+   "action": "a stylus draws on a tablet -> the stroke becomes the design, the diagram or the clean note in the app",
+   "framing": [
+    "the stylus on the glass, close, from the side",
+    "top-down on the tablet and the hand (its screen takes the UI plate)",
+    "a designer at a desk with a tablet, three-quarter"
+   ],
+   "screen": "tablet: top-down or from the side, pin the UI plate on the screen (quadMatrix on its four corners); the hand stays over it (cut it out or keep the plate under a hand matte)",
+   "queries": [
+    {
+     "q": "drawing tablet",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "tablet drawing",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "tablet drawing",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "tablet",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": []
+  },
+  {
+   "id": "coding",
+   "label": "writing code at a desk",
+   "aliases": [
+    "programmer",
+    "developer",
+    "code",
+    "software engineer",
+    "monitors",
+    "programming"
+   ],
+   "apps": [
+    "developer tools",
+    "IDEs",
+    "AI coding assistants",
+    "DevOps",
+    "APIs"
+   ],
+   "action": "a developer types code at a desk -> the build passes, the bug is found, the code is written in the product",
+   "framing": [
+    "hands on a keyboard, close, the monitor glow on them",
+    "a developer in three-quarter lit by the screens",
+    "over the shoulder at the monitor (it takes the UI plate: the product, never a stock screen of code)"
+   ],
+   "screen": "laptop: over the shoulder or from the side, pin the UI plate on the screen (quadMatrix on its four corners, the plate a touch dimmer than the clip's brightest white); from the front the screen faces away, so cut to the kit Laptop with the UI",
+   "queries": [
+    {
+     "q": "programmer",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "coding",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "programming",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "coding",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "code",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:41652",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Hands of a programmer working on a desk",
+     "shows": "hands type on a dark keyboard beside a notebook of diagrams, close, the screen out of frame",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/hands-of-a-programmer-working-on-a-desk-41652/",
+     "thumb": "https://assets.mixkit.co/videos/41652/41652-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/41652/41652-360.mp4",
+     "image": "https://assets.mixkit.co/videos/41652/41652-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 8
+    },
+    {
+     "ref": "mixkit:41637",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Programmer working with codes on a computer",
+     "shows": "over the shoulder of a developer at a monitor, the screen large in frame (pin the product over its code)",
+     "screen": "pin",
+     "page": "https://mixkit.co/free-stock-video/programmer-working-with-codes-on-a-computer-41637/",
+     "thumb": "https://assets.mixkit.co/videos/41637/41637-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/41637/41637-360.mp4",
+     "image": "https://assets.mixkit.co/videos/41637/41637-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 10
+    },
+    {
+     "ref": "burst:coding-on-laptop",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Coding On Laptop",
+     "shows": "over the shoulder: hands on a laptop, the screen toward the lens (pin the product over its code)",
+     "screen": "pin",
+     "page": "https://burst.shopify.com/photos/coding-on-laptop",
+     "thumb": "https://burst.shopifycdn.com/photos/coding-on-laptop.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Matthew Henry"
+    },
+    {
+     "ref": "burst:developer-coding-in-php",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Developer Coding In Php",
+     "shows": "top-down: hands on a laptop on a dark desk, the screen square to the lens (pin)",
+     "screen": "pin",
+     "page": "https://burst.shopify.com/photos/developer-coding-in-php",
+     "thumb": "https://burst.shopifycdn.com/photos/developer-coding-in-php.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Sarah Pflug"
+    }
+   ]
+  },
+  {
+   "id": "dashboard",
+   "label": "reading charts on a screen",
+   "aliases": [
+    "analytics",
+    "data",
+    "charts",
+    "reports",
+    "trading",
+    "metrics",
+    "spreadsheet"
+   ],
+   "apps": [
+    "analytics",
+    "BI",
+    "dashboards",
+    "finance",
+    "marketing analytics"
+   ],
+   "action": "a person studies numbers on a screen -> the insight, the alert or the report surfaces in the product",
+   "framing": [
+    "over the shoulder at a monitor of charts (it takes the UI plate)",
+    "a face lit by the screen, thinking, three-quarter",
+    "a finger or a pen pointing at a chart on a laptop, close"
+   ],
+   "screen": "laptop: over the shoulder or from the side, pin the UI plate on the screen (quadMatrix on its four corners, the plate a touch dimmer than the clip's brightest white); from the front the screen faces away, so cut to the kit Laptop with the UI",
+   "queries": [
+    {
+     "q": "charts computer",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "data analysis",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "charts",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "analytics",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "charts",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": []
+  },
+  {
+   "id": "field-work",
+   "label": "field work with a tablet",
+   "aliases": [
+    "construction site",
+    "technician",
+    "engineer",
+    "inspection",
+    "hard hat",
+    "maintenance",
+    "field service",
+    "warehouse worker"
+   ],
+   "apps": [
+    "field service",
+    "inspections",
+    "construction management",
+    "maintenance",
+    "logistics"
+   ],
+   "action": "a worker on site checks something and taps a tablet -> the report, the task or the fix logs in the product",
+   "framing": [
+    "a worker in a hard hat with a tablet on site, three-quarter",
+    "hands on the tablet with the site soft behind (its screen takes the UI plate)",
+    "an engineer inspecting a machine, close"
+   ],
+   "screen": "tablet or phone: no free clip of a worker on site with a tablet was found, so show the site (the workers, the plan, a call), then cut to the kit Phone or a tablet plate with the UI logging the report",
+   "queries": [
+    {
+     "q": "construction",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "engineer",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "construction",
+     "kind": "photo",
+     "source": "isorepublic"
+    },
+    {
+     "q": "construction worker",
+     "kind": "photo",
+     "source": "burst"
+    }
+   ],
+   "picks": [
+    {
+     "ref": "mixkit:1436",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Two construction workers",
+     "shows": "two builders in hard hats and high-visibility vests talk over something on a brick site, three-quarter",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/two-construction-workers-1436/",
+     "thumb": "https://assets.mixkit.co/videos/1436/1436-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/1436/1436-360.mp4",
+     "image": "https://assets.mixkit.co/videos/1436/1436-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 16
+    },
+    {
+     "ref": "mixkit:600",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Man in hard hat watching drone fly",
+     "shows": "from behind: a worker in a hard hat and a high-visibility vest faces a tower under construction",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/man-in-hard-hat-watching-drone-fly-600/",
+     "thumb": "https://assets.mixkit.co/videos/600/600-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/600/600-360.mp4",
+     "image": "https://assets.mixkit.co/videos/600/600-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 25
+    },
+    {
+     "ref": "mixkit:1443",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Person takes a phone call at a construction site",
+     "shows": "close: a worker in a hard hat takes a call on his phone on site, scaffolding soft behind (the phone faces away: cut to the product)",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/person-takes-a-phone-call-at-a-construction-site-1443/",
+     "thumb": "https://assets.mixkit.co/videos/1443/1443-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/1443/1443-360.mp4",
+     "image": "https://assets.mixkit.co/videos/1443/1443-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 14
+    },
+    {
+     "ref": "mixkit:1439",
+     "kind": "video",
+     "licence": "mixkit-video",
+     "title": "Pointing to blueprints",
+     "shows": "close: hands point along a blueprint on a table, the plan in sharp focus",
+     "screen": "cut",
+     "page": "https://mixkit.co/free-stock-video/pointing-to-blueprints-1439/",
+     "thumb": "https://assets.mixkit.co/videos/1439/1439-thumb-720-0.jpg",
+     "preview": "https://assets.mixkit.co/videos/1439/1439-360.mp4",
+     "image": "https://assets.mixkit.co/videos/1439/1439-1080.mp4",
+     "w": 1920,
+     "h": 1080,
+     "dur": 15
+    },
+    {
+     "ref": "isorepublic:construction-blueprint",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Construction Blueprint",
+     "shows": "two workers in high-visibility vests lean over blueprints, hands on the plan, top-down",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/construction-blueprint/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2020/09/iso-republic-hands-on-blueprints-450x300.jpg",
+     "w": 2048,
+     "h": 1365
+    },
+    {
+     "ref": "isorepublic:construction-plans",
+     "kind": "photo",
+     "licence": "cc0",
+     "title": "Construction Plans",
+     "shows": "a worker in a high-visibility vest marks a plan on a clipboard, close",
+     "screen": "cut",
+     "page": "https://isorepublic.com/photo/construction-plans/",
+     "thumb": "https://isorepublic.com/wp-content/uploads/2020/07/iso-republic-construction-site-plans-450x300.jpg",
+     "w": 2048,
+     "h": 1365
+    },
+    {
+     "ref": "burst:construction-worker-in-protective-gear",
+     "kind": "photo",
+     "licence": "burst",
+     "title": "Construction Worker In Protective Gear",
+     "shows": "from behind: a worker in a hard hat and a vest among a crowd of workers on site",
+     "screen": "cut",
+     "page": "https://burst.shopify.com/photos/construction-worker-in-protective-gear",
+     "thumb": "https://burst.shopifycdn.com/photos/construction-worker-in-protective-gear.jpg?width=500&format=pjpg&exif=0&iptc=0",
+     "w": 2400,
+     "h": 1600,
+     "author": "Shopify Partners"
+    }
+   ]
+  },
+  {
+   "id": "dog-walk",
+   "label": "walking the dog",
+   "aliases": [
+    "dog",
+    "pet",
+    "puppy",
+    "cat",
+    "vet",
+    "dog walker",
+    "pets"
+   ],
+   "apps": [
+    "pet care",
+    "dog walking",
+    "vet booking",
+    "pet food",
+    "pet trackers"
+   ],
+   "action": "a person walks a dog -> the walk, the feed or the vet visit logs in the app",
+   "framing": [
+    "the dog and the lead low and close, walking",
+    "the walker and the dog from behind on a path",
+    "a hand with a phone and the lead (its screen takes the UI plate)"
+   ],
+   "screen": "phone: in a hands shot with the screen toward the lens, pin the UI plate on the screen (quadMatrix on its four corners); where the screen faces away or moves fast, cut to the kit Phone at the same angle with the UI receiving the input",
+   "queries": [
+    {
+     "q": "dog walk",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "dog",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "dog walk",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "dog",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": []
+  },
+  {
+   "id": "family",
+   "label": "family life at home",
+   "aliases": [
+    "parents",
+    "kids",
+    "children",
+    "family",
+    "baby",
+    "parenting",
+    "home"
+   ],
+   "apps": [
+    "family organisers",
+    "parenting",
+    "baby trackers",
+    "shared calendars",
+    "kids' learning"
+   ],
+   "action": "a family moves through a morning at home -> the plan, the reminder or the shared list shows in the app",
+   "framing": [
+    "a parent and a child at a kitchen table, from the side, natural light",
+    "small hands and big hands together on something, close",
+    "a parent with a phone while a child plays soft behind (its screen takes the UI plate)"
+   ],
+   "screen": "none in the shot: the output follows on a cut to the kit Phone or Laptop (the same light, the same side) with the UI showing what the input became",
+   "queries": [
+    {
+     "q": "family home",
+     "kind": "video",
+     "source": "coverr"
+    },
+    {
+     "q": "family",
+     "kind": "video",
+     "source": "mixkit"
+    },
+    {
+     "q": "family",
+     "kind": "photo",
+     "source": "burst"
+    },
+    {
+     "q": "family",
+     "kind": "photo",
+     "source": "isorepublic"
+    }
+   ],
+   "picks": []
+  }
+ ]
+}

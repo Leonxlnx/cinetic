@@ -1,0 +1,3339 @@
+{
+ "about": "The brands a film most often shows: each brand's current official mark (the month it changed, what it looks like, the brand page it was checked against on 2026-10-29, its fingerprint), the files of the open collections that draw it (prefer: the order logos.mjs takes them in), the status of every file the collections hold for the brand (sources), and the marks and colours the brand retired, which logos.mjs never takes and logos.mjs check flags in a film. A row's verified date (else checked) is when its mark was compared with the brand page; logos.mjs check fails a film showing a brand never verified there (verified: null) or verified over 12 months ago. Built from the brands' own pages and the collections' files; a mark the table does not list is taken as before, unchecked.",
+ "checked": "2026-10-29",
+ "threshold": {
+  "same": 0.72,
+  "margin": 0.04
+ },
+ "brands": {
+  "openai": {
+   "name": "OpenAI",
+   "owner": "OpenAI",
+   "page": "https://openai.com/brand/",
+   "mark": {
+    "since": "2025-02",
+    "what": "the blossom, redrawn with the 2025 identity",
+    "fp": "fp1 a1 pk100 g0 c01879730193752738856a67677655a4884a55677676a65883725739103797810 h..kkkkk..kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk..kkkkk..",
+    "from": "svgl:openai"
+   },
+   "members": {
+    "gilbarbara": [
+     "openai"
+    ],
+    "svgl": [
+     "openai"
+    ]
+   },
+   "prefer": [
+    "svgl:openai",
+    "gilbarbara:openai-icon.svg",
+    "commons:File:OpenAI logo 2025 (symbol).svg",
+    "svgl:openai:dark"
+   ],
+   "sources": {
+    "gilbarbara": "current: openai-icon.svg; unknown: openai.svg",
+    "svgl": "current: openai; current: openai:dark",
+    "commons": "current: OpenAI logo 2025 (symbol).svg"
+   }
+  },
+  "chatgpt": {
+   "name": "ChatGPT",
+   "owner": "OpenAI",
+   "page": "https://openai.com/brand/",
+   "mark": {
+    "since": "2023-05",
+    "what": "the OpenAI blossom in black or white (the app icon), no green",
+    "fp": "fp1 a1 pk100 g0 c01879730193752738856a67677655a4884a55677676a65883725739103797810 h..kkkkk..kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk..kkkkk..",
+    "from": "svgl:openai"
+   },
+   "outdated": [
+    {
+     "since": "2022-11",
+     "until": "2023-05",
+     "what": "the white blossom on a green tile",
+     "fp": "fp1 a1 pF48.w45.g6 g0 c5effffe5effffffeffffffffffffffffffffffffffffffffefffffff5effffff hFFFFFFFFFFgwwwFFFwwwwgwFFwwwwwwFFwwwwwwFFwgwwwwFFFwwwgFFFFFFFFFF",
+     "from": "commons:File:ChatGPT logo.svg"
+    }
+   ],
+   "members": {},
+   "prefer": [
+    "svgl:openai",
+    "commons:File:ChatGPT-Logo.svg"
+   ],
+   "sources": {
+    "commons": "current: ChatGPT-Logo.svg"
+   }
+  },
+  "anthropic": {
+   "name": "Anthropic",
+   "owner": "Anthropic PBC",
+   "page": "https://www.anthropic.com",
+   "mark": {
+    "since": null,
+    "what": "the A\\ mark",
+    "fp": "fp1 a1.45 pk100 g0 c00e94e0003fd0e3008bf2a800c6c66c01f59a2f15fffe0d59a44e499d500b85d h..kkkk...kkk.kk..kkkkkk..kkkkkk..kkkkkk.kkkkk.kkkkkkkkkkkk..kkkk",
+    "from": "svgl:anthropic_black"
+   },
+   "members": {
+    "gilbarbara": [
+     "anthropic"
+    ],
+    "svgl": [
+     "anthropic_black"
+    ],
+    "simple-icons": "anthropic"
+   },
+   "prefer": [
+    "svgl:anthropic_black",
+    "gilbarbara:anthropic-icon.svg",
+    "simple-icons:anthropic",
+    "svgl:anthropic_black:dark"
+   ],
+   "sources": {
+    "gilbarbara": "current: anthropic-icon.svg; unknown: anthropic.svg",
+    "svgl": "current: anthropic_black; current: anthropic_black:dark",
+    "simple-icons": "current: anthropic (one colour)"
+   }
+  },
+  "claude": {
+   "name": "Claude",
+   "owner": "Anthropic PBC",
+   "page": "https://claude.ai",
+   "mark": {
+    "since": null,
+    "what": "the spark in its own terracotta",
+    "fp": "fp1 a0.99 pB100 g0 c01c07010249594c01a9cad30438efc98347efb98198acc4102955a6101263210 h..B.B...BBBBBBB..BBBBBB.BBBBBBBBBBBBBBBB.BBBBBB...BBBBB...BBBB..",
+    "from": "gilbarbara:claude-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "claude"
+    ],
+    "svgl": [
+     "claude-ai-icon"
+    ],
+    "simple-icons": "claude"
+   },
+   "prefer": [
+    "gilbarbara:claude-icon.svg",
+    "svgl:claude-ai-icon",
+    "simple-icons:claude"
+   ],
+   "sources": {
+    "gilbarbara": "current: claude-icon.svg; unknown: claude.svg",
+    "svgl": "current: claude-ai-icon",
+    "simple-icons": "current: claude (one colour)"
+   }
+  },
+  "gemini": {
+   "name": "Gemini",
+   "aka": [
+    "Google Gemini"
+   ],
+   "owner": "Google LLC",
+   "page": "https://gemini.google.com",
+   "mark": {
+    "since": "2025-07",
+    "what": "the sparkle in the four Google colours",
+    "fp": "fp1 a1 pI45.F18.D10.K8 g0 c00044000000bb000008ff8004bffffb44bffffb4008ff800000bb00000044000 h...AA......AK.....BKII..DCDIIIIIDDFHIIII..EFII.....FF......FF...",
+    "from": "gilbarbara:google-gemini-icon.svg"
+   },
+   "retired": [
+    "#8e75b2"
+   ],
+   "retiredWhat": "the 2023-2025 blue-violet of the first sparkle",
+   "members": {
+    "gilbarbara": [
+     "google-gemini"
+    ],
+    "svgl": [
+     "gemini"
+    ],
+    "simple-icons": "googlegemini"
+   },
+   "prefer": [
+    "gilbarbara:google-gemini-icon.svg",
+    "svgl:gemini",
+    "commons:File:Google Gemini icon 2025.svg"
+   ],
+   "sources": {
+    "gilbarbara": "current: google-gemini-icon.svg; unknown: google-gemini.svg",
+    "svgl": "current: gemini",
+    "simple-icons": "retired colour: googlegemini (one colour)",
+    "commons": "current: Google Gemini icon 2025.svg"
+   }
+  },
+  "perplexity": {
+   "name": "Perplexity",
+   "owner": "Perplexity AI, Inc.",
+   "page": "https://www.perplexity.ai/hub/press-kit",
+   "mark": {
+    "since": null,
+    "what": "the turquoise knot mark",
+    "fp": "fp1 a0.86 pH100 g0 c081431800dc768808bcee7988079f8088824ffa89808ffe908876dd008143180 h.H.HH.H..HHHHHH.HHHHHHHHH.HHHH.HHHHHHHHHHH.HHHHH.HHHHHH..H.HH.H.",
+    "from": "gilbarbara:perplexity-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "perplexity"
+    ],
+    "svgl": [
+     "perplexity"
+    ],
+    "simple-icons": "perplexity"
+   },
+   "prefer": [
+    "gilbarbara:perplexity-icon.svg"
+   ],
+   "sources": {
+    "gilbarbara": "current: perplexity-icon.svg; unknown: perplexity.svg",
+    "svgl": "unknown: perplexity",
+    "simple-icons": "unknown: perplexity (one colour)"
+   }
+  },
+  "mistral-ai": {
+   "name": "Mistral AI",
+   "aka": [
+    "Mistral"
+   ],
+   "owner": "Mistral AI",
+   "page": "https://mistral.ai/brand",
+   "mark": {
+    "since": null,
+    "what": "the pixel M",
+    "fp": "fp1 a1.1 pB55.C24.D9.A9 g0 cff3003ffff8448fffff99ffffffeefffffdffdffff4ff4ffff3663ffff3003ff hDDD..kDDCCCCkCCCCCCCkCCCBBBBBBBBBBBBBBBBBBBBBBBBBBBBBkBBAAA..kAA",
+    "from": "gilbarbara:mistral-ai-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "mistral-ai"
+    ],
+    "svgl": [
+     "mistral-ai_logo"
+    ],
+    "simple-icons": "mistralai"
+   },
+   "prefer": [
+    "gilbarbara:mistral-ai-icon.svg",
+    "svgl:mistral-ai_logo"
+   ],
+   "sources": {
+    "gilbarbara": "current: mistral-ai-icon.svg; unknown: mistral-ai.svg",
+    "svgl": "current: mistral-ai_logo",
+    "simple-icons": "unknown: mistralai (one colour)"
+   }
+  },
+  "meta": {
+   "name": "Meta",
+   "owner": "Meta Platforms, Inc.",
+   "page": "https://about.meta.com/brand/resources/",
+   "mark": {
+    "since": "2021-10",
+    "what": "the infinity loop",
+    "fp": "fp1 a1.51 pI100 g0 c09e53ea04c6db3a59509902ad10ad00cd02ba50bd0955b0bd6d10d7c6e5005e7 h.IIIIII.IIIIIIIIII.II.III..II..II.IIII.II.IIII.IIII..IIIIII..III",
+    "from": "gilbarbara:meta-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "meta"
+    ],
+    "svgl": [
+     "meta"
+    ],
+    "simple-icons": "meta"
+   },
+   "prefer": [
+    "gilbarbara:meta-icon.svg",
+    "svgl:meta",
+    "simple-icons:meta"
+   ],
+   "sources": {
+    "gilbarbara": "current: meta-icon.svg; unknown: meta.svg",
+    "svgl": "current: meta",
+    "simple-icons": "current: meta (one colour)"
+   }
+  },
+  "meta-ai": {
+   "name": "Meta AI",
+   "owner": "Meta Platforms, Inc.",
+   "page": "https://about.meta.com/brand/resources/",
+   "mark": {
+    "since": "2024-04",
+    "what": "the ring",
+    "fp": "fp1 a1 pJ100 g0 c001e7000396de5e17fe25bf118100572cf3005feb89146a403f8ff3001d55a30 h...JJ...JJJJJJJ.JJJJJJJ..J...JJJJJJ..JJJJJJ.JJJJ.JJJJJJ...JJJJJ.",
+    "from": "simple-icons:metaai"
+   },
+   "members": {
+    "simple-icons": "metaai"
+   },
+   "prefer": [
+    "simple-icons:metaai"
+   ],
+   "sources": {
+    "simple-icons": "current: metaai (one colour)"
+   }
+  },
+  "microsoft-copilot": {
+   "name": "Microsoft Copilot",
+   "aka": [
+    "Copilot"
+   ],
+   "owner": "Microsoft Corporation",
+   "page": "https://www.microsoft.com/copilot",
+   "mark": {
+    "since": null,
+    "what": "the folded ribbon in gradient",
+    "fp": "fp1 a1.1 pL37.G37.I9.B6 g5 c0bfffb004fffff109ffd4dd9dff83ffffff37ffd9de4cff901effff400afffb0 h.GGGII..GGGGII..GGGGIKKLGGGGLLLLGGGGLLLLGFFBLLLL..BBLLLL..BALLL.",
+    "from": "svgl:microsoft-copilot"
+   },
+   "members": {
+    "svgl": [
+     "microsoft-copilot"
+    ]
+   },
+   "prefer": [
+    "svgl:microsoft-copilot"
+   ],
+   "sources": {
+    "svgl": "current: microsoft-copilot"
+   }
+  },
+  "github-copilot": {
+   "name": "GitHub Copilot",
+   "owner": "GitHub, Inc.",
+   "page": "https://github.com/logos",
+   "mark": {
+    "since": null,
+    "what": "the Copilot head",
+    "fp": "fp1 a1.23 pk100 g0 c009ee900052aa250070770704c8667c4e802208ef838828f7911119703999930 h..kkkk...k.kk.k..k.kk.k.kkkkkkkkkk....kkkkkkkkkkkk....kk.kkkkkk.",
+    "from": "svgl:copilot"
+   },
+   "members": {
+    "gilbarbara": [
+     "github-copilot"
+    ],
+    "svgl": [
+     "copilot"
+    ],
+    "simple-icons": "githubcopilot"
+   },
+   "prefer": [
+    "svgl:copilot",
+    "gilbarbara:github-copilot.svg",
+    "simple-icons:githubcopilot",
+    "svgl:copilot:dark"
+   ],
+   "sources": {
+    "gilbarbara": "current: github-copilot.svg",
+    "svgl": "current: copilot; current: copilot:dark",
+    "simple-icons": "current: githubcopilot (one colour)"
+   }
+  },
+  "hugging-face": {
+   "name": "Hugging Face",
+   "owner": "Hugging Face, Inc.",
+   "page": "https://huggingface.co/brand",
+   "mark": {
+    "since": null,
+    "what": "the hugging emoji",
+    "fp": "fp1 a1.08 pC70.D26 g0 c019ee9100cffffb05ffffff48ffffff78ffffff8dffffffdffffffff6dfbbfc6 h..CCCC...CCDDCC.CCDDDDCwCDDDDDCCCCCBBCCCCCCCCCCCCCDCCDCCCCCCCCCC",
+    "from": "gilbarbara:hugging-face-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "hugging-face"
+    ],
+    "svgl": [
+     "hugging_face"
+    ],
+    "simple-icons": "huggingface"
+   },
+   "prefer": [
+    "gilbarbara:hugging-face-icon.svg",
+    "svgl:hugging_face",
+    "simple-icons:huggingface"
+   ],
+   "sources": {
+    "gilbarbara": "current: hugging-face-icon.svg; unknown: hugging-face.svg",
+    "svgl": "current: hugging_face",
+    "simple-icons": "current: huggingface (one colour)"
+   }
+  },
+  "cursor": {
+   "name": "Cursor",
+   "owner": "Anysphere, Inc.",
+   "page": "https://cursor.com/brand",
+   "mark": {
+    "since": null,
+    "what": "the cube",
+    "fp": "fp1 a0.88 pk100 g0 c004cc4004cffffc4d6222229ffb4003fffff00cfffff07ff4cff3fc4004c9400 h..kkkk..kkkkkkkkkkkkkkkkkkkk..kkkkkk..kkkkkk.kkkkkkkkkkk..kkkk..",
+    "from": "svgl:cursor_light"
+   },
+   "members": {
+    "gilbarbara": [
+     "cursor"
+    ],
+    "svgl": [
+     "cursor_light"
+    ],
+    "simple-icons": "cursor"
+   },
+   "prefer": [
+    "svgl:cursor_light",
+    "gilbarbara:cursor-icon.svg",
+    "simple-icons:cursor",
+    "svgl:cursor_light:dark"
+   ],
+   "sources": {
+    "gilbarbara": "current: cursor-icon.svg; unknown: cursor.svg",
+    "svgl": "current: cursor_light; current: cursor_light:dark",
+    "simple-icons": "current: cursor (one colour)"
+   }
+  },
+  "grok": {
+   "name": "Grok",
+   "owner": "xAI",
+   "page": "https://x.ai/legal/brand-guidelines",
+   "mark": {
+    "since": null,
+    "what": "the slashed ring",
+    "fp": "fp1 a1.05 pk100 g0 c0003410301bba773086006f20c0044a40c0210a4095003c0063bac3020023000 h...kk..k..kkkkkk.kk..kkk.k..kkkk.k....kk.kk..kk..kkkkkk.k..kk...",
+    "from": "svgl:grok-light"
+   },
+   "members": {
+    "gilbarbara": [
+     "grok"
+    ],
+    "svgl": [
+     "grok-light"
+    ]
+   },
+   "prefer": [
+    "svgl:grok-light",
+    "gilbarbara:grok-icon.svg",
+    "svgl:grok-light:dark"
+   ],
+   "sources": {
+    "gilbarbara": "current: grok-icon.svg; unknown: grok.svg",
+    "svgl": "current: grok-light; current: grok-light:dark"
+   }
+  },
+  "deepseek": {
+   "name": "DeepSeek",
+   "owner": "Hangzhou DeepSeek Artificial Intelligence Co., Ltd.",
+   "page": "https://www.deepseek.com",
+   "mark": {
+    "since": null,
+    "what": "the whale",
+    "fp": "fp1 a1.36 pI100 g0 c057a17115fff69cccefff6e5819f9ea0a00bcc70a213ff204b789d1005ef8510 h.III.I..IIIIIIIIIIIIIIIII.IIIII.I..IIII.II.IIII.IIIIII...IIIII..",
+    "from": "gilbarbara:deepseek-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "deepseek"
+    ],
+    "svgl": [
+     "deepseek"
+    ],
+    "simple-icons": "deepseek"
+   },
+   "prefer": [
+    "gilbarbara:deepseek-icon.svg",
+    "svgl:deepseek",
+    "simple-icons:deepseek"
+   ],
+   "sources": {
+    "gilbarbara": "current: deepseek-icon.svg; unknown: deepseek.svg",
+    "svgl": "current: deepseek",
+    "simple-icons": "current: deepseek (one colour)"
+   }
+  },
+  "midjourney": {
+   "name": "Midjourney",
+   "owner": "Midjourney, Inc.",
+   "page": "https://www.midjourney.com",
+   "mark": {
+    "since": null,
+    "what": "the sailboat",
+    "fp": "fp1 a1.2 pk100 g0 c0620000003374000031472000210660003004430064455503444447354444664 h.kk......kkkk....k.kkk...k..kk...k..kkk..kkkkkk.kkkkkkkkkkkkkkkk",
+    "from": "gilbarbara:midjourney.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "midjourney"
+    ],
+    "svgl": [
+     "midjourney"
+    ]
+   },
+   "prefer": [
+    "gilbarbara:midjourney.svg",
+    "svgl:midjourney",
+    "svgl:midjourney:dark"
+   ],
+   "sources": {
+    "gilbarbara": "current: midjourney.svg",
+    "svgl": "current: midjourney; current: midjourney:dark"
+   }
+  },
+  "google": {
+   "name": "Google",
+   "owner": "Google LLC",
+   "page": "https://blog.google/inside-google/company-announcements/gradient-g-logo-design/",
+   "mark": {
+    "since": "2025-09",
+    "what": "the G in a four-colour gradient",
+    "fp": "fp1 a0.98 pI19.G15.B14.E13 g7 c02aefb402efaae60af400100eb00abbbeb00bcefaf4002ec2efa9ef402aefc40 h.BBBAAA.CBBBAAA.CCB.....CC..IIIIDD..IIIIDDD...GGDEEEFGGG.EEEFGG.",
+    "from": "svgl:google"
+   },
+   "outdated": [
+    {
+     "since": "2015-09",
+     "until": "2025-09",
+     "what": "the flat four-colour G",
+     "fp": "fp1 a0.98 pI28.A26.E25.C12 g0 c02aefb302eea9e50ae300000ea00abbbea00abefaf3001db2efa9ef402aeeb40 h.AAAAAA.AAAAAAA.CBA.....CC..IIIICC..IIIIDEE...IIEEEEEFII.EEEEEE.",
+     "from": "gilbarbara:google-icon.svg"
+    }
+   ],
+   "members": {
+    "gilbarbara": [
+     "google"
+    ],
+    "svgl": [
+     "google"
+    ],
+    "simple-icons": "google"
+   },
+   "prefer": [
+    "svgl:google",
+    "commons:File:Google Favicon 2025.svg",
+    "simple-icons:google"
+   ],
+   "sources": {
+    "gilbarbara": "retired 2015-09 to 2025-09: google-icon.svg; unknown: google.svg",
+    "svgl": "current: google",
+    "simple-icons": "current: google (one colour)",
+    "commons": "current: Google Favicon 2025.svg"
+   }
+  },
+  "gmail": {
+   "name": "Gmail",
+   "aka": [
+    "Google Gmail"
+   ],
+   "owner": "Google LLC",
+   "page": "https://about.google/brand-resource-center/logos-list/",
+   "mark": {
+    "since": "2026-05",
+    "what": "the M in a soft gradient (the 2026 Workspace icons)",
+    "fp": "fp1 a1.25 pB53.A22.G20.F5 g8 cca0000acff9009fffff88ffffdeffedffb4ff4bffb0550bffb0000bfeb0000be hBB....BBBBB..BBBABBBBBBFABBBBBFGAABBBBGGAA.BB.GGAA....GGAA....GG",
+    "from": "gilbarbara:google-gmail.svg"
+   },
+   "outdated": [
+    {
+     "since": "2020-10",
+     "until": "2026-05",
+     "what": "the flat four-colour M",
+     "fp": "fp1 a1.33 pA41.E20.I20.C11 g0 cc900009cff9009fffff99ffffffffffffc8ff8cffc0880cffc0000cfec0000ce hAA....CCAAA..ACCLAAAAACDILAAAADEIIAAAAEEII.AA.EEII....EEII....EE",
+     "from": "gilbarbara:google-gmail-2020.svg"
+    },
+    {
+     "since": "2013",
+     "until": "2020-10",
+     "what": "the red M on an envelope",
+     "fp": "fp1 a1.38 pw55.A45 g0 ceffffffeffffffffffffffffffffffffffffffffffffffffffffffffeffffffe hAwwwwwwAAAwwwwAAAAAAwAAAAwAAAAwAAwwAAwwAAwwwwwwAAwwwwwwAAwwwwwwA",
+     "from": "commons:File:Gmail Icon (2013-2020).svg"
+    },
+    {
+     "since": "2013",
+     "until": "2020-10",
+     "what": "the red M on an envelope",
+     "fp": "fp1 a1.32 pA51.w41.g8 g0 ceffffffdfffffffefffffffefffffffefffffffefffffffefffffffeeffffffd hAwwwwwAAAAAwwAAAAAAAAAAAAwAAAAgAAwwAAwgAAwwwwwgAAwwwwwgAAwwwwwgA",
+     "from": "commons:File:Logo Gmail (2015-2020).svg"
+    }
+   ],
+   "members": {
+    "gilbarbara": [
+     "google-gmail"
+    ],
+    "svgl": [
+     "gmail"
+    ],
+    "simple-icons": "gmail"
+   },
+   "prefer": [
+    "gilbarbara:google-gmail.svg",
+    "commons:File:Gmail icon (2026).svg"
+   ],
+   "sources": {
+    "gilbarbara": "current: google-gmail.svg; retired 2020-10 to 2026-05: google-gmail-2020.svg",
+    "svgl": "retired 2020-10 to 2026-05: gmail",
+    "simple-icons": "retired 2020-10 to 2026-05: gmail (one colour)",
+    "commons": "current: Gmail icon (2026).svg"
+   }
+  },
+  "google-drive": {
+   "name": "Google Drive",
+   "owner": "Google LLC",
+   "page": "https://about.google/brand-resource-center/logos-list/",
+   "mark": {
+    "since": "2026-05",
+    "what": "the rounded triangle in gradient (the 2026 Workspace icons)",
+    "fp": "fp1 a1.08 pD32.I31.G30 g9 c004ee40000cffc0006ffff601decced17fe22ef7eff99ffeeffffffe5effffe5 h..GGGG....GGGG...GGGGFD..GGGGED.III..DDDIIIIDDDDIIIIDDDDIIIIgDDD",
+    "from": "gilbarbara:google-drive.svg"
+   },
+   "outdated": [
+    {
+     "since": "2020-10",
+     "until": "2026-05",
+     "what": "the flat six-part triangle",
+     "fp": "fp1 a1.12 pE32.I27.C21.G5 g0 c008ff80002ffff2009feef902ff88ff2afe11efaefc88cfe9ffffff92effffe2 h..EEED...EEEECC..EEECCC.EEEECCCCEEE..CCCGGHIIgBBIIIIIIAA.IIIIIK.",
+     "from": "gilbarbara:google-drive-2020.svg"
+    }
+   ],
+   "members": {
+    "gilbarbara": [
+     "google-drive"
+    ],
+    "svgl": [
+     "drive"
+    ],
+    "simple-icons": "googledrive"
+   },
+   "prefer": [
+    "gilbarbara:google-drive.svg",
+    "commons:File:Google Drive icon (2026).svg"
+   ],
+   "sources": {
+    "gilbarbara": "current: google-drive.svg; retired 2020-10 to 2026-05: google-drive-2020.svg",
+    "svgl": "retired 2020-10 to 2026-05: drive",
+    "simple-icons": "retired 2020-10 to 2026-05: googledrive (one colour)",
+    "commons": "current: Google Drive icon (2026).svg"
+   }
+  },
+  "google-calendar": {
+   "name": "Google Calendar",
+   "owner": "Google LLC",
+   "page": "https://about.google/brand-resource-center/logos-list/",
+   "mark": {
+    "since": "2026-05",
+    "what": "the blue tile with 31 (the 2026 Workspace icons)",
+    "fp": "fp1 a0.93 pI100 g2 c2cffffc2effffffeeffffffecffffffcbffffffbdffffffdffffffff9ffffff9 hIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII",
+    "from": "gilbarbara:google-calendar.svg"
+   },
+   "outdated": [
+    {
+     "since": "2020-10",
+     "until": "2026-05",
+     "what": "the four-colour square with 31",
+     "fp": "fp1 a1 pI45.w19.E16.C13 g0 ceffffffefffffffffffffffffffffffffffffffffffffffffffffff9efffff90 hIIIIIIIIIIIIIIIIIIwwwwCCIIwIwICCIIwIwICCIIwwwwCCFFEEEEBBEEEEEEB.",
+     "from": "gilbarbara:google-calendar-2020.svg"
+    }
+   ],
+   "members": {
+    "gilbarbara": [
+     "google-calendar"
+    ],
+    "svgl": [
+     "google-calendar"
+    ],
+    "simple-icons": "googlecalendar"
+   },
+   "prefer": [
+    "gilbarbara:google-calendar.svg",
+    "commons:File:Google Calendar icon (2026).svg"
+   ],
+   "sources": {
+    "gilbarbara": "current: google-calendar.svg; retired 2020-10 to 2026-05: google-calendar-2020.svg",
+    "svgl": "retired 2020-10 to 2026-05: google-calendar",
+    "simple-icons": "retired 2020-10 to 2026-05: googlecalendar (one colour)",
+    "commons": "current: Google Calendar icon (2026).svg"
+   }
+  },
+  "google-meet": {
+   "name": "Google Meet",
+   "owner": "Google LLC",
+   "page": "https://about.google/brand-resource-center/logos-list/",
+   "mark": {
+    "since": "2026-05",
+    "what": "the camera in a warm gradient (the 2026 Workspace icons)",
+    "fp": "fp1 a1.28 pD68.C31 g7 c3dfff900cffffc2afffffeeffffffffffffffffffffffffffffffc6ecffff901 hDDDDDD..DDDDDDCCDDDDDCCCDDDDCCCCDDDCCCCCDDDDDCCCDwDDDDCCDDDDDD..",
+    "from": "gilbarbara:google-meet.svg"
+   },
+   "outdated": [
+    {
+     "since": "2020-10",
+     "until": "2026-05",
+     "what": "the four-colour camera",
+     "fp": "fp1 a1.22 pE48.I22.C20.D4 g0 c09ffff416fffff8dfe44affffd008ffffd008ffffe44afffffffff8eefffff41 h.BCCCCC.ABCCCCDEIJCCCDEEII..DEEEII..EEEEIIEEEEEEIIEEEEEEIIEEEEE.",
+     "from": "gilbarbara:google-meet-2020.svg"
+    }
+   ],
+   "members": {
+    "gilbarbara": [
+     "google-meet"
+    ],
+    "svgl": [
+     "google-meet"
+    ],
+    "simple-icons": "googlemeet"
+   },
+   "prefer": [
+    "gilbarbara:google-meet.svg",
+    "commons:File:Google Meet icon (2026).svg"
+   ],
+   "sources": {
+    "gilbarbara": "current: google-meet.svg; retired 2020-10 to 2026-05: google-meet-2020.svg",
+    "svgl": "retired 2020-10 to 2026-05: google-meet",
+    "simple-icons": "retired 2020-10 to 2026-05: googlemeet (one colour)",
+    "commons": "current: Google Meet icon (2026).svg"
+   }
+  },
+  "google-docs": {
+   "name": "Google Docs",
+   "owner": "Google LLC",
+   "page": "https://about.google/brand-resource-center/logos-list/",
+   "mark": {
+    "since": "2026-05",
+    "what": "the page in gradient (the 2026 Workspace icons)",
+    "fp": "fp1 a0.73 pI100 g7 ccfffc200fffffe60fffffffaffffffffffffffffffffffffffffffffcffffffc hIIIIII..IIIIIII.IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII",
+    "from": "commons:File:Google Docs icon (2026).svg"
+   },
+   "hex": [
+    "#3186ff"
+   ],
+   "retired": [
+    "#4285f4",
+    "#3086f6",
+    "#0c67d6",
+    "#a1c2fa"
+   ],
+   "retiredWhat": "the flat blue of the 2014-2026 page",
+   "members": {
+    "simple-icons": "googledocs"
+   },
+   "prefer": [
+    "commons:File:Google Docs icon (2026).svg"
+   ],
+   "sources": {
+    "simple-icons": "retired colour: googledocs (one colour)",
+    "commons": "current: Google Docs icon (2026).svg"
+   }
+  },
+  "google-sheets": {
+   "name": "Google Sheets",
+   "owner": "Google LLC",
+   "page": "https://about.google/brand-resource-center/logos-list/",
+   "mark": {
+    "since": "2026-08",
+    "what": "the sheet in gradient (the 2026 Workspace icons, retouched in August)",
+    "fp": "fp1 a1.38 pF50.G46.w5 g5 cbfffffe2fffffffdfffffffffffffffffffffffffffffffffffffffdcfffffe2 hFFFFFFFFFFGGGGGFFwwwGGGFFFGGGGGFFFGGGGGFFFGGGGGFFFGGGGGFFFFFFFFF",
+    "from": "commons:File:Google Sheets icon (August 2026).svg"
+   },
+   "outdated": [
+    {
+     "since": "2020-10",
+     "until": "2026-05",
+     "what": "the flat green sheet",
+     "fp": "fp1 a0.73 pF98 g0 ceffffa10ffffffd4ffffffffffffffffffffffffffffffffffffffffeffffffe hFFFFFF..FFFFFFFFFFFFFFFFFFFFFFFFFFwFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+     "from": "svgl:google-sheets"
+    }
+   ],
+   "hex": [
+    "#0ebc5f",
+    "#009954"
+   ],
+   "retired": [
+    "#0f9d58",
+    "#34a853",
+    "#87ceac"
+   ],
+   "retiredWhat": "the flat green of the 2014-2026 sheet",
+   "members": {
+    "svgl": [
+     "google-sheets"
+    ],
+    "simple-icons": "googlesheets"
+   },
+   "prefer": [
+    "commons:File:Google Sheets icon (August 2026).svg",
+    "commons:File:Google Sheets icon (2026).svg"
+   ],
+   "sources": {
+    "svgl": "retired 2020-10 to 2026-05: google-sheets",
+    "simple-icons": "retired 2020-10 to 2026-05: googlesheets (one colour)",
+    "commons": "current: Google Sheets icon (August 2026).svg; current: Google Sheets icon (2026).svg"
+   }
+  },
+  "google-slides": {
+   "name": "Google Slides",
+   "owner": "Google LLC",
+   "page": "https://about.google/brand-resource-center/logos-list/",
+   "mark": {
+    "since": "2026-05",
+    "what": "the slide in gradient (the 2026 Workspace icons)",
+    "fp": "fp1 a1.04 pD75.C25 g1 c1479cec2dffffffdffffffffffffffffffffffffffffffffeffffffe2deca751 h.CCCCCC.DDDDDDDCDDDDDDDCDDDDDDDCDDDDDDDCCDDDDDDDCDDDDDDDCCCCCCC.",
+    "from": "commons:File:Google Slides icon (2026).svg"
+   },
+   "outdated": [
+    {
+     "since": "2020-10",
+     "until": "2026-05",
+     "what": "the flat yellow slide",
+     "fp": "fp1 a0.73 pC79.D21 g0 ceffffa10ffffffc3ffffffffffffffffffffffffffffffffffffffffeffffffe hCCCCCD..CCCCCDDDCCCCCCCCCCCCCCCCCCDDDDCCCCDCCDCCCCDDDDCCCCCCCCCC",
+     "from": "svgl:google-slides"
+    }
+   ],
+   "hex": [
+    "#ffbe00",
+    "#fec700"
+   ],
+   "retired": [
+    "#f4b400",
+    "#fbbc04",
+    "#fada80"
+   ],
+   "retiredWhat": "the flat yellow of the 2014-2026 slide",
+   "members": {
+    "svgl": [
+     "google-slides"
+    ],
+    "simple-icons": "googleslides"
+   },
+   "prefer": [
+    "commons:File:Google Slides icon (2026).svg"
+   ],
+   "sources": {
+    "svgl": "retired 2020-10 to 2026-05: google-slides",
+    "simple-icons": "retired 2020-10 to 2026-05: googleslides (one colour)",
+    "commons": "current: Google Slides icon (2026).svg"
+   }
+  },
+  "google-keep": {
+   "name": "Google Keep",
+   "owner": "Google LLC",
+   "page": "https://about.google/brand-resource-center/logos-list/",
+   "mark": {
+    "since": "2026-05",
+    "what": "the bulb in gradient (the 2026 Workspace icons)",
+    "fp": "fp1 a0.78 pD62.C33.w5 g5 c039cc9304cccccc5bccddccbbceffecc7dffffd707effe80009cca00004aa400 h.DDDDDD.DDDDDDDDDDDDDDDDDDDCCDDDDDCCCCDD.DCwwCD...CCCC....CCCC..",
+    "from": "gilbarbara:google-keep.svg"
+   },
+   "outdated": [
+    {
+     "since": "2020-10",
+     "until": "2026-05",
+     "what": "the yellow page with a bulb",
+     "fp": "fp1 a0.73 pC93.w7 g0 ceffffc30ffffffe6ffffffffffffffffffffffffffffffffffffffffeffffffe hCCCCCCC.CCCCCCCCCCCCCCCCCCCwwCCCCCCwwCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+     "from": "gilbarbara:google-keep-2020.svg"
+    }
+   ],
+   "members": {
+    "gilbarbara": [
+     "google-keep"
+    ],
+    "simple-icons": "googlekeep"
+   },
+   "prefer": [
+    "gilbarbara:google-keep.svg",
+    "commons:File:Google Keep Logo 05.2026.svg"
+   ],
+   "sources": {
+    "gilbarbara": "current: google-keep.svg; retired 2020-10 to 2026-05: google-keep-2020.svg",
+    "simple-icons": "retired 2020-10 to 2026-05: googlekeep (one colour)",
+    "commons": "current: Google Keep Logo 05.2026.svg"
+   }
+  },
+  "google-maps": {
+   "name": "Google Maps",
+   "owner": "Google LLC",
+   "page": "https://about.google/brand-resource-center/logos-list/",
+   "mark": {
+    "since": "2026",
+    "what": "the pin redrawn in 2026",
+    "fp": "fp1 a0.78 pg100 g0 c04beeb406fd88df6de1001edee0000ee9fa44af91affffa1008ff80000099000 h.gggggg.gggggggggg....gggg....gggggggggg.gggggg...gggg.....gg... fraster",
+    "from": "commons:File:Google Maps icon (2026).svg"
+   },
+   "outdated": [
+    {
+     "since": "2020-02",
+     "until": "2026",
+     "what": "the four-colour pin",
+     "fp": "fp1 a0.7 pE35.I26.C13.B7 g0 c06cffc608ffccff9ef9008ffdfc33cfe5ffffff605effe50004ef40000078000 h.IIIIII.ALIIIIIHABB..IGEBCCCDFEECCCDEEEE.CDEEEE...EEEE.....EE...",
+     "from": "gilbarbara:google-maps.svg"
+    },
+    {
+     "since": "2015",
+     "until": "2020-02",
+     "what": "the folded map",
+     "fp": "fp1 a1 pF27.A24.I16.w12 g0 c34445de5fffffffefffffffdfffffff6fffffff4fffffff4fffffff4effffff3 hFFFFBAAAFFFFBAAAFFFFBAAAFFFECAAAFFEDwAAwFEDIwwAwEDIIIwwwDIIIIIww",
+     "from": "commons:File:Google Maps icon (2015-2020).svg"
+    }
+   ],
+   "members": {
+    "gilbarbara": [
+     "google-maps"
+    ],
+    "svgl": [
+     "googleMaps"
+    ],
+    "simple-icons": "googlemaps"
+   },
+   "prefer": [
+    "commons:File:Google Maps icon (2026).svg"
+   ],
+   "sources": {
+    "gilbarbara": "retired 2020-02 to 2026: google-maps.svg",
+    "svgl": "retired 2020-02 to 2026: googleMaps",
+    "simple-icons": "retired 2020-02 to 2026: googlemaps (one colour)",
+    "commons": "current: Google Maps icon (2026).svg"
+   }
+  },
+  "google-photos": {
+   "name": "Google Photos",
+   "owner": "Google LLC",
+   "page": "https://about.google/brand-resource-center/logos-list/",
+   "mark": {
+    "since": "2025",
+    "what": "the pinwheel redrawn in 2025",
+    "fp": "fp1 a1 pA25.D25.G25.I25 g9 c0000e7000220ff207ff7ff20effee700007eeffe02ff7ff702ff0220007e0000 h....AA......AA..DDDDAA..DDDDAA....GGIIII..GGIIII..GG......GG....",
+    "from": "gilbarbara:google-photos.svg"
+   },
+   "outdated": [
+    {
+     "since": "2020-10",
+     "until": "2025",
+     "what": "the 2020 pinwheel",
+     "fp": "fp1 a1 pA25.C25.F25.I25 g0 c0000e7000220ff207ff7ff20effee700007eeffe02ff7ff702ff0220007e0000 h....AA......AA..CCCCAA..CCCCAA....FFIIII..FFIIII..FF......FF....",
+     "from": "gilbarbara:google-photos-2020.svg"
+    },
+    {
+     "since": "2015",
+     "until": "2020-10",
+     "what": "the first pinwheel",
+     "fp": "fp1 a1.01 pC26.I25.A23.E20 g0 c0000a0001233fa003affff10afffff2035ffffe902ffffa001af4420000a0000 h....A.....CCAA..gCCCAA..CCCCAA..CDFEIIII..EEIII...EEIIg....E.... fraster",
+     "from": "commons:File:Google Photos icon (2015-2020).svg"
+    }
+   ],
+   "members": {
+    "gilbarbara": [
+     "google-photos"
+    ],
+    "simple-icons": "googlephotos"
+   },
+   "prefer": [
+    "gilbarbara:google-photos.svg"
+   ],
+   "sources": {
+    "gilbarbara": "current: google-photos.svg; retired 2020-10 to 2025: google-photos-2020.svg",
+    "simple-icons": "unknown: googlephotos (one colour)"
+   }
+  },
+  "youtube": {
+   "name": "YouTube",
+   "owner": "Google LLC",
+   "page": "https://www.youtube.com/howyoutubeworks/resources/brand-resources/",
+   "mark": {
+    "since": "2024-11",
+    "what": "the play button in the cooler 2024 red (#FF0033)",
+    "fp": "fp1 a1.45 pA100 g0 c6deffed6dffffffdeffffffeffffffffffffffffeffffffedffffffd6dffffd6 hAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "from": "commons:File:YouTube full-color icon (2024).svg"
+   },
+   "hex": [
+    "#ff0033"
+   ],
+   "retired": [
+    "#ff0000",
+    "red"
+   ],
+   "retiredWhat": "the 2017-2024 pure red (#FF0000)",
+   "members": {
+    "gilbarbara": [
+     "youtube"
+    ],
+    "svgl": [
+     "youtube"
+    ],
+    "simple-icons": "youtube"
+   },
+   "prefer": [
+    "commons:File:YouTube full-color icon (2024).svg"
+   ],
+   "sources": {
+    "gilbarbara": "retired colour: youtube-icon.svg; retired colour: youtube.svg",
+    "svgl": "retired colour: youtube",
+    "simple-icons": "retired colour: youtube (one colour)",
+    "commons": "current: YouTube full-color icon (2024).svg"
+   }
+  },
+  "google-chrome": {
+   "name": "Google Chrome",
+   "aka": [
+    "Chrome"
+   ],
+   "owner": "Google LLC",
+   "page": "https://www.google.com/chrome/",
+   "mark": {
+    "since": "2022-02",
+    "what": "the flat 2022 ball",
+    "fp": "fp1 a1 pI24.A24.E22.C20 g0 c02aeea202effffe2affffffaeffffffeeffffffeaffffffa2effffe202aeea20 h.AAAAAA.AAAAAAAAEAAIIDCCEBIIIICCEEIIIICCEEFIIDCCEEEEECCC.EEEDCC.",
+    "from": "gilbarbara:chrome.svg"
+   },
+   "outdated": [
+    {
+     "since": "2014-09",
+     "until": "2022-02",
+     "what": "the shaded 2014 ball",
+     "fp": "fp1 a1 pC22.F22.A21.I8 g0 c02aeea202effffe2affffffaeffffffeeffffffeaffffffa2effffe202aeea20 h.AAAAAA.BAAAAAAAFBAKgCCCFEKIIwCCFFHIIwCCFFFHHDCCFFFFECCC.FFFDCC.",
+     "from": "commons:File:Google Chrome icon (September 2014).svg"
+    }
+   ],
+   "members": {
+    "gilbarbara": [
+     "chrome"
+    ],
+    "svgl": [
+     "chrome"
+    ],
+    "simple-icons": "googlechrome"
+   },
+   "prefer": [
+    "gilbarbara:chrome.svg",
+    "svgl:chrome",
+    "commons:File:Google Chrome icon (February 2022).svg",
+    "simple-icons:googlechrome"
+   ],
+   "sources": {
+    "gilbarbara": "current: chrome.svg",
+    "svgl": "current: chrome",
+    "simple-icons": "current: googlechrome (one colour)",
+    "commons": "current: Google Chrome icon (February 2022).svg"
+   }
+  },
+  "android": {
+   "name": "Android",
+   "owner": "Google LLC",
+   "page": "https://partnermarketinghub.withgoogle.com/brands/android/",
+   "mark": {
+    "since": "2023-09",
+    "what": "the rounded 2023 robot head",
+    "fp": "fp1 a1.71 pE95.F5 g0 c0a0000a00942249004dffd4009ffffa03ffffff38ffffff8cffffffceffffffe h.E....E..EEEEEE..EEEEEE..EEEEEE.EEEEEEEEEEFEEFEEEEEEEEEEEEEEEEEE",
+    "from": "gilbarbara:android-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "android"
+    ],
+    "svgl": [
+     "android-icon"
+    ]
+   },
+   "prefer": [
+    "gilbarbara:android-icon.svg",
+    "svgl:android-icon"
+   ],
+   "sources": {
+    "gilbarbara": "current: android-icon.svg; unknown: android.svg; unknown: android-vertical.svg",
+    "svgl": "current: android-icon"
+   }
+  },
+  "google-cloud": {
+   "name": "Google Cloud",
+   "owner": "Google LLC",
+   "page": "https://cloud.google.com",
+   "mark": {
+    "since": null,
+    "what": "the four-colour cloud",
+    "fp": "fp1 a1.24 pI37.C22.A17.E12 g0 c008ee70007fdcf600ee30bd08ffd05f8ea4401aef700008fbebbbbeb2cffffc2 h..AAAA...AAAALI..BBC.II.CCCC.IIICCCC..IICC....IICDEEIIIIDEEEIIII",
+    "from": "gilbarbara:google-cloud.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "google-cloud"
+    ],
+    "svgl": [
+     "google-cloud"
+    ],
+    "simple-icons": "googlecloud"
+   },
+   "prefer": [
+    "gilbarbara:google-cloud.svg",
+    "svgl:google-cloud",
+    "simple-icons:googlecloud"
+   ],
+   "sources": {
+    "gilbarbara": "current: google-cloud.svg",
+    "svgl": "current: google-cloud",
+    "simple-icons": "current: googlecloud (one colour)"
+   }
+  },
+  "firebase": {
+   "name": "Firebase",
+   "owner": "Google LLC",
+   "page": "https://firebase.google.com/brand-guidelines",
+   "mark": {
+    "since": "2024-05",
+    "what": "the rounded 2024 flame",
+    "fp": "fp1 a0.8 pB68.C32 g0 c0007a100005ffb1000bfffb18dfffff9effffffedffffffd6ffffff504beeb40 h...BB.....BBBB....BBBBB.CCBBBBBBCCCBBBBBCCCCBBBBCCCCBBBB.CCCBBB.",
+    "from": "gilbarbara:firebase-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "firebase"
+    ],
+    "svgl": [
+     "firebase"
+    ],
+    "simple-icons": "firebase"
+   },
+   "prefer": [
+    "gilbarbara:firebase-icon.svg",
+    "svgl:firebase",
+    "commons:File:Firebase Logo (No wordmark) (2024-).svg"
+   ],
+   "sources": {
+    "gilbarbara": "current: firebase-icon.svg; unknown: firebase.svg",
+    "svgl": "current: firebase",
+    "simple-icons": "unknown: firebase (one colour)",
+    "commons": "current: Firebase Logo (No wordmark) (2024-).svg"
+   }
+  },
+  "google-play": {
+   "name": "Google Play",
+   "owner": "Google LLC",
+   "page": "https://partnermarketinghub.withgoogle.com/brands/google-play/",
+   "mark": {
+    "since": "2022-07",
+    "what": "the 2022 triangle",
+    "fp": "fp1 a0.91 pI28.A23.C18.E13 g0 ccd500000fffd5000fffffc40fffffffbfffffffbfffffc40fffc5000cd500000 hFEE.....IFEEE...IIFEEDC.IIIFDCCCIIIACCCCIIAAABC.JAAAA...AAA.....",
+    "from": "gilbarbara:google-play-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "google-play"
+    ],
+    "svgl": [
+     "googleplay"
+    ],
+    "simple-icons": "googleplay"
+   },
+   "prefer": [
+    "gilbarbara:google-play-icon.svg",
+    "svgl:googleplay"
+   ],
+   "sources": {
+    "gilbarbara": "current: google-play-icon.svg; unknown: google-play.svg",
+    "svgl": "current: googleplay",
+    "simple-icons": "unknown: googleplay (one colour)"
+   }
+  },
+  "microsoft": {
+   "name": "Microsoft",
+   "owner": "Microsoft Corporation",
+   "page": "https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks",
+   "mark": {
+    "since": "2012-08",
+    "what": "the four squares",
+    "fp": "fp1 a1 pB25.E25.H25.C25 g0 cfffccffffffccffffffccfffcccaaccccccaacccfffccffffffccffffffccfff hBBBBEEEEBBBBEEEEBBBBEEEEBBBBEEEEHHHHCCCCHHHHCCCCHHHHCCCCHHHHCCCC",
+    "from": "gilbarbara:microsoft-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "microsoft"
+    ],
+    "svgl": [
+     "microsoft"
+    ]
+   },
+   "prefer": [
+    "gilbarbara:microsoft-icon.svg",
+    "svgl:microsoft"
+   ],
+   "sources": {
+    "gilbarbara": "current: microsoft-icon.svg; unknown: microsoft.svg",
+    "svgl": "current: microsoft"
+   }
+  },
+  "microsoft-teams": {
+   "name": "Microsoft Teams",
+   "aka": [
+    "Teams"
+   ],
+   "owner": "Microsoft Corporation",
+   "page": "https://www.microsoft.com/microsoft-teams",
+   "mark": {
+    "since": "2025-10",
+    "what": "the folded 2025 icon",
+    "fp": "fp1 a0.95 pJ100 g3 c01ce302003ff68f7006716e50cffe995efffffffffffffffffffffff47effffa h..JJJ....JJJJJJJ..JJ.JJJ.JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "from": "svgl:microsoft-teams"
+   },
+   "outdated": [
+    {
+     "since": "2019",
+     "until": "2025-10",
+     "what": "the square T with two people",
+     "fp": "fp1 a1.08 pJ100 g0 c0008e411233df8bbffff9265ffffeeeeffffffffffffffff33afffb6002cf800 h...JJJ..JJJJJJJJJJJJJ.JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ...JJJ..",
+     "from": "gilbarbara:microsoft-teams.svg"
+    },
+    {
+     "since": "2019",
+     "until": "2025-10",
+     "what": "the square T with two people",
+     "fp": "fp1 a1.08 pJ100 g0 c0008e411233df8bbffff9265ffffeeeeffffffffffffffff33afffb6002cf800 h...JJJ..JJJJJJJJJJJJJ.JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ...JJJ..",
+     "from": "commons:File:Microsoft Office Teams (2019–2025).svg"
+    }
+   ],
+   "members": {
+    "gilbarbara": [
+     "microsoft-teams"
+    ],
+    "svgl": [
+     "microsoft-teams"
+    ]
+   },
+   "prefer": [
+    "svgl:microsoft-teams",
+    "commons:File:Microsoft Office Teams (2025–present).svg"
+   ],
+   "sources": {
+    "gilbarbara": "retired 2019 to 2025-10: microsoft-teams.svg",
+    "svgl": "current: microsoft-teams",
+    "commons": "current: Microsoft Office Teams (2025–present).svg"
+   }
+  },
+  "microsoft-outlook": {
+   "name": "Microsoft Outlook",
+   "aka": [
+    "Outlook"
+   ],
+   "owner": "Microsoft Corporation",
+   "page": "https://www.microsoft.com/microsoft-365/outlook",
+   "mark": {
+    "since": "2025-10",
+    "what": "the folded 2025 icon",
+    "fp": "fp1 a1.06 pI85.H15 g3 c002be60006efffa27ffffffe9fffffffefffffffffffffffffffffff6efffffa h..IIII...IIIIII.IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIHHHIIIHHHHHII",
+    "from": "svgl:microsoft-outlook"
+   },
+   "outdated": [
+    {
+     "since": "2018",
+     "until": "2024",
+     "what": "the flat O on an envelope",
+     "fp": "fp1 a1.08 pI76.H24 g0 c00bffff923cffff9fffffff9fffffffaffffffffffffffff34ffffff02ffffff h..IIIIIIIIIIIIHHIIIIHHHHIIIIIIHHIIIIIIIIIIIIIIIIIIIIHIII..HHHHHI",
+     "from": "commons:File:Microsoft Office Outlook (2018–2024).svg"
+    },
+    {
+     "since": "2024",
+     "until": "2025-10",
+     "what": "the 2024 O on an envelope",
+     "fp": "fp1 a1.24 pI70.H30 g0 c0006ea1078afffd4fffffffeffffffffffffffffffffffff6bffffff05fffffc h...HHH..IIIIHIIIIIIIIIIIIIIIIIIIIIIIIIIHIIIIIHHHIIIIHHHH.IIHHHHH",
+     "from": "commons:File:Microsoft Outlook logo (2024–2025).svg"
+    }
+   ],
+   "members": {
+    "svgl": [
+     "microsoft-outlook"
+    ]
+   },
+   "prefer": [
+    "svgl:microsoft-outlook",
+    "commons:File:Microsoft Outlook Icon (2025–present).svg"
+   ],
+   "sources": {
+    "svgl": "current: microsoft-outlook",
+    "commons": "current: Microsoft Outlook Icon (2025–present).svg"
+   }
+  },
+  "microsoft-word": {
+   "name": "Microsoft Word",
+   "aka": [
+    "Word"
+   ],
+   "owner": "Microsoft Corporation",
+   "page": "https://www.microsoft.com/microsoft-365/word",
+   "mark": {
+    "since": "2025-10",
+    "what": "the folded 2025 icon with three bars",
+    "fp": "fp1 a0.97 pI98 g0 c07fffffd0cffffff0cffffff2dffffffffffffffffffffffffffffff38fffffd h.IIIIIII.IIIIIII.IIIIIIIIIIIIIIIIIIIIIIIIwIIIIIIIIIIIIIIIIIIIIII",
+    "from": "svgl:microsoft-word"
+   },
+   "outdated": [
+    {
+     "since": "2018-11",
+     "until": "2025-10",
+     "what": "the flat W with four bars",
+     "fp": "fp1 a1.08 pI100 g0 c02ffffff24ffffffffffffffffffffffffffffffffffffff34ffffff02ffffff h..IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII..IIIIII",
+     "from": "commons:File:Microsoft Office Word (2019–2025).svg"
+    },
+    {
+     "since": "2013",
+     "until": "2018-11",
+     "what": "the W on a page",
+     "fp": "fp1 a1 pI78.w18 g0 c469cb443ffffffffffffffffffffffffffffffffffffffffffffffff469cb443 hIIIIIIIIIIIIIwwIIIIIIIIwIIwIIIgwIwIIIIgwIIIIIIIwIIIIIwwIIIIIIIII",
+     "from": "commons:File:Microsoft Office Word (2013–2019).svg"
+    }
+   ],
+   "members": {
+    "svgl": [
+     "microsoft-word"
+    ]
+   },
+   "prefer": [
+    "svgl:microsoft-word",
+    "commons:File:Microsoft Office Word (2025–present).svg"
+   ],
+   "sources": {
+    "svgl": "current: microsoft-word",
+    "commons": "current: Microsoft Office Word (2025–present).svg"
+   }
+  },
+  "microsoft-excel": {
+   "name": "Microsoft Excel",
+   "aka": [
+    "Excel"
+   ],
+   "owner": "Microsoft Corporation",
+   "page": "https://www.microsoft.com/microsoft-365/excel",
+   "mark": {
+    "since": "2025-10",
+    "what": "the folded 2025 icon",
+    "fp": "fp1 a0.97 pE78.F22 g1 c07fffffe0cffffff0cffffff2dffffffffffffffffffffffffffffff38fffffe h.EEEEEEE.EEEEEEE.EEEEEEEFEEEEEEEFFFFEEEEFFFFEEEEFFFFEEEEFFEEEEEE",
+    "from": "svgl:microsoft-excel"
+   },
+   "outdated": [
+    {
+     "since": "2018-11",
+     "until": "2025-10",
+     "what": "the flat X on a grid",
+     "fp": "fp1 a1.08 pF100 g0 c02ffffff24ffffffffffffffffffffffffffffffffffffff34ffffff02ffffff h..FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF..FFFFFF",
+     "from": "commons:File:Microsoft Office Excel (2019–2025).svg"
+    }
+   ],
+   "members": {
+    "svgl": [
+     "microsoft-excel"
+    ]
+   },
+   "prefer": [
+    "svgl:microsoft-excel",
+    "commons:File:Microsoft Office Excel (2025–present).svg"
+   ],
+   "sources": {
+    "svgl": "current: microsoft-excel",
+    "commons": "current: Microsoft Office Excel (2025–present).svg"
+   }
+  },
+  "microsoft-powerpoint": {
+   "name": "Microsoft PowerPoint",
+   "aka": [
+    "PowerPoint"
+   ],
+   "owner": "Microsoft Corporation",
+   "page": "https://www.microsoft.com/microsoft-365/powerpoint",
+   "mark": {
+    "since": "2025-10",
+    "what": "the folded 2025 icon",
+    "fp": "fp1 a1.03 pA71.B29 g5 c019efb301cffffe37ffffffaaffffffefffffffefffffffbefffffe2239eeb30 h..ABBBB..AAABBBBAAAABBBBAAAABBBBAAAAAAABAAAAAAAAAAAAAAAAAAAAAAA.",
+    "from": "svgl:microsoft-powerpoint"
+   },
+   "outdated": [
+    {
+     "since": "2018-11",
+     "until": "2025-10",
+     "what": "the flat P on a pie",
+     "fp": "fp1 a1.08 pB100 g0 c008efc3029ffffe3fffffffbfffffffefffffffefffffffb39ffffe3008efc40 h..BBBBB.BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..BBBBB.",
+     "from": "commons:File:Microsoft Office PowerPoint (2019–2025).svg"
+    }
+   ],
+   "members": {
+    "svgl": [
+     "microsoft-powerpoint"
+    ]
+   },
+   "prefer": [
+    "svgl:microsoft-powerpoint",
+    "commons:File:Microsoft Office PowerPoint (2025–present).svg"
+   ],
+   "sources": {
+    "svgl": "current: microsoft-powerpoint",
+    "commons": "current: Microsoft Office PowerPoint (2025–present).svg"
+   }
+  },
+  "microsoft-onedrive": {
+   "name": "Microsoft OneDrive",
+   "aka": [
+    "OneDrive"
+   ],
+   "owner": "Microsoft Corporation",
+   "page": "https://www.microsoft.com/microsoft-365/onedrive",
+   "mark": {
+    "since": "2025-10",
+    "what": "the 2025 cloud in gradient",
+    "fp": "fp1 a1.62 pH90.I10 g3 c003de60008dfff307fffffb1dffffff8fffffffeefffffff9ffffffb1bffffd3 h..HHHH...IHHHHH.IIHHHHH.IIHHHHHHIHHHHHHHHHHHHHHHHHHHHHHH.HHHHHHH",
+    "from": "svgl:microsoft-onedrive"
+   },
+   "outdated": [
+    {
+     "since": "2019",
+     "until": "2025-10",
+     "what": "the flat four-blue cloud",
+     "fp": "fp1 a1.56 pI66.H34 g0 c004de50002dffe104effff60bfffffe5fffffffdefffffffaffffffd3dffffe5 h..IIII...IIIII..IIIIIII.IIIIIIIIIIIIHIIIIIIHHHIIIHHHHHHIHHHHHHHH",
+     "from": "gilbarbara:microsoft-onedrive.svg"
+    },
+    {
+     "since": "2019",
+     "until": "2025-10",
+     "what": "the flat four-blue cloud",
+     "fp": "fp1 a1.56 pI66.H34 g0 c003de50002dffe104effff60cfffffe5fffffffdefffffffaffffffd3dffffe5 h..IIII...IIIII..IIIIIII.IIIIIIIIIIIIHIIIIIIHHHIIIHHHHHHIHHHHHHHH",
+     "from": "commons:File:Microsoft Office OneDrive (2019–2025).svg"
+    }
+   ],
+   "hex": [
+    "#4894fe",
+    "#0934b3",
+    "#23c0fe",
+    "#1c91ff"
+   ],
+   "retired": [
+    "#0364b8",
+    "#0078d4",
+    "#1490df",
+    "#28a8ea"
+   ],
+   "retiredWhat": "the four flat blues of the 2019-2025 cloud",
+   "members": {
+    "gilbarbara": [
+     "microsoft-onedrive"
+    ],
+    "svgl": [
+     "microsoft-onedrive"
+    ]
+   },
+   "prefer": [
+    "svgl:microsoft-onedrive",
+    "commons:File:Microsoft OneDrive Icon (2025 - present).svg"
+   ],
+   "sources": {
+    "gilbarbara": "retired 2019 to 2025-10: microsoft-onedrive.svg",
+    "svgl": "current: microsoft-onedrive",
+    "commons": "current: Microsoft OneDrive Icon (2025 - present).svg"
+   }
+  },
+  "microsoft-onenote": {
+   "name": "Microsoft OneNote",
+   "aka": [
+    "OneNote"
+   ],
+   "owner": "Microsoft Corporation",
+   "page": "https://www.microsoft.com/microsoft-365/onenote",
+   "mark": {
+    "since": "2025-10",
+    "what": "the folded 2025 icon",
+    "fp": "fp1 a0.97 pK55.L45 g0 c07fffffd0cffffff0cffffff2dffffffffffffffffffffffffffffff38fffffe h.LLLLLLL.LLLLLLL.LLLLLLKKLLLLLKKKKKKLLKKKKKKKKKKKKKKKKKKKKKKKKKK",
+    "from": "svgl:microsoft-onenote"
+   },
+   "outdated": [
+    {
+     "since": "2018-11",
+     "until": "2025-10",
+     "what": "the flat N",
+     "fp": "fp1 a1.08 pK100 g0 c02ffffff24ffffffffffffffffffffffffffffffffffffff34ffffff02ffffff h..KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK..KKKKKK",
+     "from": "commons:File:Microsoft Office OneNote (2019–2025).svg"
+    }
+   ],
+   "members": {
+    "svgl": [
+     "microsoft-onenote"
+    ]
+   },
+   "prefer": [
+    "svgl:microsoft-onenote",
+    "commons:File:Microsoft OneNote Icon (2025 - present).svg"
+   ],
+   "sources": {
+    "svgl": "current: microsoft-onenote",
+    "commons": "current: Microsoft OneNote Icon (2025 - present).svg"
+   }
+  },
+  "microsoft-azure": {
+   "name": "Microsoft Azure",
+   "aka": [
+    "Azure"
+   ],
+   "owner": "Microsoft Corporation",
+   "page": "https://azure.microsoft.com",
+   "mark": {
+    "since": null,
+    "what": "the A in gradient",
+    "fp": "fp1 a1.06 pI52.H48 g5 c00bffb0002ffff2006ffff600bfeefb01ff99ff15ffddff5afebfffaefa1bffe h..IHHH....IIHH...IIIHHH..IIIHHH..IIIHHH.IIIIIHHHIIIIIHHHIII.IHHH",
+    "from": "gilbarbara:microsoft-azure.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "microsoft-azure"
+    ],
+    "svgl": [
+     "azure"
+    ]
+   },
+   "prefer": [
+    "gilbarbara:microsoft-azure.svg",
+    "svgl:azure"
+   ],
+   "sources": {
+    "gilbarbara": "current: microsoft-azure.svg",
+    "svgl": "current: azure"
+   }
+  },
+  "visual-studio-code": {
+   "name": "Visual Studio Code",
+   "aka": [
+    "VS Code",
+    "VSCode"
+   ],
+   "owner": "Microsoft Corporation",
+   "page": "https://code.visualstudio.com/brand",
+   "mark": {
+    "since": null,
+    "what": "the blue ribbon",
+    "fp": "fp1 a1 pI99 g0 c00001cb40002cfffc93df9ef4efe62ef5efe72efc93dfaef0002cfff00001cb4 h.....III...IIIIIIIIIIIIIIIIIIwIIIIIIIwIIIIIIIIII...IIIII.....III",
+    "from": "gilbarbara:visual-studio-code.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "visual-studio-code"
+    ],
+    "svgl": [
+     "vscode"
+    ]
+   },
+   "prefer": [
+    "gilbarbara:visual-studio-code.svg",
+    "svgl:vscode"
+   ],
+   "sources": {
+    "gilbarbara": "current: visual-studio-code.svg",
+    "svgl": "current: vscode"
+   }
+  },
+  "linkedin": {
+   "name": "LinkedIn",
+   "owner": "LinkedIn Corporation",
+   "page": "https://brand.linkedin.com",
+   "mark": {
+    "since": "2019",
+    "what": "the in tile in #0A66C2",
+    "fp": "fp1 a1 pI100 g0 ceffffffef4affffffadffefff392207ff392993ff392a93ff5a4ba5feffffffe hIIIIIIIIIIIIIIIIIIIIIIIIIIIII.IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII",
+    "from": "gilbarbara:linkedin-icon.svg"
+   },
+   "retired": [
+    "#0077b5"
+   ],
+   "retiredWhat": "the older #0077B5 blue",
+   "members": {
+    "gilbarbara": [
+     "linkedin"
+    ],
+    "svgl": [
+     "linkedin"
+    ]
+   },
+   "prefer": [
+    "gilbarbara:linkedin-icon.svg",
+    "svgl:linkedin"
+   ],
+   "sources": {
+    "gilbarbara": "current: linkedin-icon.svg; unknown: linkedin.svg",
+    "svgl": "current: linkedin"
+   }
+  },
+  "apple": {
+   "name": "Apple",
+   "owner": "Apple Inc.",
+   "page": "https://www.apple.com/legal/intellectual-property/guidelinesfor3rdparties.html",
+   "mark": {
+    "since": null,
+    "what": "the apple",
+    "fp": "fp1 a0.81 pk100 g0 c00005c000010b4003dfdcfe6dfffffd1ffffffb0cffffff64ffffffa07ecbeb1 h....kk......kk..kkkkkkkkkkkkkkk.kkkkkkk.kkkkkkkkkkkkkkkk.kkkkkk.",
+    "from": "gilbarbara:apple.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "apple"
+    ],
+    "svgl": [
+     "apple"
+    ],
+    "simple-icons": "apple"
+   },
+   "prefer": [
+    "gilbarbara:apple.svg",
+    "svgl:apple",
+    "simple-icons:apple",
+    "svgl:apple:dark"
+   ],
+   "sources": {
+    "gilbarbara": "current: apple.svg",
+    "svgl": "current: apple; current: apple:dark",
+    "simple-icons": "current: apple (one colour)"
+   }
+  },
+  "app-store": {
+   "name": "App Store",
+   "owner": "Apple Inc.",
+   "page": "https://developer.apple.com/app-store/marketing/guidelines/",
+   "mark": {
+    "since": null,
+    "what": "the blue tile with the A of three sticks (iOS 26 draws it in glass; the open collections keep the flat drawing)",
+    "fp": "fp1 a1 pI97 g8 c7ffffff7ffffffffffffffffffffffffffffffffffffffffffffffff7ffffff7 hIIIIIIIIIIIIIIIIIIIIIIIIIIIwIIIIIIIIIIIIIIIIIwIIIIIIIIIIIIIIIIII",
+    "from": "svgl:appstore"
+   },
+   "members": {
+    "gilbarbara": [
+     "apple-app-store"
+    ],
+    "svgl": [
+     "appstore"
+    ],
+    "simple-icons": "appstore"
+   },
+   "prefer": [
+    "svgl:appstore",
+    "gilbarbara:apple-app-store.svg"
+   ],
+   "sources": {
+    "gilbarbara": "current: apple-app-store.svg",
+    "svgl": "current: appstore",
+    "simple-icons": "unknown: appstore (one colour)"
+   }
+  },
+  "safari": {
+   "name": "Safari",
+   "owner": "Apple Inc.",
+   "page": "https://www.apple.com/safari/",
+   "mark": {
+    "since": null,
+    "what": "the compass (iOS 26 draws it in glass; the open collections keep the flat drawing)",
+    "fp": "fp1 a1 pH87.w5 g8 c03bffb303effffe3bffffffbeffffffeeffffffeaffffffa3effffe303aeea30 h.wHHHHw.wHHHHHHwHHHHIKHHHHHHAIHHHHHwHHHHHHHHHHHHwHHHHHHw.wHHHHw.",
+    "from": "svgl:safari"
+   },
+   "members": {
+    "gilbarbara": [
+     "safari"
+    ],
+    "svgl": [
+     "safari"
+    ],
+    "simple-icons": "safari"
+   },
+   "prefer": [
+    "svgl:safari",
+    "gilbarbara:safari.svg",
+    "simple-icons:safari"
+   ],
+   "sources": {
+    "gilbarbara": "current: safari.svg",
+    "svgl": "current: safari",
+    "simple-icons": "current: safari (one colour)"
+   }
+  },
+  "apple-music": {
+   "name": "Apple Music",
+   "owner": "Apple Inc.",
+   "page": "https://marketing.services.apple/",
+   "mark": {
+    "since": null,
+    "what": "the note on red (iOS 26 draws it in glass; the open collections keep the flat drawing)",
+    "fp": "fp1 a1 pA98 g0 c6effffe6effffffeffffffffffffffffffffffffffffffffeffffffe6effffe6 hAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "from": "svgl:apple-music-icon"
+   },
+   "members": {
+    "svgl": [
+     "apple-music-icon"
+    ],
+    "simple-icons": "applemusic"
+   },
+   "prefer": [
+    "svgl:apple-music-icon",
+    "simple-icons:applemusic"
+   ],
+   "sources": {
+    "svgl": "current: apple-music-icon",
+    "simple-icons": "current: applemusic (one colour)"
+   }
+  },
+  "slack": {
+   "name": "Slack",
+   "owner": "Slack Technologies, LLC",
+   "page": "https://slack.com/media-kit",
+   "mark": {
+    "since": "2019-01",
+    "what": "the four-colour hash of pills and dots",
+    "fp": "fp1 a1 pC25.F25.A25.H25 g0 c00b9ab000078cd00bdd8cd7b9bb77889a8877ccab7db8ddb00db870000b9ab00 h..HHFF....HHFF..HHHHFFFFHHHHFFFFAAAACCCCAAAACCCC..AACC....AACC..",
+    "from": "gilbarbara:slack-icon.svg"
+   },
+   "outdated": [
+    {
+     "since": "2013",
+     "until": "2019-01",
+     "what": "the tartan hash and the old wordmark",
+     "fp": "fp1 a3.46 pk61.F12.A8.L6 g0 c040140234b035034ac2aa8b8d8366a388b38aa298e39b998a803323232000000 h.C..k.kkFE.kk.kkFFkkkkkkGCkkkkkkFAAkkkkkLALkkkkkLC.kkkkkFF......",
+     "from": "commons:File:Slack Logo Pre 2019.svg"
+    }
+   ],
+   "retired": [
+    "#6ecadc",
+    "#e9a820",
+    "#3eb991",
+    "#e01563"
+   ],
+   "retiredWhat": "the colours of the 2013-2019 tartan hash",
+   "members": {
+    "gilbarbara": [
+     "slack"
+    ],
+    "svgl": [
+     "slack"
+    ]
+   },
+   "prefer": [
+    "gilbarbara:slack-icon.svg",
+    "svgl:slack",
+    "commons:File:Slack icon 2019.svg"
+   ],
+   "sources": {
+    "gilbarbara": "current: slack-icon.svg; unknown: slack.svg",
+    "svgl": "current: slack",
+    "commons": "current: Slack icon 2019.svg"
+   }
+  },
+  "notion": {
+   "name": "Notion",
+   "owner": "Notion Labs, Inc.",
+   "page": "https://www.notion.com/about",
+   "mark": {
+    "since": null,
+    "what": "the N cube",
+    "fp": "fp1 a0.95 pg53.w24.k23 g0 c9bcdef81fffffffdffffffffffffffffffffffffffffffffafffffff1ceddcb9 hkgggggk.kggggggkkgwwwwwgkgwkggwgkgwgkgwgkgwggkwgkgwgwgwg.kgggkkk",
+    "from": "gilbarbara:notion-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "notion"
+    ],
+    "svgl": [
+     "notion"
+    ],
+    "simple-icons": "notion"
+   },
+   "prefer": [
+    "gilbarbara:notion-icon.svg",
+    "svgl:notion"
+   ],
+   "sources": {
+    "gilbarbara": "current: notion-icon.svg; unknown: notion.svg",
+    "svgl": "current: notion",
+    "simple-icons": "unknown: notion (one colour)"
+   }
+  },
+  "figma": {
+   "name": "Figma",
+   "owner": "Figma, Inc.",
+   "page": "https://www.figma.com/using-the-figma-brand/",
+   "mark": {
+    "since": null,
+    "what": "the five shapes",
+    "fp": "fp1 a0.66 pA28.H17.B17.J16 g0 c8effffe8effffffe4dffbed4cfffdffccfffdffc4dff2441efff10008ee80000 hBBBBAAAABBBBAAAABAAAAAAAJJJJHHHHJJJJHHHHFGGG.HH.FFFF....FFFF....",
+    "from": "gilbarbara:figma.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "figma"
+    ],
+    "svgl": [
+     "figma"
+    ],
+    "simple-icons": "figma"
+   },
+   "prefer": [
+    "gilbarbara:figma.svg",
+    "svgl:figma"
+   ],
+   "sources": {
+    "gilbarbara": "current: figma.svg",
+    "svgl": "current: figma",
+    "simple-icons": "unknown: figma (one colour)"
+   }
+  },
+  "linear": {
+   "name": "Linear",
+   "owner": "Linear Orbit, Inc.",
+   "page": "https://linear.app/brand",
+   "mark": {
+    "since": null,
+    "what": "the striped disc",
+    "fp": "fp1 a1 pk100 g0 c02aeea200bffffe265cffffa785cfffe5885cffe75885cfa2b5885b202757600 h.kkkkkk..kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.kkkkk..",
+    "from": "gilbarbara:linear-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "linear"
+    ],
+    "svgl": [
+     "linear"
+    ],
+    "simple-icons": "linear"
+   },
+   "prefer": [
+    "gilbarbara:linear-icon.svg",
+    "svgl:linear",
+    "simple-icons:linear"
+   ],
+   "sources": {
+    "gilbarbara": "current: linear-icon.svg; unknown: linear.svg",
+    "svgl": "current: linear",
+    "simple-icons": "current: linear (one colour)"
+   }
+  },
+  "asana": {
+   "name": "Asana",
+   "owner": "Asana, Inc.",
+   "page": "https://asana.com/brand",
+   "mark": {
+    "since": null,
+    "what": "the three coral dots",
+    "fp": "fp1 a1.08 pA100 g0 c003dd30000affa00009ff900002aa2003b8008b3dff55ffdeff66ffe6fc11cf6 h..AAAA....AAAA....AAAA.....AA...AAA..AAAAAAAAAAAAAAAAAAAAAA..AAA",
+    "from": "gilbarbara:asana-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "asana"
+    ],
+    "svgl": [
+     "asana-logo"
+    ],
+    "simple-icons": "asana"
+   },
+   "prefer": [
+    "gilbarbara:asana-icon.svg",
+    "svgl:asana-logo",
+    "simple-icons:asana"
+   ],
+   "sources": {
+    "gilbarbara": "current: asana-icon.svg; unknown: asana.svg",
+    "svgl": "current: asana-logo",
+    "simple-icons": "current: asana (one colour)"
+   }
+  },
+  "jira": {
+   "name": "Jira",
+   "owner": "Atlassian",
+   "page": "https://atlassian.design/foundations/logos",
+   "mark": {
+    "since": "2025",
+    "what": "the Jira mark in white on an Atlassian-blue tile (#1868DB) (no open collection draws it yet)",
+    "fp": "fp1 a1 pI88.w12 g0 c5effffe5effffffeffffffffffffffffffffffffffffffffeffffffe5effffe5 hIIIIIIIIIIIIIIIIIIIIIwIIIIIwwIIIIIwwwIIIIIIwIIIIIIIIIIIIIIIIIIII",
+    "from": null
+   },
+   "outdated": [
+    {
+     "since": "2017-09",
+     "until": "2025",
+     "what": "the blue gradient chevrons",
+     "fp": "fp1 a1 pI100 g0 c0001ffff00116cef00efffcf336cdf7fcfffcf2128cf6e20008f3000002c3000 h....IIII....IIII..IIIIIIIIIIIIIIIIIIIII.IIIIIII...III......II...",
+     "from": "gilbarbara:gb-jira.svg"
+    }
+   ],
+   "hex": [
+    "#1868db"
+   ],
+   "retired": [
+    "#2684ff",
+    "#0052cc"
+   ],
+   "retiredWhat": "the blue gradient of the 2017-2025 Atlassian marks",
+   "members": {
+    "gilbarbara": [
+     "jira"
+    ],
+    "simple-icons": "jira"
+   },
+   "prefer": [],
+   "sources": {
+    "gilbarbara": "retired 2017-09 to 2025: gb-jira.svg",
+    "simple-icons": "retired 2017-09 to 2025: jira (one colour)"
+   }
+  },
+  "confluence": {
+   "name": "Confluence",
+   "owner": "Atlassian",
+   "page": "https://atlassian.design/foundations/logos",
+   "mark": {
+    "since": "2025",
+    "what": "the Confluence mark in white on an Atlassian-blue tile (#1868DB) (no open collection draws it yet)",
+    "fp": "fp1 a1 pI93.w7 g0 c5effffe5effffffeffffffffffffffffffffffffffffffffeffffffe5effffe5 hIIIIIIIIIIIIIIIIIIIIIIIIIIIwwIIIIIIwwIIIIIIIIIIIIIIIIIIIIIIIIIII",
+    "from": null
+   },
+   "outdated": [
+    {
+     "since": "2017-09",
+     "until": "2025",
+     "what": "the blue gradient crossed waves",
+     "fp": "fp1 a1.04 pI100 g0 c1b6006c36ffdaefd5efffff4017cec4005cec7105fffffe5dfe9dff53c5006b0 h.II..IIIIIIIIIIIIIIIIIII..IIIII..IIIII..IIIIIIIIIIIIIIIIIII..II.",
+     "from": "gilbarbara:gb-confluence.svg"
+    }
+   ],
+   "hex": [
+    "#1868db"
+   ],
+   "retired": [
+    "#2684ff",
+    "#0052cc"
+   ],
+   "retiredWhat": "the blue gradient of the 2017-2025 Atlassian marks",
+   "members": {
+    "gilbarbara": [
+     "confluence"
+    ],
+    "simple-icons": "confluence"
+   },
+   "prefer": [],
+   "sources": {
+    "gilbarbara": "retired 2017-09 to 2025: gb-confluence.svg",
+    "simple-icons": "retired 2017-09 to 2025: confluence (one colour)"
+   }
+  },
+  "trello": {
+   "name": "Trello",
+   "owner": "Atlassian",
+   "page": "https://atlassian.design/foundations/logos",
+   "mark": {
+    "since": null,
+    "what": "the blue board tile",
+    "fp": "fp1 a1 pI100 g0 ccffffffcfc8cc8cff808807ff808807ff808dbdff808ffffffefffffcffffffc hIIIIIIIIIIIIIIIIII.II.IIII.II.IIII.IIIIIII.IIIIIIIIIIIIIIIIIIIII",
+    "from": "svgl:trello"
+   },
+   "members": {
+    "gilbarbara": [
+     "trello"
+    ],
+    "svgl": [
+     "trello"
+    ],
+    "simple-icons": "trello"
+   },
+   "prefer": [
+    "svgl:trello",
+    "gilbarbara:trello.svg",
+    "simple-icons:trello"
+   ],
+   "sources": {
+    "gilbarbara": "current: trello.svg",
+    "svgl": "current: trello",
+    "simple-icons": "current: trello (one colour)"
+   }
+  },
+  "airtable": {
+   "name": "Airtable",
+   "owner": "Formagrid, Inc.",
+   "page": "https://airtable.com/newsroom",
+   "mark": {
+    "since": null,
+    "what": "the three-colour box",
+    "fp": "fp1 a1.2 pH41.C36.A21 g0 c006dd6004dffffd478dffd88fe8778efffe4bfffe810bfff2000bfe90000a820 h..CCCC..CCCCCCCCACCCCCDHAAACDHHHAAAAHHHHAA..HHHH....HHHH....HHH.",
+    "from": "gilbarbara:airtable.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "airtable"
+    ],
+    "simple-icons": "airtable"
+   },
+   "prefer": [
+    "gilbarbara:airtable.svg",
+    "simple-icons:airtable"
+   ],
+   "sources": {
+    "gilbarbara": "current: airtable.svg",
+    "simple-icons": "current: airtable (one colour)",
+    "commons": "unknown: Airtable Logo.svg"
+   }
+  },
+  "zapier": {
+   "name": "Zapier",
+   "owner": "Zapier, Inc.",
+   "page": "https://zapier.com/brand",
+   "mark": {
+    "since": null,
+    "what": "the orange mark",
+    "fp": "fp1 a1 pB100 g0 c9ffffff9ffffffffffffffffeaab9aade878888fffffffffffffffff9ffffff9 hBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    "from": "simple-icons:zapier"
+   },
+   "members": {
+    "gilbarbara": [
+     "zapier"
+    ],
+    "simple-icons": "zapier"
+   },
+   "prefer": [
+    "simple-icons:zapier"
+   ],
+   "sources": {
+    "gilbarbara": "unknown: zapier.svg",
+    "simple-icons": "current: zapier (one colour)"
+   }
+  },
+  "monday": {
+   "name": "monday.com",
+   "aka": [
+    "Monday"
+   ],
+   "owner": "monday.com Ltd.",
+   "page": "https://monday.com/brand",
+   "mark": {
+    "since": null,
+    "what": "the three coloured strokes",
+    "fp": "fp1 a1.66 pA44.D43.F12 g0 c00d70c8005fc4fd00bf99fb02ff5ef507fd6fe10df7cf88aff2ef3cfaa09b09b h..AA.DD..AAADDD..AAADDD..AAADDD.AAACDD..AAADDDFFAAADDDFFAA.DD.FF",
+    "from": "gilbarbara:monday-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "monday"
+    ]
+   },
+   "prefer": [
+    "gilbarbara:monday-icon.svg"
+   ],
+   "sources": {
+    "gilbarbara": "current: monday-icon.svg; unknown: monday.svg"
+   }
+  },
+  "miro": {
+   "name": "Miro",
+   "owner": "RealtimeBoard, Inc.",
+   "page": "https://miro.com/brand/",
+   "mark": {
+    "since": null,
+    "what": "the yellow tile",
+    "fp": "fp1 a1 pD87.k13 g0 c5effffe5effffffeffffffffffffffffffffffffffffffffeffffffe5effffe5 hDDDDDDDDDDDDDDDDDDkDkkDDDDDkkkDDDDkDDkDDDDDDDDDDDDDDDDDDDDDDDDDD",
+    "from": "gilbarbara:miro-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "miro"
+    ],
+    "simple-icons": "miro"
+   },
+   "prefer": [
+    "gilbarbara:miro-icon.svg"
+   ],
+   "sources": {
+    "gilbarbara": "current: miro-icon.svg; unknown: miro.svg",
+    "simple-icons": "unknown: miro (one colour)"
+   }
+  },
+  "loom": {
+   "name": "Loom",
+   "owner": "Atlassian",
+   "page": "https://www.loom.com/press",
+   "mark": {
+    "since": "2025-10",
+    "what": "the burst in Atlassian blue (no open collection draws it yet)",
+    "fp": null,
+    "from": null
+   },
+   "retired": [
+    "#625df5",
+    "#565add"
+   ],
+   "retiredWhat": "the 2020-2025 purple",
+   "members": {
+    "gilbarbara": [
+     "loom"
+    ],
+    "svgl": [
+     "loom"
+    ],
+    "simple-icons": "loom"
+   },
+   "prefer": [],
+   "sources": {
+    "gilbarbara": "retired colour: loom-icon.svg; retired colour: loom.svg",
+    "svgl": "retired colour: loom",
+    "simple-icons": "retired colour: loom (one colour)"
+   }
+  },
+  "calendly": {
+   "name": "Calendly",
+   "owner": "Calendly LLC",
+   "page": "https://calendly.com/newsroom",
+   "mark": {
+    "since": null,
+    "what": "the blue C",
+    "fp": "fp1 a1.01 pI100 g0 c03766640367cc85475ffff777bffffe66bffffd675ffff77266bb86402766730 h.IIIIII.IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII.IIIIII.",
+    "from": "svgl:calendly"
+   },
+   "members": {
+    "svgl": [
+     "calendly"
+    ],
+    "simple-icons": "calendly"
+   },
+   "prefer": [
+    "svgl:calendly",
+    "simple-icons:calendly"
+   ],
+   "sources": {
+    "svgl": "current: calendly",
+    "simple-icons": "current: calendly (one colour)"
+   }
+  },
+  "dropbox": {
+   "name": "Dropbox",
+   "owner": "Dropbox, Inc.",
+   "page": "https://www.dropbox.com/branding",
+   "mark": {
+    "since": "2017-10",
+    "what": "the open box in #0061FF",
+    "fp": "fp1 a1.19 pI100 g0 c1aa11aa1affaaffa1991199109900990affaaffa1ab99ba100affa00001aa100 h.II..II.IIIIIIII.II..II..II..II.IIIIIIII.IIIIII...IIII.....II...",
+    "from": "gilbarbara:dropbox.svg"
+   },
+   "retired": [
+    "#007ee5"
+   ],
+   "retiredWhat": "the 2013-2017 blue",
+   "members": {
+    "gilbarbara": [
+     "dropbox"
+    ],
+    "svgl": [
+     "dropbox"
+    ],
+    "simple-icons": "dropbox"
+   },
+   "prefer": [
+    "gilbarbara:dropbox.svg",
+    "simple-icons:dropbox"
+   ],
+   "sources": {
+    "gilbarbara": "current: dropbox.svg",
+    "svgl": "unknown: dropbox",
+    "simple-icons": "current: dropbox (one colour)"
+   }
+  },
+  "box": {
+   "name": "Box",
+   "owner": "Box, Inc.",
+   "page": "https://www.box.com/about-us/press",
+   "mark": {
+    "since": null,
+    "what": "the box wordmark",
+    "fp": "fp1 a1.86 pI100 g0 c8000000090000000b8238515f9bc9c8bb0970ad6908609c4b4bb4cba5e68e93a hI.......I.......IIIIII.IIIIIIIIII.II.IIII.II.IIIIIIIIIIIIIIIIIII",
+    "from": "gilbarbara:box.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "box"
+    ],
+    "simple-icons": "box"
+   },
+   "prefer": [
+    "gilbarbara:box.svg",
+    "simple-icons:box"
+   ],
+   "sources": {
+    "gilbarbara": "current: box.svg",
+    "simple-icons": "current: box (one colour)"
+   }
+  },
+  "zoom": {
+   "name": "Zoom",
+   "owner": "Zoom Communications, Inc.",
+   "page": "https://brand.zoom.com/media-library/",
+   "verified": null,
+   "verifyNote": "the media library draws its files in script and the public brand guidelines name only the wordmark in Zoom blue; the app icon's current glyph is not confirmed there",
+   "mark": {
+    "since": "2022-11",
+    "what": "the blue disc mark in #0B5CFF",
+    "fp": "fp1 a1 pI91.w9 g0 c06cffc606ffffff6cffffffcffffffffffffffffcffffffc6ffffff606cffc60 h.IIIIII.IIIIIIIIIIIIwwIIIIIIwIIIIIIwIIIIIIwIIIIIIIIIIIII.IIIIII.",
+    "from": "gilbarbara:zoom-icon.svg"
+   },
+   "retired": [
+    "#2d8cff"
+   ],
+   "retiredWhat": "the 2011-2022 blue",
+   "members": {
+    "gilbarbara": [
+     "zoom"
+    ],
+    "svgl": [
+     "zoom"
+    ],
+    "simple-icons": "zoom"
+   },
+   "prefer": [
+    "gilbarbara:zoom-icon.svg",
+    "svgl:zoom"
+   ],
+   "sources": {
+    "gilbarbara": "current: zoom-icon.svg; unknown: zoom.svg",
+    "svgl": "current: zoom",
+    "simple-icons": "unknown: zoom (one colour)"
+   }
+  },
+  "discord": {
+   "name": "Discord",
+   "owner": "Discord Inc.",
+   "page": "https://discord.com/branding",
+   "mark": {
+    "since": "2021-05",
+    "what": "Clyde without the bubble, in #5865F2",
+    "fp": "fp1 a1.29 pJ100 g0 c07d88d702ffffff28ffffff8cf7dd7fcef0aa0feffaeeaffeebffbee2b4114b2 h.JJJJJJ.JJJJJJJJJJJJJJJJJJJJJJJJJJ.JJ.JJJJJJJJJJJJJJJJJJJJJ..JJJ",
+    "from": "gilbarbara:discord-icon.svg"
+   },
+   "retired": [
+    "#7289da"
+   ],
+   "retiredWhat": "the 2015-2021 blurple",
+   "members": {
+    "gilbarbara": [
+     "discord"
+    ],
+    "svgl": [
+     "discord"
+    ],
+    "simple-icons": "discord"
+   },
+   "prefer": [
+    "gilbarbara:discord-icon.svg",
+    "svgl:discord",
+    "simple-icons:discord"
+   ],
+   "sources": {
+    "gilbarbara": "current: discord-icon.svg; unknown: discord.svg",
+    "svgl": "current: discord",
+    "simple-icons": "current: discord (one colour)"
+   }
+  },
+  "whatsapp": {
+   "name": "WhatsApp",
+   "owner": "Meta Platforms, Inc.",
+   "page": "https://about.meta.com/brand/resources/whatsapp/whatsapp-brand/",
+   "mark": {
+    "since": null,
+    "what": "the phone in a bubble",
+    "fp": "fp1 a1 pE82.w18 g0 c02aeea202dffffe2affffffaeffffffeeffffffeaffffffa9fffffd2baaeea20 h.wwEEww.wEEEEEEwwEEEEEEwEEwEEEEEEEEEEEEEwEEEEEEwwEEEEEEwwwwEEww.",
+    "from": "gilbarbara:whatsapp-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "whatsapp"
+    ],
+    "svgl": [
+     "whatsapp-icon"
+    ],
+    "simple-icons": "whatsapp"
+   },
+   "prefer": [
+    "gilbarbara:whatsapp-icon.svg"
+   ],
+   "sources": {
+    "gilbarbara": "current: whatsapp-icon.svg; unknown: whatsapp-monochrome-icon.svg; unknown: whatsapp.svg",
+    "svgl": "unknown: whatsapp-icon",
+    "simple-icons": "unknown: whatsapp (one colour)"
+   }
+  },
+  "telegram": {
+   "name": "Telegram",
+   "owner": "Telegram FZ-LLC",
+   "page": "https://telegram.org/tour/screenshots",
+   "mark": {
+    "since": null,
+    "what": "the paper plane",
+    "fp": "fp1 a1 pH92.w8 g0 c02aeea202effffe2affffffaeffffffeeffffffeaffffffa2effffe202aeea20 h.HHHHHH.HHHHHHHHHHHHHHHHHHHwwwHHHHHHwHHHHHHHHHHHHHHHHHHH.HHHHHH.",
+    "from": "gilbarbara:telegram.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "telegram"
+    ],
+    "svgl": [
+     "telegram"
+    ],
+    "simple-icons": "telegram"
+   },
+   "prefer": [
+    "gilbarbara:telegram.svg",
+    "svgl:telegram",
+    "simple-icons:telegram"
+   ],
+   "sources": {
+    "gilbarbara": "current: telegram.svg",
+    "svgl": "current: telegram",
+    "simple-icons": "current: telegram (one colour)"
+   }
+  },
+  "instagram": {
+   "name": "Instagram",
+   "owner": "Meta Platforms, Inc.",
+   "page": "https://about.meta.com/brand/resources/instagram/instagram-brand/",
+   "mark": {
+    "since": "2022-05",
+    "what": "the camera glyph on the brighter 2022 gradient",
+    "fp": "fp1 a1 pL100 g2 c6effffe6effffffeffffffffffffffffffffffffffffffffeffffffe6effffe6 hLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+    "from": "svgl:instagram-icon"
+   },
+   "hex": [
+    "#ff005f",
+    "#fc01d8",
+    "#780cff"
+   ],
+   "retired": [
+    "#3771c8",
+    "#c837ab",
+    "#ff543e"
+   ],
+   "retiredWhat": "the 2016-2022 gradient (blue, violet, orange)",
+   "members": {
+    "gilbarbara": [
+     "instagram"
+    ],
+    "svgl": [
+     "instagram-icon"
+    ],
+    "simple-icons": "instagram"
+   },
+   "prefer": [
+    "svgl:instagram-icon",
+    "commons:File:Instagram logo 2022.svg"
+   ],
+   "sources": {
+    "gilbarbara": "unknown: instagram-icon.svg; unknown: instagram.svg",
+    "svgl": "current: instagram-icon",
+    "simple-icons": "unknown: instagram (one colour)",
+    "commons": "current: Instagram logo 2022.svg"
+   }
+  },
+  "facebook": {
+   "name": "Facebook",
+   "owner": "Meta Platforms, Inc.",
+   "page": "https://about.meta.com/brand/resources/facebook/logo/",
+   "mark": {
+    "since": "2023-09",
+    "what": "the f in the 2023 blue (#0866FF)",
+    "fp": "fp1 a1 pI84.w16 g0 c02aeea202effffe2affffffaeffffffeeffffffeaffffffa2effffe202aeea20 h.IIIIII.IIIIIIIIIIIIwIIIIIIwIIIIIIwwwIIIIIIwIIIIIIIwIIII.IIwIII.",
+    "from": "svgl:facebook-icon"
+   },
+   "hex": [
+    "#0866ff"
+   ],
+   "retired": [
+    "#1877f2",
+    "#1977f3",
+    "#3b5998"
+   ],
+   "retiredWhat": "the 2019-2023 blue (#1877F2)",
+   "members": {
+    "gilbarbara": [
+     "facebook"
+    ],
+    "svgl": [
+     "facebook-icon"
+    ],
+    "simple-icons": "facebook"
+   },
+   "prefer": [
+    "svgl:facebook-icon",
+    "simple-icons:facebook"
+   ],
+   "sources": {
+    "gilbarbara": "retired colour: facebook.svg",
+    "svgl": "current: facebook-icon",
+    "simple-icons": "current: facebook (one colour)"
+   }
+  },
+  "messenger": {
+   "name": "Messenger",
+   "owner": "Meta Platforms, Inc.",
+   "page": "https://www.meta.com/brand/resources/facebook/messenger-icon/",
+   "mark": {
+    "since": "2025-02",
+    "what": "the bolt in a bubble in Facebook Blue (#0866FF)",
+    "fp": "fp1 a1 pI94.w6 g0 c03beeb303effffe3bffffffbffffffffeffffffeaffffffa1dffffd109bbb710 h.IIIIII.IIIIIIIIIIIIIIIIIIIwIwIIIIIIwIIIIIIIIIII.IIIIII..IIIII..",
+    "from": "commons:File:Facebook Messenger logo 2025.svg"
+   },
+   "hex": [
+    "#0866ff"
+   ],
+   "retired": [
+    "#a033ff",
+    "#ff5280",
+    "#ff7061"
+   ],
+   "retiredWhat": "the 2020-2025 gradient from blue through purple to pink",
+   "members": {
+    "gilbarbara": [
+     "messenger"
+    ],
+    "svgl": [
+     "messenger"
+    ],
+    "simple-icons": "messenger"
+   },
+   "prefer": [
+    "commons:File:Facebook Messenger logo 2025.svg",
+    "simple-icons:messenger"
+   ],
+   "sources": {
+    "gilbarbara": "retired colour: messenger.svg",
+    "svgl": "retired colour: messenger",
+    "simple-icons": "current: messenger (one colour)",
+    "commons": "current: Facebook Messenger logo 2025.svg"
+   }
+  },
+  "x": {
+   "name": "X",
+   "aka": [
+    "Twitter",
+    "X (formerly Twitter)"
+   ],
+   "owner": "X Corp.",
+   "page": "https://about.x.com/en/who-we-are/brand-toolkit",
+   "mark": {
+    "since": "2023-07",
+    "what": "the X",
+    "fp": "fp1 a0.98 pk100 g0 ca990006518470460046767000073a100002b380001947640082064818300099a hkkk...kk.kkk.kk..kkkkk....kkk......kkk....kkkkk..kk.kkk.kk...kkk",
+    "from": "gilbarbara:x.svg"
+   },
+   "outdated": [
+    {
+     "since": "2012-06",
+     "until": "2023-07",
+     "what": "the Twitter bird",
+     "fp": "fp1 a1.22 pI100 g0 c30008fa5a811fff87fd9fff39ffffff12dffffc00bffff5003effa005dfd7000 hI...IIIIII..IIIIIIIIIIIIIIIIIII.IIIIIII..IIIIII..IIIII..IIIII...",
+     "from": "commons:File:Logo of Twitter.svg"
+    }
+   ],
+   "retired": [
+    "#1da1f2",
+    "#1d9bf0"
+   ],
+   "retiredWhat": "the Twitter blue",
+   "members": {
+    "gilbarbara": [
+     "x"
+    ],
+    "svgl": [
+     "x"
+    ],
+    "simple-icons": "x"
+   },
+   "prefer": [
+    "gilbarbara:x.svg",
+    "svgl:x",
+    "simple-icons:x",
+    "svgl:x:dark"
+   ],
+   "sources": {
+    "gilbarbara": "current: x.svg",
+    "svgl": "current: x; current: x:dark",
+    "simple-icons": "current: x (one colour)"
+   }
+  },
+  "threads": {
+   "name": "Threads",
+   "owner": "Meta Platforms, Inc.",
+   "page": "https://about.meta.com/brand/resources/instagram/threads/",
+   "mark": {
+    "since": "2023-07",
+    "what": "the @ loop",
+    "fp": "fp1 a0.88 pk100 g0 c04bbbb604a111087b14ba908c0179e30c0a52cb4b16ba8394a1110a504bbbb50 h.kkkkkk.kk....kkk.kkkk.kk..kkkk.k.kkkkkkk.kkkkkkkk....kk.kkkkkk.",
+    "from": "gilbarbara:threads-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "threads"
+    ],
+    "svgl": [
+     "threads"
+    ],
+    "simple-icons": "threads"
+   },
+   "prefer": [
+    "gilbarbara:threads-icon.svg",
+    "svgl:threads",
+    "simple-icons:threads",
+    "svgl:threads:dark"
+   ],
+   "sources": {
+    "gilbarbara": "current: threads-icon.svg; unknown: threads.svg",
+    "svgl": "current: threads; current: threads:dark",
+    "simple-icons": "current: threads (one colour)"
+   }
+  },
+  "tiktok": {
+   "name": "TikTok",
+   "owner": "ByteDance Ltd.",
+   "page": "https://www.tiktok.com/about/brand-guidelines",
+   "mark": {
+    "since": null,
+    "what": "the note with its cyan and red echo",
+    "fp": "fp1 a0.88 pG41.A40.k18 g0 c0001fc000001ff820031fffe4df8fe26dfa5fe00fe02fe009fbdfa0007dea100 h....Gk......GkkG..G.GAkAGGGAGAAAGAALGA..GA.GGA..GkGGkA...AAAA...",
+    "from": "gilbarbara:tiktok-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "tiktok"
+    ],
+    "svgl": [
+     "tiktok-icon-light"
+    ],
+    "simple-icons": "tiktok"
+   },
+   "prefer": [
+    "gilbarbara:tiktok-icon.svg",
+    "svgl:tiktok-icon-light",
+    "simple-icons:tiktok",
+    "svgl:tiktok-icon-light:dark"
+   ],
+   "sources": {
+    "gilbarbara": "current: tiktok-icon.svg; unknown: tiktok.svg",
+    "svgl": "current: tiktok-icon-light; current: tiktok-icon-light:dark",
+    "simple-icons": "current: tiktok (one colour)"
+   }
+  },
+  "spotify": {
+   "name": "Spotify",
+   "owner": "Spotify AB",
+   "page": "https://developer.spotify.com/documentation/design",
+   "mark": {
+    "since": null,
+    "what": "the three arcs in green",
+    "fp": "fp1 a1 pE100 g0 c02aeea202effffe2a84446caec889b8eedaaa6cead9a88fa2effffe202aeea20 h.EEEEEE.EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE.EEEEEE.",
+    "from": "gilbarbara:spotify-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "spotify"
+    ],
+    "svgl": [
+     "spotify"
+    ],
+    "simple-icons": "spotify"
+   },
+   "prefer": [
+    "gilbarbara:spotify-icon.svg",
+    "svgl:spotify",
+    "simple-icons:spotify"
+   ],
+   "sources": {
+    "gilbarbara": "current: spotify-icon.svg; unknown: spotify.svg",
+    "svgl": "current: spotify",
+    "simple-icons": "current: spotify (one colour)"
+   }
+  },
+  "reddit": {
+   "name": "Reddit",
+   "owner": "Reddit, Inc.",
+   "page": "https://www.redditinc.com/brand",
+   "mark": {
+    "since": "2023-11",
+    "what": "the 2023 Snoo",
+    "fp": "fp1 a1 pB92.w8 g0 c02aeea202effffe2affffffaeffffffeeffffffeaffffffa2effffe202aeea20 h.BBBBBB.BBBBBBBBBBBBBBBBBBBwwBBBBBBBBBBBBBwBBwBBBBBBBBBB.BBBBBB.",
+    "from": "gilbarbara:reddit-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "reddit"
+    ],
+    "svgl": [
+     "reddit"
+    ],
+    "simple-icons": "reddit"
+   },
+   "prefer": [
+    "gilbarbara:reddit-icon.svg",
+    "svgl:reddit"
+   ],
+   "sources": {
+    "gilbarbara": "current: reddit-icon.svg; unknown: reddit.svg",
+    "svgl": "current: reddit",
+    "simple-icons": "unknown: reddit (one colour)"
+   }
+  },
+  "twitch": {
+   "name": "Twitch",
+   "owner": "Twitch Interactive, Inc.",
+   "page": "https://brand.twitch.tv",
+   "mark": {
+    "since": "2019-09",
+    "what": "the Glitch",
+    "fp": "fp1 a0.95 pJ100 g0 cabaaaaaef400000af40a0a1af40a0a1af402021cf73144a6eeebee5000ea0000 hJJJJJJJJJJ.....JJJ.J.J.JJJ.J.J.JJJ.J.J.JJJJ.JJJJJJJJJJJ...JJ....",
+    "from": "gilbarbara:twitch.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "twitch"
+    ],
+    "svgl": [
+     "twitch"
+    ],
+    "simple-icons": "twitch"
+   },
+   "prefer": [
+    "gilbarbara:twitch.svg"
+   ],
+   "sources": {
+    "gilbarbara": "current: twitch.svg",
+    "svgl": "unknown: twitch",
+    "simple-icons": "unknown: twitch (one colour)"
+   }
+  },
+  "snapchat": {
+   "name": "Snapchat",
+   "owner": "Snap Inc.",
+   "page": "https://www.snapchat.com/brand-guidelines",
+   "mark": {
+    "since": null,
+    "what": "the ghost",
+    "fp": "fp1 a1 pD84.w16 g0 c6effffe6effffffeffffffffffffffffffffffffffffffffeffffffe6effffe6 hDDDDDDDDDDDDDDDDDDDwwDDDDDDwwDDDDDDwwDDDDDwwwwDDDDDDDDDDDDDDDDDD",
+    "from": "svgl:snapchat"
+   },
+   "members": {
+    "svgl": [
+     "snapchat"
+    ],
+    "simple-icons": "snapchat"
+   },
+   "prefer": [
+    "svgl:snapchat"
+   ],
+   "sources": {
+    "svgl": "current: snapchat",
+    "simple-icons": "unknown: snapchat (one colour)"
+   }
+  },
+  "github": {
+   "name": "GitHub",
+   "owner": "GitHub, Inc.",
+   "page": "https://github.com/logos",
+   "mark": {
+    "since": null,
+    "what": "the Invertocat",
+    "fp": "fp1 a1.02 pk100 g0 c02aeea202dcffcd2ac0110cae800008ef800008fbc5005eb4b911ff404c00d40 h.kkkkkk.kkkkkkkkkk....kkkk....kkkk....kkkkk..kkkkkk..kkk.kk..kk.",
+    "from": "gilbarbara:github-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "github"
+    ],
+    "svgl": [
+     "github_light"
+    ],
+    "simple-icons": "github"
+   },
+   "prefer": [
+    "gilbarbara:github-icon.svg",
+    "svgl:github_light",
+    "simple-icons:github",
+    "svgl:github_light:dark"
+   ],
+   "sources": {
+    "gilbarbara": "current: github-icon.svg; unknown: github.svg; unknown: github-octocat.svg",
+    "svgl": "current: github_light; current: github_light:dark",
+    "simple-icons": "current: github (one colour)"
+   }
+  },
+  "gitlab": {
+   "name": "GitLab",
+   "owner": "GitLab Inc.",
+   "page": "https://about.gitlab.com/press/press-kit/",
+   "mark": {
+    "since": "2022-04",
+    "what": "the 2022 tanuki",
+    "fp": "fp1 a1.04 pB91.C9 g0 c0b0000b04f3003f49fa77af9effffffeeffffffe5effffe503dffd30001bb100 h.B....B.BBB..BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB.BBCCBB....CC...",
+    "from": "gilbarbara:gitlab-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "gitlab"
+    ],
+    "svgl": [
+     "gitlab"
+    ],
+    "simple-icons": "gitlab"
+   },
+   "prefer": [
+    "gilbarbara:gitlab-icon.svg",
+    "svgl:gitlab",
+    "simple-icons:gitlab"
+   ],
+   "sources": {
+    "gilbarbara": "current: gitlab-icon.svg; unknown: gitlab.svg",
+    "svgl": "current: gitlab",
+    "simple-icons": "current: gitlab (one colour)"
+   }
+  },
+  "bitbucket": {
+   "name": "Bitbucket",
+   "owner": "Atlassian",
+   "page": "https://atlassian.design/foundations/logos",
+   "mark": {
+    "since": "2025",
+    "what": "the bucket in white on an Atlassian-blue tile (#1868DB) (no open collection draws it yet)",
+    "fp": "fp1 a1 pI95.w5 g0 c4effffe4effffffeffffffffffffffffffffffffffffffffeffffffe4effffe4 hIIIIIIIIIIIIIIIIIIIIIIIIIIwIIIIIIIIIIIIIIIIwwIIIIIIIIIIIIIIIIIII",
+    "from": null
+   },
+   "outdated": [
+    {
+     "since": "2017-09",
+     "until": "2025",
+     "what": "the bucket in the blue gradient",
+     "fp": "fp1 a1.11 pI100 g0 ceffffffecffffffcafeaaefa8fd00df86ff11ff63ffbbff41ffffff10effffe0 hIIIIIIIIIIIIIIIIIIIIIIIIIII..IIIIII..IIIIIIIIIII.IIIIII..IIIIII.",
+     "from": "gilbarbara:bitbucket.svg"
+    }
+   ],
+   "hex": [
+    "#1868db"
+   ],
+   "retired": [
+    "#2684ff",
+    "#0052cc"
+   ],
+   "retiredWhat": "the blue gradient of the 2017-2025 Atlassian marks",
+   "members": {
+    "gilbarbara": [
+     "bitbucket"
+    ],
+    "simple-icons": "bitbucket"
+   },
+   "prefer": [],
+   "sources": {
+    "gilbarbara": "retired 2017-09 to 2025: bitbucket.svg",
+    "simple-icons": "retired 2017-09 to 2025: bitbucket (one colour)"
+   }
+  },
+  "vercel": {
+   "name": "Vercel",
+   "owner": "Vercel Inc.",
+   "page": "https://vercel.com/geist/brands",
+   "mark": {
+    "since": null,
+    "what": "the triangle",
+    "fp": "fp1 a1.16 pk100 g0 c00044000000cc000004ff40000cffc0004ffff400bffffb04ffffff4bffffffb h...kk......kk.....kkkk....kkkk...kkkkkk..kkkkkk.kkkkkkkkkkkkkkkk",
+    "from": "gilbarbara:vercel-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "vercel"
+    ],
+    "svgl": [
+     "vercel"
+    ],
+    "simple-icons": "vercel"
+   },
+   "prefer": [
+    "gilbarbara:vercel-icon.svg",
+    "svgl:vercel",
+    "simple-icons:vercel",
+    "svgl:vercel:dark"
+   ],
+   "sources": {
+    "gilbarbara": "current: vercel-icon.svg; unknown: vercel.svg",
+    "svgl": "current: vercel; current: vercel:dark",
+    "simple-icons": "current: vercel (one colour)"
+   }
+  },
+  "netlify": {
+   "name": "Netlify",
+   "owner": "Netlify, Inc.",
+   "page": "https://www.netlify.com/press/",
+   "mark": {
+    "since": "2023",
+    "what": "the spark n",
+    "fp": "fp1 a1.13 pG100 g0 c000550000254400000553000663bb26655388355005330000254400000055000 h...GG....GGGG.....GGG...GGGGGGGGGGGGGGGG..GGG.....GGG......GG...",
+    "from": "gilbarbara:netlify-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "netlify"
+    ],
+    "svgl": [
+     "netlify"
+    ],
+    "simple-icons": "netlify"
+   },
+   "prefer": [
+    "gilbarbara:netlify-icon.svg",
+    "svgl:netlify",
+    "simple-icons:netlify"
+   ],
+   "sources": {
+    "gilbarbara": "current: netlify-icon.svg; unknown: netlify.svg",
+    "svgl": "current: netlify",
+    "simple-icons": "current: netlify (one colour)"
+   }
+  },
+  "supabase": {
+   "name": "Supabase",
+   "owner": "Supabase, Inc.",
+   "page": "https://supabase.com/brand-assets",
+   "mark": {
+    "since": null,
+    "what": "the green bolt",
+    "fp": "fp1 a0.98 pF100 g0 c001c000001be000009fe22217ffffffeeffffff61223ff900000eb000000c100 h...F......FF.....FFFFFF.FFFFFFFFFFFFFFFF.FFFFFF.....FF......F...",
+    "from": "gilbarbara:supabase-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "supabase"
+    ],
+    "svgl": [
+     "supabase"
+    ],
+    "simple-icons": "supabase"
+   },
+   "prefer": [
+    "gilbarbara:supabase-icon.svg",
+    "svgl:supabase",
+    "simple-icons:supabase"
+   ],
+   "sources": {
+    "gilbarbara": "current: supabase-icon.svg; unknown: supabase.svg",
+    "svgl": "current: supabase",
+    "simple-icons": "current: supabase (one colour)"
+   }
+  },
+  "postgresql": {
+   "name": "PostgreSQL",
+   "aka": [
+    "Postgres"
+   ],
+   "owner": "PostgreSQL Community Association of Canada",
+   "page": "https://wiki.postgresql.org/wiki/Logo",
+   "mark": {
+    "since": null,
+    "what": "Slonik the elephant",
+    "fp": "fp1 a0.97 pI63.g37 g0 c5dccdfd5effffffeeffffffdbffffff87ffffff81cefffc70005ff400001ec00 hggggggggIIIIIIIgIIIIIIIggIIIIIIggIIIIIgg.gggIIgg...gIIk.....gg..",
+    "from": "gilbarbara:postgresql.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "postgresql"
+    ],
+    "svgl": [
+     "postgresql"
+    ],
+    "simple-icons": "postgresql"
+   },
+   "prefer": [
+    "gilbarbara:postgresql.svg",
+    "svgl:postgresql"
+   ],
+   "sources": {
+    "gilbarbara": "current: postgresql.svg",
+    "svgl": "current: postgresql",
+    "simple-icons": "unknown: postgresql (one colour)"
+   }
+  },
+  "cloudflare": {
+   "name": "Cloudflare",
+   "owner": "Cloudflare, Inc.",
+   "page": "https://www.cloudflare.com/logo/",
+   "mark": {
+    "since": null,
+    "what": "the cloud",
+    "fp": "fp1 a2.21 pB83.C17 g0 c0008e400002ffb00039fff100bffff600dfffec88fddb79cdfcbb49efffffbff h...BBB....BBBB...BBBBB...BBBBBC..BBBBBCCBBBBBBCCBBBBBBCCBBBBBBCC",
+    "from": "gilbarbara:cloudflare-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "cloudflare"
+    ],
+    "svgl": [
+     "cloudflare"
+    ],
+    "simple-icons": "cloudflare"
+   },
+   "prefer": [
+    "gilbarbara:cloudflare-icon.svg",
+    "svgl:cloudflare",
+    "simple-icons:cloudflare"
+   ],
+   "sources": {
+    "gilbarbara": "current: cloudflare-icon.svg; unknown: cloudflare.svg",
+    "svgl": "current: cloudflare",
+    "simple-icons": "current: cloudflare (one colour)"
+   }
+  },
+  "aws": {
+   "name": "AWS",
+   "aka": [
+    "Amazon Web Services"
+   ],
+   "owner": "Amazon.com, Inc.",
+   "page": "https://aws.amazon.com/trademark-guidelines/",
+   "mark": {
+    "since": null,
+    "what": "aws over the smile",
+    "fp": "fp1 a1.68 pk66.C34 g0 c4a73569415876780765a7547785a827711011020400000293940038603beda21 hkkkkkkkk.kkkkkk.kkkkkkkkkkkkkkkk......k.C.....CCCCC..CCC.CCCCCC.",
+    "from": "gilbarbara:aws.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "aws"
+    ],
+    "svgl": [
+     "aws_light"
+    ]
+   },
+   "prefer": [
+    "gilbarbara:aws.svg",
+    "svgl:aws_light",
+    "svgl:aws_light:dark"
+   ],
+   "sources": {
+    "gilbarbara": "current: aws.svg",
+    "svgl": "current: aws_light; current: aws_light:dark"
+   }
+  },
+  "docker": {
+   "name": "Docker",
+   "owner": "Docker, Inc.",
+   "page": "https://www.docker.com/company/newsroom/media-resources/",
+   "mark": {
+    "since": null,
+    "what": "the whale",
+    "fp": "fp1 a1.39 pI100 g0 c000760000499402027a973c259a9a6fdffffffb2dfffff508ffffa001bfe8100 h...II....IIII...IIIIIII.IIIIIIIIIIIIIIIIIIIIIII.IIIIII...IIII...",
+    "from": "gilbarbara:docker-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "docker"
+    ],
+    "svgl": [
+     "docker"
+    ],
+    "simple-icons": "docker"
+   },
+   "prefer": [
+    "gilbarbara:docker-icon.svg",
+    "svgl:docker",
+    "simple-icons:docker"
+   ],
+   "sources": {
+    "gilbarbara": "current: docker-icon.svg; unknown: docker.svg",
+    "svgl": "current: docker",
+    "simple-icons": "current: docker (one colour)"
+   }
+  },
+  "stripe": {
+   "name": "Stripe",
+   "owner": "Stripe, Inc.",
+   "page": "https://stripe.com/newsroom/brand-assets",
+   "mark": {
+    "since": null,
+    "what": "the blurple mark",
+    "fp": "fp1 a1 pJ100 g0 c000147ad69cffffffffffffffffffffffffffffffffffffffffffc96da741000 h....JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ....",
+    "from": "svgl:stripe"
+   },
+   "retired": [
+    "#6772e5"
+   ],
+   "retiredWhat": "the pre-2020 blurple",
+   "members": {
+    "gilbarbara": [
+     "stripe"
+    ],
+    "svgl": [
+     "stripe"
+    ],
+    "simple-icons": "stripe"
+   },
+   "prefer": [
+    "svgl:stripe"
+   ],
+   "sources": {
+    "gilbarbara": "unknown: stripe.svg",
+    "svgl": "current: stripe",
+    "simple-icons": "unknown: stripe (one colour)"
+   }
+  },
+  "shopify": {
+   "name": "Shopify",
+   "owner": "Shopify Inc.",
+   "page": "https://www.shopify.com/brand-assets",
+   "mark": {
+    "since": null,
+    "what": "the bag",
+    "fp": "fp1 a0.88 pE91.w9 g0 c00487100018ade804efffff27ffffff59ffffff8bffffffaeffffffd368bdeb8 h..EEE.....EEEEE.EEEEEEEEEEwEEEEEEEwEEEEEEEEwEEEEEEwEEEEEEEEEEEEE",
+    "from": "gilbarbara:shopify.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "shopify"
+    ],
+    "svgl": [
+     "shopify"
+    ],
+    "simple-icons": "shopify"
+   },
+   "prefer": [
+    "gilbarbara:shopify.svg",
+    "svgl:shopify",
+    "simple-icons:shopify"
+   ],
+   "sources": {
+    "gilbarbara": "current: shopify.svg",
+    "svgl": "current: shopify",
+    "simple-icons": "current: shopify (one colour)"
+   }
+  },
+  "hubspot": {
+   "name": "HubSpot",
+   "owner": "HubSpot, Inc.",
+   "page": "https://www.hubspot.com/style-guide",
+   "mark": {
+    "since": null,
+    "what": "the sprocket",
+    "fp": "fp1 a0.95 pB100 g0 cc80008507a600b6000792a600004fbd80005b02e0003e58c00298ba200990000 hBB...BB.BBB..BB...BB.BB....BBBBB...BB.BB...BBBBB..BBBBBB..BB....",
+    "from": "simple-icons:hubspot"
+   },
+   "members": {
+    "gilbarbara": [
+     "hubspot"
+    ],
+    "simple-icons": "hubspot"
+   },
+   "prefer": [
+    "simple-icons:hubspot"
+   ],
+   "sources": {
+    "gilbarbara": "unknown: hubspot.svg",
+    "simple-icons": "current: hubspot (one colour)"
+   }
+  },
+  "salesforce": {
+   "name": "Salesforce",
+   "owner": "Salesforce, Inc.",
+   "page": "https://www.salesforce.com/news/press-kits/",
+   "mark": {
+    "since": null,
+    "what": "the cloud",
+    "fp": "fp1 a1.42 pH100 g0 c1cd7b2005ffffdd46ffffffc9ffffffffffffffddfffffe54bffd81001cc1000 h.HHHHH..HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH....HH....",
+    "from": "gilbarbara:salesforce.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "salesforce"
+    ],
+    "svgl": [
+     "salesforce"
+    ]
+   },
+   "prefer": [
+    "gilbarbara:salesforce.svg",
+    "svgl:salesforce"
+   ],
+   "sources": {
+    "gilbarbara": "current: salesforce.svg",
+    "svgl": "current: salesforce"
+   }
+  },
+  "intercom": {
+   "name": "Intercom",
+   "owner": "Intercom, Inc.",
+   "page": "https://www.intercom.com/press",
+   "mark": {
+    "since": null,
+    "what": "the face in a tile",
+    "fp": "fp1 a0.98 pk100 g0 ccffffffcfe9bb9dff87bb88ff87bb88ffb7bb8bffcddddcffb7777bfcffffffb hkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+    "from": "gilbarbara:intercom-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "intercom"
+    ],
+    "simple-icons": "intercom"
+   },
+   "prefer": [
+    "gilbarbara:intercom-icon.svg",
+    "simple-icons:intercom"
+   ],
+   "sources": {
+    "gilbarbara": "current: intercom-icon.svg; unknown: intercom.svg",
+    "simple-icons": "current: intercom (one colour)"
+   }
+  },
+  "mailchimp": {
+   "name": "Mailchimp",
+   "owner": "Intuit Inc.",
+   "page": "https://mailchimp.com/about/brand-assets/",
+   "mark": {
+    "since": "2018-09",
+    "what": "Freddie winking",
+    "fp": "fp1 a0.94 pk100 g0 c00558a900628cec051ceca6057fb217277ce211644bc554603ee3327003beb91 h..kkkkk..k.kkkk.k.kkkkk.kkkk..kkkkkk...kkkkkkkkk.kkkkkkk..kkkkk.",
+    "from": "gilbarbara:mailchimp-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "mailchimp"
+    ],
+    "simple-icons": "mailchimp"
+   },
+   "prefer": [
+    "gilbarbara:mailchimp-icon.svg",
+    "simple-icons:mailchimp"
+   ],
+   "sources": {
+    "gilbarbara": "current: mailchimp-icon.svg; unknown: mailchimp.svg",
+    "simple-icons": "current: mailchimp (one colour)"
+   }
+  },
+  "webflow": {
+   "name": "Webflow",
+   "owner": "Webflow, Inc.",
+   "page": "https://webflow.com/brand",
+   "mark": {
+    "since": "2023-01",
+    "what": "the 2023 W",
+    "fp": "fp1 a1.6 pI100 g0 cff3fa8fdff8fadf8ffdfdff369ffffd06effff80fffbff40ffc8fe00d81cf900 hIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII.IIIIIII.IIIIIII.IIIIII..II.III..",
+    "from": "svgl:webflow"
+   },
+   "outdated": [
+    {
+     "since": "2018",
+     "until": "2023-01",
+     "what": "the lowercase webflow wordmark",
+     "fp": "fp1 a4 pJ100 g0 c001390000032820075bbc958b9a8989abb8697b9998899973365762200022000 h...JJ.....JJJJ..JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ...JJ...",
+     "from": "gilbarbara:webflow.svg"
+    }
+   ],
+   "members": {
+    "gilbarbara": [
+     "webflow"
+    ],
+    "svgl": [
+     "webflow"
+    ],
+    "simple-icons": "webflow"
+   },
+   "prefer": [
+    "svgl:webflow",
+    "simple-icons:webflow"
+   ],
+   "sources": {
+    "gilbarbara": "retired 2018 to 2023-01: webflow.svg",
+    "svgl": "current: webflow",
+    "simple-icons": "current: webflow (one colour)"
+   }
+  },
+  "framer": {
+   "name": "Framer",
+   "owner": "Framer B.V.",
+   "page": "https://www.framer.com/brand/",
+   "mark": {
+    "since": null,
+    "what": "the folded F",
+    "fp": "fp1 a0.66 pk100 g0 c6effffff02afffff555abaaaffffd500ffffffa1afff655305ef1000001a1000 hkkkkkkkk..kkkkkkkkkkkkkkkkkkkk..kkkkkkk.kkkkkkkk.kkk.......k....",
+    "from": "gilbarbara:framer.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "framer"
+    ],
+    "svgl": [
+     "framer"
+    ],
+    "simple-icons": "framer"
+   },
+   "prefer": [
+    "gilbarbara:framer.svg",
+    "svgl:framer",
+    "simple-icons:framer",
+    "svgl:framer:dark"
+   ],
+   "sources": {
+    "gilbarbara": "current: framer.svg",
+    "svgl": "current: framer; current: framer:dark",
+    "simple-icons": "current: framer (one colour)"
+   }
+  },
+  "canva": {
+   "name": "Canva",
+   "owner": "Canva Pty Ltd",
+   "page": "https://www.canva.com/newsroom/",
+   "mark": {
+    "since": null,
+    "what": "the C on a disc",
+    "fp": "fp1 a1 pI78.H16.w6 g0 c02aeea202effffe2affffffaeffffffeeffffffeaffffffa2effffe202aeea20 h.IIIIII.IIIHHIIIIIHHIHIIIIwIIIIIIIwIIIIIIIwIIHIIIIIHHIII.IIIIII.",
+    "from": "svgl:canva"
+   },
+   "members": {
+    "svgl": [
+     "canva"
+    ]
+   },
+   "prefer": [
+    "svgl:canva"
+   ],
+   "sources": {
+    "svgl": "current: canva"
+   }
+  },
+  "paypal": {
+   "name": "PayPal",
+   "owner": "PayPal, Inc.",
+   "page": "https://newsroom.paypal-corp.com/media-resources",
+   "mark": {
+    "since": "2024",
+    "what": "the PP monogram of the 2024 identity",
+    "fp": "fp1 a0.83 pI65.H35 g0 c0dfffc302fffffc05ffffffa7fffffffaffffff9dfffa95057fe000004fc0000 h.IIIIII.IIIIIII.IIIIIIIHIIIIIIHHIIIHHHHHIIHHHHH.IIHH.....HHH....",
+    "from": "commons:File:PayPal 2024 (Icon).svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "paypal"
+    ],
+    "svgl": [
+     "paypal"
+    ],
+    "simple-icons": "paypal"
+   },
+   "prefer": [
+    "commons:File:PayPal 2024 (Icon).svg",
+    "svgl:paypal",
+    "gilbarbara:paypal.svg",
+    "simple-icons:paypal"
+   ],
+   "sources": {
+    "gilbarbara": "current: paypal.svg",
+    "svgl": "current: paypal",
+    "simple-icons": "current: paypal (one colour)",
+    "commons": "current: PayPal 2024 (Icon).svg"
+   }
+  },
+  "mongodb": {
+   "name": "MongoDB",
+   "owner": "MongoDB, Inc.",
+   "page": "https://www.mongodb.com/company/newsroom/brand-resources",
+   "mark": {
+    "since": null,
+    "what": "the leaf",
+    "fp": "fp1 a0.47 pE100 g0 c002aa20006effe507ffffff6effdeffddffcdffc3dfbbfd30199a91000065000 h..EEEE...EEEEEE.EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE..EEEE.....EE...",
+    "from": "gilbarbara:mongodb-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "mongodb"
+    ],
+    "svgl": [
+     "mongodb-icon-light"
+    ],
+    "simple-icons": "mongodb"
+   },
+   "prefer": [
+    "gilbarbara:mongodb-icon.svg",
+    "svgl:mongodb-icon-light",
+    "simple-icons:mongodb",
+    "svgl:mongodb-icon-light:dark"
+   ],
+   "sources": {
+    "gilbarbara": "current: mongodb-icon.svg; unknown: mongodb.svg",
+    "svgl": "current: mongodb-icon-light; current: mongodb-icon-light:dark",
+    "simple-icons": "current: mongodb (one colour)"
+   }
+  },
+  "redis": {
+   "name": "Redis",
+   "owner": "Redis Ltd.",
+   "page": "https://redis.io/brand-guidelines/",
+   "mark": {
+    "since": "2024",
+    "what": "the 2024 mark in #FF4438",
+    "fp": "fp1 a1.08 pA100 g0 c029dfe701efefcf30d7db0e601bf88f408fdef866fdf526bde2dfef39504dc50 h.AAAAAA..AAAAAAA.AAAA.AA..AAAAAA.AAAAAAAAAAAAAAAAAAAAAAAAA.AAAA.",
+    "from": "simple-icons:redis"
+   },
+   "outdated": [
+    {
+     "since": "2013",
+     "until": "2024",
+     "what": "the stacked red cubes",
+     "fp": "fp1 a1.16 pA100 g0 c005cd7107dffffe8ffffffffeffffffeeffffffeffffffff5cffffb4005cc400 h..AAAA..AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA..AAAA..",
+     "from": "gilbarbara:redis.svg"
+    }
+   ],
+   "members": {
+    "gilbarbara": [
+     "redis"
+    ],
+    "svgl": [
+     "redis"
+    ],
+    "simple-icons": "redis"
+   },
+   "prefer": [
+    "simple-icons:redis"
+   ],
+   "sources": {
+    "gilbarbara": "retired 2013 to 2024: redis.svg",
+    "svgl": "retired 2013 to 2024: redis",
+    "simple-icons": "current: redis (one colour)"
+   }
+  },
+  "nextjs": {
+   "name": "Next.js",
+   "owner": "Vercel Inc.",
+   "page": "https://vercel.com/geist/brands",
+   "mark": {
+    "since": null,
+    "what": "the N in a disc",
+    "fp": "fp1 a1 pk90.g10 g0 c02aeea202effffe2affffffaeffffffeeffffffeaffffffa2effffe202aeea20 h.kkkkkk.kkkkkkkkkkkkkkkkkkggkkkkkkgkgkkkkkkkkgkkkkkkkkkk.kkkkkg.",
+    "from": "gilbarbara:nextjs-icon.svg"
+   },
+   "members": {
+    "gilbarbara": [
+     "nextjs"
+    ],
+    "svgl": [
+     "nextjs_icon_dark"
+    ],
+    "simple-icons": "nextdotjs"
+   },
+   "prefer": [
+    "gilbarbara:nextjs-icon.svg",
+    "simple-icons:nextdotjs"
+   ],
+   "sources": {
+    "gilbarbara": "current: nextjs-icon.svg; unknown: nextjs.svg",
+    "svgl": "unknown: nextjs_icon_dark",
+    "simple-icons": "current: nextdotjs (one colour)"
+   }
+  },
+  "raycast": {
+   "name": "Raycast",
+   "owner": "Raycast Technologies Inc.",
+   "page": "https://www.raycast.com/press",
+   "mark": {
+    "since": null,
+    "what": "the red rays",
+    "fp": "fp1 a0.99 pA100 g0 c0003700000296700026fff70392fff68862fffa3071226300076930000073000 h...AA.....AAAA....AAAAA.AAAAAAAAAAAAAAAA.A.AAAA...AAAA.....AA...",
+    "from": "svgl:raycast"
+   },
+   "members": {
+    "svgl": [
+     "raycast"
+    ],
+    "simple-icons": "raycast"
+   },
+   "prefer": [
+    "svgl:raycast",
+    "simple-icons:raycast"
+   ],
+   "sources": {
+    "svgl": "current: raycast",
+    "simple-icons": "current: raycast (one colour)"
+   }
+  }
+ }
+}

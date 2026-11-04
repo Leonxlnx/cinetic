@@ -1,0 +1,8 @@
+[
+ { "name": "Tidepool", "shortname": "tidepool", "url": "https://tidepool.example/", "files": ["tidepool-icon.svg", "tidepool.svg", "tidepool-monochrome-icon.svg"] },
+ { "name": "Inkwell", "shortname": "inkwell", "url": "https://inkwell.example/", "files": ["inkwell.svg"] },
+ { "name": "Squarecap", "shortname": "squarecap", "url": "https://squarecap.example/", "files": ["squarecap-icon.svg"] },
+ { "name": "Tidepool Studio", "shortname": "tidepool-studio", "url": "https://studio.tidepool.example/", "files": ["tidepool-studio.svg"] },
+ { "name": "Glowbox", "shortname": "glowbox", "url": "https://glowbox.example/", "files": ["glowbox-icon.svg"] },
+ { "name": "Slatework", "shortname": "slatework", "url": "https://slatework.example/", "files": ["slatework-icon.svg"] }
+]

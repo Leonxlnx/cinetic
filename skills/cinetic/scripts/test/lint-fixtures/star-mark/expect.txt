@@ -1,0 +1,3 @@
+Fixture for scripts/test/lint-film.test.mjs (a film folder: its own mark). expect: star-mark=3
+A five-point star, a four-point sparkle with inward curves and a star as polygon points fail in src/brand/logo.ts;
+a plus, a hexagon, a letter and a ring do not, nor a star drawn in an act (only the film's own mark is checked).
