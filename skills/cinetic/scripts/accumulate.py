@@ -270,11 +270,15 @@ def main():
     gain, top, dtype = (4.0, 1023, '<u2') if a.tenbit else (1.0, 255, np.uint8)
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     x264 = (['-tune', a.tune] if a.tune else []) + (['-x264-params', a.x264_params] if a.x264_params else [])
+    # the tags describe the raw planes, so they go on the input (#3): on the output side alone, ffmpeg 9
+    # reads the untagged pipe as BT.601 and converts it to bt709 (shifting every colour). setparams
+    # labels the frames, whose tags ffmpeg 7.1+ writes to the file
     enc = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', pix, '-s', f'{W}x{H}',
-                            '-r', f'{out_fps:g}', '-i', '-',
+                            '-r', f'{out_fps:g}',
+                            '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
+                            '-i', '-',
                             '-vf', 'setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv',
                             '-c:v', 'libx264', '-preset', a.preset, '-crf', f'{a.crf:g}', *x264, '-pix_fmt', pix,
-                            '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
                             '-movflags', '+faststart', a.out], stdin=subprocess.PIPE)
 
     got_idx = [-1]

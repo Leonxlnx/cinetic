@@ -8,6 +8,10 @@ Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first 
 
 ## [Unreleased]
 
+### Fixed
+
+- `accumulate.py` gives the BT.709 tags to the raw-plane pipe as input options too, so ffmpeg 9 never reads it as BT.601; `references/finishing.md` and `probe.py`'s hint say so ([#3](https://github.com/Leonxlnx/cinetic/pull/3), thanks @ThomasKirst).
+
 ## [1.5.0] - 2026-11-04
 
 cinetic 1.5 builds launch films and update videos from a bank of house scenes, at launch-film pace. Each point is a big line on clean ground and then one scene of 1.5-3 s. The scenes are dealt at random from the bank and vary from film to film. Nothing moves at a constant rate. The sound effects are real recordings.
