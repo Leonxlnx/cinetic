@@ -12,6 +12,10 @@ Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first 
 
 - Style rules from side-by-side tests on 1.1 ([#8](https://github.com/Leonxlnx/cinetic/pull/8), thanks @mogheess): the UI as an object on a stage at 50-80 % of the frame width, a full-frame page only as a 1-2 s macro, a new picture every 1-2 s and no canvas jumping (`product-ui.md` §1, `craft-rules.md`, tell E9); the real product's screens when they exist, otherwise a designed UI with real platform conventions; a type voice, with one italic accent face allowed on a payoff word, marked `// cinetic:accent-face <family>` and accepted by `lint-film.mjs` (fixture `accent-face.tsx`); launch films in chapters (`concept-and-story.md` §8); ground changes inside the brand's palette, within 1.5's cap of two; no looping effect bed under the track; drawn illustration only for a mark or mascot.
 
+### Fixed
+
+- `accumulate.py` gives the BT.709 tags to the raw-plane pipe as input options too, so ffmpeg 9 never reads it as BT.601; `references/finishing.md` and `probe.py`'s hint say so ([#3](https://github.com/Leonxlnx/cinetic/pull/3), thanks @ThomasKirst).
+
 ## [1.5.0] - 2026-11-04
 
 cinetic 1.5 builds launch films and update videos from a bank of house scenes, at launch-film pace. Each point is a big line on clean ground and then one scene of 1.5-3 s. The scenes are dealt at random from the bank and vary from film to film. Nothing moves at a constant rate. The sound effects are real recordings.
