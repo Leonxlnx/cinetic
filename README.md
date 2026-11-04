@@ -13,7 +13,7 @@
   <a href="https://github.com/Leonxlnx/cinetic/releases/latest"><img src="https://img.shields.io/github/v/release/Leonxlnx/cinetic?color=1f2328" alt="Latest release"></a>
 </p>
 
-<!-- EXAMPLE E1 (hero), for the owner to fill: the approved 1.2 launch film as a GIF excerpt linking to its MP4 on the media branch, with alt text, and one caption line under it (length, format, "made by an agent with cinetic 1.2 from the brief below"). No media is committed to this branch. -->
+<!-- EXAMPLE E1 (hero), for the owner to fill: the approved 1.5 launch film as a GIF excerpt linking to its MP4 on the media branch, with alt text, and one caption line under it (length, format, "made by an agent with cinetic 1.5 from the brief below"). No media is committed to this branch. -->
 
 cinetic (cinema + kinetic) is an agent skill that makes your coding agent direct a short film instead of arranging animation components. It is built for the two films a product team makes most: the **launch film** and the **update video** ("v2 is out", with the three things that changed).
 
@@ -44,11 +44,11 @@ Before the first film, check your machine with [a first test render](docs/setup.
 ## Examples
 
 <!--
-EXAMPLES, for the owner to fill with the approved 1.2 films. No media is committed to this branch: each film
+EXAMPLES, for the owner to fill with the approved 1.5 films. No media is committed to this branch: each film
 lives on the repo's `media` branch (or as a release asset) and its cell links there; list the same files in
 DEMOS in .github/workflows/release.yml so the release attaches them.
 One cell per film, in this order:
-  E2  the update video ("v1.2 is out", three changes)
+  E2  the update video ("v1.5 is out", three changes)
   E3  the launch film built from a supplied brand kit
   E4  the film made with clip match
   E5  the sign-off sting
@@ -57,7 +57,7 @@ its template or devices, and "Download MP4 (length, sound, size in MB)".
 Then the briefs, word for word, in a <details> block.
 -->
 
-Every film here was made by an agent with cinetic 1.2 from a one-paragraph brief and cut to a licensed music track. The brands are invented unless the brief supplied one. Clicking a GIF downloads its MP4. The films live on the repo's `media` branch, so installs stay small.
+Every film here was made by an agent with cinetic 1.5 from a one-paragraph brief and cut to a licensed music track. The brands are invented unless the brief supplied one. Clicking a GIF downloads its MP4. The films live on the repo's `media` branch, so installs stay small.
 
 ## Start a film
 
@@ -150,7 +150,7 @@ npx skills add Leonxlnx/cinetic -g -a claude-code -y
 Pin a version:
 
 ```bash
-npx skills add Leonxlnx/cinetic#v1.2.0
+npx skills add Leonxlnx/cinetic#v1.5.0
 ```
 
 For Claude Code the skill lands in `.claude/skills/cinetic` (project) or `~/.claude/skills/cinetic` (with `-g`). The same command installs it for the other agents the skills CLI supports, such as Codex and Cursor; choose them with `-a`.
@@ -354,7 +354,7 @@ Each round ran the briefs with cinetic and with the same agent without it but wi
 
 Round 2 was invalidated by a harness problem and is not reported.
 
-cinetic met more of the written expectations in every round and won every house-style comparison. The neutral judge was split, and its craft notes became rules: in round 7 it credited the baselines' warmer, richer pictures while preferring cinetic's ideas and product story. Version 1.2 answers that note with a plain script shown one line at a time, film templates, the product's screens built in code in a lit place with depth, music on every film, and gates that fail a flat or frozen film; 1.1.0 and 1.2.0 have not had a judged round of their own yet. A cinetic run costs about three times the time and tokens of the baseline (round 7 average: 95 vs 33 minutes, 626k vs 231k tokens). The method and the full results are in [docs/evaluation.md](docs/evaluation.md).
+cinetic met more of the written expectations in every round and won every house-style comparison. The neutral judge was split, and its craft notes became rules: in round 7 it credited the baselines' warmer, richer pictures while preferring cinetic's ideas and product story. Version 1.5 answers that note with a plain script shown one line at a time, film templates, the product's screens built in code in a lit place with depth, music on every film, and gates that fail a flat or frozen film; 1.1.0 and 1.5.0 have not had a judged round of their own yet. A cinetic run costs about three times the time and tokens of the baseline (round 7 average: 95 vs 33 minutes, 626k vs 231k tokens). The method and the full results are in [docs/evaluation.md](docs/evaluation.md).
 
 ## Origin
 
