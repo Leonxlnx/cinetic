@@ -47,6 +47,17 @@ export const paletteFor = (g: Ground): Palette => {
   return { ground: GROUNDS.light, ink: INK, accent: neutral ? INK : ACCENT, lift: LIFT, paper: C.white };
 };
 
+/**
+ * A house scene painted on the film's one ground (timeline FILM_GROUND) when it was designed on the other value: a light
+ * scene on the near-black keeps its white surfaces as raised dark ones under white type (its pill, its cards), a dark
+ * scene on the white takes the white's ink with white paper; the same value, or the flood, is its own palette.
+ */
+export const paletteOn = (design: Ground, on: Ground): Palette => {
+  if (design === on || on === 'field' || design === 'field') return paletteFor(on);
+  if (on === 'dark') return { ...paletteFor('dark'), paper: oklch(0.25, Math.min(0.02, aC * 0.15), aH) };
+  return paletteFor('light');
+};
+
 /** The look a line stands in on its ground (acts/scenes.tsx reads tone, ink, mute and accent; a clean solid, no glow). */
 export const lookFor = (g: Ground): Look => {
   const p = paletteFor(g);

@@ -39,7 +39,7 @@
 import type { Act, Form, HandoverKind, Line, Scene, Spine } from './lib/spine';
 
 /** A scene as this template plays it: a state of the element, the house scene that draws it and its content. */
-export type FilmScene = Scene & { form: Form; name: string; bank?: string; props?: Record<string, unknown>; beats?: number; ui?: string[]; via?: HandoverKind | 'cut' };
+export type FilmScene = Scene & { form: Form; name: string; subject?: string; bank?: string; props?: Record<string, unknown>; beats?: number; ui?: string[]; via?: HandoverKind | 'cut' };
 export type FilmAct = Omit<Act, 'scenes' | 'line'> & { scenes: FilmScene[]; line?: Line };
 export type FilmSpine = Omit<Spine, 'acts'> & { acts: FilmAct[] };
 

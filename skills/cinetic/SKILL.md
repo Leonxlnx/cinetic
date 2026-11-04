@@ -48,7 +48,7 @@ Every film is held to these rules and numbers; the gates in brackets measure the
 6. **Scene changes that flow.** Every hard cut hides itself: inside a blur that makes both sides unreadable, an anchor
    held within 10 px, or a whip that carries the picture a fifth of the frame in its last 0.2 s, smeared; the kept
    ground alone hides nothing; never a cross-fade of two scenes or a cut torn across two frames; at most 10 % of hard
-   cuts bare (`forensics.py` carried-cut, ghost-cut). The ground flips light-dark at most twice a film, each a declared colour event. Two or three seam kinds a film, none
+   cuts bare (`forensics.py` carried-cut, ghost-cut). One ground a film, changed once on purpose at most (a colour flood; grid-check `grounds`). Two or three seam kinds a film, none
    over 40 % of the scene changes, and one exit-then-enter, text-swap or match-cut in a film of four lines or more.
    Build them with `fx/Seam` ([transitions.md §2](references/transitions.md#2-recipes-at-60-fps)). (`forensics.py --seams`.)
 7. **Clean UI.** The product's real screens built in code at film size, every string the product's own: no bracket
@@ -136,7 +136,7 @@ spine`. Its lines go in [TREATMENT.md](assets/TREATMENT.md) (the idea sentence f
 the brand's hue; a photograph only of the brief's own subject (`node scripts/assets.mjs plate <kind>`, then `--pick <n>
 --to public/plates --accent '<accent>'`). Launch-simple casts 8-12 **house scenes** (`src/scenes`,
 1.5-3 s each, yours too, the lockup 2.5 s; two big at least): named in the spine or dealt by the act's verb
-(`src/bank.ts`), painted in one designed palette (`src/palette.ts`), each point a big line, then its scene; for other
+(`src/bank.ts`), on one ground (`src/palette.ts`), one subject 4.5 s at most, each point a big line, then its scene; for other
 moves read the [motion library](references/motion-library/README.md). Parts: `fx/world`, `fx/light`
 ([lighting.md](references/lighting.md) §8), `fx/depth` ([camera.md](references/camera.md) §13), `fx/three`
 ([three.md](references/three.md)), `kit/screens` ([product-ui.md](references/product-ui.md) §15). Content: `node
@@ -188,7 +188,7 @@ with the format's variants (it runs `credits.py`: credits go into `CREDITS.md`, 
 | Logo sting | 3-8 s | `--template none` | the name and at most one line | MP4, ProRes 4444 alphas, poster |
 
 Recipes per format in [formats.md](references/formats.md). An update film: its lone line big, read whole in 1.2 s; no scene
-over 3 s (a typed change 3 s); the lockup snaps once, keeps moving, and the film ends 2 s after it forms; a plan outside `src/deal.ts` LIMITS fails: shorten the content, never raise a limit.
+over 3 s (a typed change 3 s); the lockup snaps once and keeps moving to the last frame; a plan outside `src/deal.ts` LIMITS fails: shorten the content, never raise a limit.
 Films render at 30 fps (a move over 25 px a frame is smeared; `--fps 60` for fast camera travel);
 a loop's last frame flows into frame 0 (`forensics.py --loop`, `render.sh --loop`).
 

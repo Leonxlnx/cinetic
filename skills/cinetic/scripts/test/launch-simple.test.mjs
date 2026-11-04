@@ -16,9 +16,12 @@
  *                  through their scenes), the world's turn
  *                  takes the drop, one lockup hit at weight 1 on the frame the mark lands; declares() gives each drawn
  *                  handover's box track (finite, on every frame of its span) and the world's steps.
- *   5. the end     the mark lands, then the name, then the fact; the end lock runs from the fact to the last frame; the
- *                  settle-out is the last seam (fadeEnd), starts after the body's last bar line and completes on the
- *                  last frame (never cut mid-fade); the world's one turn is the film's colour event.
+ *   5. the end     the mark lands, then the name, then the fact; the end lock runs from the fact to the last frame; no
+ *                  settle-out (no fadeEnd seam): the lockup stays whole to the last frame, 1.5 s or more from the mark;
+ *                  the world's one turn is the film's colour event.
+ *   5b. grounds    one ground for the film (GROUND_PLAN): at most one deliberate change (the flood and its return);
+ *                  every scene painted on FILM_GROUND or the one flood; SUBJECTS: no subject over 4.5 s in a row, and a
+ *                  spine whose consecutive scenes share a subject past 4.5 s is refused by name.
  *   6. a bad spine a bare cut inside an act is a spine error (SPINE_PLAN.issues.errors names it).
  *   7. grid-check  --part spine passes on the scaffold.
  *
@@ -119,7 +122,8 @@ try {
   // 4. the sound and the declares
   out.cues = Y.default().map((e: any) => ({ f: e.f, kind: e.kind, weight: e.weight, id: e.id }));
   out.declares = Y.declares().map((d: any) => ({ id: d.id, seams: (d.seams ?? []).map((x: any) => ({ at: x.at, kind: x.kind, id: x.id, span: x.span, track: x.track })) }));
-  out.lock = { lockup: T.LOCKUP_AT, name: T.NAME_AT, fact: T.FACT_AT, end: T.END, fadeFrom: T.FADE_FROM, fade: T.END_FADE, f60fade: T.f60(T.END_FADE.fade), f60after: T.f60(T.END_FADE.after) };
+  out.lock = { lockup: T.LOCKUP_AT, name: T.NAME_AT, fact: T.FACT_AT, end: T.END };
+  out.grounds = T.GROUND_PLAN; out.filmGround = T.FILM_GROUND; out.cast = T.CAST.map((c: any) => c.ground); out.subjects = T.SUBJECTS.map((r: any) => ({ subject: r.subject, len: (r.to - r.from) / T.FPS }));
   out.seams = T.SEAMS.map((x: any) => ({ at: x.at, kind: x.kind, id: x.id }));
   out.colour = T.COLOUR; out.worldTurn = WD.WORLD_TURN.at;
   out.turn = sp.world.find((w: any) => w.step === 'turn') ?? null;
@@ -173,10 +177,18 @@ try {
     const lastAct = P.acts[P.acts.length - 1];
     result(L5.lockup >= lastAct.from && L5.lockup < L5.name && L5.name < L5.fact && L5.fact < total && L5.end.to === total && L5.end.from > L5.fact && L5.end.from < total,
       'end: the mark lands in the last act, then the name, then the fact; the end lock runs from the fact to the last frame', JSON.stringify(L5));
-    const lastSeam = P.seams[P.seams.length - 1];
-    result(lastSeam.kind === 'fadeEnd' && lastSeam.at === L5.fadeFrom && P.seams.filter((s) => s.kind === 'fadeEnd').length === 1
-      && (L5.fadeFrom >= P.bodyEnd || L5.fadeFrom === total - L5.f60fade) && L5.fadeFrom <= total - L5.f60fade,
-      'end: the settle-out is the last seam, starts after the body\'s last bar line, and completes on the last frame', JSON.stringify({ fadeFrom: L5.fadeFrom, bodyEnd: P.bodyEnd, total }));
+    result(!P.seams.some((x) => x.kind === 'fadeEnd') && (total - L5.lockup) / P.fps >= 1.5,
+      'end: no settle-out; the lockup stays whole to the last frame, 1.5 s or more from the mark', JSON.stringify({ lockup: L5.lockup, total, seams: P.seams.filter((x) => x.kind === 'fadeEnd') }));
+    // 5b. one ground, one subject at a time
+    const g = P.grounds;
+    let changes = 0;
+    for (let k = 0; k + 1 < g.length; k++) {
+      changes++;
+      if (k + 2 < g.length && g[k + 2].ground === g[k].ground) k++; // a flood and its return count as one
+    }
+    result(g.length >= 1 && g[0].from === 0 && g[g.length - 1].to === total && changes <= 1 && P.cast.every((c) => c === P.filmGround || c === 'field') && P.cast.filter((c) => c === 'field').length <= 1,
+      `grounds: one ground (${P.filmGround}) with at most one deliberate change (${changes}: ${g.map((r) => r.ground).join(' > ')})`, JSON.stringify(g));
+    result(P.subjects.every((r) => r.len <= 4.5 + 1e-9), `subjects: none over 4.5 s in a row (longest ${Math.max(...P.subjects.map((r) => r.len)).toFixed(2)} s)`, JSON.stringify(P.subjects));
     result(P.turn ? P.colour.length === 1 && P.colour[0].from === P.turn.at && P.worldTurn === P.turn.at : !P.colour.length,
       'end: the world\'s one turn is the film\'s colour event (declared from its cut; the world turns there)', JSON.stringify({ turn: P.turn, colour: P.colour, world: P.worldTurn }));
   }
@@ -191,6 +203,17 @@ try {
     const B = run(`const T: any = await import(${JSON.stringify(url('timeline.ts'))}); out.errors = T.SPINE_PLAN.issues.errors;`);
     fs.writeFileSync(spinePath, spineSrc);
     result(!B.error && B.errors.some((e) => /bare cut inside an act/.test(e)), 'a bad spine: a bare cut inside an act is a spine error', B.error ?? JSON.stringify(B.errors));
+  }
+
+  // 6b. a spine that keeps one subject over 4.5 s is refused by name
+  {
+    const src0 = fs.readFileSync(spinePath, 'utf8');
+    let n = 0;
+    const one = src0.replace(/(\{ form: '[a-z-]+', name: '[^']+')/g, (m) => (n++ < 4 ? `${m}, subject: 'one-card'` : m));
+    fs.writeFileSync(spinePath, one);
+    const R = run(`const T: any = await import(${JSON.stringify(url('timeline.ts'))}); out.subjects = T.SUBJECTS.map((r: any) => (r.to - r.from) / T.FPS);`);
+    fs.writeFileSync(spinePath, src0);
+    result(n >= 4 && !!R.error && /on one subject \("one-card"/.test(R.error), 'subjects: four scenes on one subject past 4.5 s are refused by name', R.error ?? JSON.stringify(R.subjects));
   }
 
   // 7. grid-check --part spine on the scaffold

@@ -205,7 +205,7 @@ export const PULLBACK30 = { cut: 28, lockup: 28, settled: 43 } as const;
  * LOCK_S with TAIL_S at least after the version mark, the film FILM_S. src/timeline.ts builds the plan inside them and
  * fails loudly (grid-check, the Studio, the render) on a plan outside them.
  */
-export const LIMITS = { LINE_S: 1.2, SCENE_S: 3.0, CHANGE_S: 4.0, TYPE_S: 3.0, HOOK_S: 1.6, LOCK_S: 2.0, TAIL_S: 1.0, FILM_S: [8, 20] as const } as const;
+export const LIMITS = { LINE_S: 1.2, SCENE_S: 3.0, CHANGE_S: 4.0, TYPE_S: 3.0, HOOK_S: 1.6, LOCK_S: 2.5, TAIL_S: 1.5, FILM_S: [8, 20] as const } as const;
 /** A lone line of n words holds this long once read (60 fps frames, the crisp pace's read: grid-check's text-hold). */
 export const readHold60 = (n: number): number => holdFor(n, PACE.crisp);
 /**

@@ -15,7 +15,7 @@ import { CONTENT } from '../content';
 import { TYPE_FEATURES } from '../fx/TypePairs';
 import { clamp, E } from '../lib/anim';
 import { BANK, type Box as BankBox, onScreen } from '../bank';
-import { ACCENT, lookFor, paletteFor } from '../palette';
+import { ACCENT, lookFor, paletteOn } from '../palette';
 import { CLOSE, SPINE } from '../spine';
 import { CAST, CLOSE_CAP, EASE, FACT_AT, f60x, FPS, H, handOut, lineOf, LOCK_RATE, SCENE_DEF, SCENES, SPINE_PLAN, W } from '../timeline';
 import type { ElementLook, Moment, MomentKind, SceneDef } from './scenes';
@@ -170,7 +170,7 @@ export const bankScene = (i: number): SceneDef => {
   const last = i === SCENES.length - 1;
   const raw = { ...fillOf(i, id), ...resolvePics(CAST[i].props) };
   // a colour flood floods with the brand's own accent (never the lifted one a dark ground reads its accents in)
-  const pal = { ...paletteFor(CAST[i].ground), ...(id === 'bar-flood' ? { accent: ACCENT } : {}), ...((CAST[i].props.palette as object) ?? {}) };
+  const pal = { ...paletteOn(CAST[i].design, CAST[i].ground), ...(id === 'bar-flood' ? { accent: ACCENT } : {}), ...((CAST[i].props.palette as object) ?? {}) };
   const props = { ...raw, palette: pal };
   const D = Math.max(2, Math.round((S.dur ? S.dur(raw) : S.meta.dur) * k30));
   const ho = handOut(i);

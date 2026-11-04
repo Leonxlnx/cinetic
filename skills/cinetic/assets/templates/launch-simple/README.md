@@ -59,8 +59,11 @@ these files over the Remotion starter. references/spine.md is the grammar; this 
 | a statement (line) | `type-flip` (big), `decode-title` | word, button |
 | the lockup | `blobs-to-mark` (big), `line-to-wordmark`, `word-build-badge`, `bar-flood` (big) | mark |
 
-Each scene keeps its own design: its camera, its type, its pointer, its timing. The template paints it on the value
-its source was designed on (`ground`: light, dark or the accent field) in the film's palette (`src/palette.ts`: one
+Each scene keeps its own design: its camera, its type, its pointer, its timing. The film keeps ONE ground
+(`FILM_GROUND`: the value most of its scenes were designed on, the deal's on a tie) and paints every scene on it
+(`paletteOn`: a light scene on the near-black keeps its white surfaces as raised dark ones), with one deliberate change
+at most: the film's first colour field (toast-stack's flood), then back (grid-check grounds fails more than two changes).
+The palette (`src/palette.ts`: one
 accent, the deck's or the brand's, else a house accent dealt by the seed; white; a near-black in the accent's hue; the
 accent as the one solid field), so it keeps its contrast with the brand's colour in it: never a tinted wash, never the
 scene's demo colours.
@@ -84,14 +87,17 @@ scene's demo colours.
   round the arriving one; the ground holds through the change.
 - `LINES` (frames, whole on the music's 16th; `fit` the size and rows, `chunks`), `COPY` (a line alone carries `place`,
   `cap`, `chunks` for grid-check lone-line; the fact its `cap`), `CUE`, `SEAMS`, `ACT`, the lockup's `LOCKUP_AT`,
-  `NAME_AT`, `FACT_AT` (from the lockup scene's own beats: the fact at a cap of 3.6 % or left out), the settle-out into
-  its ground with the music's ring-out, complete within 0.7 s: the lockup is gone about 2 s after its mark is whole.
+  `NAME_AT`, `FACT_AT` (from the lockup scene's own beats: the fact at a cap of 3.6 % or left out); no settle-out: the
+  lockup stays whole and creeping to the last frame (1.5-2.2 s from its mark; grid-check lockup-end, forensics end-blank).
+- `GROUND_PLAN` (the grounds as runs), `SUBJECTS`: consecutive scenes about the same picture (a scene's `subject` in
+  `src/spine.ts`, a scene of your own too, else its name) are one beat; the timeline refuses one over 4.5 s by name.
 
 ## The checks
 
-`npm run check` (tsc, lint-film, grid-check: scene-length, lone-line, seam-variety), `grid-check.ts --part spine`, then
+`npm run check` (tsc, lint-film, grid-check: scene-length, lone-line, seam-variety, lockup-end, grounds, subject-run), `grid-check.ts --part spine`, then
 on the draft (`render.sh --draft`, with the sound): `forensics.py out/draft.mp4 --cues out/cues.json` (full: the element
 in its box across every handover, no speck at a scene change, no small lone line, no undeclared swap, no text-then-cards,
-the motion gates) and `look-audit.py out/draft.mp4 --look`. On the draft's sheet: no
+the motion gates: no still run over 0.8 s before the lockup, no empty frame in the last 0.3 s) and `look-audit.py
+out/draft.mp4 --look`. On the draft's sheet: no
 line over a busy or blurred picture, every press a pointer, two big scenes, the palette the brand's (never the
 starter's green, never a scene's demo colours).

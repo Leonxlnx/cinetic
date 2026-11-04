@@ -175,31 +175,44 @@ const FLAT: Flat[] = (() => {
 /**
  * Each scene's house scene: the one its script names, else the deal's (src/bank.ts dealScene: by its act's verb, its
  * form and what the film can show; the lockup from the end scenes). A line (a word scene with no bank) is drawn by the
- * template's own line on clean ground (acts/scenes.tsx wordScene). `ground` is the value the scene was designed on (a
- * line takes the ground of the scene it becomes, so the element arrives on its own ground; a colour field's line stands
- * on the dark). `ff`: the scene opens on its own picture (the element arrives as its whole frame).
+ * template's own line (acts/scenes.tsx wordScene). `design` is the value the scene was designed on; `ground` the one it
+ * is painted on: the film keeps ONE ground (FILM_GROUND: the value most of its scenes were designed on, the deal's on a
+ * tie) and every scene stands on it (src/palette.ts paletteOn keeps its contrast), with at most one deliberate change: the
+ * film's first colour field (a flood, toast-stack's accent) keeps its field, and the film returns to its ground after it;
+ * a later field is painted on the ground. `ff`: the scene opens on its own picture (the element arrives as its whole frame).
  */
-export type CastEntry = { bank: string | null; props: Record<string, unknown>; ground: Ground; big: boolean; ff: boolean };
-export const CAST: CastEntry[] = (() => {
+export type CastEntry = { bank: string | null; props: Record<string, unknown>; ground: Ground; design: Ground; big: boolean; ff: boolean; subject: string };
+const CAST0 = (() => {
   const named = FLAT.map((x) => x.def?.bank ?? '').filter(Boolean);
   const used: string[] = [];
-  const banks = FLAT.map((s, i) => {
+  return FLAT.map((s, i) => {
     if (s.def?.bank) return s.def.bank;
     if (s.form === 'word' && s.def) return null;
     const id = dealScene({ act: s.act, k: s.k, verb: SPINE.acts[s.act]?.verb ?? '', form: s.form, last: i === FLAT.length - 1, have: HAVE, used: [...named, ...used] });
     used.push(id);
     return id;
   });
-  const dealtWorld: Ground = /^(paleSky|nearWhite|studio|clouds|sky)$/.test(String(DEAL.ground)) ? 'light' : 'dark';
-  return banks.map((id, i): CastEntry => {
+})();
+const dealtWorld: Ground = /^(paleSky|nearWhite|studio|clouds|sky)$/.test(String(DEAL.ground)) ? 'light' : 'dark';
+/** The film's one ground: the value most of its house scenes were designed on (a colour field counts as neither), the deal's on a tie. */
+export const FILM_GROUND: Ground = (() => {
+  const own = CAST0.map((id) => (id ? BANK[id]?.ground : undefined)).filter((g): g is Ground => g === 'light' || g === 'dark');
+  const light = own.filter((g) => g === 'light').length;
+  const dark = own.length - light;
+  return light === dark ? dealtWorld : light > dark ? 'light' : 'dark';
+})();
+export const CAST: CastEntry[] = (() => {
+  let flooded = false;
+  return CAST0.map((id, i): CastEntry => {
+    const subject = FLAT[i].def?.subject ?? FLAT[i].name;
     if (id) {
       const e = BANK[id];
       if (!e) throw new Error(`timeline: scene "${FLAT[i].name}" names bank "${id}", which src/bank.ts BANK does not hold (${Object.keys(BANK).join(', ')})`);
-      return { bank: id, props: FLAT[i].def?.props ?? {}, ground: e.ground, big: e.big, ff: !onScreen(e.handIn) };
+      const flood = e.ground === 'field' && !flooded;
+      if (flood) flooded = true;
+      return { bank: id, props: FLAT[i].def?.props ?? {}, ground: flood ? 'field' : FILM_GROUND, design: e.ground, big: e.big, ff: !onScreen(e.handIn), subject };
     }
-    const next = banks.slice(i + 1).find((x): x is string => !!x);
-    const g = next ? BANK[next].ground : dealtWorld;
-    return { bank: null, props: {}, ground: g === 'field' ? 'dark' : g, big: false, ff: false };
+    return { bank: null, props: {}, ground: FILM_GROUND, design: FILM_GROUND, big: false, ff: false, subject };
   });
 })();
 
@@ -486,6 +499,37 @@ export const LOCKUP_SCENE = SPINE_PLAN.end.scene;
 export const BODY_END = b(1 + BARS);
 export const TOTAL = BODY_END + TAIL;
 
+/**
+ * The grounds as runs (grid-check grounds): the film's one ground, and at most one deliberate change (the flood, then
+ * back): each scene's painted ground from CAST, merged where it holds.
+ */
+export const GROUND_PLAN: { from: number; to: number; ground: Ground }[] = SCENES.reduce<{ from: number; to: number; ground: Ground }[]>((runs, s, i) => {
+  const g = CAST[i].ground;
+  const last = runs[runs.length - 1];
+  if (last && last.ground === g) last.to = i === SCENES.length - 1 ? TOTAL : s.to;
+  else runs.push({ from: i === 0 ? 0 : s.from, to: i === SCENES.length - 1 ? TOTAL : s.to, ground: g });
+  return runs;
+}, []);
+
+/**
+ * One subject at most SUBJECT_MAX in a row (grid-check subject-run): consecutive scenes about the same picture (the same
+ * calendar, the same card: a scene's `subject` in src/spine.ts, else its own name) are one beat. The timeline refuses a
+ * longer run by name.
+ */
+export const SUBJECT_MAX = Math.round(4.5 * FPS);
+export const SUBJECTS: { subject: string; from: number; to: number; scenes: number[] }[] = SCENES.reduce<{ subject: string; from: number; to: number; scenes: number[] }[]>((runs, s, i) => {
+  const subject = CAST[i].subject;
+  const last = runs[runs.length - 1];
+  if (last && last.subject === subject) {
+    last.to = s.to;
+    last.scenes.push(i);
+  } else runs.push({ subject, from: s.from, to: s.to, scenes: [i] });
+  return runs;
+}, []);
+for (const r of SUBJECTS)
+  if (r.to - r.from > SUBJECT_MAX && r.scenes.length > 1)
+    throw new Error(`timeline: ${((r.to - r.from) / FPS).toFixed(2)} s on one subject ("${r.subject}": scenes ${r.scenes.map((i) => SCENES[i].name ?? i).join(', ')}), over 4.5 s: cut a scene, or give the next scene another subject`);
+
 // ---------------------------------------------------------------------------------------------------- the acts
 
 /** The acts as film windows (Film.tsx draws one Sequence each on the one stage); the last one holds through the tail. */
@@ -574,12 +618,9 @@ export const FACT_AT = (() => {
   return whole - f60(18);
 })();
 export const CLOSE_CAP = 0.036;
-/** The settle-out: the whole frame goes into the world's deep tone with the music's ring-out: it starts `after` f@60
- * past the body's last bar line (the final hit lands first) and completes within `fade` f@60 at most (the deep tone then
- * holds while the music rings out), never cut mid-fade. So the lockup is on screen about 2 s once its mark is whole. */
-export const END_FADE = { fade: 30, after: 8, max: 42 } as const;
-export const FADE_FROM = Math.min(TOTAL - f60(END_FADE.fade), BODY_END + f60(END_FADE.after));
-export const FADE_TO = Math.min(TOTAL - 1, FADE_FROM + f60(END_FADE.max));
+/** The end: the lockup stays whole and alive to the last frame (it keeps creeping while the music rings out): never a
+ * fade, never an empty last frame (grid-check lockup-end, forensics end-blank). */
+export const LOCKUP_HOLD = { min: 1.5, max: 2.2 } as const;
 
 // ---------------------------------------------------------------------------------------------------- COPY
 
@@ -648,8 +689,8 @@ export type Declares = { stepped?: SteppedRange[]; flashes?: Flash[]; cameraBlur
 export type Salience = 'copy' | 'hit' | 'cut' | 'move' | 'life';
 
 export const LOOK: Look = { blur: 'crisp', texture: 'clean', filmType: 'launch', oneTake: false, whiteWorld: false };
-/** One seam per scene change (lib/spine spineDeclares: the handover in its id, its element and forms), the settle-out. */
-export const SEAMS: Seam[] = [...spineDeclares(SPINE_PLAN).seams, { at: FADE_FROM, kind: 'fadeEnd' as SeamKind, id: 'fadeEnd:settle-out' }].sort((x, y) => x.at - y.at);
+/** One seam per scene change (lib/spine spineDeclares: the handover in its id, its element and forms); no settle-out: the lockup holds to the last frame. */
+export const SEAMS: Seam[] = [...spineDeclares(SPINE_PLAN).seams].sort((x, y) => x.at - y.at);
 export const STEPPED: SteppedRange[] = [];
 export const FLASHES: Flash[] = [];
 export const CAMERA_BLUR: CameraBlurRange[] = [];

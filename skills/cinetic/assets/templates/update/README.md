@@ -11,8 +11,8 @@ everything else is derived from it or dealt from the product's name, or from the
 | part | what plays | length |
 |---|---|---|
 | hook | the name, already moving on the first frame, lands centred on a clean ground; the version arrives beside it (`pill` lands, `roll`s from the old numerals, or cuts on as a `tag` while the name slides aside) | 1.6 s at most |
-| each change | its line alone on the ground of its scene (one flat colour: text never stands on a picture), then the scene that proves it; a scene that sets the line itself (porthole-line parts it round its picture, decode-title decodes it, orbit-chips sets it on its orbits) plays alone; a scene that takes over the element the scene before hands on (macro-type's send button, pressed by porthole-line's pointer) follows it on a match cut | 2-4 s |
-| end | mark-pullback: the brand's mark as a solid pulls back from an extreme close-up with a roll (about 1 s), one snap to the lockup assembling, which keeps pushing; the version lands under it as a pill on the bar line that ends the body | the lockup 2 s to the last frame |
+| each change | its line alone on the film's one ground (one flat colour: text never stands on a picture; the accent field, toast-stack's flood, is the one deliberate change, its card with it, then back), then the scene that proves it; a scene that sets the line itself (porthole-line parts it round its picture, decode-title decodes it, orbit-chips sets it on its orbits) plays alone; a scene that takes over the element the scene before hands on (macro-type's send button, pressed by porthole-line's pointer) follows it on a match cut | 2-4 s |
+| end | mark-pullback: the brand's mark as a solid pulls back from an extreme close-up with a roll (about 1 s), one snap to the lockup assembling, which keeps pushing; the version lands under it as a pill on the bar line that ends the body | the lockup whole and alive to the last frame, 1.5-2 s after the version |
 
 Every press is a real arrow pointer (porthole-line, decode-title, macro-type), never a click circle. At least one scene
 of a film is big (`SCENE_SPEC.big`: porthole-line, decode-title, macro-type, page-fly, photo-river), and the end is
@@ -24,8 +24,8 @@ hook, the cards and the scenes with a rest (played slower over a few frames, nev
 so grid-check, the Studio and the render all stop and say what to shorten): a lone line is in and read in 1.2 s (big, a
 cap of 8 % of the frame, arriving whole or in 2-3 chunks, never word by word); a scene runs 3 s at most; a change 4 s, a
 typed change 3 s (a request of about 20 characters types in macro-type, entered as its pointer nears the field; a longer
-one types in glass-prompt); the hook 1.6 s, moving on the first frame; the lockup 2 s from its first frame to the film's
-last, the version at least 1 s before the end; one snap zoom (the pull-back's cut to the lockup); the film 8-20 s. Never
+one types in glass-prompt); the hook 1.6 s, moving on the first frame; the lockup 2.5 s from its first frame to the film's
+last, the version at least 1.5 s before the end (never a fade, never an empty last frame); one snap zoom (the pull-back's cut to the lockup); the film 8-20 s. Never
 raise a limit to pass: shorten the line or the request, give the scene less content, or choose another scene.
 
 **The seams.** A change comes in on the element the scene before hands on (a match cut), on that scene's own exit, or
@@ -50,8 +50,9 @@ ones its words ask for first):
 
 **The colours** (`src/acts/look.tsx`): the brand's when `src/brand/tokens.ts` carries them, else a palette dealt per film
 (`src/deal.ts` PALETTES: a near-black or a white ground, one strong accent; never a tinted wash, never the starter's
-green, never a scene's own demo colours). Each scene takes the ground its picture needs (dark, light, the film's base,
-or the accent as a full field); each line card stands on the ground of the scene it leads into.
+green, never a scene's own demo colours). Every scene and line card stands on the film's base (`toneOf`; a light
+scene on a dark film keeps its white surfaces as raised dark ones), the accent field (toast-stack's flood) its one
+deliberate change; `GROUND_PLAN` declares it (grid-check grounds).
 
 **The deal** (`src/deal.ts`, seeded by the name; `PIN` a slot or `SEED` to re-deal; the last three films' choices are
 left out through `src/recent.ts`): `palette`, `hook` (pill, roll, tag), `voice` (the lines' move: whole, chunks, track),

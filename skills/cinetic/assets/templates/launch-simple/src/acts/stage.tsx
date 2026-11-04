@@ -9,11 +9,11 @@
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import { Handover } from '../fx/Handover';
-import { clamp, E } from '../lib/anim';
+import { clamp } from '../lib/anim';
 import { useFilm } from '../lib/film';
 import { type BoxAt, type HandoverSpec, ownOpacity } from '../lib/handover';
 import { SCENE_DRAW } from '../product';
-import { ACT, CAST, f60, FADE_FROM, FADE_TO, FPS, H, HANDOVER_PLAN, type HandoverPlan, handIn, handOut, lineOf, sceneAt, SCENES, SPINE_PLAN, W } from '../timeline';
+import { ACT, CAST, f60, FPS, H, HANDOVER_PLAN, type HandoverPlan, handIn, handOut, lineOf, sceneAt, SCENES, SPINE_PLAN, W } from '../timeline';
 import { GROUNDS, lookFor } from '../palette';
 import type { SceneCtx, SceneDef } from './scenes';
 
@@ -125,16 +125,12 @@ export const Stage: React.FC<{ F: number }> = ({ F }) => {
     const q = clamp((F - w0) / Math.max(1, w1 - w0));
     return q * q * (3 - 2 * q);
   })() : 0;
-  // the settle-out: the whole frame into its own ground with the music's ring-out, complete by FADE_TO (the deep
-  // ground then holds while the music rings out: the lockup is gone about 2 s after its mark is whole)
-  const fade = E.softIn(clamp((F - FADE_FROM) / Math.max(1, FADE_TO - FADE_FROM)));
   const FULLD: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: W, height: H };
   return (
     <div style={{ ...FULLD, overflow: 'hidden', background: base }} data-ground={CAST[s.i].ground}>
       {cross > 0.001 && landing ? <div style={{ ...FULLD, background: gOf(landing.to), opacity: cross }} /> : null}
       <D.Draw c={c} />
       {carried}
-      {fade > 0.001 ? <div style={{ ...FULLD, background: gOf(SCENES.length - 1), opacity: fade }} /> : null}
     </div>
   );
 };

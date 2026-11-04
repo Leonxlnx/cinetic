@@ -31,8 +31,11 @@ export const CARD_WHITE = '#FFFFFF';
 
 /** The ground a tone stands on. */
 export const groundOf = (tone: 'dark' | 'light' | 'field'): string => (tone === 'dark' ? FILM.dark : tone === 'light' ? FILM.light : FILM.accent);
-/** The tone a scene plays on: its own, or the film's base. */
-export const toneOf = (id: string): 'dark' | 'light' | 'field' => {
+/** The tone a scene plays on: the film's one ground (its base), whatever the scene was designed on; the accent field
+ * (toast-stack's flood) is the film's one deliberate change, its line card on the field with it, then back. */
+export const toneOf = (id: string): 'dark' | 'light' | 'field' => ((SCENE_SPEC[id]?.tone ?? 'either') === 'field' ? 'field' : FILM.base);
+/** The value a scene was designed on (its own palette's ground). */
+const designOf = (id: string): 'dark' | 'light' | 'field' => {
   const t = SCENE_SPEC[id]?.tone ?? 'either';
   return t === 'either' ? FILM.base : t;
 };
@@ -40,16 +43,19 @@ export const toneOf = (id: string): 'dark' | 'light' | 'field' => {
 /**
  * A scene's palette (src/scenes parts Palette) in this film's colours. Dark: the near-black ground, light type, white
  * cards; light: the white ground, dark type, white cards (the ground a hair off white so a white card reads on it);
- * field: the accent as the ground, dark cards with light type.
+ * field: the accent as the ground, dark cards with light type. A light scene on a dark film keeps its white surfaces as
+ * raised dark ones under light type (its pill, its cards); a dark scene on a light film takes the light palette.
  */
 export const scenePalette = (id: string): Palette => {
   const tone = toneOf(id);
-  const P: Palette =
+  const across = tone === 'dark' && designOf(id) === 'light';
+  const P0: Palette =
     tone === 'dark'
       ? { ground: FILM.dark, ink: FILM.light, accent: FILM.accent, lift: FILM.lift, paper: CARD_WHITE }
       : tone === 'field'
         ? { ground: FILM.accent, ink: mixColor(FILM.dark, FILM.accent, 0.08), accent: FILM.light, lift: FILM.lift, paper: CARD_WHITE }
         : { ground: FILM.light, ink: FILM.dark, accent: FILM.accent, lift: FILM.lift, paper: CARD_WHITE };
+  const P: Palette = across ? { ...P0, paper: mixColor(FILM.dark, FILM.light, 0.12) } : P0;
   // a scene that washes its own field toward the accent gets the ground that lands on the film's clean one
   const wash = SCENE_WASH[id];
   return wash ? { ...P, ground: unwash(P.ground, P.accent, wash) } : P;

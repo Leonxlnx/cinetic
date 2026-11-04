@@ -313,6 +313,25 @@ export const CLOSE = (() => {
 const BODY_END = CLOSE.lockup;
 export const TAIL = Math.max(LIM.tail, CLOSE.lockIn + LIM.lock - BODY_END);
 export const TOTAL = BODY_END + TAIL;
+/**
+ * The grounds as runs (grid-check grounds): the film's base everywhere (the hook, every line card and scene, the lockup),
+ * the accent field once at most (toast-stack's flood with its card), then back: one deliberate change.
+ */
+export const GROUND_PLAN: { from: number; to: number; ground: 'base' | 'field' }[] = (() => {
+  const field = (id: string) => SCENE_SPEC[id]?.tone === 'field';
+  const runs: { from: number; to: number; ground: 'base' | 'field' }[] = [];
+  const put = (from: number, to: number, ground: 'base' | 'field') => {
+    if (to <= from) return;
+    const last = runs[runs.length - 1];
+    if (last && last.ground === ground) last.to = Math.max(last.to, to);
+    else runs.push({ from: last ? last.to : 0, to, ground });
+  };
+  put(0, HOOK.out ?? 0, 'base');
+  for (const c of CHANGES) put(c.card ? c.card.from : c.scene.from, c.scene.to, field(c.scene.id) ? 'field' : 'base');
+  put(CLOSE.markIn, TOTAL, 'base');
+  if (runs.length) runs[runs.length - 1].to = TOTAL;
+  return runs;
+})();
 /** The film's bars in the body (track.py fit reads it with REVEAL and ACT.end to cut the track to the picture). */
 export const BARS = Math.round(((BODY_END - b(1)) / BAR) * 2) / 2;
 
