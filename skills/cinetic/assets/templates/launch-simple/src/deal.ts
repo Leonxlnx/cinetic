@@ -39,7 +39,11 @@ const BUILT: readonly Deal['ground'][] = ['paleSky', 'nearWhite', 'electric', 'b
 const hash = (s: string) => {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-  return h >>> 0;
+  // mixed (the murmur3 finaliser): FNV's low bits follow the letters' low bits alone, so the voice and the world picked
+  // from pools of 2 and 4 would move together and a name could reach only half the pairings
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  return (h ^ (h >>> 16)) >>> 0;
 };
 const pick = <T extends string>(seed: string, slot: string, from: readonly T[], avoid: readonly string[] = []): T => {
   const free = from.filter((x) => !avoid.includes(x));
@@ -56,8 +60,14 @@ const valid = <S extends Slot>(s: S, v: string | undefined): v is Deal[S] => !!v
 for (const [slot, v] of Object.entries(dealt))
   if (slot in DEVICES && !valid(slot as Slot, v))
     throw new Error(`deal: ${slot} "${v}" (src/dealt.ts) is not one of this template's ${slot}s (${(DEVICES[slot as Slot] as readonly string[]).join(', ')}): re-deal with deck.py`);
-/** The deal a name gets (never the last films' voice or ground while another is free): the film's own when nothing is dealt. */
-export const dealOf = (name: string): Deal => ({ voice: pick(name, 'voice', DEVICES.voice, RECENT.voice ?? []), ground: pick(name, 'ground', BUILT, RECENT.ground ?? []) });
+/**
+ * The deal a name gets (never the last films' voice or ground while another is free, never the floor's pair): the film's
+ * own when nothing is dealt.
+ */
+export const dealOf = (name: string): Deal => {
+  const voice = pick(name, 'voice', DEVICES.voice, RECENT.voice ?? []);
+  return { voice, ground: pick(name, 'ground', BUILT, [...(RECENT.ground ?? []), ...(voice === FLOOR.voice ? [FLOOR.ground] : [])]) };
+};
 /** The film's deal: the deck's, else from the name (never the last films' voice or ground while another is free). */
 export const DEAL: Deal = {
   voice: valid('voice', dealt.voice) ? dealt.voice : /^\[/.test(seed) ? FLOOR.voice : dealOf(seed).voice,
