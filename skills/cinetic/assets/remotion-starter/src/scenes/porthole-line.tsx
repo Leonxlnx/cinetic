@@ -5,9 +5,9 @@
 // bottom line rising to slip under it, both kept centred while the camera creeps in; it leaves on a defocus.
 // Numbers (frames at 30 fps, px at 1080): the press squeezes the button r 196 -> 151 in 6 f, the drain takes 3 f, the
 // circle springs 151 -> 250 in 21 f and keeps growing to 274; the picture pops up 128 px past its seat and settles in
-// 10 f; words cut on 3 f apart (the bottom line 12 f after the top); cap 165 px; the porthole overlaps the top line's
-// baseline by 13 % of its radius and the bottom line's caps by 21 %; a push x1.05 under the words, x1.13 more into the
-// exit, where the blur racks 0 -> 6.4 px.
+// 10 f; each line cuts on whole (the bottom line 12 f after the top: two chunks, read at once); cap 165 px; the
+// porthole overlaps the top line's baseline by 13 % of its radius and the bottom line's caps by 21 %; a push x1.05 under
+// the words, x1.13 more into the exit, where the blur racks 0 -> 6.4 px.
 import React from 'react';
 import { Img } from 'remotion';
 import { FONT } from '../brand/tokens';
@@ -37,7 +37,7 @@ export const PORTHOLE = {
   press: 8, // the pointer's click
   drain: [14, 17] as const,
   rise: 22.5, // the picture starts up
-  words: { top: 36, bottom: 48, every: 3 },
+  words: { top: 36, bottom: 48, every: 0 }, // every: frames between the words of a line (0: each line whole)
   cap: 165,
   exit: 72,
 } as const;

@@ -1,12 +1,16 @@
 // cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // mark-pullback: the product's mark as an extruded solid, opened on an extreme close-up of one stroke, pulls back
 // fast and decelerates on a log-scale dolly while the camera rolls 17 degrees, until the whole mark stands in frame;
-// hard cut to the flat mark, small and alone; hard cut to the lockup assembling: the mark's parts slide together
-// (the accent part glowing), the name's letters cut on one a frame and close their spacing, the whole lockup settles.
-// Numbers (frames at 30 fps, px at 1080): the dolly widens the view x4.6 in 37 f, 37 % of it (in log distance) in the
-// first 3 f, 76 % by 13 f; the roll 0 -> 17 deg on the same front-loaded curve; the first 4 f are lens-soft (6 px);
-// the flat mark 120 px tall lands from x1.5 in 2 f; the lockup: parts 1.1 mark widths apart close in 7 f, letters 1 a
-// frame each 0.22 em wide of their place closing in ~4 f, the lockup x1.117 -> 1 and 42 px right -> centred in 15 f.
+// ONE snap cut to the lockup assembling: the mark's parts slide together (the accent part glowing), the name's letters
+// cut on one a frame and close their spacing, the whole lockup settles, then keeps a slow push toward the lens to the
+// last frame (a living tail, never a still card). One snap device; no small flat mark alone on an empty ground.
+// Numbers (frames at 30 fps, px at 1080): the dolly widens the view x4.6 in 27 f, 27 % of it (in log distance) in the
+// first 2 f, 76 % by 10 f; the roll 0 -> 17 deg on the same front-loaded curve; the first 5 f rack in from 24 px soft
+// (the cut into the scene lands inside a blur);
+// the cut at 28 f; the lockup: parts 1.1 mark widths apart close in 7 f, letters 1 a frame each 0.22 em wide of their
+// place closing in ~4 f, the lockup x1.117 -> 1 and 42 px right -> centred in 15 f, then the push 0.12 % a frame
+// (about 0.5 px a frame at the lockup's ends, which forensics reads as motion) to the end of the film.
+// The ground is the palette's own clean ground (`band` adds the accent band over its top).
 // The solid is fx/three's Logo3D (real extrusion on a GPU, its CSS-3D solid on software GL), driven on this curve.
 import React, { useMemo } from 'react';
 import { Freeze } from 'remotion';
@@ -25,18 +29,25 @@ export type MarkPullbackProps = {
   name: string;
   /** the product's mark: logoParts() of its SVG (default the starter's mark) */
   logo?: Logo;
+  /** a screen-fixed accent band over the top of the ground (default none: the palette's clean ground) */
+  band?: boolean;
   palette?: Partial<Palette>;
   gl?: GlMode;
   frame?: number;
 };
 
-export const PULLBACK = { dur: 72, cut: 38, lockup: 44, scale: 4.6 } as const;
+export const PULLBACK = { dur: 60, cut: 28, lockup: 28, settled: 43, scale: 4.6, creep: 0.0012 } as const;
 
 // log-distance progress of the dolly and the roll (deg), measured (front-loaded, a long settle)
-const DOLLY: [number, number][] = [[0, 0], [3, 0.37], [8, 0.61], [13, 0.76], [18, 0.87], [23, 0.95], [28, 0.975], [33, 0.99], [37, 1]];
-const ROLL: [number, number][] = [[0, 0], [3, 5.1], [8, 9.2], [13, 12], [18, 14.2], [23, 15.6], [28, 16.6], [33, 17.1], [37, 17.3]];
-const SOFT: [number, number][] = [[0, 6], [2, 3], [4, 0]];
-const SETTLE: [number, number][] = [[45, 1.117], [50, 1.031], [55, 1.003], [60, 1.001], [70, 1]];
+const DOLLY: [number, number][] = [[0, 0], [1, 0.12], [2, 0.27], [4, 0.47], [6, 0.61], [10, 0.76], [14, 0.87], [18, 0.95], [21, 0.975], [24.5, 0.99], [27, 1]];
+const ROLL: [number, number][] = [[0, 0], [1, 1.7], [2, 3.7], [4, 6.6], [6, 9.2], [10, 12], [14, 14.2], [18, 15.6], [21, 16.6], [24.5, 17.1], [27, 17.3]];
+const SOFT: [number, number][] = [[0, 24], [1.5, 14], [3, 6], [5, 0]];
+const SETTLE: [number, number][] = [[29, 1.117], [34, 1.031], [39, 1.003], [43, 1.001], [48, 1]];
+/**
+ * The lockup's scale at scene frame t (30 fps): its settle x1.117 -> 1, then the living push (PULLBACK.creep a frame)
+ * from the settle on. A template that sets something beside the lockup (a version pill) rides this same scale.
+ */
+export const pullbackScale = (t: number): number => tab(t, SETTLE) * (1 + PULLBACK.creep * Math.max(0, t - PULLBACK.settled));
 // Logo3D's zoom runs on strongInOut: its progress for a wanted zoom share, by bisection (monotone)
 const zoomInverse = (z: number) => {
   let lo = 0;
@@ -49,18 +60,18 @@ const zoomInverse = (z: number) => {
   return (lo + hi) / 2;
 };
 // the close-up's pose (x the lockup, a slight turn that unwinds, the point of the mark that fills the frame); the
-// depth never presses flat and the colour never settles: this scene cuts to the flat mark instead of landing on it
+// depth never presses flat and the colour never settles: this scene cuts to the lockup instead of landing on it
 const FROM = { scale: PULLBACK.scale, yaw: 12, pitch: 7, roll: 0, focus: [0.12, -0.04] as [number, number], depth: 16, flatten: [2, 3] as [number, number], flat: [2, 3] as [number, number] };
 
-export const MarkPullback: React.FC<MarkPullbackProps> = ({ name, logo, palette, gl = 'auto', frame }) => {
+export const MarkPullback: React.FC<MarkPullbackProps> = ({ name, logo, band = false, palette, gl = 'auto', frame }) => {
   const { t, W, H, u, k } = useClock(frame);
   const P = paletteOf(palette);
   // no logo given: the starter's placeholder mark painted in this palette, never in the starter's own accent
   const lg = useMemo(() => logo ?? logoParts(SAMPLE_MARK_SVG.split(C.accent).join(P.accent).split(C.ink).join(P.ink)), [logo, P.accent, P.ink]);
   const cx = W / 2;
-  // ---- the ground: a screen-fixed accent band over the top of a white studio
-  const band = 28 + 8 * clamp((t - PULLBACK.cut) / 30);
-  const ground = `linear-gradient(180deg, ${mixColor(P.accent, P.paper, 0.12)} 0%, ${mixColor(P.accent, P.paper, 0.55)} ${band}%, ${P.paper} ${band + 20}%, ${P.paper} 100%)`;
+  // ---- the ground: the palette's clean ground (with `band`, a screen-fixed accent band over its top)
+  const bandAt = 28 + 8 * clamp((t - PULLBACK.cut) / 30);
+  const ground = band ? `linear-gradient(180deg, ${mixColor(P.accent, P.ground, 0.12)} 0%, ${mixColor(P.accent, P.ground, 0.55)} ${bandAt}%, ${P.ground} ${bandAt + 20}%, ${P.ground} 100%)` : P.ground;
   // ---- 1. the solid pulls back
   if (t < PULLBACK.cut) {
     const box = lg.box;
@@ -80,20 +91,7 @@ export const MarkPullback: React.FC<MarkPullbackProps> = ({ name, logo, palette,
       </div>
     );
   }
-  // ---- 2. the flat mark, small and alone
-  if (t < PULLBACK.lockup) {
-    const mb = lg.box;
-    const size = ((120 * u) * 100) / mb.h;
-    const land = tab(t, [[PULLBACK.cut, 1.5], [PULLBACK.cut + 1, 1.15], [PULLBACK.cut + 2, 1]]) * (1 + 0.003 * (t - PULLBACK.cut));
-    return (
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: ground }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${(cx - ((mb.x + mb.w / 2) * size) / 100).toFixed(2)}px, ${(H / 2 - ((mb.y + mb.h / 2) * size) / 100).toFixed(2)}px) scale(${land.toFixed(4)})`, transformOrigin: `${((mb.x + mb.w / 2) * size) / 100}px ${((mb.y + mb.h / 2) * size) / 100}px`, filter: t < PULLBACK.cut + 1 ? `blur(${(1.6 * u).toFixed(2)}px)` : undefined }}>
-          <LogoMark logo={lg} size={size} />
-        </div>
-      </div>
-    );
-  }
-  // ---- 3. the lockup assembles
+  // ---- 2. the lockup assembles (the one snap: a cut straight from the solid)
   const L0 = PULLBACK.lockup;
   const markHpx = 137 * u;
   const size = (markHpx * 100) / lg.box.h;
@@ -102,7 +100,7 @@ export const MarkPullback: React.FC<MarkPullbackProps> = ({ name, logo, palette,
   const gap = 30 * u;
   const nameW = measureTracked(name, font, 600, -0.01);
   const total = mb.w + gap + nameW;
-  const settle = tab(t, SETTLE) * (1 + 0.0004 * Math.max(0, t - 60));
+  const settle = pullbackScale(t);
   const shift = 42 * u * ((tab(t, SETTLE) - 1) / 0.117);
   const left = cx - total / 2;
   const close = 1 - E.glideOut(clamp((t - L0) / 7)); // the parts' spread, 1 -> 0
@@ -140,7 +138,7 @@ export const MarkPullback: React.FC<MarkPullbackProps> = ({ name, logo, palette,
 
 export const markPullbackMeta: SceneMeta = {
   id: 'mark-pullback',
-  does: 'the extruded mark pulls back from an extreme close-up with a roll, cuts to the flat mark, then the lockup assembles',
+  does: 'the extruded mark pulls back from an extreme close-up with a roll, then one snap cut to the lockup assembling, which keeps a slow push to the end',
   dur: PULLBACK.dur,
   props: ['name', 'logo?', 'palette?', 'gl?'],
   handIn: null,
@@ -148,7 +146,6 @@ export const markPullbackMeta: SceneMeta = {
   klass: 'big',
   cues: [
     { f: 0, kind: 'whoosh', id: 'pull-back', weight: 0.7 },
-    { f: PULLBACK.cut, kind: 'tick', id: 'flat-mark', weight: 0.5 },
     { f: PULLBACK.lockup, kind: 'snap', id: 'parts', weight: 0.6 },
     { f: PULLBACK.lockup + 7, kind: 'land', id: 'lockup', weight: 0.7 },
   ],

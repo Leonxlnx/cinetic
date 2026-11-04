@@ -7,8 +7,11 @@
 // 0.943 / 0.894 / 0.849 / 0.807, blur 4 / 4.8 / 5.6 / 12 px, brightness 92 / 85 / 78 / 70 %, ~195 / 170 / 145 / 120 px of
 // each showing; arrivals 7, 4, 4, 4 f apart, each new toast rising 120 px into the front slot at 0.95 scale, 60 %
 // opacity and 6 px blur, landing in 6 f (59 / 76 / 87 / 93 / 96 / 98 / 100 %); the stack climbs 804 px to rest by 24 f,
-// then drifts 1.5 px/f up and pushes in 3 %. Nothing fades and nothing turns.
+// then drifts 1.5 px/f up and pushes in 3 %. Nothing fades and nothing turns. The stack is framed as the frame's subject:
+// 1376 px wide (72 % of the frame), its rest extent (the front toast's top to the last slot's bottom, for the number of
+// toasts it holds) centred on the frame's height, the push centred on it; a toast shows a real face (`photo`) or a mark.
 import React from 'react';
+import { Img } from 'remotion';
 import { C, FONT } from '../brand/tokens';
 import { type IconName } from '../kit/icons';
 import { type LogoRef } from '../kit/logos';
@@ -19,7 +22,8 @@ import { withAlpha } from '../lib/handover';
 import { paletteOf, perFrame, type Palette, type SceneMeta, span, tab, useClock } from './parts';
 import { Stage1080 } from './stage1080';
 
-export type Toast = { title: string; body: string; ago: string; app?: LogoRef; glyph?: IconName };
+/** One notification: its title, body and age; its icon a real face or picture (`photo`), else the app's mark or a glyph. */
+export type Toast = { title: string; body: string; ago: string; app?: LogoRef; glyph?: IconName; photo?: string };
 
 export type ToastStackProps = {
   /** oldest first: the first lands alone and climbs, the last is the newest and ends in front (five read best) */
@@ -52,6 +56,18 @@ const CLIMB: [number, number][] = [[0, 804], [1, 756], [2, 730], [3, 710], [4, 6
 const SMEAR = [3, 6, 10, 16] as const;
 const TOAST = { w: 1376, h: 215, r: 72, icon: 140, iconR: 34, padL: 34, textL: 227 } as const;
 
+/**
+ * The stack at rest for n toasts (px at 1080): its top (the front toast's), its bottom (the last slot's) and the shift
+ * that centres that extent on the frame's height (the room a total takes above it included). Pure: the tests read it.
+ */
+export const stackFrame = (n: number, withTotal = false) => {
+  const k = Math.max(1, Math.min(5, n));
+  const last = SLOTS[k - 1];
+  const top = SLOTS[0][0] - (withTotal ? 70 + 24 : 0);
+  const bottom = last[0] + TOAST.h * last[1] + (withTotal ? 70 : 0);
+  return { top, bottom, w: TOAST.w, x: 960 - TOAST.w / 2, shift: 540 - (top + bottom) / 2 };
+};
+
 /** Slot geometry at a fractional slot s (0 front .. 5 gone). */
 const slotAt = (s: number) => {
   const i = Math.min(4, Math.floor(clamp(s, 0, 4.999)));
@@ -75,6 +91,8 @@ export const ToastStack: React.FC<ToastStackProps> = ({ items, total, palette, f
   const climb = tab(t, CLIMB);
   const lift = total ? 70 : 0; // room for the total above the stack (the stack drawn at 0.94)
   const fitK = total ? 0.94 : 1;
+  const frame0 = stackFrame(list.length, !!total);
+  const centre = frame0.shift; // the stack's rest extent centred on the frame's height
   // the climb's speed smears the stack vertically once it is fast (over 30 px/f: the slow first frames stay sharp)
   const speed = Math.abs(tab(t + 0.5, CLIMB) - tab(t - 0.5, CLIMB));
   const smear = speed > 30 ? SMEAR.reduce((a, b) => (Math.abs(b - speed / 5) < Math.abs(a - speed / 5) ? b : a)) : 0;
@@ -101,7 +119,7 @@ export const ToastStack: React.FC<ToastStackProps> = ({ items, total, palette, f
           ))}
         </defs>
       </svg>
-      <div style={{ position: 'absolute', inset: 0, transform: `scale(${(push * fitK).toFixed(4)})`, transformOrigin: '960px 60px', filter: smear ? `url(#toast-stack-smear-${smear})` : undefined }}>
+      <div style={{ position: 'absolute', inset: 0, transform: `translateY(${centre.toFixed(2)}px) scale(${(push * fitK).toFixed(4)})`, transformOrigin: `960px ${(540 - centre).toFixed(1)}px`, filter: smear ? `url(#toast-stack-smear-${smear})` : undefined }}>
         {total && (
           <div style={{ position: 'absolute', left: 0, top: 0, width: 1920, transform: `translate(0px, ${(60 + climb * 0.35).toFixed(1)}px)`, opacity: span(t, 2, 8), display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 22, fontFamily: FONT.text, color: paper, whiteSpace: 'pre' }}>
             <span data-text="toast-total" style={{ fontSize: 84, fontWeight: 600, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
@@ -139,7 +157,13 @@ export const ToastStack: React.FC<ToastStackProps> = ({ items, total, palette, f
               >
                 <div style={{ position: 'absolute', inset: 0, borderRadius: TOAST.r, background: fill, boxShadow: '0 18px 40px rgba(0,0,0,0.28)' }} />
                 <div style={{ position: 'absolute', left: TOAST.padL, top: (TOAST.h - TOAST.icon) / 2 }}>
-                  <Mark skin={skin} size={TOAST.icon} logo={it.app} glyph={it.glyph ?? 'dollar'} />
+                  {it.photo ? (
+                    <div style={{ width: TOAST.icon, height: TOAST.icon, borderRadius: '50%', overflow: 'hidden', boxShadow: `inset 0 0 0 2px ${withAlpha(paper, 0.16)}` }}>
+                      <Img src={it.photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  ) : (
+                    <Mark skin={skin} size={TOAST.icon} logo={it.app} glyph={it.glyph ?? 'dollar'} />
+                  )}
                 </div>
                 <div style={{ position: 'absolute', left: TOAST.textL, top: 36, right: 36, fontFamily: FONT.ui, whiteSpace: 'pre', lineHeight: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>

@@ -78,6 +78,7 @@ console.log(JSON.stringify({
   porthole: PL.PORTHOLE,
   blobs: B.BLOBS,
   counters: C.COUNTERS,
+  layout: [1, 2, 3].map((n) => C.cardLayout(n)).concat([C.cardLayout(1, 'left'), C.cardLayout(1, 'right')]),
   river: R.RIVER,
 }));
 `;
@@ -124,6 +125,19 @@ result(H.tab.join() === '1,2,3' && JSON.stringify(H.perFrame) === '[[4,7],[5,8],
 result(P.porthole.drain[0] === 14 && P.porthole.words.bottom - P.porthole.words.top === 12 && P.porthole.exit < P.porthole.dur, 'porthole-line: the drain at 14 f, the bottom line 12 f after the top, the exit inside the scene');
 result(P.blobs.dance + P.blobs.birth < P.blobs.slideAt && P.blobs.slideAt + P.blobs.slide < P.blobs.dur, 'blobs-to-mark: the dance, the birth and the slide in order inside the scene');
 result(P.counters.count < P.counters.dur && P.counters.develop[1] - P.counters.develop[0] === 4, 'photo-counters: the counters land before the end, the photo develops in 4 f');
+result(P.counters.exit - P.counters.count >= 6, 'photo-counters: the last figure is read before the exit push (6 f or more)', `${P.counters.count} -> ${P.counters.exit}`);
+// framing: the cards are the frame's subject, placed by composition for their number, never tucked in a corner
+{
+  const [one, two, three, left, right] = P.layout;
+  const inFrame = (c) => c.x >= 0 && c.y >= 0 && c.x + c.w <= 1920 && c.y + c.h <= 1080;
+  const cx = (c) => c.x + c.w / 2;
+  const cy = (c) => c.y + c.h / 2;
+  result(one.length === 1 && Math.abs(cx(one[0]) - 960) < 1 && Math.abs(cy(one[0]) - 540) < 1 && one[0].w >= 0.4 * 1920 && inFrame(one[0]), 'photo-counters: one card is centred and at least 40 % of the frame wide', JSON.stringify(one[0]));
+  const mid2 = (Math.min(two[0].x, two[1].x) + Math.max(two[0].x + two[0].w, two[1].x + two[1].w)) / 2;
+  result(two.length === 2 && Math.abs(mid2 - 960) < 1 && two.every((c) => inFrame(c) && Math.abs(cy(c) - 540) < 1 && c.w >= 0.3 * 1920) && two[0].x + two[0].w <= two[1].x, 'photo-counters: two cards stand side by side across the centre, each at least 30 % of the frame wide', JSON.stringify(two.map((c) => [c.x, c.y, c.w])));
+  result(three.length === 3 && Math.abs(cx(three[0]) - 960) < 1 && three[0].w >= 0.4 * 1920 && three.every(inFrame), 'photo-counters: three cards keep the big one centred, all inside the frame', JSON.stringify(three.map((c) => [c.x, c.y, c.w])));
+  result(Math.abs(cx(left[0]) - 640) < 1 && Math.abs(cx(right[0]) - 1280) < 1 && inFrame(left[0]) && inFrame(right[0]), 'photo-counters: place left / right set the one card on a third, inside the frame');
+}
 result(P.river.segs.every((s, i) => i === 0 || s <= P.river.segs[i - 1]) && P.river.segs[0] > P.river.segs[P.river.segs.length - 1], 'photo-river: the pump accelerates (segments never lengthen)', P.river.segs.join(' '));
 const sw = P.river.swaps;
 const gaps = sw.slice(1).map((f, i) => f - sw[i]);

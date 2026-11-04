@@ -69,6 +69,7 @@ console.log(JSON.stringify({
   listed: Object.keys(SCENES),
   decode: { DECODE: D.DECODE, dashes, again: JSON.stringify(D.dashesAt(7.5)) === JSON.stringify(D.dashesAt(7.5)) },
   toasts: T.TOASTS,
+  stack: [1, 2, 3, 4, 5].map((n) => T.stackFrame(n)).concat([T.stackFrame(3, true)]),
   scan: S.SCAN,
   page: P.PAGE_FLY,
   pageY: Array.from({ length: 61 }, (_, t) => [P.pageFlyScreenY(516, P.pageFlyCamera(t, 516)), P.pageFlyScreenY(0, P.pageFlyCamera(t, 516))]),
@@ -124,6 +125,9 @@ result(DECODE.decode[1] - DECODE.decode[0] === 18 && DECODE.fly[1] === DECODE.cl
 const T = P.toasts;
 const gaps = T.arrive.slice(1).map((a, i) => a - T.arrive[i]);
 result(gaps.join() === '7,4,4,4' && T.rest < T.dur, 'toast-stack: arrivals 7, 4, 4, 4 f apart and the stack at rest inside the scene', gaps.join());
+// framing: the stack is the frame's subject, centred, at least 40 % of the frame wide, for any number of toasts
+const stackOk = P.stack.every((s) => Math.abs(s.top + s.shift + (s.bottom - s.top) / 2 - 540) < 1 && Math.abs(s.x + s.w / 2 - 960) < 1 && s.w >= 0.4 * 1920 && s.top + s.shift >= 0 && s.bottom + s.shift <= 1080);
+result(stackOk, 'toast-stack: the stack at rest is centred on the frame and at least 40 % of its width, for 1-5 toasts (and with a total)', P.stack.map((s) => `${(s.top + s.shift).toFixed(0)}-${(s.bottom + s.shift).toFixed(0)}`).join(' '));
 const S = P.scan;
 result(S.type[1] <= S.click && S.click < S.tilt[0] + 1 && S.tilt[1] <= S.rise[0] && S.rise[1] <= S.pull[0] && S.pull[1] < S.dur && S.colour.every((c, i) => i === 0 || c > S.colour[i - 1]), 'scan-grid: typed, clicked, tilted, risen (tiles colour in reading order) and pulled back, in order');
 const G = P.page;
