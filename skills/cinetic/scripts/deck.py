@@ -1515,6 +1515,9 @@ def template_preview(d, inp, seed, data, root, history_on, devices, floor):
     lines = [(f'**The template plays.** ' if plays_worlds else f'**The template plays.** ground `{(fam or {}).get("id", "?")}` ({(fam or {}).get("what", "")[:90]}); ')
              + ', '.join(f'{k} `{deal[k]}`' for k in ('voice', 'end', 'camera') if deal.get(k))
              + (f'; type `{pr["id"]}` ({pr.get("voice")} with {pr.get("text")})' if pr else '') + '.']
+    if plays_bank(root):
+        lines.append('**Scenes.** 8-12 house scenes from the scene bank: the ones the spine names, the rest dealt by each act' + "'" + 's verb and seeded by this '
+                     'direction (src/bank.ts; print the plan to see them), painted in one palette on their own grounds (src/palette.ts).')
     if c and template_plays_creative(root):
         lines.append('**Creative elements.** ' + '; '.join(f'`{i}` ({by.get(i, {}).get("about", "")[:80]})' for i in c['deal']) + '.')
     elif c:
@@ -2401,8 +2404,32 @@ def template_deal(sh, devices, floor, recent=None, place=None):
     return deal, why
 
 
-def dealt_body(direction, deal, creative, hero=None):
-    """src/dealt.ts: the direction's deal, the film's creative elements and its hero shots (deal.ts reads it first)."""
+def dealt_palette(brand):
+    """The palette a scene-bank template paints with, from the sheet's brand mapping (deck.py --brand): the accent, and
+    the ground by its tone (a light ground and its ink; a dark one as the near-black). None without a mapping: the
+    template then takes the brand tokens, or a house accent dealt by the direction (src/palette.ts)."""
+    if not brand or not (brand.get('accent') or {}).get('hex'):
+        return None
+    out = {'accent': brand['accent']['hex']}
+    g = (brand.get('ground') or {}).get('hex')
+    tone = brand.get('tone')
+    if g and tone in ('dark', 'mid'):
+        out['night'] = g
+    elif g and tone != 'field':
+        out['ground'] = g
+        if (brand.get('ink') or {}).get('hex'):
+            out['ink'] = brand['ink']['hex']
+    return out
+
+
+def plays_bank(root):
+    """True for a template that assembles its film from the scene bank (src/bank.ts beside src/deal.ts: launch-simple)."""
+    return bool(root) and os.path.isfile(os.path.join(root, 'src', 'bank.ts'))
+
+
+def dealt_body(direction, deal, creative, hero=None, palette=None):
+    """src/dealt.ts: the direction's deal, the film's creative elements, its hero shots and, for a template that paints
+    its scenes from one palette (launch-simple src/palette.ts), the brand-mapped palette (deal.ts reads it first)."""
     obj = {'direction': direction, 'deal': deal}
     if creative:
         obj['creative'] = creative['deal']
@@ -2410,11 +2437,13 @@ def dealt_body(direction, deal, creative, hero=None):
     if hero:
         obj['hero'] = hero['deal']
         obj['heroReserve'] = hero['reserve']
+    if palette:
+        obj['palette'] = palette
     return ('// What the deck dealt for this film (scripts/deck.py writes this file with out/DIRECTION.md): src/deal.ts plays it\n'
             '// instead of a deal of its own, so the sheet and the template never disagree. Re-deal with deck.py (--redraw),\n'
             '// never by hand; launch.ts `pin` still fixes a slot, launch.ts `creative.swap` trades one creative element and\n'
-            '// `heroes.swap` one hero shot (each with a reason).\n'
-            'export const DEALT: { direction: string; deal: Record<string, string>; creative?: string[]; reserve?: string[]; hero?: string[]; heroReserve?: string[] } | null = '
+            '// `heroes.swap` one hero shot (each with a reason). The direction also seeds a scene-bank deal (src/bank.ts).\n'
+            'export const DEALT: { direction: string; deal: Record<string, string>; creative?: string[]; reserve?: string[]; hero?: string[]; heroReserve?: string[]; palette?: Record<string, string> } | null = '
             + json.dumps(obj, ensure_ascii=False) + ';\n')
 
 
@@ -2665,7 +2694,7 @@ def write_template_deal(sh, outdir):
     sh['project_dir'] = root
     rel = 'src/dealt.ts'
     with open(os.path.join(root, 'src', 'dealt.ts'), 'w', encoding='utf-8', newline='\n') as fh:
-        fh.write(dealt_body(sh['direction']['id'], deal, sh.get('creative'), hc))
+        fh.write(dealt_body(sh['direction']['id'], deal, sh.get('creative'), hc, dealt_palette(sh.get('brand')) if plays_bank(root) else None))
     sh['template_deal'] = {'file': rel, 'deal': deal, 'why': why}
     # the type pairing (scripts/faces.json pairs), set in the tokens with type-deal.ts (the template reads it from there)
     if 'type' not in (sh.get('keep') or []):
