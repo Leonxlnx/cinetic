@@ -119,7 +119,7 @@ export const pageFlyMeta: SceneMeta = {
   does: 'a long page on a tilted plane rises in on a dark void; the camera dives onto its headline and travels down it in one front-loaded move while the rows write on',
   dur: PAGE_FLY.dur,
   props: ['page', 'palette?', 'exit?'],
-  handIn: { form: 'page', x: 288, y: 1080, w: 1344, h: 1740, r: 14 },
+  handIn: { form: 'page', x: 288, y: 260, w: 1344, h: 1740, r: 14 },
   handOut: { form: 'page', x: 288, y: -900, w: 1344, h: 1740, r: 14 },
   klass: 'big',
   cues: [

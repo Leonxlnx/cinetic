@@ -189,7 +189,7 @@ export const SCENE_SPEC: Record<string, SceneSpec> = {
   'macro-type': { dur: 77, big: true, carries: false, tone: 'light', skip: 20, handIn: { form: 'pill', x: 591, y: 568, w: 1329, h: 194 }, handOut: { form: 'button', x: 813, y: 340, w: 386, h: 386 }, endless: { click: false } },
   'glass-prompt': { dur: 56, big: false, carries: false, tone: 'dark', handIn: null, handOut: { form: 'pill', x: 457, y: 455, w: 975, h: 182 }, exit: { kind: 'whip', carry: 'x', dir: 1 } },
   'toast-stack': { dur: 48, big: false, carries: false, tone: 'field', rest: 40, skip: 4, handIn: null, handOut: { form: 'notice', x: 272, y: 110, w: 1376, h: 215 } },
-  'page-fly': { dur: 72, big: true, carries: false, tone: 'dark', handIn: { form: 'page', x: 288, y: 1080, w: 1344, h: 1740 }, handOut: { form: 'page', x: 288, y: -900, w: 1344, h: 1740 }, exit: { kind: 'velocity', carry: 'y', dir: -1 } },
+  'page-fly': { dur: 72, big: true, carries: false, tone: 'dark', handIn: { form: 'page', x: 288, y: 260, w: 1344, h: 1740 }, handOut: { form: 'page', x: 288, y: -900, w: 1344, h: 1740 }, exit: { kind: 'velocity', carry: 'y', dir: -1 } },
   'photo-river': { dur: 81, big: true, carries: false, tone: 'either', handIn: { form: 'photo', x: 625, y: 90, w: 670, h: 900 }, handOut: { form: 'photo', x: 744, y: 250, w: 432, h: 579 } },
   'photo-counters': { dur: 52, big: false, carries: false, tone: 'light', rest: 40, handIn: { form: 'photo', x: 0, y: 0, w: 1920, h: 1080 }, handOut: { form: 'count', x: 550, y: 260, w: 820, h: 560 } },
   'orbit-chips': { dur: 60, big: false, carries: true, tone: 'light', handIn: { form: 'word', x: 516, y: 497, w: 888, h: 86 }, handOut: { form: 'card', x: 560, y: 200, w: 800, h: 680 } },
