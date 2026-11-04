@@ -55,12 +55,18 @@ import { edgeMask } from './Wipe';
  * Oversize (`oversize`): the fragment cuts in larger (house x1.6) and settles to size on M.oversize
  * (fx/Oversize), optionally defocused until a frame; it is anchored at `oversize.origin`.
  *
- * Transform and opacity only; the line carries data-text for scripts/layout-audit.sh.
+ * Rows (`breaks`): the word indices that start a new row, so the layout table owns a line's breaks per
+ * aspect and a line never wraps on a width that happens to fit. The rows stack left-aligned;
+ * `style={{ alignItems: 'center' }}` centres each one. Without `breaks` the line is one row.
+ *
+ * Transform and opacity only; the line keeps its box on every frame, so nothing laid out around it
+ * moves, and carries data-text for scripts/layout-audit.sh only while a word of it is on screen.
  */
 export type WordsSpec = {
   text: string;
   start: number; // the frame word 0 begins (it shows from start + 1); word i at start + its cadence offset, or at starts[i]
   starts?: number[];
+  breaks?: number[]; // word indices that start a new row (the layout owns the line breaks)
   pace?: Pace;
   stagger?: number; // film frames between word starts (the mean gap on the reading cadence)
   cadence?: 'phrase' | 'even' | 'reading' | 'accelerate' | number[]; // number[]: gaps in 60 fps frames
@@ -423,12 +429,39 @@ export const Words: React.FC<WordsProps> = ({ frame, style, wordStyle, ...spec }
   const words = splitWords(spec.text);
   const sub = spec.subpixel ?? isNew(spec.pace ?? film.pace);
   const lineBlur = s.blur > 0 ? defocusLevel(s.blur * (film.height / 1080)) : 0;
-  const shown = s.words.some((w) => w.opacity > 0.001); // a line whose words are all gone is gone (the layout audit reads the tagged line)
+  const shown = s.words.some((w) => w.opacity > 0.001); // a line whose words are all gone is gone, and untagged: the layout audit reads only lines on screen
+  const breaks = spec.breaks ?? [];
+  const rows = [0, ...breaks].map((from, j, all) => words.map((_, i) => i).slice(from, all[j + 1] ?? words.length));
+  const word = (i: number) => {
+    const w = words[i];
+    const ws = s.words[i];
+    const b = ws.focus ? defocusLevel(ws.blur * (film.height / 1080)) : ws.blur;
+    return (
+      <span
+        key={i}
+        style={{
+          display: 'inline-block',
+          // a sharp word gets its own composited layer on this frame: its rise stays sub-pixel to the last
+          // frame (vertical text in a flat layer snaps to whole pixels); a word that blurs is never promoted
+          transform: sub ? `translate3d(${ws.x.toFixed(5)}em, ${ws.y.toFixed(5)}em, 0)` : ws.x ? `translate(${ws.x.toFixed(4)}em, ${ws.y.toFixed(4)}em)` : `translateY(${ws.y.toFixed(4)}em)`,
+          willChange: sub && b <= 0.05 ? 'transform' : undefined,
+          filter: blurFilter(b),
+          opacity: ws.opacity,
+          color: ws.color,
+          ...wordStyle?.(i, ws.p),
+        }}
+      >
+        {ws.colors ? [...w].map((c, li) => <span key={li} style={{ color: ws.colors?.[li] }}>{c}</span>) : w}
+        {i < words.length - 1 && !breaks.includes(i + 1) ? ' ' : ''}
+      </span>
+    );
+  };
   return (
     <span
-      data-text={id}
+      data-text={shown ? id : undefined}
       style={{
         display: 'inline-flex',
+        ...(breaks.length ? { flexDirection: 'column' as const } : {}),
         flexWrap: 'nowrap',
         whiteSpace: 'pre',
         color: spec.color, // the words' ink without an accent too (an accented word overrides it while it cools)
@@ -439,29 +472,13 @@ export const Words: React.FC<WordsProps> = ({ frame, style, wordStyle, ...spec }
         ...(shown ? {} : { opacity: 0 }),
       }}
     >
-      {words.map((w, i) => {
-        const ws = s.words[i];
-        const b = ws.focus ? defocusLevel(ws.blur * (film.height / 1080)) : ws.blur;
-        return (
-          <span
-            key={i}
-            style={{
-              display: 'inline-block',
-              // a sharp word gets its own composited layer on this frame: its rise stays sub-pixel to the last
-              // frame (vertical text in a flat layer snaps to whole pixels); a word that blurs is never promoted
-              transform: sub ? `translate3d(${ws.x.toFixed(5)}em, ${ws.y.toFixed(5)}em, 0)` : ws.x ? `translate(${ws.x.toFixed(4)}em, ${ws.y.toFixed(4)}em)` : `translateY(${ws.y.toFixed(4)}em)`,
-              willChange: sub && b <= 0.05 ? 'transform' : undefined,
-              filter: blurFilter(b),
-              opacity: ws.opacity,
-              color: ws.color,
-              ...wordStyle?.(i, ws.p),
-            }}
-          >
-            {ws.colors ? [...w].map((c, li) => <span key={li} style={{ color: ws.colors?.[li] }}>{c}</span>) : w}
-            {i < words.length - 1 ? ' ' : ''}
-          </span>
-        );
-      })}
+      {breaks.length
+        ? rows.map((row) => (
+            <span key={row[0]} style={{ display: 'flex', flexWrap: 'nowrap' }}>
+              {row.map(word)}
+            </span>
+          ))
+        : words.map((_, i) => word(i))}
     </span>
   );
 };

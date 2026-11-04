@@ -662,6 +662,9 @@ tween: a third of it visible on its first frame, 90 % by about 0.25 s, home by 0
 | blur | none | none on calm type | `blur` |
 
 - Words rise on their own composited layer (`subpixel`), so the last pixel of the rise is as smooth as the first.
+- The layout owns the line breaks: `breaks` lists the word indices that start a new row (a launch film's long big
+  line takes two rows), never a box width that happens to wrap; `alignItems: 'center'` centres the rows. The line
+  keeps its box on every frame but carries its `data-text` tag only while a word of it is on screen.
 - `wordFrames()` returns each word's start, end and `settle` (the frame it reads as landed: its drawn rise under the
   fastest hold drift, 90 px/s). One soft text sound per line (per part of a line built in beats) goes on the last word's settle (`chainResolves()`),
   never one per word, and the accent hold counts from it.
