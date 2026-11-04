@@ -559,9 +559,10 @@ result(all(v['status'] == 'built' for v in RECIPES.values()), 'every colour reci
 SRC = deck.starter_src()
 # never dealt by name: the kit's generic Text and Check come with its panels; glass, glow plates, gradient
 # text and font cycling stay in the starter for a brand that supplies them, and the deck lights its worlds
-# with the key light and living light instead
+# with the key light and living light instead; a press is shown by the real pointer, so the click bloom (a disc of
+# light at the press) is never dealt
 UNDEALT = {'Text', 'Check', 'Glass', 'Bloom', 'RimLight', 'FloorGlow', 'ColourShadow', 'LightFront', 'RadialStreaks',
-           'GradientText', 'FontCycle'}
+           'GradientText', 'FontCycle', 'ClickBloom'}
 unlisted = []
 for sub in ('fx', 'kit'):
     for f in sorted(os.listdir(os.path.join(SRC, sub))):

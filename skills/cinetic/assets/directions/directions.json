@@ -1281,6 +1281,58 @@
    "file": "fx/GlideStep.tsx",
    "status": "built"
   },
+  "Handover": {
+   "file": "fx/Handover.tsx",
+   "status": "built"
+  },
+  "Smear": {
+   "file": "fx/Moves.tsx",
+   "status": "built"
+  },
+  "RiseWord": {
+   "file": "fx/Moves.tsx",
+   "status": "built"
+  },
+  "BuildLine": {
+   "file": "fx/Moves.tsx",
+   "status": "built"
+  },
+  "Pop": {
+   "file": "fx/Moves.tsx",
+   "status": "built"
+  },
+  "Land": {
+   "file": "fx/Moves.tsx",
+   "status": "built"
+  },
+  "FromLens": {
+   "file": "fx/Moves.tsx",
+   "status": "built"
+  },
+  "Press": {
+   "file": "fx/Moves.tsx",
+   "status": "built"
+  },
+  "WhipCut": {
+   "file": "fx/Moves.tsx",
+   "status": "built"
+  },
+  "Tail": {
+   "file": "fx/Moves.tsx",
+   "status": "built"
+  },
+  "SelectRing": {
+   "file": "fx/Moves.tsx",
+   "status": "built"
+  },
+  "GlyphSweep": {
+   "file": "fx/Moves.tsx",
+   "status": "built"
+  },
+  "RimStreak": {
+   "file": "fx/Moves.tsx",
+   "status": "built"
+  },
   "LitGround": {
    "file": "fx/Grounds.tsx",
    "status": "built"
