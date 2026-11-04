@@ -223,8 +223,8 @@ def main():
               f"{col['space']}/{col['primaries']}/{col['transfer']}/{col['range']}",
               None if ok else 'encode with scale=out_color_matrix=bt709:out_range=tv and -colorspace/-color_primaries/'
                               '-color_trc bt709 -color_range tv, and end -vf with setparams=color_primaries=bt709:'
-                              'color_trc=bt709:colorspace=bt709:range=tv (ffmpeg 7.1+ takes the tags from the frames; '
-                              'see references/finishing.md)')
+                              'color_trc=bt709:colorspace=bt709:range=tv (ffmpeg 7.1+ takes the tags from the frames; a raw pipe '
+                              'also takes the four tags as input options; see references/finishing.md)')
 
     if au is not None:
         a_frames = au.get('duration')
