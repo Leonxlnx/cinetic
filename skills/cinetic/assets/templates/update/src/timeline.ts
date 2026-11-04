@@ -393,6 +393,16 @@ export const MOMENTS30: Record<string, (dur30: number) => Moment[]> = {
   'photo-river': () => [m(0, 'hit', 'first', 0.6), m(8, 'tick', 'swaps', 0.4), m(26, 'riser', 'faster', 0.5), m(45, 'whoosh', 'river', 0.7), m(61, 'hit', 'last', 0.8)],
   'photo-counters': () => [m(0, 'swell', 'photo', 0.5), m(2, 'whoosh', 'card-big', 0.5), m(4, 'tick', 'counting', 0.3), m(11, 'pop', 'card-2', 0.5), m(18, 'pop', 'card-3', 0.5), m(47, 'whoosh', 'exit', 0.6)],
   'orbit-chips': () => [m(9, 'whoosh', 'chips-fly', 0.7), m(11, 'pop', 'chips-land-1', 0.7), m(22, 'tick', 'chips-small', 0.5), m(43, 'suck', 'chips-dip', 0.6)],
+  'photo-orbit': () => [m(0, 'hit', 'line-glow', 0.9), m(1, 'whoosh', 'tiles-dive', 0.7), m(5, 'tick', 'word-2', 0.4), m(10, 'tick', 'word-3', 0.4), m(56, 'riser', 'flare-build', 0.6), m(66, 'hit', 'flare', 0.9)],
+  'card-rivers': () => [m(1, 'click', 'rivers-in', 0.6), m(14, 'tock', 'beat', 0.5), m(38, 'hit', 'word-swap', 0.9), m(71, 'hit', 'accelerate', 0.8), m(77, 'hit', 'accelerate-2', 0.7), m(84, 'whoosh', 'streaks', 0.6)],
+  'site-flip': () => [m(0, 'snap', 'block-1', 0.6), m(1, 'snap', 'block-2', 0.6), m(2, 'whoosh', 'sheet', 0.8), m(13, 'tick', 'sections', 0.3), m(28, 'whoosh', 'orbit', 0.5), m(33, 'pop', 'pictures', 0.5), m(52, 'whoosh', 'exit', 0.7)],
+  'ribbon-ring': () => [m(0, 'swell', 'ring-in', 0.5), m(1, 'key', 'word-1', 0.4), m(11, 'key', 'word-2', 0.35), m(19, 'key', 'word-3', 0.35), m(30, 'whoosh', 'whip-up', 0.6), m(39, 'key', 'word-last', 0.4)],
+  'phone-pullback': () => [m(0, 'whoosh', 'pull-back', 0.5), m(26, 'whoosh', 'pull-peak', 0.4), m(44, 'land', 'phone', 0.4), m(55, 'click', 'press', 0.8), m(58, 'pop', 'menu', 0.7), m(75, 'tick', 'row', 0.3)],
+  'object-window': () => [m(0, 'whoosh', 'window-rises', 0.4), m(12, 'whoosh', 'turn', 0.5), m(30, 'swell', 'push', 0.4), m(58, 'click', 'mark-spot', 0.7), m(59, 'pop', 'marker', 0.5), m(74, 'click', 'done', 0.7)],
+  'crystal-hall': () => [m(0, 'whoosh', 'sphere', 0.6), m(10, 'land', 'landing', 0.6), m(12, 'swell', 'crystal', 0.5), m(18, 'hit', 'cone', 0.8), m(58, 'riser', 'fill', 0.5), m(61, 'bell', 'flash', 0.7)],
+  'cloud-dome': () => [m(4, 'riser', 'tilt', 0.4), m(17, 'whoosh', 'cloud-rush', 0.9), m(27, 'land', 'diorama', 0.7), m(29, 'swell', 'glass', 0.5), m(80, 'whoosh', 'push-cut', 0.7)],
+  'street-poster': () => [m(0, 'pop', 'plate-1', 0.7), m(18, 'pop', 'plate-2', 0.8), m(36, 'pop', 'plate-3', 0.7), m(42, 'whoosh', 'last-pull', 0.4)],
+  'room-push': () => [m(0, 'whoosh', 'haze', 0.5), m(4, 'tick', 'pass', 0.3), m(22, 'hit', 'punch', 0.7), m(44, 'riser', 'push', 0.5), m(58, 'land', 'screen', 0.6)],
 };
 /** The mark-pullback's own moments (its meta cues): the pull-back, the one snap to the lockup, the lockup landing. */
 export const END_MOMENTS30: Moment[] = [m(0, 'whoosh', 'pull-back', 0.7), m(PULLBACK30.lockup, 'snap', 'parts', 0.6), m(PULLBACK30.lockup + 7, 'land', 'lockup', 0.7)];
