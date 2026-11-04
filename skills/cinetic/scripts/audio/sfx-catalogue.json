@@ -1,7 +1,7 @@
 {
  "catalogue": 1,
  "updated": "2026-11-04",
- "about": "Real sound effects for cinetic films: links, never audio (the audio is fetched at film time by sfx.mjs into the film's audio/sfx/ with a licence record, and never committed). Each sound was auditioned with earshot (a forced choice between its role and cheap or cartoon alternatives) and measured: onset (first sample at 10 % of the peak), lead before it, peak, loudness, floor, centroid. align: onset roles put their transient on the cue frame, peak roles (whooshes, risers, swells) their loudest point.",
+ "about": "Real sound effects for cinetic films: links, never audio (the audio is fetched at film time by sfx.mjs into the film's audio/sfx/ with a licence record, and never committed). Each sound was auditioned with earshot (a forced choice between its role and cheap or cartoon alternatives) and measured: onset (first sample at 10 % of the peak), lead before it, peak, loudness, floor, centroid. align: onset roles put their transient on the cue frame, peak roles (whooshes, risers, swells) their loudest point. \"roles\" maps a kit role to the kinds that may play it; \"actions\" (the actions of scripts/audio/actions.py) wins where the cast names the role's action.",
  "sources": {
   "mixkit-sfx": {
    "name": "Mixkit",
@@ -114,52 +114,108 @@
   ]
  },
  "actions": {
-  "logo_lock": [
+  "logo-lock": [
    "lockup",
+   "sub",
    "impact"
   ],
-  "lockup": [
-   "lockup",
+  "reveal": [
+   "impact",
+   "lockup"
+  ],
+  "thud": [
+   "impact",
+   "sub"
+  ],
+  "land": [
+   "impact",
+   "paper"
+  ],
+  "card-land": [
+   "paper",
    "impact"
+  ],
+  "swipe": [
+   "whoosh.medium",
+   "paper",
+   "whoosh.short"
+  ],
+  "slide": [
+   "paper",
+   "whoosh.short"
   ],
   "whip": [
    "whoosh.medium",
    "whoosh.short"
   ],
+  "pass": [
+   "whoosh.short",
+   "whoosh.medium"
+  ],
+  "jump-cut": [
+   "whoosh.short",
+   "impact"
+  ],
+  "press": [
+   "click.soft",
+   "click.hard"
+  ],
+  "touch": [
+   "click.soft"
+  ],
+  "toggle": [
+   "click.hard",
+   "click.soft"
+  ],
+  "lock": [
+   "click.hard",
+   "lockup"
+  ],
+  "error": [
+   "click.hard"
+  ],
+  "appear": [
+   "click.soft",
+   "pop"
+  ],
+  "shape": [
+   "whoosh.short",
+   "pop"
+  ],
+  "build": [
+   "riser",
+   "reverse"
+  ],
   "swell": [
    "reverse",
    "riser"
   ],
-  "shape": [
-   "pop",
-   "whoosh.short"
+  "detent": [
+   "tick",
+   "click.soft"
   ],
-  "typing": [
-   "typing",
-   "key"
+  "chime": [
+   "glass",
+   "notification"
+  ],
+  "success": [
+   "notification",
+   "glass"
+  ],
+  "shutter": [
+   "shutter"
+  ],
+  "letter": [
+   "key",
+   "typing"
   ],
   "type": [
    "typing",
    "key"
   ],
-  "page": [
-   "paper"
-  ],
-  "card_land": [
-   "paper",
-   "impact"
-  ],
-  "shutter": [
-   "shutter"
-  ],
-  "photo": [
-   "shutter"
-  ],
-  "notify": [
-   "notification"
-  ],
-  "glint": [
-   "glass"
+  "text": [
+   "key",
+   "click.soft"
   ]
  },
  "sounds": [

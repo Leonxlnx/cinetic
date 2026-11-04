@@ -9,9 +9,9 @@
  *   node scripts/audio/sfx.mjs [all] [--film NAME] [--avoid ID,ID] [--kit audio/kit.json] [--to audio/sfx] [--python PY]
  *   node scripts/audio/sfx.mjs pick|get|place|list|licences [options]
  *
- * pick      every kit role that is on gets one catalogue sound of its kind (scripts/audio/sfx-catalogue.json,
- *           "roles": a kit role -> the catalogue roles that may play it; a sub-role such as hit.logo_lock or
- *           whoosh.long.whip reads its action first). Among the best few of each kind the film's own seed (its
+ * pick      every kit role that is on gets one catalogue sound of its kind (scripts/audio/sfx-catalogue.json:
+ *           "actions" for the action the cast gave the role, else "roles": a kit role -> the kinds that may play it;
+ *           a sub-role such as hit.logo_lock or whoosh.long.whip reads its action). Among the best few of each kind the film's own seed (its
  *           name) chooses, a sound any of the last four films played is held back
  *           (~/.cinetic/sfx-history.json, or $CINETIC_HOME), and no sound plays two roles. Writes
  *           audio/sfx/picks.json and records the film's sounds in the history (--no-history: neither reads nor
@@ -26,8 +26,9 @@
  *           (bed_db: its level over the track; offset_ms; min_gap_ms; width), three takes in audio/kit/
  *           (real.lock.json). score.py levels them to the bed, pans them along the cue and masters to -14 LUFS.
  * all       pick, get and place (the default).
- * refine    after a mix (score.py's out/qa/score.json): every effect it calls masked by the track or buried is
- *           avoided and its role picks again, then get and place (--score PATH). Run the mix again after it.
+ * refine    after a mix (score.py's out/qa/score.json) and kit.py listen (out/qa/kit_listen.json): every effect the mix
+ *           calls masked or buried, and every take earshot's ears flag (a cheap alternative outranks the role's own
+ *           description), is avoided and its role picks again, then get and place (--score PATH). Mix and listen again.
  * list      the catalogue by role (count, ids); licences: the sources and the licence each was read under.
  *
  * Offline: --offline, or a download that fails, leaves those roles to the kit's synthesized takes, and says so
@@ -64,12 +65,18 @@ export function hash(s) {
   return h >>> 0;
 }
 
-/** The catalogue roles that may play a kit role: the sub-role's action first (hit.logo_lock), then its base (hit). */
-export function kindsFor(cat, role) {
+/**
+ * The catalogue kinds that may play a kit role: the action the cast gave it (kit.json cast.roles[role].action), then
+ * the role itself, then a sub-role's action (hit.logo_lock), then its base (hit).
+ */
+export function kindsFor(cat, role, action = null) {
   const map = cat.roles || {};
+  const acts = cat.actions || {};
+  const norm = (x) => String(x || '').replace(/_/g, '-');
+  if (action && acts[norm(action)]) return acts[norm(action)];
   if (map[role]) return map[role];
   const parts = role.split('.');
-  const act = (cat.actions || {})[parts[parts.length - 1]];
+  const act = acts[norm(parts[parts.length - 1])];
   if (parts.length > 1 && act) return act;
   for (let k = parts.length - 1; k >= 1; k--) {
     const key = parts.slice(0, k).join('.');
@@ -90,13 +97,13 @@ export function quality(s) {
  * The film's picks: {role: sound} for every role, each from the role's kinds (the first kind preferred), the
  * last films' sounds and this film's other picks held back, the film's seed choosing among the best TOP.
  */
-export function pick(cat, roles, film, history = [], avoid = []) {
+export function pick(cat, roles, film, history = [], avoid = [], actions = {}) {
   const recent = new Set(history.slice(-AVOID_FILMS).filter((h) => h.film !== film).flatMap((h) => h.ids || []));
   const banned = new Set(avoid);
   const used = new Set();
   const out = {};
   for (const role of roles) {
-    const kinds = kindsFor(cat, role);
+    const kinds = kindsFor(cat, role, actions[role]);
     let chosen = null;
     for (const kind of kinds) {
       const pool = cat.sounds.filter((s) => s.role === kind && !used.has(s.id) && !banned.has(s.id)).sort((a, b) => quality(b) - quality(a) || (a.id < b.id ? -1 : 1));
@@ -189,7 +196,8 @@ function cmdPick(a, cat) {
   const pp = path.join(a.to, 'picks.json');
   const before = existsSync(pp) ? (readJson(pp).avoid || []) : [];
   const avoid = [...new Set([...before, ...String(a.avoid || '').split(',').map((x) => x.trim()).filter(Boolean)])];
-  const picks = pick(cat, roles, a.film, hist, avoid);
+  const actions = Object.fromEntries(Object.entries(kit.cast?.roles || {}).map(([n, r]) => [n, r?.action]).filter(([, x]) => x));
+  const picks = pick(cat, roles, a.film, hist, avoid, actions);
   const none = roles.filter((r) => !picks[r]);
   const doc = {
     picks: 1, film: a.film, date: today(), catalogue: cat.updated,
@@ -295,9 +303,12 @@ export function maskedIds(a) {
   const pp = path.join(a.to, 'picks.json');
   if (!existsSync(sp) || !existsSync(pp)) return null;
   const find = (o) => { if (!o || typeof o !== 'object') return null; if (Array.isArray(o.masked)) return o.masked; for (const v of Object.values(o)) { const r = find(v); if (r) return r; } return null; };
-  const masked = find(readJson(sp)) || [];
+  const masked = (find(readJson(sp)) || []).map((m) => m.role);
+  // earshot's ears on the placed takes (kit.py listen): a role it flags (a cheap alternative outranks it) picks again too
+  const lp = path.join(path.dirname(sp), 'kit_listen.json');
+  const flagged = existsSync(lp) ? (readJson(lp).flagged || []).map((f) => String(f).split(' (')[0]) : [];
   const roles = readJson(pp).roles || {};
-  return [...new Set(masked.map((m) => roles[m.role]?.id).filter(Boolean))];
+  return [...new Set([...masked, ...flagged].map((r) => roles[r]?.id).filter(Boolean))];
 }
 
 function cmdList(a, cat) {
