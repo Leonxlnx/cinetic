@@ -150,6 +150,11 @@ Film checks (with the grammar; read at 240 wide, the ending at 480):
   end-drift    the last 2 s slide at a flat speed (a line fits the middle band's shift, r2 >= 0.95) and
                the last 0.5 s still move at half that speed or more: an ending that never lands  warn
   end-centre   the last frame's lockup (the crisp blobs on its row) sits over 1 % of the width off centre warn
+  speck        within 0.5 s of a scene change (a declared seam or cut), all that is crisp on screen fits in a box under
+               30 % of the frame's width and height (about 8 % of the frame) on an empty ground, for more than 6 f@30
+               (0.2 s): the handover shrank its element to a speck                                fail
+  lone-line    a line alone on its ground (1-3 text rows, nothing else crisp) sets at a cap height under 6 % of the
+               frame (the rows' ink less their descenders, read at 480 wide) for 0.4 s or more    fail
   world-still  the world's textured corners stay one picture wherever they show and match at both ends
                of a film of 8 s or more (no cloud, light or camera moving it)                   warn
   world-murk   the world's outer ring has no highlight (p99.5 luma under 120) on 70 % of the film  warn
@@ -2348,7 +2353,9 @@ def run_grammar(args, info, M, extra, k_, cuts, freezes, ignored, reading, acts,
     # the film: never an empty frame or a long freeze, an ending that lands centred, a world that lives
     fs = M.get('film')
     if fs is not None and fs.f:
-        out['film'] = film_check(fs, extra, add, sev, ignored, reading, end_rng, legibility_frames(extra, k_))
+        seam_f = sorted({vf(x['at']) for x in (extra.get('seams') or []) if isinstance(x, dict) and isinstance(x.get('at'), (int, float)) and x.get('kind') != 'fadeEnd'}
+                        | {int(a) for a, _ in cuts})
+        out['film'] = film_check(fs, extra, add, sev, ignored, reading, end_rng, legibility_frames(extra, k_), seams=seam_f)
     return out
 
 
@@ -3152,7 +3159,14 @@ FILM = dict(w=240, edge=200.0, empty=0.0005, empty_warn_s=0.1, empty_fail_s=0.5,
             frozen_d=0.12, frozen_px=0.0005, frozen_s=1.0, frozen_read_s=1.5, frozen_share=0.55,
             end_s=2.0, drift_px=4.0, drift_r2=0.95, land=0.5, centre=0.01,
             ring=0.08, murk_hi=120.0, murk_share=0.7, world_db=40.0, world_share=0.5, world_tex=3.0, world_min_s=8.0,
-            audio_db=-50.0, end_drop_db=12.0, legible=3.0, lost=2.0)
+            audio_db=-50.0, end_drop_db=12.0, legible=3.0, lost=2.0,
+            # a speck: everything crisp fits in a box under 30 % of the frame's width and height (about 8 % of the
+            # frame) on an empty ground, read at 480 wide (edges over 48 levels), around a scene change (0.5 s either
+            # side); more than 6 frames at 30 fps (0.2 s) of it fails
+            speck_edge=48.0, speck_px=24, speck_w=0.3, speck_h=0.3, speck_pad_s=0.5, speck_s=0.2,
+            # a line alone (one to three text rows, nothing else crisp) whose cap height is under 6 % of the frame
+            # (with 0.4 % read tolerance) for 0.4 s or more fails; text rows: 8 %+ of the band's pixels are edges
+            lone_cap=0.056, lone_s=0.4, lone_density=0.08, lone_rows=3)
 
 
 class FilmScan:
@@ -3167,6 +3181,7 @@ class FilmScan:
         self.sw = min(FILM['w'], self.tw) // 2 * 2
         self.sh = max(2, int(round(h * self.sw / w)) // 2 * 2)
         self.f, self.edge, self.chg, self.npx, self.ring_hi, self.corners = [], [], [], [], [], []
+        self.box, self.lone = [], []  # the crisp content's box (shares of the frame) and a lone line's cap share
         self.every = max(1, int(round(fps / 2)))
         self.prev = None
         self.tail = deque(maxlen=int(round((FILM['end_s'] + 0.5) * fps)) + 2)
@@ -3198,7 +3213,52 @@ class FilmScan:
         if (len(self.f) - 1) % self.every == 0:
             cw, ch = self.sw // 8, self.sh // 8
             self.corners.append((f, [g[:ch, :cw].copy(), g[:ch, -cw:].copy(), g[-ch:, :cw].copy(), g[-ch:, -cw:].copy()]))
-        self.tail.append((f, cv2.cvtColor(big, cv2.COLOR_RGB2GRAY).astype(np.float32)))
+        gb = cv2.cvtColor(big, cv2.COLOR_RGB2GRAY).astype(np.float32)
+        self.tail.append((f, gb))
+        self.box.append(None)
+        self.lone.append(None)
+        mb = np.hypot(cv2.Sobel(gb, cv2.CV_32F, 1, 0, ksize=3), cv2.Sobel(gb, cv2.CV_32F, 0, 1, ksize=3)) > FILM['speck_edge']
+        ys, xs = np.nonzero(mb)
+        if len(xs) < FILM['speck_px']:
+            return
+        x0, x1 = np.percentile(xs, [1, 99])
+        y0, y1 = np.percentile(ys, [1, 99])
+        self.box[-1] = (float(x0) / self.tw, float(y0) / self.th, float(x1 - x0 + 1) / self.tw, float(y1 - y0 + 1) / self.th)
+        # a line alone: 1-3 runs of text rows (dense edges) holding nearly all the crisp pixels, side by side in one block
+        rows = mb.sum(axis=1)
+        on = rows >= 2
+        runs_ = []
+        i = 0
+        while i < len(on):
+            if on[i]:
+                j = i
+                while j + 1 < len(on) and (on[j + 1] or (j + 3 < len(on) and on[j + 2:j + 4].any())):
+                    j += 1
+                runs_.append((i, j))
+                i = j + 1
+            else:
+                i += 1
+        if not 1 <= len(runs_) <= FILM['lone_rows']:
+            return
+        inside = sum(int(rows[a:b + 1].sum()) for a, b in runs_)
+        if inside < 0.95 * len(xs) or (runs_[-1][1] - runs_[0][0] + 1) > 0.45 * self.th:
+            return
+        caps = []
+        for a, b in runs_:
+            band = mb[a:b + 1]
+            cols = np.nonzero(band.any(axis=0))[0]
+            wpx = cols[-1] - cols[0] + 1
+            dens = float(band[:, cols[0]:cols[-1] + 1].mean())
+            # a text row: wide, 2 % of the frame tall or more, its pixels partly edges (a rule or an outline is all edge)
+            if wpx < 0.12 * self.tw or (b - a + 1) < 0.02 * self.th or not FILM['lone_density'] <= dens <= 0.6:
+                return
+            r = rows[a:b + 1].astype(np.float32)
+            med = float(np.median(r[r > 0])) if (r > 0).any() else 0.0
+            bottom = b
+            while bottom > a and rows[bottom] < 0.3 * med:  # descender rows: sparse below the baseline
+                bottom -= 1
+            caps.append((bottom - a + 1) / self.th)
+        self.lone[-1] = float(np.median(caps))
 
 
 def film_ending(scan):
@@ -3339,7 +3399,7 @@ def legibility(scan, pairs):
     return rows
 
 
-def film_check(scan, extra, add, sev, ignored, reading=(), end_rng=None, pairs=()):
+def film_check(scan, extra, add, sev, ignored, reading=(), end_rng=None, pairs=(), seams=()):
     """Empty frames and stalls, frozen holds, the ending (a drift that never lands, a lockup off centre), a world that never
     changes or has no highlight. Flags go through `add`; returns the report."""
     fps, n = scan.fps, len(scan.f)
@@ -3363,6 +3423,37 @@ def film_check(scan, extra, add, sev, ignored, reading=(), end_rng=None, pairs=(
             f"{'; still: a stall' if still else ''}): the frame is never empty between two scenes; let the next element arrive while "
             'the last one leaves, or keep a blur peak to 2 f')
     rep['empty'] = empties
+    # 1b. a scene change never leaves a speck (an element under about 8 % of the frame) alone on an empty ground
+    pad = int(round(FILM['speck_pad_s'] * fps))
+    near = lambda g: any(abs(g - c) <= pad for c in seams)  # noqa: E731
+    specks = []
+    if seams and getattr(scan, 'box', None):
+        flags_ = [bool(b) and b[2] < FILM['speck_w'] and b[3] < FILM['speck_h'] and near(F[i]) for i, b in enumerate(scan.box)]
+        for i, j in runs(flags_):
+            a, b = F[i], F[j]
+            dur = (b - a + 1) / fps
+            if ignored(a) or (end_rng and a >= end_rng[0]) or dur <= FILM['speck_s'] + 1e-9:
+                continue
+            bx = scan.box[i]
+            specks.append(dict(frm=a, to=b, s=round(dur, 2), box=[round(v, 3) for v in bx]))
+            add('speck', sev('fail'), f'{a}-{b}', f'{b - a + 1} f ({dur:.2f} s) at a scene change where all that stands on the ground is a speck '
+                f'({bx[2] * 100:.0f} % x {bx[3] * 100:.0f} % of the frame): a handover never shrinks its element to a speck on an empty frame; '
+                'keep the element big, let the next scene arrive round it while the last one leaves, or vary the handover')
+    rep['speck'] = specks
+    # 1c. a line alone on its ground sets big: a cap height of 6 % of the frame or more
+    smalls = []
+    if getattr(scan, 'lone', None):
+        flags_ = [c is not None and c < FILM['lone_cap'] for c in scan.lone]
+        for i, j in runs(flags_):
+            a, b = F[i], F[j]
+            dur = (b - a + 1) / fps
+            if ignored(a) or (end_rng and a >= end_rng[0]) or dur < FILM['lone_s'] - 1e-9:
+                continue
+            cap = float(np.median([scan.lone[k] for k in range(i, j + 1)]))
+            smalls.append(dict(frm=a, to=b, s=round(dur, 2), cap=round(cap, 4)))
+            add('lone-line', sev('fail'), f'{a}-{b}', f'a line alone on its ground for {dur:.2f} s at a cap height of {cap * 100:.1f} % of the frame: a '
+                'line alone sets at 6 % or more (house 9 %, the hero bigger; two rows rather than a small line), never a small line in a wide empty frame')
+    rep['lone'] = smalls
     # 2. frozen holds: nothing changes for over a second mid-film (a line being read: 1.5 s)
     endf = end_rng[0] if end_rng else last + 1 - int(round(2 * fps))
     frozen = [i > 0 and scan.chg[i] < FILM['frozen_d'] and scan.npx[i] < FILM['frozen_px'] for i in range(n)]
@@ -4384,6 +4475,39 @@ def film_self_test(check, tmp):
     check(not any(x['check'] == 'frozen-hold' for x in fl), 'film: 0.8 s frozen passes (holds may be still)', str(names(fl)))
     rep, fl = gate(moving + [moving[-1]] * 40 + tail, reading=[(30, 75)])
     check(not any(x['check'] == 'frozen-hold' for x in fl), 'film: 1.3 s frozen while a line is read passes (1.5 s)', str(names(fl)))
+    # a speck at a scene change: a small chip alone on the empty ground for 12 f fails; for 4 f, or a big card, passes
+    flat = np.full((h, w, 3), 236, np.uint8)
+
+    def chip(img, cw, ch):
+        out = img.copy()
+        x0, y0 = (w - cw) // 2, (h - ch) // 2
+        out[y0:y0 + ch, x0:x0 + cw] = (40, 90, 220)
+        return out
+    big = [chip(flat, 300, 170)] * 20
+
+    def gate_s(frames):
+        fl = []
+        add = lambda check_, severity, frame, note, **kw: fl.append(dict(check=check_, severity=severity))  # noqa: E731
+        film_check(scan_of(frames), {}, add, lambda s: s, lambda f: False, (), None, seams=[30])
+        return fl
+    fl = gate_s(big + [chip(flat, 60, 24)] * 12 + big)
+    check(('speck', 'fail') in names(fl), 'film: a small chip alone on the empty ground for 12 f at a scene change fails speck', str(names(fl)))
+    fl = gate_s(big + [chip(flat, 60, 24)] * 4 + big)
+    check(not any(x['check'] == 'speck' for x in fl), 'film: a chip for 4 f (or a big card) at a scene change passes', str(names(fl)))
+    # a line alone: rows of letters at a 4 % cap for 0.5 s fail lone-line; the same at an 8 % cap pass
+    def line_img(cap):
+        img = flat.copy()
+        ch = max(3, int(round(cap * h)))
+        y0 = (h - ch) // 2
+        for k in range(12):  # letter-like strokes across a third of the width
+            x = int(w * 0.33) + k * int(w * 0.03)
+            img[y0:y0 + ch, x:x + max(2, ch // 4)] = 30
+            img[y0:y0 + max(2, ch // 6), x:x + int(w * 0.02)] = 30
+        return img
+    fl = gate_s(big + [line_img(0.04)] * 16 + big)
+    check(('lone-line', 'fail') in names(fl), 'film: a line alone at a 4 % cap for 0.5 s fails lone-line', str(names(fl)))
+    fl = gate_s(big + [line_img(0.08)] * 16 + big)
+    check(not any(x['check'] == 'lone-line' for x in fl), 'film: a line alone at an 8 % cap passes', str(names(fl)))
 
     # the ending: a lockup sliding at a flat 0.25 px/f to the last frame warns end-drift; the same slide eased to a stop passes
     def lockup(dx):
