@@ -11,9 +11,9 @@ import { holdFor, PACE, readingWindows, type PaceName } from './lib/pace';
 import { bar, MUSIC } from './music';
 import { allows, COL_OF, type Form, handoverFrames, HANDOVERS, handoversFor, type HandoverKind, planSpine, type PlanAct, type PlanChange, type PlanScene, type Spine, spineDeclares, type SpinePlan, stemVerb } from './lib/spine';
 import { CLOSE, type FilmScene, PICTURES, SPINE } from './spine';
-import { BANK, dealScene, durOf, type Ground, type Need, onScreen, SCENE_SEED } from './bank';
+import { BANK, DEAL_RULES, DEAL_SEED, dealScene, durOf, FLOOR_CAST, type Ground, HISTORY, type Need, onScreen, SCENE_SEED } from './bank';
 import { IDENTITY } from './brand/identity';
-import { DEAL } from './deal';
+import { DEAL, UNNAMED } from './deal';
 
 export { PACE } from './lib/pace'; // grid-check checks COPY against the film's own pace numbers
 /** The film-time music grid (src/music.ts): null until track.py grid writes the track's; then b() follows its bars. */
@@ -173,22 +173,32 @@ const FLAT: Flat[] = (() => {
 })();
 
 /**
- * Each scene's house scene: the one its script names, else the deal's (src/bank.ts dealScene: by its act's verb, its
- * form and what the film can show; the lockup from the end scenes). A line (a word scene with no bank) is drawn by the
- * template's own line (acts/scenes.tsx wordScene). `design` is the value the scene was designed on; `ground` the one it
+ * Each scene's house scene, dealt (src/bank.ts dealScene: a seeded weighted draw by its act's verb, its form, its size
+ * and the films before this one; the lockup from the end scenes; never one scene twice, two of the last film's at most):
+ * a scene that names a `bank` redraws its slot by hand and says why (`why`), a scene marked `own` is the film's one
+ * scene of its own (src/product.tsx OWN, `seconds` 1.5-3), and a line (a word scene) is drawn by the template's own line
+ * (acts/scenes.tsx wordScene). `design` is the value the scene was designed on; `ground` the one it
  * is painted on: the film keeps ONE ground (FILM_GROUND: the value most of its scenes were designed on, the deal's on a
  * tie) and every scene stands on it (src/palette.ts paletteOn keeps its contrast), with at most one deliberate change: the
  * film's first colour field (a flood, toast-stack's accent) keeps its field, and the film returns to its ground after it;
  * a later field is painted on the ground. `ff`: the scene opens on its own picture (the element arrives as its whole frame).
  */
-export type CastEntry = { bank: string | null; props: Record<string, unknown>; ground: Ground; design: Ground; big: boolean; ff: boolean; subject: string };
+export type CastEntry = { bank: string | null; own: boolean; props: Record<string, unknown>; ground: Ground; design: Ground; big: boolean; ff: boolean; subject: string };
 const CAST0 = (() => {
   const named = FLAT.map((x) => x.def?.bank ?? '').filter(Boolean);
   const used: string[] = [];
+  let slot = 0;
   return FLAT.map((s, i) => {
     if (s.def?.bank) return s.def.bank;
+    if (s.def?.own) {
+      const sec = s.def.seconds;
+      if (s.form === 'word' || !(typeof sec === 'number' && sec >= DEAL_RULES.ownSeconds[0] && sec <= DEAL_RULES.ownSeconds[1]))
+        throw new Error(`timeline: scene "${s.name}" is your own: give it a picture form and its seconds (${DEAL_RULES.ownSeconds.join('-')}), and draw it in src/product.tsx OWN`);
+      return null;
+    }
     if (s.form === 'word' && s.def) return null;
-    const id = dealScene({ act: s.act, k: s.k, verb: SPINE.acts[s.act]?.verb ?? '', form: s.form, last: i === FLAT.length - 1, have: HAVE, used: [...named, ...used] });
+    const id = dealScene({ act: s.act, k: s.k, verb: SPINE.acts[s.act]?.verb ?? '', form: s.form, last: i === FLAT.length - 1, have: HAVE, used: [...named, ...used], floor: UNNAMED ? FLOOR_CAST[slot] : undefined });
+    slot++;
     used.push(id);
     return id;
   });
@@ -210,11 +220,26 @@ export const CAST: CastEntry[] = (() => {
       if (!e) throw new Error(`timeline: scene "${FLAT[i].name}" names bank "${id}", which src/bank.ts BANK does not hold (${Object.keys(BANK).join(', ')})`);
       const flood = e.ground === 'field' && !flooded;
       if (flood) flooded = true;
-      return { bank: id, props: FLAT[i].def?.props ?? {}, ground: flood ? 'field' : FILM_GROUND, design: e.ground, big: e.big, ff: !onScreen(e.handIn), subject };
+      return { bank: id, own: false, props: FLAT[i].def?.props ?? {}, ground: flood ? 'field' : FILM_GROUND, design: e.ground, big: e.big, ff: !onScreen(e.handIn), subject };
     }
-    return { bank: null, props: {}, ground: FILM_GROUND, design: FILM_GROUND, big: false, ff: false, subject };
+    return { bank: null, own: !!FLAT[i].def?.own, props: FLAT[i].def?.props ?? {}, ground: FILM_GROUND, design: FILM_GROUND, big: false, ff: false, subject };
   });
 })();
+
+/**
+ * The deal as the checks read it (scripts/grid-check.ts deal-*): each scene's house scene (null: a line, or the film's
+ * own), whether the deal gave it or the script redrew it (and why), and the last film's scenes. Lines are the
+ * template's own type and are not counted; of the picture scenes 75 % or more come from the bank, one is the film's
+ * own at most, none plays twice, and two at most are the last film's.
+ */
+export const DEAL_PLAN = {
+  template: 'launch-simple',
+  seed: DEAL_SEED,
+  scenes: FLAT.map((s, i) => ({ name: s.name, bank: CAST[i].bank, own: CAST[i].own, line: !CAST[i].bank && !CAST[i].own, dealt: !!CAST[i].bank && !s.def?.bank, ...(s.def?.bank ? { why: s.def.why ?? '' } : {}) })),
+  last: HISTORY[0] ?? [],
+};
+/** The house scenes the film plays (film-diff.mjs --record keeps them, so the next films are dealt others). */
+export const PLAYED: string[] = [...new Set(CAST.map((c) => c.bank).filter((x): x is string => !!x))];
 
 /** No handover kind on more than this share of the film's changes (one move every time reads as a template). */
 export const SEAM_SHARE = 0.4;
@@ -265,7 +290,7 @@ const VIA: (HandoverKind | 'cut' | undefined)[] = (() => {
       return pinned;
     }
     const table = handoversFor(A, B);
-    const inForm = CAST[i].bank ? (BANK[CAST[i].bank as string].handIn?.form ?? undefined) : 'word';
+    const inForm = CAST[i].bank ? (BANK[CAST[i].bank as string].handIn?.form ?? undefined) : CAST[i].own ? B : 'word';
     const ob = CAST[i - 1].bank ? BANK[CAST[i - 1].bank as string].handOut : null;
     const outInSight = !ob || (ob.x >= -2 && ob.y >= -2 && ob.x + ob.w <= W + 2 && ob.y + ob.h <= H + 2);
     // the form table's own recipe first; a converge (two moves: a collapse, then a growth) after the one-move kinds
@@ -328,6 +353,11 @@ const SPANS: Span[] = FLAT.map((_, i): Span => {
   if (CAST[i].bank && last) {
     const own = BANK_DUR[i];
     return { nat: Math.min(LOCKUP_MAX, own + f60(36)), min: Math.min(LOCKUP_MAX - EIGHTH, Math.round(own * EASE[0]) + f60(12)), max: LOCKUP_MAX, w: 1 };
+  }
+  if (CAST[i].own) {
+    // the film's own scene at its declared length (1.5-3 s), eased a little to land on the music
+    const own = Math.round(Number(FLAT[i].def?.seconds) * FPS);
+    return { nat: Math.min(SCENE_MAX, own + out), min: Math.max(Math.round(DEAL_RULES.ownSeconds[0] * FPS), Math.round(own * 0.9)), max: SCENE_MAX, w: 1 };
   }
   if (CAST[i].bank) {
     const own = BANK_DUR[i];
@@ -722,6 +752,13 @@ export const PLAN_PRINT = [
   ...SPINE_PLAN.acts.map((a) => `act ${a.i + 1} ${a.verb} (${a.bars} bars, ${Math.round(a.share * 100)} %, world ${a.world}): ${a.scenes.map((i) => `${SCENES[i].name}:${SCENES[i].form}=${CAST[i]?.bank ?? 'line'}${CAST[i]?.big ? '*' : ''} ${((SCENES[i].to - SCENES[i].from) / FPS).toFixed(2)} s`).join(' | ')}`),
   ...HANDOVER_PLAN.map((h) => `  ${h.forms[0]} -> ${h.forms[1]}: ${h.kind} at ${(h.at / FPS).toFixed(2)} s`),
   ...LINES.map((l) => `  line ${l.id} (${l.place}) "${l.text}" ${(l.in / FPS).toFixed(2)}-${(l.out / FPS).toFixed(2)} s, read ${((l.out - l.in) / FPS).toFixed(2)} s in ${l.chunks} chunk(s), cap ${(l.fit.cap * 100).toFixed(1)} % of the frame${l.fit.rows.some((r) => r > 0) ? ' on two rows' : ''}`),
+  `  deal: ${(() => {
+    const pic = DEAL_PLAN.scenes.filter((x) => !x.line);
+    const bank = pic.filter((x) => x.bank).length;
+    const shared = PLAYED.filter((x) => DEAL_PLAN.last.includes(x)).length;
+    const redrawn = DEAL_PLAN.scenes.filter((x) => 'why' in x).map((x) => `${x.name} -> ${x.bank} (${x.why || 'NO REASON'})`);
+    return `${bank} of ${pic.length} picture scenes from the bank (${Math.round((100 * bank) / Math.max(1, pic.length))} %), ${pic.length - bank} of the film's own, ${shared} shared with the last film${redrawn.length ? `; redrawn: ${redrawn.join(', ')}` : ''}`;
+  })()}`,
   `  seams: ${Object.entries(HANDOVER_PLAN.reduce((m: Record<string, number>, h) => ({ ...m, [h.kind]: (m[h.kind] ?? 0) + 1 }), {})).map(([k, v]) => `${k} ${v}`).join(', ')} (no kind over ${Math.round(SEAM_SHARE * 100)} %)`,
   `  issues: ${[...SPINE_PLAN.issues.errors.map((e) => `ERROR ${e}`), ...SPINE_PLAN.issues.warnings, ...VIA_NOTES].join(' | ') || 'none'}`,
 ].join('\n');

@@ -1516,8 +1516,10 @@ def template_preview(d, inp, seed, data, root, history_on, devices, floor):
              + ', '.join(f'{k} `{deal[k]}`' for k in ('voice', 'end', 'camera') if deal.get(k))
              + (f'; type `{pr["id"]}` ({pr.get("voice")} with {pr.get("text")})' if pr else '') + '.']
     if plays_bank(root):
-        lines.append('**Scenes.** 8-12 house scenes from the scene bank: the ones the spine names, the rest dealt by each act' + "'" + 's verb and seeded by this '
-                     'direction (src/bank.ts; print the plan to see them), painted in one palette on their own grounds (src/palette.ts).')
+        lines.append('**Scenes.** 8-12 house scenes dealt from the scene bank at random (src/bank.ts: seeded by this direction and the last '
+                     'films, weighted toward each act' + "'" + 's verb and big scenes, never one twice, two of the last film' + "'" + 's at most; print the plan '
+                     'to see them): 75 % of the picture scenes or more from the bank, one of the film' + "'" + 's own at most, a dealt slot redrawn '
+                     'only with its reason (`why`); painted in one palette on one ground (src/palette.ts).')
     if c and template_plays_creative(root):
         lines.append('**Creative elements.** ' + '; '.join(f'`{i}` ({by.get(i, {}).get("about", "")[:80]})' for i in c['deal']) + '.')
     elif c:

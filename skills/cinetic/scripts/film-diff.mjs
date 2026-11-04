@@ -27,7 +27,8 @@
  *             film's (warn: a re-deal with --mood or --pair changes it)
  *   creative  the film's creative elements (film.json devices.creative, else src/deal.ts CREATIVE) are not all the
  *             last film's (warn); --record keeps them, so the next deal (deck.py, deal.ts) plays others
- *   hero      the hero shots (film.json devices.hero, else src/deal.ts HERO_DEAL.deal or the update film's PLAYED) are not
+ *   hero      the hero shots (film.json devices.hero, else src/deal.ts HERO_DEAL.deal, the update film's PLAYED or the
+ *             launch film's src/timeline.ts PLAYED: its dealt house scenes) are not
  *             all the last film's (warn); --record keeps them, so deck.py's next deal weighs them down
  *   world     the place the film stands in is its world AND that world's hue (film.json devices.world / devices.hue, else
  *             the deal's ground and the hue the accent in src/brand/tokens.ts gives it: launch-simple its own hue, the
@@ -114,9 +115,9 @@ function tsDeal(dir, name = 'DEAL') {
   const m = tsDealMany(dir, [name]);
   return m ? m[name] ?? null : null;
 }
-/** Several exports of src/deal.ts in one tsx run (each run costs seconds): { name: value }, or null. */
-function tsDealMany(dir, names) {
-  const deal = path.join(dir, 'src', 'deal.ts');
+/** Several exports of src/deal.ts (or another src module) in one tsx run (each run costs seconds): { name: value }, or null. */
+function tsDealMany(dir, names, file = 'deal.ts') {
+  const deal = path.join(dir, 'src', file);
   if (!fs.existsSync(deal)) return null;
   const up = (from, rel) => {
     for (let d = path.resolve(from); ; d = path.dirname(d)) {
@@ -207,6 +208,11 @@ export function filmDevices(dir, { useTsx = true } = {}) {
   // (deck.py recent_hero, the templates' recent.ts) weigh them down and every film shoots its own
   const hr = Array.isArray(got?.HERO_DEAL?.deal) ? got.HERO_DEAL.deal : Array.isArray(got?.PLAYED) ? got.PLAYED : null;
   if (!out.hero.length && hr) out.hero = list(hr);
+  // launch-simple's house scenes: the timeline's PLAYED (the bank's deal), so the next film is dealt others
+  if (useTsx && !out.hero.length && fs.existsSync(path.join(dir, 'src', 'bank.ts'))) {
+    const played = tsDealMany(dir, ['PLAYED'], 'timeline.ts')?.PLAYED;
+    if (Array.isArray(played)) out.hero = list(played);
+  }
   if (deal && typeof deal === 'object') {
     for (const s of ['voice', 'ground', 'end', 'camera']) if (!out[s] && typeof deal[s] === 'string') out[s] = deal[s];
     if (!out.seams.length) out.seams = [...new Set(['seamTA', 'seamAT'].map((s) => deal[s]).filter((x) => typeof x === 'string'))];

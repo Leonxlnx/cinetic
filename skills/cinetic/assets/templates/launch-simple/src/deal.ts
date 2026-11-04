@@ -54,6 +54,8 @@ const pick = <T extends string>(seed: string, slot: string, from: readonly T[], 
 /** Where the deal came from: the deck's direction, or the product's name. */
 export const DEAL_SOURCE = DEALT ? `deck.py direction ${DEALT.direction}` : `the name "${IDENTITY.name}"`;
 const seed = IDENTITY.name;
+/** The unnamed scaffold (no direction dealt, the name still a [slot]): it plays the floor, its scenes too (src/bank.ts FLOOR_CAST). */
+export const UNNAMED = !DEALT && /^\[/.test(seed);
 const dealt = (DEALT?.deal ?? {}) as Partial<Record<Slot, string>>;
 const valid = <S extends Slot>(s: S, v: string | undefined): v is Deal[S] => !!v && (DEVICES[s] as readonly string[]).includes(v);
 // a deck deal naming a device this template lacks is a mistake to say, never a silent fallback

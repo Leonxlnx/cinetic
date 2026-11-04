@@ -6,6 +6,7 @@
 // within 2 s. Every limit is src/deal.ts LIMITS; FAULTS at the end of this file fails a plan outside them. Picture (src/acts), sound (src/sync.ts -> out/cues.json) and QA (scripts/grid-check.ts) all import this
 // file. The facts live in src/update.ts; this file only places them on the grid. Keep it free of React and CSS imports:
 // Node scripts load it directly.
+export { DEAL_PLAN, PLAYED } from './deal';
 import { DEAL, HEROES, LIMITS, LINE_MIN60, LINES, LINKED, macroTypeDur30, type Move, PULLBACK30, RESOLVE60, SCENE_SPEC, splitLine } from './deal';
 import { holdFor, PACE, readingWindows, wordCount, type PaceName } from './lib/pace';
 import { bar, MUSIC } from './music';

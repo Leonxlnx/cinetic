@@ -182,6 +182,16 @@
  *                  starts/s, 1.3-2.7 moves running at once on average, no 1 s without a start
  *                  outside HOLD and END (warnings)
  *
+ * The deal (the timeline's DEAL_PLAN, launch-simple and update; --part spine runs it too): a film's scenes are dealt from the
+ * house bank at random. Lines are the template's own type and are not counted; scenes drawn in src/product.tsx OWN count
+ * as the film's own whether the script declares them or not:
+ *   deal-share     under 75 % of the picture scenes from the bank (error)
+ *   deal-own       more than one scene of the film's own, or one drawn in src/product.tsx OWN the script does not mark
+ *                  `own` (errors)
+ *   deal-twice     one house scene twice in the film (error)
+ *   deal-shared    more than 2 scenes shared with the last film in the history (error)
+ *   deal-redraw    a dealt slot redrawn by hand without its reason (`why`) (error)
+ *
  * The spine (the timeline's SPINE_PLAN; --part spine runs these alone and needs nothing else from the timeline). A film
  * is one action played as 3-5 acts, one case carried from the request to the result, and one element whose form changes
  * act to act and carries the scene changes. A beat film (a line, a card, a cut, again) passes the beat rules above and
@@ -807,6 +817,74 @@ function spineDownbeats(T: Record<string, unknown>): number[] | null {
   return out;
 }
 
+/** The keys of src/product.tsx's OWN object (the film's own scenes by name), read by brace depth; [] without one. */
+function ownKeys(file: string): string[] {
+  if (!existsSync(file)) return [];
+  const t = readFileSync(file, 'utf8');
+  const at = /const OWN[^=]*=\s*\{/.exec(t);
+  if (!at) return [];
+  const keys: string[] = [];
+  let depth = 1;
+  let quote = '';
+  for (let i = at.index + at[0].length; i < t.length && depth > 0; i++) {
+    const c = t[i];
+    if (quote) {
+      if (c === '\\') i++;
+      else if (c === quote) quote = '';
+      continue;
+    }
+    if (c === "'" || c === '"' || c === '`') {
+      if (depth === 1) {
+        const m = /^(['"])([^'"]+)\1\s*:/.exec(t.slice(i));
+        if (m) {
+          keys.push(m[2]);
+          i += m[0].length - 1;
+          continue;
+        }
+      }
+      quote = c;
+    } else if (c === '{' || c === '(' || c === '[') depth++;
+    else if (c === '}' || c === ')' || c === ']') depth--;
+    else if (depth === 1 && /[A-Za-z_$]/.test(c) && /[\s,{]/.test(t[i - 1])) {
+      const m = /^([A-Za-z_$][\w$]*)\s*:/.exec(t.slice(i));
+      if (m) {
+        keys.push(m[1]);
+        i += m[0].length - 1;
+      }
+    }
+  }
+  return keys;
+}
+
+type DealScene = { name: string; bank: string | null; own?: boolean; line?: boolean; dealt?: boolean; why?: string };
+/** The deal rules on a template's DEAL_PLAN (see the deal family above); none without one. */
+function dealFindings(T: Record<string, unknown>): { findings: Finding[]; summary: Record<string, unknown> | null } {
+  const plan = T.DEAL_PLAN as { template?: string; scenes?: DealScene[]; last?: string[] } | undefined;
+  if (!plan || !Array.isArray(plan.scenes)) return { findings: [], summary: null };
+  const out: Finding[] = [];
+  const e = (check: string, message: string) => out.push({ check, severity: 'error', message });
+  const drawn = ownKeys(resolve(dirname(tlPath), 'product.tsx'));
+  const scenes = plan.scenes.map((x) => (drawn.includes(x.name) ? { ...x, bank: null, own: true, line: false, drawn: true } : { ...x, drawn: false }));
+  const pic = scenes.filter((x) => !x.line);
+  const bank = pic.filter((x) => x.bank);
+  const own = pic.filter((x) => !x.bank);
+  const share = pic.length ? bank.length / pic.length : 1;
+  if (share < 0.75 - 1e-9)
+    e('deal-share', `${bank.length} of ${pic.length} picture scenes come from the bank (${Math.round(share * 100)} %); 75 % or more are dealt from the house scenes: let the deal cast them`);
+  if (own.length > 1) e('deal-own', `${own.length} scenes of the film's own (${own.map((x) => x.name).join(', ')}); one at most: let the deal cast the rest`);
+  for (const x of scenes.filter((y) => y.drawn && !plan.scenes.find((z) => z.name === y.name)?.own))
+    e('deal-own', `scene "${x.name}" is drawn in src/product.tsx OWN over the scene the deal gave it: mark it \`own: true\` with its seconds in the spine (one a film), or delete the drawing`);
+  const ids = bank.map((x) => x.bank as string);
+  const twice = [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))];
+  if (twice.length) e('deal-twice', `${twice.join(', ')} plays twice; one house scene once a film`);
+  const last = Array.isArray(plan.last) ? plan.last : [];
+  const shared = [...new Set(ids.filter((id) => last.includes(id)))];
+  if (shared.length > 2) e('deal-shared', `${shared.length} scenes shared with the last film (${shared.join(', ')}); 2 at most: deal again`);
+  for (const x of pic.filter((y) => y.bank && y.dealt === false && !String(y.why ?? '').trim()))
+    e('deal-redraw', `scene "${x.name}" names ${x.bank} by hand with no reason: give it \`why\` (what rules the dealt scene out), or let the deal cast it`);
+  return { findings: out, summary: { template: plan.template ?? null, scenes: pic.length, bank: bank.length, share: Math.round(share * 100), own: own.length, shared: shared.length } };
+}
+
 /** --part spine: the spine rules alone, on any module that exports SPINE_PLAN. */
 function spineOnly(T: Record<string, unknown>) {
   const out: Finding[] = [];
@@ -821,16 +899,19 @@ function spineOnly(T: Record<string, unknown>) {
     out.push(...r.findings);
     summary = r.summary;
   }
+  const dealt = dealFindings(T);
+  out.push(...dealt.findings);
   const errors = out.filter((x) => x.severity === 'error').length;
   const warnings = out.length - errors;
   const pass = errors === 0 && !(strict && warnings > 0);
-  if (json) console.log(JSON.stringify({ tool: 'grid-check', part: 'spine', timeline: tlPath, pass, errors, warnings, summary: { spine: summary }, findings: out }, null, 1));
+  if (json) console.log(JSON.stringify({ tool: 'grid-check', part: 'spine', timeline: tlPath, pass, errors, warnings, summary: { spine: summary, deal: dealt.summary }, findings: out }, null, 1));
   else {
     for (const f of out) console.log(`${f.severity === 'error' ? 'FAIL' : 'warn'}  ${f.check}  ${f.message}`);
     const s = summary as { acts?: number; changes?: number; element?: number; withinActs?: number | null; speedOnly?: number; lines?: Record<string, number>; caseActs?: number[] } | null;
     console.log(s
       ? `grid-check spine: ${s.acts} acts, ${s.changes} scene changes, the element on ${s.element} % (${s.withinActs ?? '-'} % inside acts), speed alone ${s.speedOnly} %, lines ${Object.entries(s.lines ?? {}).map(([k, v]) => `${v} ${k}`).join(', ')}, the case in acts ${(s.caseActs ?? []).join(', ') || 'none'} -> ${pass ? 'pass' : 'FAIL'} (${errors} errors, ${warnings} warnings)`
       : `grid-check spine: no plan -> FAIL`);
+    if (dealt.summary) console.log(`grid-check deal: ${dealt.summary.bank} of ${dealt.summary.scenes} picture scenes from the bank (${dealt.summary.share} %), ${dealt.summary.own} own, ${dealt.summary.shared} shared with the last film`);
   }
   process.exit(pass ? 0 : 1);
 }
@@ -1912,6 +1993,10 @@ async function main() {
       warn('spine-declared', `a film from the ${template} template with no SPINE_PLAN: write the film as one sentence, one case, one element in 3-5 acts (the template's spine) and export SPINE_PLAN from the timeline`);
   }
 
+  // --- the deal: most scenes dealt from the bank, one of the film's own at most, none twice, two of the last film's at most
+  const dealt = dealFindings(T);
+  out.push(...dealt.findings);
+
   // --- report
   const errors = out.filter((x) => x.severity === 'error').length;
   const warnings = out.length - errors;
@@ -1942,6 +2027,7 @@ async function main() {
     onsets: onsets.length,
     shots: shotInfo,
     spine,
+    deal: dealt.summary,
   };
   if (json) console.log(JSON.stringify({ tool: 'grid-check', timeline: tlPath, pass, errors, warnings, summary, findings: out }, null, 1));
   else {

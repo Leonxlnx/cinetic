@@ -3,7 +3,7 @@
 // payments, a title that decodes, a mark born from two blobs ...). A film is 8-12 of them, each point a line on clean
 // ground and then its scene, the spine's one element carried from each scene's last form into the next. This file is
 // the timeline's side of the bank: what each scene takes and hands on, how long it runs, which verbs ask for it, what it
-// needs, the ground it was designed on, and the deal that picks a scene for an act's verb when the spine names none.
+// needs, the ground it was designed on, and the deal that casts the film's scenes from the bank at random.
 // Kept free of React, the brand tokens and the scene modules (the timeline imports it; the scenes import the timeline
 // through the tokens): the numbers mirror each scene's meta entry, and acts/bank.tsx checks them against the real metas
 // and fits each scene to its slot at draw time, so a scene always plays whole, never cut and never frozen early.
@@ -99,28 +99,67 @@ export const onScreen = (b: Box | null, W = 1920, H = 1080) => {
 const hash = (s: string) => {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-  return h >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  return (h ^ (h >>> 16)) >>> 0;
 };
-/** The scenes the last films played (new-film.sh writes RECENT; empty for a first film): the deal leaves them out while another fits. */
-const recentScenes = ((RECENT as Record<string, readonly string[] | undefined>).scenes ?? []) as readonly string[];
-/** The seed every scene deal starts from: the deck's direction when one is dealt, else the product's name. */
-export const SCENE_SEED = DEALT ? `direction:${DEALT.direction}` : DEAL_SOURCE;
-
-export type DealAsk = { act: number; k: number; verb: string; form?: Form; last: boolean; line?: boolean; have: readonly Need[]; used: readonly string[] };
+/** The deal's rules: most of a film's scenes from the bank, one of its own at most, two shared with the last film at most. */
+export const DEAL_RULES = { bankShare: 0.75, ownMax: 1, sharedMax: 2, ownSeconds: [1.5, 3] } as const;
 /**
- * The house scene an act's verb asks for, dealt: the scenes whose verbs hold the act's verb (the lockup: the 'end'
- * scenes; a scene that carries the act's line: the 'line' scenes), whose needs the film has, of the scene's form when
- * one is written; never one this film already plays, never one of the last films' while another fits. The same seed
- * and the same spine deal the same scenes; another product (or another direction) deals others.
+ * The house scenes each of the last films played, newest first (new-film.sh writes RECENT.hero from the film history,
+ * where film-diff.mjs --record keeps each film's PLAYED; an older RECENT.scenes counts as one film). Empty: a first film.
+ */
+export const HISTORY: readonly (readonly string[])[] = (() => {
+  const r = RECENT as { hero?: unknown; scenes?: unknown };
+  const films = (Array.isArray(r.hero) ? r.hero : []).filter((x): x is string[] => Array.isArray(x)).map((f) => f.filter((x) => typeof x === 'string'));
+  return films.length ? films : Array.isArray(r.scenes) && r.scenes.length ? [r.scenes.filter((x): x is string => typeof x === 'string')] : [];
+})();
+/** The seed the film's look starts from: the deck's direction when one is dealt, else the product's name. */
+export const SCENE_SEED = DEALT ? `direction:${DEALT.direction}` : DEAL_SOURCE;
+/** The seed the scene deal draws from: SCENE_SEED with the films before this one (the same name after another film deals anew). */
+export const DEAL_SEED = `${SCENE_SEED}#${HISTORY.slice(0, 3).map((f) => f.join('+')).join('|')}`;
+/** What the unnamed scaffold plays, slot by slot (a named film is dealt). */
+export const FLOOR_CAST = ['macro-type', 'page-fly', 'decode-title', 'toast-stack', 'blobs-to-mark'] as const;
+/** How a scene's weight falls when one of the last films played it (the last film first). */
+const RECENT_WEIGHT = [0.08, 0.3, 0.55, 0.8];
+/** The pull of a scene whose verbs hold the act's verb, of one that hands on the spine's form, of a big one. */
+const PULL = { verb: 3, form: 1.5, big: 1.8 } as const;
+
+export type DealAsk = { act: number; k: number; verb: string; form?: Form; last: boolean; line?: boolean; have: readonly Need[]; used: readonly string[]; seed?: string; history?: readonly (readonly string[])[]; floor?: string };
+/** A scene's weight in an act's deal: its verb, its form, its size, and how lately the last films played it. */
+export const dealWeight = (e: BankEntry, stem: string, form: Form | undefined, history: readonly (readonly string[])[] = HISTORY) =>
+  (e.verbs.some((v) => v === stem || stem.startsWith(v)) ? PULL.verb : 1) *
+  (form && e.handOut.form === form ? PULL.form : 1) *
+  (e.big ? PULL.big : 1) *
+  history.slice(0, RECENT_WEIGHT.length).reduce((a, f, j) => (f.includes(e.id) ? a * RECENT_WEIGHT[j] : a), 1);
+/**
+ * The house scene a slot is dealt: a seeded weighted draw (DEAL_SEED: the film's name or direction and the films before
+ * it) over every scene the film can show (the lockup from the 'end' scenes; a scene that carries the act's line from the
+ * 'line' scenes), weighted toward the act's verb, toward big scenes and away from the last films' scenes; never one this
+ * film already plays, and none of the last film's once the film shares DEAL_RULES.sharedMax with it. The same seed and
+ * the same spine deal the same scenes; another product, another direction or another history deals others.
  */
 export const dealScene = (q: DealAsk): string => {
+  const history = q.history ?? HISTORY;
   const stem = q.last ? 'end' : q.line ? 'line' : stemVerb(q.verb);
   const fits = (e: BankEntry) => (e.needs ?? []).every((n) => q.have.includes(n));
-  const byVerb = Object.values(BANK).filter((e) => e.verbs.some((v) => v === stem || stem.startsWith(v)) && fits(e));
-  const pool0 = byVerb.length ? byVerb : Object.values(BANK).filter((e) => !e.verbs.includes('end') && fits(e));
-  const sameForm = q.form ? pool0.filter((e) => e.handOut.form === q.form) : [];
-  const pool1 = (sameForm.length ? sameForm : pool0).filter((e) => !q.used.includes(e.id));
-  const pool2 = pool1.filter((e) => !recentScenes.includes(e.id));
-  const pool = pool2.length ? pool2 : pool1.length ? pool1 : pool0;
-  return pool[hash(`${SCENE_SEED}:${q.act}:${q.k}:${stem}`) % pool.length].id;
+  const all = Object.values(BANK).filter((e) => fits(e) && (q.last ? e.verbs.includes('end') : !e.verbs.includes('end')));
+  const lines = q.line && !q.last ? all.filter((e) => e.verbs.includes('line')) : all;
+  const pool0 = lines.length ? lines : all;
+  const free = pool0.filter((e) => !q.used.includes(e.id));
+  const last = history[0] ?? [];
+  const shared = q.used.filter((id) => last.includes(id)).length;
+  const fresh = shared >= DEAL_RULES.sharedMax ? free.filter((e) => !last.includes(e.id)) : free;
+  const pool = fresh.length ? fresh : free.length ? free : pool0;
+  if (q.floor && pool.some((e) => e.id === q.floor)) return q.floor;
+  const seed = q.seed ?? DEAL_SEED;
+  let best = pool[0];
+  let top = -Infinity;
+  for (const e of pool) {
+    // the weighted draw (log u / w, the largest wins): a scene of twice the weight wins about twice as often
+    const u = (hash(`${seed}:${q.act}:${q.k}:${e.id}`) + 0.5) / 4294967296;
+    const key = Math.log(u) / dealWeight(e, stem, q.form, history);
+    if (key > top) [top, best] = [key, e];
+  }
+  return best.id;
 };

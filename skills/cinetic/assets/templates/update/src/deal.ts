@@ -292,12 +292,24 @@ export const joins = (a: string, b: string): boolean => {
 
 /** What the unnamed scaffold plays first. */
 export const FLOOR_HERO: string[] = ['macro-type', 'toast-stack', 'porthole-line', 'page-fly', 'photo-river', 'decode-title', 'glass-prompt', 'photo-counters', 'orbit-chips'];
-const RECENT_WEIGHT = [0.12, 0.3, 0.55, 0.8];
-const recentHero: readonly (readonly string[])[] = (((RECENT as { hero?: unknown }).hero ?? []) as unknown[]).filter((x): x is string[] => Array.isArray(x));
-/** The change scenes in a film's own order: a weighted shuffle seeded by the name, the last films' scenes late. */
+/** The end's scene: the brand's mark as a solid pulling back into the lockup. */
+export const HERO_END = 'mark-pullback';
+const RECENT_WEIGHT = [0.08, 0.3, 0.55, 0.8];
+/** The deal's rules: every change scene from the bank (an update film has no scene of its own), two change scenes shared with the last film at most. */
+export const DEAL_RULES = { bankShare: 0.75, ownMax: 1, sharedMax: 2 } as const;
+/** The pull of a big scene in the deal, and how many places in the order each of a change's words that ask for a scene is worth. */
+const BIG_PULL = 1.8;
+const ASK_PULL = 1.5;
+/** The scenes each of the last films played, newest first (src/recent.ts hero, from the film history). */
+export const HISTORY: readonly (readonly string[])[] = (((RECENT as { hero?: unknown }).hero ?? []) as unknown[]).filter((x): x is string[] => Array.isArray(x));
+const recentHero = HISTORY;
+/**
+ * The change scenes in a film's own order: a weighted shuffle seeded by the name and the films before it (the same name
+ * after another film deals anew), big scenes early, the last films' scenes late.
+ */
 export const heroOrder = (name: string, recent: readonly (readonly string[])[] = []): string[] => {
-  const r = rng(hashSeed(`${name.trim().toLowerCase()}#scene`));
-  const w = (id: string) => recent.slice(0, RECENT_WEIGHT.length).reduce((a, s, k) => (s.includes(id) ? a * RECENT_WEIGHT[k] : a), 1);
+  const r = rng(hashSeed(`${name.trim().toLowerCase()}#scene#${recent.slice(0, 3).map((f) => f.join('+')).join('|')}`));
+  const w = (id: string) => (SCENE_SPEC[id]?.big ? BIG_PULL : 1) * recent.slice(0, RECENT_WEIGHT.length).reduce((a, s, k) => (s.includes(id) ? a * RECENT_WEIGHT[k] : a), 1);
   return PICTURE_HEROES.map((id) => ({ id, k: r() ** (1 / w(id)) })).sort((a, b) => b.k - a.k).map((x) => x.id);
 };
 /** The deck's scenes (src/dealt.ts hero, then heroReserve), checked against HERO_META. */
@@ -322,7 +334,7 @@ export const HERO_ORDER: { order: string[]; source: string } = DECK_HERO
  * scene takes over an element the scene before can hand on (a send button pressed), the change before takes that scene
  * when it shows it too, so the two join on one element (a match cut, no line card between them).
  */
-export const planScenes = (order: readonly string[], changes: readonly Change[]): string[] => {
+export const planScenes = (order: readonly string[], changes: readonly Change[], last: readonly string[] = recentHero[0] ?? []): string[] => {
   const out: (string | null)[] = changes.map((c) => {
     if (!c.scene) return null;
     if (!heroMeta(c.scene) || heroMeta(c.scene)!.role !== 'picture') throw new Error(`update.ts: ${c.id} names the scene "${c.scene}"; the change scenes are ${PICTURE_HEROES.join(', ')}`);
@@ -331,10 +343,17 @@ export const planScenes = (order: readonly string[], changes: readonly Change[])
   });
   const opts = changes.map((c) => {
     const fit = order.filter((id) => sceneFit(id, c) >= 2);
-    return fit.slice().sort((a, b) => asks(b, c) - asks(a, c) || fit.indexOf(a) - fit.indexOf(b));
+    // the change's words pull a scene ASK_PULL places forward in the dealt order, never past the deal itself
+    return fit.slice().sort((a, b) => fit.indexOf(a) - ASK_PULL * asks(a, c) - (fit.indexOf(b) - ASK_PULL * asks(b, c)));
   });
+  // two of the last film's change scenes at most (the lockup every update film ends on is not counted): past that, a
+  // scene it played only when nothing else films the change
+  const shared = () => out.filter((id) => id && last.includes(id)).length;
+  const fresh = (id: string) => !out.includes(id) && (shared() < DEAL_RULES.sharedMax || !last.includes(id));
   const turn = changes.map((_, i) => i).filter((i) => !out[i]).sort((a, b) => opts[a].length - opts[b].length || a - b);
-  for (const i of turn) out[i] = opts[i].find((id) => !out.includes(id)) ?? opts[i][0] ?? order.find((id) => sceneFit(id, changes[i]) >= 1) ?? null;
+  for (const i of turn)
+    out[i] =
+      opts[i].find(fresh) ?? opts[i].find((id) => !out.includes(id)) ?? order.find((id) => sceneFit(id, changes[i]) >= 1 && fresh(id)) ?? order.find((id) => sceneFit(id, changes[i]) >= 1 && !out.includes(id)) ?? opts[i][0] ?? null;
   for (let i = 0; i < out.length; i++) {
     if (!out[i]) {
       const c = changes[i];
@@ -345,7 +364,7 @@ export const planScenes = (order: readonly string[], changes: readonly Change[])
   if (!out.some((id) => SCENE_SPEC[id as string].big)) {
     for (let i = 0; i < changes.length; i++) {
       if (changes[i].scene) continue;
-      const big = order.find((id) => SCENE_SPEC[id].big && sceneFit(id, changes[i]) >= 1 && !out.includes(id));
+      const big = order.find((id) => SCENE_SPEC[id].big && sceneFit(id, changes[i]) >= 1 && fresh(id));
       if (big) {
         out[i] = big;
         break;
@@ -355,7 +374,7 @@ export const planScenes = (order: readonly string[], changes: readonly Change[])
   for (let i = 0; i + 1 < changes.length; i++) {
     const next = out[i + 1] as string;
     if (changes[i].scene || !SCENE_SPEC[next].carries || joins(out[i] as string, next)) continue;
-    const link = opts[i].find((id) => joins(id, next) && !out.includes(id));
+    const link = opts[i].find((id) => joins(id, next) && fresh(id));
     if (link && (SCENE_SPEC[link].big || !SCENE_SPEC[out[i] as string].big)) out[i] = link;
   }
   return out as string[];
@@ -364,8 +383,6 @@ export const planScenes = (order: readonly string[], changes: readonly Change[])
 export const HEROES: string[] = planScenes(HERO_ORDER.order, UPDATE.changes);
 /** Where change i hands its element straight into change i + 1's scene (a match cut: no line card for i + 1). */
 export const LINKED: boolean[] = HEROES.map((id, i) => i + 1 < HEROES.length && joins(id, HEROES[i + 1]) && SCENE_SPEC[HEROES[i + 1]].carries);
-/** The end's scene: the brand's mark as a solid pulling back into the lockup. */
-export const HERO_END = 'mark-pullback';
 
 // ---------------------------------------------------------------------------------------------- the lines
 /**
@@ -399,3 +416,17 @@ export const LINE_MIN = 96;
 export const DEAL_SOURCE = `${SEED !== null ? `SEED ${SEED}` : UNNAMED ? 'the floor (the name slot is still [Product])' : `the name "${IDENTITY.name}"`}${Object.keys(PIN).length ? `, pinned: ${Object.keys(PIN).join(', ')}` : ''}; scenes from ${HERO_ORDER.source}`;
 /** The scenes that play, in film order (the changes' and the end's), for the print and the film history. */
 export const PLAYED: string[] = [...new Set([...HEROES, HERO_END])];
+/**
+ * The deal as the checks read it (scripts/grid-check.ts deal-*): each scene in film order with its house scene, whether
+ * the deal gave it or the change named it (and why), and the last film's scenes (the lockup every update film ends on
+ * is left out of them). Every scene of an update film is a house scene; none plays twice; two at most are the last film's.
+ */
+export const DEAL_PLAN = {
+  template: 'update',
+  seed: HERO_ORDER.source,
+  scenes: [
+    ...HEROES.map((id, i) => ({ name: UPDATE.changes[i].id, bank: id, own: false, line: false, dealt: !UPDATE.changes[i].scene, ...(UPDATE.changes[i].scene ? { why: UPDATE.changes[i].why ?? '' } : {}) })),
+    { name: 'lockup', bank: HERO_END, own: false, line: false, dealt: true },
+  ],
+  last: (recentHero[0] ?? []).filter((id) => id !== HERO_END),
+};
