@@ -41,7 +41,7 @@ stop`) adds the gap to its one element and 1 s rings out after it.
 |---|---|---|---|
 | `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing to one case, point by point | 8-12 house scenes of the scene bank (`src/scenes`, 1.5-3 s each, two big at least) cast by `src/spine.ts` (one sentence as 3-5 acts, one case, one element handed on at every scene change), the rest dealt by each act's verb and varied film to film; lines alone on clean ground for the promise and one point; presses with a real pointer; a designed palette (one accent, white, near-black, the accent field) painted on each scene's own ground; the lockup a house scene; the direction you pick from the deck's three seeds the deal and the type pairing (`deck.py --direction <id> --why` writes `src/dealt.ts`) |
 | none (the starter, `--template none`) | 15-45 s | a launch film whose idea is its own device | the dealt direction's skeleton |
-| `update` | 8-20 s (two changes run 11-15 s) | "vX is out": 2-3 changes, each understood at a glance | the hook (the name and the version on a clean ground), then each change as its line alone on the ground of its scene and one house scene from the scene bank that proves it, 2-4 s a change (a pointer pressing send into a porthole holding the change's picture as its line parts round it, a request typed at macro scale, notifications stacking in depth on the accent field, a page flown, pictures pumped into a row in depth ...), at least one big scene, two scenes joined on one element where they can; the mark pulls back into the lockup and the version lands on the bar line; colours from the brand or a dealt palette |
+| `update` | 8-20 s (two changes run 9-12 s) | "vX is out": 2-3 changes, each understood at a glance | the hook (the name and the version on a clean ground, moving from the first frame), then each change as its line alone on the ground of its scene (big, whole or in 2-3 chunks, read in 1.2 s) and one house scene from the scene bank that proves it, 2-4 s a change (a typed one 3 s, no scene over 3 s) (a pointer pressing send into a porthole holding the change's picture as its line parts round it, a request typed at macro scale, notifications stacking in depth on the accent field, a page flown, pictures pumped into a row in depth ...), at least one big scene, two scenes joined on one element where they can; the mark pulls back into the lockup (one snap, the lockup gone 2 s after it forms) and the version lands on the bar line; every length in `src/deal.ts` LIMITS, a plan outside them fails; colours from the brand or a dealt palette |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
 | `capability-reel` | 15-25 s | only when the brief asks for a wall of the product's breadth (sources, formats, integrations); never the default | a ring of sources, one real record, a statement, a capability ticker, the big claim on the accent, a transition out of its full stop, the end card |
 | `camera-teaser` | 20-25 s | a dark, fast teaser of a product's screens where the motion is the camera's: whips, pushes, one 3D turn over one layout per shot | the request box arriving tilted in the light, a whip into its close-up and the send button, the window streaming code under the one 3D turn, the proof in depth with the real marks of what it works with, the page with a modal toast, the stages, the mark; each act deals one of two or three devices |
@@ -99,15 +99,19 @@ and the one fact under the lockup. Then `src/content.ts` fills whatever a scene'
 
 "vX is out", told by the product itself (`references/update-films.md`), assembled from the scene bank (`src/scenes`):
 the hook (`hook`: the version's pill lands beside the name, `roll`s from the old numerals, or cuts on as a `tag`),
-then each change in the order the session meets it as its line alone on the ground of its scene and the house scene
-that proves it, 2-4 s a change (`src/deal.ts` HERO_META and `sceneFit`: porthole-line for a press that opens a picture,
+then each change in the order the session meets it as its line alone on the ground of its scene (big: a cap of 8 % of
+the frame; whole or in 2-3 chunks, `voice` whole / chunks / track; in and read in 1.2 s) and the house scene that proves
+it, 2-4 s a change, a typed change 3 s, no scene over 3 s (`src/deal.ts` HERO_META and `sceneFit`: porthole-line for a press that opens a picture,
 decode-title for a short press, macro-type or glass-prompt for a typed request, toast-stack for a list, page-fly for a
 page, photo-river for 8+ pictures, photo-counters for a figure on a picture, orbit-chips for 3+ partners), at least one
 big scene a film; where a scene hands on the very element the next takes over (macro-type's send button, pressed by
 porthole-line's pointer) the two join on a match cut and the second sets its own line. Every press is a real pointer;
-text stands only on a clean ground. The end is always the mark-pullback, the version landing under the lockup as a pill
-on the bar line that ends the body (STRUCTURAL); the hook, the cards and the scenes with a rest take the time that bar
-line leaves, so the lockup never waits. Colours: the brand's (`src/brand/tokens.ts`) or a palette dealt per film
+text stands only on a clean ground; the other changes come in through a defocus (the cut inside the blur) and a card's
+line dissolves off over its scene. The end is always the mark-pullback (one snap to the lockup), the version landing
+under the lockup as a pill on the bar line that ends the body (STRUCTURAL), the film over 2 s after the lockup forms;
+the hook, the scenes with a rest and the pull-back's rest take the time that bar line leaves, never the cards. Every
+length is `src/deal.ts` LIMITS: `src/timeline.ts` throws on a plan outside them (grid-check, the Studio and the render
+stop and name what to shorten). Colours: the brand's (`src/brand/tokens.ts`) or a palette dealt per film
 (`palette`: a near-black or a white ground and one accent; never a tinted wash, never the starter's green, never a
 scene's demo colours), each scene on the ground its picture needs. The deal (`src/deal.ts`, template.json "slots"):
 palette, hook, voice (the lines' move), set (their size) and the scenes (the deck's `src/dealt.ts`, else the name's).
