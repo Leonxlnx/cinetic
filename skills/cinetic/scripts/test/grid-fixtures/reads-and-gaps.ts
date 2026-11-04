@@ -1,6 +1,6 @@
-// Fixture for scripts/test/grid-check.test.mjs. expect: event-gap=1
+// Fixture for scripts/test/grid-check.test.mjs. expect: event-gap:warn=1
 // A held read carries the gap it sits in (no tick planted in it), up to readMax (150 f when
-// calm); a stretch with nothing on screen and no event still fails.
+// calm); a stretch with nothing on screen and no event warns (a hold may rest: rest-past.ts fails past 2.5 s).
 export const FPS = 60;
 export const BPM = 100;
 export const PACE_NAME = 'calm';

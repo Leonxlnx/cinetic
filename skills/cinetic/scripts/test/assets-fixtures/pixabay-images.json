@@ -1,0 +1,17 @@
+{
+ "_shape": "the Pixabay API image search response (documented fields; not a live recording)",
+ "total": 1,
+ "hits": [
+  {
+   "id": 3001,
+   "pageURL": "https://pixabay.com/photos/coast-3001/",
+   "tags": "coast, rocks, sea",
+   "previewURL": "https://cdn.pixabay.com/photo/3001_150.jpg",
+   "webformatURL": "https://pixabay.com/get/3001_640.jpg",
+   "largeImageURL": "https://pixabay.com/get/3001_1280.jpg",
+   "imageWidth": 5472,
+   "imageHeight": 3648,
+   "user": "e_photographer"
+  }
+ ]
+}

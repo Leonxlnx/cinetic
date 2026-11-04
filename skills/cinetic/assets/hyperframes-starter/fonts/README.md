@@ -7,15 +7,15 @@ Why local:
 - A hosted web-font link is fetched at build time and fails when the render runs offline.
 - `hyperframes lint` reports `font_family_without_font_face` for any family it cannot resolve.
 
-The starter uses one variable sans, Geist, as a stand-in: its `@font-face` block in `index.html` carries a `cinetic:placeholder` marker, and `lint-film.mjs` fails until you choose the family for this brand's personality (`references/brand-and-color.md` §2 in the skill) and delete the marker. `npm install` runs `setup.mjs`, which copies the face here from its `@fontsource-variable/*` package:
+The starter uses the face set's default, Inter (its opsz file, so film sizes take the display cut): its `@font-face` block in `index.html` carries a `cinetic:placeholder` marker, and `lint-film.mjs` fails until you choose the look (`references/copy-and-type.md` §6 and `scripts/faces.json` in the skill; `node scripts/add-font.mjs --list`) and delete the marker. `npm install` runs `setup.mjs`, which copies the face here from its `@fontsource-variable/*` package:
 
 ```
-fonts/geist-latin-wght-normal.woff2   <-  node_modules/@fontsource-variable/geist/files/
+fonts/inter-latin-opsz-normal.woff2   <-  node_modules/@fontsource-variable/inter/files/
 ```
 
 To swap the family, or to add a mono (for code or tabular numbers):
-1. `npm i -D @fontsource-variable/schibsted-grotesk` (a sans from the table in `references/brand-and-color.md` §2, or the brand's package; the file is `files/<name>-latin-wght-normal.woff2`).
-2. Add a line to `COPIES` in `setup.mjs`, e.g. `['node_modules/@fontsource-variable/schibsted-grotesk/files/schibsted-grotesk-latin-wght-normal.woff2', 'fonts/schibsted-grotesk-latin-wght-normal.woff2']`, then run `node setup.mjs`.
+1. `npm i -D @fontsource-variable/dm-sans` (a face from the set, or the brand's package; the file is `files/<name>-latin-wght-normal.woff2`, or `-latin-opsz-normal.woff2` for a face with an optical size).
+2. Add a line to `COPIES` in `setup.mjs`, e.g. `['node_modules/@fontsource-variable/dm-sans/files/dm-sans-latin-opsz-normal.woff2', 'fonts/dm-sans-latin-opsz-normal.woff2']`, then run `node setup.mjs`.
 3. Add its `@font-face` block and use the family name literally in `font-family` (lint cannot see through `var(...)`).
 
 When `node_modules` is shared with other projects (`new-film.sh --link-modules`), `npm i` would write into that shared folder. Use `node scripts/add-font.mjs <name>` instead of steps 1–2: it fetches the package with `npm pack` into a temp folder, copies the upright latin and latin-ext `.woff2` files and the licence into `fonts/`, and prints the `@font-face` blocks for step 3.

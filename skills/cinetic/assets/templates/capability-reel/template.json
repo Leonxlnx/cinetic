@@ -1,0 +1,56 @@
+{
+ "name": "capability-reel",
+ "about": "A 15-25 s launch close (or a short launch film on its own): one line inside a ring of sources, the ring tightening as it becomes a disc that grows into one real record, a statement on a light card that squashes round its line, a ticker through what the product returns, the big claim on the accent in two beats, a graphic transition out of its full stop, and the end card. new-film.sh --template capability-reel lays these files over the Remotion starter.",
+ "engine": "remotion",
+ "pace": "crisp",
+ "type_family": "bold",
+ "bpm": 120,
+ "music": {
+  "required": true,
+  "slot": "audio/music/",
+  "about": "Every reel is cut to a licensed, human-made, instrumental track (references/music.md): its cuts and swaps sit on the track's drum onsets and earshot effects mark the state changes; never effects only.",
+  "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 118-134 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track); 118-134 BPM with a punchy kick suits the template's cuts on kicks",
+  "add": "bash scripts/new-film.sh <dir> --template capability-reel --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
+  "then": [
+   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end auto  (its own ending, else a fade: never a cut)",
+   "python3 scripts/audio/track.py grid",
+   "python3 scripts/audio/track.py check"
+  ]
+ },
+ "next": [
+  "capability reel: fill src/reel.ts (the script in plain words: line 1 says what the product is, 2-7 words a line, and the product's own sources, record and capabilities in every [slot]),",
+  "  the record's real picture (reel.ts record.photo): node scripts/assets.mjs search \"<the record's subject>\" --kind photo --no-people --fit 4:5, sheet, get '#n' --to public/assets, grade; never a drawn object,",
+  "  rebuild the product's real record in src/acts/Record.tsx where the kit stands in, then deal its direction:",
+  "  python3 scripts/deck.py --brief \"<one line>\" --format launch --have ui --options 3 (references/templates.md)",
+  "  the sources' real marks: node scripts/logos.mjs get <name> --film . for each source (their slugs in reel.ts logo)"
+ ],
+ "copy": [
+  "src/reel.ts",
+  "src/timeline.ts",
+  "src/Film.tsx",
+  "src/Root.tsx",
+  "src/sync.ts",
+  "src/acts/stage.tsx",
+  "src/acts/Sources.tsx",
+  "src/acts/Record.tsx",
+  "src/acts/Statement.tsx",
+  "src/acts/Ticker.tsx",
+  "src/acts/Claim.tsx",
+  "src/acts/Rings.tsx",
+  "src/acts/End.tsx",
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "keep_if_present": [
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "remove": [
+  "src/acts/Act1.tsx",
+  "src/acts/Act2.tsx",
+  "src/acts/Act3.tsx",
+  "src/acts/Act4.tsx",
+  "src/acts/ground.tsx",
+  "src/acts/plate.tsx"
+ ]
+}

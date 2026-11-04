@@ -1,0 +1,4 @@
+{
+ "_shape": "a Burst search grid reduced to the img attributes parseBurstList reads, hand-written (not their markup); one card repeats, one img has no photo id",
+ "html": "<div class=\"grid\">\n<img data-photo-title=\"Example Barista Pours Milk\" data-photo-id=\"9001\" src=\"https://burst.shopifycdn.com/photos/example-barista-pours-milk.jpg?width=1000&amp;format=pjpg&amp;exif=0&amp;iptc=0\" alt=\"example barista pours milk\">\n<img alt=\"example desk by a window\" src=\"https://burst.shopifycdn.com/photos/example-desk-by-a-window.jpg?width=1000&amp;format=pjpg\" data-photo-id=\"9002\">\n<img data-photo-title=\"Example Barista Pours Milk\" data-photo-id=\"9001\" src=\"https://burst.shopifycdn.com/photos/example-barista-pours-milk.jpg?width=373\" alt=\"example barista pours milk\">\n<img src=\"https://burst.shopifycdn.com/assets/example-logo.svg\" alt=\"\">\n</div>"
+}

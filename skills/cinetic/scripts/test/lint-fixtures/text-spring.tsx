@@ -1,4 +1,4 @@
-// Fixture for scripts/test/lint-film.test.mjs. expect: text-spring:warn=3
+// Fixture for scripts/test/lint-film.test.mjs. expect: text-spring:warn=3 scale-from-zero:warn=2 deprecated-token:warn=4 spring-budget:warn=3
 // Overshooting springs that move text warn (a preset, an alias of one, spr()'s snap default);
 // SPR.calm on text and a snap spring on a shape do not.
 import React from 'react';

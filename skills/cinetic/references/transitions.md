@@ -1,214 +1,449 @@
 # Transitions
 
-Covers how a film moves from shot to shot: selection rules, the energy table, the seam laws, a catalogue of twelve designed seams (each with frames, curves and its failure mode), the bans, and when to use `@remotion/transitions`. Read it while planning seams in the beat sheet (Steps 1–3) and before building any act boundary.
+How a cinetic film gets from one shot to the next. A scene change flows when something carries across it: the ground
+stays, the motion runs on, or one anchor (a word slot, a shape, a held object) keeps its place. A hard cut is a normal
+seam when it carries one of those; it reads as a jolt only when it carries nothing, or when it flips the ground from
+light to dark. Never a crossfade between unrelated shots. Read this while planning seams in the beat sheet
+(Steps 1-3) and before building any act boundary: pick each seam from the recipes in §2, build it with `fx/Seam`
+(or the primitive the recipe names), declare it, and let `forensics.py` count what each cut carries.
 
-The frame counts and curves are proven defaults from shipped films (Tessel's are quoted where they came from). Keep the laws; tune the numbers to the film's energy.
+Every primitive below is a pure state function of the frame (`xxxState(frame, props, film)`, closed form, fractional
+frames and any order) plus a thin component drawn with transforms, opacity, clip paths and masks. Soft shapes come
+from gradients or static pre-blurred plates, never from an animated blur radius; defocus is at most two copies at
+fixed levels (`lib/defocus`); when a defocused layer also fades, fade the group and let the copies mix by their
+weights inside it. Every fx exports `declares(props, film)`: the seams, flashes and stepped frames it makes on purpose,
+so the checks treat them as craft. Numbers are 60 fps frames (`f@60`) and px at 1080p unless they say otherwise.
 
 **Contents**
-1. [Selection rules](#1-selection-rules)
-2. [Energy](#2-energy)
-3. [Seam laws](#3-seam-laws)
-4. [The seam catalogue](#4-the-seam-catalogue)
-5. [Bans](#5-bans)
-6. [`@remotion/transitions` and the grid](#6-remotiontransitions-and-the-grid)
-7. [Seam plan and checks](#7-seam-plan-and-checks)
+1. [The seam rules](#1-the-seam-rules)
+2. [Recipes at 60 fps](#2-recipes-at-60-fps)
+3. [Pick the seam from the content](#3-pick-the-seam-from-the-content)
+4. [Iris](#4-iris)
+5. [Morph, MorphChain and MatchCut](#5-morph-morphchain-and-matchcut)
+6. [Exposure and LightSweep](#6-exposure-and-lightsweep)
+7. [BlockStep, Window, TypeWindow](#7-blockstep-window-typewindow)
+8. [Dive, BlobRing, Wipe](#8-dive-blobring-wipe)
+9. [CutFx: cuts dressed with what is on screen](#9-cutfx-cuts-dressed-with-what-is-on-screen)
+10. [Pixel devices](#10-pixel-devices)
+11. [Camera seams](#11-camera-seams)
+12. [Sound-led cuts](#12-sound-led-cuts)
+13. [Bans](#13-bans)
+14. [`@remotion/transitions` and the grid](#14-remotiontransitions-and-the-grid)
+15. [Checks](#15-checks)
 
 ---
 
-## 1. Selection rules
+## 1. The seam rules
 
-- **A seam is a designed match, not a cut between unrelated pictures.** Something carries across: the story device, a shape, a colour, a direction of motion or a velocity.
-- **The story device never blinks.** It stays at full opacity through every seam and is handed from scene to scene as a shared prop.
-- **6–8 transition types per film, each used at most twice.** Velocity-matched cuts are exempt. Variety within a grammar reads as authored; one type repeated reads as a preset.
-- **One signature move derived from the mark,** used three times: open, middle, close. In Tessel it was the red "now" dot growing into a flood or collapsing into a point.
-- **Seams land on the grid.** Act changes on downbeats; the cut frame (or the frame a flood fills the screen) is where the sound hits (`references/timing-grid.md`).
-- **Pick the seam from the story moment**, then its energy (§2), then check it against its failure mode (§4).
-- **No element crosses the frame faster than about 60–80 px/f.** Motion blur makes fast motion read as motion only up to a point: past it, a 240° shutter smears an element into a streak longer than itself, and the samples that fit in a frame show as stepped copies. A whip that needs 300 px/f is a seam that wants to be a cut on the beat, a match cut, a mask wipe, or a shorter distance with the rest of the travel hidden behind the cut. `measure-speed.py` lists the frames over 80 px/f (`too_fast`) when the master renders; design them away before that.
+**Every hard cut carries a device.** A hard cut (one frame, most of the picture new) is fine, about a third of a
+film's scene changes, when it carries at least one of:
 
-## 2. Energy
+| Device | What it means on screen | Measured as |
+|---|---|---|
+| Ground kept | the same paper, field or gradient on both sides; only the content changes | the frame's border colour moves under 30 code values |
+| Blur at the seam | the cut sits inside a blur: the outgoing shot softens into it, the incoming one resolves out of it | sharpness dips 0.4 log units or more around the cut |
+| Anchor held | one thing keeps its screen place: the word slot, a shape's centre, a held subject (its size may jump) | an anchor within 10 px across the cut, or under 35 % of the frame changing |
+| Motion carried | the outgoing shot accelerates into the cut, the incoming one already moves the same way and decays | the same direction (cos 0.7 or more), 90 px/s or faster out, 60 px/s in |
 
-| Energy | Duration | At 60 fps | Curve family | Transient blur | Typical seams |
-|---|---|---|---|---|---|
-| Calm | 0.5–0.8 s | 30–48 f | sine-like: `E.smooth`, `E.dolly`, `E.inOut` on morphs | 20–30 px (defocus) | container morph, rack focus, slow iris, pull-back |
-| Medium | 0.3–0.5 s | 18–30 f | cubic-like: `E.glide`, `E.whip`, `E.ui` | 8–15 px | whip, split on a seam, partial slide |
-| High | 0.15–0.3 s | 9–18 f | expo-like: `E.in` / `E.out`, `E.contact` | 3–6 px | zoom-through, velocity-matched cut, implosion, flood |
+A cut with none of them is bare: **at most 10 % of a film's hard cuts are bare** (`forensics.py` carried-cut).
 
-- Match the seam's energy to the music at that point: a high-energy seam on a drop, a calm one across a breakdown.
-- **Text-led films default to calm seams.** In the calm pace use at most 2 high-energy seams per film, each in a stretch with no text being read; a seam never fires while a fragment is still in its reading hold. Text leaves before or with the seam (its whole-fragment exit, 24 f), never in the middle of it.
-- Blur here is the transient softness a seam adds on purpose (a defocus, a zoom smear). Speed blur on fast motion comes from the motion-blur render pass (`references/finishing.md`), whose samples never cross an act boundary, so hard cuts stay crisp.
+**The ground flips at most twice a film.** A light ground cut to a dark one (or back) is a colour event, the loudest
+seam there is: at most 2 in a film, each a declared colour event (a `colour` seam or a `COLOUR` range), placed where
+the story turns. Pick one ground family and let the cuts keep it.
 
-## 3. Seam laws
+**Vary the seams.** The most-used seam kind covers **at most 45 %** of a film's scene changes: plan 3-4 kinds. A
+typical mix: hard cuts that carry a device about a third; match-cut and exit-then-enter about a tenth each; blur-through
+and velocity-cut about one in sixteen each; then shared element, zoom-through, morph, mask, card expand, whip, wipe.
+A film with 4 or more lines moves from line to line at least once with an exit-then-enter, a text-swap or a match-cut
+on a kept ground (a type film uses them as its workhorse).
 
-1. **Both sides at rest, or the incoming shot starts at the outgoing velocity.** Anything else is a visible jerk.
-2. **Accelerate out, cut at peak speed, decay in.** The outgoing move accelerates about ×1.1–1.2 per frame over its last 10–24 f (`E.exit`; `E.in` is steeper and suits implosions), the cut lands at its peak velocity, and the incoming move enters at 20–45 px/f and decays about ×0.89–0.94 per frame (a time constant of about 12 f, `E.out` over 48–84 f).
-3. **Match every property across the cut:** position, size, radius, colour, shadow, opacity, blur. A property that flips at the cut pops (a dot whose opacity went 0 → 1, a pill that appeared).
-4. **The rest pose appears once.** If a move comes to rest on pose P and the next act opens on P, the outgoing act's last frame is the move's last in-between and the incoming act's frame 0 is P. Showing P twice reads as stop-hold-go.
-5. **Place things the same way on both sides.** If one act positions an element by layout and the next by transform, sub-pixel differences show as a whole-UI shimmer on the cut (0.42 px in Tessel). Share the placement function.
-6. **Never cross-fade two copies of one object.** Morph one object, wipe chrome away with a clip, and swap content on a single element at the arc apex (when progress passes 0.5).
+**Declare every seam** in `SEAMS` (`{ at, kind, carry?, dir?, signature?, id? }`); `seamDeclares()` of `fx/Seam`
+writes the seam for a recipe and names it in the id (`exitEnter:line-2`), which the checks read. One or two signature
+seams per film (`signature: true`), the rest quieter; never the same device twice in a row. No dissolve between
+unrelated shots, and no fade to black except at the very end.
 
-Velocity matching from the real curves, so the numbers are exact for whole frames:
+**The laws every seam keeps:**
+1. **Accelerate out, cut at peak speed, decay in.** Both sides at rest, or the incoming shot opens at 0.4-1.4x the
+   outgoing speed in the same direction and decays (`lib/handoff.ts` `launch`, `carry`).
+2. **Match every property across the cut**: position, size, radius, colour, shadow, opacity, blur. A property that
+   flips at the cut pops.
+3. **The rest pose appears once.** The outgoing act's last frame is the move's last in-between; the incoming act's
+   frame 0 is the pose.
+4. **Place things the same way on both sides** (one placement function), or the cut shimmers.
+5. **Never cross-fade two copies of one object.** Morph one object, swap content on one element at the fastest frame.
+6. **The seam starts from what the eye is on**, and the story device never blinks.
+7. **The incoming shot arrives already moving** (a slide, a settle, a focus resolving), never parked.
+8. **A discrete frame is designed** (a flash, a block, a held step): declared and rendered from one sample.
 
-```ts
-import { E, type Ease } from '../lib/anim';
+## 2. Recipes at 60 fps
 
-/** px/f on the last frame of a D px move over T frames (E.in: its fastest frame). */
-export const exitSpeed = (D: number, T: number, ease: Ease = E.in) => D * (ease(1) - ease(1 - 1 / T));
-/** Distance an incoming move over T frames needs to start at v px/f. */
-export const entryDistance = (v: number, T: number, ease: Ease = E.out) => v / (ease(1 / T) - ease(0));
+Each recipe gives the frames, the curves and the blur; `fx/Seam` builds the first seven (`recipe` in brackets), the
+others name their primitive. `at` is always the incoming shot's first frame.
 
-// exit 300 px over 24 f on E.in -> 71.7 px/f at the cut, just inside the ~80 px/f ceiling; the entry
-// over 90 f on E.out then travels entryDistance(71.7, 90) = about 1050 px, in the same screen direction
+**Exit-then-enter** (`exitEnter`) - the house seam for centred type: the ground never cuts, so the next line reads as
+the next thought.
+- The ground (colour, gradient, glow) keeps moving through the whole seam.
+- Exit 12-18 f (house 15): the outgoing elements accelerate away 8-24 px (cubic-in or expo-in; the step grows about
+  x1.3-1.5 a 30 fps frame), opacity 1 -> 0, blur 0 -> 10-12 px.
+- Gap 0-6 f (house 3): only the ground and its light move (a glow rising, a field brightening).
+- Enter 14-24 f (house 20): blur 10-12 -> 0 px, opacity 0 -> 1, rising 16-24 px into place on expo-out; the line is
+  sharp again about 20 f after the swap. If a hard cut does the swap, put it inside the blur.
+
+**Text-swap** (`textSwap`) - inside a scene: the slot stays, only the words change. Keep the centre and the cap height.
+- Blur swap (house): the old line blurs 0 -> 12 px and fades in 8 f (ease-in), the new one resolves from 12 px in
+  12-14 f (ease-out), 2-4 f of overlap; 18-22 f in all.
+- Push-up: the new line enters one line pitch below and pushes the old one up (a 2-frame ramp, then expo-out, about
+  16 px a frame at its peak, 16-20 f); the old line ends at 35-45 % opacity, not gone.
+- Ink-in: the new word appears pale (or in the accent tint) at the same centre and inks to its colour in 10-20 f.
+
+**Match-cut** (`matchCut`; for an object box that moves, `MatchCut` §5) - one anchor holds across a one-frame cut.
+- Pick the anchor (the word slot, a shape's centre, a held subject) and keep its screen centre within 10 px; its size
+  may jump (a tight crop cuts to the wide shot).
+- Keep the camera move running through the cut in the same direction: it accelerates over the last 8-12 f, and the
+  incoming shot continues at about the same step (divided by the crop when the size jumps) and decays x0.85-0.9 a
+  frame over 12-20 f.
+- Ground, colour and picture may change freely while the anchor holds. Montage form: the word and its frame fixed at
+  centre, the picture cutting every 0.5-0.6 s; plate swap: the subject held, the background cutting every ~10 f.
+
+**Blur-through** (`blurThrough`) - a change of place without a cut feel.
+- Out 12-16 f: blur 0 -> 24-40 px (quad-in), the shot shrinking or moving away while it accelerates; optionally the
+  light ramps toward the next ground.
+- Cut at the blur peak.
+- In 10-16 f: blur 24-40 -> 0 px (expo-out) while keeping 50-80 % of the outgoing velocity, decaying x0.88 a frame.
+
+**Velocity-cut** (`velocityCut`) - the speed carries the eye across a total change of content.
+- Build the speed geometrically into the cut: x1.15-1.35 a frame over the last 8-12 f, cut on the fastest frame.
+- The incoming shot moves the same way, its first step 0.5-0.9x the last outgoing step, decaying x0.90-0.94 a frame
+  (12-24 f) to a 1-2 px/f drift.
+- Smear only the frames above about 9 px/f, 0.4-0.5x the per-frame travel.
+- Content may change completely as long as direction and speed continue.
+
+**Shared element** (`sharedElement`) - one element belongs to both scenes and is never cut (a mark, an avatar, a
+card, a field).
+- The old surroundings leave around it in 10-14 f (fade, blur or a soft light wipe).
+- The element moves and scales into its new role over 24-36 f (ease in-out), or decays after a cut-on-motion.
+- The new surroundings arrive in 8-16 f. Occlusion form: a large soft foreground shape (70 % of the frame width or
+  more) crosses the lens for 8-12 f and the cut sits under it.
+
+**Zoom-through** (`zoomThrough`; with a camera, `zoomThrough` + `handoffShot` §11) - into the element that becomes the
+next frame.
+- An exponential push centred on the element: x1.04-1.10 a frame over 16-30 f.
+- When the element covers the frame, cut (or a 2-4 f cross) to the next shot at the matching scale; the element's
+  colour is the next shot's ground.
+- The next shot keeps scaling at about a third of the last step and settles in 20-36 f.
+
+**Morph** (`Morph`, `MorphChain` §5) - one shape becomes the next.
+- Same centre; size, radius and colour interpolate over 18-30 f (sine or cubic in-out).
+- Hide the change of topology at the smallest or most blurred moment: a dot, a blurred blob, a chip under blur. The
+  ground may change at the dot.
+- The new element grows and settles over 12-20 f (ease-out).
+
+**Card expand** (`pillBreath` + `Window` §7, or a box tween) - the card becomes the next screen.
+- The card rect (x, y, w, h, radius) animates to the frame over 24-36 f (cubic in-out).
+- Cross the content inside at 40-60 % of the expand under a blur 0 -> 16 -> 0 px.
+- After the rect lands the new screen builds on a 3-4 f stagger, settling from 1.03 to 1. Reversed (the picture
+  shrinking into a card), it is a scene exit.
+
+**Mask reveal** (`Iris` §4) - from a meaningful point (a word gap, a button, an avatar).
+- Radius 0 -> the half-diagonal: fast, geometric x1.27 a frame (14-16 f); soft, expo-out over 26-30 f.
+- A hard edge, or a shape from the brand.
+- The incoming shot already moves inside the mask, 1.0-1.15x the outgoing motion, decaying x0.8 a frame.
+
+**Push-slide** (`Wipe kind="push"` §8) - a hard edge travels.
+- The old shot moves 3-4 f before the edge enters; the edge enters at 70-90 px/f, decays x0.89-0.92 a frame to a
+  2-3 px/f creep near half the frame; the old shot moves at 0.6 of the edge; the second stage leaves accelerating
+  x1.07-1.12 a frame and is cut at speed. 40-48 f in all.
+- Half-frame form: copy held on one half, only the device half changes (out accelerating, in decaying), 26 f.
+
+**Whip** (`FlashCut` §9, `whip` §11)
+- Speed builds x1.12-1.2 a frame to a peak of 110-220 px/f at 0.55 of the move (24-40 f), then brakes x0.8-0.85.
+- Directional blur 0.4-0.5x the travel above about 9 px/f. Cut on the peak frame, or under a luma wash.
+- The next framing arrives on the brake; a whip into dark doubles as a section break.
+
+**Hard cut, done right**
+- The outgoing shot is moving and accelerating into the cut; the incoming one already moves and settles.
+- Keep the ground, or hold the type in the same centre slot; a cut that also flips the ground is one of the film's
+  two colour events.
+- Montage runs: the same slot, 0.4-0.7 s a picture.
+
+**Continuous camera** (`lib/camera-moves.ts`, §11) - no seam at all: one accelerate-peak-decay move (peak at
+0.4-0.57 of it, then x0.75-0.85 a frame) carries into the next composition, 34-40 f.
+
+**Colour flip** (`colour` seam) - keep the word or shape at centre, cut the ground colour; or three flips 10 f apart.
+It is one of the film's two colour events.
+
+**Light wipe** (`LightSweep` §6) - a soft band of light crosses in 10-20 f, the frame blurs under it and resolves into
+the next scene; or a white gradient rises from the bottom and the next word rises behind its edge.
+
+## 3. Pick the seam from the content
+
+| The outgoing shot ends on | Use | Seam kind |
+|---|---|---|
+| a centred line, the next line is the next thought | `Seam recipe="exitEnter"` (the ground stays) | `breath` |
+| a line whose slot the next words take | `Seam recipe="textSwap"` (blur swap, push-up or ink-in) | `defocus` |
+| a word, shape or subject the next shot also has at that place | `Seam recipe="matchCut"`, or `MatchCut` for a moving object box | `morph` |
+| a fast move, the next shot is new content | `Seam recipe="velocityCut"` | `velocity` |
+| a change of place with nothing to carry | `Seam recipe="blurThrough"` | `defocus` |
+| an element that goes on into the next scene | `Seam recipe="sharedElement"` | `morph` |
+| an element that becomes the next frame | `Seam recipe="zoomThrough"` | `zoomThrough` |
+| a small UI object (chip, pill, dot, button) that means the next thing | `MorphChain`: the object gathers, swells and becomes the next word or panel | `morph` |
+| a frame built of two panels | `doorSplitState`: the halves leave at speed and the next card rides up through the gap | `mask` |
+| a line of type with a gap between two words | `Iris` from the gap, rate mode | `mask` |
+| a framed image or card that should become the next scene | `pillBreath` into the cut, then `Window` steps | `mask` |
+| a big soft foreground object, mist, a frosted panel | `Dive` through it | `defocus` |
+| a bright moment on the music (a hit, a drop) | `Exposure` bloom | `light` |
+| a fast camera move | `FlashCut` inside the whip | `whip` |
+| a section change into one centred statement | `BlobRing` around it | `mask` |
+| a reveal across the frame | `Wipe kind="push"` (a hard edge pushing the old shot along); `feather` or `gradient` for a soft wash | `wipe` |
+| a hard beat with nothing to carry | `BlockStep` (blocks, then the incoming element's silhouette) | `stepped` |
+| a downbeat with imagery on both sides | `Pixelate` or `MosaicIris` | `stepped` / `mask` |
+| any other cut | a hard cut that keeps the ground or the slot, on a sound | `hard` |
+
+The device book holds many more, family by family: [cuts and seams](devices/cuts-and-seams.md),
+[camera transitions](devices/camera-transitions.md), [morphs and object handoffs](devices/morphs-and-object-handoffs.md),
+[wipes, masks and irises](devices/wipes-masks-and-irises.md), [speed and rush](devices/speed-and-rush.md).
+
+## 4. Iris
+
+`<Iris frame start x y mode="rate" />` grows the radius by the same ratio every frame (house ×1.28 a frame at 60 fps,
+×1.64 at 30 fps) from 22 px at 1080p on its first frame: the circle is visible from its first frame, opens from the
+point and accelerates in px all the way off the corners (about 16-19 f to the far corner from the centre). The 1.2
+paces make rate mode the default (`pace.fx.irisMode`); `mode="ease"` keeps the eased iris.
+
+- `shape` spreads the log growth over the run (a burst out of the point, a near-even middle, an acceleration off the
+  corners); give `frames` and `to` with it. `irisRadius()` is the radius alone; `irisRateRun()` its frames.
+- `originFrom={{ text, gap, left, top, size, weight, track, lead }}` opens it from the gap after word `gap`
+  (`gapOrigin()`: halfway across the space, at mid cap height). Measure under `FontGate`.
+- `scallop`: a cloud edge (house 9 lobes, cusps 8 % of the radius deep) that turns a third of a lobe as it opens.
+- **The reveal iris** (`irisReveal(start, { x, y })`): a product shot opening onto a new stage opens already big (its
+  first radius 37 % of the frame height, never a dot) and covers the frame in 10 f at 60 fps, most of the growth on its
+  first frames (radius ratios about 1.76, 1.21, 1.10, 1.07 per 30 fps frame). Wind up first: the container widens on
+  an ease-in for a few frames and the iris opens on the next beat. Keep the dot for logo stings.
+- **An iris carries speed.** Opened in a line that is moving, the line around the circle accelerates out
+  (`launch()`) into the frame the circle covers the frame on, and the line inside opens moving the same way at 1.15×
+  that speed, decaying in one stage (×0.65 a 30 fps frame) to its drift: `carriedCut(f, cover, { vCut }, { ratio:
+  IRIS_CARRY.ratio, decay: IRIS_CARRY.decay60, fast: { share: 0, decay: 0.4 } })` on the one coordinate both lines
+  ride. The circle itself stays where it opened.
+- Start it on the hit frame. Declares a `mask` seam carrying the shape.
+
+## 5. Morph, MorphChain and MatchCut
+
+`Morph` (the container morph) keeps its 1.1 API; `path={{ a, b }}` draws the container as an outline morph between
+two SVG paths (`morphPath(a, b, p)`) with the content clipped by it, and `seam` declares it. `fx/MorphPath` morphs
+outlines that travel round the shape, with followers and goo.
+
+`MorphChain` carries the film through several states of one object instead of cutting:
+
+```tsx
+<MorphChain frame={f} states={[chip, gathered, swollen, word]} windows={[{ from, to, ease }, ...]}>
+  {[<ChipFace />, <WordFace />]}
+</MorphChain>
 ```
 
-`E.in` and `E.out` are exact mirror images, so an exit and an entry with the same distance and duration also match; the helpers let the two sides differ.
+- A state is a box (`lib/box.ts MorphBox`: x, y, w, h, radius, fill, stroke, shadow) plus `blur`, `opacity`, `rot` and
+  the `content` index it shows. A window moves the box to the next state on its own `ease` (geometry) and `fade` (blur
+  and opacity) curve; `log: true` blends size in log space. The content swaps when a window completes; a one-frame
+  window is a designed swap, declared as a `morph` seam (`chainSwaps()`).
+- House chain: a hand-off every 8-32 f; a collapse 16-20 f, ease-in under a blur that grows to 12-20 px while the
+  object fades into the next state's box; a gather in two phases (a linear drift, then `M.squeeze`); a swell of
+  +40-60 % over 24 f on `M.swell` straight into the swap; the next content appears at the object's pre-swell size. Let
+  the camera carry the swell's growth on into the new content (a push on `E.glideOut` from the swap frame).
+- `collapse(f, { start, frames, zoom, mask, square, into })`: a frame pulls back while its edges close to a centred
+  square; on the cut a solid square keeps shrinking, decelerating, and may hand over to the next shot's first card.
+- `growThrough(f, { start, frames, from, to })`: a cell grows through the frame on log size (`E.buildIn`); `.cut` is
+  the first frame it covers the frame.
+- `pillBreath(f, { start, from, to, h, stretch, hold, contract, end })`: a pill mask stretches front-loaded (house 44 f
+  on `E.snapOut`), holds 12 f, and contracts into the cut on `E.launchIn` (22 f to 0.86 of its width); pair it with
+  `Window` so the next shot opens from the pill's own box.
 
-## 4. The seam catalogue
+**MatchCut: the cut that keeps the object.** `<MatchCut frame cut from to outgoing incoming ground />`
+(`matchCutState()` for the numbers alone). The eye is on one thing; the world changes around it on the cut and the
+thing does not jump. `from` is the object's screen box in the outgoing shot (a function of the frame when it moves),
+`to` its rest box in the incoming shot's own layout. The incoming shot opens placed so its object sits one outgoing
+step further along (position and size, size in log space: a push of ×1.09 a frame opens ×1.09 bigger than the last
+outgoing frame), then settles onto its layout in 36 f, the inherited speed falling to about a third in the first
+frames and landing with zero speed.
 
-Each entry: what it is, frames and curves, and the failure mode to check on the contact sheet.
+- Give the incoming rest box a little more room than the inherited one in the direction of the move (a packshot a
+  touch bigger than the last pushed frame) so the push lands; where the inherited speed would carry it past its rest
+  it brakes instead of bouncing.
+- `carry: ['x', 'y']` keeps the position and opens at the new size (a ring that reappears big on the same centre);
+  `ratio: 0` matches the box with the object at rest. Draw the incoming shot's paper or colour field as `ground` (it
+  never moves, so no edge shows while the shot opens smaller than its rest).
+- A shape carried across photo cuts is a match cut too: two discs contracting into the cut become an outline ring on
+  the pair's centre and a frame on the pair's box, each opening at the inherited size and still contracting.
+- Declares a `morph` seam on the incoming first frame (carrying scale for a push into the object) and camera blur on
+  the frames the object moves fast enough to smear.
 
-### 4.1 Relay handoff
-The story device crosses the seam untouched while the world changes around it.
-- **Frames:** none of its own. The device's state is one function of the *absolute* frame, rendered by both acts, so its last frame in act A and its first in act B are consecutive samples of the same curve.
-- **Failure:** the device blinks out for a few frames (4 missing frames were flagged in Tessel), changes style at the seam, or two copies overlap.
+## 6. Exposure and LightSweep
 
-```ts
-// src/device.ts: one source for the device, imported by every act that shows it
-import { E, hitPulse, lmix, mix, prog } from './lib/anim';
-import { CUE } from './timeline';
-export const deviceAt = (abs: number) => ({
-  x: mix(960, 420, prog(abs, CUE.drop, CUE.drop + 40, E.inOut)),
-  y: 540,
-  r: lmix(14, 20, prog(abs, CUE.drop, CUE.drop + 40, E.inOut)) * (1 + 0.3 * hitPulse(abs - CUE.deviceIn)),
-});
-// in an act: const d = deviceAt(ACT.turn.from + f);
-```
+`<Exposure frame at up down peak brightness swap hue a b />`: the frame over-exposes into a light event and the next
+scene settles out of it. The scenes hand over inside the light (a cut, or a dissolve of at most 8 f hidden under the
+bloom), and the incoming scene settles back from an overshoot of its own brightness (about 11 % over its rest).
 
-### 4.2 Shared-element container morph
-The mark's pieces become the product's containers (Tessel: the tall block became the sidebar, the square became the calendar).
-- **Frames and curves:** 46 f on `E.inOut`. Each piece is a **mask** (clip) with the live product drawn inside it at its final transform. Inner corners square off and the pieces overlap by 2 px once they join (from about 35% of the move), with their bottoms meeting, so no background line or L-step shows. On the landing frame, swap to one unclipped product layer drawn with **the identical transform** the next act opens on.
-- **Failure:** a double exposure (window chrome fading over a differently shaped tile), a hairline of background between pieces, a shimmer at the swap because the two layers are placed differently.
+- House: rise 40 f on `E.buildIn` to the peak, veil 0.82, brightness ×1.5, swap 10 f before the peak with a 6 f
+  dissolve, settle 26 f on `E.linear`. Peak on a hit. `charge={{ at, gain, rise, fall }}` adds a short charge before
+  the bloom.
+- The light is the whole frame's, in one hue: never a glow or halo around one element.
 
-### 4.3 Iris or flood from the device
-The device grows to fill the frame, or the frame contracts onto the device.
-- **Iris in:** a full-accent frame (the device at 80×, 28 px → 2240 px, covering the 2203 px frame diagonal) contracts onto the marker by the first beat (30 f). Scale in log space on the `iris` curve (.4, 0, .7, .92), so the zoom rate is even and it lands with a little speed on the tick.
-- **Flood out:** radius from the device to the farthest corner over 18 f on `E.out`, starting at `cue − 1` so it is already opening on the drop frame. A flood that ends a shot runs on `E.in` instead, so its edge is fastest at the cut.
-- **Failure:** a linear radius (crawls, then snaps), a flood still at rest on the drop frame (a dead frame on the boom), the same iris three times (it turns into a preset).
+`<LightSweep frame start frames band angle gain hue />`: a soft band of light moved by transform (screen blend), swung
+past the lens, accelerating (house 44 f on `E.launchIn`, band 0.45 of the frame width, gain 0.55): a sheen across a
+product as it lands, or a light event that carries a cut. Both count as the act's light event
+(`references/lighting.md`).
 
-```ts
-// needs the specialist token in anim.ts:  iris: Easing.bezier(0.4, 0, 0.7, 0.92),
-import { E, lmix, mix, prog } from '../lib/anim';
-const farthest = (x: number, y: number) => Math.hypot(Math.max(x, 1920 - x), Math.max(y, 1080 - y));
-/** Diameter of an iris that contracts from 80x onto a 28 px dot by frame 30, in log space. */
-export const irisD = (f: number) => lmix(28 * 80, 28, prog(f, 0, 30, E.iris));
-/** Radius of a flood from a button at (x, y), already moving on the drop frame. */
-export const floodR = (f: number, drop: number, x: number, y: number) =>
-  mix(0, farthest(x, y), prog(f, drop - 1, drop + 18, E.out));
-```
+## 7. BlockStep, Window, TypeWindow
 
-### 4.4 Implosion into the device, then silence, then the drop
-Everything collapses into the device; a beat of true silence; the drop.
-- **Frames and curves:** world scale 1 → 0 and rotation 0 → −14° on `E.in` over 19 f, while the device grows ×1.25. Then ≤ 15 f of true silence (only the device on screen, reverb tails ducked too), then the drop on the downbeat.
-- **Failure:** the device shrinks with the world (it is the constant, so it must hold or grow), the "silence" still carries a tail, the implosion ends off the grid so the silence has no pulse.
+- **`<BlockStep frame at blocks silhouette outgoing incoming />`**: a hard transition built from flat blocks, one frame
+  each: a block covers part of the old frame, the next frame a bigger block elsewhere, then the incoming element
+  appears as a flat silhouette of itself that steps back to the real thing (house 1, 2/3, 1/3, 0 over three frames).
+  Blocks are the film's paper or ink colour, never the accent. Every block frame is a declared flash; the run is
+  stepped. Cut it on a hit.
+- **`<Window frame start rects oldScale cadence radius old next />`**: the next shot opens as a window inside the
+  current one and takes the frame in a few held steps while the old shot steps back (house 1 → 0.94 → 0.80), on a
+  lower cadence (16 fps holds), so it reads as a designed edit. `radius` keeps the corners of the object that became
+  the window.
+- **`<TypeWindow />`**: the next shot through the letters of a word that scales up step by step until the image takes
+  the frame; the title inverts to the light colour on the last step (house 9 steps at 24 fps).
 
-### 4.5 Shutter collapse
-A full-frame field collapses to a line, then to the device.
-- **Frames and curves:** height first over 16 f on `shutter` (.2, .7, .2, 1), starting at `cue − 1` so it is already moving on the drop frame; then width over frames 13–26 on `E.inOut` into a line, which becomes the device. Clip it to the content area so the line never crosses UI chrome.
-- **Failure:** both axes at once (reads as a zoom-out, not a shutter), a field still at rest on the drop frame, a line crossing a sidebar or header.
+## 8. Dive, BlobRing, Wipe
 
-### 4.6 Split on a seam
-The product opens along one of its own borders (a sidebar edge, a list divider).
-- **Frames and curves:** the split on `split` (.33, 0, .1, 1) over 42 f; one side widens into a type column while the other goes full-bleed on a vertical hinge (rotateY −12°, perspective 2400). Clip with `clip-path: inset(… round r)` using sub-pixel values. Swing shut on `close` (.55, 0, .15, 1) so it comes to rest exactly on the next act's frame 0.
-- **Failure:** integer clip values step 1 px on slow moves; the rest pose shown twice; a split along a line that is not a real border (it reads as a wipe).
+- **`<Dive frame start outgoing background incoming occluder />`**: a soft occluder (mist, a frosted panel, a big
+  blurred foreground object) rises into the frame while the scene behind it defocuses on an accelerating curve; a few
+  frames are nothing but the soft layer (the hidden cut sits in the middle); the next subject rises out of it and its
+  focus racks in a few frames behind its position. House: rise 40 f, defocus to 16 px, travel 0.35 of the height,
+  12 f fully covered, clear 20 f, the subject rises 0.12 of the height over 18 f and racks from 14 px over 36 f,
+  starting 4 f after it moves.
+- **`<BlobRing frame start hole soft tighten release wobble color />`**: a soft ring of one colour swirls in around the
+  frame and frames the next statement, then breathes (tightens on `M.ringTighten`, loosens, its centre wandering).
+  House: swirl 8 f from a hole 1.6× its rest size; hole 0.74 × 1.12 of the frame; soft edge 0.36 of the radius;
+  tighten to 0.86 over 28 f; wobble 25 px over 2 s. Two or three section changes into a statement at most.
+- **`<Wipe frame start kind angle outgoing incoming />`**: the incoming shot behind a travelling edge (an alpha ramp in
+  a mask, never a blurred element).
+  - `kind: 'push'`, the studio wipe: a hard edge that pushes the outgoing shot along. The edge starts off-frame, so
+    the old shot is already moving when it enters; it arrives fast (its speed peaks a quarter of the way in, about 7 %
+    of the frame a 60 fps frame), decelerates to 0.483 of the frame in 54 f, creeps, then leaves on `E.buildIn` over
+    42 f and is cut at speed. The outgoing shot rides 0.62 of the edge's travel in the arrival and holds while the
+    edge leaves. The edge streaks 0.3 of its step (a box-blurred hard edge is a ramp), so it is sharp when slow and
+    smeared when fast; the pushed shot is smeared along the travel (`smear: 'draw'`, or `'shutter'` to declare camera
+    blur instead). `stages` sets other runs (`[{ to, frames, ease, push, gap }]`), `ride: 1` pins the incoming shot to
+    the edge as a sliding sheet.
+  - `kind: 'feather'`: a 350 px edge that decelerates across the frame (it lands at about a third of its starting
+    speed), 30 f on `E.softOut`. `kind: 'gradient'`: an edge as wide as 70 % of the element it reveals, at one speed
+    (house 3360 px/s): a line of type washing on.
+  - A wipe is finished on the frame its run ends (`wipeEnd()`), even when its edge lands a hair short of the frame:
+    `<Wipe>` stops drawing the outgoing shot from there.
+- **Edge masks**: `edgeMask({ left: 250 })` (and `<Scroll edgeMask>`) is the static version for lines that scroll
+  through the frame: a line comes out of nothing instead of being cut by the frame.
 
-```ts
-type Box = { x: number; y: number; w: number; h: number };
-const px = (v: number) => `${Math.max(0, v).toFixed(3)}px`;
-/** Sub-pixel, rounded clip of the full frame down to box b. */
-export const insetClip = (b: Box, r: number) =>
-  `inset(${px(b.y)} ${px(1920 - b.x - b.w)} ${px(1080 - b.y - b.h)} ${px(b.x)} round ${px(r)})`;
-```
+## 9. CutFx: cuts dressed with what is on screen
 
-### 4.7 Velocity-matched cut
-A hard cut between two moving shots whose motion continues in the same screen direction at the same speed (§3 helpers).
-- **Frames:** exit on `E.exit` over 10–24 f, cut at peak speed, entry on `E.out` decaying over 48–84 f. Whips peak on the kick.
-- **Failure:** direction reverses across the cut, speed halves or doubles, or one side is at rest; any of these reads as a jump.
+- **Blur bridge** (`blurBridge(f, cut)`): a hard punch-in from a wide shot to its close-up (x2-2.5) softens the wide
+  shot's last two frames and the close-up's first two (house sigma 1.2, 4 | 3, 1.2 at 1080p, through `Defocus`), and
+  the close-up eases back about 9 % on a decaying pull-back, so the jump reads as one push and the close-up breathes.
 
-### 4.8 Zoom-through
-The camera flies forward through shot A into shot B.
-- **Frames and curves:** exit scale 1 → 1.2 with blur 0 → 10 px (text-sized layers) or 18–20 px (full frame) on `E.in` over 12 f (0.2 s); entry scale 0.75 → 1 over 30 f (0.5 s) on `E.out`. Scale with `lmix`. Put the blur on one wrapper, never on each child, and never on a layer with `will-change`.
-- **Full-frame blur:** an animated `filter: blur()` on a large layer steps from sharp to soft in one frame; for a full-frame zoom-through, cross-fade to a constant 18 px copy with `src/fx/RackFocus.tsx` instead.
-- **Failure:** the entry starting slow (the forward motion stalls at the cut), blur on the entry lingering past 6 f on text, ghost frames from `will-change`.
+- **`<FlashCut frame cut whip flash streak slide pull out in />`**: the camera whips on an ease-in that never brakes,
+  then one over-exposed frame (about 92 % white) with a faint ghost of what was there, then one dark frame of
+  horizontal streaks, then the next shot already sliding in, decelerating, and pulling back the moment it lands.
+  House: whip 24 f on `E.launchIn` over 0.24 of the frame width; flash 0.92 with a 0.3 ghost; slide 28 f on
+  `E.snapOut` from 0.55 of the width; pull 28 f to 0.65 on `E.glideOut`. Cut on a swell's peak. The slide opens at
+  several times the whip's last speed, so its first frames are the most smeared of the cut: the whip's tail and the
+  slide's head are drawn with the whip-shutter streak (`smear: 'draw'`, house) and sharpen as the shot lands.
+- **`<DefocusCut frame at out empty in outgoing incoming ground />`**: the outgoing line blurs out and fades together
+  (most of the blur late), exactly one empty frame, and the next line arrives very soft and pulls into focus, its blur
+  shrinking by about the same ratio each frame until it snaps sharp. House: out 18 f to 32 px on `E.buildIn`; 1 empty
+  frame; in from 45 px, ×0.80 per 60 fps frame, sharp after 18 f.
+- Small cuts (state functions; draw them with any layers):
+  - `blackDipState(f, { cut, black, fadeUp })`: a whip that ends on 1-2 black frames, the next shot fading up (house 2
+    black frames, 8 f linear).
+  - `doorSplitState(f, { start, frames, axis, rise })`: the frame splits down the middle and both halves slide apart
+    on the measured door path (each step about ×1.5 the last, leaving at about 250 px a frame at 24 fps; 30 f), and
+    the next card inherits their speed turned through 90°: it peeks 32 px over 12 f before the doors move, creeps,
+    then rides up from the bottom edge a third into the doors' run, peaks with them and decays home in 50 f (`rise`,
+    px below its rest; give its rest `top`). Draw the card above the halves.
+  - `fillSwapState(f, { at, n, every, grow, fills })`: hard swaps of full-frame fills a few frames apart, each 4 %
+    bigger than the last (house 3 swaps 10 f apart).
+  - `tintThroughGrey(f, { start, frames, a, b, grey })`: a colour change that passes through a neutral grey of the
+    same lightness, so two tints never mix into a third hue (house 56 f on `E.strongInOut`).
+  - A graphic match cut into an object: `zoomThrough({ factor: 1.5, frames: 22 })` with `handoffShot()` carrying the
+    log scale across the cut, the next shot opening inside the same shape.
 
-### 4.9 Partial slide cut
-Both shots slide a short way in the same direction; the cut hides in the motion.
-- **Frames and curves:** ±230 px, the same distance and the same duration on both sides (for example 24 f); the exit runs on `E.in` and has faded out by 25–30% of its travel; the entry arrives on `E.out`.
-- **Failure:** unequal distance or duration (two unrelated moves), the exit still visible when the entry arrives (a double exposure), a full-frame push (a preset slide).
+## 10. Pixel devices
 
-### 4.10 Word waterfall
-One line hands over to the next word by word, so only one line is ever on screen.
-- **Frames and curves:** line A exits at half its entry stagger (3–4 f) over 16 f on `E.in`, rising 0.6 of its entry offset; line B's first word starts once A's last word is past half its exit, on the beat. Entry per `references/motion-tokens.md` §6.
-- **Failure:** two full lines visible at once (a text wall), B's words colliding with A's, all words leaving together (that is a fade).
+- **Pixelate on the beat.** `pixelateState(frame, { cut, out, in }, film)`: the block size grows into the cut on a log
+  scale (house 8 f from 6 to 160 px, a little faster at the end) and shrinks after it (from 190 px by ×0.72 a frame for
+  11 f). Put the cut on the track's downbeat. `<Pixelate cut out in outgoing incoming />` draws it with static SVG
+  filters, one per block size the run uses (`pixelLadder()`), built once: each frame only picks its filter, so no
+  filter attribute is animated. The run is stepped and the cut a `stepped` seam.
+- **Mosaic iris.** `<MosaicIris at origin ring cell colors reveal outgoing incoming />`: a ring of square cells opens
+  from a point (the status dot, the last word's period); cells live only in the annulus (house ring 195 px, cells
+  30 px), their colours from the accent's own family re-picked on twos; inside the ring the next scene shows through a
+  circle. Front-loaded expansion (`E.snapOut` to the far corner in 18 f). A `mask` seam on its first frame.
+- More in the device book: `fx/DotMatrix` (the next shot turns on as an LED dot matrix), `fx/Cascade` (dots,
+  halftone, mosaic, then the picture), `fx/Slices`, `fx/Implode`, `fx/Glint` (a pixel sprite that bridges a hard cut).
 
-### 4.11 An exit that reverses its entrance
-Leave the way you came, mirrored in time: an entrance on `E.out` exits on `E.in`, along the same path.
-- **Frames:** exits are shorter than entrances (Tessel's wordmark tucked back behind the mark in 14 f on the tock). When something was revealed from behind an edge, it tucks back behind the **live** edge: the clip follows the moving element, never a fixed box.
-- **Failure:** a fixed clip box while the mark moves (the word pokes out on one side), a generic fade instead of the reverse move (reads as a pop when fast).
+## 11. Camera seams
 
-### 4.12 Words become the mark
-The payoff line turns into the mark's pieces.
-- **Frames and curves:** each word is **underlined**, never struck through (a strike crosses out the film's own promise): a 0.1 em line at baseline + 0.07 em, drawn left to right over 16 f on `E.out`. The line swells into a block covering ascenders to descenders (top at baseline − 0.8 em, 1.04 em tall) over 12 f while the glyphs fade under it (≥ 6 f). The blocks accelerate into the mark's pieces over 20 f on `E.contact`, shape settling 6 f early, and land with the contact squash (`land()` in `references/motion-tokens.md` §7). The relay dot follows 5 f behind and drops into its slot.
-- **Failure:** glyph tops poking out above the block (pad covering boxes about 8 px; negative tracking pushes the last glyph's ink past the measured width), pieces landing on a target that is still moving, the dot arriving before the blocks clear its path.
+The camera makes many of the best seams: `scaleBreath` (every cut breathes), `whip` with `swapAt` on its peak,
+`zoomThrough` with `handoffShot`, `SnapZoom` (one jump frame), `defocusPulse`, `reversal` into the last cut,
+`punchOut` (`references/camera.md`). Speed through a cut comes from `lib/handoff.ts` (`launch`, `carry`,
+`carriedCut`, `carryChain`). Declare each one.
 
-Two more tools, used inside seams rather than as seams: **luminance flips** (white → accent → ink) hidden inside a move, never on a static frame (see `references/brand-and-color.md`), and a **deliberate hard cut on the beat**, which is fine when it is intended; declare it as a cut for `scripts/forensics.py` (see `references/review-loop.md`).
+**Fast seams streak.** Slow moves stay crisp; above about 720 px/s at 1080p (24 px a frame at 30 fps, 12 at 60) a
+whip, a scroll into a cut, a slide out of a flash or a pushed shot carries a streak of 0.3-0.5 of its per-frame
+travel along the move, and a travelling hard edge a ramp 0.3 of its step. Two ways, never both on one layer:
 
-## 5. Bans
+- Draw it: `DirBlur` (`fx/Defocus`) along the move from the layer's speed (the whip shutter, 360°, for whips and the
+  slide out of a flash cut). `FlashCut` and `Wipe kind="push"` do this themselves (`smear: 'draw'`).
+- Declare it: `blurRanges(shot, from, to, { film })` (`lib/camera-moves.ts`) returns the frames a camera move is fast
+  enough to smear on, `fastRanges(speed, from, to)` (`lib/handoff.ts`) the same for any speed; put them in
+  `CAMERA_BLUR` (or a primitive's `declares()`, with `smear: 'shutter'`) and the finishing pass renders exactly those
+  frames with the shutter. A crisp film keeps its holds sharp and still streaks its whips.
+
+## 12. Sound-led cuts
+
+- **Cut on a sound.** At least half of the hard cuts land on a sound within a frame (the picture may lead by up to
+  3 f), and most within 100 ms: an accent of the track or a designed effect (`grid-check cut-on-sound`).
+- **A dip before the biggest reveal.** The reveal comes after a break, a stop or a stop-down of 0.2-0.5 s and lands on
+  the track's entry (`REVEAL`, `reveal-dip`).
+- **One gesture at a time.** A cut the track already accents gets no designed hit; a whoosh belongs to a camera-scale
+  move, not to every cut.
+- **Not on every downbeat.** Outside reels, at most 60 % of ordinary cuts sit on downbeats and the shot lengths vary
+  with the music's phrasing (`anti-metronome`).
+
+## 13. Bans
 
 | Ban | Why | Instead |
 |---|---|---|
-| Crossfade as the default seam | nothing carries across, so the film reads as slides | a relay, morph or matched move |
-| Dissolving two layers that both fade over black | at the midpoint luminance is 0.5·B + 0.25·A, a 25% dip | fade only the incoming layer over a fully opaque outgoing one |
-| Glitch or RGB split, light leak, film burn, swirl, ripple, dreamy zoom, flash through white, page burn | preset gimmicks with no story reason | a seam from §4 |
-| The same iris or wipe three times | it becomes a preset | the signature move three times, everything else ≤ 2 |
-| A whip or fling above ~80 px/f | blur can't make it read: a long smear with stepped copies | a cut on the beat, a match cut, a mask wipe, or a shorter move |
-| Two copies of one object cross-fading | a translucent double image | morph one object; swap content at the apex |
+| A crossfade as a seam (over 8 f, full frame) | nothing carries across, so the film reads as slides | a velocity hand-over, a morph, a mask from the picture |
+| A dissolve between unrelated shots, a fade to black mid-film | a soft cut with no idea | a carried seam; `fadeEnd` only closes the film |
+| Two layers both fading over black | a 25 % luminance dip at the midpoint | fade only the incoming layer over an opaque outgoing one |
+| Glitch, RGB split as decoration, light leak, film burn, swirl, ripple, dreamy zoom, a fade through white | preset gimmicks with no story reason | a seam from this page; a declared one-frame flash inside a whip is craft, a fade through white is not |
+| The same device three times (signature excepted) | it becomes a preset | vary the families |
+| A whip or fling the blur cannot carry | a long smear with stepped copies | a cut on the beat, a match cut, a mask wipe, a shorter move, or a declared `CAMERA_BLUR` range |
+| Two copies of one object cross-fading | a translucent double image | morph one object; swap content at the peak |
 
-## 6. `@remotion/transitions` and the grid
+## 14. `@remotion/transitions` and the grid
 
-- The package is not in the starter; add it with `npx remotion add @remotion/transitions` so its version matches `remotion`.
-- Version 4.0.529 ships 20 presentations: blur-slide, book-flip, clock-wipe, cross-zoom, crosswarp, dissolve, dreamy-zoom, fade, film-burn, flip, iris, linear-blur, none, push-cut, ripple, slide, swap, wipe, zoom-blur, zoom-in-out. Treat the gimmicks (book-flip, clock-wipe, crosswarp, dreamy-zoom, film-burn, ripple, swap, zoom-blur) as off-brand unless the brand asks for them.
-- `fade()` keeps the outgoing scene at full opacity by default, which is the correct dissolve; `shouldFadeOutExitingScene: true` brings back the luminance dip.
-- **A transition shortens the timeline** (60 + 60 − 15 = 105 frames); an overlay does not. Every later cue shifts by the overlap unless you account for it, which breaks the grid.
-- **Prefer seams built inside the acts**: the outgoing act draws its exit and the incoming act its entry, both from shared absolute-frame functions (`deviceAt` in §4.1). `ACT` stays contiguous and bar-aligned, and each act still renders alone.
-- If you do use `TransitionSeries`, add the overlap to the outgoing sequence so the incoming one still starts on the grid:
+- The package is not in the starter; add it with `npx remotion add @remotion/transitions` so its version matches.
+  Treat its gimmicks (book-flip, clock-wipe, crosswarp, dreamy-zoom, film-burn, ripple, swap, zoom-blur) as off-brand.
+- **A transition shortens the timeline** (60 + 60 − 15 = 105 frames); every later cue shifts by the overlap unless
+  you add the overlap to the outgoing sequence. Prefer seams built inside the acts from shared absolute-frame
+  functions: `ACT` stays contiguous and on the grid, and each act still renders alone.
 
-```tsx
-import React from 'react';
-import { linearTiming, TransitionSeries } from '@remotion/transitions';
-import { fade } from '@remotion/transitions/fade';
-import { E } from '../lib/anim';
-import { b } from '../timeline';
+## 15. Checks
 
-const X = 15; // overlap
-export const Pair: React.FC<{ a: React.ReactNode; c: React.ReactNode }> = ({ a, c }) => (
-  <TransitionSeries>
-    <TransitionSeries.Sequence durationInFrames={b(3) + X}>{a}</TransitionSeries.Sequence>
-    <TransitionSeries.Transition presentation={fade()} timing={linearTiming({ durationInFrames: X, easing: E.smooth })} />
-    {/* starts at b(3) + X - X = b(3): still on the downbeat */}
-    <TransitionSeries.Sequence durationInFrames={b(2)}>{c}</TransitionSeries.Sequence>
-  </TransitionSeries>
-);
-```
-
-## 7. Seam plan and checks
-
-Write the plan into the treatment's beat sheet before building:
-
-| Seam | Bar | Type (§4) | Energy | Frames | What carries across | Sound |
-|---|---|---|---|---|---|---|
-| hook → turn | 4 | implosion + silence + flood | high | 19 + 15 + 18 | the device | suck, silence, drop |
-| turn → proof | 6 | container morph | calm | 46 | mark pieces → product | whoosh at `peak()` |
-| feature 1 → 2 | 9 | velocity-matched whip | medium | 28 | screen direction | whoosh apex on the kick |
-
-- Count types: 6–8 in total, each ≤ 2 times, plus the signature move 3 times.
-- Grab frames `seam − 2 … seam + 2` (`scripts/grab.sh`) and read them as stills: one outline per object, no property flip, the rest pose once.
-- `scripts/forensics.py` flags MAD spikes at seams you did not declare as cuts and seam differences above 0.4; both usually mean a property flipped or a pose repeated.
+- `forensics.py` (seams, on every render; `--seams` runs them alone on a small decode): `carried-cut` counts the
+  device each hard cut carries (ground kept, blur at the seam, anchor held, motion carried) and fails when more than
+  10 % are bare (one bare cut warns; so does a film that declares no seams, since only the plan names a matched
+  shape); a declared seam that does not carry what its recipe promises warns (a velocity seam with no motion across);
+  a declared velocity seam whose exit does not build x1.15-1.35 a frame or whose next shot stops inside 8 f warns, and
+  one that turns or does not decay fails; `ground-flip` fails a third flip of a neutral ground (paper, grey, slate,
+  black) between light and dark (a colour field moving between its deep and light state is one family); `seam-mix` fails when one seam kind takes more than 45 % of the scene changes (5 or more),
+  and warns when a film of 4+ lines has no exit-then-enter, text-swap or match-cut. Also `dissolve-detect`,
+  `still-cut`, `hold-into-exit`; spikes at undeclared cuts usually mean a property flipped or a pose repeated.
+- `grid-check.ts`: `seam-plan` (fade only at the end, UI dissolves short and inside acts, kinds <= 3, carried >= 40 %,
+  a velocity seam in a cut film), `declares-cover` (every primitive's seams declared), `cut-on-sound`,
+  `reveal-dip`, `anti-metronome`.
+- `look-audit.py`: the floor's carried share and scale contrast between shots.
+- Grab frames `seam - 2 ... seam + 2` (`scripts/grab.sh`) and read them as stills: one outline per object, no property
+  flip, the rest pose once.

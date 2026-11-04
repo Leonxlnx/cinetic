@@ -36,28 +36,42 @@
 
   // ---- pace: how fast text arrives, how long it holds, how much is on screen ------------------
   // The same profiles as the Remotion kit's src/lib/pace.ts, in 60 fps frames. calm (the house
-  // default): fragments of 1-4 words rising over 36 f, 11 f apart, held about 1-1.5 s, taking turns
-  // with the picture; crisp: the denser launch-film tempo, for briefs that ask for energy.
-  // scripts/new-film.sh --pace sets PACE_NAME; scripts/lint-film.mjs reads it here.
+  // default): fragments of 1-4 words, each word fading in over 32 f on E.snapOut, 12 f apart on the
+  // reading cadence, held about 1-1.5 s, taking turns with the picture; crisp: the denser launch
+  // tempo, for briefs that ask for energy. The PACE block is written by scripts/gen-pace.mjs from
+  // pace.ts: never edit it by hand. scripts/new-film.sh --pace sets PACE_NAME; scripts/lint-film.mjs
+  // reads it here.
   const PACE_NAME = 'calm';
+  // <gen-pace>
   const PACE = {
     calm: {
-      wordDur: 36, stagger: 11, rise: 0.2, blur: 0, ease: 'outSoft', exit: 'together', exitDur: 24, exitLift: 0.12,
-      holdBase: 42, holdPerWord: 8, holdMin: 60, readMax: 150, gapMin: 30, gapMax: 90,
-      maxNewWords: 4, maxVisibleBuild: 8, maxVisibleReplace: 5, maxWordsPerSec: 1.2, avgWordsPerSec: 0.9, maxWords: 30,
-      textShare: 0.65, freeRun: 90, maxGap: 72, accentDur: 24, recentreDur: 96, recentreLead: 36,
-      move: { base: 0.5, perPx: 0.0016, camMin: 0.9, camMax: 3.0 },
-      fx: { mask: { stagger: 10, dur: 38, exitDur: 22 }, typeFPerChar: 3, scramble: { stagger: 5, rate: 1.0, fadeIn: 16 }, roll: { dur: 90, roll: 18 }, morph: 52, iris: 32 },
+      wordDur: 28, stagger: 11, rise: 0.33, riseUnit: 'line', riseDur: 22, blur: 0, ease: 'snapOut',
+      cadence: 'reading', exit: 'auto', exitDur: 15, exitFade: 9, exitLift: 0.12, holdBase: 36, holdPerWord: 7,
+      holdMin: 52, readMax: 150, gapMin: 26, gapMax: 90, maxNewWords: 4, maxVisibleBuild: 8, maxVisibleReplace: 5,
+      maxWordsPerSec: 1.35, avgWordsPerSec: 1, maxWords: 30, textShare: 0.65, freeRun: 90, maxGap: 72, accentDur: 28,
+      accentHold: 16, accentCool: 12, accentSpace: 'oklab', recentre: 'jump', recentreDur: 19, recentreLead: 0,
+      move: { base: 0.44, perPx: 0.0014, camMin: 0.8, camMax: 2.65 },
+      fx: {
+        mask: { stagger: 9, dur: 9, exitDur: 19, head: 'linearStop', lastScale: 2.8 }, typeFPerChar: 2,
+        scramble: { stagger: 3, rate: 1, fadeIn: 14, order: 'centre', rateHz: 10 }, roll: { dur: 80, roll: 16 },
+        morph: 46, iris: 16, irisMode: { mode: 'rate', ratio: 1.28 },
+      },
     },
     crisp: {
-      wordDur: 26, stagger: 6, rise: 0.32, blur: 8, ease: 'out', exit: 'words', exitDur: 16, exitLift: 0.19,
-      holdBase: 36, holdPerWord: 6, holdMin: 42, readMax: 120, gapMin: 18, gapMax: 90,
-      maxNewWords: 5, maxVisibleBuild: 10, maxVisibleReplace: 10, maxWordsPerSec: 2.0, avgWordsPerSec: 1.2, maxWords: 35,
-      textShare: 0.8, freeRun: 60, maxGap: 48, accentDur: 14, recentreDur: 60, recentreLead: 20,
-      move: { base: 0.35, perPx: 0.00135, camMin: 0.6, camMax: 2.4 },
-      fx: { mask: { stagger: 5, dur: 30, exitDur: 16 }, typeFPerChar: 2, scramble: { stagger: 3, rate: 1.5, fadeIn: 10 }, roll: { dur: 60, roll: 14 }, morph: 40, iris: 24 },
+      wordDur: 23, stagger: 8, rise: 0.33, riseUnit: 'line', riseDur: 19, blur: 0, ease: 'snapOut',
+      cadence: 'reading', exit: 'auto', exitDur: 12, exitFade: 7, exitLift: 0.19, holdBase: 28, holdPerWord: 6,
+      holdMin: 36, readMax: 120, gapMin: 16, gapMax: 90, maxNewWords: 5, maxVisibleBuild: 10, maxVisibleReplace: 10,
+      maxWordsPerSec: 2.25, avgWordsPerSec: 1.35, maxWords: 35, textShare: 0.8, freeRun: 60, maxGap: 48,
+      accentDur: 18, accentHold: 6, accentCool: 12, accentSpace: 'oklab', recentre: 'jump', recentreDur: 14,
+      recentreLead: 0, move: { base: 0.31, perPx: 0.0012, camMin: 0.53, camMax: 2.1 },
+      fx: {
+        mask: { stagger: 7, dur: 9, exitDur: 14, head: 'linearStop', lastScale: 2.8 }, typeFPerChar: 2,
+        scramble: { stagger: 3, rate: 1.5, fadeIn: 9, order: 'centre', rateHz: 10 }, roll: { dur: 53, roll: 12 },
+        morph: 35, iris: 16, irisMode: { mode: 'rate', ratio: 1.28 },
+      },
     },
   };
+  // </gen-pace>
   const pace = PACE[PACE_NAME];
   /** Words in a string, as every check counts them. */
   const wordCount = (text) => String(text).split(/\s+/).filter(Boolean).length;
@@ -131,35 +145,145 @@
     return ease;
   }
 
-  /** True exponential ease-out, normalised to land on 1 (k = 6: half-way at 12%, 90% at 38%). */
+  /** True exponential ease-out, normalised to land on 1: (1 - e^(-k p)) / (1 - e^(-k)). k = 6: half-way at 12%, 90% at 38%. */
   function expOut(k) {
     const n = 1 - Math.exp(-k);
     return (p) => (p <= 0 ? 0 : p >= 1 ? 1 : (1 - Math.exp(-k * p)) / n);
   }
+  /** Exponential ease-in: (e^(k p) - 1) / (e^k - 1); its speed grows by e^(k / frames) every frame. */
+  function expIn(k) {
+    const n = Math.exp(k) - 1;
+    return (p) => (p <= 0 ? 0 : p >= 1 ? 1 : (Math.exp(k * p) - 1) / n);
+  }
+  /** A per-frame ratio written at fpsRef as the same ratio per frame at fps: r^(fpsRef / fps). */
+  const perFrame = (r, fpsRef, fps) => r ** (fpsRef / fps);
+  /** A house curve given as progress at p = 0, 0.1 ... 1, through a monotone cubic (as the Remotion kit's table()). */
+  function table(ys) {
+    const n = ys.length - 1, h = 1 / n;
+    const d = ys.slice(0, -1).map((y, i) => (ys[i + 1] - y) / h);
+    const end = (a, z) => { const q = a + (a - z) * 0.5; return Math.sign(q) !== Math.sign(a) ? 0 : Math.abs(q) > 2 * Math.abs(a) ? 2 * a : q; };
+    const m = ys.map((_, i) => {
+      if (i === 0) return end(d[0], d[1]);
+      if (i === n) return end(d[n - 1], d[n - 2]);
+      const a = d[i - 1], z = d[i];
+      if (a * z <= 0) return 0;
+      return (Math.sign(a) + Math.sign(z)) * Math.min(Math.abs(a), Math.abs(z), Math.abs((a + z) / 2) / 2);
+    });
+    return (p) => {
+      if (p <= 0) return ys[0];
+      if (p >= 1) return ys[n];
+      const i = Math.min(n - 1, Math.floor(p / h)), s = (p - i * h) / h, s2 = s * s, s3 = s2 * s;
+      return (2 * s3 - 3 * s2 + 1) * ys[i] + (s3 - 2 * s2 + s) * h * m[i] + (-2 * s3 + 3 * s2) * ys[i + 1] + (s3 - s2) * h * m[i + 1];
+    };
+  }
+  /** Name a curve and give it its family: arrive | reposition | leave | linear (1.1 names also say what replaces them). */
+  const tag = (fn, family, token, deprecated) => Object.assign((p) => fn(p), deprecated ? { family, token, deprecated } : { family, token });
 
-  // ---- easing tokens: named for how they feel (table: references/motion-tokens.md) ---------
+  const STD_IN_OUT = [0, 0.04, 0.127, 0.316, 0.55, 0.756, 0.871, 0.924, 0.962, 0.986, 1];
+  const WHIP_BUILD = [0, 0.017, 0.041, 0.083, 0.143, 0.279, 0.522, 0.757, 0.902, 0.976, 1];
+
+  // ---- easing tokens by role (the Remotion kit's lib/anim.ts E; table: references/motion-tokens.md)
   const E = {
-    out: bez(0.16, 1, 0.3, 1), //         expo-out: arrivals and reveals (never fade-outs)
-    outSoft: bez(0.22, 1, 0.36, 1), //    quint-out: gentle settles
-    in: bez(0.7, 0, 0.84, 0), //          expo-in: departures, implosions, exits
-    inOut: bez(0.87, 0, 0.13, 1), //      expo-in-out: whips and lockup slides
-    smooth: bez(0.65, 0, 0.35, 1), //     cubic-in-out: drifts and 10-14 f fades
-    ui: bez(0.4, 0, 0.2, 1), //           small UI state changes
-    cam: bez(0.48, 0.1, 0, 0.9), //       camera: slow start, peak at ~27%, long settle
-    glide: bez(0.47, 0.2, 0.15, 1), //    150-350 px moves with a soft landing
-    rest: bez(0.45, 0, 0.1, 1), //        zero-slope start, ends at rest: chains after a move
-    contact: bez(0.55, 0, 0.9, 0.55), //  accelerates INTO an impact (ends with velocity)
-    whip: bez(0.6, 0, 0.15, 1), //        feature-to-feature whips
-    dolly: bez(0.35, 0, 0.65, 1), //      slow push through a hold
-    exit: bez(0.55, 0.055, 0.675, 0.19), // cubic-in: exits into a cut; a whole fragment's lift as it leaves
-    expo: expOut(6), //                   exponential glide of held text: a build line re-centring
-    linear: (p) => p, //                  drift only
+    // arrive: peak speed on the first frame
+    snapOut: tag(bez(0.137, 0.758, 0.128, 0.926), 'arrive', 'snapOut'), //   words (opacity and rise as one), inserts, tiles; 32 f
+    glideOut: tag(bez(0.172, 0.687, 0.393, 0.943), 'arrive', 'glideOut'), // THE default arrival; 34 f
+    settleOut: tag(bez(0.202, 0.579, 0.484, 0.887), 'arrive', 'settleOut'), // UI cards, slow settles; 34 f
+    softOut: tag(expOut(1.271), 'arrive', 'softOut'), //                      tints, mask reveals, slow pushes; 34 f
+    liftOut: tag(bez(0.399, 0.329, 0.148, 0.966), 'arrive', 'liftOut'), //   UI reframes: a short lunge, a long settle; 31 f
+    jump: tag(expOut(12), 'arrive', 'jump'), //                               line re-centre: 42 % in frame 1 of 22 f at 60 fps
+    // reposition inside a shot
+    stdInOut: tag(table(STD_IN_OUT), 'reposition', 'stdInOut'), //           repositioning, pull-backs, presses; 30 f
+    strongInOut: tag(bez(0.673, 0.077, 0.288, 0.943), 'reposition', 'strongInOut'), // camera reframes, pans, colour cross-fades; 36 f
+    whipBuild: tag(table(WHIP_BUILD), 'reposition', 'whipBuild'), //         whips: long build, short brake (peak at .55-.6); 28 f
+    anticipate: tag(bez(0.56, -0.303, 0.132, 0.795), 'reposition', 'anticipate'), // one wind-up per film at most
+    // leave: end at speed; cut on the last frame
+    softIn: tag(bez(0.571, 0.245, 0.76, 0.612), 'leave', 'softIn'), //       gentle exits; 28 f
+    buildIn: tag(bez(0.525, 0.079, 0.724, 0.331), 'leave', 'buildIn'), //    THE exit (x1.11 a frame at 26 f); 26 f
+    launchIn: tag(bez(0.556, 0.053, 0.835, 0.188), 'leave', 'launchIn'), //  into a cut (x1.16 a frame at 29 f); 29 f
+    linear: tag((p) => p, 'linear', 'linear'), //                             colour lerps, decays, drifts, counters
+    // 1.1 names, 1.1 shapes
+    out: tag(bez(0.16, 1, 0.3, 1), 'arrive', 'out', 'snapOut'), //           expo-out: arrivals and reveals (never fade-outs)
+    outSoft: tag(bez(0.22, 1, 0.36, 1), 'arrive', 'outSoft', 'snapOut'), //  quint-out: gentle settles
+    in: tag(bez(0.7, 0, 0.84, 0), 'leave', 'in', 'launchIn'), //             expo-in: departures, implosions, exits
+    inOut: tag(bez(0.87, 0, 0.13, 1), 'reposition', 'inOut', 'strongInOut'), // expo-in-out: whips and lockup slides
+    smooth: tag(bez(0.65, 0, 0.35, 1), 'reposition', 'smooth', 'strongInOut'), // cubic-in-out: drifts and 10-14 f fades
+    ui: tag(bez(0.4, 0, 0.2, 1), 'reposition', 'ui', 'stdInOut'), //         small UI state changes
+    cam: tag(bez(0.48, 0.1, 0, 0.9), 'arrive', 'cam', 'liftOut'), //         camera: slow start, peak at ~27%, long settle
+    glide: tag(bez(0.47, 0.2, 0.15, 1), 'arrive', 'glide', 'liftOut'), //    150-350 px moves with a soft landing
+    rest: tag(bez(0.45, 0, 0.1, 1), 'reposition', 'rest', 'stdInOut'), //   zero-slope start, ends at rest
+    contact: tag(bez(0.55, 0, 0.9, 0.55), 'leave', 'contact', 'buildIn'), // accelerates INTO an impact (ends with velocity)
+    whip: tag(bez(0.6, 0, 0.15, 1), 'reposition', 'whip', 'whipBuild'), //   feature-to-feature moves (fast start)
+    dolly: tag(bez(0.35, 0, 0.65, 1), 'reposition', 'dolly', 'linear'), //  slow push through a hold
+    exit: tag(bez(0.55, 0.055, 0.675, 0.19), 'leave', 'exit', 'buildIn'), // cubic-in: exits into a cut
+    type: tag(bez(0.5, 1, 0.89, 1), 'arrive', 'type'), //                    quad-out: an eased typewriter
+    expo: tag(expOut(6), 'arrive', 'expo'), //                                exponential glide of held text (the 1.1 re-centre)
   };
+  /** The 1.1 easing names and their replacements. */
+  const E_DEPRECATED = Object.fromEntries(Object.entries(E).filter(([, e]) => e.deprecated).map(([k, e]) => [k, e.deprecated]));
+
+  /** Special curves primitives use as their defaults, by job (the Remotion kit's M). */
+  const M = {
+    rise: tag(bez(0.17, 0.75, 0.29, 0.83), 'arrive', 'M.rise'),
+    press: tag(bez(0.77, 0.51, 0.33, 0.94), 'reposition', 'M.press'),
+    lockup: tag(bez(0.841, 0.113, 0.196, 0.941), 'reposition', 'M.lockup'),
+    develop: tag(bez(0.73, 0.26, 0.45, 0.69), 'reposition', 'M.develop'),
+    letterArc: tag(bez(0.428, 1.064, 0.653, 1.114), 'arrive', 'M.letterArc'),
+    letterGrow: tag(bez(0.721, 0.007, 0.854, 1.45), 'reposition', 'M.letterGrow'),
+    letterSlide: tag(bez(0.301, 0.189, 0.249, 0.89), 'arrive', 'M.letterSlide'),
+    groupSettle: tag(bez(0.172, 0.752, 0.455, 0.826), 'arrive', 'M.groupSettle'),
+    pixelStair: tag(bez(0.49, 0.03, 0.07, 0.94), 'reposition', 'M.pixelStair'),
+    demosaicZoom: tag(bez(0.006, 0.51, 0.35, 1), 'arrive', 'M.demosaicZoom'),
+    collagePush: tag(bez(0.734, 0.266, 0.339, 0.837), 'reposition', 'M.collagePush'),
+    oversize: tag(bez(0.232, 0.902, 0.794, 0.997), 'arrive', 'M.oversize'),
+    squeeze: tag(bez(0.917, 0.495, 0.361, 0.843), 'reposition', 'M.squeeze'),
+    swell: tag(bez(1, -0.044, 0.791, 0.97), 'reposition', 'M.swell'),
+    ringTighten: tag(bez(0.253, -0.242, 0.331, 0.925), 'reposition', 'M.ringTighten'),
+    focusSlide: tag(bez(0, 0.973, 0.466, 0.983), 'arrive', 'M.focusSlide'),
+  };
+
+  // ---- tables: house numbers, 60 fps frames unless noted (the Remotion kit's lib/anim.ts) ----
+  const DUR = {
+    word: [16, 24, 32, 32, 57], lineIn: [12, 18, 28, 54, 78], letter: [12, 25, 34, 45, 64],
+    typeOther: [8, 19, 26, 53, 66], typeOn: [19, 24, 40, 58, 91],
+    typeColour: [12, 12, 18, 28, 60], typeScale: [13, 19, 26, 49, 81], typeExit: [7, 10, 17, 24, 33],
+    reflow: [10, 12, 22, 44, 64], scaleIn: [11, 20, 32, 53, 81], slideIn: [15, 18, 30, 39, 48],
+    exit: [10, 15, 24, 32, 44], ui: [10, 20, 34, 50, 70], press: [12, 17, 20, 25, 32],
+    cursor: [25, 31, 44, 54, 90], logoPart: [10, 20, 30, 46, 80], counter: [24, 24, 34, 80, 120],
+    lineDraw: [13, 16, 22, 45, 95], mask: [12, 17, 26, 40, 58], morph: [14, 16, 22, 32, 49],
+    colour: [12, 20, 34, 54, 110], whip: [17, 21, 32, 52, 94], zoomThrough: [14, 24, 35, 46, 75],
+    push: [15, 28, 50, 72, 86], pull: [25, 30, 43, 70, 129], pan: [27, 38, 48, 72, 126],
+    drift: [18, 28, 49, 82, 146], orbit: [25, 35, 55, 81, 110], seamMove: [6, 14, 25, 42, 64],
+    collage: [25, 27, 40, 62, 120], loader: [14, 17, 25, 30, 61], ambient: [18, 29, 60, 97, 244],
+    hold: [15, 24, 76, 147, 302], focus: [16, 16, 27, 45, 45],
+  };
+  const PRESS = { squeeze: 9, hold: 3, release: 10 };
+  const TAU = { marker: 3, element: 8, hero: 17, world: 30, exitUi: 6, exitCamera: 19 };
+  const STAG = {
+    letter: [2, 3, 4, 8, 14], word: [4, 7, 10, 14, 14], row: [6, 8, 9, 10, 18],
+    ui: [2.5, 5, 7.5, 17.5, 34], logoPart: [6, 6, 7, 24, 30],
+  };
+  const ACCEL = {
+    rows: [18, 18, 14, 10, 8, 6, 6],
+    montage: [14, 14, 14, 14, 14, 10, 10, 10, 6, 6, 6, 6, 6, 6],
+    typing: [5, 2, 2, 1, 1, 1],
+  };
+  const CPS = { human: { min: 19, house: 30, max: 45, burst: 2 }, prompt: { start: 5, end: 19 }, stream: { min: 50, max: 150 } };
+  const SPEED = {
+    wordRise: [420, 630, 1080], reflowPeak: [930, 2000, 3060], uiCard: [390, 1080, 1900], slideIn: [780, 1860, 3200],
+    cursor: [1350, 1530, 2400], pan: [570, 1700, 2640], whipPeak: [750, 1600, 3700], whipMax: 7400,
+    cutExitTypical: [900, 2700], holdDrift: [6, 30, 90], residualAfterCut: 45, blurThreshold: [900, 1200], crispFlatMax: 10000,
+  };
+  const CARRY = {
+    ratio: [0.4, 0.7, 1.4], decay60: [0.78, 0.89, 0.93], fast: { share: 0.6, decay60: 0.4 }, residual60: 0,
+    approach60: [16, 46], settle60: [16, 50],
+  };
+  const BREATH = { into: [0.01, 0.08], intoDur60: [10, 20], open: [0.05, 0.12], settleDur60: [8, 50] };
+  const OVERSIZE = { from: [1.28, 1.9], dur60: [22, 56] };
 
   const clamp = (v, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
   const mix = (a, z, t) => a + (z - a) * t;
-  /** Log-space mix for scale and zoom: equal ratios per frame, so a zoom never seems to rush. */
-  const lmix = (a, z, t) => Math.exp(mix(Math.log(a), Math.log(z), t));
+  /** Log-space mix for scale and zoom: equal ratios per frame, so a zoom never seems to rush (linear when an end is 0). */
+  const lmix = (a, z, t) => (a > 0 && z > 0 ? Math.exp(mix(Math.log(a), Math.log(z), t)) : mix(a, z, t));
   /** Clamped eased value between two frames (for values you compute yourself, e.g. in onUpdate). */
   const tw = (f, from, to, a, z, ease = E.out) => mix(a, z, ease(clamp((f - from) / (to - from))));
   const prog = (f, from, to, ease = E.out) => tw(f, from, to, 0, 1, ease);
@@ -256,20 +380,36 @@
   }
 
   /**
-   * Spring presets, identical to the Remotion kit. Default to critical damping (zeta >= 1). Never an
-   * overshooting one (snap, pop, land, word, detent, micro) on type: words ease in, or ride SPR.calm.
+   * Spring presets, identical to the Remotion kit. Default to critical damping. A film has ONE
+   * underdamped class (one kind of element that springs, every time, never type); the 1.1 presets
+   * keep their 1.1 configs. Keep one preset per line (lint-film reads them).
    */
   const SPR = {
-    snap: { damping: 18, stiffness: 260, mass: 0.7 }, //   locks into place, small overshoot
-    pop: { damping: 11, stiffness: 180, mass: 0.6 }, //    14% overshoot: a true landing only (<= 2 per film)
-    soft: { damping: 26, stiffness: 120, mass: 1 }, //     weighty, no overshoot
-    heavy: { damping: 30, stiffness: 90, mass: 1.4 }, //   big objects
-    firm: { damping: 24, stiffness: 140, mass: 1 }, //     UI arrivals, no overshoot
-    micro: { damping: 30, stiffness: 500, mass: 0.6 }, //  chips, badges, small snaps
-    land: { damping: 14.5, stiffness: 200, mass: 1 }, //   ~15% overshoot: a true landing only (<= 2 per film)
-    word: { damping: 20, stiffness: 170, mass: 0.9 }, //   words sliding in to lock
-    detent: { damping: 24, stiffness: 380, mass: 0.6 }, // a reel or picker clicking home
-    calm: { damping: 16, stiffness: 64, mass: 1 }, //      critically damped, 97% at 41 f: the only spring for type
+    critical: { stiffness: 170, damping: 26, mass: 1 }, //       DEFAULT: zeta 1.00, settled (2 %) in 27 f at 60 fps
+    criticalFast: { stiffness: 400, damping: 40, mass: 1 }, //   markers, chips: 18 f
+    criticalSlow: { stiffness: 60, damping: 15.5, mass: 1 }, //  big objects, the camera: 45 f
+    landing: { stiffness: 244, damping: 18.3, mass: 1 }, //      THE spring class: zeta 0.59, 10 %, 23 f
+    softLanding: { stiffness: 145, damping: 16, mass: 1 }, //    big framing objects: 6 %, 30 f
+    menu: { stiffness: 910, damping: 39, mass: 1 }, //           a menu or container snapping open: 7 %, 12 f
+    containerPop: { stiffness: 4274, damping: 71, mass: 1 }, //  a container morph: 12-13 %, 6 f
+    wordDrop: { stiffness: 864, damping: 33.3, mass: 1 }, //     posterised word drops only: 11 %, 12 f
+    lazyWheel: { stiffness: 100, damping: 10.1, mass: 1 }, //    wheel pickers: 16 %, 49 f
+    logoSwing: { stiffness: 68, damping: 8.24, mass: 1 }, //     a logo's rotation after a wind-up: 16 %, 59 f
+    snap: { damping: 18, stiffness: 260, mass: 0.7 }, //         1.1: locks into place, small overshoot
+    pop: { damping: 11, stiffness: 180, mass: 0.6 }, //          1.1: 14% overshoot
+    soft: { damping: 26, stiffness: 120, mass: 1 }, //           1.1: weighty, no overshoot
+    heavy: { damping: 30, stiffness: 90, mass: 1.4 }, //         1.1: big objects
+    firm: { damping: 24, stiffness: 140, mass: 1 }, //           1.1: UI arrivals, no overshoot
+    micro: { damping: 30, stiffness: 500, mass: 0.6 }, //        1.1: chips, badges, small snaps
+    land: { damping: 14.5, stiffness: 200, mass: 1 }, //         1.1: ~15% overshoot
+    word: { damping: 20, stiffness: 170, mass: 0.9 }, //         1.1: words sliding in to lock
+    detent: { damping: 24, stiffness: 380, mass: 0.6 }, //       1.1: a reel or picker clicking home
+    calm: { damping: 16, stiffness: 64, mass: 1 }, //            1.1: critically damped, 97% at 41 f
+  };
+  /** The 1.1 spring presets and the preset that replaces each. */
+  const SPR_DEPRECATED = {
+    snap: 'landing', pop: 'containerPop', soft: 'critical', heavy: 'criticalSlow', firm: 'critical',
+    micro: 'criticalFast', land: 'landing', word: 'critical', detent: 'criticalFast', calm: 'criticalSlow',
   };
 
   // ---- sync: computed from the same curves the picture uses --------------------------------
@@ -330,7 +470,9 @@
   const MOTION = {
     FPS, BPM, W, H, BEAT, BAR, b, sec, at, fd,
     PACE_NAME, PACE, pace, wordCount, holdFor, revealFor, readingWindows, durFor,
-    bez, E, clamp, mix, lmix, tw, prog, arrive, depart, arriving, departing, hitPulse, squash, pulse, springFn, spring, SPR,
+    bez, expOut, expIn, perFrame, tag, STD_IN_OUT, WHIP_BUILD, E, E_DEPRECATED, M,
+    DUR, PRESS, TAU, STAG, ACCEL, CPS, SPEED, CARRY, BREATH, OVERSIZE,
+    clamp, mix, lmix, tw, prog, arrive, depart, arriving, departing, hitPulse, squash, pulse, springFn, spring, SPR, SPR_DEPRECATED,
     peak, settleOf, delayTo, hit, reachAt, startFor, rand,
   };
   root.MOTION = MOTION;

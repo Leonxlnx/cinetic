@@ -1,0 +1,26 @@
+{
+ "fps": 60,
+ "bpm": 100,
+ "total": 636,
+ "events": [
+  { "f": 144, "kind": "hit", "weight": 1, "pan": 0 },
+  { "f": 315, "kind": "tick", "weight": 0.6, "pan": 0 }
+ ],
+ "declared": {
+  "seams": [{ "at": 144, "kind": "snapZoom", "carry": "scale" }],
+  "stepped": [{ "from": 300, "to": 360, "fps": 12, "id": "collage" }],
+  "flashes": [{ "f": 144, "frames": 1, "id": "zoom-flash" }],
+  "cameraBlur": [],
+  "end": null,
+  "reveal": null,
+  "springClass": "",
+  "structural": [],
+  "fx": [
+   { "id": "zoom", "seams": [{ "at": 144, "kind": "snapZoom" }], "stepped": [], "flashes": [{ "f": 144, "frames": 1, "id": "zoom-step" }], "cameraBlur": [] },
+   { "id": "collage", "seams": [], "stepped": [{ "from": 310, "to": 350, "fps": 16, "id": "collage" }], "flashes": [], "cameraBlur": [] },
+   { "id": "flick", "seams": [], "stepped": [], "flashes": [], "cameraBlur": [{ "from": 400, "to": 420, "id": "flick" }] },
+   { "id": "pop", "seams": [], "stepped": [], "flashes": [{ "f": 500, "frames": 2, "id": "pop" }], "cameraBlur": [] },
+   { "id": "card", "seams": [{ "at": 432, "kind": "morph" }], "stepped": [], "flashes": [], "cameraBlur": [] }
+  ]
+ }
+}

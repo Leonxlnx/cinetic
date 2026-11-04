@@ -1,0 +1,15 @@
+# The Python packages cinetic's scripts import (Python 3.11 or newer). Install them into one virtual environment
+# and point PYTHON at its interpreter:
+#   python -m pip install -r scripts/requirements.txt
+#   node scripts/py.mjs --check      (lists what the interpreter the scripts use still misses)
+# earshot, the sound kit's renderer, lives in its own environment (EARSHOT_PYTHON); it is not listed here.
+numpy                 # every check and measure
+opencv-python         # forensics, look-audit, like, palette, brand, motion blur (opencv-python-headless works too; sheet.py draws with pillow without it)
+scipy                 # the music, the sound, check-sync, measure-speed
+soundfile             # reading and writing audio
+pyloudnorm            # loudness (master.py, check-sync.py)
+librosa               # the track's analysis (track.py, av-audit.py)
+pillow                # brand.py, dither-gradient.py, sheet.py without opencv
+fonttools             # outline-text.py (brand-kit.sh's SVG lockups)
+brotli                # woff2 fonts for outline-text.py
+uharfbuzz             # shaping for outline-text.py (the SVG lockups)

@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 10 10" onload="alert(1)"><script>alert(2)</script>
+<foreignObject width="10" height="10"><div>hi</div></foreignObject><image xlink:href="https://tracker.example/p.png" width="1" height="1"/>
+<rect width="10" height="10" fill="url(https://tracker.example/x.svg#g)" onclick="x()"/><use href="#a"/><style>@import url(https://tracker.example/s.css); .a{fill:#123456}</style></svg>

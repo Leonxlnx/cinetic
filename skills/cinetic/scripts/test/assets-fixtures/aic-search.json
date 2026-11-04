@@ -1,0 +1,57 @@
+{
+ "_shape": "the Art Institute of Chicago /artworks/search response, hand-written with the fields assets.mjs reads (not a recording)",
+ "config": {
+  "iiif_url": "https://www.artic.edu/iiif/2",
+  "website_url": "https://www.artic.edu"
+ },
+ "data": [
+  {
+   "id": 101,
+   "title": "Example seascape",
+   "thumbnail": {
+    "width": 3000,
+    "height": 2000,
+    "alt_text": "Example seascape"
+   },
+   "date_display": "1900",
+   "artist_display": "A. Artist\nExample City",
+   "medium_display": "Oil on canvas",
+   "is_public_domain": true,
+   "artwork_type_title": "Painting",
+   "artist_title": "A. Artist",
+   "image_id": "00000000-0000-4000-8000-000000000101"
+  },
+  {
+   "id": 102,
+   "title": "Example cliffs",
+   "thumbnail": {
+    "width": 2400,
+    "height": 1800,
+    "alt_text": "Example cliffs"
+   },
+   "date_display": "1900",
+   "artist_display": "A. Artist\nExample City",
+   "medium_display": "Oil on canvas",
+   "is_public_domain": true,
+   "artwork_type_title": "Painting",
+   "artist_title": "A. Artist",
+   "image_id": "00000000-0000-4000-8000-000000000102"
+  },
+  {
+   "id": 103,
+   "title": "Example breakers",
+   "thumbnail": {
+    "width": 4000,
+    "height": 2600,
+    "alt_text": "Example breakers"
+   },
+   "date_display": "1900",
+   "artist_display": "A. Artist\nExample City",
+   "medium_display": "Oil on canvas",
+   "is_public_domain": true,
+   "artwork_type_title": "Painting",
+   "artist_title": "A. Artist",
+   "image_id": "00000000-0000-4000-8000-000000000103"
+  }
+ ]
+}

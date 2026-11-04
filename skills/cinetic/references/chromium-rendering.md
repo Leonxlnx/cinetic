@@ -23,6 +23,7 @@ Every item here was hit on a real film and fixed. The numbers are what was measu
 | 13 | Animations differ between renders or ignore the timeline | CSS `transition`/`animation`, `Math.random`, `Date.now` run on wall-clock time | everything is a function of the frame; seeded `random()` | `lint-film` `css-animation`, `nondeterminism`; `--against` |
 | 14 | WebGL canvases render blank or very slowly | no GPU GL backend in headless Linux | `Config.setChromiumOpenGlRenderer('angle')` (the starter sets it); concurrency 1 while validating | a still of the canvas frame |
 | 15 | A word settles in 1 px ticks at the end of its rise; a slow vertical drift of text stair-steps even inside one transform | the headless shell snaps a text layer's **vertical** position to whole pixels (horizontal stays sub-pixel) | end vertical text moves on `arrive(p)` / start exits on `depart(q)` (`src/lib/anim.ts`); for a long slow vertical drift of text (a slow camera push over type), draw the type as vector outlines (`scripts/outline-text.py` gives SVG paths from the brand font), which move sub-pixel like any shape; otherwise move it horizontally, by scale, or promote the layer (no animated blur inside, and never a whole-frame promoted layer, which can drop a frame's content) | `forensics.py` judder on the text region |
+| 17 | Type drawn as SVG `<text>` jumps in size or place, or overlaps itself, once a camera, scale or 3D turn sits above it | Chrome lays SVG text out under the CSS transforms of its parents differently from HTML text | set type as HTML placed by its baseline (`top = y - baseline x size`), keep SVG for paths | `lint-film` `svg-text` |
 | 16 | Text snaps from slightly soft to sharp a few frames after it has stopped | CSS `blur()` radii render in ~0.5 px steps and anything under ~0.75 px renders fully sharp | clear entrance blur by 60% of the move (`blurIn`), start exit blur once moving (`blurOut`) | `forensics.py` sharpness step |
 
 ## Details and code
@@ -150,6 +151,35 @@ const p = prog(f, s, s + 26, E.out);
 ### 16. Blur radii are quantised
 
 `filter: blur(r)` renders in steps of about 0.5–0.6 px of radius, and any radius under about 0.75 px renders exactly sharp (measured: 0.1–0.7 px identical to no blur; 0.8–1.3 px one level; 1.4–1.8 px the next). A blur ramp that eases to 0 alongside a slowing move therefore spends its last frames at "slightly soft", then snaps to sharp once the word has already stopped. Clear entrance blur early with `blurIn(p, px)` (gone by 60% of the eased move, when the word is still fast and half transparent) and start exit blur only once the element moves (`blurOut(q, px)`); both are in `src/lib/anim.ts`. Large defocus goes through `RackFocus` (item 3).
+
+### 17. Defocus at fixed levels
+
+An animated `filter: blur()` radius is quantised (item 16), expensive on a large layer, and its last frames snap. Draw
+defocus as at most two copies at fixed levels (`lib/defocus.ts`: 0.75, 1, 1.5, 2, 3, 4, 6, 8, 12, 16, 24, 32 px),
+cross-faded by opacity (`defocusMix(sigma)`), so any sigma reads as a smooth ramp and no radius ever animates. When a
+defocused layer also fades, fade the group, not each copy (fading each copy shifts the mix toward the sharper one).
+Bake large soft shapes (a foreground occluder, a glow, a shadow) once into a plate.
+
+### 18. Scaled text rasterisation
+
+Text scaled up from a small size is rasterised at its layout size and goes soft; text scaled down is minified with
+aliasing (item 6). Lay text out at the size it is seen at its biggest and scale down, draw a giant word as SVG paths
+(`scripts/outline-text.py`), or switch the layout size on a whole frame at a velocity peak. A giant word (400 px and up)
+that the camera crosses is best as paths.
+
+### 19. GPU cost inside the frame
+
+Large CSS blurs, stacked defocus copies, animated SVG filters and `backdrop-filter` on 1080p layers load the GPU on
+every frame and can stall a laptop's display driver. `lint-film.mjs` warns (`gpu-cost`) on a blur over 40 px, more
+than 2 blurred layers in a file, an SVG filter animated by the frame, any `backdrop-filter`, and a chain holding more
+than 24 sharp word layers. The fix is a baked plate (`scripts/dither-gradient.py`), static filters picked per frame
+(the pixelate ladder), and frost built from two copies instead of a backdrop filter.
+
+### 20. Two scenes at once
+
+A transition that draws both shots (a window, a dive, an exposure hand-over) doubles the layer count for its frames.
+Keep the outgoing shot's heavy layers (defocus copies, footage) only for the frames they are visible, unmount the rest,
+and prefer one shared plate for both sides.
 
 ## When something looks wrong and none of these fit
 

@@ -1,128 +1,192 @@
 {
  "kit": 1,
- "name": "calm",
+ "name": "launch",
  "sr": 48000,
- "note": "The default for text-led films: soft natural touches, one tuned voice for bells and text, gentle air for moves, a single struck note for the lockup. Clicks, ticks, the pop, the snap, the space bar and the short whoosh are CC0 recordings fitted as code, where they measure closer to their role than the forge member (earshot match against the role's description and against synth-blip descriptions, earshot realness); the other touches are forge taps, the tuned voice is the launch film's measured kalimba. Every take passes the model-free audit (earshot kit check). Riser, swell, suck and drop are off: a reveal resolves on one element.",
+ "note": "The music-led launch film: soft, short, mid-register effects mixed against the music bed instead of at a fixed level. Every role names its level over the bed (bed_db: the mix's loudest 50 ms at the effect over the music's median 50 ms level in the second before the cue), where it sits against the cut (offset_ms: taps, knocks and clicks lead, pop-in thumps and whoosh and swell peaks land after) and how close a run may go (min_gap_ms); ticks and bells are set wide. The numbers are house numbers for music-led films; the members are the earshot 0.4 recipe sounds made for that style (ui_pop, knock, cut_hit, mallet, shutter, the thump-whoosh, the dark riser and swell, the mid ding). level_db is the same balance for a mixer without a bed (the loudest role at 0 dB). One gesture at a time: the music steps down before a hit, a drop, a big whoosh or a swell and comes back on it; nothing ducks under the effects. Every take passes the model-free audit (earshot kit check).",
  "roles": {
   "tick": {
-   "sound": "fit/tick/domino",
+   "sound": "pro_hover_tick/ping",
    "takes": 3,
    "align": "onset",
-   "level_db": -5.0,
-   "note": "domino pieces knocking, a CC0 recording fitted as code (0.14 s): matches 'a soft quiet UI tick' at z +1.02, p 0.67 over synth-blip descriptions (tap/glass: -0.08, p 0.01), realness 0.83 (0.45); level +3 dB for its lower loudness at the same peak"
+   "bed_db": 3.0,
+   "offset_ms": 0,
+   "min_gap_ms": 66,
+   "width": 0.1,
+   "level_db": 0.0,
+   "note": "an airy 8.8 kHz tick (60 ms), set fully wide: ticks come in runs ~66 ms apart; felt in the run, as low over the bed as the light touches"
   },
   "tick.crisp": {
-   "sound": "pro_tap/glass",
+   "sound": "pro_click/tink",
    "takes": 3,
    "align": "onset",
-   "level_db": -8.0,
-   "note": "the same glass touch, tighter (98 ms, 225 Hz body + glass partial): crisp without a synthetic tink"
+   "bed_db": 3.0,
+   "offset_ms": 0,
+   "min_gap_ms": 66,
+   "width": 0.3,
+   "level_db": -13.0,
+   "note": "a bright designed tink for the crisper tick, a little wide"
   },
   "tock": {
-   "sound": "tap/knuckle",
+   "sound": "knock/wood",
    "takes": 3,
    "align": "onset",
-   "level_db": -6.0,
-   "note": "a knuckle knock: the low partner of the glass tick"
+   "bed_db": 8.0,
+   "offset_ms": -40,
+   "min_gap_ms": 100,
+   "level_db": -1.5,
+   "note": "a mid-band wooden knock (0.15 s, 400 Hz block): knocks lead the cut by ~40 ms"
   },
   "hit": {
-   "sound": "notify/m0",
-   "takes": 2,
+   "sound": "cut_hit/punch",
+   "takes": 3,
    "align": "onset",
-   "level_db": -3.0,
-   "note": "the lockup as one struck bell on the film's tonic (edits.pitch, set by kit.py tune: G4 in G major), single attack, no build, 1.9 s natural decay: a soft tonal resolve instead of a boom",
-   "edits": {
-    "pitch": "G4"
-   }
+   "bed_db": 7.5,
+   "offset_ms": 0,
+   "level_db": -9.0,
+   "note": "one short punchy cut hit (0.28 s, two thirds under 150 Hz), on the cut, after the music steps down"
   },
   "land": {
-   "sound": "pro_pop_in/deep",
-   "takes": 3,
-   "align": "onset",
-   "level_db": -5.0,
-   "note": "a round low thump (75 Hz body, 0.18 s): an element settling, felt more than heard"
-  },
-  "land.light": {
-   "sound": "tap/soft",
-   "takes": 3,
-   "align": "onset",
-   "level_db": -8.0,
-   "note": "a soft fingertip thump for small elements landing"
-  },
-  "pop": {
-   "sound": "fit/pop/mouth_plop",
+   "sound": "pro_pop_in/round",
    "takes": 4,
    "align": "onset",
-   "level_db": -2.5,
-   "note": "a soft mouth plop, a CC0 recording fitted as code (0.28 s), no pitch glide: matches 'a soft natural pop' at z +2.98, p 1.00 over synth-blip descriptions (pro_pop_in/airy: +1.88, 0.98), realness 0.97 (0.65)"
+   "bed_db": 8.0,
+   "offset_ms": 30,
+   "min_gap_ms": 159,
+   "level_db": -5.5,
+   "note": "a round low pop-in thump (124 Hz, 0.18 s): it lands ~30 ms after the cut"
+  },
+  "land.light": {
+   "sound": "tap/finger",
+   "takes": 3,
+   "align": "onset",
+   "bed_db": 3.0,
+   "offset_ms": -60,
+   "min_gap_ms": 115,
+   "level_db": -10.0,
+   "note": "a light finger tap (150-260 Hz and a faint click), low under the bed: taps lead the cut by ~60 ms"
+  },
+  "pop": {
+   "sound": "ui_pop/soft",
+   "takes": 4,
+   "align": "onset",
+   "bed_db": 8.5,
+   "offset_ms": 4,
+   "min_gap_ms": 114,
+   "level_db": -8.0,
+   "note": "the soft rounded mid pop (0.14 s, 550 Hz, 22 ms onset, t20 75 ms): the most used effect, in runs ~114 ms apart"
   },
   "whoosh.short": {
-   "sound": "fit/whoosh.short/bamboo_swish",
+   "sound": "whoosh_fast/crisp",
    "takes": 3,
    "align": "peak",
-   "level_db": -9.0,
-   "note": "a short whoosh, a CC0 recording fitted as code (0.48 s, one smooth pass): matches 'a short fast whoosh swish through the air' at z +5.32 (swipe/velvet, which reads as 'a heavy thud': +2.01), realness 0.99 (0.97)"
+   "bed_db": 9.0,
+   "offset_ms": 37,
+   "level_db": -5.5,
+   "note": "a fast air whoosh (0.37 s, 570 Hz): its peak lands ~37 ms after the cut (swish/bright for a brighter 2.4 kHz flick)"
   },
   "whoosh.long": {
-   "sound": "whoosh_big/swell",
+   "sound": "whoosh_big/thump",
    "takes": 2,
    "align": "peak",
-   "level_db": -7.0,
-   "note": "a gentle air swell (1.36 s, peak at 0.44 s) for scene moves: air, not a sub-led designed whoosh"
+   "bed_db": 8.5,
+   "offset_ms": 3,
+   "level_db": -6.5,
+   "note": "a big low whoosh that lands with a thump ~80 ms in and rings ~0.35 s"
   },
   "suck": null,
-  "riser": null,
-  "drop": null,
+  "riser": {
+   "sound": "riser/dark",
+   "takes": 2,
+   "align": "peak",
+   "bed_db": 8.0,
+   "offset_ms": -23,
+   "level_db": -3.5,
+   "note": "a short dark riser (0.8 s, noise + sub + a speeding stutter, no synth sweep), its peak ~23 ms before the cut and its fall across it (it rings on past its loudest point, so it is aligned on the peak, not its end); at most one or two a film"
+  },
+  "swell": {
+   "sound": "reverse_swell/dark",
+   "takes": 2,
+   "align": "peak",
+   "bed_db": 9.5,
+   "offset_ms": 42,
+   "level_db": -5.5,
+   "note": "a darker near-mono reverse swell peaking ~42 ms after the cut; at most one a film (reverse_swell/cymbal for the bright wide cymbal)"
+  },
+  "drop": {
+   "sound": "cut_hit/kick",
+   "takes": 2,
+   "align": "onset",
+   "bed_db": 7.0,
+   "offset_ms": 0,
+   "level_db": -8.5,
+   "note": "a short kick-led sub hit (0.22 s) on the cut; set edits.pitch to the film's root",
+   "edits": {
+    "pitch": "G1"
+   }
+  },
   "key": {
-   "sound": "typing_key/thock",
+   "sound": "typing_key/clicky",
    "takes": 12,
    "align": "onset",
-   "level_db": -10.0,
-   "note": "a thocky mechanical key, a new take per keystroke; the light / laptop members ring (comb ring in the audit)"
+   "bed_db": 6.5,
+   "offset_ms": 8,
+   "min_gap_ms": 87,
+   "level_db": -1.0,
+   "note": "realistic mid keys (1.3-4.4 kHz), a new take per keystroke, ~87 ms apart in a run"
   },
   "key.space": {
    "sound": "fit/key.space/thock_space",
    "takes": 4,
    "align": "onset",
-   "level_db": -9.5,
-   "note": "a mechanical keyboard space bar, a CC0 recording fitted as code (0.39 s): matches 'a spacebar press' at z +3.22 (typing_key/deep: +2.14), realness 0.99 (0.84); its own top tags include 'a spacebar press'"
+   "bed_db": 6.5,
+   "offset_ms": 8,
+   "level_db": -1.5,
+   "note": "a mechanical keyboard space bar, a CC0 recording fitted as code"
   },
   "key.return": {
-   "sound": "typing_key/deep",
+   "sound": "typing_key/clicky",
    "takes": 2,
    "seed": 4100,
    "align": "onset",
-   "level_db": -7.0,
-   "note": "the deep cap pressed firmer (its own seed): return sits 2.5 dB over the space bar"
+   "bed_db": 7.0,
+   "offset_ms": 8,
+   "level_db": -0.5,
+   "note": "the run's own switch on its own seeds, a little louder"
   },
   "click": {
    "sound": "fit/click/floss_lid",
    "takes": 2,
    "align": "onset",
-   "level_db": -4.5,
-   "note": "a small plastic click, a CC0 recording fitted as code (0.13 s, 4.9 kHz centroid): matches 'a soft UI button click' at z +1.70, p 0.73 over synth-blip descriptions (tap/finger, which reads as 'a punchy impact hit': +1.37, 0.61), realness 0.97 (0.89)"
+   "bed_db": 6.5,
+   "offset_ms": -11,
+   "min_gap_ms": 85,
+   "level_db": 0.0,
+   "note": "a small plastic click, a CC0 recording fitted as code: clicks lead the cut by ~11 ms"
   },
   "click.confirm": {
-   "sound": "pluck/kalimba_soft",
+   "sound": "notify/mid_tine",
    "takes": 1,
-   "seed": 8101,
+   "align": "onset",
+   "bed_db": 8.5,
+   "offset_ms": 0,
+   "level_db": -8.5,
+   "note": "a rounded mid ding (690 Hz, 32 ms onset), the accent at the end of a run",
    "edits": {
     "pitch": "G5"
-   },
-   "align": "onset",
-   "level_db": -10.0,
-   "note": "a soft tuned pluck confirms: the same voice as bell and text, quieter"
+   }
   },
   "snap": {
-   "sound": "fit/snap/switch_flip",
+   "sound": "shutter/dslr",
    "takes": 2,
    "align": "onset",
-   "level_db": -3.5,
-   "note": "a switch flip, a CC0 recording fitted as code (0.19 s, one attack): matches 'a toggle switch click' at z +2.24, p 1.00 over synth-blip descriptions (pro_pop_in/knock: +0.61, 0.27), realness 0.97 (0.08)"
+   "bed_db": 4.0,
+   "offset_ms": 9,
+   "min_gap_ms": 66,
+   "level_db": -7.0,
+   "note": "a camera shutter for snap zooms and whip-cuts (fit/snap/switch_flip for a toggle)"
   },
-  "swell": null,
   "bell": {
-   "sound": "pluck/kalimba",
+   "sound": "mallet/glock",
    "pitches": [
     "G4",
     "A4",
@@ -137,28 +201,74 @@
    ],
    "takes": 1,
    "align": "onset",
-   "level_db": -5.0,
-   "note": "the launch film's kalimba on two octaves of the key's pentatonic (10 notes, G4-E6 in G major, set by kit.py tune): one tuned note per progress step or motif note, so a climbing motif has a rung for every step"
+   "bed_db": 7.5,
+   "offset_ms": -20,
+   "min_gap_ms": 110,
+   "width": 0.6,
+   "level_db": -8.5,
+   "note": "a gated glockenspiel note doubled an octave under (0.35 s), C pentatonic G4-E6, set wide (L / R correlation 0.6): notes lead the cut by ~20 ms"
   },
   "text": {
-   "sound": "pluck/kalimba_soft",
+   "sound": "mallet/pluck",
    "pitches": [
-    "G4",
-    "A4",
-    "B4",
-    "D5",
-    "E5"
+    "G3",
+    "A3",
+    "B3",
+    "D4",
+    "E4"
    ],
    "takes": 1,
    "align": "onset",
-   "level_db": -12.0,
-   "note": "one soft tuned note when a text fragment resolves (not per word), on the five pentatonic degrees of one octave (set by kit.py tune); a chain steps through each chord's tones among them, under the picture"
+   "bed_db": 4.0,
+   "offset_ms": 0,
+   "min_gap_ms": 110,
+   "level_db": -16.0,
+   "note": "one soft felt pluck per resolved fragment (C pentatonic C4-A4), low under the bed"
   }
  },
  "off": {
-  "suck": "off by default: a reverse whoosh into a cut stacks a build onto the reveal",
-  "riser": "off by default: a reveal resolves on one element; add pro_riser/air_gate only if the treatment needs a build",
-  "drop": "a calm film resolves without a sub drop; pro_sub_drop/soft tuned to the root is the restrained choice if weight is needed",
-  "swell": "off by default: a reverse swell before a hit is a stacked lead-in"
+  "suck": "off: a reverse whoosh into a cut stacks a lead-in on the hit; the music stop-down does that job"
+ },
+ "mix": {
+  "level": "bed",
+  "duck_db": 0,
+  "stop_down": {
+   "before": [
+    "hit",
+    "drop",
+    "whoosh.long",
+    "swell"
+   ],
+   "depth_db": [
+    6,
+    12
+   ],
+   "length_s": [
+    0.3,
+    0.5
+   ],
+   "release": "on the hit: the music comes back with it"
+  },
+  "runs": {
+   "accent_at_end": [
+    "click.confirm",
+    "land",
+    "drop"
+   ]
+  },
+  "density_per_10s": {
+   "music_led": [
+    3,
+    13
+   ],
+   "voice_over_explainer": [
+    18,
+    30
+   ],
+   "effects_led": [
+    30,
+    38
+   ]
+  }
  }
 }

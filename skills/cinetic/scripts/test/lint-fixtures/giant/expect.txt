@@ -1,0 +1,2 @@
+Fixture for scripts/test/lint-film.test.mjs (a whole film folder, linted as one). expect: giant-watermark:warn=1 giant-once:warn=1
+Act 1 sets its giant word as a faint watermark behind the copy (warns); Act 2 sets a second giant word: the giant role is the set of one moment, once per film (warns on the second act).

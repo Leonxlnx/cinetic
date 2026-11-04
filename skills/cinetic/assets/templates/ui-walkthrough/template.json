@@ -1,0 +1,115 @@
+{
+ "name": "ui-walkthrough",
+ "about": "A product walkthrough of 25-40 s: a promise with the input's source mark in its line, the user's input as one lit card that becomes the output in place under the film's one 3D turn, proof arriving, a speed claim, then the product's own flow in steps (the input goes in, the product reads every item, finds what matters, the user picks, it builds), the output live and the end card. Every slot deals one of two or three devices per film (src/deal.ts). new-film.sh --template ui-walkthrough lays these files over the Remotion starter.",
+ "engine": "remotion",
+ "pace": "crisp",
+ "type_family": "bold",
+ "bpm": 120,
+ "music": {
+  "required": true,
+  "slot": "audio/music/",
+  "about": "Every walkthrough is cut to a licensed, human-made, instrumental track (references/music.md): the track carries the film and earshot effects mark the product's state changes; never effects only.",
+  "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 116-132 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track); 116-132 BPM with a clear kick suits the template's whole-bar acts",
+  "add": "bash scripts/new-film.sh <dir> --template ui-walkthrough --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
+  "then": [
+   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end auto  (its own ending, else a fade: never a cut)",
+   "python3 scripts/audio/track.py grid",
+   "python3 scripts/audio/track.py check"
+  ]
+ },
+ "next": [
+  "ui walkthrough: fill src/walk.ts (the script in plain words: line 1 says what the product is, with [] where the input's source mark sits; 2-7 words a line; the product's own strings and numbers in every [slot]),",
+  "  fetch the input's source mark: node scripts/logos.mjs get <name> --film . (its slug in walk.ts input.source, its name in input.sourceName),",
+  "  real portraits of the feed's people (walk.ts photos.people, row order) and pictures of the found items when they are pictures (photos.results): node scripts/assets.mjs search \"<subject>\" --kind photo --people --fit 1:1, sheet, get '#n' --to public/assets, grade; never a drawn face,",
+  "  see the devices this film was dealt: npx tsx -e \"import { DEAL } from './src/deal'; console.log(DEAL)\" (src/deal.ts: PIN a slot, or SEED to re-deal),",
+  "  rebuild the product's real screens in src/acts where the kit stands in, then deal its direction:",
+  "  python3 scripts/deck.py --brief \"<one line>\" --format launch --have ui --options 3 (references/templates.md)"
+ ],
+ "copy": [
+  "src/walk.ts",
+  "src/deal.ts",
+  "src/timeline.ts",
+  "src/Film.tsx",
+  "src/Root.tsx",
+  "src/sync.ts",
+  "src/acts/stage.tsx",
+  "src/acts/type.tsx",
+  "src/acts/Open.tsx",
+  "src/acts/Card.tsx",
+  "src/acts/Proof.tsx",
+  "src/acts/Claim.tsx",
+  "src/acts/Field.tsx",
+  "src/acts/Feed.tsx",
+  "src/acts/Insight.tsx",
+  "src/acts/Pick.tsx",
+  "src/acts/Page.tsx",
+  "src/acts/End.tsx",
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "keep_if_present": [
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "remove": [
+  "src/acts/Act1.tsx",
+  "src/acts/Act2.tsx",
+  "src/acts/Act3.tsx",
+  "src/acts/Act4.tsx",
+  "src/acts/ground.tsx",
+  "src/acts/plate.tsx"
+ ],
+ "deal": {
+  "file": "src/deal.ts",
+  "seed": "the product's name (IDENTITY.name), or SEED in src/deal.ts; PIN chooses a slot by hand, MOVE_PIN and EXIT_PIN a line's move and exit",
+  "print": "npx tsx -e \"import { DEAL, LINES } from './src/deal'; console.log(DEAL, LINES)\""
+ },
+ "slots": {
+  "stage": {
+   "mixed": "paper until the claim, the slate from the claim on (the claim turns the film once)",
+   "light": "every act on paper, the claim on the slate (out and back: the film's two flips)",
+   "dark": "every act on the slate, the claim on paper (out and back: the film's two flips)"
+  },
+  "open": {
+   "line": "the promise with the source's mark inside it (acts/type.tsx MarkLine, on its dealt move) in a slow push",
+   "push": "the same line, then the camera pushes through it to 2.2x onto the mark (fx/TypePush), bleeding off the frame",
+   "card": "the line high in the frame while the input's own lit card rises into it from below, cropped by the bottom edge: the next act's object"
+  },
+  "turn": {
+   "flip": "the lit card turns over through edge-on; its back is the output",
+   "sheen": "a lit band sweeps the card and develops the output behind it",
+   "slide": "the input slides out of the card's window as the output slides in, smeared along its travel"
+  },
+  "proof": {
+   "stack": "notices stacking in front, the newest from behind (fx/Stack), facing the camera in the light",
+   "river": "notices flowing up through three depths at their own speeds",
+   "wall": "result tiles tumbling into a content wall the camera pushes through (kit ContentWall)"
+  },
+  "claim": {
+   "accent": "on the accent like a poster: cap 16 %, flush left at 3 %, -0.04 em (fx/TypeClaim); the film's colour event",
+   "push": "the camera pushes through the line to 2.2x onto its number (fx/TypePush)",
+   "object": "the claim with its object at cap height inside the line (acts/type.tsx MarkLine)"
+  },
+  "read": {
+   "lens": "the product's dense screen; its focus line glides down the rows to the key row (kit DenseScreen)",
+   "flick": "a feed flicked past, braking onto the key item (fx/Scroll, DirBlur)",
+   "ticker": "the items flowing past as content tiles on two depths (kit ContentTicker)"
+  },
+  "build": {
+   "pill": "the chosen row becomes a progress head whose percentage climbs over the build",
+   "assemble": "the output's sections fly in from in front of the page and land in their slots",
+   "stream": "the output types in top-down under a progress rule"
+  },
+  "page": {
+   "lit": "one lit page rises, turns to face the camera as it lands (fx/Lit) and scrolls",
+   "stack": "the page between its siblings in a depth stack the camera pushes through"
+  },
+  "end": {
+   "side": "the lockup beside the output, live and sharp, lit and facing the camera, cropped by the frame's edge",
+   "centre": "the lockup alone in the middle of a clean ground, the mark's parts arriving in turn"
+  },
+  "lines": {
+   "moves": "each line of the script arrives on mask, land, fall or glide (fx/TypePresets; src/deal.ts LINES), never the same move twice in a row, the payoff on a quick one; it leaves on slide, spread, collapse, push or drop"
+  }
+ }
+}

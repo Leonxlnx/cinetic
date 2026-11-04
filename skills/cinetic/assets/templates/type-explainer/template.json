@@ -1,0 +1,71 @@
+{
+ "name": "type-explainer",
+ "about": "A 20-30 s type-led explainer on a lit page, one short sentence at a time: the name and its mark arriving as the next word, what the product is said at the pace of speech, the problem as one line, the promise with the product standing in it as a word and becoming the next shot, the product's own screen built in code in its light, how it fits together with the mark between the words, the mark becoming the hub of the product's parts as content tiles, the close. Each slot plays one of two or three devices dealt per film from the name (src/deal.ts), so no two films run one fixed sequence. new-film.sh --template type-explainer lays these files over the Remotion starter.",
+ "engine": "remotion",
+ "pace": "crisp",
+ "type_family": "calm",
+ "bpm": 90,
+ "deal": {
+  "seed": "the product's name (src/explain.ts seed re-deals, devices pins a slot); src/deal.ts deals and documents each device",
+  "slots": {
+   "open": ["band", "push", "focus"],
+   "voice": ["said", "mask", "build"],
+   "pain": ["land", "push", "crowd"],
+   "promise": ["pill", "roll", "lens"],
+   "picture": ["turn", "stack"],
+   "system": ["wipe", "push", "sheet"],
+   "grid": ["hive", "ring", "stack"],
+   "end": ["lockup", "claim"]
+  }
+ },
+ "music": {
+  "required": true,
+  "slot": "audio/music/",
+  "about": "Every explainer is cut to a licensed, human-made, instrumental track (references/music.md): a calm, even bed whose downbeats carry the act lines; earshot effects mark the story's own moments (the name, each line when it is whole, the product opening and becoming the shot, the parts, the lockup), never the cuts; never effects only.",
+  "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 88-110 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track); 88-110 BPM, light and steady, suits one sentence a bar (a faster track grows the acts whose lines need it: src/timeline.ts BARS)",
+  "add": "bash scripts/new-film.sh <dir> --template type-explainer --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
+  "then": [
+   "npx tsx -e \"const t = require('./src/timeline.ts'); console.log(t.BARS, t.DEAL)\"   (the bars at the track's tempo, and the dealt devices)",
+   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end auto  (its own ending, else a fade: never a cut)",
+   "python3 scripts/audio/track.py grid",
+   "python3 scripts/audio/track.py check"
+  ]
+ },
+ "next": [
+  "type explainer: fill src/explain.ts (the script in plain words: the what line says what the product is, 2-7 words a line, halves of at most 4 words; the product's own modules, its world for the screen, and the products it really works with as integrations),",
+  "  fetch the real marks of those products: node scripts/logos.mjs get <name> --film . (one per integration), then look at npx remotion still KitLogos,",
+  "  see the devices the name deals (src/deal.ts; explain.ts seed re-deals), rebuild the product's screen from its real screens (acts/product.tsx), then deal its direction:",
+  "  python3 scripts/deck.py --brief \"<one line>\" --format launch --have ui --options 3 (references/templates.md)"
+ ],
+ "copy": [
+  "src/explain.ts",
+  "src/deal.ts",
+  "src/timeline.ts",
+  "src/Film.tsx",
+  "src/Root.tsx",
+  "src/sync.ts",
+  "src/acts/stage.tsx",
+  "src/acts/product.tsx",
+  "src/acts/Open.tsx",
+  "src/acts/Pain.tsx",
+  "src/acts/Promise.tsx",
+  "src/acts/Picture.tsx",
+  "src/acts/System.tsx",
+  "src/acts/Grid.tsx",
+  "src/acts/End.tsx",
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "keep_if_present": [
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "remove": [
+  "src/acts/Act1.tsx",
+  "src/acts/Act2.tsx",
+  "src/acts/Act3.tsx",
+  "src/acts/Act4.tsx",
+  "src/acts/ground.tsx",
+  "src/acts/plate.tsx"
+ ]
+}

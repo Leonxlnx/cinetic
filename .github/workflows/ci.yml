@@ -21,7 +21,7 @@ jobs:
   check:
     name: Lint and test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     defaults:
       run:
         shell: bash
@@ -203,17 +203,95 @@ jobs:
             exit 1
           fi
 
-      - name: Lint-film regression tests
-        run: node "skills/$SKILL/scripts/test/lint-film.test.mjs"
+      - name: No audio and no video in git
+        run: |
+          # A film's licensed track and everything mixed from it stay out of git, and demo films live on the
+          # media branch: this branch carries no audio file and no video file at all.
+          bad="$(git ls-files | grep -iE '\.(wav|mp3|flac|ogg|m4a|aac|aif|aiff|opus|mp4|mov|m4v|webm|mkv)$' || true)"
+          if [ -n "$bad" ]; then
+            while IFS= read -r f; do echo "::error file=$f::audio or video tracked by git"; done <<< "$bad"
+            exit 1
+          fi
+          echo "$(git ls-files | wc -l | tr -d ' ') tracked files, no audio and no video"
+
+      - name: Set up Python and ffmpeg for the tests
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends ffmpeg > /dev/null
+          ffmpeg -version | head -n 1
+          # a venv: the runner's system Python is externally managed (PEP 668); first on PATH for every later step
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet numpy scipy soundfile pyloudnorm librosa opencv-python-headless pillow fonttools brotli
+          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
+
+      - name: Provenance (house wording, no audio in git; release mode)
+        run: node "skills/$SKILL/scripts/test/provenance.test.mjs" --release
+
+      - name: Lint-film regression tests (static part)
+        run: node "skills/$SKILL/scripts/test/lint-film.test.mjs" --part static
+
+      - name: UI layout tests (ui-layout.cjs on audit boxes made in code)
+        run: node "skills/$SKILL/scripts/test/ui-layout.test.mjs"
 
       - name: Technique library and pick.py tests
         run: python3 "skills/$SKILL/scripts/test/pick.test.py"
 
-      - name: Install the Remotion starter (for its type check and grid-check cases)
+      - name: Direction deck tests (deck.py)
+        run: python3 "skills/$SKILL/scripts/test/deck.test.py"
+
+      - name: Brand kit intake tests (brand.py)
+        run: python3 "skills/$SKILL/scripts/test/brand.test.py"
+
+      - name: Raster logo trace tests (trace-logo.py)
+        run: python3 "skills/$SKILL/scripts/test/trace-logo.test.py"
+
+      - name: Clip match tests (like.py)
+        run: python3 "skills/$SKILL/scripts/test/like.test.py"
+
+      - name: Imagery tests (assets.mjs, offline fixtures)
+        run: node "skills/$SKILL/scripts/test/assets.test.mjs"
+
+      - name: Music track tests (track.py on test beds made in code)
+        run: python3 "skills/$SKILL/scripts/test/track.test.py"
+
+      - name: Sound library and effects catalogue tests (signals made in code, no earshot; sfx.mjs on fixtures, no network)
+        run: |
+          python3 "skills/$SKILL/scripts/test/library.test.py"
+          node "skills/$SKILL/scripts/test/sfx.test.mjs"
+
+      - name: Copy check tests (copy-check.py)
+        run: python3 "skills/$SKILL/scripts/test/copy-check.test.py"
+
+      - name: Cast, detail-pair, sheet and check-sync tests (audio/kit.py cast, detail-pair.py, sheet.py and forensics.py without opencv, check-sync.py's frames gate)
+        run: |
+          python3 "skills/$SKILL/scripts/test/cast.test.py"
+          python3 "skills/$SKILL/scripts/test/detail-pair.test.py"
+          python3 "skills/$SKILL/scripts/test/sheet.test.py"
+          python3 "skills/$SKILL/scripts/test/check-sync.test.py"
+          python3 "skills/$SKILL/scripts/test/av-level.test.py"
+
+      - name: Real marks and music finder tests (logos.mjs, music.mjs; offline fixtures, no network)
+        run: |
+          node "skills/$SKILL/scripts/test/logos.test.mjs"
+          node "skills/$SKILL/scripts/test/music.test.mjs"
+
+      - name: Forensics self-test (the checks and the motion gates on clips made in code)
+        run: python3 "skills/$SKILL/scripts/forensics.py" --self-test
+
+      - name: Install the Remotion starter (for its type check and the tests that run its src through tsx)
         run: cd "skills/$SKILL/assets/remotion-starter" && npm install --no-audit --no-fund --loglevel=error
 
       - name: Remotion starter type check (tsc --noEmit)
         run: cd "skills/$SKILL/assets/remotion-starter" && npx tsc --noEmit
+
+      - name: Music fit test (track.py fit reads launch-simple's beat plan through the starter's tsx)
+        run: python3 "skills/$SKILL/scripts/test/fit.test.py"
+
+      - name: Token tests (type roles, curves, springs, colour)
+        run: node "skills/$SKILL/scripts/test/tokens.test.mjs"
+
+      - name: HyperFrames mirror tests (motion.js against the Remotion core)
+        run: node "skills/$SKILL/scripts/test/mirror.test.mjs"
 
       - name: Grid-check regression tests (fixtures, both starters, new-film.sh --pace crisp)
         run: |
@@ -223,13 +301,33 @@ jobs:
             exit 1
           fi
 
-      - name: Score regression tests (score.py against main's, bit for bit on the synth engine)
+      - name: Starter primitive tests (continuity, depth and light, kit, type, transitions, seams, drift, data, precheck, film-diff, frames, the one deal; through the starter's tsx)
         run: |
-          # a venv: the runner's system Python is externally managed (PEP 668)
-          python3 -m venv "$RUNNER_TEMP/venv"
-          "$RUNNER_TEMP/venv/bin/pip" install --quiet numpy scipy soundfile pyloudnorm librosa
+          fail=0
+          for t in continuity depth-light kit-dense type-moves type-presets type-systems type-emphasis transitions seam handoff primitives moment wordmark logo-kit drift details kit-real pictures placeholder data-check timing precheck film-diff frames deal-source; do
+            echo "::group::$t.test.mjs"
+            node "skills/$SKILL/scripts/test/$t.test.mjs" || { echo "::error::$t.test.mjs failed"; fail=1; }
+            echo "::endgroup::"
+          done
+          exit "$fail"
+
+      - name: Spine, scene bank and launch template tests (the spine and its handovers, the house scenes against their contracts and tables, launch-simple, creative and cue checks; through the starter's tsx)
+        run: |
+          fail=0
+          for t in spine handover moves depth-shots screen-forms world-step stock-plate logo-standins render-key creative cues launch-simple house-scenes ui-scenes scene-tables bank-d bank-e; do
+            echo "::group::$t.test.mjs"
+            node "skills/$SKILL/scripts/test/$t.test.mjs" || { echo "::error::$t.test.mjs failed"; fail=1; }
+            echo "::endgroup::"
+          done
+          exit "$fail"
+
+      - name: Type family tests (type-family.mjs, and new-film.sh --template and --type on a temp folder)
+        run: node "skills/$SKILL/scripts/test/type-family.test.mjs"
+
+      - name: Score regression tests (the effects-only path bit for bit against main's score.py)
+        run: |
           base=()
-          # main's score.py and its siblings, to compare the synth engine against bit for bit
+          # main's score.py and its siblings: the effects-only path must render the same WAV bit for bit
           if git fetch --no-tags --depth=1 origin main 2>/dev/null; then
             mkdir -p "$RUNNER_TEMP/main"
             git archive FETCH_HEAD "skills/$SKILL/scripts/audio" | tar -x -C "$RUNNER_TEMP/main"
@@ -238,10 +336,16 @@ jobs:
             fi
           fi
           [ "${#base[@]}" -gt 0 ] || echo "::notice::main could not be fetched; score.test.py runs without --baseline"
-          "$RUNNER_TEMP/venv/bin/python" "skills/$SKILL/scripts/test/score.test.py" "${base[@]}"
+          python3 "skills/$SKILL/scripts/test/score.test.py" "${base[@]}"
 
       - name: Script --help contract and docs tests
         run: node "skills/$SKILL/scripts/test/scripts-docs.test.mjs"
+
+      - name: add-font.mjs --add tests (a font package written in code)
+        run: node "skills/$SKILL/scripts/test/add-font.test.mjs"
+
+      - name: Render parts tests (render.sh and deliver.sh with a stand-in for Remotion)
+        run: python3 "skills/$SKILL/scripts/test/render-parts.test.py"
 
       - name: Python syntax (py_compile)
         run: |
@@ -453,6 +557,68 @@ jobs:
 
       - name: Encode tags test (Homebrew ffmpeg)
         run: python "skills/$SKILL/scripts/test/encode-tags.test.py"
+
+  windows:
+    # Windows through Git Bash, the route docs/setup.md gives: no python3 on the PATH (the runner's Python is
+    # python.exe), so every step finds it through scripts/py.mjs; the packages come from scripts/requirements.txt;
+    # new-film.sh scaffolds a project, and the Remotion starter's timeline runs through grid-check with its tsx
+    # (npx through a shell, paths as Windows sees them).
+    name: Windows (Git Bash, py.mjs, requirements.txt)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install the Python packages (scripts/requirements.txt)
+        run: python -m pip install --quiet -r "skills/$SKILL/scripts/requirements.txt"
+
+      - name: py.mjs finds that Python, and it imports every package
+        run: |
+          node "skills/$SKILL/scripts/py.mjs" --which
+          node "skills/$SKILL/scripts/py.mjs" --check
+
+      - name: Script --help contract and docs tests (py.mjs, requirements.txt)
+        run: node "skills/$SKILL/scripts/test/scripts-docs.test.mjs"
+
+      - name: Scaffold a film under Git Bash (new-film.sh) and check its Python
+        run: |
+          film="$(cygpath -u "$RUNNER_TEMP")/film"
+          bash "skills/$SKILL/scripts/new-film.sh" "$film" --no-install
+          [ -f "$film/scripts/requirements.txt" ] || { echo "::error::new-film.sh did not copy scripts/requirements.txt"; exit 1; }
+          (cd "$film" && node scripts/py.mjs --check)
+
+      - name: Deck, pick and copy-check tests
+        run: |
+          python "skills/$SKILL/scripts/test/pick.test.py"
+          python "skills/$SKILL/scripts/test/deck.test.py"
+          python "skills/$SKILL/scripts/test/copy-check.test.py"
+
+      - name: Install the Remotion starter
+        run: cd "skills/$SKILL/assets/remotion-starter" && npm install --no-audit --no-fund --loglevel=error
+
+      - name: Grid-check regression tests (fixtures, both starters, new-film.sh on Windows)
+        run: |
+          node "skills/$SKILL/scripts/test/grid-check.test.mjs" | tee "$RUNNER_TEMP/grid.log"
+          if grep -q '^skip  the Remotion starter' "$RUNNER_TEMP/grid.log"; then
+            echo "::error::the Remotion starter cases were skipped (its npm install did not take)"
+            exit 1
+          fi
 
   encode-tags:
     # ffmpeg 7.1 and newer take a file's colour tags from the frames (#2). The test's static part

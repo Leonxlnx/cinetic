@@ -1,5 +1,5 @@
-// Fixture for scripts/test/grid-check.test.mjs. expect: fragment=1 reveal-rate:warn=1 copy-concurrent=1 word-rate:warn=2 text-share=1 text-share:warn=1
-// A whole sentence at once: eleven words in one entry, revealed in 32 f (3 f a word), all on screen
+// Fixture for scripts/test/grid-check.test.mjs. expect: script=1 reveal-rate:warn=1 copy-concurrent=1 word-rate:warn=2 text-share=1 text-share:warn=1
+// A whole sentence at once: eleven words in one line (a line holds 3-8), revealed in 32 f (3 f a word), all on screen
 // together and resolving inside 5 s (2.3 words a second), on 76% of the body (an error when calm:
 // more than 10 points over 65%) with no text-free beat.
 export const FPS = 60;

@@ -1,85 +1,70 @@
 #!/usr/bin/env python3
 """
-score.py: renders a film's soundtrack. The sound effects come from the events in out/cues.json
-(exported from the picture code by scripts/export-cues.ts), voiced by the film's earshot sound kit
-(score.json "sfx", audio/kit.json, rendered by scripts/audio/kit.py) or by synth voices. The music
-is score.json "music": "none" (an effects-only film, the default without chords), "synth" (the
-built-in band: key, tempo, one chord per bar, sections, drops, silences, signature motif; the
-default when chords are given) or the path of a track ("bed" also supplies one, with any music
-setting). The mix is sidechained, bussed and mastered by master.py to the film's target,
-master.lufs in score.json (default -14 LUFS with music, -18 for an effects-only film so a few
-accents keep their dynamics; -16 for a calm brand or a sting of 8 s or less; --lufs overrides it),
-with a true-peak ceiling and a 3 ms fade-in at sample 0.
+score.py: renders a film's soundtrack from the picture's events (out/cues.json, exported from the
+picture code by scripts/export-cues.ts), the film's earshot sound kit (audio/kit.json, rendered by
+scripts/audio/kit.py) and audio/score.json, mixed and mastered by master.py.
 
-Effects ("sfx": {"engine": "auto" | "earshot" | "synth", "kit": "audio/kit.json", "python": null}):
-"auto" (default) plays the kit: its takes in audio/kit/ (kit.lock.json), rendered again first by
-earshot when kit.json changed and earshot is found (kit.py: "python", EARSHOT_PYTHON, an importable
-earshot, earshot on PATH); played as they are when earshot is missing (vendored); with no takes at
-all, the synth voices play with a loud warning. "earshot" fails instead of falling back; "synth"
-uses the synth voices only. Each cue plays the take of its role (kit.role_for: hit, whoosh.short,
-key.space, text, ...): a take per cue by a hash of its id and frame, never the same file twice in a
-row; placed so the take's measured onset (peak for whooshes, end for risers) lands on the frame; a
-whoosh's lead-in is faded so it starts no earlier than its move; levelled by the role's level_db,
-the cue's weight and KIT_GAIN (a take at level_db 0 sits where the synth voices sat against the
-music), with keys, clicks and crisp ticks levelled against the music as below; tonal roles play the
-take whose pitch is nearest the note the synth voice would sound. An explicit note (a hand-set
-pitch, a progress rung, a motif note) plays only a take on that note: with none, that cue gets its
-synth voice and a warning (a neighbouring take would be a wrong note). Each take is trimmed toward
-its role's median loudness (kit.lock.json lufs_m_max, at most 6 dB), so repeated cues of a role do
-not jump in level although the takes are peak-normalised. A role the kit sets null is off (its cues
-are skipped and listed); a role the kit does not name keeps its synth voice. Kind "text" is the
-soft sound of a copy fragment resolving: a chain's fragments step through the chord's tones (with a
-kit, the chord's tones among the text takes, so consecutive fragments play different notes).
-The stack guard warns when a second designed sound (or a lead-in: whoosh, riser, swell or suck, or
-a score.json motif) sits within +-3 f of the payoff or the "lockup" cue, or when 2+ heavy sounds
-(hit, drop, snap, heavy land) or 3+ kinds start within +-3 f anywhere; a score.json drop's silence
-and suck are the stop-down, not a layer. The report also lists the kit's audit warnings (a rising
-pitch glide, stacked attacks) and every synth riser.
+A film sounds one of two ways, nothing else:
+  music-led     one licensed, human-made, instrumental track, edited at bar lines (track.py), plus the
+                earshot `launch` kit levelled over it ("music": {"track", "edit", "licence", "gain_db"})
+  effects-only  no music: an earshot kit (calm, crisp or minimal) at its roles' level_db ("music": "none",
+                the default)
+cinetic makes no music: "music": "synth" exits 1 (choose a licensed track, references/music.md, or "none").
+
+Music-led (renders exactly the plan of scripts/audio/plan.py, run in-process):
+  bed        the edit's segments and joins (track.py build_bed), staged to -18 LUFS integrated, plus
+             music.gain_db; no saturation and no glue on an already mastered track, and no EQ unless it is
+             dull: a bed whose 8-16 kHz band sits more than 28 dB under its whole (a pad that masks every
+             click) gets a parallel air shelf (half the deficit, at most +4.5 dB above 7 kHz) and +1.5 dB of
+             presence (2-5 kHz), so the hits cut through; a track whose own 2-8 kHz band sits under -35 dB is
+             muffled and fails the gate (pick another), and a mix under -22 dB there or -32 dB at 8-16 kHz warns
+  fx lift    when the effects sit under 3 dB over the bed on the median (their hits lost in the music), the
+             effects bus rises until the median reads 4.5 dB over it (at most +6 dB), said in the report
+  effects    each placed event's take at the plan's gain (bed_db over the bed as played), dry; roles with a
+             width keep their stereo, whooshes, risers and swells travel along the cue's pan, every other
+             effect is mono within +-0.15 of the centre; a 30 Hz high-pass; tuned takes fade out by 1.5 s
+  automation the stop-downs (before a hit, a drop or a swell, back on the hit), score.json silences and the
+             end fade; nothing ducks under an effect
+  stems      out/stems/bed.wav (as played) and sfx.wav, which sum to the pre-master mix
+Effects-only: each cue plays the take of its role (kit.role_for), placed so the take's measured onset
+(peak for whooshes) lands on the frame, levelled by the role's level_db, the cue's weight and KIT_GAIN,
+trimmed toward the role's median loudness; a whoosh's lead-in starts no earlier than its move; tonal roles
+play the take nearest the note the chord logic asks for; keys, clicks and crisp ticks dry, the rest
+through the short rooms; master at -18 LUFS (glue on).
+
+Both: the typing plan ("typing": auto, soft, mechanical, pitched, muted, word, off; one per film: per key
+up to 25 chars/s, once per word above, never two keys within 60 ms, about 12 keys/s at most, word
+accents, sigma 2.5 dB, no jump over 5 dB between neighbours), the progress climb ("progress", on a tuned
+role's takes), score.json silences (everything mutes), the payoff and the stack guard (one element at the
+payoff and the lockup; 2+ heavy sounds or 3+ kinds within +-3 f anywhere). Tuned effects never become a
+melody: at most 2 pitched effects in any 4 s (the extra ones are thinned and listed), no tonal effect
+rings past 1.5 s. Every effect is an earshot kit take: a cue whose role the kit does not name, or an
+explicit note no take sounds, fails the gate; --draft plays placeholder voices for them instead and marks
+the report "draft": true (never delivered: deliver.sh, credits.py and av-audit.py refuse it).
 
 Usage (from the project root):
   python3 scripts/audio/score.py --cues out/cues.json --score audio/score.json \
       --out public/audio/soundtrack.wav [--stems out/stems] [--json out/qa/score.json]
-      [--lufs -14] [--ceiling 0.77] [--quiet]
+      [--plan out/qa/sfx_plan.json] [--lufs -14] [--ceiling 0.77] [--draft] [--bed-only] [--quiet]
 
-Writes a 48 kHz 24-bit stereo WAV exactly TOTAL/FPS seconds long, optional stems that sum to
-the pre-master mix (drums, bass, pad, arp, bells, reverb, sfx, and bed when used) and a JSON
-report: loudness, true peak, LRA (warns under 5 LU on films of 20 s or more), the loudest moment
-against the payoff and the payoff's lift over the median momentary loudness (warns under 2 LU), limiter hot spots,
-masked effects (under +6 dB in their own band), every tuned sound with its note, skipped events
-and warnings. The end fade (master.fade) applies to the music and the effects alike, so the WAV
-reaches digital silence; an effect that starts inside the fade is reported. The hook check warns
-when the first 0.5 s sits more than 12 dB under the median momentary loudness (a soft hook).
-A "progress" block re-pitches matching events into a climbing scale that resolves on the tonic
-(with a kit whose role for them is tuned, a climb through that role's take notes; an untuned kit
-role warns, since its rungs cannot climb).
-The arc check warns when the loudest moment falls in the last 20% of a film over 8 s: the drop on
-the hero reveal should peak, and the lockup resolve. The hook check applies to films with music;
-an effects-only film may open on near-silence.
+--bed-only (a film with a track whose effects are not made yet): the edited track alone, exactly as the film
+plays it (track.py build_bed: bar 1 at the edit's film_t0, the joins, the ending, the stop-downs score.json adds),
+staged and mastered like the full mix; no kit is read and no effect plays (the report says "bed_only": true).
+It needs no out/cues.json: without one, the film's length, tempo and reveal come from the edit (edit.json's ending and
+hold) and its fps from src/music.ts.
+Never cut the track by hand for the picture: a hand cut that drops film_t0 or carries an encoder's priming pad
+puts every downbeat early or late against the cuts the timeline made on it (check-sync.py measures the music
+against the edit and fails it).
 
-Typing ("typing" in score.json, one per film): "auto" (default) sounds each run per key ("soft")
-up to 25 chars/s and once per word ("word") above, as measured top-tier launch films do. "soft" is
-a dark modal tock (spectral peak 0.75-0.95 kHz, centroid ~1.2 kHz, ~11% in 2-5 kHz, -20 dB about
-6 ms after its peak); "mechanical" is stiffer with a bottom-out tick; "pitched" plays felt mallets
-on chord/pentatonic tones in G4-F5; "muted" is dull and 10 dB further under the music; "word" is one
-pitched blip per word (36-60 ms, 330-1400 Hz) stepping through the chord's tones (with a kit: one key
-take per word); "off" skips key events. With a kit the key takes set the timbre and the style sets
-timing and level. Per key: never two keys within 60 ms, runs over 12 keys/s thinned to about 12/s (word
-starts, spaces and returns kept); level follows the word (+2.5 dB on word starts, a slight
-decrescendo inside it, -1 dB before a space, sigma 2.5 dB at random, -3 dB once a run passes 1.5 s),
-no jump over 6 dB between neighbours; about half the letters bottom out 25-35 ms after the press;
-no key-up click unless "keyup": true. Keys, clicks and crisp ticks are dry and every effect but a
-whoosh, riser, swell or suck sits within +-0.15 of the centre.
-Under every run sounded per key the music bus ducks mix.typing_duck_db (default 10 dB; 0 disables),
-30 ms down and 250 ms back, and bars with 4+ sounded keys mute the hats and dip the arp. Levels
-against the music, as measured (6 ms effect RMS vs the music's 250 ms RMS): each typing run about
--4 dB under the ducked music (word blips +6, muted -14), and one level per film for the UI click
-(-3 dB) and the crisp tick (-8 dB), each within +-12 dB of its static level. The report's "typing"
-block measures each run against the music (A-weighted, short-window, 2-5 / 5-10 kHz) and
-"sfx_levels" the clicks and crisp ticks.
-Schema and recipes: references/sound.md.
+Targets (master.lufs overrides): -14 LUFS with music (-16 for a film of 8 s or less), -18 effects-only;
+true peak <= -1.5 dBTP; last 480 samples zero. The report holds loudness, true peak, LRA, PLR, the loudest
+moment against the payoff, limiter hot spots, masked effects, tuned sounds, skipped events and, with a
+track: music (record, segments, joins, ending), over_bed (each effect's loudest 50 ms over the bed it was
+levelled against, per role: with the bed, the bed's own accent there, and the take alone, which the warnings
+judge), stop_downs (measured on the bed), no_duck, density, one_gesture, the lockup element after a stop. Schema and recipes: references/sound.md; the track: references/music.md.
 
-Exit codes: 0 rendered and the gate passed (LUFS within +-0.5 of target, true peak <= -1.5
-dBTP, last 480 samples zero); 1 on invalid input, a failed gate, or "engine": "earshot" with no
+Exit codes: 0 rendered and the gate passed (a --draft render passes nothing: its report says "pass": false);
+1 invalid input, a failed gate, "music": "synth", an effect with no kit take, or "engine": "earshot" with no
 playable kit.
 """
 import argparse
@@ -88,15 +73,16 @@ import math
 import os
 import re
 import sys
+import types
 
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import dsp as D  # noqa: E402
 import kit as K  # noqa: E402
 import master as M  # noqa: E402
-import synth as S  # noqa: E402
 
-SR = S.SR
+SR = D.SR
 
 MODES = {
     'major': [0, 2, 4, 5, 7, 9, 11], 'ionian': [0, 2, 4, 5, 7, 9, 11], 'minor': [0, 2, 3, 5, 7, 8, 10],
@@ -113,64 +99,107 @@ QUALITIES = {
     '9sus4': [0, 5, 7, 10, 14], '6sus4': [0, 5, 7, 9], 'dim': [0, 3, 6], 'dim7': [0, 3, 6, 9],
     'm7b5': [0, 3, 6, 10], 'aug': [0, 4, 8], '+': [0, 4, 8],
 }
-# Arrangement per section style. Gains are multipliers on house levels; cut = pad low-pass
-# (Hz) at the section's start and end; ring = sustain one chord per chord change, not per bar.
-STYLES = {
-    'intro': dict(pad=0.55, bass=0.0, arp=0.0, drone=1.0, drums=None, cut=(700, 1300), attack=0.6, level=0.95, ring=True),
-    'build': dict(pad=0.8, bass=0.65, arp=0.8, drone=0.0, drums='build', cut=(1400, 3200), attack=0.15, level=0.95, ring=False),
-    'groove': dict(pad=0.85, bass=1.0, arp=0.8, drone=0.0, drums='groove', cut=(2200, 2400), attack=0.1, level=1.0, ring=False),
-    'drive': dict(pad=1.0, bass=1.0, arp=1.0, drone=0.0, drums='drive', cut=(3000, 3400), attack=0.05, level=1.0, ring=False),
-    'breakdown': dict(pad=0.95, bass=0.5, arp=0.45, drone=0.0, drums='clock', cut=(1800, 3000), attack=0.2, level=0.9, ring=True),
-    'resolve': dict(pad=1.0, bass=0.9, arp=0.0, drone=0.0, drums='one', cut=(1700, 1700), attack=0.02, level=1.0, ring=True),
-    'hold': dict(pad=0, bass=0, arp=0, drone=0, drums=None, cut=(2000, 2000), attack=0.1, level=1.0, ring=True),
-}
-STYLES['tail'] = STYLES['hold']
-ARP_PATTERN = [0, 2, 1, 3, 2, 1, 3, 2, 0, 2, 1, 3, 2, 3, 1, 2]
-# Static levels (pre-master, before the per-run and per-film levelling in render()).
+# Placeholder levels (--draft voices only), pre-master; a kit take at level_db 0 sits about here.
 BASE = dict(tick=0.25, tock=0.34, hit=0.5, land=0.26, land_light=0.15, pop=0.12, whoosh=0.24, riser=0.18,
             drop=0.7, key=0.2, click=0.9, crisp=0.4, snap=0.45, swell=0.16, bell=0.08, suck=0.5, text=0.1)
-# Kit takes (peak -1 dBFS) play at KIT_GAIN x 10^(level_db/20) x weight. Measured on earshot's calm kit: per
-# role, the synth voice it replaces (BASE, weight 1) over its take at the role's level_db, by 6 ms RMS for
-# short sounds and 50 ms for the rest; the median of 13 roles is 0.83 (spread -13 to +5 dB: the kit keeps its
-# own balance between roles), so a kit sits against the music about where the synth voices did.
+# Effects-only kit takes (peak -1 dBFS) play at KIT_GAIN x 10^(level_db/20) x weight.
 KIT_GAIN = 0.83
-MUSIC = ('synth', 'none')  # anything else in "music" is the path of a track (the bed)
 ENGINES = ('auto', 'earshot', 'synth')
-LUFS_MUSIC, LUFS_SFX_ONLY = -14.0, -18.0  # default master.lufs with music / for an effects-only film
+LUFS_MUSIC, LUFS_STING, LUFS_SFX_ONLY = -14.0, -16.0, -18.0  # master.lufs defaults: with music / a <= 8 s sting with music / none
+STING_S = 8.0
+STAGE_LUFS = -18.0   # the edited bed is gain-staged to this before the mix
+SYNTH_MSG = ('cinetic makes no music: "music": "synth" is gone. Choose a licensed, human-made, instrumental track '
+             '(references/music.md; record it with scripts/audio/track.py add) and write "music": {"track": '
+             '"audio/music/<file>", "edit": "audio/music/edit.json", "licence": "audio/music/<name>.licence.json"}, '
+             'or "music": "none" for an effects-only film')
 TEXT_RUN_GAP = 3.0  # s: text sounds closer than this are one chain and step through the chord's tones
 STACK_F = 3.0  # frames: two designed sounds this close read as one stacked gesture
 HEAVY_ROLES = ('hit', 'drop', 'snap', 'land')
 LEAD_IN = ('whoosh', 'riser', 'swell', 'suck')
+TONAL_MAX_S = 1.5   # no tonal effect rings longer than this: a tuned take fades out by then
+TONAL_FADE_S = 0.15
+TUNED_PER_4S = 2    # at most this many pitched effects in any 4 s window (so never 3 within 2 s)
 # Typing (score.json "typing"). "auto" picks per run: "word" above AUTO_WORD_RATE chars/s, else "soft".
 TYPING = ('auto', 'soft', 'mechanical', 'pitched', 'muted', 'word', 'off')
-PER_KEY = ('soft', 'mechanical', 'pitched')  # a sound per key, in the foreground: the music ducks under them
+PER_KEY = ('soft', 'mechanical', 'pitched')  # a sound per key, in the foreground
 TYPING_GAIN = dict(soft=1.0, mechanical=1.0, pitched=0.5, muted=0.8, word=5.0)
-AUTO_WORD_RATE = 25.0  # chars/s: measured typing above 25-30 chars/s is sounded per word, or not at all
+AUTO_WORD_RATE = 25.0  # chars/s: typing above 25-30 chars/s is sounded per word, or not at all
 KEY_KIND_GAIN = {'letter': 1.0, 'back': 0.9, 'space': 1.26, 'return': 1.33}  # heard level: space +2 dB, return +2.5 dB
 KEY_RMS_REF = dict(soft=0.31, mechanical=0.344, muted=0.388, pitched=0.624)  # a letter's 6 ms RMS / peak, per style
-KEY_CENTROID_MAX = 3000.0  # Hz: a kit key run brighter than the measured key-click centroids (0.8-3 kHz) warns
+KEY_CENTROID_MAX = 3000.0  # Hz: a kit key run brighter than key-click centroids (0.8-3 kHz) warns
 KEY_FAST = 12.0  # keys/s: typing faster than this is thinned
 KEY_MIN_GAP = 1 / KEY_FAST  # s: in a fast run a letter sounds only this long after the previous sounded key
 KEY_FLAM_GAP = 0.06  # s: never two keys closer (a flam); word starts, spaces and returns need only this
 WORD_MIN_GAP = 0.08  # s: word blips closer than this merge into one
 KEY_LEVEL_SD = 2.5  # dB, random per press (heard: about 2.5 dB SD over a run, with the word dynamics)
 KEY_MAX_STEP = 5.0  # dB between neighbouring sounded keys as planned (heard: under 6 dB with the timbre's spread)
-# Levels against the music, as measured: short-window (6 ms) effect RMS minus the music's 250 ms RMS
-# at the same moment. render() levels each typing run, and each film's clicks and crisp ticks, to these.
-LEVEL_VS_MUSIC = dict(key=-4.0, pitched=-8.0, muted=-14.0, word=6.0, click=-3.0, crisp=-8.0)  # at weight 1
-LEVEL_CLAMP_DB = 12.0  # the levelling never moves a run or a voice more than this from its static level
+LEVEL_CLAMP_DB = 12.0
 QWERTY = ('qwertyuiop', 'asdfghjkl', 'zxcvbnm')
-UI_KINDS = ('tick', 'tock')  # the signature clock: a small room, never the hall
+UI_KINDS = ('tick', 'tock')  # the clock: a small room, never the hall
 WIDE_KINDS = ('whoosh', 'riser', 'swell', 'suck')  # only these take width; every other effect sits near the centre
 SFX_PAN = 0.15  # |pan| of every other effect; the cue's pan (+-0.8 at the screen edges) is scaled into it
+# the over-bed gate: an effect's loudest 50 ms over the bed it was levelled against (reported with the bed and
+# alone; the take alone against over_bed(bed_db) is judged, within this many dB)
+OVER_BED_TOL = 2.0
+STOP_MIN_DIP_DB, STOP_RETURN_DB = 6.0, 3.0
+LOCKUP_PEAK = (-9.0, -6.0)  # dBFS: the one element after an old edit's stop ending
+HIT_RING_SEND = 0.55        # a hit ending's element: its hall send (2.8 s), so it rings 1.5 s or more under the end card
+LOCKUP_UNDER_PAYOFF = 2.0   # LU
+REVEAL_BAND = (0.75, 0.90)  # share of the runtime: the biggest reveal, the payoff (SKILL.md energy, formats.md §2)
 
 
 class ScoreError(Exception):
     pass
 
 
+def read_json(path, what):
+    try:
+        with open(path, encoding='utf-8') as fh:
+            return json.load(fh)
+    except FileNotFoundError:
+        raise ScoreError(f'{what} not found: {path}') from None
+    except json.JSONDecodeError as e:
+        raise ScoreError(f'{what} {path} is not valid JSON ({e})') from None
+
+
+def film_fps(root):
+    """The film's fps from src/music.ts (track.py grid writes it) or src/timeline.ts (FPS), else 30."""
+    for rel, pat in (('src/music.ts', r'\bfps:\s*(\d+(?:\.\d+)?)'), ('src/timeline.ts', r'\bFPS\s*=\s*(\d+(?:\.\d+)?)'),
+                     ('music.js', r'\bfps:\s*(\d+(?:\.\d+)?)')):
+        try:
+            with open(os.path.join(root, rel), encoding='utf-8') as fh:
+                m = re.search(pat, fh.read())
+            if m:
+                return float(m.group(1))
+        except OSError:
+            pass
+    return 30.0
+
+
+def bed_cues(score, score_path):
+    """--bed-only with no out/cues.json: the film's length, tempo and reveal from the edit (audio/music/edit.json),
+    so the edited bed renders before the timeline exports anything."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(score_path)))
+    music = score.get('music') if isinstance(score.get('music'), dict) else {}
+    if not music.get('edit'):
+        raise ScoreError('--bed-only with no cues needs the edit (audio/score.json music.edit; track.py fit writes it)')
+    edit = read_json(locate(music['edit'], os.path.dirname(os.path.abspath(score_path))), 'edit')
+    fps = film_fps(root)
+    end = edit.get('ending') or {}
+    beat = float(edit.get('beat_s') or 60.0 / float(edit['bpm']))
+    last = float(end.get('end_s') or edit.get('film_t0', 0) + int(edit.get('film_bars', 8)) * 4 * beat)
+    tail = float(end.get('hold_s') or end.get('ring_s') or 2.0)
+    total = int(math.ceil((last + tail) * fps))
+    cue = {}
+    if (edit.get('reveal') or {}).get('film_s') is not None:
+        cue['reveal'] = int(round(float(edit['reveal']['film_s']) * fps))
+    if end.get('hit_film_s') is not None or end.get('end_s') is not None:
+        cue['lockup'] = cue['end'] = int(round(float(end.get('hit_film_s') or end['end_s']) * fps))
+    return dict(fps=fps, bpm=float(edit['bpm']), total=total, acts={}, cue=cue, copy=[], events=[], from_edit=True)
+
+
 # ------------------------------------------------------------------------------------------
-# harmony
+# harmony (the key and an optional chord chart steer the tuned roles: text, bell, confirm)
 # ------------------------------------------------------------------------------------------
 class Chord:
     _re = re.compile(r'^([A-G][#b]?)(.*?)(?:/([A-G][#b]?))?$')
@@ -180,10 +209,10 @@ class Chord:
         if not m or m.group(2) not in QUALITIES:
             raise ScoreError(f'unknown chord "{sym}"; qualities: {", ".join(q or "(major)" for q in QUALITIES)}')
         self.name = sym
-        self.root = S.pitch_class(m.group(1))
+        self.root = D.pitch_class(m.group(1))
         self.iv = QUALITIES[m.group(2)]
         self.pcs = [(self.root + i) % 12 for i in self.iv]
-        self.bass = S.pitch_class(m.group(3)) if m.group(3) else self.root
+        self.bass = D.pitch_class(m.group(3)) if m.group(3) else self.root
 
     def tones(self):
         """Voiced tones for pads: drop the fifth from 5+ note chords, double the root of triads."""
@@ -196,54 +225,6 @@ class Chord:
             iv = [0, 7, 12, 19]
         return [(self.root + i) % 12 for i in iv]
 
-
-def voicings(ch):
-    """Close and drop-2 voicings between D3 and G5 whose lowest note is the root, third or fifth
-    (tensions such as 9 and 11 sit inside or on top, never at the bottom)."""
-    tones = ch.tones()
-    base = {(ch.root + i) % 12 for i in ch.iv if i in (0, 3, 4, 7) or (i == 5 and 3 not in ch.iv and 4 not in ch.iv)}
-    out = []
-    for r in range(len(tones)):
-        order = tones[r:] + tones[:r]
-        for low in range(50, 66):
-            if low % 12 != order[0]:
-                continue
-            v = [low]
-            for p in order[1:]:
-                nxt = v[-1] + 1
-                while nxt % 12 != p:
-                    nxt += 1
-                v.append(nxt)
-            for cand in (v, sorted(v[:-2] + [v[-2] - 12] + v[-1:]) if len(v) >= 4 else None):
-                if cand and cand[0] >= 50 and cand[-1] <= 79 and cand[0] % 12 in base:
-                    out.append(cand)
-    return out
-
-
-def _mud(v):
-    """penalty for close intervals low in the register (they turn to mud)"""
-    c = 0
-    for a, b in zip(v[:-1], v[1:]):
-        if b - a <= 2 and a < 60:
-            c += 6
-        elif b - a <= 4 and a < 52:
-            c += 4
-    return c
-
-
-def voice_lead(ch, prev):
-    best, cost = None, 1e9
-    for v in voicings(ch):
-        c = 0.25 * abs(np.mean(v) - 62) + _mud(v)
-        if prev:
-            c += sum(min(abs(a - b) for b in prev) for a in v) + sum(min(abs(a - b) for a in v) for b in prev)
-        else:
-            c += abs(np.mean(v) - 60)
-        if c < cost:
-            best, cost = v, c
-    return best
-
-
 def stack(pcs, low, count):
     """`count` ascending notes from `low` cycling through pcs (arp tones)."""
     out, m = [], int(math.ceil(low))
@@ -253,24 +234,8 @@ def stack(pcs, low, count):
         m += 1
     return out
 
-
-def arp_tones(ch, center=66):
-    """root, third (or sus), fifth and one colour tone (9, maj7, 7 or the octave), ascending
-    from the root nearest `center`"""
-    tri = [i for i in ch.iv if i in (0, 3, 4, 5, 7)][:3]
-    color = next((c for c in (14, 11, 10, 9) if c in ch.iv), 12)
-    first = int(S.nearest([ch.root], center))
-    out = [first]
-    for i in tri[1:] + [color]:
-        m = first + i
-        while m <= out[-1]:
-            m += 12
-        out.append(m)
-    return out
-
-
 # ------------------------------------------------------------------------------------------
-# the song: timing, chords, sections
+# the song: timing, key, music, effects, master
 # ------------------------------------------------------------------------------------------
 class Song:
     def __init__(self, score, cues):
@@ -278,13 +243,14 @@ class Song:
         self.fps, self.total, self.bpm = float(cues['fps']), int(cues['total']), float(cues['bpm'])
         if 'bpm' in score and abs(float(score['bpm']) - self.bpm) > 1e-6:
             raise ScoreError(f'score.json bpm {score["bpm"]} differs from the timeline ({self.bpm}); fix one')
+        self.grid = cues.get('music') or None  # the film-time music grid (src/music.ts) when the film has a track
         self.beat = 60.0 / self.bpm
         self.barlen = 4 * self.beat
         self.dur = self.total / self.fps
         self.nbars = int(math.ceil(self.dur / self.barlen - 1e-9))
         self.warnings = []
         key = str(score.get('key', 'C major')).split()
-        self.tonic = S.pitch_class(key[0])
+        self.tonic = D.pitch_class(key[0])
         self.mode = key[1].lower() if len(key) > 1 else 'major'
         if self.mode not in MODES:
             raise ScoreError(f'unknown mode "{self.mode}"; use one of {", ".join(MODES)}')
@@ -292,98 +258,127 @@ class Song:
         minorish = MODES[self.mode][2] == 3
         self.penta = [(self.tonic + i) % 12 for i in ([0, 3, 5, 7, 10] if minorish else [0, 2, 4, 7, 9])]
         self.triad = [(self.tonic + i) % 12 for i in ([0, 3, 7] if minorish else [0, 4, 7])]
-        # music: the synth band, none (effects only), or a track's path (the bed). Without the field, a
-        # score with chords keeps the synth band it always had; one without is effects only.
-        music = score.get('music')
-        bed = score.get('bed')
+        # music: "none" (effects only) or a licensed track {track, edit, licence, gain_db}
+        music, bed = score.get('music'), score.get('bed')
+        self.music_cfg = None
         if music is None:
-            music = 'synth' if score.get('chords') else 'none'
-        if not isinstance(music, str) or not music:
-            raise ScoreError('music is "synth", "none" or the path of a music track')
-        if music not in MUSIC:
+            music = 'none'
+            if score.get('chords') and score.get('sections'):
+                self.warnings.append('this score.json once played a generated band ("chords" + "sections" without "music"); '
+                                     'it renders effects-only now: ' + SYNTH_MSG.split(': ', 1)[1])
+        if music == 'synth':
+            raise ScoreError(SYNTH_MSG)
+        if isinstance(music, str) and music != 'none':
             if bed:
-                raise ScoreError('give the music track once: "music": "<file>" or "bed", not both')
-            bed, music = music, 'none'
-        self.music = music
-        self._chords(score.get('chords', []), required=self.music == 'synth')
-        self._sections(score.get('sections', []))
-        sig = score.get('signature', {})
-        self.sig_tick = S.midi(sig['tick']) if 'tick' in sig else S.nearest([self.tonic], 86)  # octave 6: 0.8-1.6 kHz
-        self.sig_tock = S.midi(sig['tock']) if 'tock' in sig else S.nearest([(self.tonic + 7) % 12], self.sig_tick - 5)
-        t5 = S.nearest([self.tonic], 72)
-        self.motif = [S.midi(m) if isinstance(m, str) else t5 + m for m in sig.get('motif', [0, 7, 14])]
-        step = float(sig.get('step', 0.5))
-        self.rhythm = [float(r) for r in sig['rhythm']] if 'rhythm' in sig else [k * step for k in range(len(self.motif))]
-        if len(self.rhythm) != len(self.motif):
-            raise ScoreError('signature.rhythm needs one beat offset per motif note')
-        self.motifs = []
-        for m in score.get('motifs', []):
-            notes = [S.midi(x) if isinstance(x, str) else t5 + x for x in m['notes']] if 'notes' in m else self.motif
-            rhythm = [float(r) for r in m['rhythm']] if 'rhythm' in m else (
-                self.rhythm if 'notes' not in m else [k * float(m.get('step', step)) for k in range(len(notes))])
-            self.motifs.append(dict(t=self.T(m['at']), gain=float(m.get('gain', 1.0)), notes=notes, rhythm=rhythm))
-        # silences: (t0, t1, depth, scope). A drop's silence stops the music dead (reverb
-        # included) while effects of on-screen motion ring on; a `silences` entry mutes everything.
+                raise ScoreError('give the music track once: "music": {"track": ...} (not "bed" as well)')
+            self.warnings.append(f'"music": "{music}" is the older form: write "music": {{"track": "{music}", "edit": '
+                                 '"audio/music/edit.json", "licence": "audio/music/<name>.licence.json"}; without an edit the '
+                                 'whole file plays from frame 0')
+            self.music_cfg = dict(track=music, edit=None, licence=None, gain_db=0.0, at=0.0)
+        elif isinstance(music, dict):
+            if not (music.get('track') or music.get('edit')):
+                raise ScoreError('music needs "track" (the licensed file in audio/music/) and "edit" (audio/music/edit.json)')
+            self.music_cfg = dict(track=music.get('track'), edit=music.get('edit'), licence=music.get('licence'),
+                                  gain_db=float(music.get('gain_db', 0.0)), at=0.0)
+        elif music != 'none':
+            raise ScoreError('music is "none" or {"track": ..., "edit": ..., "licence": ...}')
+        if bed and not self.music_cfg:
+            b_ = {'file': bed} if isinstance(bed, str) else bed
+            self.warnings.append('"bed" is the older form: write "music": {"track", "edit", "licence"}')
+            self.music_cfg = dict(track=b_['file'], edit=None, licence=None, gain_db=float(b_.get('gain_db', 0)), at=b_.get('at', 0))
+        self.music = 'track' if self.music_cfg else 'none'
+        self.has_music = self.music_cfg is not None
+        self.bed_lufs = STAGE_LUFS if self.has_music else None
+        self._chords(score.get('chords', []))
+        for old in ('sections', 'motifs'):
+            if score.get(old):
+                self.warnings.append(f'score.json "{old}" is ignored: cinetic makes no music (a licensed track or none)')
+        sig = score.get('signature', {}) or {}
+        if sig.get('motif') or sig.get('rhythm'):
+            self.warnings.append('signature.motif is ignored: a motif of tuned notes is music; the bell plays one note')
+        self.sig_tick = D.midi(sig['tick']) if 'tick' in sig else D.nearest([self.tonic], 86)  # octave 6: 0.8-1.6 kHz
+        self.sig_tock = D.midi(sig['tock']) if 'tock' in sig else D.nearest([(self.tonic + 7) % 12], self.sig_tick - 5)
+        self.motifs = []  # the progress resolve (two notes an octave apart: one gesture)
+        # silences: (t0, t1, depth, scope 'all'): everything mutes, effects included
         self.silences = []
-        self.sucks = []  # (t0, t1, depth): the music ducks into a drop
+        sd = score.get('stopdowns') or {}
+        if not isinstance(sd, dict):
+            raise ScoreError('stopdowns is an object: {"auto": "kit", "add": [], "skip": [], "quiet_db": -7}')
+        self.stopdowns = dict(auto=sd.get('auto', 'kit') not in (False, 'off', 'none'), add=list(sd.get('add') or []),
+                              skip=list(sd.get('skip') or []), stop_len=float(sd.get('stop_len', 0.4)))
+        self.quiet_db = float(sd['quiet_db']) if sd.get('quiet_db') is not None else None
         for d in score.get('drops', []):
-            t = self.T(d['at'])
-            sil = self.span(d.get('silence', 0))
-            if sil > 0:
-                self.silences.append((t - sil, t, float(d.get('depth', 0.97)), 'music'))
-            suck = float(d.get('suck', 0.2))
-            if suck > 0:
-                self.sucks.append((t - max(suck, sil), t, float(d.get('suckDepth', 0.9))))
+            sil = d.get('silence', 0)
+            self.warnings.append('score.json "drops" is the older form: a drop\'s silence is a stop-down now '
+                                 '(stopdowns.add with "depth": "stop"); the suck is gone (nothing ducks)')
+            if sil:
+                self.stopdowns['add'].append(dict(at=d['at'], depth='stop', weight=float(d.get('weight', 1.5))))
         for s_ in score.get('silences', []):
             self.silences.append((self.T(s_['from']), self.T(s_['to']), float(s_.get('depth', 0.97)), 'all'))
+        self.ending = score.get('ending') or {}
         self.payoff = self.T(score['payoff']) if 'payoff' in score else None
         pr = score.get('progress')
         self.progress = None
-        if pr:  # a progress motif: matching events climb the scale one step each; the resolve lands on the tonic
+        if pr:  # a progress climb: matching events step up the key one note each; the resolve lands on the tonic
             if not pr.get('match'):
                 raise ScoreError('progress needs "match": a piece of the event ids that climb (e.g. "day")')
             self.progress = dict(match=str(pr['match']), kind=pr.get('kind'), start=pr.get('start'),
-                                 tonic=S.midi(pr['tonic']) if 'tonic' in pr else S.nearest([self.tonic], 76),  # rungs near 0.5-1.5 kHz
+                                 tonic=D.midi(pr['tonic']) if 'tonic' in pr else D.nearest([self.tonic], 76),
                                  resolve=self.T(pr['resolve']) if 'resolve' in pr else None,
                                  gain=float(pr.get('gain', 1.0)))
         self.typing = str(score.get('typing', 'auto')).lower()
         if self.typing not in TYPING:
             raise ScoreError(f'unknown typing "{self.typing}"; use one of {", ".join(TYPING)}')
         self.keyup = bool(score.get('keyup', False))
-        mix = score.get('mix', {})
-        self.mix = dict(music=float(mix.get('music', 1.0)), sfx=float(mix.get('sfx', 1.0)),
-                        reverb=float(mix.get('reverb', 1.0)), sidechain=float(mix.get('sidechain', 0.55)),
-                        duck_db=float(mix.get('duck_db', 3.0)), typing_duck_db=float(mix.get('typing_duck_db', 10.0)))
-        if not 0 <= self.mix['typing_duck_db'] <= 30:
-            raise ScoreError('mix.typing_duck_db is dB the music dips under typing: 0 (off) to 30 (default 10)')
-        self.bed = None
-        if bed:  # a supplied music track: it replaces nothing, it joins the music bus
-            bed = {'file': bed} if isinstance(bed, str) else bed
-            self.bed = dict(file=bed['file'], at=self.T(bed.get('at', 0)), gain_db=float(bed.get('gain_db', 0)))
-        self.has_music = self.music == 'synth' or self.bed is not None
-        # sfx: where the effects' voices come from (module doc; kit.py renders the kit)
+        mix = score.get('mix', {}) or {}
+        for k_ in ('sidechain', 'duck_db'):
+            if k_ in mix:
+                self.warnings.append(f'mix.{k_} is ignored: the music never ducks under the effects (a stop-down before a '
+                                     'hit, a drop or a swell is the one move: stopdowns)')
+        if float(mix.get('typing_duck_db', 0) or 0) != 0:
+            self.warnings.append('mix.typing_duck_db is ignored: music never ducks under effects: keys ride 6.5 dB over '
+                                 'the bed (for foreground typing the edit puts a sparse bar under the run)')
+        self.mix = dict(music=float(mix.get('music', 1.0)), sfx=float(mix.get('sfx', 1.0)), reverb=float(mix.get('reverb', 1.0)))
+        # sfx: where the effects' voices come from (kit.py renders the kit)
         sfx = score.get('sfx') or {}
         if not isinstance(sfx, dict):
             raise ScoreError('sfx is an object: {"engine": "auto", "kit": "audio/kit.json", "python": null}')
-        extra = sorted(set(sfx) - {'engine', 'kit', 'takes', 'python'})
+        extra = sorted(set(sfx) - {'engine', 'kit', 'takes', 'python', 'restraint'})
         if extra:
-            self.warnings.append(f'sfx: unknown key(s) {", ".join(extra)} ignored (engine, kit, takes, python)')
+            self.warnings.append(f'sfx: unknown key(s) {", ".join(extra)} ignored (engine, kit, takes, python, restraint)')
+        self.restraint = sfx.get('restraint')  # plan.py: effects in any 10 s before whole actions go quiet ("off": none)
         self.engine = str(sfx.get('engine', 'auto')).lower()
         if self.engine not in ENGINES:
             raise ScoreError(f'sfx.engine "{self.engine}": use one of {", ".join(ENGINES)}')
         self.kit_path = str(sfx.get('kit') or 'audio/kit.json')
         self.kit_takes = sfx.get('takes')
         self.earshot_python = sfx.get('python')
-        mas = score.get('master', {})
+        mas = score.get('master', {}) or {}
+        sting = self.has_music and self.dur <= STING_S
         self.lufs_from = 'master.lufs' if 'lufs' in mas else (
-            'default with music' if self.has_music else 'default for an effects-only film')
-        self.lufs = float(mas.get('lufs', LUFS_MUSIC if self.has_music else LUFS_SFX_ONLY))
+            ('default for a sting with music' if sting else 'default with music') if self.has_music
+            else 'default for an effects-only film')
+        self.lufs = float(mas.get('lufs', (LUFS_STING if sting else LUFS_MUSIC) if self.has_music else LUFS_SFX_ONLY))
         self.ceiling = float(mas.get('ceiling', 0.77))
         self.fade = float(mas.get('fade', min(1.3, max(0.4, self.dur * 0.12))))
 
     # time --------------------------------------------------------------------------------
     def bar_t(self, bar, beat=0.0, sub=0.0):
-        return ((bar - 1) * 4 + beat + sub / 4) * self.beat
+        """seconds of a bar:beat:sub position: on the film's music grid (its measured downbeats) when the
+        film has a track, else on the timeline's BPM grid"""
+        g = self.grid
+        pos = (bar - 1) * 4 + beat + sub / 4
+        if g and g.get('downbeats'):
+            d, beat_f = g['downbeats'], float(g['beatS']) * float(g['fps'])
+            i = int(math.floor(pos / 4))
+            if 0 <= i < len(d) - 1:
+                f = d[i] + ((pos - 4 * i) / 4) * (d[i + 1] - d[i])
+            elif i >= len(d) - 1:
+                f = d[-1] + (pos - 4 * (len(d) - 1)) * beat_f
+            else:
+                f = d[0] + pos * beat_f
+            return f / float(g['fps'])
+        return pos * self.beat
 
     def T(self, x):
         """frame number | "@cue" | "@cue+6" | "bar:beat:sub" string -> seconds"""
@@ -392,35 +387,29 @@ class Song:
         s = str(x).strip()
         m = re.match(r'^@([A-Za-z_]\w*)\s*([+-]\s*\d+(\.\d+)?)?$', s)
         if m:
-            if m.group(1) not in self.cues['cue']:
+            at = self.cues['cue'].get(m.group(1))
+            rv = (self.cues.get('declared') or {}).get('reveal')
+            if at is None and m.group(1) == 'reveal' and isinstance(rv, (int, float)):
+                at = rv  # no cue named reveal: the timeline's REVEAL (export-cues declared.reveal)
+            if at is None:
                 raise ScoreError(f'score.json refers to cue "{m.group(1)}", not in cues.json '
-                                 f'({", ".join(sorted(self.cues["cue"]))})')
-            return (self.cues['cue'][m.group(1)] + float((m.group(2) or '0').replace(' ', ''))) / self.fps
+                                 f'({", ".join(sorted(self.cues["cue"]))})'
+                                 + ('; "@reveal" also reads the timeline\'s REVEAL, which it does not declare' if m.group(1) == 'reveal' else ''))
+            return (at + float((m.group(2) or '0').replace(' ', ''))) / self.fps
         m = re.match(r'^(\d+)(?::(\d+(?:\.\d+)?))?(?::(\d+(?:\.\d+)?))?$', s)
         if m:
             return self.bar_t(int(m.group(1)), float(m.group(2) or 0), float(m.group(3) or 0))
         raise ScoreError(f'cannot read time {x!r}: use a frame number, "@cue", "@cue+6" or "bar:beat:sub"')
 
-    def span(self, x):
-        """duration: frames (number) | "1/8" note value | "@cue" not allowed -> seconds"""
-        if isinstance(x, (int, float)):
-            return float(x) / self.fps
-        m = re.match(r'^(\d+)/(\d+)$', str(x).strip())
-        if m:
-            return 4 * self.beat * int(m.group(1)) / int(m.group(2))
-        raise ScoreError(f'cannot read duration {x!r}: frames or a note value such as "1/8"')
-
     # chords --------------------------------------------------------------------------------
-    def _chords(self, chords, required=True):
+    def _chords(self, chords):
+        """An optional chord chart (one chord per bar): it steers which tones a text chain steps through.
+        Without one, tuned effects take the key's scale."""
         if not chords:
-            if required:
-                raise ScoreError('score.json needs "chords": one chord symbol per bar (or "music": "none")')
-            self.segs = []  # no chord chart: tuned effects take the key's scale
+            self.segs = []
             return
         if len(chords) > self.nbars:
             self.warnings.append(f'{len(chords)} chords for {self.nbars} bars: extra chords ignored')
-        if len(chords) < self.nbars - 1:
-            self.warnings.append(f'{len(chords)} chords for {self.nbars} bars: the last chord holds')
         segs = []
         for b in range(1, self.nbars + 1):
             entry = chords[min(b, len(chords)) - 1] if b <= len(chords) else '-'
@@ -444,298 +433,13 @@ class Song:
         return self.segs[-1][2] if self.segs else None
 
     def sub_root(self, t):
-        """the chord's root between E1 and Eb2 (41-78 Hz): snaps, booms and landings glide onto it"""
+        """the chord's root between E1 and Eb2 (41-78 Hz): hits, drops and landings aim at it"""
         ch = self.chord_at(t)
         pc = ch.root if ch else self.tonic
-        return S.mtof(28 + (pc - 28) % 12)
-
-    # sections --------------------------------------------------------------------------------
-    def _sections(self, sections):
-        self.sections = []
-        taken = set()
-        for s_ in sections:
-            b0, b1 = (s_['bars'] if isinstance(s_['bars'], list) else [s_['bars'], s_['bars']])
-            style = s_.get('style', 'groove')
-            if style not in STYLES:
-                raise ScoreError(f'unknown section style "{style}"; use one of {", ".join(STYLES)}')
-            if b0 < 1 or b1 < b0:
-                raise ScoreError(f'bad section bars {s_["bars"]}')
-            if b1 > self.nbars:
-                self.warnings.append(f'section {s_["bars"]} runs past the last bar ({self.nbars})')
-            for b in range(b0, b1 + 1):
-                if b in taken:
-                    raise ScoreError(f'bar {b} is in two sections')
-                taken.add(b)
-            st = dict(STYLES[style])
-            st.update(dict(style=style, b0=b0, b1=b1, level=float(s_.get('level', st['level'])),
-                           bright=float(s_.get('bright', 1.0)), clock=bool(s_.get('clock', False)),
-                           hats=bool(s_.get('hats', True)), layers=s_.get('layers', {})))
-            if 'drums' in s_:
-                st['drums'] = s_['drums']
-            for k, v in st['layers'].items():
-                if k not in ('pad', 'bass', 'arp', 'drone', 'drums', 'bells'):
-                    raise ScoreError(f'unknown layer "{k}" in section {s_["bars"]}')
-            self.sections.append(st)
-        self.sections.sort(key=lambda s_: s_['b0'])
-
-    def section_at(self, t):
-        bar = int(t // self.barlen) + 1
-        for s_ in self.sections:
-            if s_['b0'] <= bar <= s_['b1']:
-                return s_
-        return None
-
-    def silence_start_in(self, a, b):
-        starts = [s0 for s0, s1, _, _ in self.silences if a <= s0 < b]
-        return min(starts) if starts else None
+        return D.mtof(28 + (pc - 28) % 12)
 
 
-# ------------------------------------------------------------------------------------------
-# music
-# ------------------------------------------------------------------------------------------
-def layer(sec, name):
-    """a layer's gain in a section: the style's default times the section's `layers` override"""
-    base = sec[name] if name in ('pad', 'bass', 'arp', 'drone') else 1.0
-    return float(base) * float(sec['layers'].get(name, 1.0))
-
-
-def build_music(song, n, events, plan=None, kit=None):
-    """The synth band ("music": "synth") and the score's motifs (any music setting; on the kit's bell role
-    when it has one). Returns the stems and the kick times for the sidechain."""
-    drums, bass, pad, arp, bells = (np.zeros((n, 2)) for _ in range(5))
-    kicks = []
-    if song.music != 'synth':
-        motif_bells(song, bells, kit)
-        return dict(drums=drums, bass=bass, pad=pad, arp=arp, bells=bells), kicks
-    beat, barlen = song.beat, song.barlen
-    ev_t = [(e['f'] / song.fps, e['kind']) for e in events]
-    key_t = [k['t'] for k in (plan or {}).values()]  # sounded keys (and word blips) only
-    fg_t = [k['t'] for k in (plan or {}).values() if k['style'] in PER_KEY]  # typing in the foreground
-    owned = [t for t, k in ev_t if k in ('tick', 'tock', 'click')] + key_t
-    big = [t for t, k in ev_t if k in ('drop', 'hit', 'snap')]
-    booms = [t for t, k in ev_t if k in ('drop', 'hit')]
-
-    def free(t, tol=1.6):
-        return all(abs(t - o) > tol / song.fps for o in owned)
-
-    tonic_kick = S.mtof(28 + (song.tonic - 28) % 12)  # the kick settles on the tonic (E1..Eb2): in key under every chord
-
-    def K(t, g=1.0, hard=1.0):
-        if not in_silence(song, t):
-            S.place(drums, S.kick(tonic_kick, 0.9, hard), t, g)
-            kicks.append((t, g))
-
-    # ---- pads ------------------------------------------------------------------------------
-    notes = []
-    for sec in song.sections:
-        if layer(sec, 'pad') <= 0:
-            continue
-        s0, s1 = song.bar_t(sec['b0']), song.bar_t(sec['b1'] + 1)
-        for a, b, ch in song.segs:
-            a2, b2 = max(a, s0), min(b, s1)
-            if a2 >= b2 - 1e-6 or ch is None:
-                continue
-            cuts = [a2] + ([] if sec['ring'] else [song.bar_t(k) for k in range(sec['b0'], sec['b1'] + 2) if a2 < song.bar_t(k) < b2]) + [b2]
-            for x0, x1 in zip(cuts[:-1], cuts[1:]):
-                notes.append((x0, x1, ch, sec))
-    notes.sort(key=lambda z: z[0])
-    prev = None
-    for i, (a, b, ch, sec) in enumerate(notes):
-        v = voice_lead(ch, prev)
-        prev = v
-        release = 0.9
-        after = song.section_at(b + 1e-3)
-        if sec['style'] == 'resolve' or after is None or after['style'] in ('hold', 'tail'):
-            release = 2.2  # the last chord rings out
-        end = b + release
-        nxt = song.chord_at(b + 1e-3)
-        if ch.root == (song.tonic + 7) % 12 and nxt is not None and nxt.root == song.tonic and b < song.dur - 0.5:
-            end, release = b + 0.08, 0.3  # the V chord is gone by the downbeat it resolves into
-        sil = song.silence_start_in(a, end)
-        if sil is not None:
-            end, release = sil, min(0.6, max(0.05, (sil - a) * 0.5))
-        u = (a - song.bar_t(sec['b0'])) / max(1e-6, song.bar_t(sec['b1'] + 1) - song.bar_t(sec['b0']))
-        cut = (sec['cut'][0] + (sec['cut'][1] - sec['cut'][0]) * u) * sec['bright']
-        # the film's first chord starts with intent (no fade-in on the hook); the intro builds by its filter
-        attack = 0.02 if a < 1e-3 or any(abs(a - t) < 0.03 for t in big) else sec['attack']
-        d = max(0.05, end - a)
-        gain = 0.34 * layer(sec, 'pad') / len(v) * 2.2
-        for k, m in enumerate(v):
-            x = S.supersaw(S.mtof(m), d, 5, 0.11, cut, min(attack, d * 0.5), min(release, d * 0.9), seed=1000 + 17 * k + i)
-            S.place(pad, x, a, gain)
-    pad = S.filt(pad, S.hp(170, 2))
-    # intro drone: tonic + fifth, swelling, stopping dead where the section (or a silence) ends
-    for sec in song.sections:
-        if layer(sec, 'drone') <= 0:
-            continue
-        a, b = song.bar_t(sec['b0']), song.bar_t(sec['b1'] + 1)
-        sil = song.silence_start_in(a, b)
-        b = sil if sil is not None else b
-        root = S.mtof(28 + (song.tonic - 28) % 12)
-        rise = 0.05 if a < 1e-3 else 1.6  # at the film's start the drone is already there
-        S.place(pad, S.drone([root, root * 1.5], b - a, rise=rise), a, 0.16 * layer(sec, 'drone'))
-
-    # ---- drums, bass, arp per bar -----------------------------------------------------------
-    for sec in song.sections:
-        dg, bg, ag = layer(sec, 'drums'), layer(sec, 'bass'), layer(sec, 'arp')
-        nb = sec['b1'] - sec['b0'] + 1
-        for bar in range(sec['b0'], sec['b1'] + 1):
-            s = song.bar_t(bar)
-            if s >= song.dur:
-                break
-            u = (bar - sec['b0']) / max(1, nb - 1)
-            # typing in the foreground owns the top end: the hats stop and the arp steps back
-            typing = sum(1 for t in fg_t if s <= t < s + barlen) >= 4
-            hats = sec['hats'] and not typing
-            pat = sec['drums']
-
-            def H(t, g, d=0.08, tau=0.012, bright=7500, pan=0.25):
-                if hats and free(t) and not song.silence_start_in(t - 0.01, t + 0.01) and not in_silence(song, t):
-                    S.place(drums, S.hat(d, tau, bright, seed=14 + int(t * 1000)), t, g * dg, pan)  # a new hat every hit
-
-            if pat == 'build':
-                K(s, 0.6 * dg, 0.8)
-                for k in range(8):
-                    H(s + k * beat / 2, (0.04 + 0.05 * u) * (1.4 if k % 2 else 0.8), 0.06, 0.01, 9000, -0.2 + 0.4 * (k % 2))
-            elif pat == 'groove':
-                K(s, 1.0 * dg)
-                K(s + 1.75 * beat, 0.55 * dg)
-                K(s + 2 * beat, 0.85 * dg)
-                S.place(drums, S.clap(seed=13 + 4 * bar), s + 2 * beat, 0.42 * dg)
-                for k in range(8):
-                    if not typing or k % 2 == 0:
-                        H(s + k * beat / 2, 0.10 if k % 2 else 0.05)
-            elif pat == 'drive':
-                for q in range(4):
-                    K(s + q * beat, (1.0 if q == 0 else 0.85) * dg)
-                    H(s + q * beat + beat / 2, 0.16, 0.25, 0.07, 6500, 0.2)
-                S.place(drums, S.clap(seed=13 + 4 * bar), s + beat, 0.40 * dg)
-                S.place(drums, S.clap(seed=15 + 4 * bar), s + 3 * beat, 0.44 * dg)
-                if not typing:
-                    for k in range(1, 16, 2):
-                        H(s + k * beat / 4, 0.06, 0.05, 0.01, 9500, -0.3)
-            elif pat == 'clock':
-                for k in range(8):
-                    t = s + k * beat / 2
-                    if free(t, 2.5):
-                        m = song.sig_tick if k % 2 == 0 else song.sig_tock
-                        vary = 10 ** (float(np.clip(S.rng(bar * 64 + k).normal(0, 1.0), -2, 2)) / 20)  # +-1 dB, a new seed per tick
-                        S.place(drums, S.tick(S.mtof(m), 0.05, 0.008, 0.5, 2000 + bar * 64 + k, k % 2 == 1), t,
-                                (0.10 + 0.03 * u) * dg * vary, -0.15 if k % 2 else 0.15)
-            elif pat == 'one' and bar == sec['b0'] and not any(abs(s - t) < 2 / song.fps for t in booms):
-                K(s, 1.0 * dg, 1.1)  # a drop or hit on this downbeat already carries the weight
-            if sec['clock']:
-                for q in range(4):
-                    t = s + q * beat
-                    if free(t, 2.5) and not in_silence(song, t):
-                        m = song.sig_tick if q % 2 == 0 else song.sig_tock
-                        vary = 10 ** (float(np.clip(S.rng(bar * 16 + q + 7).normal(0, 1.0), -2, 2)) / 20)
-                        S.place(drums, S.tick(S.mtof(m), 0.06, 0.009, 0.6, 3000 + bar * 16 + q, q % 2 == 1), t,
-                                (0.06 + 0.01 * (q % 2 == 0)) * vary, 0.15 if q % 2 else -0.15)
-
-            # bass
-            if bg > 0:
-                def B(t, d, g, oct_=0, drive=1.3, h2=0.22):
-                    ch = song.chord_at(t)
-                    if ch is None or in_silence(song, t):
-                        return
-                    m = S.nearest([ch.bass], 35) + oct_
-                    sil = song.silence_start_in(t, t + d)
-                    d = (sil - t) if sil is not None else d
-                    if d > 0.03:
-                        S.place(bass, S.bass(S.mtof(m), d, drive, h2), t, g * bg)
-                st = sec['style']
-                if st == 'drive':
-                    for k in range(8):
-                        B(s + k * beat / 2, beat / 2 * 0.95, 0.40, 12 if k in (3, 7) else 0, 1.3, 0.35)
-                elif st == 'groove':
-                    B(s, beat * 1.5, 0.36)
-                    B(s + 1.75 * beat, beat * 0.45, 0.26)
-                    B(s + 2 * beat, beat * 1.9, 0.34)
-                elif st in ('build', 'breakdown'):
-                    for a, b, ch in song.segs:
-                        a2, b2 = max(a, s), min(b, s + barlen)
-                        if a2 < b2 - 1e-6 and ch is not None:
-                            B(a2, (b2 - a2) * 0.98, 0.22, 0, 1.1)
-                elif st == 'resolve' and bar == sec['b0']:
-                    s0, s1 = song.bar_t(sec['b0']), song.bar_t(sec['b1'] + 1)
-                    segs_ = [(max(a, s0), min(b, s1), ch) for a, b, ch in song.segs if ch is not None and min(b, s1) > max(a, s0) + 1e-6]
-                    for j, (a2, b2, ch) in enumerate(segs_):
-                        d = (b2 - a2) if j < len(segs_) - 1 else max(b2 - a2, min(1.6 * barlen, song.dur - a2))
-                        x = S.bass(S.mtof(S.nearest([ch.bass], 35)), max(0.1, d), 1.2)
-                        k = min(len(x), S.ns(0.4))
-                        x[-k:] *= np.linspace(1, 0, k)
-                        S.place(bass, x, a2 + (0.06 if j == 0 else 0), 0.3 * bg)  # lets the kick or boom land first
-
-            # pluck arp
-            if ag > 0:
-                st = sec['style']
-                step = 1 if st == 'drive' else 2
-                gain = {'build': 0.06 + 0.04 * u, 'groove': 0.08, 'drive': 0.13, 'breakdown': 0.06}.get(st, 0.06) * ag
-                if typing:
-                    gain *= 0.6
-                for k in range(0, 16, step):
-                    t = s + k * beat / 4
-                    ch = song.chord_at(t)
-                    if ch is None or in_silence(song, t) or song.silence_start_in(t, t + 0.12):
-                        continue
-                    tones = arp_tones(ch)
-                    m = tones[ARP_PATTERN[k] % len(tones)] + (12 if st == 'drive' and k in (6, 14) else 0)
-                    S.place(arp, S.pluck(S.mtof(m), 0.45, 4200 if st == 'drive' else 3000), t,
-                            gain * (1.0 if k % 4 == 0 else 0.75), -0.35 if k % 2 else 0.35)
-    arp = S.pingpong(arp, beat * 0.75, fb=0.32, mix=0.28)
-
-    # ---- bells: a chord on each resolve, the signature motif where score.json places it ------
-    for sec in song.sections:
-        t = song.bar_t(sec['b0'])
-        if sec['style'] == 'resolve' and layer(sec, 'bells') > 0 and not any(abs(mo['t'] - t) < 0.1 for mo in song.motifs):
-            ch = song.chord_at(t + 1e-3)
-            if ch is not None:  # a strummed chord of bells on the resolution (the motif replaces it)
-                tones = [S.nearest([ch.root], 56)] + stack(ch.pcs, 68, 3)
-                for k, m in enumerate(tones):
-                    S.place(bells, S.fm_bell(S.mtof(m), 4.5, 2.0, 3.5, 1.8), t + 0.02 * k, (0.10 - 0.015 * k) * layer(sec, 'bells'))
-    motif_bells(song, bells, kit)
-    return dict(drums=drums, bass=bass, pad=pad, arp=arp, bells=bells), kicks
-
-
-def motif_bells(song, bells, kit=None):
-    """score.json "motifs" (and a progress resolve) onto the bells stem: the kit's bell takes, each note on
-    the take nearest it, when the kit has a bell role; FM bells otherwise. The stem joins the music bus at
-    1.5x, which the kit level undoes so a motif note sits at the bell role's level."""
-    st, name, spec = kit.lookup('bell') if kit else ('missing', None, None)
-    for mo in song.motifs:
-        for k, (m, r) in enumerate(zip(mo['notes'], mo['rhythm'])):
-            t, pan = mo['t'] + r * song.beat, 0.12 * (k % 2 * 2 - 1)
-            tk = kit.pick(name, f"motif|{t:.4f}|{k}", m, explicit=True) if st == 'ok' else None
-            if tk is not None:
-                g = KIT_GAIN * 10 ** (float(spec.get('level_db') or 0.0) / 20) * (1.0 - 0.12 * k) * mo['gain'] / 1.5
-                S.place(bells, kit.audio(tk) * tk.get('trim', 1.0), t - tk[spec.get('align', 'onset') + '_s'], g, pan)
-            else:
-                if st == 'ok':
-                    missing_note(song, kit, name, m, 'or keep the motif inside the role\'s notes (a progress climb and its '
-                                 'resolve fit two octaves of pentatonic takes at 5 rungs or fewer)')
-                S.place(bells, S.fm_bell(S.mtof(m), 3.0, 1.4, 3.5, 1.3), t, (0.10 - 0.015 * k) * mo['gain'], pan)
-
-
-def missing_note(song, kit, name, m, hint=None):
-    """Warn (once per role and note) that a pitched kit role has no take on an explicit note, so its synth
-    voice plays it: a neighbouring take would be a wrong note. hint: the other way out, for the caller."""
-    seen = song.__dict__.setdefault('_missing_notes', set())
-    if (name, round(m, 3)) in seen:
-        return
-    seen.add((name, round(m, 3)))
-    ns = kit.notes(name)
-    song.warnings.append(f'kit role {name} ({kit.roles[name]["sound"]}) has no take on {note_name(m)} (its notes: '
-                         f'{note_name(ns[0])}-{note_name(ns[-1])}, {len(ns)} of them): its synth voice plays that note. Add '
-                         f'{note_name(m)} to the role\'s pitches in audio/kit.json and run kit.py render (npm run kit), '
-                         + (hint or 'or drop the hand-set pitch and let score.py choose the note'))
-
-
-def in_silence(song, t, scope=None):
-    return any(a <= t < b for a, b, _, sc in song.silences if scope is None or sc == scope)
-
-
-PITCHED = ('pop', 'tick', 'tock', 'click', 'bell', 'land')  # kinds whose voice takes a `pitch`
+PITCHED = ('pop', 'tick', 'tock', 'click', 'bell', 'land')  # kinds whose placeholder voice takes a `pitch`
 
 
 def progress_ladder(song, kit, hits):
@@ -764,7 +468,6 @@ def progress_ladder(song, kit, hits):
         if len(inkey) >= 2:
             return found[0], inkey
     return None, None
-
 
 def apply_progress(song, events, kit=None):
     """The progress motif (score.json "progress"): every event whose id contains `match` (and
@@ -831,7 +534,6 @@ def balance(x, pan):
         return x
     a = (float(np.clip(pan, -1, 1)) + 1) * np.pi / 4
     return x * np.array([np.cos(a), np.sin(a)]) * np.sqrt(2)
-
 
 def plan_typing(song, events):
     """Humanize the film's key events for score.json "typing". Returns (plan, thinned, runs):
@@ -914,7 +616,7 @@ def plan_typing(song, events):
             thinned[i] = why
             continue
         last_blip = T[i]
-        r = S.rng(7919 * i + int(float(events[i]['f']) * 10) + 37)
+        r = D.rng(7919 * i + int(float(events[i]['f']) * 10) + 37)
         ch = song.chord_at(T[i] + 1e-3)
         pcs = ch.pcs if ch is not None else song.penta
         tones = [m for m in range(64, 90) if m % 12 in pcs]  # E4-F6: 330-1400 Hz
@@ -924,7 +626,7 @@ def plan_typing(song, events):
         db = float(np.clip(r.normal(0, 1.0), -2.0, 2.0)) + (1.5 if i in first else 0.0)
         plan[i] = dict(t=max(0.0, T[i] + float(np.clip(r.normal(0, 0.0025), -lim, lim))), kind='word', style='word',
                        seed=0, strike=7919 * i, level=10 ** (db / 20), keyup=None, second=0.0, second_db=None, tau=1.0,
-                       note=S.mtof(m), midi=m, pitch=1.0, pan=0.0, gain=TYPING_GAIN['word'], db=db)
+                       note=D.mtof(m), midi=m, pitch=1.0, pan=0.0, gain=TYPING_GAIN['word'], db=db)
         runs[run_of[i]]['sounded'] += 1
 
     # per key (soft, mechanical, pitched, muted): thin by time
@@ -949,7 +651,7 @@ def plan_typing(song, events):
     walk, prev_db = 2, None
     for n, i in enumerate(kept):
         f = float(events[i]['f'])
-        r = S.rng(7919 * i + int(f * 10) + 31)
+        r = D.rng(7919 * i + int(f * 10) + 31)
         rate = float(np.sum(np.abs(tk - T[i]) <= 0.25)) / 0.5
         kind = V[i] if V[i] in ('space', 'return', 'back') else 'letter'
         db = float(np.clip(r.normal(0, KEY_LEVEL_SD), -2.5 * KEY_LEVEL_SD, 2.5 * KEY_LEVEL_SD))
@@ -967,7 +669,7 @@ def plan_typing(song, events):
         u_up, u_sec, u_delay, u_db = r.random(), r.random(), r.random(), r.random()
         keyup = min(dwell[0] + (dwell[1] - dwell[0]) * u_up, gap - 0.03) if song.keyup and gap > need else None
         second = None if kind in edge else (0.025 + 0.010 * u_delay if u_sec < 0.5 else 0.0)  # about half the letters
-        ident = int(S.rng(4242 + i).integers(26))
+        ident = int(D.rng(4242 + i).integers(26))
         row = next(k for k, rw in enumerate(QWERTY) if letters[ident] in rw)
         col = QWERTY[row].index(letters[ident]) + (0, 0.25, 0.75)[row]
         note, m = None, None
@@ -976,12 +678,12 @@ def plan_typing(song, events):
             pcs = [q for q in song.penta if ch is None or q in ch.pcs]
             pcs = pcs if len(pcs) >= 3 else song.penta
             if kind in edge:
-                m = S.nearest([ch.root if ch else song.tonic], 60)
+                m = D.nearest([ch.root if ch else song.tonic], 60)
             else:
                 tones = [q for q in range(67, 78) if q % 12 in pcs]
                 walk = int(np.clip(walk + int(r.integers(-2, 3) if pos[i] == 0 else r.integers(-1, 2)), 0, len(tones) - 1))
                 m = tones[walk]
-            note = S.mtof(m)
+            note = D.mtof(m)
         plan[i] = dict(t=max(0.0, T[i] + float(np.clip(r.normal(0, 0.0035), -lim, lim))), kind=kind, style=style[i],
                        seed=0 if kind in edge else ident, strike=7919 * i + int(f * 10), level=10 ** (db / 20),
                        keyup=keyup, second=second, second_db=None if kind in edge else -12.0 - 3.0 * u_db,
@@ -992,7 +694,6 @@ def plan_typing(song, events):
         runs[run_of[i]]['rate_max'] = max(runs[run_of[i]]['rate_max'], rate)
     return plan, thinned, runs
 
-
 def kit_target(song, kind, e, t, pcs, pitch, text_note):
     """(note, explicit) a tonal kit role is aimed at: the note the synth voice would sound (the cue's own
     pitch is explicit: a progress rung or a set note keeps its octave), None for untuned kinds."""
@@ -1001,17 +702,16 @@ def kit_target(song, kind, e, t, pcs, pitch, text_note):
     if kind == 'text':
         return text_note, False
     if kind == 'bell':
-        return S.nearest(pcs, 80), False
+        return D.nearest(pcs, 80), False
     if kind == 'click' and e.get('variant') == 'confirm':
-        return S.nearest([q for q in song.penta if q in pcs] or song.penta, 81), False
+        return D.nearest([q for q in song.penta if q in pcs] or song.penta, 81), False
     if kind in ('hit', 'drop', 'snap', 'land'):
-        return S.ftom(song.sub_root(t)), False
+        return D.ftom(song.sub_root(t)), False
     if kind == 'tick':
         return (None if e.get('variant') == 'crisp' else song.sig_tick), False
     if kind == 'tock':
         return song.sig_tock, False
     return None, False
-
 
 def kit_voice(kit, name, spec, e, i, f, t, target=None, explicit=False, index=None, mono=True):
     """One cue's take: (samples, start s, MIDI note of a pitched take or None, file). The take is chosen by
@@ -1023,38 +723,110 @@ def kit_voice(kit, name, spec, e, i, f, t, target=None, explicit=False, index=No
         x = x.mean(axis=1)
     return x * tk.get('trim', 1.0), t - tk[spec.get('align', 'onset') + '_s'], tk['midi'], tk['file']
 
-
 def fade_head(x, cut):
     """x with its first `cut` samples dropped and a short raised-cosine fade-in where it now starts."""
     if cut <= 0:
         return x
     x = x[cut:].copy()
-    k = min(len(x), max(1, S.ns(0.012)))
+    k = min(len(x), max(1, D.ns(0.012)))
     w = 0.5 - 0.5 * np.cos(np.pi * np.arange(k) / k)
     x[:k] *= w[:, None] if x.ndim == 2 else w
     return x
 
+def text_chain_note(song, ch, text_run):
+    """the MIDI note a text chain's fragment steps to: root, third, fifth, third (the key's triad without
+    chords), in the octave above the chord's root near C5"""
+    tri = [(ch.root + i) % 12 for i in ch.iv if i in (0, 3, 4, 5, 7)][:3] if ch else song.triad
+    lo = int(D.nearest([ch.root if ch else song.tonic], 72))
+    tones = [q for q in range(lo, lo + 24) if q % 12 in tri]
+    return tones[(0, 1, 2, 1)[text_run % 4] % len(tones)]
 
-def build_sfx(song, n, events, plan=None, thinned=None, kit=None):
-    """Every event as a sound. Returns the buses (fx with its rooms, hall sends, ui for the clock's
-    tick/tock with a small room, and keys, clicks and crisp ticks, all dry), the placed and skipped
-    events and the hit ducks. Effects other than whooshes, risers, swells and sucks sit within
-    +-0.15 of the centre: the cue's pan is scaled into that range.
-    With `kit` (kit.Kit), a cue whose role the kit names plays its take (module doc); a role set to
-    null skips the cue; a role the kit does not name keeps the synth voice below."""
+
+def text_kit_target(song, kit, name, ch, pcs, text_run):
+    """(note, explicit) for a text cue on a tuned kit role: the chain steps through the chord's tones among the
+    role's notes (root, third, fifth, third), so consecutive fragments play different takes"""
+    tri = [(ch.root + i) % 12 for i in ch.iv if i in (0, 3, 4, 5, 7)][:3] if ch else song.triad
+    ns = kit.notes(name)
+    tones = [m_ for m_ in ns if int(round(m_)) % 12 in tri]
+    if len(tones) < 2:  # fewer than two triad tones among the takes: any chord tone, else any take
+        wide = [m_ for m_ in ns if int(round(m_)) % 12 in pcs]
+        tones = wide if len(wide) >= 2 else ns
+    return tones[(0, 1, 2, 1)[text_run % 4] % len(tones)], True
+
+
+def tonal_trim(x):
+    """a tuned sound ends by TONAL_MAX_S: cut there with a TONAL_FADE_S cos^2 fade (a copy; shorter ones as they are)"""
+    n = int(TONAL_MAX_S * SR)
+    if len(x) <= n:
+        return x
+    x = x[:n].copy()
+    k = int(TONAL_FADE_S * SR)
+    w = np.cos(np.linspace(0, np.pi / 2, k)) ** 2
+    x[-k:] *= w[:, None] if x.ndim == 2 else w
+    return x
+
+
+def tuned_thin(items, song, cues):
+    """items: placements with 'midi' (pitched) -> the set of item indices over the tuned budget (at most
+    TUNED_PER_4S pitched effects in any 4 s). Kept first: the payoff and the lockup, structural events,
+    heavy roles, then by weight and time. A progress resolve (two notes an octave apart) counts once."""
+    lock = cues.get('cue', {}).get('lockup')
+    lock_t = lock / song.fps if lock is not None else None
+
+    def special(t):
+        return any(m is not None and abs(t - m) <= STACK_F / song.fps for m in (song.payoff, lock_t))
+    cands = []
+    for k, it in enumerate(items):
+        if it.get('midi') is None or it.get('dyad_second'):
+            continue
+        cands.append(((0 if special(it['t']) or it.get('structural') else 1, 0 if it.get('heavy') else 1,
+                       -it.get('w', 1.0), it['t']), it['t'], k))
+    kept, drop = [], set()
+    for _, t, k in sorted(cands):
+        near = sorted([u for u in kept if abs(u - t) < 4.0] + [t])
+        if any(sum(1 for u in near if a <= u < a + 4.0) > TUNED_PER_4S for a in near):
+            drop.add(k)
+        else:
+            kept.append(t)
+    return drop
+
+
+def voices(draft):
+    """the placeholder voices (dsp + draft), only for a --draft render"""
+    if not draft:
+        return None
+    import draft as DR
+    return types.SimpleNamespace(**{**vars(D), **{k: v for k, v in vars(DR).items() if not k.startswith('__')}})
+
+
+def build_sfx(song, n, events, plan=None, thinned=None, kit=None, draft=False, cues=None):
+    """Every event as a sound (the effects-only path, and --draft voices). Returns the buses (fx with its rooms,
+    hall sends, ui for the clock's tick/tock with a small room, and keys, clicks and crisp ticks, all dry), the
+    placed and skipped events, and the cues no kit take sounds (missing: a failed gate unless --draft). Effects
+    other than whooshes, risers, swells and sucks sit within +-0.15 of the centre: the cue's pan is scaled into
+    that range. A cue whose role the kit names plays its take (module doc); a role set to null skips the cue;
+    a role the kit does not name, or an explicit note no take sounds, is missing (a placeholder voice under
+    --draft). Pitched effects past the tuned budget are thinned; tuned takes end by 1.5 s."""
     fx, hall, ui, keys, clicks, crisp = (np.zeros((n, 2)) for _ in range(6))
-    placed, skipped, ducks = [], [], []
+    buses = dict(fx=fx, hall=hall, ui=ui, keys=keys, clicks=clicks, crisp=crisp)
+    placed, skipped, missing, items = [], [], [], []
+    V = voices(draft)
     fps, beat = song.fps, song.beat
     plan, thinned = plan or {}, thinned or {}
     last_heavy = None
     pop_run, last_pop, lights = 0, -1e9, {}
     text_run, last_text = 0, -1e9
+    motif_warned = False
     # the UI click: one voice for the whole film at one level (the median click weight), a fixed
     # press-release gap, +-0.5 dB and a tiny timbre jitter per press
     cw = [float(e.get('weight', 1.0)) for e in events if e['kind'] == 'click']
     click_w = float(np.median(cw)) if cw else 1.0
     click_seed = 23 + 7 * song.tonic
-    click_gap = 0.080 + 0.012 * S.rng(click_seed).random()
+    click_gap = 0.080 + 0.012 * D.rng(click_seed).random()
+
+    def put(bus, x, start, g, pan, rec, midi=None, **kw):
+        items.append(dict(bus=bus, x=x, start=start, g=g, pan=pan, rec=rec, midi=midi, t=rec['t'], **kw))
+
     for i, e in enumerate(events):
         kind, f = e['kind'], float(e['f'])
         t = f / fps
@@ -1065,7 +837,7 @@ def build_sfx(song, n, events, plan=None, thinned=None, kit=None):
         seed = 7919 * i + int(f * 10)
         ch = song.chord_at(t + 1e-3)
         pcs = ch.pcs if ch else song.scale
-        pitch = S.midi(e['pitch']) if 'pitch' in e else None
+        pitch = D.midi(e['pitch']) if 'pitch' in e else None
         dur = float(e['dur']) / fps if 'dur' in e else None
         g = BASE.get(kind, 0) * w
         start = t
@@ -1074,16 +846,19 @@ def build_sfx(song, n, events, plan=None, thinned=None, kit=None):
         if kind not in BASE:
             skipped.append(dict(i=i, f=f, kind=kind, why='unknown kind'))
             continue
-        if in_silence(song, t, 'all') and kind != 'suck':
+        if any(a <= t < b for a, b, _, sc in song.silences) and kind != 'suck':
             song.warnings.append(f'{kind} at f={f} falls inside a silence and is muted')
         text_note = None
         if kind == 'text':  # one chain's fragments step root, third, fifth, third (the key's triad without chords)
             text_run = text_run + 1 if t - last_text < TEXT_RUN_GAP else 0
             last_text = t
-            tri = [(ch.root + i) % 12 for i in ch.iv if i in (0, 3, 4, 5, 7)][:3] if ch else song.triad
-            lo = int(S.nearest([ch.root if ch else song.tonic], 72))
-            tones = [q for q in range(lo, lo + 24) if q % 12 in tri]
-            text_note = tones[(0, 1, 2, 1)[text_run % 4] % len(tones)]
+            text_note = text_chain_note(song, ch, text_run)
+        motif = kind == 'bell' and e.get('variant') == 'motif'
+        if motif and not motif_warned:
+            motif_warned = True
+            song.warnings.append('bell variant "motif": a motif of tuned notes is music; the bell plays one note')
+        heavy = kind in ('hit', 'drop', 'snap') or (kind == 'land' and w >= 0.6 and e.get('variant') != 'light')
+        why_missing = None
         if kit is not None and not (kind == 'key' and i not in plan):
             kp = plan.get(i) if kind == 'key' else None
             role = K.role_for(kind, kp['kind'] if kp else e.get('variant'), w, dur)
@@ -1093,18 +868,13 @@ def build_sfx(song, n, events, plan=None, thinned=None, kit=None):
                 continue
             target, explicit = kit_target(song, kind, e, t, pcs, pitch, text_note) if st == 'ok' else (None, False)
             if st == 'ok' and kind == 'text' and pitch is None and kit.notes(name):
-                # a chain steps through the chord's tones among the kit's text notes (root, third, fifth,
-                # third as the synth voice does), so consecutive fragments play different takes
-                ns = kit.notes(name)
-                tones = [m_ for m_ in ns if int(round(m_)) % 12 in tri]
-                if len(tones) < 2:  # fewer than two triad tones among the takes: any chord tone, else any take
-                    wide = [m_ for m_ in ns if int(round(m_)) % 12 in pcs]
-                    tones = wide if len(wide) >= 2 else ns
-                target, explicit = tones[(0, 1, 2, 1)[text_run % 4] % len(tones)], True
-            motif = kind == 'bell' and e.get('variant') == 'motif'
-            if st == 'ok' and explicit and not motif and not kit.covers(name, target):
-                missing_note(song, kit, name, target)  # the synth voice below plays this cue
+                target, explicit = text_kit_target(song, kit, name, ch, pcs, text_run)
+            if st == 'ok' and explicit and not kit.covers(name, target):
+                why_missing = (f'kit role {name} ({kit.roles[name]["sound"]}) has no take on {note_name(target)}: add it to the '
+                               "role's pitches in audio/kit.json and render the kit (npm run kit), or drop the hand-set pitch")
                 st = 'missing-note'
+            if st == 'missing':
+                why_missing = f'the kit has no {role} role (nor one of its family): give it one in audio/kit.json (npm run kit)'
             if st == 'ok' and name == 'land':
                 if last_heavy is not None and abs(f - last_heavy) < 1:
                     skipped.append(dict(i=i, f=f, kind=kind, why='second heavy landing on one frame'))
@@ -1119,23 +889,13 @@ def build_sfx(song, n, events, plan=None, thinned=None, kit=None):
                     x, start, m, src = kit_voice(kit, name, spec, e, i, f, kp['t'], index=index)
                     g = kg * w * kp['level'] * kp['gain'] / (TYPING_GAIN[kp['style']] * KEY_KIND_GAIN.get(kk, 1.0))
                     g *= 0.8 if kp['style'] == 'muted' else 1.0
-                    pan, bus = float(np.clip(kp['pan'], -SFX_PAN, SFX_PAN)), keys
-                elif motif:  # the signature motif on the bell takes (a note the kit lacks: the synth bell)
-                    for k, (mm, r) in enumerate(zip(song.motif, song.rhythm)):
-                        if kit.covers(name, mm):
-                            x, start, m, src = kit_voice(kit, name, spec, e, i, f, t + r * beat, mm, True)
-                            gk = kg * w * (1.0 - 0.12 * k)
-                        else:
-                            missing_note(song, kit, name, mm, 'or change signature.motif to notes the role has')
-                            x, start, m, src = S.fm_bell(S.mtof(mm), 3.0, 1.4, 3.5, 1.3), t + r * beat, mm, None
-                            gk = g * (1.2 - 0.15 * k) * 1.25
-                        S.place(fx, x, start, gk, pan)
-                        placed.append(dict(i=i, f=f, kind=kind, variant='motif', id=e.get('id', ''), t=t, start=start, x=x,
-                                           g=gk, pan=pan, midi=m, sample=src, role=name if src else None))
-                    continue
+                    pan, bus = float(np.clip(kp['pan'], -SFX_PAN, SFX_PAN)), 'keys'
                 else:
                     wide = kind in WIDE_KINDS
-                    x, start, m, src = kit_voice(kit, name, spec, e, i, f, t, target, explicit, mono=not wide)
+                    keep = wide or spec.get('width') is not None  # a role with a width keeps the stereo it was rendered with
+                    x, start, m, src = kit_voice(kit, name, spec, e, i, f, t, target, explicit, mono=not keep)
+                    if keep and not wide and x.ndim == 2:
+                        pan = 0.0
                     if kind in ('whoosh', 'suck'):  # the take's lead-in starts no earlier than its move (2 f of air)
                         d = float(np.clip(dur or (0.45 + 0.35 * w), 0.15, 3.0)) if kind == 'whoosh' else (dur or 0.35)
                         lead = float(e.get('apexFrac', 0.5 if kind == 'whoosh' else 0.85)) * d + 2 / fps
@@ -1143,167 +903,179 @@ def build_sfx(song, n, events, plan=None, thinned=None, kit=None):
                         if cut > 0:
                             x, start = fade_head(x, cut), start + cut / SR
                     g = kg * (click_w if kind == 'click' else w)  # level_db sets each role's level, land.light's too
-                    if kind == 'click':  # one level per film, +-0.5 dB per press, as the synth click
-                        r = S.rng(seed)
+                    if kind == 'click':  # one level per film, +-0.5 dB per press
+                        r = D.rng(seed)
                         r.standard_normal()
                         g *= 10 ** (float(np.clip(r.normal(0, 0.25), -0.5, 0.5)) / 20)
                     if wide:
                         pan = float(np.clip(e.get('pan', 0.0), -1, 1)) * 0.6
                         if x.ndim == 2:
                             x, pan = balance(x, pan), 0.0
-                    bus = crisp if crisp_ else clicks if kind == 'click' else ui if kind in UI_KINDS else fx
-                    if kind in ('hit', 'drop'):
-                        ducks.append((t, w))
-                    elif kind == 'snap':
-                        ducks.append((t, w * 0.7))
-                    elif name == 'land':
-                        ducks.append((t, w * 0.6))
-                S.place(bus, x, start, g, pan)
-                placed.append(dict(i=i, f=f, kind=kind, id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan, midi=m,
-                                   sample=src, role=name, **({'variant': 'crisp'} if crisp_ else {})))
+                    bus = 'crisp' if crisp_ else 'clicks' if kind == 'click' else 'ui' if kind in UI_KINDS else 'fx'
+                if m is not None:
+                    x = tonal_trim(x)
+                put(bus, x, start, g, pan, dict(i=i, f=f, kind=kind, id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan,
+                                                midi=m, sample=src, role=name, **({'variant': 'crisp'} if crisp_ else {})),
+                    m, w=w, heavy=heavy, structural=bool(e.get('structural')))
                 continue
+        elif kit is None and not (kind == 'key' and i not in plan):
+            why_missing = 'no kit to play (npm run kit renders it; earshot 0.4+ in its own virtualenv)'
+        if why_missing and not draft:
+            missing.append(dict(i=i, f=f, kind=kind, id=e.get('id', ''), why=why_missing))
+            skipped.append(dict(i=i, f=f, kind=kind, why='no kit take: ' + why_missing))
+            continue
+        if kind == 'key' and i not in plan:
+            skipped.append(dict(i=i, f=f, kind=kind, why=thinned.get(i, 'thinned')))
+            continue
+        # ---- placeholder voices (--draft only)
         if kind == 'tick' and e.get('variant') == 'crisp':  # counters locking, list rows, build ticks
-            x = S.crisp_tick(seed, 0.05, S.mtof(pitch) if pitch else None)
+            x = V.crisp_tick(seed, 0.05, V.mtof(pitch) if pitch else None)
             m, g = pitch, BASE['crisp'] * w
-            S.place(crisp, x, start, g, pan)
-            placed.append(dict(i=i, f=f, kind=kind, variant='crisp', id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan, midi=m))
+            put('crisp', x, start, g, pan, dict(i=i, f=f, kind=kind, variant='crisp', id=e.get('id', ''), t=t, start=start,
+                                                x=x, g=g, pan=pan, midi=m), m, w=w)
             continue
         if kind == 'tick':
             m = pitch or song.sig_tick
-            x = S.tick(S.mtof(m), 0.08, 0.010, 0.8, seed)
+            x = V.tick(V.mtof(m), 0.08, 0.010, 0.8, seed)
         elif kind == 'tock':
             m = pitch or song.sig_tock
-            x = S.tick(S.mtof(m), 0.08, 0.011, 0.8, seed, True) * 0.95 + S.tock(S.mtof(m) / 4, 0.08, 0.02, 0.05, seed) * 0.2
+            x = V.tick(V.mtof(m), 0.08, 0.011, 0.8, seed, True) * 0.95 + V.tock(V.mtof(m) / 4, 0.08, 0.02, 0.05, seed) * 0.2
         elif kind == 'hit':
             r = song.sub_root(t)
-            m = S.ftom(r)
-            x = S.sub_boom(r * 2, r, 0.1, 1.6, seed)
-            x = S.layer_in(x, S.clap(seed=seed), 0.6)
-            x = S.layer_in(x, S.filt(S.noise(0.5, seed + 1), S.bp(200, 3000)) * S.expdec(0.5, 0.1), 0.35)
-            S.place(hall, S.filt(x, S.hp(250)), t, g * 0.4, pan)
-            ducks.append((t, w))
+            m = None
+            x = V.sub_boom(r * 2, r, 0.1, 1.6, seed)
+            x = V.layer_in(x, V.clap(seed=seed), 0.6)
+            x = V.layer_in(x, V.filt(V.noise(0.5, seed + 1), V.bp(200, 3000)) * V.expdec(0.5, 0.1), 0.35)
+            D.place(hall, V.filt(x, V.hp(250)), t, g * 0.4, pan)
         elif kind == 'land':
-            heavy = w >= 0.6 and e.get('variant') != 'light'
             if heavy:
                 if last_heavy is not None and abs(f - last_heavy) < 1:
                     skipped.append(dict(i=i, f=f, kind=kind, why='second heavy landing on one frame'))
                     continue
                 last_heavy = f
                 r = song.sub_root(t)
-                m = S.ftom(r)
-                knock = S.tock(650 + 150 * S.rng(seed).random(), 0.2, 0.05, 1.0, seed)
-                x = S.layer_in(S.sub_boom(r * 2, r, 0.08, 1.0, seed) * 0.55, knock)
-                ducks.append((t, w * 0.6))
+                knock = V.tock(650 + 150 * V.rng(seed).random(), 0.2, 0.05, 1.0, seed)
+                x = V.layer_in(V.sub_boom(r * 2, r, 0.08, 1.0, seed) * 0.55, knock)
             else:
                 key = id(ch)
                 k = lights.get(key, 0)
                 lights[key] = k + 1
                 ladder = stack(pcs, 84, 4)
                 m = pitch or ladder[k % len(ladder)]
-                x = S.tock(S.mtof(m), 0.12, 0.028, 0.35, seed)
+                x = V.tock(V.mtof(m), 0.12, 0.028, 0.35, seed)
                 g = BASE['land_light'] * min(2.0, w / 0.5)  # a light landing's reference weight is 0.5
         elif kind == 'pop':
-            pop_run = pop_run + 1 if t - last_pop < 1.0 else 0  # a run of pops climbs the pentatonic
+            pop_run = pop_run + 1 if t - last_pop < 1.0 else 0
             last_pop = t
-            ladder = [m for m in range(81, 99) if m % 12 in song.penta]  # rings on the note: ~0.9-2.3 kHz
-            target = S.nearest([p for p in song.penta if p in pcs] or song.penta, 86)
-            base = int(np.argmin([abs(m - target) for m in ladder]))
-            m = pitch or ladder[min(len(ladder) - 1, base + pop_run)]
-            x = S.blip(S.mtof(m), e.get('variant') != 'down')
+            ladder = [q for q in range(81, 99) if q % 12 in song.penta]
+            target = D.nearest([p for p in song.penta if p in pcs] or song.penta, 86)
+            base = int(np.argmin([abs(q - target) for q in ladder]))
+            m = pitch or ladder[min(len(ladder) - 1, base)]  # one note: a climbing run of pops is a melody
+            x = V.blip(V.mtof(m), e.get('variant') != 'down')
         elif kind == 'whoosh':
             d = float(np.clip(dur or (0.45 + 0.35 * w), 0.15, 3.0))
             apex = float(e.get('apexFrac', 0.5))
-            x = S.whoosh(d, 120, 500 + 250 * min(w, 1.6), 220, apex, pan, 0.025, seed)  # dull: centroid ~550 Hz
+            x = V.whoosh(d, 120, 500 + 250 * min(w, 1.6), 220, apex, pan, 0.025, seed)  # dull: centroid ~550 Hz
             start = t - apex * d
             pan = 0.0
         elif kind == 'suck':
             d = dur or 0.35
             apex = float(e.get('apexFrac', 0.85))
-            x = S.whoosh(d, 2500, 900, 200, apex, 0.0, 0.04, seed)  # synth.suck() with a movable apex
+            x = V.whoosh(d, 2500, 900, 200, apex, 0.0, 0.04, seed)
             start = t - apex * d
         elif kind == 'riser':
             d = dur or song.barlen
-            m = pitch or S.nearest([ch.root if ch else song.tonic], 67)
-            x = S.riser(d, 220, 7000, S.mtof(m), seed)
+            x = V.riser(d, 220, 7000, None, seed)  # noise only: no tuned saws
             start = t - d
         elif kind == 'drop':
             r = song.sub_root(t)
-            m = S.ftom(r)
-            x = S.stereo(S.sub_boom(r * 2, r, 0.12, 2.4, seed, tau=0.75))
-            x = S.layer_in(x, S.whoosh(0.4, 3000, 400, 150, 0.1, 0.0, 0.05, seed + 3), 0.4)  # falling air
-            S.place(hall, S.filt(x, S.hp(250)), t, g * 0.3, pan)
-            ducks.append((t, w))
+            x = V.stereo(V.sub_boom(r * 2, r, 0.12, 1.4, seed, tau=0.5))
+            x = V.layer_in(x, V.whoosh(0.4, 3000, 400, 150, 0.1, 0.0, 0.05, seed + 3), 0.4)  # falling air
+            D.place(hall, V.filt(x, V.hp(250)), t, g * 0.3, pan)
         elif kind == 'key':
-            if i not in plan:
-                skipped.append(dict(i=i, f=f, kind=kind, why=thinned.get(i, 'thinned')))
-                continue
             k = plan[i]  # plan_typing(): style, thinning, word dynamics, jitter, bottom-out, density
             if k['style'] == 'word':
-                x = S.word_blip(k['note'], 0.048) * k['level']
+                x = V.word_blip(k['note'], 0.048) * k['level']
             else:
-                x = S.key_click(k['seed'], k['pitch'], None, k['style'], k['kind'], k['strike'], k['level'], k['keyup'],
+                x = V.key_click(k['seed'], k['pitch'], None, k['style'], k['kind'], k['strike'], k['level'], k['keyup'],
                                 k['note'], k['tau'], k['second'], k['second_db'])
-                # level by what is heard (6 ms RMS), not by the peak: every key, space and return then
-                # sits exactly where plan_typing put it, whatever its timbre
-                w6 = max(1, S.ns(0.006))
+                w6 = max(1, D.ns(0.006))
                 x *= k['level'] * KEY_RMS_REF[k['style']] / (np.sqrt(np.convolve(x ** 2, np.ones(w6) / w6, 'same')).max() + 1e-12)
-            g = BASE['key'] * w * k['gain']  # render() then levels the run against the music (weight 1 = the norm)
+            g = BASE['key'] * w * k['gain']
             start = k['t']
             pan = float(np.clip(k['pan'], -SFX_PAN, SFX_PAN))
             m = k['midi']
         elif kind == 'click':  # press + release; variant "confirm" adds a soft tuned tone (meaningful actions only)
-            m = pitch or S.nearest(song.penta, 95)  # one tone near 2 kHz for the film
-            tone = S.mtof(S.nearest([q for q in song.penta if q in pcs] or song.penta, 81)) if e.get('variant') == 'confirm' else None
-            r = S.rng(seed)
-            x = S.ui_click(S.mtof(m), 0.14, click_seed, click_gap + 0.004 * r.standard_normal(), tone, seed)
+            tone = V.mtof(D.nearest([q for q in song.penta if q in pcs] or song.penta, 81)) if e.get('variant') == 'confirm' else None
+            r = D.rng(seed)
+            x = V.ui_click(V.mtof(pitch or D.nearest(song.penta, 95)), 0.14, click_seed, click_gap + 0.004 * r.standard_normal(),
+                           tone, seed)
+            m = D.nearest(song.penta, 81) if tone else None
             g = BASE['click'] * click_w * 10 ** (float(np.clip(r.normal(0, 0.25), -0.5, 0.5)) / 20)
-            S.place(clicks, x, start, g, pan)
-            placed.append(dict(i=i, f=f, kind=kind, id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan, midi=m))
+            put('clicks', x, start, g, pan, dict(i=i, f=f, kind=kind, id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan,
+                                                 midi=m), m, w=w)
             continue
         elif kind == 'snap':
-            m = S.ftom(song.sub_root(t))
-            x = S.snap(S.mtof(m), 0.6, 1.0, seed)
-            ducks.append((t, w * 0.7))
+            x = V.snap(song.sub_root(t), 0.6, 1.0, seed)
         elif kind == 'swell':
-            d = dur or beat
-            notes = stack(pcs, 60, 3) if not pitch else [pitch]
+            d = min(dur or beat, TONAL_MAX_S)
+            notes = [pitch] if pitch else stack(pcs, 60, 1)
             m = notes[0]
-            x = S.swell([S.mtof(q) for q in notes], d, seed)
+            x = V.swell([V.mtof(q) for q in notes], d, seed)
             start = t - d
         elif kind == 'bell':
-            if e.get('variant') == 'motif':
-                for k, (m, r) in enumerate(zip(song.motif, song.rhythm)):
-                    y = S.fm_bell(S.mtof(m), 3.0, 1.4, 3.5, 1.3)
-                    S.place(fx, y, t + r * beat, g * (1.2 - 0.15 * k) * 1.25, pan)
-                    placed.append(dict(i=i, f=f, kind=kind, t=t, x=y, g=g, pan=pan))
-                continue
-            m = pitch or S.nearest(pcs, 80)
-            x = S.fm_bell(S.mtof(m), 2.5, 1.6, 3.5, 1.0)
+            m = pitch or D.nearest(pcs, 80)
+            x = V.fm_bell(V.mtof(m), TONAL_MAX_S, 1.6, 3.5, 0.3)
         elif kind == 'text':  # a fragment resolving: a soft mallet on the chain's next chord tone
             m = pitch or text_note
-            x = S.tick(S.mtof(m), 0.14, 0.03, 0.8, seed)
+            x = V.tick(V.mtof(m), 0.14, 0.03, 0.8, seed)
         if x is None:
             continue
+        if m is not None:
+            x = tonal_trim(x)
         if x.ndim == 2 and pan:
             x = balance(x, pan)
             pan = 0.0
-        S.place(keys if kind == 'key' else ui if kind in UI_KINDS else fx, x, start, g, pan)
-        placed.append(dict(i=i, f=f, kind=kind, id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan, midi=m))
-    return dict(fx=fx, hall=hall, ui=ui, keys=keys, clicks=clicks, crisp=crisp), placed, skipped, ducks
-
-
-# ------------------------------------------------------------------------------------------
-# mix
-# ------------------------------------------------------------------------------------------
-def smooth_env(points, n, tau=0.02):
-    t = np.arange(n) / SR
-    ts, gs = zip(*sorted(points))
-    g = np.interp(t, ts, gs)
-    return S.filt(g, S.lp(1 / (2 * np.pi * tau), 1))
-
-
-OCTAVES = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
-A_WEIGHT_DB = [-26.2, -16.1, -8.6, -3.2, 0.0, 1.2, 1.0, -1.1]
+        put('keys' if kind == 'key' else 'ui' if kind in UI_KINDS else 'fx', x, start, g, pan,
+            dict(i=i, f=f, kind=kind, id=e.get('id', ''), t=t, start=start, x=x, g=g, pan=pan, midi=m, draft=True), m,
+            w=w, heavy=heavy, structural=bool(e.get('structural')))
+    # the progress resolve: the tonic and its octave below on the kit's bell role, at once (one gesture)
+    for mo in song.motifs:
+        st, name, spec = kit.lookup('bell') if kit is not None else ('missing', None, None)
+        for k, mm in enumerate(mo['notes']):
+            tk = kit.pick(name, f"motif|{mo['t']:.4f}|{k}", mm, explicit=True) if st == 'ok' else None
+            if tk is None:
+                why = (f'kit role bell has no take on {note_name(mm)} for the progress resolve' if st == 'ok'
+                       else 'the kit has no bell role for the progress resolve')
+                if not draft:
+                    missing.append(dict(i=-1, f=round(mo['t'] * fps, 2), kind='bell', id='progress:resolve', why=why))
+                    continue
+                x, start_, src = tonal_trim(V.fm_bell(V.mtof(mm), TONAL_MAX_S, 1.4, 3.5, 0.4)), mo['t'], None
+                g = BASE['bell'] * mo['gain'] * (1.0 - 0.12 * k)
+            else:
+                x = tonal_trim(kit.audio(tk) * tk.get('trim', 1.0))
+                if x.ndim == 2:
+                    x = x.mean(axis=1)
+                start_, src = mo['t'] - tk[spec.get('align', 'onset') + '_s'], tk['file']
+                g = KIT_GAIN * 10 ** (float(spec.get('level_db') or 0.0) / 20) * (1.0 - 0.12 * k) * mo['gain']
+            pan_ = 0.12 * (k % 2 * 2 - 1)
+            put('fx', x, start_, g, pan_, dict(i=-1, f=round(mo['t'] * fps, 2), kind='bell', variant='resolve', id='progress:resolve',
+                                               t=mo['t'], start=start_, x=x, g=g, pan=pan_, midi=mm, sample=src,
+                                               role=name if src else None), mm, w=mo['gain'], dyad_second=k > 0, structural=True)
+    # the tuned budget, then everything into its bus in event order
+    drop = tuned_thin(items, song, cues or {})
+    for k, it in enumerate(items):
+        if k in drop:
+            r = it['rec']
+            skipped.append(dict(i=r['i'], f=r['f'], kind=r['kind'], role=r.get('role'),
+                                why=f'tuned budget: at most {TUNED_PER_4S} pitched effects in 4 s (a run of tuned hits is a melody)'))
+            continue
+        D.place(buses[it['bus']], it['x'], it['start'], it['g'], it['pan'])
+        placed.append(it['rec'])
+    if drop:
+        song.warnings.append(f'{len(drop)} pitched effect(s) thinned by the tuned budget (at most {TUNED_PER_4S} in any 4 s): '
+                             + ', '.join(f"{items[k]['rec']['kind']} f{items[k]['rec']['f']:g}" for k in sorted(drop)[:6]))
+    return buses, placed, skipped, missing
 
 
 def band_snr(evt, bus):
@@ -1312,7 +1084,16 @@ def band_snr(evt, bus):
     A-weighted energy (a landing is heard by its knock, not its sub). Returns (band_hz, snr_db)."""
     if len(evt) < 256:
         return None
-    w = np.hanning(len(evt))
+    # flat with raised-cosine edges (1 ms in, 5 ms out): a Hann window over the take would weigh its attack, in its
+    # first milliseconds, at nearly nothing (a pop read 10-15 dB under what plays) while the steady music keeps its level
+    w = np.ones(len(evt))
+    for k, head in ((min(len(evt) // 4, int(0.001 * SR)), True), (min(len(evt) // 4, int(0.005 * SR)), False)):
+        if k > 1:
+            r = 0.5 - 0.5 * np.cos(np.pi * np.arange(k) / k)
+            if head:
+                w[:k] = r
+            else:
+                w[-k:] = r[::-1]
     A = np.abs(np.fft.rfft(evt.mean(axis=1) * w)) ** 2
     B = np.abs(np.fft.rfft(bus.mean(axis=1) * w)) ** 2
     fr = np.fft.rfftfreq(len(evt), 1 / SR)
@@ -1329,16 +1110,14 @@ def band_snr(evt, bus):
             best = (c, snr)
     return best
 
-
 def _a_weight(fr):
     """A-weighting as a power gain per frequency (Hz)."""
     fr = np.maximum(fr, 1e-3)
     ra = (12194 ** 2 * fr ** 4) / ((fr ** 2 + 20.6 ** 2) * np.sqrt((fr ** 2 + 107.7 ** 2) * (fr ** 2 + 737.9 ** 2)) * (fr ** 2 + 12194 ** 2))
     return (ra * 1.2589) ** 2
 
-
 def short_vs_music(sig, music, t, win=0.006, mwin=0.25):
-    """An effect against the music the way the norms measure it: the effect's 6 ms RMS at its
+    """An effect against the music by the house measure: the effect's 6 ms RMS at its
     loudest (within 2 ms before to 20 ms after t) minus the music's 250 ms RMS centred on t, in dB.
     sig and music are mono. Returns (dB, effect RMS) or (None, rms) when there is no music there."""
     i = int(round(t * SR))
@@ -1354,55 +1133,15 @@ def short_vs_music(sig, music, t, win=0.006, mwin=0.25):
         return None, peak
     return 20 * np.log10(peak / mu), peak
 
-
-def level_bus(bus, times, music, target_db, spans=None):
-    """Scale an effect bus so the median of its events' short_vs_music sits on target_db (clamped
-    to +-LEVEL_CLAMP_DB). spans: [(i0, i1, times)] levels each span on its own (typing runs);
-    otherwise one gain for the whole bus (one voice, one level per film). Returns the gains in dB,
-    one per span (or one), None where no music sits under the events."""
-    sig = bus.mean(axis=1)
-    out = []
-    for i0, i1, ts in (spans or [(0, len(bus), times)]):
-        d = [v for v in (short_vs_music(sig, music, t)[0] for t in ts) if v is not None]
-        if not d:
-            out.append(None)
-            continue
-        g = float(np.clip(target_db - np.median(d), -LEVEL_CLAMP_DB, LEVEL_CLAMP_DB))
-        bus[i0:i1] *= 10 ** (g / 20)
-        out.append(round(g, 1))
-    return out
-
-
-def typing_duck(song, plan, runs, n):
-    """Typing in the foreground gets room: the music bus gain dips mix.typing_duck_db (default 10 dB)
-    under every run of 3+ keys sounded per key (soft, mechanical, pitched), down over the 30 ms before
-    its first key and back up over 250 ms after its last. muted, word and off runs leave the music alone."""
-    g = np.ones(n)
-    db = song.mix['typing_duck_db']
-    for r in runs:
-        r['duck_db'] = 0.0
-        ts = sorted(plan[i]['t'] for i in r['idx'] if i in plan and plan[i]['style'] in PER_KEY)
-        if len(ts) < 3 or db <= 0:  # a lone key or two (an Enter, a shortcut) leaves the music alone
-            continue
-        a, b = ts[0], ts[-1] + 0.03
-        i0, i1 = max(0, int((a - 0.03) * SR)), min(n, int((b + 0.25) * SR))
-        u = np.arange(i0, i1) / SR
-        shape = np.where(u < a, 0.5 - 0.5 * np.cos(np.pi * np.clip((u - a + 0.03) / 0.03, 0, 1)),
-                         np.where(u <= b, 1.0, 0.5 + 0.5 * np.cos(np.pi * np.clip((u - b) / 0.25, 0, 1))))
-        g[i0:i1] = np.minimum(g[i0:i1], 1 - (1 - 10 ** (-db / 20)) * shape)
-        r['duck_db'] = db
-    return g
-
-
 def typing_levels(runs, plan, keys_sig, music_sig, kit_keys=None):
     """Each typing run of 4+ sounded keys (2+ word blips) against the music under it, both
-    pre-master and the music already ducked: the A-weighted level difference over the run, the
+    pre-master: the A-weighted level difference over the run, the
     keys' short-window level against the music (6 ms vs 250 ms RMS, median), the 2-5 and 5-10 kHz
     band differences, the typing's 2-5 kHz share of its own A-weighted energy, and the bed's share
-    above 2 kHz. Targets, from measured norms: per key (soft, mechanical, pitched) the run sits -8
-    to -2 dB A under the ducked music with the keys about at the music's short-window RMS; word
+    above 2 kHz. House targets: per key (soft, mechanical, pitched) the run sits -8
+    to -2 dB A under the music with the keys about at the music's short-window RMS; word
     blips +2 to +9 dB over it; muted typing 8 dB A or more under the full bed. kit_keys: {event index:
-    "role: sound"} for keys a kit take voiced: such a run is bright when its centroid passes the measured
+    "role: sound"} for keys a kit take voiced: such a run is bright when its centroid passes the house
     key-click range (KEY_CENTROID_MAX), and the warning names the take, not a style. Returns (rows,
     warnings)."""
     rows, warns = [], []
@@ -1434,18 +1173,18 @@ def typing_levels(runs, plan, keys_sig, music_sig, kit_keys=None):
         rows.append(row)
         where = f'typing at {row["t"][0]}-{row["t"][1]}s ({r["style"]}, {row["chars_per_s"]:.0f} chars/s)'
         if r['style'] != 'word' and r['chars_per_s'] > AUTO_WORD_RATE:  # any per-key style, muted included
-            warns.append(f'{where} sounds per key above {AUTO_WORD_RATE:.0f} chars/s; measured films sound typing that fast '
+            warns.append(f'{where} sounds per key above {AUTO_WORD_RATE:.0f} chars/s; the house sounds typing that fast '
                          'once per word or not at all: "typing": "auto", "word" or "off"')
-        if np.sqrt(np.mean(mu ** 2)) < 1e-3:
+        quiet = np.sqrt(np.mean(mu ** 2)) < 1e-3
+        if quiet:  # no music under it: only the timbre is judged
             row['note'] = 'no music under this run'
-            continue
-        if r['style'] in PER_KEY:
+        elif r['style'] in PER_KEY:
             if row['vs_music_A_db'] > -1:
-                warns.append(f'{where} sits {row["vs_music_A_db"]:+.0f} dB A against the ducked music (want about -8 to -2): '
+                warns.append(f'{where} sits {row["vs_music_A_db"]:+.0f} dB A against the music (want about -8 to -2): '
                              'lower the key weights')
             elif row['vs_music_A_db'] < -10:
-                warns.append(f'{where} sits {-row["vs_music_A_db"]:.0f} dB A under the ducked music (want about 2-8): the music is '
-                             'too dense to level against; raise mix.typing_duck_db, thin the section, or "muted"')
+                warns.append(f'{where} sits {-row["vs_music_A_db"]:.0f} dB A under the music (want about 2-8): the music is '
+                             'too dense to level against; put a sparse bar under the run (track.py edit), or "muted"')
         elif r['style'] == 'muted' and row['vs_music_A_db'] > -8:
             warns.append(f'{where} sits only {-row["vs_music_A_db"]:.0f} dB A under the music (muted typing is background, '
                          '8 dB A or more under): lower the key weights')
@@ -1457,11 +1196,11 @@ def typing_levels(runs, plan, keys_sig, music_sig, kit_keys=None):
         if r['style'] == 'word':
             continue
         if ks:  # the kit's take sets the timbre; the typing style only shapes timing and level
-            # judged by the measured key-click centroid (0.8-3 kHz, median 1.8): recorded keys in earshot's bank
+            # judged by the house key-click centroid (0.8-3 kHz, median 1.8): recorded keys in earshot's bank
             # put 39-65% of their A-weighted energy in 2-5 kHz with centroids of 1-2.2 kHz, so the synth voice's
             # 25% share target would flag every one of them
             if row['centroid_hz'] > KEY_CENTROID_MAX:
-                warns.append(f'{where} is bright: its keys\' centroid is {row["centroid_hz"] / 1000:.1f} kHz (measured key clicks '
+                warns.append(f'{where} is bright: its keys\' centroid is {row["centroid_hz"] / 1000:.1f} kHz (key clicks '
                              f'sit at 0.8-{KEY_CENTROID_MAX / 1000:g} kHz, median 1.8; a key is a dark tock). The kit\'s key '
                              f'takes ({", ".join(ks)}) set the timbre, not the typing style: give the brighter role a darker '
                              'member in audio/kit.json (earshot sfx list shows each sound\'s centroid_hz), then npm run kit')
@@ -1470,123 +1209,109 @@ def typing_levels(runs, plan, keys_sig, music_sig, kit_keys=None):
                          'or less; a key is a dark tock): use "soft" or "muted"')
     return rows, warns
 
-
-def load_bed(song, n, base_dir):
-    """The supplied track (score.json "bed"), resampled to 48 kHz stereo and placed at its time."""
-    import soundfile as sf
-    from math import gcd
-    tries = [song.bed['file'], os.path.join(base_dir, song.bed['file'])]
-    path = next((p for p in tries if os.path.exists(p)), None)
-    if path is None:
-        raise ScoreError(f'bed file not found: {song.bed["file"]} (looked in the working directory and next to score.json)')
-    x, sr = sf.read(path, always_2d=True, dtype='float64')
-    x = np.repeat(x, 2, axis=1) if x.shape[1] == 1 else x[:, :2]
-    if sr != SR:
-        from scipy import signal
-        g = gcd(SR, sr)
-        x = signal.resample_poly(x, SR // g, sr // g, axis=0)
-    out = np.zeros((n, 2))
-    S.place(out, x, song.bed['at'], 10 ** (song.bed['gain_db'] / 20), tail=0.05)
-    return out
+# ------------------------------------------------------------------------------------------
+# mix: effects only (the earshot kit at level_db)
+# ------------------------------------------------------------------------------------------
+OCTAVES = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
+A_WEIGHT_DB = [-26.2, -16.1, -8.6, -3.2, 0.0, 1.2, 1.0, -1.1]
 
 
-def render(song, events, stems_dir=None, base_dir='.', kit=None):
+class BedOnlyKit:
+    """--bed-only: a kit with no roles, so the plan places no effect and the edited bed plays alone"""
+    lock, roles, cast, source = {}, {}, None, 'none'
+
+    def lookup(self, role):
+        return 'missing', role, None
+
+    def notes(self, name):
+        return []
+
+    def covers(self, name, target):
+        return False
+
+    def pick(self, *args, **kw):
+        return None
+
+    def warnings(self, roles=None):
+        return []
+
+
+def render_effects(song, events, stems_dir=None, kit=None, draft=False, cues=None):
+    """The effects-only soundtrack: every event through build_sfx, the short rooms, the end fade, the master
+    at the film's target (glue on). Returns (master, info, report parts)."""
     n_out = int(round(song.dur * SR))
     n = n_out + 4 * SR
     plan, thinned, runs = plan_typing(song, events)
-    stems, kicks = build_music(song, n, events, plan, kit)
-    if song.bed:
-        stems['bed'] = load_bed(song, n, base_dir)
-    B, placed, skipped, ducks = build_sfx(song, n, events, plan, thinned, kit)
+    B, placed, skipped, missing = build_sfx(song, n, events, plan, thinned, kit, draft, cues)
     fx, hall, ui, keys = B['fx'], B['hall'], B['ui'], B['keys']
     t = np.arange(n) / SR
-
-    sc = M.sidechain_times(kicks + [(tt_, 0.8 * w) for tt_, w in ducks], n, song.mix['sidechain'], 0.14)
-    send = S.filt(stems['pad'] * 0.25 + stems['arp'] * 0.35 + stems['bells'] * 0.6 + stems['drums'] * 0.06, S.hp(250, 2))
-    parts = dict(drums=stems['drums'] * 0.8, bass=stems['bass'] * sc * 0.55, pad=stems['pad'] * (0.55 + 0.45 * sc) * 1.6,
-                 arp=stems['arp'] * (0.7 + 0.3 * sc) * 1.7, bells=stems['bells'] * 1.5,
-                 reverb=S.reverb(send, 'hall') * 0.6 * song.mix['reverb'])
-    if 'bed' in stems:
-        parts['bed'] = stems['bed']
-    music = sum(parts.values())
-
-    # music bus: section levels, a 3 dB dip for 150 ms around key hits, a 10 dB dip under typing
-    # sounded per key, the suck before drops
-    pts = [(0.0, 1.0)]
-    for sec in song.sections:
-        a, b = song.bar_t(sec['b0']), song.bar_t(sec['b1'] + 1)
-        pts += [(a + 1e-3, sec['level']), (b - 1e-3, sec['level'])]
-    pts.append((n / SR, pts[-1][1]))
-    bus = smooth_env(pts, n, 0.03)
-    dip = 1 - 10 ** (-song.mix['duck_db'] / 20)
-    for tt_, w in ducks:
-        seg = (t >= tt_ - 0.01) & (t < tt_ + 0.4)
-        u = t[seg] - tt_
-        shape = np.where(u < 0, (u + 0.01) / 0.01, np.where(u < 0.15, 1.0, np.exp(-(u - 0.15) / 0.08)))
-        bus[seg] *= 1 - dip * min(1.0, w) * shape
-    bus *= typing_duck(song, plan, runs, n)
-    for a, b, depth in song.sucks:
-        w_ = (t > a) & (t < b)
-        bus[w_] = np.minimum(bus[w_], 1 - depth * np.clip((t[w_] - a) / 0.04, 0, 1))
-    # the end fade: music AND effects (with their reverb) reach digital zero 30 ms before the end,
-    # so nothing is still sounding when master.py's last 60 ms fade and zeroed samples arrive
+    # the end fade: the effects (with their rooms) reach digital zero 30 ms before the end, so nothing is
+    # still sounding when master.py's last 60 ms fade and zeroed samples arrive
     fade = np.clip((song.dur - 0.03 - t) / song.fade, 0, 1) ** 2
-    hold = {'all': np.ones(n), 'music': np.ones(n)}
+    hold = np.ones(n)
     for a, b, depth, scope in song.silences:
         w_ = (t > a - 0.04) & (t < b)
-        h = hold[scope]
-        h[w_] = np.minimum(h[w_], 1 - depth * np.clip((t[w_] - (a - 0.04)) / 0.04, 0, 1))
+        hold[w_] = np.minimum(hold[w_], 1 - depth * np.clip((t[w_] - (a - 0.04)) / 0.04, 0, 1))
         r_ = (t >= b) & (t < b + 0.008)  # open again over 8 ms, so tails that resume at the silence's end don't click
-        h[r_] = np.minimum(h[r_], 1 - depth * (0.5 + 0.5 * np.cos(np.pi * (t[r_] - b) / 0.008)))
-    music_gain = bus * fade * song.mix['music'] * hold['music'] * hold['all']
-    music_bus = music * (bus * fade * song.mix['music'] * hold['music'])[:, None]
-
-    # levels against the music as heard (measured norms: 6 ms effect RMS vs 250 ms music RMS): each
-    # typing run on its own, and one gain per film for the click and for the crisp tick
-    heard = (music_bus * hold['all'][:, None]).mean(axis=1)
-    ref = heard / 1.25  # the dry effects go out at 1.25x (below); mix.sfx stays a trim on top of the levelling
-    spans, owners = [], []
+        hold[r_] = np.minimum(hold[r_], 1 - depth * (0.5 + 0.5 * np.cos(np.pi * (t[r_] - b) / 0.008)))
     for r in runs:
-        ts = sorted(plan[i]['t'] for i in r['idx'] if i in plan)
-        if ts:
-            spans.append((max(0, int((ts[0] - 0.02) * SR)), min(n, int((ts[-1] + 0.3) * SR)), ts))
-            owners.append(r)
-    wdb = lambda ws: 20 * math.log10(max(0.05, float(np.median(ws)))) if ws else 0.0  # a weight shifts the target
-    for r, (i0, i1, ts) in zip(owners, spans):
-        target = LEVEL_VS_MUSIC.get(r['style'], LEVEL_VS_MUSIC['key'])
-        target += wdb([float(events[i].get('weight', 1.0)) for i in r['idx'] if i in plan])
-        r['level_db'] = level_bus(keys, None, ref, target, [(i0, i1, ts)])[0]
-    sfx_levels = {}
-    for name, bus_, sel in (('click', B['clicks'], lambda p: p['kind'] == 'click'),
-                            ('crisp', B['crisp'], lambda p: p.get('variant') == 'crisp')):
-        ps = [p for p in placed if sel(p)]
-        if not ps:
-            continue
-        target = LEVEL_VS_MUSIC[name] + wdb([float(events[p['i']].get('weight', 1.0)) for p in ps])
-        g_db = level_bus(bus_, [p['start'] for p in ps], ref, target)[0]
-        for p in ps:
-            p['g'] *= 10 ** ((g_db or 0.0) / 20)
-        sig = bus_.mean(axis=1) * 1.25 * song.mix['sfx']
-        sv = [v for v in (short_vs_music(sig, heard, p['start'])[0] for p in ps) if v is not None]
-        sfx_levels[name] = dict(count=len(ps), level_db=g_db, vs_music_db=round(float(np.median(sv)), 1) if sv else None,
-                                target_db=round(target, 1))
-        if sv and abs(np.median(sv) - target - 20 * math.log10(max(song.mix['sfx'], 1e-3))) > 2:
-            song.warnings.append(f'{name}: {len(ps)} at {np.median(sv):+.1f} dB against the music, target {target:+g} (the levelling '
-                                 f'stops {LEVEL_CLAMP_DB:g} dB from the static level): the music under them is unusually loud or quiet; check '
-                                 'that section\'s level, or their weights')
-
-    fx_low = S.filt(fx, S.lp(90, 2))
-    fx_dry = S.filt(fx - fx_low * 0.45, S.hp(24, 2)) * 1.25 * song.mix['sfx']
-    fxs = S.filt(fx, S.hp(250, 2))
-    fx_wet = (S.reverb(fxs * 0.18, 'room') + S.reverb(fxs * 0.08 + hall, 'hall')) * song.mix['sfx']
+        r['duck_db'] = 0.0
+        r['level_db'] = None
+    fx_low = D.filt(fx, D.lp(90, 2))
+    fx_dry = D.filt(fx - fx_low * 0.45, D.hp(24, 2)) * 1.25 * song.mix['sfx']
+    fxs = D.filt(fx, D.hp(250, 2))
+    fx_wet = (D.reverb(fxs * 0.18, 'room') + D.reverb(fxs * 0.08 + hall, 'hall')) * song.mix['sfx']
     # keys, clicks and crisp ticks dry; the clock's tick and tock plus a small room (0.3 s) sent at
     # -22 dB and high-passed at 350 Hz
     dry = ui + keys + B['clicks'] + B['crisp']
-    ui_dry = S.filt(dry, S.hp(24, 2)) * 1.25 * song.mix['sfx']
-    ui_wet = S.reverb(S.filt(ui, S.hp(350, 2)) * 0.08, 'small') * song.mix['sfx']
+    ui_dry = D.filt(dry, D.hp(24, 2)) * 1.25 * song.mix['sfx']
+    ui_wet = D.reverb(D.filt(ui, D.hp(350, 2)) * 0.08, 'small') * song.mix['sfx']
     fx_dry = (fx_dry + ui_dry) * fade[:, None]
     fx_wet = (fx_wet + ui_wet) * fade[:, None]
-    keys_dry = S.filt(keys, S.hp(24, 2)) * 1.25 * song.mix['sfx'] * fade[:, None]  # for the typing report
+    keys_dry = D.filt(keys, D.hp(24, 2)) * 1.25 * song.mix['sfx'] * fade[:, None]  # for the typing report
+    fade_warnings(song, placed)
+    mix = (fx_dry + fx_wet) * hold[:, None]
+    mix = mix[:n_out]
+    y, info = M.finish(mix, song.lufs, song.ceiling, fade=0)
+    silent = np.zeros((n_out, 2))
+    kit_keys = {p['i']: f"{p['role']}: {kit.roles[p['role']]['sound']}" for p in placed if p['kind'] == 'key' and p.get('sample')}
+    trows, twarn = typing_levels(runs, plan, (keys_dry * hold[:, None])[:n_out], silent, kit_keys)
+    song.warnings.extend(twarn)
+    typing = dict(style=song.typing, styles=sorted({r['style'] for r in runs}), keys=sum(1 for e in events if e['kind'] == 'key'),
+                  sounded=len(plan), thinned=len(thinned), duck_db=0.0, runs=trows)
+    if stems_dir:
+        import soundfile as sf
+        os.makedirs(stems_dir, exist_ok=True)
+        sf.write(os.path.join(stems_dir, 'sfx.wav'), ((fx_dry + fx_wet) * hold[:, None])[:n_out].astype(np.float32), SR)
+        for stale in ('music.wav', 'bed.wav', 'drums.wav', 'bass.wav', 'pad.wav', 'arp.wav', 'bells.wav', 'reverb.wav'):
+            if os.path.exists(os.path.join(stems_dir, stale)):
+                os.remove(os.path.join(stems_dir, stale))  # older layouts would double-count in tools that sum the stems
+    tuned = [dict(f=p['f'], kind=p['kind'], id=p.get('id', ''), note=note_name(p['midi']), in_key=fits(song, p))
+             for p in placed if p.get('midi') is not None]
+    sounded = []  # the intended sound times (cues_sounded.json): the cue frame, a key's planned time
+    seen = set()
+    for p in placed:
+        if p['i'] < 0 or p['i'] in seen:
+            continue
+        seen.add(p['i'])
+        e = dict(events[p['i']])
+        e['cue_f'] = e['f']
+        e['f'] = round((plan[p['i']]['t'] if p['kind'] == 'key' and p['i'] in plan else p['t']) * song.fps, 3)
+        if p.get('role'):
+            e['role'] = p['role']
+        sounded.append(e)
+    return y, info, dict(placed=placed, skipped=skipped, missing=missing, masked=[], tuned=tuned, typing=typing,
+                         sfx_levels={}, sounded=sorted(sounded, key=lambda e: e['f']))
+
+
+def fits(song, p):
+    """in the key, or a tone of the chord sounding at that moment (a V7's leading tone)"""
+    ch = song.chord_at(p['t'] + 1e-3)
+    pc = int(round(p['midi'])) % 12
+    return pc in song.scale or (ch is not None and pc in ch.pcs)
+
+
+def fade_warnings(song, placed):
     seen = set()
     for p in placed:  # an effect that starts inside the fade is mostly lost: say so
         g_ = float(np.clip((song.dur - 0.03 - p['t']) / song.fade, 0, 1) ** 2)
@@ -1596,60 +1321,592 @@ def render(song, events, stems_dir=None, base_dir='.', kit=None):
                                  f"({20 * np.log10(g_ + 1e-9):.0f} dB): move it at least "
                                  f"{int(np.ceil((song.fade + 0.03) * song.fps))} f before the end or shorten master.fade")
 
-    mix = (music_bus + fx_dry + fx_wet) * hold['all'][:, None]
-    mix = mix[:n_out]
 
-    y, info = M.finish(mix, song.lufs, song.ceiling, fade=0)
+# ------------------------------------------------------------------------------------------
+# mix: a licensed track + the plan
+# ------------------------------------------------------------------------------------------
+def load_music(song, base_dir, n):
+    """(the staged bed (n, 2) at 48 kHz, edit.json) for a film with a track, (None, None) without one. The edit's
+    segments and joins come from track.py build_bed; the bed is staged to STAGE_LUFS, then music.gain_db."""
+    if not song.has_music:
+        return None, None
+    import track as TR
+    cfg = song.music_cfg
+    edit = None
+    root = os.path.dirname(base_dir) if os.path.basename(base_dir) == 'audio' else base_dir  # the project root
+    cache = os.path.join(root, 'out', 'cache', 'music')
+    if cfg.get('edit'):
+        edit = settle_ending(song, read_json(locate(cfg['edit'], base_dir), 'edit'))
+        try:
+            bed, _ = TR.build_bed(edit, base_dir, n=n, cache_dir=cache)
+        except TR.TrackError as e:
+            raise ScoreError(str(e)) from None
+    else:
+        tp = locate(cfg['track'], base_dir)
+        if not os.path.isfile(tp):
+            raise ScoreError(f'music track not found: {cfg["track"]} (looked in the working directory and next to score.json)')
+        try:
+            x, _ = TR.decode(tp, cache)
+        except TR.TrackError as e:
+            raise ScoreError(str(e)) from None
+        bed = np.zeros((n, 2))
+        D.place(bed, x.astype(np.float64), song.T(cfg.get('at', 0)), 1.0, tail=0.05)
+    bed = M.stage(bed, STAGE_LUFS) * 10 ** (float(cfg.get('gain_db') or 0.0) / 20)
+    return bed, edit
 
-    # report: masking per event, payoff dynamics
-    mb = (music_bus * hold['all'][:, None])[:n_out]
-    kit_keys = {p['i']: f"{p['role']}: {kit.roles[p['role']]['sound']}" for p in placed if p['kind'] == 'key' and p.get('sample')}
-    trows, twarn = typing_levels(runs, plan, (keys_dry * hold['all'][:, None])[:n_out], mb, kit_keys)
-    song.warnings.extend(twarn)
-    styles = sorted({r['style'] for r in runs})
-    typing = dict(style=song.typing, styles=styles, keys=sum(1 for e in events if e['kind'] == 'key'), sounded=len(plan),
-                  thinned=len(thinned), duck_db=song.mix['typing_duck_db'], runs=trows)
-    masked = []
+
+def settle_ending(song, edit):
+    """A hit ending whose bar line comes after the lockup with nothing on it (a template that holds the end card past
+    the body's last bar): the lockup stays the film's last hit and the music subtracts under the end card: from the
+    lockup the bed plays END_UNDER_DB under its level (plan.py: the lockup's stop-down goes through), and its last
+    downbeat on the bar line rings out (ring_bed), never a bed at full level under the end card stopping on nothing.
+    The edit on disk is unchanged; ending.under_from_s marks it, and it is reported."""
+    end = dict((edit or {}).get('ending') or {})
+    lock = (song.cues.get('cue') or {}).get('lockup')
+    if end.get('mode') not in ('hit', 'stop') or lock is None or not edit.get('segments'):
+        return edit
+    lt, t = float(lock) / song.fps, float(end.get('bed_stops_film_s', end.get('hit_film_s', 0.0)))
+    bar = 4.0 * float(edit.get('beat_s') or song.beat)
+    if not (0.3 <= t - lt <= 2.0 * bar) or any(abs(float(e['f']) / song.fps - t) <= 3.0 / song.fps for e in song.cues.get('events', [])):
+        return edit
+    end['under_from_s'] = round(lt, 4)
+    song.warnings.append(f"the hit ending's bar line ({t:.2f} s) comes {t - lt:.1f} s after the lockup ({lt:.2f} s) with nothing on "
+                         "it: from the lockup the bed plays 6 dB under and its last downbeat rings out on the bar line (an "
+                         "element on the bar line, or a body that ends on the lockup's bar, ends it cleaner)")
+    return dict(edit, ending=end)
+
+
+def ring_hit(song, edit, placed, sfx):
+    """A hit ending (track.py edit --end hit): the element on the bar line where the bed is released rings through
+    the hall (2.8 s), so the film ends on a decay of 1.5 s or more, never on the bed stopping. Without an
+    element there, a warning names the frame."""
+    end = (edit or {}).get('ending') or {}
+    if end.get('mode') not in ('hit', 'stop'):
+        return None
+    t = float(end.get('hit_film_s', end.get('end_s', 0.0)))
+    near = [p for p in placed if 'x' in p and abs(p['sync_s'] - t) <= max(0.1, 3 / song.fps)]
+    if not near and end.get('under_from_s') is not None:
+        return None  # settle_ending said it: the lockup before the bar line is the last hit, the bed rings out
+    if not near:
+        song.warnings.append(f'the hit ending has no element on its bar line ({t:.2f} s, f={t * song.fps:.0f}): cue one hit or drop '
+                             'there (the lockup), or end on the track\'s own ending (track.py edit --end own) or a fade (--end fade)')
+        return None
+    p = max(near, key=lambda q: q['g'])
+    x = p['x'].mean(axis=1) if p['x'].ndim == 2 else p['x']
+    x = np.concatenate([x, np.zeros(int(3.0 * SR))])  # room for the hall's tail (reverb keeps the input's length)
+    wet = D.filt(D.reverb(x * p['g'] * HIT_RING_SEND, 'hall'), D.hp(250, 2))
+    D.place(sfx, wet, p['start'], 1.0, 0.0, tail=0.05)
+    p['ring'] = dict(send=HIT_RING_SEND, room='hall')
+    return p
+
+
+BED_RING_SEND = 0.6  # a hit ending: the bed's last downbeat through the hall, so the music itself rings out under the hit
+
+
+def ring_bed(edit, bed_played, source=None, until_s=None):
+    """A hit ending: the bed's last downbeat (its attack and the 0.5 s release under the hit, as the track plays it before
+    the lockup's breath: `source`) is sent through the hall (2.8 s) into the bed, so the music's own last chord rings out
+    with the lockup instead of stopping under it."""
+    source = bed_played if source is None else source
+    end = (edit or {}).get('ending') or {}
+    if end.get('mode') not in ('hit', 'stop'):
+        return None
+    t = float(end.get('bed_stops_film_s', end.get('hit_film_s', end.get('end_s', 0.0))))
+    rel = float(end.get('release_s', 0.5))
+    i0, i1 = max(0, int((t - 0.02) * SR)), min(len(bed_played), int((t + 0.06 + rel) * SR))
+    if i1 - i0 < int(0.05 * SR):
+        return None
+    # the ring lasts to the end card's last frame: a hall of 2.8 s, longer (up to 6 s) when the picture holds longer
+    rt = float(np.clip(1.1 * ((until_s or t + 2.8) - t), 2.8, 6.0))
+    x = np.concatenate([source[i0:i1].mean(axis=1), np.zeros(int((rt * 1.2 + 0.4) * SR))])
+    room = 'hall' if rt <= 2.81 else D.make_ir(rt, 0.025, 5500, 1.0, 3)
+    wet = D.filt(D.reverb(x * BED_RING_SEND, room), D.hp(120, 2))
+    D.place(bed_played, wet, i0 / SR, 1.0, 0.0, tail=0.3)
+    return dict(t=round(t, 3), send=BED_RING_SEND, rt60_s=round(rt, 2))
+
+
+SALIENT_JUMP_DB, SALIENT_REL_LU = 6.0, -8.0  # earshot's salient hit: a 100 ms block 6 dB over the 200 ms before, near the level
+ACCENT_SHARE = 0.30      # the share of the picture's events that should land as hits the ear marks
+CLICK_TRACK_SHARE = 0.85  # more than this, evenly spaced: a click track
+
+
+def salient_hits(y):
+    """The times the ear marks as hits (earshot's rule, model-free): a 100 ms K-weighted block (every 20 ms) that rises
+    6 dB or more within 80 ms over the quietest block of the 200 ms before and lands within 8 LU of the integrated
+    loudness; one hit per run of such blocks, at its biggest rise."""
+    tb, L = M.blocks(y, 0.1, 0.02)
+    if len(L) < 20:
+        return []
+    try:
+        I = M.integrated(y)
+    except ValueError:
+        return []
+    from numpy.lib.stride_tricks import sliding_window_view as sw
+    a, b = 10, 4
+    pre = sw(np.concatenate([np.full(a, L[0]), L]), a).min(axis=1)[:len(L)]
+    post = sw(np.concatenate([L, np.full(b - 1, L[-1])]), b).max(axis=1)[:len(L)]
+    rise = post - pre
+    idx = np.flatnonzero((rise >= SALIENT_JUMP_DB) & (post >= I + SALIENT_REL_LU))
+    out = []
+    for run in (np.split(idx, np.flatnonzero(np.diff(idx) > 2) + 1) if len(idx) else []):
+        k = run[int(np.argmax(rise[run]))]
+        t = float(tb[k]) - 0.02
+        if not out or t - out[-1] > 0.1:
+            out.append(t)
+    return out
+
+
+def accent_read(y, events, song, plan=None):
+    """How many of the picture's events land as hits the ear marks (a salient hit within 100 ms, as earshot reads a film
+    against its picture), which ones, and whether it reads as a click track (nearly every event hit, evenly spaced)."""
+    hits = np.array(salient_hits(y))
+    evs = [e for e in events if e['f'] / song.fps < song.dur]
+    on = [bool(len(hits)) and float(np.min(np.abs(hits - e['f'] / song.fps))) <= 0.1 for e in evs]
+    moments = set()
+    for s in (plan or {}).get('stopdowns', []):
+        if s.get('status') in ('added', 'arrangement'):
+            moments.add(round(float(s['t']), 2))
+    share = sum(on) / len(evs) if evs else None
+    ioi = np.diff(hits) if len(hits) > 2 else np.array([])
+    cv = float(np.std(ioi) / np.mean(ioi)) if len(ioi) else None
+    rep = dict(events=len(evs), salient=int(sum(on)), share=None if share is None else round(share, 3),
+               moments=len(moments), hits=len(hits), hits_per_10s=round(10 * len(hits) / max(song.dur, 1e-6), 2),
+               hit_spacing_cv=None if cv is None else round(cv, 2),
+               missed=[dict(f=e['f'], kind=e['kind'], id=e.get('id', '')) for e, h in zip(evs, on) if not h
+                       and (e.get('structural') or e['kind'] in ('hit', 'drop', 'land') or 'lockup' in str(e.get('id', '')))][:8])
+    if share is not None and len(evs) >= 4 and share < ACCENT_SHARE:
+        song.warnings.append(f"few events land as hits: {sum(on)} of {len(evs)} ({share:.0%}; want {ACCENT_SHARE:.0%}+): the moments "
+                             "(a landing, a seam, the lockup) take a breath of the music before them; give the events that matter "
+                             "an action (src/sync.ts) and a weight of 0.45+, or cut the picture on the track's accents")
+    if share is not None and share > CLICK_TRACK_SHARE and cv is not None and cv < 0.25:
+        song.warnings.append(f'{share:.0%} of the events land as evenly spaced hits (spacing CV {cv:.2f}): a click track; let the '
+                             'music carry the lighter ones (lower their weight under 0.45)')
+    return rep
+
+
+def plan_voice(kit, p, song):
+    """(samples, start s) of one planned take, as score.py places it: mono unless the role keeps its width or
+    the kind travels; the whoosh lead-in faded so it starts no earlier than its move; a tuned take ends by 1.5 s"""
+    tk = next(t for t in kit.roles[p['role']]['takes'] if t['file'] == p['take'])
+    x = kit.audio(tk)
+    keep = p['width'] is not None
+    if x.ndim == 2 and not keep:
+        x = x.mean(axis=1)
+    start = float(p['start_s'])
+    if p['kind'] in ('whoosh', 'suck'):
+        w = 1.0
+        d = float(np.clip(p.get('dur_s') or (0.45 + 0.35 * w), 0.15, 3.0)) if p['kind'] == 'whoosh' else (p.get('dur_s') or 0.35)
+        lead = float(p.get('apex') or (0.5 if p['kind'] == 'whoosh' else 0.85)) * d + 2 / song.fps
+        cut = int(round((float(p['cue_s']) - lead - start) * SR))
+        if cut > 0:
+            x, start = fade_head(x, cut), start + cut / SR
+    if p.get('trim_s') or p.get('midi') is not None:
+        x = tonal_trim(x)
+    if x.ndim == 2 and p['width'] == 'travel' and p['pan']:
+        x = balance(x, p['pan'])
+    return x, start
+
+
+AIR = dict(floor_db=-28.0, k=0.5, max_db=4.5, shelf_hz=7000.0, presence=(2000.0, 5000.0), presence_db=1.5,
+           # the mix's balance: a soundtrack whose 2-8 kHz band sits under -22 dB of the whole, or its 8-16 kHz band under
+           # -32, reads as a dull murk (a bright launch mix sits about -11 to -25 and -11 to -31); a track whose own 2-8 kHz
+           # band sits under -35 dB is muffled (a low-passed pad: no EQ adds what the file does not hold)
+           mix_presence=-22.0, mix_air=-32.0, muffled=-35.0)
+FX_LIFT = dict(floor_db=3.0, target_db=4.5, max_db=6.0)
+
+
+def band_balance(x):
+    """The share of a signal's power in four bands against its whole (dB, over the film): low (30-250 Hz), mid
+    (250-2k), presence (2-8k), air (8-16k); None when shorter than a second."""
+    x = np.asarray(x, np.float64)
+    x = x.mean(axis=1) if x.ndim == 2 else x
+    seg = 1 << 15
+    if len(x) < max(SR, seg):
+        return None
+    win = np.hanning(seg)
+    tot = np.zeros(seg // 2 + 1)
+    for i in range(len(x) // seg):
+        tot += np.abs(np.fft.rfft(x[i * seg:(i + 1) * seg] * win)) ** 2
+    fr = np.fft.rfftfreq(seg, 1.0 / SR)
+    allp = float(tot[fr >= 30].sum())
+    if allp <= 0:
+        return None
+    band = lambda lo, hi: round(10 * math.log10(float(tot[(fr >= lo) & (fr < hi)].sum()) / allp + 1e-24), 2)  # noqa: E731
+    return dict(low=band(30, 250), mid=band(250, 2000), presence=band(2000, 8000), air=band(8000, 16000))
+
+
+def open_bars_hint(edit, base_dir='.'):
+    """Where the track opens up (its bars with a full spectrum: the centroid over 700 Hz and 0.4 of its 75th percentile
+    bar), as an instruction for the edit: 'fit the edit on its open bars 17-32, 41-45 (track.py edit --start-bar 17 ...)'."""
+    try:
+        a = json.load(open(locate((edit or {}).get('analysis'), base_dir), encoding='utf-8'))
+        cen = np.array([float(b.get('centroid') or 0.0) for b in a['bars']])
+        lim = min(700.0, 0.4 * float(np.percentile(cen, 75)))
+        runs, st = [], None
+        for i, c in enumerate(list(cen) + [0.0]):
+            if c >= lim and st is None:
+                st = i
+            if c < lim and st is not None:
+                runs.append((st + 1, i))
+                st = None
+        runs = [r for r in runs if r[1] - r[0] >= 1]
+        if not runs:
+            return 'the whole track is muffled'
+        ranges = ', '.join(f'{x}-{y}' for x, y in runs[:4])
+        return f'fit the edit on the bars where the track opens up ({ranges}: track.py edit --start-bar {runs[0][0]} or --entry {runs[0][0]})'
+    except (OSError, ValueError, KeyError, TypeError):
+        return 'fit the edit on the bars where the track opens up (track.py edit --start-bar)'
+
+
+def air_bed(bed):
+    """A dull bed with air and presence back (a parallel high-pass blend: a smooth shelf, no ringing), or the bed as it
+    is: (bed, info)."""
+    b = band_balance(bed)
+    info = dict(bed=b, shelf_db=0.0, presence_db=0.0)
+    if b is None or b['air'] >= AIR['floor_db']:
+        return bed, info
+    g = min(AIR['max_db'], AIR['k'] * (AIR['floor_db'] - b['air']))
+    y = bed + (10 ** (g / 20) - 1) * D.filt(bed, D.hp(AIR['shelf_hz'], 2))
+    y = y + (10 ** (AIR['presence_db'] / 20) - 1) * D.filt(bed, D.bp(AIR['presence'][0], AIR['presence'][1], 2))
+    info.update(shelf_db=round(g, 2), presence_db=AIR['presence_db'])
+    return y, info
+
+
+def fx_lift(bed_played, placed, n):
+    """How far to raise the effects bus (dB, 0 when they already read): the median of the effects' loudest 50 ms with
+    the bed over the bed alone, keys left out; under FX_LIFT floor_db the take level that reads target_db over a
+    steady bed, at most max_db."""
+    import mixkeys as MK
+    mix_over, take_over = [], []
     for p in placed:
-        if p['kind'] in ('key', 'drop') or 'start' not in p:
-            continue  # typing is judged as a texture; a drop IS the music's downbeat
-        x = S.stereo(p['x']) * p['g'] * 1.25 * song.mix['sfx']
-        k = p['kind']
-        if k in ('whoosh', 'suck'):
-            i0, i1 = int((p['t'] - 0.06) * SR), int((p['t'] + 0.06) * SR)
-        elif k in ('riser', 'swell'):
-            i0, i1 = int((p['t'] - 0.15) * SR), int(p['t'] * SR)
-        else:  # clicks are heard in their first 20 ms, knocks in 30 ms, booms over 60 ms
-            win = 0.06 if k in ('hit', 'drop') else 0.03 if k in ('snap', 'land', 'bell') else 0.02
-            i0, i1 = int(p['t'] * SR), int((p['t'] + win) * SR)
-        i0, i1 = max(0, i0), min(n_out, i1)
-        seg, s0 = np.zeros((max(0, i1 - i0), 2)), int(round(p['start'] * SR))
-        lo, hi = max(i0, s0), min(i1, s0 + len(x))
-        if hi > lo:
-            seg[lo - i0:hi - i0] = x[lo - s0:hi - s0]
-        r = band_snr(seg, mb[i0:i1])
-        if r is not None:
-            p['snr'] = (r[0], round(r[1], 1))
-            if r[1] < (0 if p.get('variant') == 'crisp' else 6):  # a crisp tick sits just over the bed by design
-                masked.append(dict(f=p['f'], kind=p['kind'], id=p.get('id', ''), band_hz=r[0], snr_db=round(r[1], 1)))
+        if p.get('kind') == 'key' or 'x' not in p or 'g' not in p or 'start' not in p:
+            continue
+        lvs = effect_levels(bed_played, p, n)
+        if lvs is None:
+            continue
+        try:
+            lv = MK.bed_level(bed_played, p.get('sync_s', p.get('t', 0.0)))
+        except MK.BedError:
+            lv = None
+        if lv is None:
+            continue
+        mix_over.append(lvs['mix'] - lv)
+        take_over.append(lvs['take'] - lv)
+    if len(mix_over) < 3:
+        return 0.0, None
+    med = float(np.median(mix_over))
+    if med >= FX_LIFT['floor_db']:
+        return 0.0, round(med, 2)
+    want_take = 10 * math.log10(10 ** (FX_LIFT['target_db'] / 10) - 1)
+    return round(float(np.clip(want_take - float(np.median(take_over)), 0.0, FX_LIFT['max_db'])), 2), round(med, 2)
+
+
+def render_music(song, events, cues, kit, bed, edit, stems_dir=None, draft=False, plan_path=None, base_dir='.'):
+    """The music-led soundtrack: the plan (plan.py, in-process) rendered over the staged bed as played."""
+    import plan as PL
+    n_out = int(round(song.dur * SR))
+    n = len(bed)
+    plan = PL.make(cues, song, kit, bed, edit, draft)
+    if plan_path:
+        PL.write_json(plan_path, plan)
+        PL.write_json(os.path.join(os.path.dirname(os.path.abspath(plan_path)), 'cues_sounded.json'), PL.sounded_cues(cues, plan))
+    active = [s for s in plan['stopdowns'] if s.get('status') in ('added', 'arrangement')]
+    auto = PL.ride_envelope(song, n) * PL.stop_envelope(n, active) * PL.hold_envelope(song, n) * PL.end_fade(song, n)
+    bed, air = air_bed(bed)  # a dull pad gets its air and presence back (the hits cut through it)
+    bed_played = bed * auto[:, None] * song.mix['music']
+    bed_ring = ring_bed(edit, bed_played, bed * (PL.ride_envelope(song, n) * PL.hold_envelope(song, n))[:, None] * song.mix['music'],
+                        until_s=song.dur)
+    sfx = np.zeros((n, 2))
+    placed = []
+    for p in plan['events']:
+        x, start = plan_voice(kit, p, song)
+        g = 10 ** (p['gain_db'] / 20)
+        if x.ndim == 1:  # a mono take plays as dual mono at unity (the level model's own measure), balanced off centre
+            x = np.stack([x, x], axis=1)
+            if p['pan']:
+                x = balance(x, p['pan'])
+        D.place(sfx, x, start, g, 0.0)
+        placed.append(dict(i=p['i'], f=p['f'], kind=p['kind'], id=p['id'], t=p['cue_s'], start=start, x=x, g=g, pan=p['pan'],
+                           midi=p.get('midi'), sample=p['take'], role=p['role'], sync_s=p['sync_s'], plan=p))
+    skipped = [dict(i=s['i'], f=s['f'], kind=s['kind'], role=s.get('role'), why=f"{s['status']}: {s.get('why')}")
+               for s in plan['silent']]
+    missing = [dict(m) for m in plan['missing']]
+    if draft and missing:  # placeholder voices for the cues the kit cannot sound (never delivered)
+        sub = [events[m['i']] for m in missing if m['i'] >= 0]
+        tp, th, _ = plan_typing(song, sub)
+        Bd, pd, _, _ = build_sfx(song, n, sub, tp, th, None, True, cues)
+        sfx += sum(Bd[k] for k in ('fx', 'ui', 'keys', 'clicks', 'crisp')) * 1.25
+        placed += pd
+    ring_hit(song, edit, placed, sfx)
+    sfx = D.filt(sfx, D.hp(30, 2)) * (PL.hold_envelope(song, n) * PL.end_fade(song, n))[:, None] * song.mix['sfx']
+    fade_warnings(song, placed)
+    lift, fx_med = fx_lift(bed_played, placed, n)
+    if lift > 0:  # the effects under the music: the bus rises until their hits read over it
+        kf = 10 ** (lift / 20)
+        sfx = sfx * kf
+        for p in placed:
+            if 'g' in p:
+                p['g'] *= kf
+        song.warnings.append(f'the effects sat {fx_med:+.1f} dB over the bed on the median (under {FX_LIFT["floor_db"]:g}: the hits lost in the music); '
+                             f'the effects bus rose {lift:+.1f} dB. Give the moments that matter a weight of 0.45+ in src/sync.ts and pick a bed '
+                             'that leaves them room (a dull pad masks a click)')
+    if air.get('shelf_db'):
+        song.warnings.append(f"the bed is dull (its 8-16 kHz band {air['bed']['air']:g} dB under the whole, want above {AIR['floor_db']:g}): "
+                             f"+{air['shelf_db']:g} dB of air above {AIR['shelf_hz'] / 1000:g} kHz and +{air['presence_db']:g} dB of presence on it; "
+                             'a brighter track needs none')
+    mix = (bed_played + sfx)[:n_out]
+    air['mix'] = band_balance(mix)
+    y, info = M.finish(mix, song.lufs, song.ceiling, fade=0, glue=False)
     if stems_dir:
         import soundfile as sf
         os.makedirs(stems_dir, exist_ok=True)
-        # stems sum exactly to the pre-master mix: each music part carries the bus automation
-        for k, v in parts.items():
-            sf.write(os.path.join(stems_dir, f'{k}.wav'), (v * music_gain[:, None])[:n_out].astype(np.float32), SR)
-        sf.write(os.path.join(stems_dir, 'sfx.wav'), ((fx_dry + fx_wet) * hold['all'][:, None])[:n_out].astype(np.float32), SR)
-        stale = os.path.join(stems_dir, 'music.wav')
-        if os.path.exists(stale):
-            os.remove(stale)  # an older layout; it would double-count in tools that sum the stems
-    def fits(p):  # in the key, or a tone of the chord sounding at that moment (a V7's leading tone)
-        ch = song.chord_at(p['t'] + 1e-3)
-        pc = int(round(p['midi'])) % 12
-        return pc in song.scale or (ch is not None and pc in ch.pcs)
-
-    tuned = [dict(f=p['f'], kind=p['kind'], id=p.get('id', ''), note=note_name(p['midi']), in_key=fits(p))
+        sf.write(os.path.join(stems_dir, 'bed.wav'), bed_played[:n_out].astype(np.float32), SR)
+        sf.write(os.path.join(stems_dir, 'sfx.wav'), sfx[:n_out].astype(np.float32), SR)
+        for stale in ('music.wav', 'drums.wav', 'bass.wav', 'pad.wav', 'arp.wav', 'bells.wav', 'reverb.wav'):
+            if os.path.exists(os.path.join(stems_dir, stale)):
+                os.remove(os.path.join(stems_dir, stale))
+    tuned = [dict(f=p['f'], kind=p['kind'], id=p.get('id', ''), note=note_name(p['midi']), in_key=fits(song, p))
              for p in placed if p.get('midi') is not None]
-    return y, info, dict(placed=placed, skipped=skipped, masked=masked, tuned=tuned, typing=typing, sfx_levels=sfx_levels)
+    gates = music_gates(song, plan, bed, bed_played, sfx, auto, edit, base_dir, placed)
+    bb, mb = air.get('bed'), air.get('mix')
+    if bb and bb['presence'] < AIR['muffled']:
+        gates['fails'].append(f"the bed is muffled: its 2-8 kHz band sits {bb['presence']:g} dB under the whole (under {AIR['muffled']:g}: a low-passed "
+                              'pad or a filtered intro that masks every click and reads as a murk; no EQ adds what the file does not hold): '
+                              + open_bars_hint(edit, base_dir) + ', or pick a brighter track (music.mjs search or pick), then mix again')
+    elif mb and (mb['presence'] < AIR['mix_presence'] or mb['air'] < AIR['mix_air']):
+        gates['warnings'].append(f"the mix is dull: 2-8 kHz {mb['presence']:g} dB and 8-16 kHz {mb['air']:g} dB under the whole (want over "
+                                 f"{AIR['mix_presence']:g} and {AIR['mix_air']:g}): a brighter track, or effects with attack and air (clicks, ticks, "
+                                 'glass) on the moments that matter')
+    masked, read = [], 0
+    lock_f = (cues.get('cue') or {}).get('lockup')
+    for p in placed:
+        if p['kind'] in ('key', 'drop') or 'start' not in p:
+            continue
+        thr = 3.0 if (p.get('plan') or {}).get('bed_db') is not None and p['plan']['bed_db'] <= 4 else 6.0
+        x = D.stereo(p['x']) * p['g']
+        i0, i1 = max(0, int(p['start'] * SR)), min(n_out, int(p['start'] * SR) + len(x))
+        if i1 - i0 < 256:
+            continue
+        read += 1
+        r = band_snr(x[:i1 - i0], bed_played[i0:i1])
+        if r is not None and r[1] < thr:
+            # a hero sound: the payoff, the lockup or a structural event (an act change, the reveal, the ending)
+            e = events[p['i']] if isinstance(p.get('i'), int) and 0 <= p['i'] < len(events) else {}
+            hero = ('the payoff' if song.payoff is not None and abs(p['t'] - song.payoff) <= 3 / song.fps else
+                    'the lockup' if lock_f is not None and abs(p['f'] - lock_f) <= 3 else
+                    'a structural event' if e.get('structural') else None)
+            masked.append(dict(f=p['f'], kind=p['kind'], id=p.get('id', ''), band_hz=r[0], snr_db=round(r[1], 1), margin_db=thr,
+                               role=p.get('role'), hero=hero))
+    return y, info, dict(placed=placed, skipped=skipped, missing=missing, masked=masked, masked_read=read, tuned=tuned,
+                         typing=None, sfx_levels={}, plan=plan, gates=gates, bed_ring=bed_ring,
+                         lift=dict(fx_db=lift, fx_median_db=fx_med, **air))
+
+
+def effect_levels(bed_played, p, n):
+    """An effect's own loudest 50 ms measured three ways (LUFS scale), or None when the effect is shorter than
+    50 ms or outside the bed:
+      mix   the bed plus this one effect (no other effect) over that window: what bed_db sets on a steady bed
+            ("the mix's loudest 50 ms at the effect")
+      bed   the bed alone over the same window: its own accent there (a kick under an on-beat cue reads several
+            dB over the bed's median, and the mix with it)
+      take  the take alone at its gain: what the kit's gain places (the bed's level + over_bed(bed_db))"""
+    import mixkeys as MK
+    x = D.stereo(p['x']) * p['g']
+    s0 = int(round(p['start'] * SR))
+    if s0 < 0:
+        x, s0 = x[-s0:], 0
+    if len(x) < MK.L_WIN or s0 >= n:
+        return None
+    kx = MK.kpower(x)
+    c = np.concatenate([[0.0], np.cumsum(kx)])
+    win = c[MK.L_WIN:] - c[:-MK.L_WIN]
+    j = int(np.argmax(win))
+    w0 = s0 + j
+    if w0 + MK.L_WIN > n:
+        return None
+    a = max(0, w0 - int(0.2 * SR))  # 200 ms of lead so the K-weighting filters have settled
+    bseg = bed_played[a:w0 + MK.L_WIN]
+    seg = bseg.copy()
+    lo = max(s0, a)
+    seg[lo - a:] += x[lo - s0:lo - s0 + (len(seg) - (lo - a))]
+    kp = MK.kpower(seg)
+    kb = MK.kpower(bseg)
+    return dict(mix=float(-0.691 + 10 * np.log10(kp[w0 - a:w0 - a + MK.L_WIN].mean() + 1e-24)),
+                bed=float(-0.691 + 10 * np.log10(kb[w0 - a:w0 - a + MK.L_WIN].mean() + 1e-24)),
+                take=float(-0.691 + 10 * np.log10(win[j] / MK.L_WIN + 1e-24)))
+
+
+def effect_over_bed_window(bed_played, p, n):
+    """LUFS of the bed plus this one effect (no other effect) over the effect's own loudest 50 ms: what bed_db
+    sets ("the mix's loudest 50 ms at the effect"); None when the effect is shorter than 50 ms or outside"""
+    lv = effect_levels(bed_played, p, n)
+    return None if lv is None else lv['mix']
+
+
+def take_want_db(bed_db, weight_db=0.0):
+    """The take alone over the bed for a mix bed_db over a steady bed (mixkeys.over_bed), plus the cue's weight
+    (plan.py's weight_db: a weighted cue is meant louder); None for bed_db <= 0"""
+    import mixkeys as MK
+    return MK.over_bed(bed_db) + float(weight_db or 0.0) if bed_db is not None and bed_db > 0 else None
+
+
+def steady_db(take_db):
+    """The mix over a steady bed that a take take_db over the bed makes (the inverse of over_bed)"""
+    return float(10 * np.log10(1.0 + 10 ** (take_db / 10)))
+
+
+def music_gates(song, plan, bed, bed_played, sfx, auto, edit, base_dir, placed):
+    """Gates 8-10 and 13 on the stems: over_bed, stop_downs, no_duck, joins (and the report's music block)."""
+    import mixkeys as MK
+    import plan as PL
+    out = dict(fails=[], warnings=[])
+    n = len(bed)
+    active = [s for s in plan['stopdowns'] if s.get('status') in ('added', 'arrangement')]
+    # 8. over the bed, measured over the effect's loudest 50 ms against the bed level it was levelled against:
+    # the mix (bed + this effect: measured_db, error_db, as bed_db reads on a steady bed), the bed alone in that
+    # window (bed_accent_db: the track's own accent under the cue) and the take alone (take_db against
+    # take_want_db = over_bed(bed_db) + the cue's weight_db). The warnings judge the take alone: on a beat the bed's
+    # own kick lifts the mix reading by several dB while the take sits where the kit puts it, and turning it down
+    # would be wrong. Typed keys vary press by press on purpose (the typing dynamics): judged by their role median.
+    rows, by_role = [], {}
+    for p in placed:
+        pl = p.get('plan')
+        if not pl or pl.get('bed_lufs') is None or pl.get('bed_db') is None:
+            continue
+        lvs = effect_levels(bed_played, p, n)
+        if lvs is None:
+            continue
+        own = next((k for k, s in enumerate(active) if s['for'].endswith(f":{pl['id'] or pl['i']}") and abs(s['t'] - pl['sync_s']) < 1e-3), None)
+        ref = bed_played if own is None else bed * (PL.ride_envelope(song, n) * PL.stop_envelope(n, active, own)
+                                                     * PL.hold_envelope(song, n) * PL.end_fade(song, n))[:, None] * song.mix['music']
+        try:
+            lv = MK.bed_level(ref, pl['sync_s'])
+        except MK.BedError:
+            lv = None
+        if lv is None:
+            continue
+        over = round(lvs['mix'] - lv, 2)
+        take = round(lvs['take'] - lv, 2)
+        wdb = float(pl.get('weight_db') or 0.0)
+        want = take_want_db(pl['bed_db'], wdb)
+        row = dict(id=pl['id'], role=pl['role'], t=pl['sync_s'], bed_db=pl['bed_db'], measured_db=over,
+                   error_db=round(over - pl['bed_db'], 2), clamped=pl['clamped'], weight_db=round(wdb, 2), take_db=take,
+                   take_want_db=None if want is None else round(want, 2),
+                   take_error_db=None if want is None else round(take - want, 2),
+                   steady_db=round(steady_db(take), 2), bed_accent_db=round(lvs['bed'] - lv, 2))
+        row['judged_db'] = row['take_error_db'] if row['take_error_db'] is not None else row['error_db']
+        rows.append(row)
+        by_role.setdefault(pl['role'], []).append(row)
+    roles = {}
+    for r_, rr in sorted(by_role.items()):
+        bdb = rr[0]['bed_db']
+        q = np.percentile([x['measured_db'] for x in rr], [25, 50, 75])
+        tq = float(np.median([x['take_db'] for x in rr]))
+        wants = [x['take_want_db'] for x in rr if x['take_want_db'] is not None]
+        want = float(np.median(wants)) if wants else None
+        jm = float(np.median([x['judged_db'] for x in rr]))
+        roles[r_] = dict(bed_db=bdb, n=len(rr), median=round(float(q[1]), 2), iqr=[round(float(q[0]), 2), round(float(q[2]), 2)],
+                         take_median=round(tq, 2), take_want=None if want is None else round(want, 2),
+                         steady_median=round(float(np.median([x['steady_db'] for x in rr])), 2),
+                         bed_accent_median=round(float(np.median([x['bed_accent_db'] for x in rr])), 2))
+        if abs(jm) > OVER_BED_TOL:
+            nclamp = sum(1 for x in rr if x['clamped'])
+            out['warnings'].append(f'{r_}: the takes sit {jm:+.1f} dB off their level over the bed (take alone {tq:.1f} dB over '
+                                   f'it, want {want if want is None else round(want, 1)} for bed_db {bdb:g}, +-{OVER_BED_TOL:g})'
+                                   + (f'; {nclamp} of {len(rr)} take(s) held at the -1 dBFS peak, so a higher bed_db cannot lift them'
+                                      if nclamp else '')
+                                   + "; with a track the role's bed_db in audio/kit.json sets it (level_db is the effects-only level)")
+    off = [r for r in rows if abs(r['judged_db']) > OVER_BED_TOL and r['role'].split('.')[0] != 'key']
+    for r in off[:6]:
+        out['warnings'].append(f"{r['role']} {r['id']} at {r['t']:.2f} s: the take alone sits {r['take_db']:+.1f} dB over the bed "
+                               f"(want {r['take_want_db']} for bed_db {r['bed_db']:g}"
+                               + (f" and weight {r['weight_db']:+.1f} dB" if r['weight_db'] else '')
+                               + f"; with the bed {r['measured_db']:+.1f} dB, its own "
+                               f"accent there {r['bed_accent_db']:+.1f} dB)" + (' (clamped by the -1 dBFS ceiling)' if r['clamped'] else ''))
+    med = float(np.median([r['measured_db'] for r in rows])) if rows else None
+    smed = float(np.median([r['steady_db'] for r in rows])) if rows else None
+    out['over_bed'] = dict(effects=rows, roles=roles, median=None if med is None else round(med, 2),
+                           within_tol=sum(1 for r in rows if abs(r['error_db']) <= OVER_BED_TOL), count=len(rows),
+                           steady_median=None if smed is None else round(smed, 2),
+                           take_within_tol=sum(1 for r in rows if abs(r['judged_db']) <= OVER_BED_TOL),
+                           judged='the take alone over the bed against over_bed(bed_db) + weight_db, +-%g dB (typed keys '
+                                  'by their role median)' % OVER_BED_TOL)
+    if smed is not None and not 3.0 <= smed <= 10.0:
+        out['warnings'].append(f'the effects sit {smed:.1f} dB over the bed overall, as on a steady bed (house range 3-10)')
+    # 9. stop-downs, measured on the bed stem
+    sd_rows = []
+    payoff = song.payoff
+    for s in plan['stopdowns']:
+        if s.get('status') not in ('added', 'arrangement'):
+            sd_rows.append(dict(s))
+            continue
+        t = s['t']
+        bt, lv = MK.block_levels(bed_played[max(0, int((t - 1.5) * SR)):min(n, int((t + 0.3) * SR))])
+        tt = bt + max(0.0, t - 1.5)
+        pre = lv[(tt >= t - 1.5) & (tt < t - 0.5)]
+        win = lv[(tt >= max(t - 0.5, float(s.get('from', t - 0.5)))) & (tt < t)]  # the stop-down's own span (a moment's breath is shorter)
+        aft = lv[(tt >= t) & (tt < t + 0.25)]
+        dip = float(np.median(pre) - np.percentile(win, 25)) if len(pre) and len(win) else 0.0
+        back = float(np.median(pre) - np.median(aft)) if len(pre) and len(aft) else 0.0
+        ok = dip >= STOP_MIN_DIP_DB - 0.25
+        returned = back <= STOP_RETURN_DB or bool(s.get('through'))
+        row = dict(s, measured_dip_db=round(dip, 2), back_within_db=round(back, 2), ok=bool(ok), returned=bool(returned))
+        sd_rows.append(row)
+        at_payoff = payoff is not None and abs(t - payoff) <= 3 / song.fps
+        if not ok:
+            msg = (f"the stop-down before {s['for']} at {t:.2f} s measures {dip:.1f} dB (want >= {STOP_MIN_DIP_DB:g}): its depth is "
+                   "6 + 4 x (weight - 0.5) dB within the kit's mix.stop_down depth_db, so raise the event's weight in src/sync.ts "
+                   f"(or skip it, stopdowns.skip [\"{s.get('id', '')}\"], and add {{\"at\": {t:.2f}, \"weight\": 1.5}} to stopdowns.add); "
+                   "stopdowns.quiet_db is the level of an effect with no bed under it, not a depth")
+            (out['fails'] if at_payoff else out['warnings']).append(msg)
+        if not returned:
+            out['warnings'].append(f"the bed is {back:.1f} dB down 250 ms after {s['for']} at {t:.2f} s (want back within "
+                                   f"{STOP_RETURN_DB:g}, unless the track breaks there)")
+    out['stop_downs'] = sd_rows
+    # 10. no ducking: the automation is 0 dB outside the stop-downs, silences and the end fade; and the bed's
+    # gain never dips under a bright effect. The arc ride (plan.py: the opening and the body's dips, slewed by the bar,
+    # whatever the effects do) is the arrangement's level, not a duck: it is read apart
+    auto = auto / PL.ride_envelope(song, n)
+    t = np.arange(n) / SR
+    allowed = np.zeros(n, bool)
+    for s in active:
+        allowed |= (t >= s['from'] - 0.001) & ((t <= s['t'] + 0.001) | bool(s.get('through')))
+    for a, b, _, _ in song.silences:
+        allowed |= (t >= a - 0.05) & (t <= b + 0.01)
+    allowed |= t >= song.dur - 0.03 - song.fade
+    dev = np.abs(20 * np.log10(np.maximum(auto, 1e-9)))[~allowed]
+    worst = float(dev.max()) if dev.size else 0.0
+    bright = [p for p in placed if p['kind'] in ('tick', 'click', 'key', 'snap', 'pop', 'text', 'bell')]
+    under = []
+    for p in bright:
+        i = int(p['sync_s'] * SR) if p.get('sync_s') is not None else int(p['t'] * SR)
+        a = auto[max(0, i - SR):i]
+        b = auto[i:min(n, i + int(0.1 * SR))]
+        if len(a) and len(b):
+            d = 20 * np.log10(max(float(np.mean(b)), 1e-9) / max(float(np.mean(a)), 1e-9))
+            if d < -1.0 and not allowed[min(n - 1, i)]:
+                under.append(dict(id=p.get('id'), t=round(p['t'], 3), dip_db=round(d, 2)))
+    out['no_duck'] = dict(automation_max_db=round(worst, 3), under_bright=under, ok=worst <= 0.01 and not under)
+    if not out['no_duck']['ok']:
+        out['fails'].append(f'the bed is ducked: {worst:.2f} dB of automation outside the stop-downs, silences and the end'
+                            + (f'; {len(under)} dip(s) under bright effects' if under else ''))
+    # 13. joins
+    if edit and edit.get('joins'):
+        import track as TR
+        src = None
+        try:
+            root = os.path.dirname(base_dir) if os.path.basename(base_dir) == 'audio' else base_dir
+            x, _ = TR.decode(TR.locate(edit['track'], base_dir), os.path.join(root, 'out', 'cache', 'music'))
+            src = x.mean(axis=1).astype(np.float64)
+        except TR.TrackError:
+            pass
+        rows_j = TR.join_report(bed, edit, src)
+        out['joins'] = rows_j
+        for j in rows_j:
+            out['fails'] += [f"join at {j['film_s']:.3f} s: {p_}" for p_ in j['problems']]
+    else:
+        out['joins'] = []
+    return out
 
 
 def locate(path, base_dir):
@@ -1659,30 +1916,29 @@ def locate(path, base_dir):
             return p
     return path
 
-
-def sfx_report(song, kinfo, kit, ev):
-    """Where every effect came from: the kit's roles (sound, cues, takes used), the cues of roles the kit
-    leaves off, the kinds still on synth voices. Adds the kit's audit warnings for the roles the film
-    plays (a rising glide, stacked attacks) and a warning for every synth riser."""
-    roles, synth, off = {}, {}, {}
+def sfx_report(song, kinfo, kit, ev, draft=False):
+    """Where every effect came from: the kit's roles (sound, cues, takes used), the cues of roles the kit leaves off,
+    the cues no take sounds (missing), the placeholder voices of a --draft render. Adds the kit's audit warnings for
+    the roles the film plays (a rising pitch glide, stacked attacks)."""
+    roles, drafted, off = {}, {}, {}
     for p in ev['placed']:
         if p.get('sample'):
             r = roles.setdefault(p['role'], dict(sound=kit.roles[p['role']]['sound'], cues=set(), takes=set()))
             r['cues'].add(p['i'])
             r['takes'].add(p['sample'])
         else:
-            synth.setdefault(p['kind'], set()).add(p['i'])
+            drafted.setdefault(p['kind'], set()).add(p['i'])
     for s_ in ev['skipped']:
-        if s_.get('role'):
+        if s_.get('role') and 'off' in str(s_.get('why', '')):
             off[s_['role']] = off.get(s_['role'], 0) + 1
     if off:
         song.warnings.append('cues the kit leaves off (skipped): ' + ', '.join(f'{r} x{n}' for r, n in off.items())
-                             + '. By design for riser, swell and suck (a reveal resolves on one element); give the role a '
-                             'sound in audio/kit.json if the picture needs it')
+                             + '. By design for riser, swell and suck in the calm kits (a reveal resolves on one element); '
+                             'give the role a sound in audio/kit.json if the picture needs it')
     if kit is not None:
         for role, sound, codes in kit.warnings(set(roles)):
             if 'rising_glide' in codes:
-                song.warnings.append(f'kit role {role} ({sound}) rises in pitch (earshot audit: rising_glide): a rising synth '
+                song.warnings.append(f'kit role {role} ({sound}) rises in pitch (earshot audit: rising_glide): a rising '
                                      'whip reads as cheap; pick another sound for it in audio/kit.json')
             if {'stacked', 'pre_swell'} & set(codes):
                 song.warnings.append(f'kit role {role} ({sound}) stacks attacks or builds before its hit (earshot audit: '
@@ -1691,12 +1947,10 @@ def sfx_report(song, kinfo, kit, ev):
             if rest:
                 song.warnings.append(f'kit role {role} ({sound}): earshot audit warnings {", ".join(rest)} '
                                      '(python3 scripts/audio/kit.py check)')
-    risers = [p for p in ev['placed'] if p['kind'] == 'riser' and not p.get('sample')]
-    if risers:
-        at = ', '.join(f"{p['f']:g}" for p in risers)
-        song.warnings.append(f'synth riser at f={at}: two saws glide up an octave, a rising synth whip; let the reveal '
-                             'resolve on one element, or give "riser" a kit sound')
-    return dict(engine=song.engine, source=kinfo['source'], kit=kinfo['kit'].replace(os.sep, '/'),
+    src = kinfo['source']
+    if draft and drafted:
+        src = f'{src} + draft voices'
+    return dict(engine=song.engine, source=src, kit=kinfo['kit'].replace(os.sep, '/'),
                 takes=kinfo['takes'].replace(os.sep, '/'), name=kinfo.get('name'), bank=kinfo.get('bank'),
                 earshot=kinfo.get('earshot_version'), notes=kinfo['notes'],
                 kit_cues=len({i for r in roles.values() for i in r['cues']}),
@@ -1704,28 +1958,26 @@ def sfx_report(song, kinfo, kit, ev):
                                lufs_spread=kit.roles[k].get('lufs_spread', 0.0),
                                trim_db=sorted({t.get('trim_db', 0.0) for t in kit.roles[k]['takes'] if t['file'] in v['takes']}))
                        for k, v in sorted(roles.items())},
-                off=off, synth={k: len(v) for k, v in sorted(synth.items())})
+                off=off, missing=len(ev['missing']), draft_voices={k: len(v) for k, v in sorted(drafted.items())})
 
 
 def stack_guard(song, placed, events, cues):
-    """Stacked gestures, as warnings and report rows {t, f, at, layers, lead_ins}. At the payoff and the
-    "lockup" cue: a second sound within +-STACK_F frames (a score.json motif counts), or a lead-in that runs
-    into it (a whoosh, riser, swell or suck event from up to 0.75 s before, still sounding 0.1 s before the
-    moment). A reveal resolves on ONE clean element after a stop-down. A score.json drop is not a layer:
-    its silence and the music's suck into it are the stop-down itself (the suck ducks the music bus and
-    plays no sound). Anywhere else: 2+ heavy sounds (hit, drop, snap, a heavy landing) or 3+ kinds
-    starting within +-STACK_F frames. Typing is a texture: not counted."""
+    """Stacked gestures, as warnings and report rows {t, f, at, layers, lead_ins}. At the payoff and the "lockup"
+    cue: a second sound within +-STACK_F frames (the progress resolve counts), or a lead-in that runs into it (a
+    whoosh, riser, swell or suck from up to 0.75 s before, still sounding 0.1 s before the moment). A reveal
+    resolves on ONE clean element after a stop-down. Anywhere else: 2+ heavy sounds (hit, drop, snap, a heavy
+    landing) or 3+ kinds starting within +-STACK_F frames. Typing is a texture: not counted."""
     win = STACK_F / song.fps
     evs, seen = [], set()
     for p in placed:
-        if p['kind'] == 'key' or p['i'] in seen:
+        if p['kind'] == 'key' or (p['i'], p.get('variant')) in seen:
             continue
-        seen.add(p['i'])
-        e = events[p['i']]
+        seen.add((p['i'], p.get('variant')))
+        e = events[p['i']] if p['i'] >= 0 else dict(kind=p['kind'], weight=1.0)
         role = K.role_for(e['kind'], e.get('variant'), float(e.get('weight', 1.0)),
                           float(e['dur']) / song.fps if 'dur' in e else None)
         evs.append(dict(p, heavy=role in HEAVY_ROLES, label=f"{p['kind']} {p.get('id') or ''}".strip()))
-    moments = []  # (t, name): the payoff, and the lockup cue (one moment when they coincide)
+    moments = []
     if song.payoff is not None:
         moments.append([song.payoff, 'payoff'])
     if 'lockup' in cues.get('cue', {}):
@@ -1738,9 +1990,8 @@ def stack_guard(song, placed, events, cues):
     out = []
     for m_t, at in moments:
         layers = [e['label'] for e in evs if abs(e['t'] - m_t) <= win and e['kind'] not in LEAD_IN]
-        layers += [f'motif bells (score.json motifs, {mo["t"]:.2f}s)' for mo in song.motifs if abs(mo['t'] - m_t) <= win]
         leads = [e['label'] for e in evs if e['kind'] in LEAD_IN and m_t - 0.75 <= e['t'] <= m_t + win
-                 and e['start'] + len(e['x']) / SR >= m_t - 0.1]  # still sounding 100 ms before the moment
+                 and e['start'] + len(e['x']) / SR >= m_t - 0.1]
         if len(layers) + len(leads) >= 2:
             out.append(dict(t=round(m_t, 3), f=round(m_t * song.fps, 2), at=at, layers=layers, lead_ins=leads))
             song.warnings.append(f'stacked {at} at {m_t:.2f}s: {", ".join(layers + leads)}. A reveal resolves on ONE clean '
@@ -1750,7 +2001,7 @@ def stack_guard(song, placed, events, cues):
         if any(abs(e['t'] - m[0]) <= win for m in moments):
             continue
         near = [q for q in evs if abs(q['t'] - e['t']) <= win]
-        key = tuple(sorted(q['i'] for q in near))
+        key = tuple(sorted((q['i'], q.get('variant') or '') for q in near))
         if key in done:
             continue
         if sum(q['heavy'] for q in near) >= 2 or len({q['kind'] for q in near}) >= 3:
@@ -1761,23 +2012,65 @@ def stack_guard(song, placed, events, cues):
     return out
 
 
+def lockup_after_stop(song, plan, y, rep):
+    """The one element after a stop ending: its peak in the master (-9 to -6 dBFS) and its momentary maximum at
+    least 2 LU under the payoff's. Returns the report row (None without a stop ending)."""
+    if not plan or (plan.get('bed') or {}).get('ending') != 'stop':
+        return None
+    stop = next((s for s in plan['stopdowns'] if s.get('status') == 'ending'), None)
+    after = [p for p in plan['events'] if stop is not None and p['sync_s'] >= stop['t'] - 0.05] or \
+            [p for p in plan['events'] if p['level'].startswith('no bed')][-1:]
+    if not after:
+        return None
+    p = after[0]
+    i0 = max(0, int(p['start_s'] * SR))
+    i1 = min(len(y), i0 + int(1.0 * SR))
+    if i1 <= i0:
+        return None
+    peak = float(20 * np.log10(np.abs(y[i0:i1]).max() + 1e-12))
+    tm, mom = M.blocks(y, 0.4, 0.1)
+    w_ = (tm >= p['sync_s'] - 0.2) & (tm <= p['sync_s'] + 0.8)
+    mmax = float(mom[w_].max()) if w_.any() else None
+    pay = (rep.get('payoff') or {}).get('momentary_max')
+    if (rep.get('payoff') or {}).get('after_stop') or (song.payoff is not None and song.payoff >= p['sync_s'] - 3 / song.fps):
+        pay = None  # the payoff is this element: compared with itself it would read 0 LU under
+    row = dict(id=p['id'], role=p['role'], t=p['sync_s'], peak_dbfs=round(peak, 2), momentary_max=None if mmax is None else round(mmax, 2),
+               under_payoff_lu=None if (mmax is None or pay is None) else round(pay - mmax, 2), quiet_db=plan['bed']['quiet_db'])
+    want = sum(LOCKUP_PEAK) / 2
+    if not LOCKUP_PEAK[0] <= peak <= LOCKUP_PEAK[1]:
+        row['try_quiet_db'] = round(plan['bed']['quiet_db'] + (want - peak), 1)
+        song.warnings.append(f"the lockup element after the stop peaks at {peak:.1f} dBFS (want {LOCKUP_PEAK[0]:g} to {LOCKUP_PEAK[1]:g}): "
+                             f"try stopdowns.quiet_db {row['try_quiet_db']:g}")
+    if row['under_payoff_lu'] is not None and row['under_payoff_lu'] < LOCKUP_UNDER_PAYOFF:
+        song.warnings.append(f"the lockup element is only {row['under_payoff_lu']:.1f} LU under the payoff (want "
+                             f"{LOCKUP_UNDER_PAYOFF:g}+): lower stopdowns.quiet_db")
+    return row
+
+
 def main(argv=None):
-    ap = argparse.ArgumentParser(description='Render the soundtrack from score.json + cues.json, mixed and mastered.')
+    ap = argparse.ArgumentParser(description='Render the soundtrack from score.json + cues.json (+ the licensed track and '
+                                             'the effects plan), mixed and mastered.')
     ap.add_argument('--cues', default='out/cues.json')
     ap.add_argument('--score', default='audio/score.json')
     ap.add_argument('--out', default='public/audio/soundtrack.wav')
     ap.add_argument('--stems', metavar='DIR', help='also write stems here; they sum to the pre-master mix')
     ap.add_argument('--json', metavar='PATH', help='write the report JSON here')
+    ap.add_argument('--plan', metavar='PATH', help='with a track: also write the effects plan here (and cues_sounded.json '
+                    'beside it); default out/qa/sfx_plan.json when --json is in out/qa')
     ap.add_argument('--lufs', type=float, help='target LUFS; overrides master.lufs from score.json (default -14 with '
-                    'music, -18 for an effects-only film)')
+                    'music, -16 for a sting of 8 s or less with music, -18 for an effects-only film)')
     ap.add_argument('--ceiling', type=float, help='override master.ceiling (linear)')
     ap.add_argument('--max-tp', type=float, default=-1.5, help='gate: max true peak dBTP (default -1.5)')
     ap.add_argument('--tol', type=float, default=0.5, help='gate: LUFS tolerance (default 0.5)')
+    ap.add_argument('--draft', action='store_true', help='play placeholder voices for cues the kit cannot sound; the '
+                    'report says "draft": true and the build is never delivered')
+    ap.add_argument('--bed-only', action='store_true', help="a film with a track: render the edited track alone (as the "
+                    "film plays it, bar 1 at the edit's film_t0), staged and mastered, with no effects; never a hand cut")
     ap.add_argument('--quiet', action='store_true')
     a = ap.parse_args(argv)
     try:
-        cues = json.load(open(a.cues))
-        score = json.load(open(a.score))
+        score = read_json(a.score, 'score')
+        cues = read_json(a.cues, 'cues') if (os.path.isfile(a.cues) or not a.bed_only) else bed_cues(score, a.score)
         song = Song(score, cues)
         if a.lufs is not None:
             song.lufs, song.lufs_from = a.lufs, '--lufs'
@@ -1785,12 +2078,41 @@ def main(argv=None):
             song.ceiling = a.ceiling
         events = sorted(cues.get('events', []), key=lambda e: e['f'])
         base_dir = os.path.dirname(os.path.abspath(a.score))
-        kit, kinfo = K.resolve(song.engine, locate(song.kit_path, base_dir),
-                               locate(song.kit_takes, base_dir) if song.kit_takes else None, song.earshot_python,
-                               log=None if a.quiet else (lambda s: print(s, file=sys.stderr)))
-        song.warnings.extend(kinfo['warnings'])
-        progress = apply_progress(song, events, kit) if song.progress else None  # the rungs follow the kit's notes
-        y, info, ev = render(song, events, a.stems, base_dir, kit)
+        if a.bed_only:
+            if not song.has_music:
+                raise ScoreError('--bed-only renders the edited track alone: audio/score.json names no music track')
+            if a.draft:
+                raise ScoreError('--bed-only and --draft: choose one (the bed alone, or placeholder voices over it)')
+            kit, kinfo = BedOnlyKit(), dict(engine='none', source='none: --bed-only (the edited track alone, no effects)',
+                                            kit=song.kit_path, takes='', notes=[], warnings=[])
+            events, cues = [], dict(cues, events=[])
+            song.warnings.append('--bed-only: the edited track alone, no effects (the actions stay silent until the kit is '
+                                 'rendered: npm run sound)')
+        elif song.engine == 'synth' and not a.draft:
+            raise ScoreError('sfx.engine "synth" plays placeholder voices: that is a --draft build only (never delivered). '
+                             'Render the earshot kit (npm run kit) and use "engine": "auto"')
+        if not a.bed_only:
+            kit, kinfo = (None, dict(engine='synth', source='draft voices (sfx.engine synth)', kit=song.kit_path,
+                                     takes=song.kit_takes or '', notes=[], warnings=[])) if song.engine == 'synth' else \
+                K.resolve(song.engine, locate(song.kit_path, base_dir), locate(song.kit_takes, base_dir) if song.kit_takes else None,
+                          song.earshot_python, log=None if a.quiet else (lambda s: print(s, file=sys.stderr)))
+        song.warnings.extend(w for w in kinfo['warnings'] if 'blind synthesis fallback' not in w)
+        if kit is None and not a.draft:
+            raise ScoreError('no earshot kit can be played (' + '; '.join(kinfo['warnings']) .replace('blind synthesis fallback: ', '')
+                             + '). Every effect comes from the kit: render it (npm run kit), or vendor its takes; '
+                             '--draft plays placeholder voices for a timing check (never delivered)'
+                             + ('; --bed-only renders the edited track alone (no effects). Never cut the track by hand: '
+                                "bar 1 sits at the edit's film_t0" if song.has_music else ''))
+        progress = apply_progress(song, events, kit) if song.progress else None
+        bed, edit = load_music(song, base_dir, int(round(song.dur * SR)) + 4 * SR)
+        if song.has_music:
+            if kit is None:
+                raise ScoreError('a film cut to a track needs the earshot kit for its effects (npm run kit), or --bed-only for '
+                                 'the edited track alone; never a hand cut of the track')
+            plan_path = a.plan or (os.path.join(os.path.dirname(os.path.abspath(a.json)), 'sfx_plan.json') if a.json else None)
+            y, info, ev = render_music(song, events, cues, kit, bed, edit, a.stems, a.draft, plan_path, base_dir)
+        else:
+            y, info, ev = render_effects(song, events, a.stems, kit, a.draft, cues)
         import soundfile as sf
         os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
         sf.write(a.out, y.astype(np.float32), SR, subtype='PCM_24')
@@ -1801,8 +2123,8 @@ def main(argv=None):
     rep = M.measure(y)
     lim = info['limiter_gr_db']
     rep['limiter_max_gr_db'] = max(0.0, round(float(lim.max()), 2))
-    rep['target_lufs'] = dict(lufs=song.lufs, source=song.lufs_from, music=song.music if not song.bed else 'bed')
-    hot, i = [], 0
+    rep['target_lufs'] = dict(lufs=song.lufs, source=song.lufs_from, music=song.music)
+    hot = []
     step = int(0.25 * SR)
     for i in range(0, len(lim), step):
         v = float(lim[i:i + step].max())
@@ -1811,82 +2133,164 @@ def main(argv=None):
     rep['limiter_hot'] = hot
     if hot:
         song.warnings.append('limiter over 1.5 dB at ' + ', '.join(f"{h['t']}s ({h['gr_db']} dB)" for h in hot[:6])
-                             + ': lower the effect or music that peaks there' + (
+                             + ': lower the effect or the bed that peaks there' + (
                                  '' if song.has_music else f', or the target (master.lufs {song.lufs:g}): an '
                                  'effects-only film sits at -16 to -18 LUFS so its few accents keep their peaks'))
-    rep['sfx'] = sfx_report(song, kinfo, kit, ev)
+    rep['sfx'] = sfx_report(song, kinfo, kit, ev, a.draft)
     rep['stacks'] = stack_guard(song, ev['placed'], events, cues)
+    tm, mom = M.blocks(y, 0.4, 0.1)
+    end_ = ((edit or {}).get('ending') or {}) if song.has_music else {}
+    stop_s = end_.get('bed_stops_film_s') if end_.get('mode') == 'stop' else None
+    # the track's own final hit (a button or ring ending) is the film's last big moment, the way launch music ends
+    # (a final moment about 2 LU over the integrated loudness): the arc's peak is read without its first second
+    arc_max, arc_t = rep.get('momentary_max'), rep.get('momentary_max_t')
+    hit_s = end_.get('last_hit_film_s') if end_.get('mode') in ('button', 'ring') else None
+    if hit_s is not None and len(mom):
+        fw = (tm >= hit_s - 0.15) & (tm <= hit_s + 1.2)
+        if fw.any() and (~fw).any():
+            rep['final_hit'] = dict(t=round(float(hit_s), 3), momentary_max=round(float(mom[fw].max()), 2))
+            k = int(np.argmax(np.where(fw, -np.inf, mom)))
+            arc_max, arc_t = round(float(mom[k]), 2), round(float(tm[k]), 3)
+            rep['arc_max'], rep['arc_max_t'] = arc_max, arc_t
     if song.payoff is not None:
-        tm, mom = M.blocks(y, 0.4, 0.1)
         win = (tm >= song.payoff - 0.2) & (tm <= song.payoff + 1.0)
         i0, i1 = int(song.payoff * SR), int((song.payoff + 1.0) * SR)
         rep['payoff'] = dict(t=round(song.payoff, 3), momentary_max=round(float(mom[win].max()), 2) if win.any() else None,
                              limiter_gr_db=round(float(lim[i0:i1].max()), 2) if i1 > i0 else None)
-        if win.any() and mom[win].max() < rep['momentary_max'] - 0.5:
+        # a payoff after the bed stops is the stop ending's one element, which sits under the payoff by design: it
+        # is not measured as the loudest moment, nor compared with itself (lockup_after_stop)
+        on_stop = stop_s is not None and song.payoff >= stop_s - 0.05
+        rep['payoff']['after_stop'] = on_stop
+        if on_stop:
+            song.warnings.append(f'"payoff" ({song.payoff:.2f}s) is the stop ending\'s element (the bed stops at {stop_s:.2f}s), '
+                                 'which sits 2 LU or more under the payoff: point "payoff" at the reveal before the stop, or '
+                                 'end on "button" or "ring" when the reveal is the lockup')
+        elif win.any() and mom[win].max() < arc_max - 0.5:
             song.warnings.append(f'the payoff ({song.payoff:.2f}s) is not the loudest moment: '
-                                 f'{mom[win].max():.1f} vs {rep["momentary_max"]} LUFS-M at {rep["momentary_max_t"]}s')
+                                 f'{mom[win].max():.1f} vs {arc_max} LUFS-M at {arc_t}s'
+                                 + (': a later section of the track is louder; edit the track so the entry on the reveal '
+                                    'is the peak (track.py edit)' if song.has_music else ''))
         if rep['payoff']['limiter_gr_db'] and rep['payoff']['limiter_gr_db'] > 1.5:
             song.warnings.append(f'limiter takes {rep["payoff"]["limiter_gr_db"]} dB off the payoff (keep it under 1.5)')
-        # contrast: the payoff should stand clearly above the film's typical level, not just edge it
         audible = mom[mom > -70]
-        if win.any() and len(audible):
+        if win.any() and len(audible) and not on_stop:
             lift = float(mom[win].max() - np.median(audible))
             rep['payoff']['over_median_lu'] = round(lift, 2)
             if lift < 2.0:
                 song.warnings.append(f'the payoff is only {lift:.1f} LU over the median momentary loudness (want 2-3+): '
-                                     'thin the bars before it, leave true silence before the drop, give the hit more body')
-    # the hook: the first half second is heard at intent, not faded in from nothing (a film with music;
-    # an effects-only film may open on near-silence before its first fragment)
-    tm, mom = M.blocks(y, 0.4, 0.1)
+                                     + ('cut to a break or a stop before the entry (track.py edit), or let a stop-down breathe '
+                                        'before it' if song.has_music else 'leave true silence before it, give the hit more body'))
     audible = mom[mom > -70]
-    head = mom[tm <= 0.45]  # 0.4 s blocks inside the first ~0.65 s
+    head = mom[tm <= 0.45]
     if len(audible) and len(head) and song.has_music:
         med, opening = float(np.median(audible)), float(head.max())
         rep['hook'] = dict(opening_lufs_m=round(opening, 2), median_lufs_m=round(med, 2), below_median_db=round(med - opening, 2))
         if med - opening > 12:
             song.warnings.append(f'soft hook: the first 0.5 s sits {med - opening:.0f} dB under the median momentary loudness '
-                                 f'({opening:.1f} vs {med:.1f} LUFS-M; an intro runs 5-12 LU under the body): enter with '
-                                 'intent on frame 0 (a drone, a chord, the device\'s tick, at most a 150-450 ms entry; no slow '
-                                 'swell or riser into the opening)')
-    # the arc: measured films peak at the drop or hero reveal (30-60% of the runtime); the lockup is
-    # the most resolved moment, not the loudest. A sting (8 s or less) is all lockup: exempt.
-    if song.dur > 8 and rep.get('momentary_max_t') is not None:
-        frac = rep['momentary_max_t'] / song.dur
+                                 f'({opening:.1f} vs {med:.1f} LUFS-M; an intro runs 5-12 LU under the body): start the edit '
+                                 'on the track\'s intro with intent (track.py edit --film-t0 0-0.45)')
+    if song.dur > 8 and arc_t is not None:
+        frac = arc_t / song.dur
         rep['loudest_frac'] = round(frac, 2)
-        if frac > 0.8:
-            song.warnings.append(f'the loudest moment is at {frac * 100:.0f}% of the film ({rep["momentary_max_t"]}s): the ending '
-                                 'should subtract, not slam. Peak on the drop or hero reveal (30-60%) and point "payoff" '
-                                 'there; stop or filter the music as the logo forms, then one soft resolved element')
-    # the end: the effects follow the music's fade, so the last 50 ms are close to silence
+        if frac > REVEAL_BAND[1]:
+            song.warnings.append(f'the loudest moment is at {frac * 100:.0f}% of the film ({arc_t}s): the ending '
+                                 f'should subtract, not slam. Peak on the biggest reveal ({REVEAL_BAND[0]:.0%}-{REVEAL_BAND[1]:.0%} '
+                                 'in) and point "payoff" there; end on a stop, the track\'s final hit or its ring')
     if rep.get('tail_50ms_db') is not None and rep['tail_50ms_db'] > -45:
         song.warnings.append(f'the ending is not silent: the last 50 ms measure {rep["tail_50ms_db"]} dB (want under -45)')
-    # dynamics: a launch film of 20 s or more wants real contrast (sections that thin out, a silence, a drop)
-    if song.dur >= 20 and rep.get('lra') is not None and rep['lra'] < 5:
-        song.warnings.append(f'LRA {rep["lra"]} LU is flat for a {song.dur:.0f}s film (want 5-8): thin the section before the '
-                             'turn, cut to silence before the drop, hold the bed back until the payoff')
+    # the ending as av-audit judges the film: a decay (the track's own ending, a hit that rings, a fade), never a cut
+    shape = D.ending_shape(y)
+    rep['ending'] = shape
+    pr = D.ending_problem(shape)
+    if pr and song.has_music:
+        rep.setdefault('_fails_extra', []).append(pr + ': track.py edit --end own|fade|hit, and a tail that holds MUSIC.end.hold')
+    if shape.get('dead_air_s') is not None and shape['dead_air_s'] > D.END_DEAD_AIR_S and song.has_music:
+        song.warnings.append(f"{shape['dead_air_s']:.1f} s of silence after the music ends: the picture holds on nothing; end the film "
+                             'where the ending\'s ring or fade does (the tail = MUSIC.end.hold)')
+    if song.dur >= 20 and rep.get('lra') is not None and rep['lra'] < 5 and song.has_music:
+        song.warnings.append(f'LRA {rep["lra"]} LU is flat for a {song.dur:.0f}s film (want 5-8): the arc comes from the edit '
+                             '(an intro, a break, the entry on the reveal), not from automation')
     off = [x for x in ev['tuned'] if not x['in_key']]
     if off:
         song.warnings.append('out of key: ' + ', '.join(f"{x['kind']} {x['note']} at f={x['f']}" for x in off))
     by = {}
     for e in events:
         by[e['kind']] = by.get(e['kind'], 0) + 1
-    fails = M.gate(rep, song.lufs, a.tol, a.max_tp)
-    rep.update(out=a.out, bpm=song.bpm, key=f'{S_note(song.tonic)} {song.mode}', bars=song.nbars,
+    fails = M.gate(rep, song.lufs, a.tol, a.max_tp) + rep.pop('_fails_extra', [])
+    # 4. no generated music; 5. every effect from the earshot kit
+    rep['music'] = dict(source='none')
+    if song.has_music:
+        plan = ev['plan']
+        rec = song.music_cfg.get('licence')
+        rep['music'] = dict(source=f'track:{rec}' if rec else 'track (no licence record named: score.json music.licence)',
+                            record=rec, track=song.music_cfg.get('track'), edit=song.music_cfg.get('edit'),
+                            staged_lufs=STAGE_LUFS, gain_db=song.music_cfg.get('gain_db'),
+                            segments=(edit or {}).get('segments'), ending=(edit or {}).get('ending'),
+                            joins=ev['gates']['joins'])
+        g = ev['gates']
+        rep['over_bed'] = g['over_bed']
+        rep['stop_downs'] = g['stop_downs']
+        rep['no_duck'] = g['no_duck']
+        rep['density'] = plan['density_per_10s']
+        rep['one_gesture'] = plan['one_gesture']
+        rep['runs'] = plan['runs']
+        rep['restraint'], rep['repeats'], rep['cast'] = plan.get('restraint'), plan.get('repeats'), plan.get('cast')
+        song.warnings.extend(w for w in plan['warnings'] + g['warnings']
+                             if not (a.bed_only and ('kit lock has no mix.stop_down' in w or 'not cast for this film' in w)))
+        fails += g['fails']
+        # masking: a hero sound the music covers in every band (under 0 dB in its best band) fails, whatever the
+        # over-bed range says (audibility wins for these); short of that it is listed with its margin. A film with
+        # more than 30 % of its effects masked warns
+        for m in ev['masked']:
+            if m.get('hero') and m['snr_db'] < 0:
+                fails.append(f"{m['hero']}'s {m['kind']} {m['id']} at f={m['f']:g} is buried: {-m['snr_db']:.1f} dB under the music in its "
+                             f"best band ({m['band_hz']} Hz), want +{m['margin_db']:g}: raise role {m.get('role')}'s bed_db (audibility "
+                             "wins over the over-bed range here) or cast another sound (kit.py cast --avoid)")
+        if ev.get('masked_read') and len(ev['masked']) > 0.3 * ev['masked_read']:
+            song.warnings.append(f"{len(ev['masked'])} of {ev['masked_read']} effects are masked by the music (over 30 %): the kit's "
+                                 'sounds sit where the track is busy; cast again against this track (kit.py cast --avoid)')
+        if song.mix['music'] != 1.0 or song.mix['sfx'] != 1.0:
+            song.warnings.append(f"mix.music {song.mix['music']:g} / mix.sfx {song.mix['sfx']:g} trim the buses after plan.py levelled every "
+                                 "effect against the bed, so the over-bed and masking reads no longer describe the master: with a "
+                                 "track set each role's bed_db in audio/kit.json (music.gain_db for headroom) and leave mix at 1")
+        rep['lockup'] = lockup_after_stop(song, plan, y, rep)
+        rep['bed_ring'] = ev.get('bed_ring')
+        rep['lift'] = ev.get('lift')
+        rep['ride'] = plan.get('ride')
+        if events and not a.bed_only:
+            rep['accents'] = accent_read(y, events, song, plan)
+        if not rec:
+            song.warnings.append('score.json music names no licence record: credits.py and deliver.sh refuse the film until it does')
+    if ev['missing']:
+        msg = (f"{len(ev['missing'])} cue(s) with no earshot kit take: "
+               + '; '.join(f"{m['kind']} {m.get('id') or ''} f={m['f']:g} ({m['why']})" for m in ev['missing'][:4]))
+        if a.draft:
+            song.warnings.append(msg + ' (placeholder voices: a --draft build)')
+        else:
+            fails.append(msg)
+    rep.update(out=a.out, bpm=song.bpm, key=f'{S_note(song.tonic)} {song.mode}', bars=song.nbars, draft=bool(a.draft),
+               bed_only=bool(a.bed_only),
                events=dict(count=len(events), by_kind=by, skipped=ev['skipped'], masked=ev['masked'], tuned=ev['tuned']),
                chords=[dict(t=round(a_, 3), chord=c.name if c else 'N.C.') for a_, _, c in song.segs if a_ < song.dur],
                warnings=song.warnings, fails=fails)
     if progress:
         rep['progress'] = progress
-    if ev['typing']['keys']:
+    if ev.get('typing') and ev['typing']['keys']:
         rep['typing'] = ev['typing']
-    if ev['sfx_levels']:
-        rep['sfx_levels'] = ev['sfx_levels']
-    rep['pass'] = not fails
+    rep['pass'] = not fails and not a.draft
     if a.json:
         os.makedirs(os.path.dirname(os.path.abspath(a.json)), exist_ok=True)
-        json.dump(rep, open(a.json, 'w'), indent=1)
+        with open(a.json, 'w', encoding='utf-8', newline='\n') as fh:
+            json.dump(rep, fh, indent=1)
+        if not song.has_music:  # the effects-only film's intended sound times, for av-audit.py and listen.py
+            cs = dict(cues, events=ev['sounded'], silent=[dict(s_, status='skipped') for s_ in ev['skipped']],
+                      sounded=dict(score=1, intended='the cue frame; a key at its planned time'))
+            with open(os.path.join(os.path.dirname(os.path.abspath(a.json)), 'cues_sounded.json'), 'w', encoding='utf-8',
+                      newline='\n') as fh:
+                json.dump(cs, fh, indent=1)
     if not a.quiet:
-        print(f"{'PASS' if not fails else 'FAIL'}  {a.out}  {rep['seconds']}s  {rep['lufs']} LUFS (target {song.lufs:g}, "
+        tag = 'DRAFT' if a.draft else ('PASS' if not fails else 'FAIL')
+        print(f"{tag}  {a.out}  {rep['seconds']}s  {rep['lufs']} LUFS (target {song.lufs:g}, "
               f"{song.lufs_from})  TP {rep['true_peak_db']} dBTP  LRA {rep['lra']} LU  loudest {rep['momentary_max']} "
               f"LUFS-M at {rep['momentary_max_t']}s  limiter {rep['limiter_max_gr_db']} dB  "
               f"events {len(events)} ({len(ev['skipped'])} skipped, {len(ev['masked'])} masked)")
@@ -1895,27 +2299,33 @@ def main(argv=None):
               + (f" (earshot {sx['earshot']}, bank {sx['bank']})" if sx.get('bank') else '')
               + (f": {sx['kit_cues']} cues from {len(sx['roles'])} roles" if sx['roles'] else '')
               + (f"; off in the kit: {', '.join(f'{r} x{n}' for r, n in sx['off'].items())}" if sx['off'] else '')
-              + (f"; synth voices: {', '.join(f'{k} x{n}' for k, n in sx['synth'].items())}" if sx['synth'] else ''))
+              + (f"; draft voices: {', '.join(f'{k} x{n}' for k, n in sx['draft_voices'].items())}" if sx['draft_voices'] else ''))
+        if song.has_music:
+            ob, sdn = rep['over_bed'], rep['stop_downs']
+            print(f"  music: {rep['music']['source']}; over the bed {ob['take_within_tol']}/{ob['count']} takes within "
+                  f"+-{OVER_BED_TOL:g} dB of their level (as on a steady bed: median {ob['steady_median']} dB; with the bed's "
+                  f"own accents {ob['within_tol']}/{ob['count']}, median {ob['median']}); stop-downs "
+                  + (', '.join(f"{s['t']:.2f}s {s['status']}" + (f" {s['measured_dip_db']:.1f} dB" if 'measured_dip_db' in s else '')
+                               for s in sdn) or 'none')
+                  + f"; density {rep['density']['median']}/10 s; no duck {'ok' if rep['no_duck']['ok'] else 'FAIL'}")
+        if rep.get('accents'):
+            ac = rep['accents']
+            print(f"  hits: {ac['salient']} of {ac['events']} events land as hits the ear marks ({100 * (ac['share'] or 0):.0f} %, want "
+                  f"{100 * ACCENT_SHARE:.0f} %+), {ac['moments']} breaths before moments, {ac['hits_per_10s']} hits per 10 s")
+        if rep.get('ride') and rep['ride'].get('points'):
+            rd = rep['ride']
+            print(f"  arc ride: opening {rd.get('opening_db', 0):+.1f} dB, body lifted up to {rd.get('lift_max_db', 0):.1f} dB "
+                  f"(the body sat at {rd.get('body_lufs')} vs the opening's {rd.get('opening_lufs')} LUFS short-term)")
         for s_ in rep['stacks']:
             print(f"  stack: {s_['t']}s (f={s_['f']:g}{', ' + s_['at'] if s_['at'] else ''}): {', '.join(s_['layers'] + s_['lead_ins'])}")
-        ty = ev['typing']
-        if ty['keys']:
-            worst = max((r['vs_music_A_db'] for r in ty['runs'] if 'note' not in r and r['style'] != 'word'), default=None)
-            ducked = any(r['duck_db'] for r in ty['runs'])
-            print(f"  typing: {ty['style']} ({', '.join(ty['styles'])}), {ty['sounded']}/{ty['keys']} keys sound"
-                  + (f", music ducked {ty['duck_db']:g} dB under the keys" if ducked else '')
-                  + (f", loudest run {worst:+.1f} dB A vs the music" if worst is not None else ''))
-        for k_, v_ in ev['sfx_levels'].items():
-            if v_['vs_music_db'] is not None:
-                print(f"  {k_}: {v_['count']} at one level, {v_['vs_music_db']:+.1f} dB vs the music (6 ms vs 250 ms RMS; "
-                      f"target {v_['target_db']:+g})")
         if progress and progress.get('events'):
             print(f"  progress: {progress['events']} rungs {progress['rungs'][0]['note']} -> {progress['rungs'][-1]['note']}"
                   + (f", resolves on {progress['resolve']['note']} at {progress['resolve']['t']}s" if 'resolve' in progress else ''))
         for w in song.warnings:
             print('  warning:', w)
         for m in ev['masked']:
-            print(f"  masked: {m['kind']} {m['id']} at f={m['f']}: {m['snr_db']} dB over the music in its best band ({m['band_hz']} Hz)")
+            print(f"  masked: {m['kind']} {m['id']} at f={m['f']}: {m['snr_db']} dB over the music in its best band ({m['band_hz']} Hz), "
+                  f"want {m['margin_db']:g}" + (f" ({m['hero']})" if m.get('hero') else ''))
         for f_ in fails:
             print('  FAIL:', f_)
     return 0 if not fails else 1
@@ -1926,7 +2336,6 @@ NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']
 
 def S_note(pc):
     return NAMES[pc]
-
 
 def note_name(m):
     k = int(round(m))
