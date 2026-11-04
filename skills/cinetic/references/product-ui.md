@@ -65,6 +65,17 @@ takes the film context or reads it inside a component.
   feature's name exactly once, where the product itself would show it, or as the one line of copy or on the end card.
 - **Fill the frame.** Push in until the part doing the work fills most of the frame; frame UI as macro crops and hero
   planes, bleeding past an edge. A small card floating in empty space reads as a slide.
+- **The UI is an object on a stage, not the screen.** A window, card, phone or notification sits at about 50-80 % of
+  the frame width (a phone 70-90 % of the height) with the stage visible round it, and the part doing the work is
+  isolated at a readable size. A page filling the frame edge to edge reads as a screen recording: a 1-2 s macro
+  push only, then back to the object. A new picture every 1-2 s (subject, scale or stage), never the same view of the
+  same UI past about 3 s; and no canvas jumping: the camera never flies between spots on one big page or canvas, it
+  hands over from object to object, or pushes into one and pulls back out.
+- **The real product when it exists, a designed one when it doesn't.** Ask once for screenshots, a link or a Figma
+  file and rebuild those screens (§10). With none, design a fictional UI that explains the function the way a real
+  team would ship it: real platform conventions (an iOS grouped list and large title, real macOS window chrome), the
+  product's own look (its colour, radius and one signature component), and the third-party apps it acts in as
+  believable brands with their own colours, which are content, not the film's palette.
 - **Simple and aligned.** No accent bar on a card, one left edge per card, text never across a picture or a mark (§3.1).
 
 ## 2. The data module

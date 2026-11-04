@@ -221,6 +221,8 @@
  *   - anywhere else, it covers the hard-ban rules on its own line and the next one.
  * A marker with nothing after it is an error: say what the brand supplied. It also covers the house
  * palette rules pure-ink and gradient-shape; accent-count (one accent family) still applies.
+ * Accent face: `cinetic:accent-face <family>` covers italic and serif on its own line and the next: the one
+ * italic accent face a film may set on a payoff word (SKILL.md, Hard bans: Type). A marker with no family is an error.
  *
  * Palette: hex colours must appear in the tokens file (Remotion: src/brand/tokens.ts). In a
  * HyperFrames project with no tokens file, the custom properties in the HTML's `:root { }` blocks
@@ -1072,6 +1074,7 @@ const isOneish = (x) => /^\s*(1(\.0+)?|0?\.[5-9]\d*)\s*$/.test(x ?? '');
 const issues = [];
 let suppressed = 0;
 let brandSupplied = 0;
+let accentFace = 0;
 // ---------------------------------------------------------------------------------- placeholders (scripts/placeholders.json)
 const PLACEHOLDERS = (() => {
   const fallback = { words: ['lorem', 'ipsum', 'dolor sit', 'placeholder', 'label text', 'sample text', 'dummy text', 'text here', 'title here'], labels: ['label', 'text', 'heading', 'subtitle', 'caption', 'button', 'placeholder', 'lorem'], numbered: ['item', 'label', 'text', 'title', 'card'] };
@@ -1246,6 +1249,10 @@ const BRAND_RE = /cinetic:brand-supplied\b/;
 const BRAND_REASON_RE = /cinetic:brand-supplied\b[\s:,.;–—-]*[\w"'#(]/;
 // house palette rules a supplied brand also overrides (its colours are checked only for contrast and the one-accent rule)
 const BRAND_RULES = new Set(['pure-ink', 'gradient-shape']);
+// the one italic accent face for a payoff word (SKILL.md Hard bans: Type): covers italic and serif on its line and the next
+const ACCENT_RE = /cinetic:accent-face\b/;
+const ACCENT_REASON_RE = /cinetic:accent-face\b[\s:,.;–—-]*[\w"'#(]/;
+const ACCENT_RULES = new Set(['italic', 'serif']);
 const LIGHT_RE = /cinetic:light\b/; // a declared light field or soft shape in fx/ or lib/ (see glow)
 // a device's own palette in fx/ or lib/ (spectral runs, false-colour maps, mask stops): see the header
 const DEVICE_RE = /cinetic:device-palette\b/;
@@ -1317,6 +1324,10 @@ for (const file of files) {
       devicePalette++;
       return;
     }
+    if (ACCENT_RULES.has(rule) && (ACCENT_RE.test(here) || ACCENT_RE.test(prev))) {
+      accentFace++;
+      return;
+    }
     if ((HARD_BANS.has(rule) || BRAND_RULES.has(rule)) && (brandFile || BRAND_RE.test(here) || BRAND_RE.test(prev))) {
       brandSupplied++;
       return;
@@ -1335,6 +1346,9 @@ for (const file of files) {
   for (const m of raw.matchAll(/cinetic:brand-supplied\b.*/g))
     if (!BRAND_REASON_RE.test(m[0].replace(/\*\/|-->/g, '')))
       report(m.index, 'brand-supplied', 'error', 'say what the brand supplied after cinetic:brand-supplied (and record it in BRIEF.md)');
+  for (const m of raw.matchAll(/cinetic:accent-face\b.*/g))
+    if (!ACCENT_REASON_RE.test(m[0].replace(/\*\/|-->/g, '')))
+      report(m.index, 'brand-supplied', 'error', 'name the family after cinetic:accent-face (the one italic accent face for a payoff word, SKILL.md Hard bans: Type)');
   for (const m of raw.matchAll(/cinetic:device-palette\b.*/g)) {
     if (!inDevice) report(m.index, 'device-palette', 'warn', 'cinetic:device-palette is honoured only inside fx/ or lib/: keep the device palette in its device file, or put the colours in the tokens with their job');
     else if (!DEVICE_REASON_RE.test(m[0].replace(/\*\/|-->/g, ''))) report(m.index, 'device-palette', 'error', "say the palette's job after cinetic:device-palette (a spectral run, a false-colour map, mask stops)");
@@ -2975,7 +2989,7 @@ const failed = errors > 0 || (opt.strict && warnings > 0);
 if (opt.json) {
   console.log(
     JSON.stringify(
-      { tool: 'lint-film', root: relative(process.cwd(), root) || '.', tokens: paletteName, files: files.length, errors, warnings, suppressed, brandSupplied, devicePalette, pass: !failed, issues },
+      { tool: 'lint-film', root: relative(process.cwd(), root) || '.', tokens: paletteName, files: files.length, errors, warnings, suppressed, brandSupplied, accentFace, devicePalette, pass: !failed, issues },
       null,
       1,
     ),
@@ -2984,7 +2998,7 @@ if (opt.json) {
   for (const x of issues) console.log(`${x.file}:${x.line}:${x.col}  ${x.severity === 'error' ? 'error' : 'warn '}  ${x.rule}  ${x.message}\n    ${x.excerpt}`);
   if (!paletteName) console.log('note: no tokens file or :root palette found; off-token colours were not checked (pass --tokens)');
   console.log(
-    `lint-film: ${files.length} files, ${errors} errors, ${warnings} warnings${suppressed ? `, ${suppressed} suppressed` : ''}${brandSupplied ? `, ${brandSupplied} brand-supplied (list each in BRIEF.md)` : ''}${devicePalette ? `, ${devicePalette} in device palettes` : ''} -> ${failed ? 'FAIL' : 'pass'}`,
+    `lint-film: ${files.length} files, ${errors} errors, ${warnings} warnings${suppressed ? `, ${suppressed} suppressed` : ''}${brandSupplied ? `, ${brandSupplied} brand-supplied (list each in BRIEF.md)` : ''}${accentFace ? `, ${accentFace} accent-face` : ''}${devicePalette ? `, ${devicePalette} in device palettes` : ''} -> ${failed ? 'FAIL' : 'pass'}`,
   );
 }
 process.exit(failed ? 1 : 0);

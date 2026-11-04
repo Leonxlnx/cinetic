@@ -32,7 +32,7 @@ Every film is held to these rules and numbers; the gates in brackets measure the
    repeats, quantity). The first picture beat shows the core action literally, with a real person giving the input where the input is human (real footage or a photo),
    and the product's main act plays on screen (the input becoming the output in steps, never a cut from the request to
    the finished result); what it makes is rich and holds the brief's own subjects. With the words covered, every
-   picture beat still reads. Data agrees when paused: newest first in a stack, counts and times that fit together, a
+   picture beat still reads. Data agrees when paused: newest first in a stack, counts and times that agree, a
    face with its own name (`precheck.mjs` cast).
 4. **Less text, every word chosen.** 1-5 words a line typically, 2-7 at most, one claim, plain words a customer would
    use; 0.3-1.5 headline words a second; what the product is by 3 s. No text in 15 % of the frames or more; at most two
@@ -44,9 +44,9 @@ Every film is held to these rules and numbers; the gates in brackets measure the
    One type event a film (a giant word with the product rising behind it, a line an object pushes apart, a
    decode, a build that re-centres). Emphasis is quiet: the key word in the accent on at most two lines, not always the
    last word; a box, marker, pill, underline or knockout only as the one signature. Every line reads at 3:1 against
-   what stands behind it, never held up by a grey halo. (`lint-film.mjs` emphasis, `forensics.py` legibility.)
-6. **Scene changes that flow.** Every hard cut hides itself: inside a blur that makes both sides unreadable, an anchor
-   held within 10 px, or a whip that carries the picture a fifth of the frame in its last 0.2 s, smeared; the kept
+   what is behind it, never held up by a grey halo. (`lint-film.mjs` emphasis, `forensics.py` legibility.)
+6. **Scene changes that flow.** Every hard cut hides itself: inside a blur making both sides unreadable, an anchor
+   held within 10 px, or a whip carrying the picture a fifth of the frame in its last 0.2 s, smeared; the kept
    ground alone hides nothing; never a cross-fade of two scenes or a cut torn across two frames; at most 10 % of hard
    cuts bare (`forensics.py` carried-cut, ghost-cut). One ground a film, changed once on purpose at most (a colour flood; grid-check `grounds`). Two or three seam kinds a film, none
    over 40 % of the scene changes, and one exit-then-enter, text-swap or match-cut in a film of four lines or more.
@@ -75,7 +75,7 @@ Every film is held to these rules and numbers; the gates in brackets measure the
     lands, a glow the size of the button); a hero object in a real material; the product's real content in quantity; a
     scale jump (macro to wide, a giant word); smear only on fast moves; transitions made of focus and light. Cards face
     the camera (a 3D turn is a designed move). A flat field with small type and a still card fails.
-11. **Simple and finished.** The path below, one review round, on the time plan; a gate that costs more than 5 minutes
+11. **Simple and finished.** The path below, one review round, on the time plan; a gate costing over 5 minutes
     on a 30 s film is advisory. A film is delivered whole, never cut.
 
 ## Hard bans
@@ -85,11 +85,12 @@ In a look you invent, none of these appear (`lint-film.mjs` checks the code, the
   seamless, elevate, unlock, the future of, magic) and slogan shapes ("X, reimagined", "Less X. More Y."); keyword
   piles; two lines readable at once (a declared swap excepted); eyebrow labels, stacked taglines, "Introducing…";
   filler text, fake metrics.
-- **Type:** serif faces, italic or oblique (or a skew faking one). One clean sans, plus a mono for code.
+- **Type:** serif faces, italic or oblique (or a skew faking one); a payoff word may take an italic accent face
+  (`// cinetic:accent-face <family>`). One clean sans, plus a mono for code.
 - **Colour:** orange, amber, beige, cream, tan or sand as an accent, a paper or a glow; neon; purple, violet or
   indigo; green in a brand you invent; a monochrome accent wash; glassmorphism as a UI style.
 - **Decoration:** emoji and stock icons; an accent bar down a card's side; sparkles for "AI", confetti, lens flares,
-  code rain; bounce on anything that is not landing; a springy overshoot on copy.
+  code rain; bounce on anything not landing; a springy overshoot on copy.
 - **Pictures:** a person, place or product drawn in SVG where a photo belongs; grey cards standing in for pictures;
   stock gestures (handshakes, pointing at screens); low-resolution or mixed-grade pictures.
 - **Sound:** generated music; a film with no music; ducking the music under effects; copyrighted audio in any repository.
@@ -100,16 +101,16 @@ accent over the film's world ([lighting.md](references/lighting.md)).
 
 ## The time plan
 
-A run has a budget (1-2 h; 90 min when none is given). Renders are slow: the whole film exists early, and every
-later look is cut from it:
-- **15 %:** brief, scaffold (seconds), direction, a script that passes `copy-check`, the track picked and fitted: the
+A run has a budget (1-2 h; 90 min if none is given). Renders are slow: the whole film exists early, every later
+look cut from it:
+- **15 %:** brief, scaffold (seconds), direction, a script passing `copy-check`, the track picked and fitted: the
   picture is cut to it, never watched without its sound (a silent film fails `forensics.py` audio).
 - **25 %:** the ending as stills: `node scripts/frames.mjs end` (the lockup, the name and the mark read).
 - **45 %:** a complete draft with its ending: `render.sh Film out/draft.mp4 --draft --max-min 9` (the whole film at half size, fast encode, the current sound) and its sheet `out/qa/draft-sheet.png`.
 - **45-70 %:** the soundtrack, the review round on the draft, fixes, the draft again.
 - **Long mode.** Given hours (an ultra run), polish each dealt scene in its own pass against its recipe numbers, its
   stills beside the recipe's, before the next, instead of one pass over the film.
-- **70 %:** the final starts: `bash scripts/render.sh Film out/film.mp4 --max-min 9` (parts that resume: rerun until exit 0). If it cannot finish in the time left, deliver the draft scaled up (`--from-draft out/draft.mp4`).
+- **70 %:** the final starts: `bash scripts/render.sh Film out/film.mp4 --max-min 9` (parts resume: rerun until exit 0). If it cannot finish in time, deliver the draft scaled up (`--from-draft out/draft.mp4`).
 
 ## The simple path
 
@@ -117,7 +118,7 @@ Read a reference only when its step needs it.
 
 **1. Brief and scaffold.** Write `BRIEF.md`: the spec line (`1920x1080@30, 25s, format: launch, audio:
 licensed track + launch kit`), what is supplied (a brand kit, a clip to feel like, footage, the products it works
-with), the hard bans. Ask at most three questions, only when the product, format or length is missing.
+with), the hard bans. Ask at most 3 questions, only if the product, format or length is missing.
 Then scaffold:
 ```
 bash scripts/new-film.sh films/<name> --name "<Product>" [--brand <kit>] [--like <clip>] [--music <file> + licence flags] [--link-modules <node_modules>]
@@ -126,7 +127,7 @@ A launch gets `launch-simple`, `--format update` the update film, other shapes [
 it writes `film.json` and deals the type pairing (`type-deal.ts`).
 
 **2. Direction, then the spine, first.** `python3 scripts/deck.py --brief "<one line>" --format launch [--have ui,photos]
-[--brand brand/brand.json]` deals three directions into `out/OPTIONS.md`; pick the one that fits with
+[--brand brand/brand.json]` deals three directions into `out/OPTIONS.md`; pick one with
 `--direction <id> --why "<one line>"`. Then the spine, before any picture ([spine.md](references/spine.md)): one
 sentence as 3-5 acts, one case (the brief's request, names and numbers in every act), one element changing form act to
 act, said as a chain ("the word becomes the pill becomes the page becomes the count becomes the mark"); lines alone
@@ -209,7 +210,7 @@ changes state in one frame (`glideValue`), every move lands before its cut, no r
 ([motion-tokens.md](references/motion-tokens.md), [camera.md](references/camera.md)).
 
 **Engine.** Everything is a pure function of the frame: no CSS transitions or keyframes, no `Math.random`, `Date.now`
-or `performance.now` (seeded `rand(seed)`); all translation in one `transform`; clamp every value that feeds geometry;
+or `performance.now` (seeded `rand(seed)`); all translation in one `transform`; clamp every value feeding geometry;
 no `will-change` where a blur animates, defocus at fixed levels, large soft shapes baked into dithered plates; fonts
 loaded before any measurement. Never loop `npx remotion still`: a cut from the draft costs
 seconds (`frames.mjs` and `render.sh` share one bundle)

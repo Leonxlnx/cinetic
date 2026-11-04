@@ -11,6 +11,7 @@ Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first 
 ### Added
 
 - `deliver.sh --variant-accept-fast A-B` passes the master's `--accept-fast` waiver on to blurred variants (`--variant-samples`), which reuse its samples and so stopped at the same fast frames. `Words` takes `breaks`, the word indices that start a new row, so the layout owns a line's breaks, and tags its line with `data-text` only while a word of it is on screen ([#4](https://github.com/Leonxlnx/cinetic/pull/4), thanks @ThomasKirst).
+- Style rules from side-by-side tests on 1.1 ([#8](https://github.com/Leonxlnx/cinetic/pull/8), thanks @mogheess): the UI as an object on a stage at 50-80 % of the frame width, a full-frame page only as a 1-2 s macro, a new picture every 1-2 s and no canvas jumping (`product-ui.md` §1, `craft-rules.md`, tell E9); the real product's screens when they exist, otherwise a designed UI with real platform conventions; a type voice, with one italic accent face allowed on a payoff word, marked `// cinetic:accent-face <family>` and accepted by `lint-film.mjs` (fixture `accent-face.tsx`); launch films in chapters (`concept-and-story.md` §8); ground changes inside the brand's palette, within 1.5's cap of two; no looping effect bed under the track; drawn illustration only for a mark or mascot.
 
 ### Fixed
 

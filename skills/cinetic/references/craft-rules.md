@@ -145,7 +145,8 @@ Four more that have homes but no automated check:
 ## 5. The product in motion
 
 1. **Scale:** product windows fill 70-92 % FW, often overflowing an edge; show the hero widget alone first, then pull
-   back for context; UI rebuilt at about 2× its web size (`uiFilm()`).
+   back for context; UI rebuilt at about 2× its web size (`uiFilm()`). The house frames the product as an object on
+   the stage at 50-80 % FW and goes full-frame only for a 1-2 s macro (`references/product-ui.md` §1).
 2. **Legibility is the most common failure:** wide UI text at 5-16 px reads only as texture. Push in 2-5× on every
    interaction, or isolate in two steps (fade the neighbours, then dim the world, while the hero never moves).
 3. **One hero per frame:** 1-4 objects; a dense full screen only as a 1-2 s establishing beat before the push.
@@ -165,7 +166,9 @@ Four more that have homes but no automated check:
 
 1. **Polarity is structure:** the stage changes luminance or colour world by act (2-6 times a film), each change on
    an act boundary riding a cut, a flip or a morph; one inversion at about 40 % of the runtime, in a hole in the
-   music, is the strongest reset there is.
+   music, is the strongest reset there is. A cinetic film changes its ground inside the brand's own palette (ink,
+   paper, the accent and tints of them) and twice at most, a flood and its return counting as one (`grounds`,
+   `references/checks.md`).
 2. **The accent is a signal:** one dominant accent over neutral grounds, a few percent of the pixels on most frames,
    one full-bleed accent beat of about 1.2 s at most (`references/brand-and-color.md`).
 3. **Colour marks what just changed:** arrivals are tinted and resolve to neutral over 12-50 f.

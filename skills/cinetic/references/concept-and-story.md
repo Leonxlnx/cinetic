@@ -189,7 +189,7 @@ Run every finalist through these. A concept that fails the ownership or deletion
 | Test | How to run it | It fails when |
 |---|---|---|
 | **Ownership** | Swap in a competitor's name and logo. Then list every prop in the film and strike any that could appear in another product's film. | The film still works with another name, or fewer than two owned props remain |
-| **Deletion** | Delete the demo beats: the value must still read. Then delete the value beats: the film must stop working. | The value vanishes with the demo, or the film still "works" without the value (it was a tour) |
+| **Deletion** | Delete the demo beats: the value must still read. Then delete the value beats: the film must stop working. | The value vanishes with the demo, or the film still "works" without the value (it was a tour); in a chapters film, a chapter shows no result or no through-line carries across them |
 | **Muted** | Describe the film using pictures only: no copy, no sound. | The problem → result can't be told from the images |
 | **Feature word** | Would a stranger, watching muted, use the brief's own word for the feature ("streak", "split", "cache hit")? | They would describe a neighbouring thing (a chart of pages instead of a streak). The device serves the feature; when a name-derived metaphor makes the feature read as something else, keep the feature's familiar form and let the device dress it |
 | **Poster** | Describe the final frame as a still printed on a wall. | It doesn't say who made it and what it does |
@@ -272,6 +272,7 @@ Production recipes (act templates, loop seams, stings, social layouts) are in `r
 | Format | Arc | Device's job | Where the idea lands |
 |---|---|---|---|
 | Launch film, 20–45 s | hook and what it is → problem → turn → proof ×1–2 → promise → lockup | carries every shot, becomes the mark | the turn at ~20–25% of the film, the callback at the promise |
+| Launch film in chapters, 20–45 s | hook → turn (the product named) → 3–4 chapters, each a 1–3 word flash → the UI doing it → its result → promise → lockup | links the chapters (the mark, the agent's cursor, a recurring line stem) and becomes the mark | each chapter's result; the refrain at the promise |
 | Product / feature video, 8–30 s | situation → cause → action → result (held) → name | it is the unit the product acts on | the result |
 | Feature loop, 4–15 s | rest A → cause → action → result → rest A | its state *is* the loop | mid-loop; the last frame is the first |
 | Logo sting, 3–8 s | gather → assemble with a contact → hit → wordmark → building hold | the primitives are the device | the hit |
@@ -280,6 +281,8 @@ Production recipes (act templates, loop seams, stings, social layouts) are in `r
 | Before/after | the same shot twice with an identical camera move: without, then with | the camera move itself | the difference |
 
 Proportions that work for a 30 s launch film: hook + problem ~20%, turn ~10%, proof ~35–40%, promise ~15%, lockup and tail ~15–20%. Write the script into those beats, one sentence a beat (5–8 in a 30 s film), and give each line what the picture does while it is read and right after: the line lands, the product does exactly that, and the next line moves on (`references/copy-and-type.md` §2b). Tessel: problem 0–6 s, turn 6–10 s, proof 10–24 s, promise and lockup 24–33 s.
+
+**Two launch shapes; pick the one that fits, or mix them.** One unfolding story suits a product with one sharp capability. **Chapters** suit a launch with several things to show (a texting agent doing four tasks, each inside its own app; an AI receptionist set up in three flashes, then a live call): a chapter is a short flash of text (a verb, the feature in 1–3 words, or a refrain's stem: "Tessel plans." → "Tessel moves."), then the UI doing it with a concrete result, then a hand-over into the next. Vary their lengths (2–5 s) and give the strongest the 70–85 % slot. Chapters are not a tour as long as every chapter shows a result and one through-line (the device, the agent, the refrain) carries across them all.
 
 **Loops need a cyclic story.** Don't build enter → hold → exit; build a process whose end state is its start state (a line that dries and is watered, an inbox that clears and refills). Put both sides of the seam at rest, or at the same velocity.
 
