@@ -309,6 +309,16 @@ jobs:
           done
           exit "$fail"
 
+      - name: Spine, scene bank and launch template tests (the spine and its handovers, the house scenes against their contracts and tables, launch-simple, creative and cue checks; through the starter's tsx)
+        run: |
+          fail=0
+          for t in spine handover moves depth-shots screen-forms world-step stock-plate logo-standins render-key creative cues launch-simple house-scenes ui-scenes scene-tables; do
+            echo "::group::$t.test.mjs"
+            node "skills/$SKILL/scripts/test/$t.test.mjs" || { echo "::error::$t.test.mjs failed"; fail=1; }
+            echo "::endgroup::"
+          done
+          exit "$fail"
+
       - name: Type family tests (type-family.mjs, and new-film.sh --template and --type on a temp folder)
         run: node "skills/$SKILL/scripts/test/type-family.test.mjs"
 
