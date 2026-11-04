@@ -380,6 +380,16 @@ q_lines = sorted(f['line'] for f in rep.get('findings', []) if f['rule'] == 'qua
 result(rep_lines == [2] and q_lines == [1] and all(f['severity'] == 'warn' for f in rep.get('findings', []) if f['rule'] in ('repeats', 'quantity')),
        'repeats: a line made of the words its own picture shows warns (line 1 and a line saying what the picture cannot pass); quantity: "every" warns',
        f'repeats {rep_lines}, quantity {q_lines}')
+# quantity skips a template's scaffold line: a quantifier inside or next to a [bracketed placeholder] is not copy yet;
+# a quantifier apart from the placeholders, in the same line, still warns
+slot_lines = ['Every [record] gets [its fields filled].', 'Ask it for any [task].', 'Each [part] shares one [record].',
+              '[Name] checks [every order] for you.', 'Every [record] gets its fields filled, always.']
+doc = {'fps': 30, 'total': 600, 'name': 'Ferry', 'copy': [
+    {'id': f'line{k + 1}', 'text': t, 'in': 10 + 100 * k, 'resolved': 40 + 100 * k, 'out': 90 + 100 * k} for k, t in enumerate(slot_lines)]}
+code, rep = run(['--stdin', '--format', 'launch'], json.dumps(doc))
+q_slot = [(f['line'], f['message'].split('"')[1]) for f in rep.get('findings', []) if f['rule'] == 'quantity']
+result(q_slot == [(5, 'always')], 'quantity: a quantifier inside or next to a [bracketed placeholder] passes, one apart from them warns',
+       str(q_slot))
 
 # --ocr on stills under 1600 px wide: a screen's small strings are unreadable there, so it warns (ocr_small, no OCR needed)
 import importlib.util

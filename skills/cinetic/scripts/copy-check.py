@@ -47,8 +47,9 @@ Checks (error unless marked):
               two of its words (or half of them) are the strings its picture puts on screen (line<k> against ui<k>.*); the
               picture tells it, the line says what the picture cannot, or the pair keeps no line
   quantity    (warning) "every", "each", "all", "always", "automatically": a claim about many or every time, which one
-              example on screen never proves: the picture shows three or more at once or the whole lifecycle
-  case        (out/cues.json) one case runs from the request to the result: with the spine (cues `spine`: its case and its
+              example on screen never proves: the picture shows three or more at once or the whole lifecycle (one next
+              to a [bracketed placeholder] of a template's scaffold line passes)
+  case       (out/cues.json) one case runs from the request to the result: with the spine (cues `spine`: its case and its
               acts' strings) the case's request, names or numbers (or two of the request's nouns) on screen in fewer than
               two acts is an error; without it, the brief's typed request (its content block's `prompt:`) against the
               strings COPY shows in each act (cues `acts`) is a warning
@@ -842,17 +843,34 @@ def check_repeats(lines, ui, name):
 
 
 _QUANT = re.compile(r"\b(every|each|all|any|always|automatically|whenever|never)\b", re.I)
+_SLOT = re.compile(r"\[[^\[\]]*\]")
+
+
+def _quant_claim(text):
+    """The first quantifier that is copy. One inside a [bracketed placeholder] or next to one (only spaces between:
+    "Every [record] gets [its fields filled].", "Ask it for any [task].") sits in a template's scaffold line, whose
+    real words are not written yet, and passes."""
+    slots = [(s.start(), s.end()) for s in _SLOT.finditer(text)]
+    for m in _QUANT.finditer(text):
+        if any(a <= m.start() and m.end() <= b for a, b in slots):
+            continue
+        if any((a >= m.end() and not text[m.end():a].strip()) or (b <= m.start() and not text[b:m.start()].strip())
+               for a, b in slots):
+            continue
+        return m
+    return None
 
 
 def check_quantity(lines):
     """quantity: "every PR", "each order", "always": a claim about many or about every time. One PR on screen proves one;
     the picture shows the many (three or more at once, each with its result) or the lifecycle (it opens, works, and is
-    gone when done), or the word lives only in text and the picture never tells it."""
+    gone when done), or the word lives only in text and the picture never tells it. A quantifier next to a [bracketed
+    placeholder] is a template's unwritten line and passes."""
     out = []
     for i, l in enumerate(lines):
         if l.get('end'):
             continue
-        m = _QUANT.search(l['text'])
+        m = _quant_claim(l['text'])
         if m:
             out.append({'rule': 'quantity', 'severity': 'warn', 'line': i + 1, 'text': l['text'],
                         'message': f'"{m.group(1)}" claims many (or every time): draw it, not one: three or more at once, each with '
