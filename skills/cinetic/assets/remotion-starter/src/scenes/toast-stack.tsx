@@ -10,6 +10,8 @@
 // then drifts 1.5 px/f up and pushes in 3 %. Nothing fades and nothing turns. The stack is framed as the frame's subject:
 // 1376 px wide (72 % of the frame), its rest extent (the front toast's top to the last slot's bottom, for the number of
 // toasts it holds) centred on the frame's height, the push centred on it; a toast shows a real face (`photo`) or a mark.
+// The subject from the first frame: the first toast lands on frame 0 whatever their number (the rest on the beats after
+// it), and a short stack climbs less, so that toast's top is on screen (900 px down at most) from the first frame.
 import React from 'react';
 import { Img } from 'remotion';
 import { C, FONT } from '../brand/tokens';
@@ -68,6 +70,29 @@ export const stackFrame = (n: number, withTotal = false) => {
   return { top, bottom, w: TOAST.w, x: 960 - TOAST.w / 2, shift: 540 - (top + bottom) / 2 };
 };
 
+/** When each of n toasts lands (frames): the first on the scene's first frame, the rest on the arrival beats after it. */
+export const toastArrivals = (n: number) => TOASTS.arrive.slice(0, Math.max(1, Math.min(TOASTS.arrive.length, n)));
+
+// the stack's climb (px below its rest place) at frame t for n toasts: the measured climb, shortened when the stack is
+// short, so that the first toast's top is on screen from the first frame (FIRST_TOP px down at most)
+const FIRST_TOP = 900;
+const climbFor = (t: number, n: number, withTotal = false) => {
+  const restTop = SLOTS[0][0] + (withTotal ? 70 : 0) + stackFrame(n, withTotal).shift; // the front toast's top at rest
+  const k = clamp((FIRST_TOP - restTop) / CLIMB[0][1], 0, 1);
+  const c = tab(t, CLIMB);
+  return c > 0 ? c * k : c;
+};
+
+/** Screen y (px at 1080) of the first toast's top at frame t, for n toasts (with a total or not). Pure: the tests read it. */
+export const toastFirstTop = (t: number, n: number, withTotal = false) => {
+  const arrive = toastArrivals(n);
+  let s = 0;
+  for (let j = 1; j < arrive.length; j++) s += tab(t - arrive[j], ENTRY);
+  const y = slotAt(s)[0] + (withTotal ? 70 : 0) + climbFor(t, n, withTotal);
+  const k = (1 + 0.03 * span(t, TOASTS.rest, TOASTS.dur)) * (withTotal ? 0.94 : 1);
+  return 540 + (y - 540 + stackFrame(n, withTotal).shift) * k;
+};
+
 /** Slot geometry at a fractional slot s (0 front .. 5 gone). */
 const slotAt = (s: number) => {
   const i = Math.min(4, Math.floor(clamp(s, 0, 4.999)));
@@ -87,14 +112,14 @@ export const ToastStack: React.FC<ToastStackProps> = ({ items, total, palette, f
   const meta = mixColor(paper, fill, 0.42);
   const skin = skinOf('dark', fill, P.accent);
   const list = items.slice(-TOASTS.arrive.length);
-  const arrive = list.map((_, k) => TOASTS.arrive[TOASTS.arrive.length - list.length + k]);
-  const climb = tab(t, CLIMB);
+  const arrive = toastArrivals(list.length);
+  const climb = climbFor(t, list.length, !!total);
   const lift = total ? 70 : 0; // room for the total above the stack (the stack drawn at 0.94)
   const fitK = total ? 0.94 : 1;
   const frame0 = stackFrame(list.length, !!total);
   const centre = frame0.shift; // the stack's rest extent centred on the frame's height
   // the climb's speed smears the stack vertically once it is fast (over 30 px/f: the slow first frames stay sharp)
-  const speed = Math.abs(tab(t + 0.5, CLIMB) - tab(t - 0.5, CLIMB));
+  const speed = Math.abs(climbFor(t + 0.5, list.length, !!total) - climbFor(t - 0.5, list.length, !!total));
   const smear = speed > 30 ? SMEAR.reduce((a, b) => (Math.abs(b - speed / 5) < Math.abs(a - speed / 5) ? b : a)) : 0;
   const push = 1 + 0.03 * span(t, TOASTS.rest, TOASTS.dur);
   const lines = mixColor(ground, paper, 0.08);

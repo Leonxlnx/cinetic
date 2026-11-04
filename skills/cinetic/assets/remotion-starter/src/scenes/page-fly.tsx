@@ -1,12 +1,14 @@
 // cinetic:house-scene (the scene bank: its colours come from the palette it is given)
 // page-fly: a long white page lies on a plane in 3D, tilted back and rolled a little, on a dark void with a light
-// hugging its edge. It rises in from the bottom of the frame seen from very close, the camera dives in on its headline
+// hugging its edge. It comes in rising, seen from very close with its headline on screen from the first frame (never a
+// blank sheet), the camera dives in on the headline
 // and then travels down it in one front-loaded move (fast first, slowing), pulling back to a steady distance while the
 // page's paragraphs and table rows write on as they come into view; the far (upper) part of the page stays a little
 // soft. At the end the travel speeds up again and the page leaves upward.
-// Numbers (frames at 30 fps, px at 1080): the plane tilted 22 deg with a roll from -5.7 to -1 deg; the page's top edge
-// rises from below the frame past 220 in 7 f; the camera is steered by where the headline sits on screen (AIM: its
-// centre 760 px down on the dive, 290 a third of the way, 150 by the middle, creeping to 20), the plane's scroll solved
+// Numbers (frames at 30 fps, px at 1080): the plane tilted 22 deg with a roll from -5.7 to -1 deg; on the first frame
+// the page's top edge stands 260 px down and its headline 1010; the camera is steered by where the headline sits on
+// screen (AIM: its centre 1010 px down on the first frame, 760 by f3, 230 a third of the way, 150 by the middle,
+// creeping to 20), the plane's scroll solved
 // through the perspective, so the headline reads big on the dive and settles near 1x; far blur 2.5 px over the top 40 %
 // of the frame; edge light 2 px near-white plus a 30 px falloff; the exit accelerates 40 -> 180 px/f in 6 f.
 import React from 'react';
@@ -38,10 +40,10 @@ export const PAGE_FLY = {
   pt: 2.9,
 } as const;
 
-// where the headline's centre sits on screen (px) frame by frame: it rises with the page from below the frame, then the
+// where the headline's centre sits on screen (px) frame by frame: it comes in on the first frame with the page rising, then the
 // camera's front-loaded travel down the page carries it up and slows (the dive's magnification holds 1.4, eases to 1.02);
 // the headline's cap reads ~130 px on the dive, ~100 a third of the way and ~70 from the middle on
-const AIM: [number, number][] = [[0, 2200], [2, 1760], [4, 1400], [6, 1075], [8, 850], [9, 760], [13, 506], [21, 292], [31, 146], [36, 116], [42, 97], [47, 84], [52, 60], [60, 20]];
+const AIM: [number, number][] = [[0, 1010], [1, 915], [2, 832], [3, 760], [4, 696], [5, 640], [7, 548], [9, 476], [12, 390], [16, 302], [21, 232], [26, 182], [31, 146], [36, 116], [42, 97], [47, 84], [52, 60], [60, 20]];
 const ZOOM: [number, number][] = [[0, 1.4], [0.3, 1.38], [0.5, 1.1], [1, 1.02]];
 const PERSP = 1600;
 const FOCUS_Y = 400; // the plane's origin on screen

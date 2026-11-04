@@ -16,6 +16,8 @@
  *                  three rows; the prism clock never runs back and its vertices join across the cut in the hold (no
  *                  jump over 13 px); the lockup's letters land 8 frames apart at 60 fps (closer for a long name, the run
  *                  held to 64) and its length follows the name.
+ *   4. subject     every scene shows its subject by frame 6 (never an empty card, page or field at its start): the
+ *                  first key lights, the flood's bar stands, the chips' line is on and the first letter lands by then.
  *
  * It runs the scene modules through the starter's own tsx (npm install in assets/remotion-starter first).
  * Usage (from the skill root):  node scripts/test/scene-tables.test.mjs [--verbose]
@@ -153,6 +155,9 @@ result(jump <= 13, 'prism: the hold\'s cut joins (no vertex jumps over 13 px)', 
 const gaps = (b) => b.at.slice(1).map((a, i) => +(a - b.at[i]).toFixed(3));
 result(gaps(P.lockShort).every((g) => g === 8) && gaps(P.lockLong).every((g) => g < 8) && P.lockLong.at[P.lockLong.at.length - 1] - P.lockLong.at[0] <= 64, 'lockup: letters 8 f apart at 60 fps, closer for a long name, the run held to 64');
 result(P.lockDur[1] > P.lockDur[0] && P.lockDur[0] >= 45 && P.lockDur[1] <= 90, 'lockup: its length follows the name, inside 1.5-3 s', P.lockDur.join(' '));
+
+// 4. subject: on screen by frame 6, never an empty card, page or field at the scene's start
+result(P.slots[0].at <= 6 && F[0].box.w > 0 && F[0].box.h > 0 && O[0].lineS > 0 && P.lockShort.at[0] <= 12, 'key-glow, bar-flood, orbit-chips, beat-lockup: the first key, the bar, the line and the first letter are on by frame 6', `${P.slots[0].at} ${F[0].box.w}x${F[0].box.h} ${O[0].lineS} ${P.lockShort.at[0] / 2}`);
 
 if (failed) {
   console.log(`\n${failed} failed`);

@@ -11,11 +11,15 @@
  *               gone after the decode; the title opens over 18 f and the button lands on its click.
  *   3. timing   the toast arrivals come 7 then 4 f apart and the stack rests inside the scene; the scan's click comes
  *               before the tilt, the grid rises after it and pulls back before the end; the page rises before it
- *               travels and leaves at the end (it enters from the bottom edge, the headline follows its on-screen aim
+ *               travels and leaves at the end (it comes in rising, the headline follows its on-screen aim
  *               and the travel is front-loaded); the prompt's placeholder cuts before the typing starts; the macro
  *               scene's length grows with the request (and its default is the meta's); the iris opens before the
  *               input lands and the push runs to the end.
  *   4. iris     the window's outline lies between the disc (0.80 R) and the lobe tips (R), and turns with its angle.
+ *   5. subject  every scene shows its subject by frame 6 (never an empty card, page or field at its start): the first
+ *               toast lands on frame 0 for any number of toasts and is whole on screen by frame 4; the page comes in
+ *               with its headline on screen on its first frame; the title decodes and the link types from the first
+ *               frames.
  *
  * It runs the scene modules through the starter's own tsx (npm install in assets/remotion-starter first).
  * Usage (from the skill root):  node scripts/test/ui-scenes.test.mjs [--verbose]
@@ -70,6 +74,7 @@ console.log(JSON.stringify({
   decode: { DECODE: D.DECODE, dashes, again: JSON.stringify(D.dashesAt(7.5)) === JSON.stringify(D.dashesAt(7.5)) },
   toasts: T.TOASTS,
   stack: [1, 2, 3, 4, 5].map((n) => T.stackFrame(n)).concat([T.stackFrame(3, true)]),
+  toastFirst: [1, 2, 3, 4, 5].map((n) => ({ n, arrive: T.toastArrivals(n), top0: T.toastFirstTop(0, n), top4: Math.max(T.toastFirstTop(4, n), T.toastFirstTop(4, n, true)) })),
   scan: S.SCAN,
   page: P.PAGE_FLY,
   pageY: Array.from({ length: 61 }, (_, t) => [P.pageFlyScreenY(516, P.pageFlyCamera(t, 516)), P.pageFlyScreenY(0, P.pageFlyCamera(t, 516))]),
@@ -133,12 +138,18 @@ result(S.type[1] <= S.click && S.click < S.tilt[0] + 1 && S.tilt[1] <= S.rise[0]
 const G = P.page;
 result(G.rise[1] < G.travel[1] && G.travel[1] <= G.exit[0] && G.exit[1] === G.dur, 'page-fly: the page rises before the travel ends and leaves on the last frame');
 const py = P.pageY.map((p) => p[0]);
-result(P.pageY[0][1] > 1000 && Math.abs(py[9] - 760) < 2 && py.every((y, i) => i === 0 || y < py[i - 1]) && py[60] > 0 && py[60] < 120 && py[9] - py[31] > 3 * (py[31] - py[52]), 'page-fly: the page enters from the bottom edge, the headline sits where its aim says and the travel is front-loaded', `${py[0].toFixed(0)} ${py[9].toFixed(0)} ${py[31].toFixed(0)} ${py[60].toFixed(0)}`);
+result(P.pageY[0][1] > 0 && P.pageY[0][1] < py[0] && Math.abs(py[3] - 760) < 2 && py.every((y, i) => i === 0 || y < py[i - 1]) && py[60] > 0 && py[60] < 120 && py[9] - py[31] > 3 * (py[31] - py[52]), 'page-fly: the page comes in rising, the headline sits where its aim says and the travel is front-loaded', `${py[0].toFixed(0)} ${py[3].toFixed(0)} ${py[31].toFixed(0)} ${py[60].toFixed(0)}`);
 result(P.prompt.cut < P.prompt.type && P.prompt.type < P.prompt.dur, 'glass-prompt: the placeholder cuts out before the request types in');
 const [k0, k1, k2] = P.macro.durs;
 result(k0 === P.metas['macro-type'].dur && k1 > k0 && k2 < k0 && k1 <= 110, 'macro-type: its length grows with the request (the default is the meta\'s)', `${k0} ${k1} ${k2}`);
 const I = P.iris.IRIS;
 result(I.open < I.pill && I.push[1] === I.dur && I.leave[1] === I.dur, 'iris-input: the window opens before the input lands, the push and the headline leave run to the end');
+
+// 5. subject: on screen by frame 6, never an empty card, page or field at the scene's start
+const tf = P.toastFirst;
+result(tf.every((x) => x.arrive[0] === 0 && x.top0 < 1080 - 100 && x.top4 + 215 <= 1080), 'toast-stack: the first notice lands on frame 0 (on screen from the first frame, whole by frame 4) for 1-5 toasts', tf.map((x) => `${x.n}:${x.arrive[0]}/${x.top0.toFixed(0)}/${x.top4.toFixed(0)}`).join(' '));
+result(py[0] <= 1020 && py[6] <= 1080 - 140, 'page-fly: the page carries its headline from its first frame (centre 1020 px down at most, whole by frame 6)', `${py[0].toFixed(0)} ${py[6].toFixed(0)}`);
+result(DECODE.decode[0] <= 6 && S.type[0] <= 6, 'decode-title, scan-grid: the title decodes and the link types in from the first frames', `${DECODE.decode[0]} ${S.type[0]}`);
 
 // 4. iris
 const rr = P.iris.r;

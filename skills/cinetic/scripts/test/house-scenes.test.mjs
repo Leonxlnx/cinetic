@@ -13,6 +13,8 @@
  *      the blobs end as one dot; the counters' steps land on their last value; the river's pump accelerates, its row's
  *      front cards cut in faster, its far row recedes between the left word and the last card; with no logo the
  *      placeholder mark takes the palette's accent (never the starter's own).
+ *   5. subject: every scene shows its subject by frame 6 (never an empty card, page or field at its start): the counters'
+ *      first card, the river's first picture and the wordmark's first word are on by then.
  *
  * mark-pullback draws fx/three's Logo3D: when the starter's three.js packages are not installed its checks are skipped
  * (and said so), the rest still run.
@@ -80,6 +82,7 @@ console.log(JSON.stringify({
   counters: C.COUNTERS,
   layout: [1, 2, 3].map((n) => C.cardLayout(n)).concat([C.cardLayout(1, 'left'), C.cardLayout(1, 'right')]),
   river: R.RIVER,
+  subject: { cards: [1, 2, 3].map((n) => C.cardLayout(n)[0].enter), line: L.LINE_MARK.first },
 }));
 `;
 
@@ -153,6 +156,9 @@ for (const f of ['mark-pullback', 'word-build-badge', 'blobs-to-mark']) {
   const src = readFileSync(join(SRC, 'scenes', `${f}.tsx`), 'utf8');
   result(/SAMPLE_MARK_SVG\.split\(C\.accent\)\.join\(P\.accent\)/.test(src) && !/markOf\(/.test(src), `${f}: with no logo the placeholder mark takes the palette's accent`);
 }
+
+// 5. subject: on screen by frame 6, never an empty card, page or field at the scene's start
+result(P.subject.cards.every((f) => f <= 6) && P.river.swaps[0] === 0 && P.subject.line <= 6, 'photo-counters, photo-river, line-to-wordmark: the first card, picture and word are on by frame 6', `${P.subject.cards.join(',')} ${P.river.swaps[0]} ${P.subject.line}`);
 
 console.log(failed ? `\n${failed} failed` : '\nall passed');
 process.exit(failed ? 1 : 0);
