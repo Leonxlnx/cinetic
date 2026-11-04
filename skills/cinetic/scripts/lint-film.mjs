@@ -75,6 +75,12 @@
  *   scale-from-zero   an entrance scaled up from 0 (a tween, spring or mix from ~0): start oversized
  *   fade-exit         a statement fading out over more than 12 f@60 with no move in the same style
  *   linear-opacity    type opacity on E.linear
+ *   linear-motion     error: a transform, position, scale, rotation, camera, blur or opacity at a constant rate:
+ *                     interpolate() without an easing option, E.linear, a raw frame ratio (frame / n, frame * k) or a
+ *                     house scene's raw span() ramp reaching a moving property, or a scale tweened in value space over
+ *                     a ratio of 1.6 or more (zoom in log space: zoomAt() or lmix()). Film code, templates and house
+ *                     scenes (fx/, lib/ and kit/ keep their own curve tests); a true live rate (a clock, a real-time
+ *                     progress bar, a counter's rate, a constant ambient drift) keeps // lint-ok: <reason>
  *   crossfade         error: two full-frame layers dissolving into each other over more than 8 f@60
  *                     (unknown length: warn); a UI dissolve carries data-ui
  *   shutter           SHUTTER in blur.ts outside 120-180 degrees
@@ -2036,6 +2042,139 @@ for (const file of files) {
           if (n && n > LAYER_BUDGET)
             report(i, 'gpu-cost', 'warn', `chain "${id}" holds ${n} words: each sharp word stays on its own composited layer for the shot (budget ${LAYER_BUDGET}); split the thought into two shots or a replace chain`);
         });
+    }
+
+    // linear-motion (error): a moving property on a straight-line ramp. Film code, templates and house scenes;
+    // the primitives in fx/, lib/ and kit/ are gated by their own curve tests. A true live rate keeps // lint-ok: <reason>.
+    if (isScript && !isAnim && !/(^|\/)(fx|lib|kit)\//.test(norm)) {
+      // a ramp handed to a function (a curve, an ease, a sine, a floor, a type-on) is shaped or used there; clamp,
+      // min, max and grouping parens pass it through unchanged
+      const PASS = /^(?:clamp|clamp01|Math\.min|Math\.max|Math\.abs|min|max|abs|)$/;
+      const shaped = (src, i) => {
+        let depth = 0;
+        for (let k = i - 1; k >= 0 && k > i - 400; k--) {
+          const c = src[k];
+          if (c === ')' || c === ']') depth++;
+          else if (c === '(' || c === '[') {
+            if (depth > 0) {
+              depth--;
+              continue;
+            }
+            if (c === '[') return false;
+            const name = src.slice(Math.max(0, k - 40), k).match(/([\w$.]+|\))\s*$/)?.[1] ?? '';
+            if (name === ')') return true; // a curried curve: bezier(...)(x)
+            if (/^[A-Za-z_$]/.test(name) && !PASS.test(name)) return true;
+          } else if (depth === 0 && (c === ';' || c === '{' || c === '}' || (c === '=' && !/[=!<>]/.test(src[k - 1]) && !/[=>]/.test(src[k + 1])))) return false;
+        }
+        return false;
+      };
+      // the frame and the names that are the frame shifted (const lf = frame - start)
+      const base = new Set(['frame']);
+      for (const m of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*useCurrentFrame\s*\(/g)) base.add(m[1]);
+      if (/[({,]\s*f\s*[,}:)]/.test(code)) base.add('f');
+      if (/\buseClock\s*\(/.test(code)) base.add('t'); // a house scene's clock: frames at 30 fps
+      // the frame shifted (any name), or shifted and rescaled to another rate (a clock's name: t60, f60, tw, local)
+      const CLOCK_NAME = /^(?:[tfu][\w$]{0,3}|frame[\w$]*|local[\w$]*|clock[\w$]*|time[\w$]*)$/;
+      for (let pass = 0; pass < 3; pass++)
+        for (const [lhs, rhs] of decls) {
+          if (!/^[A-Za-z_$][\w$]*$/.test(lhs)) continue;
+          const m = rhs.trim().match(new RegExp(`^\\(?\\s*(${[...base].join('|')})\\s*([-+]\\s*[\\w$.()]+\\s*)?\\)?(\\s*\\*\\s*(?:[1-9][\\d.]*|fps|k|K))?$`));
+          if (m && (!m[3] || CLOCK_NAME.test(lhs))) base.add(lhs);
+        }
+      const B = [...base].map((b) => b.replace(/\$/g, '\\$')).join('|');
+      const drivers = [];
+      // interpolate() with no easing option, on any input
+      for (const c of callsIn(code, ['interpolate'])) if (!/\beasing\s*:/.test(c.args[3] ?? '') && !shaped(code, c.index)) drivers.push({ i: c.index, why: 'interpolate() without an easing option' });
+      // a scene's raw 0..1 ramp (span(t, a, b)) used as it comes
+      for (const c of callsIn(code, ['span'])) if (!shaped(code, c.index)) drivers.push({ i: c.index, why: 'a raw span() ramp' });
+      // E.linear handed to a tween or as an easing
+      each(/\bE\.linear\b(?!\s*\()/g, (m, i) => {
+        if (/\bstagger\s*\([^()]*$/.test(code.slice(Math.max(0, i - 80), i))) return; // stagger offsets are delays, not motion
+        drivers.push({ i, why: 'E.linear' });
+      });
+      each(/\bE\.linear\s*\(/g, (m, i) => drivers.push({ i, why: 'E.linear' }));
+      // a raw frame ratio: frame / n, (frame - a) / n, frame * k
+      each(new RegExp(`(?<![\\w$.])\\(?\\s*(?:${B})\\s*(?:-\\s*[\\w$.]+\\s*)?\\)?\\s*(?:\\/(?![/*])|\\*\\s*-?[\\d.])`, 'g'), (m, i0) => {
+        const i = i0 + m[0].search(/\S/);
+        if (shaped(code, i) || /%\s*$/.test(code.slice(Math.max(0, i - 8), i))) return;
+        drivers.push({ i, why: 'a raw frame ratio' });
+      });
+      if (drivers.length) {
+        // the motion sinks: transforms in a template, and style keys / props that move, scale, turn, blur or fade
+        const sinks = [];
+        for (const m of code.matchAll(/`[^`]*\b(?:translate(?:3d|X|Y|Z)?|scale(?:3d|X|Y)?|rotate(?:3d|X|Y|Z)?|blur|perspective|skew(?:X|Y)?|matrix(?:3d)?)\([^`]*`/g)) sinks.push([m.index, m.index + m[0].length]);
+        const KEYS = 'transform|opacity|filter|scale|scaleX|scaleY|rotate|rotateX|rotateY|rotateZ|translate|translateX|translateY|x|y|z|left|top|right|bottom|zoom|blur|tx|ty|dx|dy|pan|tilt|dolly|yaw|pitch|push';
+        for (const m of code.matchAll(new RegExp(`(?<![\\w$.-])(?:${KEYS})\\s*(?::(?!:)|=\\s*\\{)`, 'g'))) {
+          const s = m.index + m[0].length;
+          let depth = 0;
+          let j = s;
+          for (; j < code.length && j < s + 600; j++) {
+            const c = code[j];
+            if ('([{'.includes(c)) depth++;
+            else if (')]}'.includes(c)) {
+              if (depth === 0) break;
+              depth--;
+            } else if ((c === ',' || c === ';' || c === '\n') && depth === 0) break;
+          }
+          sinks.push([m.index, j]);
+        }
+        const inSink = (i) => sinks.some(([a, b]) => i >= a && i < b);
+        // the names a sink reads as they are (a name handed to a curve inside the sink is shaped there)
+        const sinkNames = new Set();
+        for (const [a, b] of sinks) {
+          const text = code.slice(a, b);
+          for (const m of text.matchAll(/(?<![\w$.])[A-Za-z_$][\w$]*(?![\w$])/g)) if (!shaped(text, m.index)) sinkNames.add(m[0]);
+        }
+        // follow a driver through the declarations to a sink; an ease or a stepped index on the way ends it
+        const declAt = (i) =>
+          decls
+            .filter(([lhs, rhs, k]) => {
+              const s = code.indexOf(rhs, k);
+              return s >= 0 && i >= s && i < s + rhs.length && /^[A-Za-z_$][\w$]*$/.test(lhs);
+            })
+            .sort((a, b) => a[1].length - b[1].length)[0];
+        const carries = (name, seen = new Set()) => {
+          if (sinkNames.has(name)) return true;
+          if (seen.has(name) || seen.size > 40) return false;
+          seen.add(name);
+          const re = new RegExp(`(?<![\\w$.])${name.replace(/\$/g, '\\$')}(?![\\w$])`, 'g');
+          for (const [lhs, rhs] of decls) {
+            if (!/^[A-Za-z_$][\w$]*$/.test(lhs) || lhs === name) continue;
+            for (const m of rhs.matchAll(re)) {
+              if (shaped(rhs, m.index)) continue;
+              if (carries(lhs, seen)) return true;
+            }
+          }
+          return false;
+        };
+        const seenLine = new Set();
+        for (const d of drivers.sort((a, b) => a.i - b.i)) {
+          if (d.why === 'a raw frame ratio' && base.has(declAt(d.i)?.[0])) continue; // a clock rescaled (const t60 = (t - cut) * 2)
+          const hit = inSink(d.i) || (() => {
+            const dc = declAt(d.i);
+            return dc && !/^\s*(?:async\s*)?(?:\([^()]*\)|[A-Za-z_$][\w$]*)\s*(?::[^=]+)?=>/.test(dc[1]) ? carries(dc[0]) : false;
+          })();
+          if (!hit) continue;
+          const { line } = pos(d.i);
+          if (seenLine.has(line)) continue;
+          seenLine.add(line);
+          report(d.i, 'linear-motion', 'error', `${d.why} drives a move, a scale, a turn, a blur or a fade at a constant rate: nothing on screen moves linearly. Arrivals expOut / E.snapOut, exits expIn / E.buildIn, travels expInOut, zooms zoomAt() (log space); a true live rate (a clock, a real-time progress bar, a counter's rate, a constant ambient drift) keeps // lint-ok: <reason>`);
+        }
+        // a scale or zoom tweened in value space over a big ratio: a push in log space looks constant to the eye
+        const scaleSinks = [
+          ...[...code.matchAll(/\bscale(?:3d|X|Y)?\(\s*\$\{([^}]*)\}/g)].map((m) => [m.index, m[1]]),
+          ...[...code.matchAll(/(?<![\w$.-])(?:scale|zoom)\s*(?::(?!:)|=\s*\{)\s*([^,}\n]+)/g)].map((m) => [m.index, m[1]]),
+        ];
+        for (const [i, e] of scaleSinks) {
+          if (/\b(lmix|zoomAt|logMix)\s*\(/.test(e)) continue;
+          const full = expand(e, i);
+          if (/\b(lmix|zoomAt|logMix)\s*\(/.test(full)) continue;
+          const num = (x) => (/^\s*-?[\d.]+\s*$/.test(x ?? '') ? Number(x) : NaN);
+          const pairs = [...tweensIn(full).map((t) => [num(t.from), num(t.to)]), ...callsIn(full, ['mix']).map((c) => [num(c.args[0]), num(c.args[1])])];
+          const big = pairs.find(([a, b]) => a > 0 && b > 0 && Math.max(a, b) / Math.min(a, b) >= 1.6);
+          if (big) report(i, 'linear-motion', 'error', `a scale from ${big[0]} to ${big[1]} tweened in value space: the push eases out on screen long before it ends (each step is a smaller share of the size). Zoom in log space: zoomAt() or lmix(from, to, eased)`);
+        }
+      }
     }
 
     if (isScript && !house && !isAnim) {

@@ -101,6 +101,12 @@ for (const f of STATIC ? readdirSync(FIX).sort() : []) {
   if (verbose || diffs.length) for (const x of r.issues.filter((x) => HARD.includes(x.rule) || TEXT.includes(x.rule) || GRAMMAR.includes(x.rule))) console.log(`      ${x.line}: ${x.rule} ${x.severity} ${x.excerpt}`);
 }
 
+// linear-motion: the house scenes and the launch-simple and update acts move on curves, never at a constant rate
+for (const sub of STATIC ? ['remotion-starter/src/scenes', 'templates/launch-simple/src/acts', 'templates/update/src/acts'] : []) {
+  const lin = lint(join(SKILL, 'assets', sub)).issues.filter((x) => x.rule === 'linear-motion');
+  result(!lin.length, `${sub} moves on curves (no linear-motion)`, lin.map((x) => `${x.file}:${x.line}`).join('; ') || 'clean');
+}
+
 // 2. starters: placeholders are the only errors, and removing the markers leaves them clean
 for (const [name, sub] of STATIC
   ? [
