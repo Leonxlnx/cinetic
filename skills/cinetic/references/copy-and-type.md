@@ -731,8 +731,9 @@ emphasis kind (by default the key words in the accent colour; else weight, scale
 on at most 60 % of its lines, on the key words the script names (`keys`, or *marks*: "Brook is a *water bottle*.");
 the other lines are plain. `fx/TypeEmphasis` `filmEmphasis` deals it; `<TypeLine>` adds no device of its own. A box, a
 marker bar, a pill, an underline or a knockout is never the film's kind: only its one declared signature, on one line
-at most. Love is in the build and the size, not in a decoration on every line: one line, centred, built word by word
-on the film's one voice (§8), set at 6-9 % cap height. One-line statements are the norm (80 % of a film's statements
+at most. Love is in the build and the size, not in a decoration on every line: one line, centred, on the film's one
+voice (§8), big (a line alone at a 9.2 % cap, never under 7 %; the claim 11.2 %), whole or in two or three chunks and
+read in 1.2 s at most. One-line statements are the norm (80 % of a film's statements
 or more); a two-voice stack (a small lead line over big key words, `StatementLine stack`) at most once a film.
 `copy-check.py` reads the marks and suggests a key word for a line without one. Stacks, planes in depth and type behind
 the subject: `fx/TypeStack`, `fx/TypeDepth`, `fx/TypeBehind`.

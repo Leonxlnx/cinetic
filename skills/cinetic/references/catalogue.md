@@ -121,9 +121,9 @@ as covers, `ledger` a list that adds up, `price-pick` a plan picked, `doc-travel
 
 Headline systems rotate: the dealt voice opens the film and each line after it takes the next voice in turn (build ->
 blur -> ink), so no two lines in a row arrive the same way, in the film's one face; at most one contrasting entry per
-30 s, for the hero line only. Three sizes, never every line one size: the statement (6.6 % cap), the lines between it and
-the claim a size down (5 %), the claim more than twice their cap (11.8 %); the update film's change lines at 1.3 / 1 /
-1.55 / 1.15 x the line size. Lines are centred, in the middle band, one line (85 % or more of them), sentence case.
+30 s, for the hero line only. Three sizes, never every line one size: a line alone is big (a 9.2 % cap, never under
+7 %; a long line takes two rows) and read in 1.2 s at most, the lines set in the product's own words a size down (5 %),
+the claim 11.2 %; the update film's change lines at 1.3 / 1 / 1.55 / 1.15 x the line size. Lines are centred, in the middle band, one line (85 % or more of them), sentence case.
 Emphasis: the key word in the accent on about one line in three (`fx/TypeEmphasis` `filmEmphasis`, share 0.34; no
 automatic heavier last word on the other lines: one highlighted last word on every line is the template look); no box,
 marker or underline unless it is the film's one signature, on one line. On a photograph every line stands on a soft
@@ -184,7 +184,7 @@ into the button it was about to press. Or the deck's dealt signature shot (`out/
 ## 3. Seams (two or three kinds a film)
 
 Every hard cut carries something (the ground kept, a blur at the seam, an anchor held within 10 px, or the motion
-carried); at most 10 % of hard cuts carry nothing; the most-used kind stays under 45 % of the scene changes; at most
+carried); at most 10 % of hard cuts carry nothing; no kind takes more than 40 % of the scene changes; at most
 two light-dark ground flips, each a declared colour event. A film of four lines or more holds at least one
 exit-then-enter, text-swap or match-cut. Full recipes in frames: [transitions.md §2](transitions.md#2-recipes-at-60-fps).
 
@@ -229,9 +229,10 @@ The bans stay: no orange, amber, cream or sand, no purple or violet, no neon, un
 
 ## 5. End card (one design a film)
 
-Centred, built from the film's last element, landed and then held still 2-3 s (no drift: a lockup sliding 0.25 px a
-frame to the end is an aimless move), the name once, the one fact under it, then the whole frame settles out into the
-world's deep tone over the last 0.6 s with the music's ring-out. A drawn mark is laid out by its ink: its ink 1.3x the
+Centred, built from the film's last element, 2.5 s at most: it lands with one snap and keeps living (a creep that
+lands, a light; never a frozen hold, never an aimless slide), the name once, the one fact under it, then the whole frame
+settles out into the world's deep tone over the last 0.6 s with the music's ring-out, the film over 2 s at most after
+the mark is whole. A drawn mark is laid out by its ink: its ink 1.3x the
 name's cap height, 0.44 cap from the name, in its own colours (only its near-black parts take the world's ink). The ten
 designs with their builds are in [devices/logo-and-end-card.md](devices/logo-and-end-card.md#ten-end-card-designs-recipes);
 their ids for `film.json` `end` and `logo`:
@@ -273,17 +274,19 @@ T = a line alone, centred, on the clean ground; A = the product acting, full fra
 
 | s | beat | what |
 |---|---|---|
-| 0.0-1.5 | T | "[Name] turns [input] into [output]." in the film's voice |
-| 1.5-4.0 | A | the input becoming the output in the product (a real person giving the input where it is human) |
-| 4.0-5.3 | T | line 2, the same voice, `exitEnter` on the kept ground |
-| 5.3-8.0 | A | the product doing it (`step-list` or `typing`; a `matchCut` or `velocityCut` in) |
-| 8.0-9.3 | T | line 3 |
-| 9.3-12.5 | A | the proof (`counter`, a result appearing, `card-expand`) |
-| 12.5-13.8 | T | line 4 |
-| 13.8-16.5 | A | the payoff picture: the signature |
-| 16.5-20.0 | end | the centred lockup built from the last element, held 2-3 s |
+| 0.0-1.2 | T | "[Name] turns [input] into [output]." in the film's voice |
+| 1.2-4.0 | A | the input becoming the output in the product (a real person giving the input where it is human) |
+| 4.0-5.2 | T | line 2, the same voice, `exitEnter` on the kept ground |
+| 5.2-7.8 | A | the product doing it (`step-list` or `typing`; a `matchCut` or `velocityCut` in) |
+| 7.8-9.0 | T | line 3 |
+| 9.0-11.4 | A | the proof (`counter`, a result appearing) |
+| 11.4-14.0 | A | the proof opening on (`card-expand`, the element handed on) |
+| 14.0-15.2 | T | line 4 |
+| 15.2-17.5 | A | the payoff picture: the signature |
+| 17.5-20.0 | end | the centred lockup built from the last element: one snap, living, the film over 2 s after the mark |
 
-A 15 s launch is 3-4 lines and 3-4 picture beats; a 30 s one 5-7 lines. Lines run 0.5-2.3 s (about 1.3), picture
-beats 1-3.5 s, the first line on screen by 1 s, 0.3-1.5 headline words a second. `assets/templates/launch-simple`
+A 15 s launch is 3-4 lines and 3-4 picture beats; a 30 s one 5-7 lines. A line alone is read in 1.2 s at most, every
+picture beat runs 1.5-3 s (a longer point takes two), the lockup 2.5 s at most, the first line on screen by 1 s, 0.3-1.5
+headline words a second. `assets/templates/launch-simple`
 lays this down, deals the voice, the ground, the seams, the end card and the camera (still, or one push that lands),
 and plays the film's creative elements (§0) on at least half its beats.

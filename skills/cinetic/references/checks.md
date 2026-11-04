@@ -41,16 +41,18 @@ node scripts/film-diff.mjs --record                           # after the ship g
 `--final` on the master, `--ocr` on full-size held stills: half-size stills hide a screen's small strings), lint `--strict` and grid-check clean (its `beats` rules: type-only beats at least 15 % of the
 shots and two a film, a line over a picture on at most 40 % of the beats, the first line by 1 s, in a film that
 declares its beat plan; its spine rules in a film that plays the spine: one action in 3-5 acts, the element carrying
-most scene changes, one case, lines alone only at the ends, the lockup grown from the last form); forensics `--spine`
+most scene changes, one case, lines alone only at the ends, the lockup grown from the last form; in a film that declares
+its look: a line alone read in 1.2 s at most at a cap of 7 % or more, every scene 1.5-3 s, the lockup 2.5 s at most and
+held 2 s at most after its mark, no seam kind over 40 % of five or more changes); forensics `--spine`
 on the draft (`--grammar-only` runs it when the cues declare handovers) and `look-audit.py --look` on it (no flat
 void, no plain card slab); precheck `--ship`; layout-audit passing with its placeholder floor and its placement gate
 (statements centred 80 % of their time, in the middle band 85 %, none flush left at the top or bottom, one text-top
 split at most (a line above a picture filling the rest of the frame), one split layout per 30 s); forensics passing on
-the master (its seam checks: every hard cut carries a device, at most two ground flips, no seam kind over 45 % of five
-or more changes, a spine handover counted by its own kind); `logos.mjs check` (current marks, every brand verified on its own page within 12 months, no drawn or inline stand-in for a real company's mark: its official file through `logos.mjs get`);
+the master (its seam checks: every hard cut carries a device, at most two ground flips, the most-used seam kind capped,
+a spine handover counted by its own kind); `logos.mjs check` (current marks, every brand verified on its own page within 12 months, no drawn or inline stand-in for a real company's mark: its official file through `logos.mjs get`);
 `film-diff.mjs` (ground, voice, signature and end card apart from the last three films, the move set at most 25 %
-shared, a template film half its slots off the floor); the end card centred, built from the last element and held 2-3
-s (grid-check reads the template's `end_hold`); the ground family's tokens from `palette.py --family`; the sound gates
+shared, a template film half its slots off the floor); the end card centred, built from the last element, 2.5 s at
+most and held 2 s at most after its mark (grid-check's `scene-length`); the ground family's tokens from `palette.py --family`; the sound gates
 (`references/sound.md`); probe and check-sync (`references/finishing.md`); and the director pass with no open P0.
 
 **Advisory (read them, never a ship gate by default):** `look-audit.py` (the floors against a flat film),
