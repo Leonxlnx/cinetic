@@ -12,13 +12,22 @@ Cues: the {events:[{f,kind,weight,pan,apexFrac?}]} schema, or an older per-key e
 forensics.load_cues). Events closer than --cluster frames are one expected onset.
 
 Checks (defaults are proven starting points, not dogma):
+  intended   the times a sound is meant to start: out/qa/cues_sounded.json (plan.py / score.py: only the events
+             that received a sound, each at its cue plus the role's offset, at the take's align point) when
+             it sits in the cues' qa/ folder and is newer than the cues (--sounded names another); else
+             the cue frames, minus the keys and skipped events score.py's report lists
   sync       each onset event has an audio onset within +-2 f (librosa backtracked onsets at hop
              128, delta 0.03, or a > 1 kHz 1 ms-envelope rise >= 4x); hit rate >= 90%     fail
              With --stems the sfx stem is searched (strict) and stray sfx onsets are listed.
              Key events that score.py does not sound (thinned to ~12/s, the letters of a word
              typed in the "word" style, or "typing": "off") are replayed from the score JSON
-             and not expected; a key's bottom-out or keyup within 0.2 s after it is not a stray
-             onset.
+             and not expected, nor are the events score.py's report (--score-report, default
+             out/qa/score.json beside the cues) lists as skipped when it is newer than the cues
+             (a role the sound kit leaves off, such as riser; matched on frame and kind, so the
+             hit a skipped riser leads into is still expected); a key's bottom-out or keyup
+             within 0.2 s after it is not a stray onset, nor is an onset inside a whoosh's or
+             suck's own span (its apexFrac of dur before the apex, at least 0.5 s after it) or
+             a riser's or swell's build.
              Without it the full mix is searched, where music hides quiet and soft-attack
              effects, so a low hit rate there is only a warning: gate with --stems.
   apex       whoosh/suck events (or any with apexFrac): the 30 ms envelope maximum of the sfx
@@ -41,24 +50,48 @@ Checks (defaults are proven starting points, not dogma):
              from -8 to +3 f: it lands on nothing; cue it on the readable frame            warn
   loudness   ffmpeg ebur128: integrated at the film's target +-1 LUFS, true peak <= -1.0 dBTP  fail
              (target: --lufs, else master.lufs in the score JSON (--score, default
-             audio/score.json), else -14 and -16 both pass)
-             loudness range 3-8 LU; loudest momentary window on the payoff cue if one exists warn
+             audio/score.json), else score.py's default for it: -14 with music, -18 for an
+             effects-only film; without a score JSON -14 and -16 both pass)
+             loudness range 3-8 LU (3-14 for an effects-only film, whose accents stand alone);
+             loudest momentary window on the payoff cue if one exists                         warn
              (audio shorter than cues.json's total is an excerpt: loudness and the tail are
              reported, not gated)
   clipping   samples at or above full scale                                                 fail
   duration   audio and picture lengths differ by > 1.5 f                                     warn
   clicks     a > 14 kHz sample > 9x the RMS of its 20 ms and > 6x its 4 ms neighbourhood
-             whose > 14 kHz energy sits >= 80% inside 1 ms (a cut, not a designed attack)   warn
+             whose > 14 kHz energy sits >= 80% inside 1 ms (a cut, not a designed attack);
+             one within +-1 f of an onset event is that sound's own attack (a tap or knock
+             from the kit starts that fast; kit.py check audits the takes for clicks)      warn
   tail       last 50 ms RMS <= -45 dBFS and last 10 ms peak <= -60 dBFS                      fail
              and the last half second quieter than the one before it                         warn
+  ending     the music ends on a decay, never a cut (audio/dsp.py ending_shape, as score.py and track.py
+             check judge it): the last moment within 12 dB of the playing level that falls 20 dB inside
+             150 ms with under 0.3 s of decay after it, nothing coming back, fails (a bed stopped dead, a
+             60 ms fade over full-level music, the film ending mid-bar); the track's own final hit ringing
+             out, a hit that rings 1.5 s or more or a 2-3 s fade under the end card pass         fail
+             more than 1 s of silence after the last sound (the picture holds on nothing)     warn
   head       first 5 ms peak <= -40 dBFS: above it the film clicks on sample 0 or cuts in
-             mid-sound (skipped on an excerpt)                                               warn
-  masking    (--stems) each sfx >= +6 dB over the music in its best band (60 ms); < 0 dB warns
-             (typing and crisp ticks sit just over the music by design: score.py's report
-             judges them, not this check)
+             mid-sound (skipped on an excerpt, and on a track edit that puts bar 1 on frame 0) warn
+  masking    (--stems) each sfx over the music in its best band (60 ms) by its role's margin: 3 dB for roles
+             that sit 4 dB or less over the bed (ticks, taps, text, snap), 6 dB for the rest; < 0 dB warns
+             (typing and crisp ticks sit just over the music by design: score.py's report judges them);
+             score.py's over-bed and stop-down figures are copied into the report
+  music_sync (a film with a track: cues.json "music", the film-time grid) every structural cue and act
+             boundary within +-1 f of a downbeat attack, an entry, a stop's end or the ending (the reveal,
+             the payoff and the lockup fail when off); a hard cut 2-4 f off a strong accent (>= 6 dB) is a
+             near miss                                                                         warn/fail
+  level      (a film with a track) the music's level never steps mid-shot: a rise of 8 dB or a fall of 10 dB (the second
+             after against the second before, on the music stem with --stems, else the mix) that lands on no picture
+             event (an act change, a declared seam, a cut cue, the reveal or lockup, within 0.15 s of where the louder
+             or quieter part begins) fails; 5-8 dB warns.
+             A section of the track entering mid-shot reads as a mistake: fit the edit to the shots (track.py fit),
+             so its level changes ride the cuts. The opening second, the stops the grid declares and the ending after
+             the body's last bar line are left out                                             fail/warn
+  draft      a soundtrack score.py rendered with --draft (placeholder voices) is never delivered     fail
 
 Writes JSON (--json) and a short summary. Exit: 0 no failing check, 1 a failing check, 2 usage or
-input error. Needs ffmpeg/ffprobe, numpy, scipy, soundfile, librosa (and opencv for the picture).
+input error. Needs ffmpeg/ffprobe, numpy, scipy, soundfile and librosa (opencv is optional: the
+picture is decoded by ffmpeg).
 """
 import argparse
 import glob
@@ -74,7 +107,21 @@ from scipy import signal
 
 sys.dont_write_bytecode = True  # no __pycache__ in the project's scripts/
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from forensics import SW, SH, decode, load_cues, probe  # noqa: E402
+try:
+    from forensics import SW, SH, decode, load_cues, probe  # noqa: E402
+except ModuleNotFoundError as _e:  # forensics imports opencv for its own picture metrics; nothing used here needs it
+    if _e.name != 'cv2':
+        raise
+    import types
+
+    class _NoCV(types.ModuleType):
+        def __getattr__(self, name):
+            if name.startswith('__'):  # module introspection (other imports walk sys.modules)
+                raise AttributeError(name)
+            raise RuntimeError(f'opencv (cv2.{name}) is not installed: pip install opencv-python-headless')
+
+    sys.modules['cv2'] = _NoCV('cv2')
+    from forensics import SW, SH, decode, load_cues, probe  # noqa: E402
 
 
 def die(msg):
@@ -116,8 +163,8 @@ def find_stems(d):
     if not os.path.isdir(d):
         die(f'--stems {d} is not a directory')
     files = sorted(glob.glob(os.path.join(d, '*.wav')))
-    sfx = [p for p in files if re.match(r'(sfx|fx|effects)', os.path.basename(p).lower())]
-    bus = [p for p in files if os.path.basename(p).lower() == 'music.wav']  # score.py's summed music bus
+    sfx = [p for p in files if re.match(r'(sfx|fx|effects|room)', os.path.basename(p).lower())]
+    bus = [p for p in files if os.path.basename(p).lower() in ('bed.wav', 'music.wav')]  # the track as played
     music = bus or [p for p in files if p not in sfx]
     return sfx, music
 
@@ -231,19 +278,247 @@ def silent_keys(args):
         return None
 
 
+def score_json(args):
+    """The first readable score JSON (score_paths), or None."""
+    for p in score_paths(args):
+        try:
+            return json.load(open(p))
+        except (OSError, ValueError):
+            continue
+    return None
+
+
+def effects_only(sc):
+    """True when score.py renders this score JSON without music: "music": "none" (the default) and no
+    older "bed"."""
+    music = sc.get('music') or 'none'
+    return music == 'none' and not sc.get('bed')
+
+
+def sounded_default(args):
+    return os.path.join(os.path.dirname(os.path.abspath(args.cues)), 'qa', 'cues_sounded.json')
+
+
+def same_events(sounded, cues):
+    """True when cues_sounded.json was planned from these events: its sounded rows (at their cue frame) and its
+    silent rows are exactly the cues' (frame, kind) pairs, so a re-export that changed no event keeps it current."""
+    try:
+        have = {(round(float(e.get('cue_f', e['f'])), 3), e['kind']) for e in sounded.get('events', [])}
+        have |= {(round(float(x['f']), 3), x['kind']) for x in sounded.get('silent', []) if 'f' in x and 'kind' in x}
+        want = {(round(float(e['f']), 3), e['kind']) for e in cues.get('events', []) if isinstance(e, dict)}
+        return bool(want) and have == want and sounded.get('fps') == cues.get('fps')
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
+def sounded_path(args):
+    """out/qa/cues_sounded.json (the intended sound times) when it is current for these cues (newer than
+    cues.json, or planned from the same events), else None"""
+    p = args.sounded or sounded_default(args)
+    try:
+        if os.path.isfile(p) and (args.sounded or os.path.getmtime(p) >= os.path.getmtime(args.cues)
+                                  or same_events(json.load(open(p, encoding='utf-8')), json.load(open(args.cues, encoding='utf-8')))):
+            return p
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+def score_report(args):
+    p = args.score_report or os.path.join(os.path.dirname(os.path.abspath(args.cues)), 'qa', 'score.json')
+    try:
+        if os.path.isfile(p) and os.path.getmtime(p) >= os.path.getmtime(args.cues):
+            return json.load(open(p))
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+def role_margins(args, default):
+    """{role: masking margin dB} from the effects plan (out/qa/sfx_plan.json): 3 dB for roles 4 dB or less over
+    the bed, the default for the rest"""
+    p = os.path.join(os.path.dirname(os.path.abspath(args.cues)), 'qa', 'sfx_plan.json')
+    try:
+        plan = json.load(open(p))
+    except (OSError, ValueError):
+        return {}
+    return {e['role']: (3.0 if e.get('bed_db') is not None and e['bed_db'] <= 4 else default) for e in plan.get('events', [])}
+
+
+def music_sync(raw, fps):
+    """Structural cuts against the film's music grid (cues.json "music"): rows and near misses, or None."""
+    m = raw.get('music')
+    if not m or not m.get('downbeats'):
+        return None
+    onsets = [('downbeat', float(x)) for x in m['downbeats']] + [('entry', float(x)) for x in m.get('entries') or []]
+    onsets += [('stop end', float(s['to'])) for s in m.get('stops') or [] if 'to' in s]
+    if m.get('end') and m['end'].get('f') is not None:
+        onsets.append(('ending', float(m['end']['f'])))
+    strong = [float(a['f']) for a in m.get('accents') or [] if float(a.get('db', 0)) >= 6.0]
+    exact = {'reveal', 'payoff', 'lockup'}
+    rows = []
+    cue_at = {int(round(float(v))): k for k, v in (raw.get('cue') or {}).items()}
+    want = []
+    for e in raw.get('events', []):
+        if e.get('structural'):
+            ex = str(e.get('id', '')).split(':')[-1] in exact or cue_at.get(int(round(float(e['f'])))) in exact
+            want.append((e.get('id') or e.get('kind'), float(e['f']), ex))
+    for name, a in (raw.get('acts') or {}).items():
+        if isinstance(a, dict) and float(a.get('from', 0)) > 0:
+            want.append((f'act {name}', float(a['from']), False))
+    for name, f in (raw.get('cue') or {}).items():
+        if name in exact and not any(abs(w[1] - float(f)) < 0.5 for w in want):
+            want.append((f'cue {name}', float(f), True))
+    for name, f, ex in want:
+        kind, at = min(onsets, key=lambda o: abs(o[1] - f))
+        d = round(f - at, 2)
+        rows.append(dict(what=name, f=round(f, 2), nearest=kind, nearest_f=round(at, 2), off_f=d, ok=abs(d) <= 1.0, exact=ex))
+    near = []
+    for e in raw.get('events', []):
+        if e.get('kind') == 'cut':
+            for a in strong:
+                if 2.0 <= abs(float(e['f']) - a) <= 4.0:
+                    near.append(dict(f=float(e['f']), accent_f=a, off_f=round(float(e['f']) - a, 2)))
+                    break
+    return dict(rows=rows, near_misses=near, grid_bpm=m.get('bpm'))
+
+
+LEVEL_FAIL_DB, LEVEL_FALL_FAIL_DB, LEVEL_WARN_DB, LEVEL_TOL_S = 8.0, 10.0, 5.0, 0.15
+
+
+def level_severity(step_db):
+    """a mid-shot level step: a rise of 8 dB or a fall of 10 dB fails (a section jumping in, a hole), 5 dB or more warns"""
+    if step_db >= LEVEL_FAIL_DB or step_db <= -LEVEL_FALL_FAIL_DB:
+        return 'fail'
+    return 'warn' if abs(step_db) >= LEVEL_WARN_DB else None
+
+
+def picture_events(raw):
+    """film frames where the picture changes on purpose: act changes, declared seams, cut cues, the reveal/lockup"""
+    ev = [float(a['from']) for a in (raw.get('acts') or {}).values() if isinstance(a, dict) and float(a.get('from', 0)) > 0]
+    ev += [float(x['at']) for x in ((raw.get('declared') or {}).get('seams') or []) if isinstance(x, dict) and x.get('at') is not None]
+    sal = raw.get('salience') or {}
+    cue = raw.get('cue') or {}
+    ev += [float(cue[k]) for k, v in sal.items() if v == 'cut' and k in cue]
+    ev += [float(cue[k]) for k in ('reveal', 'payoff', 'lockup', 'end') if k in cue]
+    d = raw.get('declared') or {}
+    if d.get('reveal') is not None:
+        try:
+            ev.append(float(d['reveal']))
+        except (TypeError, ValueError):
+            pass
+    return sorted(set(ev))
+
+
+def level_steps(sig, sr, raw, fps):
+    """the music's level steps (dB, the second after against the second before) that land on no picture event:
+    [{t, f, step_db, nearest_event_f}], strongest first; None for a film without a track grid"""
+    m = raw.get('music') or {}
+    if not m.get('downbeats') or sig is None or not len(sig):
+        return None
+    hop = int(0.02 * sr)
+    w = int(0.05 * sr)
+    n = (len(sig) - w) // hop
+    if n < 10:
+        return []
+    e = np.array([np.mean(sig[i * hop:i * hop + w] ** 2) for i in range(n)]) + 1e-12
+    k1, k0 = int(1.0 / 0.02), int(0.1 / 0.02)
+    c = np.concatenate([[0.0], np.cumsum(e)])
+    step = np.full(n, 0.0)
+    for i in range(k1, n - k1):
+        before = (c[i - k0] - c[i - k1]) / (k1 - k0)
+        after = (c[i + k1] - c[i + k0]) / (k1 - k0)
+        step[i] = 10 * np.log10(after / before)
+    t = (np.arange(n) * hop + w / 2) / sr
+    body_end = float(m['downbeats'][-1]) / fps
+    stops = [(float(x['from']) / fps - 0.3, float(x['to']) / fps + 0.3) for x in m.get('stops') or [] if 'from' in x and 'to' in x]
+    ev = np.array(picture_events(raw)) / fps
+    out = []
+    a = np.abs(step)
+    peaks, _ = signal.find_peaks(a, height=LEVEL_WARN_DB, distance=int(1.0 / 0.02))  # a section changes at most once a second
+    h2, w2, k2 = int(0.005 * sr), int(0.02 * sr), 20  # where it begins: 20 ms windows every 5 ms, 100 ms either side
+    for p0 in peaks:
+        c0 = int(t[p0] * sr)
+        i0, i1 = max(0, c0 - int(0.7 * sr)), min(len(sig) - w2, c0 + int(0.7 * sr))
+        e2 = np.array([np.mean(sig[i:i + w2] ** 2) for i in range(i0, i1, h2)]) + 1e-12
+        tp = float(t[p0])
+        if len(e2) > 2 * k2 + 1:
+            fine = np.array([10 * np.log10(e2[i:i + k2].mean() / e2[i - k2:i].mean()) for i in range(k2, len(e2) - k2)])
+            j = int(np.argmax(fine) if step[p0] > 0 else np.argmin(fine)) + k2
+            tp = (i0 + j * h2) / sr
+        if tp < 1.0 or tp > body_end - 0.05 or any(a_ <= tp <= b_ for a_, b_ in stops):
+            continue
+        near = float(ev[np.argmin(np.abs(ev - tp))]) if len(ev) else None
+        if near is not None and abs(near - tp) <= LEVEL_TOL_S:
+            continue
+        out.append(dict(t=round(tp, 2), f=int(round(tp * fps)), step_db=round(float(step[p0]), 1),
+                        nearest_event_f=int(round(near * fps)) if near is not None else None))
+    return sorted(out, key=lambda r: -abs(r['step_db']))
+
+
 def film_lufs(args):
     """The film's loudness target and where it came from: --lufs, else master.lufs in the score
-    JSON (score.py's default -14 when the field is absent), else (None, None)."""
+    JSON (score.py's default when the field is absent: -14 with music, -18 effects only), else
+    (None, None)."""
     if args.lufs is not None:
         return args.lufs, '--lufs'
     for p in score_paths(args):
         if os.path.isfile(p):
             try:
-                v = (json.load(open(p)).get('master') or {}).get('lufs', -14.0)
-                return float(v), p
+                sc = json.load(open(p))
+                mas = sc.get('master') or {}
+                if 'lufs' in mas:
+                    return float(mas['lufs']), p
+                return (-18.0, f'{p} (effects only: score.py default)') if effects_only(sc) else (-14.0, p)
             except (OSError, ValueError, TypeError, AttributeError):
                 continue
     return None, None
+
+
+def score_skipped(args):
+    """(frame, kind) of the events score.py's report lists as skipped (a role the kit leaves off, a
+    second heavy landing on one frame, a thinned key), when the report is newer than the cues; else
+    None. Matched on the kind too: a riser's frame is the frame of the hit it leads into, and a kit
+    that leaves the riser off still plays that hit."""
+    p = args.score_report or os.path.join(os.path.dirname(os.path.abspath(args.cues)), 'qa', 'score.json')
+    try:
+        if not os.path.isfile(p) or os.path.getmtime(p) < os.path.getmtime(args.cues):
+            return None
+        rep = json.load(open(p))
+        return {(round(float(s['f']), 3), str(s.get('kind'))) for s in (rep.get('events') or {}).get('skipped', [])}
+    except (OSError, ValueError, TypeError, KeyError, AttributeError):
+        return None
+
+
+def is_skipped(e, skipped):
+    return (round(float(e['f']), 3), str(e['kind'])) in skipped
+
+
+def effect_spans(path, fps):
+    """[(f0, f1, kind, f)] frame spans the long effects of the cues file sound over, as score.py places
+    them: a whoosh or suck around its apex (dur frames, apexFrac of it before f; score.py's default
+    length when dur is missing), a riser or swell building into f. A take's tail can outlast its cue's
+    dur, so a whoosh or suck span runs at least 0.5 s past its apex. Onsets inside a span belong to
+    that sound's body, not to a missing event."""
+    try:
+        raw = json.load(open(path))
+    except (OSError, ValueError):
+        return []
+    out = []
+    for e in raw.get('events') or []:
+        if not isinstance(e, dict) or not isinstance(e.get('f'), (int, float)):
+            continue
+        kind, f, w = str(e.get('kind', '')), float(e['f']), float(e.get('weight', 1.0) or 1.0)
+        dur = float(e['dur']) if isinstance(e.get('dur'), (int, float)) else None
+        if kind in ('whoosh', 'suck'):
+            d = dur if dur is not None else (min(3.0, max(0.15, 0.45 + 0.35 * w)) if kind == 'whoosh' else 0.35) * fps
+            a = float(e.get('apexFrac', 0.5 if kind == 'whoosh' else 0.85))
+            out.append((f - a * d - 2, f + max((1 - a) * d, 0.5 * fps), kind, f))
+        elif kind in ('riser', 'swell'):  # score.py's default: a bar for a riser, a beat for a swell
+            beat = 60.0 / float(raw.get('bpm') or 120) * fps
+            d = dur if dur is not None else (4 * beat if kind == 'riser' else beat)
+            out.append((f - d, f + 1, kind, f))
+    return out
 
 
 def ebur128(path):
@@ -292,7 +567,10 @@ def main():
                     "the cues file's folder)")
     ap.add_argument('--lufs-tol', type=float, default=1.0)
     ap.add_argument('--tp-max', type=float, default=-1.0, help='dBTP')
-    ap.add_argument('--lra', default='3,8', help='acceptable loudness range, LU')
+    ap.add_argument('--lra', help='acceptable loudness range, LU (default 3,8; 3,14 for an effects-only film)')
+    ap.add_argument('--score-report', help="score.py's report JSON (default: qa/score.json in the cues' folder)")
+    ap.add_argument('--sounded', help="the intended sound times (default: qa/cues_sounded.json in the cues' folder, when "
+                    'newer than the cues)')
     ap.add_argument('--no-loudness', action='store_true', help='skip loudness (e.g. a muted loop)')
     ap.add_argument('--payoff', help='cue name whose moment should be the loudest (default: a cue named payoff)')
     ap.add_argument('--tail-rms', type=float, default=-45.0, help='dBFS over the last 50 ms')
@@ -305,12 +583,18 @@ def main():
 
     if not os.path.isfile(args.cues):
         die(f'no such cues file: {args.cues} (run npx tsx scripts/export-cues.ts)')
-    cues = load_cues(args.cues)
+    raw_cues = json.load(open(args.cues, encoding='utf-8'))
+    sp = sounded_path(args)
+    cues = load_cues(sp) if sp else load_cues(args.cues)
+    srep = score_report(args)
     vinfo = probe(args.video) if args.video else None
     fps = args.fps or (vinfo['fps'] if vinfo else None) or cues['fps']
     if not fps:
         die('no fps: pass --fps or put fps in cues.json')
     notes = []
+    if not sp and os.path.isfile(sounded_default(args)):
+        notes.append(f'{sounded_default(args)} is older than {args.cues} and its events differ: every cue is expected to '
+                     'sound; run plan.py (or npm run audio) to plan the new cues')
     if vinfo and cues['fps'] and abs(cues['fps'] - vinfo['fps']) > 0.01:
         notes.append(f'cues.json says {cues["fps"]} fps but the video is {vinfo["fps"]:.3f}; using {fps:.3f}')
 
@@ -349,14 +633,29 @@ def main():
             notes.append(f'no sfx*.wav in {args.stems}; using the full mix')
 
     # ---- events -> expected onsets / apexes (keys score.py thins out are not expected to sound)
-    quiet_keys = silent_keys(args)
-    if quiet_keys:
-        notes.append(f'{len(quiet_keys)} key events are thinned by score.py (typing plan) and not expected to sound')
-    elif quiet_keys is None:
-        notes.append('could not replay score.py\'s typing plan: every key event is expected to sound')
+    if sp:
+        quiet_keys, skipped = set(), set()
+        notes.append(f'intended sound times from {sp} ({len(cues["events"])} sounded events; the silent ones are listed '
+                     'there, not expected)')
+    else:
+        quiet_keys = silent_keys(args)
+        if quiet_keys:
+            notes.append(f'{len(quiet_keys)} key events are thinned by score.py (typing plan) and not expected to sound')
+        elif quiet_keys is None:
+            notes.append("could not replay score.py's typing plan: every key event is expected to sound")
+        skipped = score_skipped(args) or set()
+    if srep and srep.get('draft'):
+        add('draft', 'fail', None, 'the soundtrack is a --draft build (placeholder voices): it is never delivered; render the '
+            'kit (npm run kit) and the soundtrack again without --draft')
+    off = [e for e in cues['events'] if e['kind'] != 'key' and is_skipped(e, skipped)]
+    if off:
+        notes.append(f'{len(off)} events are skipped by score.py (its report: a role the kit leaves off) and not expected '
+                     'to sound: ' + ', '.join(sorted({e["kind"] for e in off})))
     ev_on = [e for e in cues['events'] if not e['apex'] and not e.get('ends')
-             and not (e['kind'] == 'key' and quiet_keys and round(e['f'], 3) in quiet_keys)]
-    ev_ap = [e for e in cues['events'] if e['apex'] or e.get('ends')]
+             and not (e['kind'] == 'key' and quiet_keys and round(e['f'], 3) in quiet_keys)
+             and not (e['kind'] != 'key' and is_skipped(e, skipped))]
+    ev_ap = [e for e in cues['events'] if (e['apex'] or e.get('ends')) and not is_skipped(e, skipped)]
+    spans = [(a, b) for a, b, kind, f in effect_spans(args.cues, fps) if (round(f, 3), kind) not in skipped]
     groups = []
     for e in ev_on:
         crisp = e['kind'] == 'tick' and e.get('variant') == 'crisp'
@@ -423,13 +722,18 @@ def main():
     if strict:
         ev_frames = np.array(sorted(e['f'] for e in cues['events'])) if cues['events'] else np.array([])
         key_frames = np.array([e['f'] for e in cues['events'] if e['kind'] == 'key'])
+        inside = 0
         for t in on_t:
             f = t * fps
             if len(key_frames) and np.any((f - key_frames > 0) & (f - key_frames <= 0.2 * fps + args.tol)):
                 continue  # a key's bottom-out (25-40 ms) or keyup (70-180 ms) after the press
             if not len(ev_frames) or np.min(np.abs(ev_frames - f)) > 3 * args.tol:
+                if any(a <= f <= b for a, b in spans):
+                    inside += 1  # texture inside a whoosh's (or riser's) own body: that sound, not a stray
+                    continue
                 stray.append(round(float(f), 1))
         sync['stray_sfx_onsets_f'] = stray[:60]
+        sync['onsets_inside_long_effects'] = inside
         if stray:
             add('sync', 'warn', None, f'{len(stray)} effect onsets have no event within {3 * args.tol:g} f '
                 f'(first at f{stray[0]}): a sound with no picture reason, or an event missing from cues.json')
@@ -598,7 +902,9 @@ def main():
         if tp is not None and tp > args.tp_max:
             add('loudness', 'fail', None, f'true peak {tp:.1f} dBTP > {args.tp_max:g}'
                 + (' after the AAC encode: lower the limiter ceiling' if not args.audio else ''))
-        lo_lra, hi_lra = (float(v) for v in args.lra.split(','))
+        sc = score_json(args)
+        lra_rng = args.lra or ('3,14' if sc is not None and effects_only(sc) else '3,8')
+        lo_lra, hi_lra = (float(v) for v in lra_rng.split(','))
         if lra is not None and not lo_lra <= lra <= hi_lra:
             add('loudness', 'warn', None, f'loudness range {lra:.1f} LU outside {lo_lra:g}-{hi_lra:g}: '
                 + ('too flat, no drops or builds' if lra < lo_lra else 'too wide for a short film'))
@@ -645,6 +951,12 @@ def main():
                 last = i
     clicks.sort(key=lambda c: (c['t'], c['ch']))
     clicks = [c for i, c in enumerate(clicks) if i == 0 or c['t'] - clicks[i - 1]['t'] > 0.001]  # one per moment
+    # a sharp attack within +-1 f of a cue the effects voice is that sound's designed transient (a kit
+    # take is audited for clicks by `kit.py check`; a tap or knock starts that fast), not a buffer edge
+    on_f = np.array([e['f'] for e in ev_on]) if ev_on else np.array([])
+    for c in clicks:
+        if c['kind'] == 'click' and len(on_f) and float(np.min(np.abs(on_f - c['t'] * fps))) <= 1.0:
+            c['kind'], c['on_cue'] = 'attack', True
     bad_clicks = [c for c in clicks if c['kind'] == 'click']  # a percussive attack is designed; a cut is not
     if bad_clicks:
         add('clicks', 'warn', bad_clicks[0]['frame'], f'{len(bad_clicks)} clicks (> 14 kHz energy packed into 1 ms, '
@@ -662,15 +974,38 @@ def main():
             f'{tail["peak10_dbfs"]} dBFS): fade to digital zero and leave >= 60 f of tail')
     elif tail['last_half_vs_previous_db'] > 0 and r1 > 1e-4:
         add('tail', 'warn', None, 'the last half second is louder than the one before: the ending is cut, not decayed')
+    # the ending: a decay, never a cut (the same measure as score.py's and track.py check's)
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'audio'))
+        import dsp as _D  # noqa: E402
+        ending = _D.ending_shape(mono, sr)
+        ending_msg = _D.ending_problem(ending)
+        dead_max = _D.END_DEAD_AIR_S
+    except Exception as e:  # noqa: BLE001
+        ending, ending_msg, dead_max = dict(note=f'not measured ({type(e).__name__}: {e})'), None, None
+    if excerpt:
+        pass
+    elif ending_msg:
+        add('ending', 'fail', int(round(float(ending['last_loud_s']) * fps)),
+            ending_msg + ': track.py edit --end own|fade|hit (references/music.md), and a tail that holds MUSIC.end.hold')
+    elif dead_max is not None and (ending.get('dead_air_s') or 0) > dead_max:
+        add('ending', 'warn', None, f"{ending['dead_air_s']:.1f} s of silence after the last sound: the picture holds on nothing; "
+            "end the film where the music's ring or fade ends (the tail = MUSIC.end.hold)")
     # the head: sample 0 starts from silence (master.py fades in over 3 ms); a sound already at level
     # in the first 5 ms is a click on the first frame, or a sound cut in mid-action
     h5 = np.abs(x[:max(1, int(sr * 0.005))])
     head = dict(peak5_dbfs=round(20 * np.log10(h5.max() + 1e-12), 1), sample0_dbfs=round(20 * np.log10(h5[0].max() + 1e-12), 1))
-    if not excerpt and head['peak5_dbfs'] > args.head_peak:
+    # with a track whose edit puts bar 1's attack on frame 0 (track.py edit --film-t0 0) the film opens on a downbeat, by design
+    seg0 = (((srep or {}).get('music') or {}).get('segments') or [None])[0]
+    t0m = float(seg0['film_s']) if isinstance(seg0, dict) and isinstance(seg0.get('film_s'), (int, float)) else None
+    head['track_film_t0'] = t0m
+    if not excerpt and head['peak5_dbfs'] > args.head_peak and not (t0m is not None and t0m < 0.005):
         add('head', 'warn', 0, f'the audio starts at level: first 5 ms peak {head["peak5_dbfs"]} dBFS (> {args.head_peak:g}), '
             f'sample 0 at {head["sample0_dbfs"]} dBFS: '
             + ('a click on the first frame; re-master through scripts/audio/master.py, which fades in from zero over 3 ms'
                if head['sample0_dbfs'] > -45 else  # a faded head decodes from AAC at about -60
+               f"the track's edit opens {t0m:.2f} s before bar 1, inside what plays there: start the film on bar 1's attack "
+               '(track.py edit --film-t0 0) or on bars where the track begins quietly (--start-bar)' if t0m is not None else
                'a sound already in progress at frame 0 (a riser, pad or reverb begun before the film) cuts in '
                'mid-action; start from silence, or on the attack of a hit designed for frame 0'))
     if vinfo:
@@ -686,6 +1021,8 @@ def main():
         sb = [signal.sosfilt(signal.butter(4, b, 'band', fs=sr, output='sos'), sfx_sig) for b in bands]
         mb = [signal.sosfilt(signal.butter(4, b, 'band', fs=sr, output='sos'), music_sig) for b in bands]
         win = int(0.06 * sr)
+        margins = role_margins(args, args.mask_db)
+        by_f = {round(float(e['f']), 2): e.get('role') for e in (json.load(open(sp)).get('events', []) if sp else [])}
         mrows = []
         for g in groups:
             i = int(g['f'] / fps * sr)
@@ -696,23 +1033,50 @@ def main():
             if max(lv_s) < -75:  # nothing in the sfx stem here (a picture-only cue, or a sound on another bus)
                 continue
             j = int(np.argmax(np.array(lv_s) - np.array(lv_m)))
-            mrows.append(dict(f=round(g['f'], 2), kinds=sorted(g['kinds'])[:3], band=f'{bands[j][0]}-{bands[j][1]}',
-                              margin_db=round(lv_s[j] - lv_m[j], 1)))
-        low = [r for r in mrows if r['margin_db'] < args.mask_db]
+            role = by_f.get(round(g['f'], 2))
+            mrows.append(dict(f=round(g['f'], 2), kinds=sorted(g['kinds'])[:3], role=role, band=f'{bands[j][0]}-{bands[j][1]}',
+                              margin_db=round(lv_s[j] - lv_m[j], 1), target_db=margins.get(role, args.mask_db)))
+        low = [r for r in mrows if r['margin_db'] < r['target_db']]
         masked = [r for r in mrows if r['margin_db'] < 0]
         masking = dict(checked=len(mrows), below_target=len(low), masked=len(masked),
                        worst=sorted(mrows, key=lambda r: r['margin_db'])[:15])
         if masked:
             add('masking', 'warn', int(round(masked[0]['f'])), f'{len(masked)} effects sit under the music in their '
-                f'own band (worst {masking["worst"][0]["margin_db"]} dB at f{masking["worst"][0]["f"]}): +6 dB in band, '
-                'duck the music 3 dB for 150 ms around key hits')
+                f'own band (worst {masking["worst"][0]["margin_db"]} dB at f{masking["worst"][0]["f"]}): move the effect off '
+                'the busy band, raise its weight, or cut to a sparser bar under it (track.py edit); the music never ducks')
 
+    # ---- the music's level never steps mid-shot (a film with a track)
+    lv = level_steps(music_sig if music_sig is not None else mono, sr, raw_cues, fps)
+    if lv:
+        for r in lv[:6]:
+            add('level', level_severity(r['step_db']), r['f'],
+                f"the music {'rises' if r['step_db'] > 0 else 'falls'} {abs(r['step_db']):.1f} dB at {r['t']:.2f} s on no picture event "
+                f"(the nearest cut or seam is f{r['nearest_event_f']}): a section entering mid-shot reads as a mistake; fit the "
+                "edit to the shots (track.py fit) so its level changes ride the cuts, or cut the picture on it")
+
+    # ---- music_sync (a film with a track) and score.py's music figures
+    msync = music_sync(raw_cues, fps)
+    if msync:
+        for r in msync['rows']:
+            if not r['ok']:
+                add('music', 'fail' if r['exact'] else 'warn', int(round(r['f'])),
+                    f"{r['what']} sits {r['off_f']:+.1f} f from the music's nearest {r['nearest']} (f{r['nearest_f']}): "
+                    "structure lands on the music's events within 1 f")
+        for nm in msync['near_misses'][:6]:
+            add('music', 'warn', int(round(nm['f'])), f"a hard cut {nm['off_f']:+.1f} f off a strong accent (f{nm['accent_f']}): "
+                'a near miss reads as a mistake; move it onto the accent or well clear of it')
+    if srep:
+        for k_ in ('over_bed', 'stop_downs', 'no_duck', 'density', 'music'):
+            if srep.get(k_) is not None:
+                msync = msync or {}
+                msync[k_] = srep[k_] if k_ != 'over_bed' else {kk: v for kk, v in srep[k_].items() if kk != 'effects'}
     fails = sum(1 for f in flags if f['severity'] == 'fail')
     res = dict(file=args.video, audio_source=src, sr=sr, fps=round(fps, 3), duration_s=round(dur, 3), excerpt=excerpt,
                cues=args.cues, cue_schema=cues['schema'], pass_=fails == 0, fails=fails,
                warnings=len(flags) - fails, notes=notes, flags=flags, sync=sync,
                apex=dict(checked=len(apex_rows), off=[r for r in apex_rows if not r['ok']], rows=apex_rows),
-               visual=visual, loudness=loud, clipping_samples=clip, clicks=clicks[:40], tail=tail, head=head, masking=masking)
+               visual=visual, loudness=loud, clipping_samples=clip, clicks=clicks[:40], tail=tail, head=head, masking=masking,
+               music_sync=msync, intended=sp, ending=ending, level=lv)
     res['pass'] = res.pop('pass_')
     if args.json:
         os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
@@ -731,6 +1095,9 @@ def main():
         print(f'  loudness: I {loud["integrated_lufs"]} LUFS (target {" or ".join(f"{t:g}" for t in loud["accepted"])}), '
               f'LRA {loud["lra_lu"]} LU, TP {loud["true_peak_dbtp"]} dBTP, '
               f'max momentary {loud.get("momentary_max_lufs")} at {loud.get("momentary_max_t")} s')
+    if ending.get('drop20_s') is not None:
+        print(f"  ending: {'ABRUPT' if ending.get('abrupt') else 'decays'} (the last loud moment {ending.get('last_loud_s')} s falls 20 dB in "
+              f"{ending.get('drop20_s')} s, then {ending.get('tail_s')} s of decay; {ending.get('dead_air_s')} s of silence after)")
     print(f'  head: first 5 ms peak {head["peak5_dbfs"]} dBFS; tail: last 50 ms {tail["rms50_dbfs"]} dBFS, '
           f'last 10 ms peak {tail["peak10_dbfs"]} dBFS; '
           f'clicks {len(bad_clicks)} (+{len(clicks) - len(bad_clicks)} attacks); clipped samples {clip}')

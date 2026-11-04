@@ -1,0 +1,3609 @@
+{
+ "version": 2,
+ "about": "Imagery-led film directions for scripts/deck.py, in the same schema as directions.json (deck.py merges the two decks and their catalogues). In these directions real photographs, footage, textures or archive images are the world: the product's own or the user's (dealt only with --have photos or footage), with found ones only under licences that need no credit (scripts/assets.mjs), graded into one natural look (each picture keeps its own colour; the accent stays free for live data) and moved by the motion system; code-drawn UI and type sit on them as support. Each direction adds an `assets` block: what to list from the subject before searching, the queries built from that list, how many pictures, the grade, and what to refuse.",
+ "primitives": {
+  "Photo": {
+   "file": "fx/Photo.tsx",
+   "status": "built"
+  },
+  "photoState": {
+   "file": "fx/Photo.tsx",
+   "status": "built"
+  },
+  "photoCover": {
+   "file": "fx/Photo.tsx",
+   "status": "built"
+  },
+  "photoPoint": {
+   "file": "fx/Photo.tsx",
+   "status": "built"
+  },
+  "TypeMask": {
+   "file": "fx/TypeMask.tsx",
+   "status": "built"
+  },
+  "typeMaskState": {
+   "file": "fx/TypeMask.tsx",
+   "status": "built"
+  },
+  "Footage": {
+   "file": "fx/Footage.tsx",
+   "status": "built"
+  },
+  "footageTime": {
+   "file": "fx/Footage.tsx",
+   "status": "built"
+  },
+  "loopSpan": {
+   "file": "fx/Footage.tsx",
+   "status": "built"
+  },
+  "Montage": {
+   "file": "fx/Montage.tsx",
+   "status": "built"
+  },
+  "montageState": {
+   "file": "fx/Montage.tsx",
+   "status": "built"
+  },
+  "Cutouts": {
+   "file": "fx/Cutout.tsx",
+   "status": "built"
+  },
+  "cutoutState": {
+   "file": "fx/Cutout.tsx",
+   "status": "built"
+  },
+  "Lens": {
+   "file": "fx/Lens.tsx",
+   "status": "built"
+  },
+  "lensState": {
+   "file": "fx/Lens.tsx",
+   "status": "built"
+  },
+  "lensPoint": {
+   "file": "fx/Lens.tsx",
+   "status": "built"
+  },
+  "Trace": {
+   "file": "fx/Trace.tsx",
+   "status": "built"
+  },
+  "traceState": {
+   "file": "fx/Trace.tsx",
+   "status": "built"
+  },
+  "resample": {
+   "file": "fx/Trace.tsx",
+   "status": "built"
+  },
+  "shapeAtX": {
+   "file": "fx/Trace.tsx",
+   "status": "built"
+  },
+  "clockTime": {
+   "file": "fx/Footage.tsx",
+   "status": "built"
+  },
+  "steadyMatrix": {
+   "file": "fx/Footage.tsx",
+   "status": "built"
+  },
+  "steadyZoom": {
+   "file": "fx/Footage.tsx",
+   "status": "built"
+  }
+ },
+ "methods": {
+  "photo-grade": "One grade for every picture in the film, baked into the files with scripts/assets.mjs grade: natural by default (each picture keeps its own colour; exposure and colour strength matched across the set; strong colours held back), matte or silver for a quieter film, night for low key; tint, duotone and deep only for one shot. grade measures the set and fails under 30 % neutral pixels. In the film only static CSS filters or a tint plate keep a late addition in line; nothing animates a filter.",
+  "type-window": "Giant letters cut out of a plate: an SVG rect in the plate colour masked by the text (white rect, black text in an SVG mask), drawn over a full-frame picture that moves on its own; the plate's own shadow (the same masked rect in ink, offset 8-12 px, one fixed 10-14 px blur) falls just inside the letters. The push scales the text about a point inside one stroke in log space until the stroke is wider than the frame, then the plate is dropped (fx/TypeMask).",
+  "depth-slices": "A photograph parted into two or three depth slices: hand-drawn polygons in the image's own px (a horizon, a rock against spray, a figure), each a copy of the photo clipped by its polygon and moved with the camera amplified by its depth (push^(1 + d g), drift x (1 + d g), g 0.6); the nearest slice travels at most 3 % of the frame more than the far plane (fx/Photo slices).",
+  "cut-matte": "Cut-outs from photographs along hand-drawn mattes (polygons in image px), laid like printed paper: each piece arrives lifted and settles flat on settleOut, its shadow the matte shape offset z cot(elevation) away from one key, two fixed blur radii (3 and 14 px) cross-faded by the lift, a contact shadow over the last 24 px; an optional paper border grown from the matte (fx/Cutout).",
+  "footage-clock": "Footage timed by the film, not by its own clock: every output frame shows one source frame picked in closed form (speed keys integrated, freezes taken out of the clock, a loop span from the music's beats, or a clock the film sets: source time = lo + (hi - lo) x a value the film animates, so the picture moves with the data) and drawn by a Sequence shifted so the video's own clock stands on that frame (a Freeze does not reach OffthreadVideo's clock); blend draws the next source frame over it at the fraction between them (24 fps clips and slow clocks move on every film frame); steady holds the land still from a feature track; an unblended 24 or 30 fps clip in a 60 fps film is declared as a stepped run. Around the stretch the product drives, the clip lives: from the cut it runs slow and eases to zero speed exactly where the driven clock starts at zero speed (it reads as slack water, a held breath), and afterwards it moves on from rest; a clip that only stands still while a line is drawn reads as a paused video (fx/Footage, fx/Montage).",
+  "loupe": "A round window over a picture that shows the same picture magnified about the window's own centre (the picture drawn twice: once full frame, once scaled about the lens centre and clipped to a circle), with a hairline rim, a thin shade inside the rim and one fixed soft shadow thrown away from the key; it springs open once (the one landing), glides between stops on strongInOut and can shrink into a counter of the name while staying live (fx/Lens). The original needs zoom x the frame resolution.",
+  "edge-trace": "A line that belongs to the picture: trace a real edge once on the frame it draws on (a threshold or edge contour on the held frame, smoothed along its length and resampled, kept in image px), map it through the picture's layer every frame (photoPoint), draw it along its length, and let it relax into a chart or a mark on the same plane (fx/Trace). Trace on the frame the draw is half done on when the picture moves. Keep the stretch calm: cut hooks, inlets and notches out of it (they crumple into knots when the line peels off), smooth it along its length (sigma about 25 px at 1080p) and move it 8-10 px off the edge to the darker side, so a light line reads on dark water instead of vanishing on foam or sky. Stroke 4-6 px at 1080p, never brighter than the brightest real thing in the picture."
+ },
+ "directions": [
+  {
+   "id": "campaign",
+   "name": "The campaign",
+   "intensity": 5,
+   "idea": "One photograph is the world, and the product's word is cut out of it.",
+   "story": {
+    "shape": "reveal",
+    "line": "The word stands cut out of a deep plate with the place living behind it; the camera goes through a letter into that place; the product is shown there; the name closes as a window again."
+   },
+   "world": {
+    "space": "layered",
+    "set": "A deep plate in the accent's hue at depth with the product's word cut through it at 80-95 % of the frame width; behind the letters, real footage or a photograph of the product's world (its place, its material, its weather) moves on its own. Later shots are that same picture full frame, with lines set in its quiet areas.",
+    "planes": "3: the plate with its cut letters, the picture behind them, and the type over the picture once it is the world",
+    "light_kind": "practical",
+    "light": "The picture behind the letters is the only light: the plate is lit by what shows through it, the plate's shadow falls 8-12 px inside every letter edge, and as the camera goes through the stroke the picture lifts from brightness 0.94 to 1.0.",
+    "light_build": "type-window method: the plate as an SVG rect masked by the text, its shadow the same masked rect in ink at opacity 0.3-0.42 under one fixed blur; the lift a static brightness() step on the picture layer at the push, two values cross-faded by opacity.",
+    "method": [
+     "type-window",
+     "photo-grade"
+    ],
+    "texture": "a fine grain baked into the graded pictures; the plate itself clean"
+   },
+   "palettes": [
+    {
+     "id": "deep-plate",
+     "recipe": "inkStage",
+     "accent": [
+      "teal",
+      "blue",
+      "red"
+     ],
+     "proportions": {
+      "ground": 60,
+      "ink": 32,
+      "accent": 8
+     },
+     "notes": "a near-black neutral plate (C .025 or less); the picture inside the letters keeps its own colour (natural grade) and carries the colour mass; type in near-white; the accent marks only the one live product fact"
+    },
+    {
+     "id": "slate-plate",
+     "recipe": "slateMid",
+     "accent": [
+      "red",
+      "blue",
+      "teal"
+     ],
+     "proportions": {
+      "ground": 62,
+      "ink": 30,
+      "accent": 8
+     },
+     "notes": "a mid slate plate; the pictures graded natural or matte, each keeping its own colour; the accent on one product fact, never washed over the pictures"
+    }
+   ],
+   "type_options": [
+    {
+     "id": "heavy-grotesk",
+     "sans": "a grotesk with a heavy display weight",
+     "weights": [
+      500,
+      800
+     ],
+     "case": "upper case for the cut word, sentence case for lines",
+     "notes": "the cut word at 750-800 with tracking -0.04 em: wide strokes make wide windows"
+    },
+    {
+     "id": "neo-grotesk",
+     "sans": "a neutral neo-grotesk",
+     "weights": [
+      500,
+      720
+     ],
+     "case": "upper case for the cut word, sentence case for lines",
+     "notes": "a quieter word for a calmer subject; lines at 120"
+    }
+   ],
+   "camera": {
+    "class": "letter-push",
+    "motion": "dolly",
+    "animator": "The camera pushes: first a creep on the word, then the dolly through one letter's stroke, then slow pushes inside the pictures.",
+    "in_shot": "A creep of 1.5-2 % per second on the word; inside a picture a push of 4-7 % over the shot.",
+    "between": "The window opens as a zoom-through carried on log scale into the full picture; later cuts are velocity cuts on the picture's own drift."
+   },
+   "cuts": {
+    "kind": "carried",
+    "grammar": "The opening is a zoom-through; inside the world, velocity cuts carry the drift; one hard cut on the music's biggest accent.",
+    "carried_min": 0.6,
+    "seams": [
+     "zoomThrough",
+     "velocity",
+     "hard"
+    ],
+    "on_sound": "The plate drops on a downbeat; the hard cut on the biggest accent."
+   },
+   "type": {
+    "modes": [
+     "build"
+    ],
+    "recentre": "none",
+    "cadence": "reading",
+    "roles": [
+     "giant",
+     "line",
+     "caption"
+    ],
+    "scale_contrast": "One giant word (800 px and up) as the set, cut through the plate; every other line at 120 in the picture's quiet areas.",
+    "behaviour": "The giant word is the only type until the window opens; lines build only over full-frame pictures, never over the plate."
+   },
+   "transitions": [
+    "TypeMask",
+    "carry",
+    "carriedCut",
+    "launch",
+    "creep"
+   ],
+   "signature": {
+    "name": "The lifted word",
+    "family": "lifted-word",
+    "shot": "The product's word is cut out of the picture it stands on, the letters registered to it so for 0.6 s it reads as one photograph; then the letters lift 120 px toward the camera on the key (34 f, settleOut), their contact shadow falling onto the same picture, and through the holes they leave the next place already moves; the camera pushes into one hole and the next place is the world.",
+    "build": "TypeMask twice, as two SVG masks: the letters filled with the picture (registered: same cover and move) and the holes filled with the next shot; the lift and its shadow from cutoutState (key azimuth 315, CUTOUT_HOUSE z); the push into a hole as the letter window's push (typeMaskState); a carry after the cut.",
+    "cost": "medium",
+    "elements": 8,
+    "primitives": [
+     "TypeMask",
+     "typeMaskState",
+     "Cutouts",
+     "cutoutState",
+     "Photo",
+     "carry"
+    ],
+    "techniques": [
+     "tr-portal-aspect-zoom",
+     "tx-low-luma-photo-plate"
+    ]
+   },
+   "signature_alt": {
+    "name": "The letter window, short",
+    "shot": "The word cut through a dark neutral plate with the place moving inside; at most 1.2 s, then the push through one stroke match-cuts onto a real edge of the next picture (a waterline, a ridge) at the same place in the frame.",
+    "build": "TypeMask: an SVG rect masked by an SVG text (the letters), its shadow the same masked rect in ink under a fixed blur; the push a transform on the text about a point inside the stroke (typeMaskState, log scale); the fill a Footage or Photo layer scaled about the same point; after the opening a carry on log scale (typeMaskExitSpeed).",
+    "primitives": [
+     "TypeMask",
+     "typeMaskState",
+     "Footage",
+     "carry"
+    ],
+    "techniques": [
+     "tr-portal-aspect-zoom"
+    ]
+   },
+   "lockup": {
+    "kind": "device-mark",
+    "shot": "The last picture holds; the plate slides back in from both sides as a band and the product's name is cut through it, the place moving inside the name.",
+    "build": "TypeMask with the name as the text and no push; the plate's two halves entering by transform; Words for the line under it.",
+    "primitives": [
+     "TypeMask",
+     "Words"
+    ],
+    "techniques": [
+     "le-device-becomes-mark"
+    ]
+   },
+   "idea_sentences": [
+    "In this film, [the product's one word] becomes a window cut out of [the place it is used in].",
+    "In this film, [the product's name] becomes the shape through which we see [its world].",
+    "In this film, [one photograph of the subject] becomes the world the camera enters through a letter."
+   ],
+   "fit": {
+    "formats": [
+     "launch",
+     "update",
+     "feature",
+     "sting",
+     "vertical"
+    ],
+    "paces": [
+     "calm",
+     "crisp"
+    ],
+    "ui": "optional",
+    "footage": "optional",
+    "imagery": "sourced",
+    "seconds": [
+     6,
+     40
+    ],
+    "needs_also": [],
+    "keywords_required": false
+   },
+   "music": {
+    "mode": "track",
+    "bpm": [
+     96,
+     124
+    ],
+    "feel": "a slow build with one clear downbeat for the opening; space between hits",
+    "ending": "ring"
+   },
+   "primitives": [
+    "TypeMask",
+    "typeMaskState",
+    "Footage",
+    "Photo",
+    "Montage",
+    "Words",
+    "Chain",
+    "carry",
+    "creep",
+    "launch",
+    "carriedCut"
+   ],
+   "techniques": [
+    "tr-portal-aspect-zoom",
+    "tx-low-luma-photo-plate",
+    "le-device-becomes-mark",
+    "tx-global-grain",
+    "cam-living-hold",
+    "tr-velocity-handoff-cut",
+    "lc-negative-space-caption"
+   ],
+   "avoid_techniques": [
+    "tr-iris-from-glyph",
+    "tr-giant-word-punch-out"
+   ],
+   "keywords": [
+    "outdoor",
+    "place",
+    "travel",
+    "weather",
+    "nature",
+    "city",
+    "coast",
+    "brand",
+    "campaign",
+    "launch",
+    "photo",
+    "camera"
+   ],
+   "skeleton": [
+    {
+     "beat": "word",
+     "share": 0.12,
+     "picture": "Frame 0: the word is already cut through the plate, the place moving inside its letters, a creep on.",
+     "copy": null,
+     "signature": false
+    },
+    {
+     "beat": "window",
+     "share": 0.11,
+     "picture": "The letter window: the push through one stroke into the place.",
+     "copy": null,
+     "signature": true
+    },
+    {
+     "beat": "place",
+     "share": 0.27,
+     "picture": "The place full frame, the zoom settling; the first line builds in its quiet area.",
+     "copy": {
+      "words": [
+       2,
+       4
+      ],
+      "what": "what the product does there"
+     },
+     "signature": false
+    },
+    {
+     "beat": "proof",
+     "share": 0.28,
+     "picture": "Two more pictures of the same world on velocity cuts, a product fact on the last.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "one product fact"
+     },
+     "signature": false
+    },
+    {
+     "beat": "lockup",
+     "share": 0.22,
+     "picture": "The plate returns as a band and the name is cut through it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and where to get it"
+     },
+     "signature": false
+    }
+   ],
+   "avoid": [
+    "letters smaller than 70 % of the frame width (the windows are too thin to read the picture)",
+    "a busy picture behind thin letters",
+    "a crossfade from the word to the picture (the push is the transition)",
+    "type on the plate next to the cut word",
+    "a picture graded outside the film's one hue"
+   ],
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version number cut out of the picture it stands on, already lifting a few px off it, its shadow on the picture and the new place moving through the digits.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is a new photograph from the same graded shoot, cut on the beat, with a one-line fragment in the open third of the picture and the changed screen pinned into the place.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the drift of each picture carries across the cut at 0.7 of its speed, so the shoot reads as one travelling camera"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The lifted word: the product's name cut out of the latest picture lifts toward the camera and the next place moves through its holes; the push through one hole makes that place the world.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The plate slides back in as a band and the name and the version are cut through it, the place still moving inside the letters.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
+   "assets": {
+    "kind": [
+     "video",
+     "photo"
+    ],
+    "count": [
+     3,
+     6
+    ],
+    "inventory": "List the product's world before searching: the place it is used in, the weather or season, the material its users touch, the movement that place has (water, crowds, traffic, wind). The window needs texture with contrast (foam, leaves, streets from above), not a portrait. Name the phenomenon the product measures, changes or lives in, in its own words (tidal channels, swell lines, cloud streets, a glaze crawling, a kiln's flame), never the category (sea, ocean from above, nature): category queries return the stock archetypes.",
+    "queries": [
+     "[the phenomenon] from above",
+     "[the phenomenon] [the place]",
+     "[the place] at [the time it happens]",
+     "[the material] macro",
+     "[the phenomenon] from orbit"
+    ],
+    "sources": [
+     "mixkit",
+     "openverse",
+     "commons",
+     "nasa"
+    ],
+    "orientation": "landscape",
+    "min_width": 1920,
+    "grade": {
+     "look": "natural",
+     "accent": "the film's accent",
+     "notes": "one natural grade for every clip and still (each keeps its own colour; the check wants 30 % neutral pixels or more); the plate is the deepest tone in the film"
+    },
+    "choose": "Pick footage with even texture over the whole frame and one direction of motion; a top-down view reads through letters better than a horizon. Reject anything whose subject sits in one corner.",
+    "avoid": [
+     "handshakes",
+     "laptops with coffee",
+     "people pointing at screens",
+     "glowing brains",
+     "generic city timelapses",
+     "drone shots of a single car on a road",
+     "sunsets used as decoration",
+     "a speedboat's wake from above",
+     "a wave exploding on rocks",
+     "a misty coast from a drone",
+     "time-lapse clouds",
+     "hands on a laptop",
+     "a drone over a lone car on a road",
+     "a sunset as decoration",
+     "a city skyline time-lapse"
+    ]
+   }
+  },
+  {
+   "id": "score-cut",
+   "name": "Cut to the score",
+   "intensity": 5,
+   "idea": "Real footage cut on the music's accents, one carried travel running through every shot from first light to night.",
+   "story": {
+    "shape": "day-arc",
+    "line": "The product's day in its real places, ordered by the hour of their light: dawn, work, dusk, night, one gesture running through all of them."
+   },
+   "world": {
+    "space": "flat",
+    "set": "Full-frame footage of the product's places and gestures, every shot 0.5-1.5 s, ordered by the hour of its light; short calm fragments sit low in the frame, the camera's travel is one direction for the whole act.",
+    "planes": "2: the footage and the fragments over it",
+    "light_kind": "sun-arc",
+    "light": "The light crosses one day: the first shots are blue dawn, the middle full daylight, the last dusk and street light; the grade keeps one hue, so only the light's height and direction change.",
+    "light_build": "photo-grade method with one look for every clip; the order of the shots carries the sun; an exposure lift by a static brightness() on the dusk shots' layer only.",
+    "method": [
+     "photo-grade",
+     "footage-clock"
+    ],
+    "texture": "the footage's own grain plus one baked grain for the whole set"
+   },
+   "palettes": [
+    {
+     "id": "slate-day",
+     "recipe": "slateMid",
+     "accent": [
+      "blue",
+      "teal",
+      "green"
+     ],
+     "proportions": {
+      "ground": 66,
+      "ink": 26,
+      "accent": 8
+     },
+     "notes": "footage graded natural so each place keeps its own light (grey mist, white foam, dark rock, a lit window); fragments in near-white; the accent on one word per act"
+    },
+    {
+     "id": "ink-day",
+     "recipe": "inkStage",
+     "accent": [
+      "red",
+      "blue"
+     ],
+     "proportions": {
+      "ground": 70,
+      "ink": 22,
+      "accent": 8
+     },
+     "notes": "a lower-key grade (night or matte) for night-heavy subjects; neutral shadows; the fragments carry the light"
+    }
+   ],
+   "type_options": [
+    {
+     "id": "grotesk",
+     "sans": "a firm grotesk",
+     "weights": [
+      500,
+      680
+     ],
+     "case": "sentence case",
+     "notes": "fragments at 120, 1-3 words"
+    },
+    {
+     "id": "humanist",
+     "sans": "a humanist sans",
+     "weights": [
+      450,
+      620
+     ],
+     "case": "sentence case",
+     "notes": "people-led footage"
+    }
+   ],
+   "camera": {
+    "class": "beat-travel",
+    "motion": "travel",
+    "animator": "One travel: every shot slides the same way; it builds into each cut and the next shot opens already moving.",
+    "in_shot": "The footage's own camera plus a lateral travel decaying to a 45 px/s drift and a 3 % push.",
+    "between": "Velocity cuts on the music's accents (carryChain): launch into the cut, carry out of it at 0.7 of the cut speed."
+   },
+   "cuts": {
+    "kind": "on-sound",
+    "grammar": "Every cut on an accent of the track; the travel carries through each one, and a real edge in each picture (a waterline, a horizon, a ridge, a road's edge) sits on the same screen line across the cut, so the eye rides one line through different places; never a drawn line on a flat ground; the last shot brakes and holds.",
+    "carried_min": 0.8,
+    "seams": [
+     "velocity",
+     "hard"
+    ],
+    "on_sound": "Cuts on downbeats and the snare's accents; the final hold sits on the track's first stop."
+   },
+   "type": {
+    "modes": [
+     "replace"
+    ],
+    "recentre": "none",
+    "cadence": "reading",
+    "roles": [
+     "line",
+     "display"
+    ],
+    "scale_contrast": "Fragments at 120 over full-frame footage; one display line at 200 on the final hold.",
+    "behaviour": "A fragment holds still in screen space across cuts (an anchored line) while the footage changes under it; never more than one line on screen."
+   },
+   "transitions": [
+    "Montage",
+    "carryChain",
+    "launch",
+    "carry",
+    "FootageRamp"
+   ],
+   "signature": {
+    "name": "The carried cut",
+    "family": "carried-montage",
+    "shot": "Four shots of 30 f each cut on four beats, one lateral travel through all of them at 9-12 px/f on the cut frames, each shot opening at 0.7x the last cut's speed; on the fifth shot the travel brakes over 24 f to a 45 px/s drift exactly under the anchored fragment.",
+    "build": "Montage (montageState over lib/handoff carryChain: launch into each cut, carry out of it); each shot a Footage frame picked in closed form under one transform; the fragment a sibling Words layer with no transform during the cuts.",
+    "cost": "light",
+    "elements": 8,
+    "primitives": [
+     "Montage",
+     "montageState",
+     "carryChain",
+     "Words"
+    ],
+    "techniques": [
+     "tr-velocity-handoff-cut",
+     "ps-score-mapped-to-acts"
+    ]
+   },
+   "signature_alt": {
+    "name": "The long hold",
+    "shot": "After eight quick shots one shot holds for 2.5 s, the only still moment, and the claim lands in it.",
+    "build": "Montage with uneven cut spacing; the held shot a Footage with a 2 % push.",
+    "primitives": [
+     "Montage",
+     "Footage"
+    ],
+    "techniques": [
+     "ps-long-tail-beat-lengths"
+    ]
+   },
+   "lockup": {
+    "kind": "hard-stop",
+    "shot": "On the track's stop the travel halts dead on a night shot, the footage freezes on that frame and the name is there at 200 px.",
+    "build": "Footage with a freeze at the stop frame; Words for the name, no entrance move.",
+    "primitives": [
+     "Footage",
+     "Words"
+    ],
+    "techniques": [
+     "ps-silent-sign-off"
+    ]
+   },
+   "idea_sentences": [
+    "In this film, [the product's day] becomes a row of real places cut on the music.",
+    "In this film, [the gesture the product makes easy] becomes one movement carried through every shot.",
+    "In this film, [the hours the product saves] become a day of light from dawn to night."
+   ],
+   "fit": {
+    "formats": [
+     "launch",
+     "update",
+     "sting",
+     "vertical",
+     "feature"
+    ],
+    "paces": [
+     "crisp",
+     "calm"
+    ],
+    "ui": "optional",
+    "footage": "optional",
+    "imagery": "sourced",
+    "seconds": [
+     8,
+     45
+    ],
+    "needs_also": [],
+    "keywords_required": false
+   },
+   "music": {
+    "mode": "track",
+    "bpm": [
+     100,
+     128
+    ],
+    "feel": "a groove with clear accents to cut on and one stop near the end",
+    "ending": "stop"
+   },
+   "primitives": [
+    "Montage",
+    "montageState",
+    "Footage",
+    "footageTime",
+    "Words",
+    "Chain",
+    "launch",
+    "carry",
+    "carryChain",
+    "FootageRamp"
+   ],
+   "techniques": [
+    "tr-velocity-handoff-cut",
+    "ps-score-mapped-to-acts",
+    "ps-long-tail-beat-lengths",
+    "ps-silent-sign-off",
+    "ps-direction-per-act",
+    "tr-anchor-overlay-cut",
+    "tx-global-grain"
+   ],
+   "avoid_techniques": [
+    "tx-on-twos-cadence",
+    "ps-oner-morph-chain"
+   ],
+   "keywords": [
+    "footage",
+    "day",
+    "routine",
+    "people",
+    "city",
+    "travel",
+    "sport",
+    "outdoor",
+    "event",
+    "music",
+    "community",
+    "delivery"
+   ],
+   "skeleton": [
+    {
+     "beat": "dawn",
+     "share": 0.08,
+     "picture": "Frame 0: footage already travelling, first light; one fragment.",
+     "copy": {
+      "words": [
+       2,
+       3
+      ],
+      "what": "the setup"
+     },
+     "signature": false
+    },
+    {
+     "beat": "work",
+     "share": 0.27,
+     "picture": "Daylight shots on the beat, the travel carried through each cut.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "what the product does"
+     },
+     "signature": false
+    },
+    {
+     "beat": "run",
+     "share": 0.3,
+     "picture": "The carried cut: four shots on four beats braking under the anchored line.",
+     "copy": {
+      "words": [
+       2,
+       4
+      ],
+      "what": "the claim"
+     },
+     "signature": true
+    },
+    {
+     "beat": "dusk",
+     "share": 0.12,
+     "picture": "Dusk and street light; no words.",
+     "copy": null,
+     "signature": false
+    },
+    {
+     "beat": "stop",
+     "share": 0.23,
+     "picture": "The stop: the travel halts on a night shot and the name is there.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the name"
+     },
+     "signature": false
+    }
+   ],
+   "avoid": [
+    "shots that change direction every cut (a slideshow)",
+    "speed ramps on every shot",
+    "footage with readable signs, logos or brands",
+    "time-lapse clouds as filler",
+    "more than one line on screen",
+    "shots under 0.4 s"
+   ],
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version printed in the lower third over a shot already travelling sideways at 9 px/f, the track's first accent landing on frame 0.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "One shot per change, each one beat long: the changed screen of the product held in the same corner while the footage behind it cuts on the accent and the travel never stops.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "every cut opens at 0.7x the outgoing travel speed, so one lateral move runs through all the changes"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The carried cut: four shots on four beats with one travel through them, braking on the fifth to a slow drift under the line that names the whole release.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "On the track's stop the travel halts on a night shot, the frame freezes, and the name and the version sit on it at display size.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
+   "assets": {
+    "kind": [
+     "video"
+    ],
+    "count": [
+     6,
+     12
+    ],
+    "inventory": "List the product's day: where it is used at dawn, at work, at dusk, at night; the gestures (walking, cycling, cooking, loading, typing); the places (street, kitchen, harbour, studio). Each item becomes a query with the hour of its light. Name the phenomenon the product measures, changes or lives in, in its own words (tidal channels, swell lines, cloud streets, a glaze crawling, a kiln's flame), never the category (sea, ocean from above, nature): category queries return the stock archetypes.",
+    "queries": [
+     "[the phenomenon] [the place]",
+     "[the gesture] close up",
+     "[the place] at [the hour it happens]",
+     "[the phenomenon] from orbit",
+     "[the place] from above"
+    ],
+    "sources": [
+     "mixkit",
+     "commons",
+     "nasa"
+    ],
+    "orientation": "landscape",
+    "min_width": 1280,
+    "grade": {
+     "look": "natural",
+     "accent": "the film's accent",
+     "notes": "one natural look for the set; the order of the shots carries the light, the grade never washes them in one hue"
+    },
+    "choose": "Pick clips whose motion runs the same way (left or right) or can be mirrored without readable text; prefer 50/60 fps clips for any slow shot.",
+    "avoid": [
+     "handshakes",
+     "laptops with coffee",
+     "people pointing at screens",
+     "office high-fives",
+     "generic city timelapses unless the day itself is the idea",
+     "faces looking into the lens",
+     "a speedboat's wake from above",
+     "a wave exploding on rocks",
+     "a misty coast from a drone",
+     "time-lapse clouds",
+     "hands on a laptop",
+     "a drone over a lone car on a road",
+     "a sunset as decoration",
+     "a city skyline time-lapse"
+    ]
+   }
+  },
+  {
+   "id": "in-place",
+   "name": "The product in its place",
+   "intensity": 4,
+   "idea": "The product's result is drawn into real places, and the place answers it.",
+   "story": {
+    "shape": "result-first",
+    "line": "The result is already there in the real place (the forecast on the horizon, the route on the street, the order on the table); then how it got there, one product moment per place."
+   },
+   "world": {
+    "space": "perspective",
+    "set": "Real photographs and footage of the places the product is used; the product's states are drawn into them along their real edges (the waterline, the curb, the ridge) and onto their real objects (a post, a gauge, a wall), following the picture as the camera moves; where the product predicts or controls something, the clip's own clock follows the product's value.",
+    "planes": "3: the picture, the product layer pinned into it, and the calm copy",
+    "light_kind": "face-shade",
+    "light": "Every surface drawn into a picture takes that picture's light: a panel facing away from the photo's sun sits 0.12 L darker, its shadow falls the way the photo's shadows fall.",
+    "light_build": "face-shade method on the pinned surfaces (an ink overlay at opacity k(1 - n.l)), the key read from the photograph's own shadows; shadows as ink plates under one fixed blur.",
+    "method": [
+     "face-shade",
+     "photo-grade",
+     "depth-slices",
+     "edge-trace",
+     "footage-clock"
+    ],
+    "texture": "the photograph's own grain, matched on the drawn layer by the baked grain"
+   },
+   "palettes": [
+    {
+     "id": "stone-place",
+     "recipe": "stoneMid",
+     "accent": [
+      "blue",
+      "red"
+     ],
+     "proportions": {
+      "ground": 64,
+      "ink": 28,
+      "accent": 8
+     },
+     "notes": "pictures graded matte or natural with their own colour; drawn lines in near-white or ink by the picture's local tone, never brighter than its brightest real thing; the accent only on the live value (a dot, a reading)"
+    },
+    {
+     "id": "paper-place",
+     "recipe": "tintedPaper",
+     "accent": [
+      "green",
+      "blue"
+     ],
+     "proportions": {
+      "ground": 66,
+      "ink": 26,
+      "accent": 8
+     },
+     "notes": "bright daylight pictures in their own colour; ink lines; the accent on the result only"
+    }
+   ],
+   "type_options": [
+    {
+     "id": "ui-grotesk",
+     "sans": "a neutral grotesk with tabular figures",
+     "weights": [
+      500,
+      650
+     ],
+     "case": "sentence case",
+     "notes": "numbers at 120-200 in the picture, labels at 40 or more"
+    },
+    {
+     "id": "humanist",
+     "sans": "a humanist sans",
+     "weights": [
+      450,
+      600
+     ],
+     "case": "sentence case",
+     "notes": "softer subjects (food, health, home)"
+    }
+   ],
+   "camera": {
+    "class": "scene-pin",
+    "motion": "follow",
+    "animator": "The camera follows the pinned product layer through the picture: it trucks, pushes, and the drawn layer stays glued to its place.",
+    "in_shot": "A truck of 20-40 px/s with a 3-5 % push; the pinned points re-projected every frame.",
+    "between": "Velocity cuts between places; the pinned line can carry across a cut when both pictures share its direction."
+   },
+   "cuts": {
+    "kind": "carried",
+    "grammar": "Velocity cuts between places on the camera's travel; the result is shown before the steps.",
+    "carried_min": 0.6,
+    "seams": [
+     "velocity",
+     "morph",
+     "hard"
+    ],
+    "on_sound": "A pinned value lands on an accent; cuts on the bar lines."
+   },
+   "type": {
+    "modes": [
+     "build"
+    ],
+    "recentre": "jump",
+    "cadence": "reading",
+    "roles": [
+     "line",
+     "display",
+     "ui"
+    ],
+    "scale_contrast": "Product numbers at 200 inside the picture against lines at 120 in its quiet sky or water.",
+    "behaviour": "Copy sits in the picture's quiet area and never on the pinned layer; labels on the pinned layer are 40 px or larger."
+   },
+   "transitions": [
+    "Photo",
+    "photoPoint",
+    "carriedCut",
+    "launch",
+    "carry"
+   ],
+   "signature": {
+    "name": "The forecast drives the picture",
+    "family": "pinned-chart",
+    "shot": "A real place with one clear edge (the foam around rocks from above, a waterline, a ridge) holds still on one source frame while the camera creeps 3 %; a 5 px line draws along that edge in 42 f, lifts off it and relaxes into the product's curve on the same picture (36 f, staggered along the line); three ticks land 8 f apart; the now-dot rides the curve and the clip's clock is the curve's value, so the place moves with the data (the sea floods as the tide rises, stands at the top, ebbs as it falls); the reading counts beside it at 120 and 56 px.",
+    "build": "Footage with steady (a land track from a feature track on what does not move), clock = lo + (hi - lo) * value(dot) and blend; the edge traced once on the held frame (a threshold contour, smoothed and resampled) and mapped through the layer every frame (photoPoint); Trace for the draw, the relax, the ticks and the dot; the reading in tabular figures.",
+    "cost": "medium",
+    "elements": 10,
+    "primitives": [
+     "Footage",
+     "footageTime",
+     "Trace",
+     "traceState",
+     "Photo",
+     "photoPoint"
+    ],
+    "techniques": [
+     "d3-pinned-label-world-swap"
+    ]
+   },
+   "signature_alt": {
+    "name": "The table card",
+    "shot": "A product card lies on a real table in the photo's perspective, turns 90 degrees up as it opens, and takes the photo's light.",
+    "build": "A preserve-3d card on a quad matrix fitted to four image points; face-shade overlay from the photo's key.",
+    "primitives": [
+     "Photo",
+     "photoPoint"
+    ],
+    "techniques": [
+     "lc-negative-space-caption"
+    ]
+   },
+   "lockup": {
+    "kind": "world-object",
+    "shot": "The last picture holds a real object that measures or carries the result (a post in the water, a buoy, a quay wall, a gauge): the live reading is printed onto it at its real waterline (the now-dot, a hairline, the value at 56 px and the next event at 48 px), a line draws along the picture's real edge, and the name rises from behind the far shore.",
+    "build": "Photo with the object's points in image px mapped by photoPoint every frame; Trace for the edge; MaskRise for the name with its mask edge on the picture's horizon; Words for the platforms.",
+    "primitives": [
+     "Photo",
+     "photoPoint",
+     "Trace",
+     "MaskRise",
+     "Words"
+    ],
+    "techniques": [
+     "le-device-becomes-mark"
+    ]
+   },
+   "idea_sentences": [
+    "In this film, [the product's result] becomes part of [the real place it is used in].",
+    "In this film, [the product's chart or route] becomes a line drawn on [a real landscape].",
+    "In this film, [the product's card] becomes an object lying in [a real room]."
+   ],
+   "fit": {
+    "formats": [
+     "launch",
+     "update",
+     "feature",
+     "walkthrough",
+     "loop"
+    ],
+    "paces": [
+     "calm",
+     "crisp"
+    ],
+    "ui": "optional",
+    "footage": "optional",
+    "imagery": "sourced",
+    "seconds": [
+     8,
+     40
+    ],
+    "needs_also": [],
+    "keywords_required": false
+   },
+   "music": {
+    "mode": "track",
+    "bpm": [
+     90,
+     118
+    ],
+    "feel": "even and open, accents for each value that lands",
+    "ending": "ring"
+   },
+   "primitives": [
+    "Photo",
+    "photoPoint",
+    "photoState",
+    "Footage",
+    "Words",
+    "Chain",
+    "carriedCut",
+    "launch",
+    "carry",
+    "Roll",
+    "Trace"
+   ],
+   "techniques": [
+    "d3-pinned-label-world-swap",
+    "lc-negative-space-caption",
+    "le-device-becomes-mark",
+    "pd-hard-swap-on-cause",
+    "dn-ease-out-count-up",
+    "cam-living-hold",
+    "tx-global-grain"
+   ],
+   "avoid_techniques": [
+    "lc-live-split-view",
+    "lc-hub-spoke-diagram"
+   ],
+   "keywords": [
+    "map",
+    "route",
+    "weather",
+    "forecast",
+    "delivery",
+    "location",
+    "travel",
+    "food",
+    "home",
+    "outdoor",
+    "booking",
+    "place"
+   ],
+   "skeleton": [
+    {
+     "beat": "result",
+     "share": 0.16,
+     "picture": "Frame 0: the result already pinned in the real place; the camera trucks.",
+     "copy": {
+      "words": [
+       2,
+       3
+      ],
+      "what": "the result"
+     },
+     "signature": false
+    },
+    {
+     "beat": "chart",
+     "share": 0.26,
+     "picture": "The pinned chart draws along the real line of the place.",
+     "copy": {
+      "words": [
+       2,
+       4
+      ],
+      "what": "what it reads"
+     },
+     "signature": true
+    },
+    {
+     "beat": "places",
+     "share": 0.22,
+     "picture": "Two more places on velocity cuts, one product value pinned in each.",
+     "copy": null,
+     "signature": false
+    },
+    {
+     "beat": "fact",
+     "share": 0.15,
+     "picture": "One number at 200 in the picture's sky.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "one honest number"
+     },
+     "signature": false
+    },
+    {
+     "beat": "lockup",
+     "share": 0.21,
+     "picture": "The mark printed onto a surface in the last picture; the name beside it.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the name"
+     },
+     "signature": false
+    }
+   ],
+   "avoid": [
+    "a phone mock-up held by a stock hand",
+    "UI floating flat over a photo with no perspective",
+    "drawn layers brighter than the picture's highlights",
+    "labels under 40 px",
+    "pictures of offices with screens"
+   ],
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version drawn as a line along the waterline of a real shore, the camera already trucking along it and the mark's dot riding the line's end.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change lives in a new real place: the product's changed readout pinned to a surface in the photograph (a quay wall, a window, a sail), re-projected every frame as the camera trucks past.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the truck's direction and speed carry across each cut, and the next place's readout enters from the same side"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The forecast drives the picture: a line drawn along a real edge relaxes into the product's curve, the now-dot rides it and the clip's clock follows the value, so the place moves with the data.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The live reading printed onto a real object in the last picture (a post at its waterline, a gauge, a quay wall); the name and the version rise from behind the far shore.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
+   "assets": {
+    "kind": [
+     "photo",
+     "video"
+    ],
+    "count": [
+     3,
+     6
+    ],
+    "inventory": "List where the product's result exists in the world: the horizon of a forecast, the street of a route, the table of an order, the wall of a room. Each place needs one clear line (waterline, curb, table edge) to pin the product to. Name the phenomenon the product measures, changes or lives in, in its own words (tidal channels, swell lines, cloud streets, a glaze crawling, a kiln's flame), never the category (sea, ocean from above, nature): category queries return the stock archetypes.",
+    "queries": [
+     "[the phenomenon] [the place] from above",
+     "[the edge the result sits on] (waterline, curb, ridge)",
+     "[the place] at [its two states]",
+     "[the surface the result sits on] close up",
+     "[the object that measures it] (a post, a gauge, a buoy)"
+    ],
+    "sources": [
+     "openverse",
+     "commons",
+     "mixkit",
+     "nasa"
+    ],
+    "orientation": "landscape",
+    "min_width": 2400,
+    "grade": {
+     "look": "matte",
+     "accent": "the film's accent",
+     "notes": "matte or natural; it keeps room above the highlights for drawn lines; the accent stays out of the pictures so it reads on the live value"
+    },
+    "choose": "Pick pictures with a strong straight line and an empty third for copy; 2400 px or more so a push stays sharp.",
+    "avoid": [
+     "handshakes",
+     "laptops with coffee",
+     "people pointing at screens",
+     "phones held up to the camera",
+     "glowing brains",
+     "generic city timelapses",
+     "a speedboat's wake from above",
+     "a wave exploding on rocks",
+     "a misty coast from a drone",
+     "time-lapse clouds",
+     "hands on a laptop",
+     "a drone over a lone car on a road",
+     "a sunset as decoration",
+     "a city skyline time-lapse"
+    ]
+   }
+  },
+  {
+   "id": "material",
+   "name": "The material",
+   "intensity": 4,
+   "idea": "The product's material, seen in macro, is the whole set.",
+   "story": {
+    "shape": "detail-to-whole",
+    "line": "The film starts so close to a material that it is a landscape; each act is one material from the product's world; the last pull-back shows the product made of it."
+   },
+   "world": {
+    "space": "flat",
+    "set": "Full-frame macro photographs and clips of the materials of the product's world (stone, paper fibre, cloth, water, metal, wood grain), graded into one hue; type sits in the material's quiet areas; each act one material.",
+    "planes": "2: the material and the type over it, a defocused copy of the material as a third plane in the pull-back",
+    "light_kind": "sheen",
+    "light": "A soft material highlight crosses the surface as the camera slides, 1.3x the camera's speed, lifting the texture's relief by 0.06-0.10 L where it passes.",
+    "light_build": "a baked one-hue highlight plate in the soft-light blend, moved by transform at 1.3x the camera's travel, opacity 0.25-0.4; plate-light method.",
+    "method": [
+     "plate-light",
+     "photo-grade"
+    ],
+    "texture": "the material itself; no added texture"
+   },
+   "palettes": [
+    {
+     "id": "stone-macro",
+     "recipe": "stoneMid",
+     "accent": [
+      "blue",
+      "green"
+     ],
+     "proportions": {
+      "ground": 70,
+      "ink": 22,
+      "accent": 8
+     },
+     "notes": "one natural or matte grade over every material, colour strength matched; ink type; the accent on one word per act"
+    },
+    {
+     "id": "slate-macro",
+     "recipe": "slateMid",
+     "accent": [
+      "teal",
+      "red"
+     ],
+     "proportions": {
+      "ground": 70,
+      "ink": 22,
+      "accent": 8
+     },
+     "notes": "darker materials (wet stone, ink, metal); near-white type"
+    }
+   ],
+   "type_options": [
+    {
+     "id": "grotesk",
+     "sans": "a precise grotesk",
+     "weights": [
+      450,
+      650
+     ],
+     "case": "sentence case",
+     "notes": "lines at 120 placed in the material's flat zones"
+    },
+    {
+     "id": "mono-labels",
+     "sans": "a grotesk with a mono for labels",
+     "weights": [
+      400,
+      600
+     ],
+     "case": "sentence case",
+     "notes": "material names as labels at 46"
+    }
+   ],
+   "camera": {
+    "class": "macro-slide",
+    "motion": "drift",
+    "animator": "The camera slides across the material at macro scale and pulls back once per act.",
+    "in_shot": "A drift of 30-60 px/s with a 2-4 % push.",
+    "between": "Velocity cuts from material to material on the drift's direction; the final pull-back is continuous."
+   },
+   "cuts": {
+    "kind": "carried",
+    "grammar": "Velocity cuts on the drift between materials; one continuous pull-back at the end.",
+    "carried_min": 0.7,
+    "seams": [
+     "velocity",
+     "defocus",
+     "hard"
+    ],
+    "on_sound": "A material change on each bar line; the pull-back lands on the last downbeat."
+   },
+   "type": {
+    "modes": [
+     "build"
+    ],
+    "recentre": "jump",
+    "cadence": "reading",
+    "roles": [
+     "line",
+     "caption",
+     "display"
+    ],
+    "scale_contrast": "Lines at 120 against a texture enlarged 6x; one display line at 200 on the product.",
+    "behaviour": "Type sits in the flattest part of the texture and never moves with the slide."
+   },
+   "transitions": [
+    "Photo",
+    "RackFocus",
+    "carriedCut",
+    "creep",
+    "scaleBreath"
+   ],
+   "signature": {
+    "name": "The material pull",
+    "family": "material-pull",
+    "shot": "From the material at x6 the camera pulls back over 1.2 s on liftOut while the sheen crosses once at 1.3x the travel; the texture resolves into the surface of the product, a cut-out photo of the object at 70 % of the frame height, its edge sharp against a 12 px defocused copy of the material.",
+    "build": "Photo at the macro scale inside the product's cut-out matte (Cutouts with one piece), a second Photo of the material defocused behind (RackFocus with a fixed level); the pull a log-scale transform; the sheen a soft-light plate moved by transform.",
+    "cost": "light",
+    "elements": 5,
+    "primitives": [
+     "Photo",
+     "Cutouts",
+     "RackFocus"
+    ],
+    "techniques": [
+     "cam-detail-first-pullback",
+     "cl-tilt-linked-sheen"
+    ]
+   },
+   "signature_alt": {
+    "name": "The sheen pass",
+    "shot": "One soft highlight band crosses a held macro of the material in 0.9 s and the line lands as it passes.",
+    "build": "A baked highlight plate in the soft-light blend moved once by transform across a Photo.",
+    "primitives": [
+     "Photo"
+    ],
+    "techniques": [
+     "cl-specular-sweep"
+    ]
+   },
+   "lockup": {
+    "kind": "light-finds",
+    "shot": "The sheen comes to rest on the mark pressed into the material (a lighter copy of the texture inside the mark's shape) and the name sets beside it.",
+    "build": "Photo twice: the base and a brightness 1.12 copy clipped by the mark's SVG path; the sheen plate by transform; Words for the name.",
+    "primitives": [
+     "Photo",
+     "Words"
+    ],
+    "techniques": [
+     "le-mark-glint-turn"
+    ]
+   },
+   "idea_sentences": [
+    "In this film, [the product's material] becomes a landscape the camera crosses.",
+    "In this film, [what the product is made of] becomes the set of every shot.",
+    "In this film, [the texture users touch] becomes the surface the name is pressed into."
+   ],
+   "fit": {
+    "formats": [
+     "launch",
+     "update",
+     "feature",
+     "sting",
+     "loop"
+    ],
+    "paces": [
+     "calm"
+    ],
+    "ui": "none",
+    "footage": "optional",
+    "imagery": "sourced",
+    "seconds": [
+     6,
+     30
+    ],
+    "needs_also": [],
+    "keywords_required": false
+   },
+   "music": {
+    "mode": "track",
+    "bpm": [
+     70,
+     104
+    ],
+    "feel": "textural and slow, a soft pulse; room for the sheen to be heard",
+    "ending": "ring"
+   },
+   "primitives": [
+    "Photo",
+    "photoState",
+    "Cutouts",
+    "RackFocus",
+    "Words",
+    "Chain",
+    "creep",
+    "carriedCut",
+    "scaleBreath"
+   ],
+   "techniques": [
+    "cam-detail-first-pullback",
+    "cl-tilt-linked-sheen",
+    "cl-specular-sweep",
+    "le-mark-glint-turn",
+    "cam-living-hold",
+    "tx-global-grain",
+    "tr-defocus-cut"
+   ],
+   "avoid_techniques": [
+    "tx-brushed-micro-streaks",
+    "cl-living-stage"
+   ],
+   "keywords": [
+    "material",
+    "fabric",
+    "paper",
+    "stone",
+    "wood",
+    "metal",
+    "ceramic",
+    "craft",
+    "design",
+    "hardware",
+    "furniture",
+    "texture"
+   ],
+   "skeleton": [
+    {
+     "beat": "macro",
+     "share": 0.17,
+     "picture": "Frame 0: a macro of the first material sliding past; no words for the first second.",
+     "copy": null,
+     "signature": false
+    },
+    {
+     "beat": "materials",
+     "share": 0.31,
+     "picture": "Two more materials on velocity cuts, a line in each one's flat zone.",
+     "copy": {
+      "words": [
+       2,
+       4
+      ],
+      "what": "what it is made of"
+     },
+     "signature": false
+    },
+    {
+     "beat": "pull",
+     "share": 0.23,
+     "picture": "The material pull: the texture becomes the product's surface.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the product"
+     },
+     "signature": true
+    },
+    {
+     "beat": "lockup",
+     "share": 0.29,
+     "picture": "The sheen finds the mark pressed into the material; the name beside it.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the name"
+     },
+     "signature": false
+    }
+   ],
+   "avoid": [
+    "a texture under 2400 px wide pushed past its resolution",
+    "materials graded in different hues",
+    "stock bokeh",
+    "glossy highlights that move on their own",
+    "type on the busiest part of the texture"
+   ],
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version pressed into the material at macro scale, a lighter copy of the texture inside the digits, the camera already drifting across the grain.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change on a new material in the same light: the changed part of the product cut out and laid on the texture, its contact shadow sharpening as it lands.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the drift across one material continues on the next in the same direction at 0.7x the speed"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The material pull: from the texture at x6 the camera pulls back until it resolves into the surface of the product, its edge sharp against a defocused copy of the material.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The light comes to rest on the mark pressed into the material, and the name and the version set beside it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
+   "assets": {
+    "kind": [
+     "texture",
+     "photo"
+    ],
+    "count": [
+     3,
+     5
+    ],
+    "inventory": "List what the product is made of or touches: its case, its paper, its fabric, the stone of its place, the water, the tool's metal. One material per act. Name the phenomenon the product measures, changes or lives in, in its own words (tidal channels, swell lines, cloud streets, a glaze crawling, a kiln's flame), never the category (sea, ocean from above, nature): category queries return the stock archetypes.",
+    "queries": [
+     "[the material] macro",
+     "[the material] texture",
+     "[the material] surface close up",
+     "[the material] detail"
+    ],
+    "sources": [
+     "openverse",
+     "commons",
+     "nasa"
+    ],
+    "orientation": "landscape",
+    "min_width": 2400,
+    "grade": {
+     "look": "matte",
+     "accent": "the film's accent",
+     "notes": "one matte look; colour strength matched so no material jumps out"
+    },
+    "choose": "Even light across the whole frame, a texture without one dominant object, sharp corner to corner; reject anything with a shallow focus band.",
+    "avoid": [
+     "handshakes",
+     "laptops with coffee",
+     "stock wood desks with plants",
+     "glowing brains",
+     "marble with veins as decoration",
+     "a speedboat's wake from above",
+     "a wave exploding on rocks",
+     "a misty coast from a drone",
+     "time-lapse clouds",
+     "hands on a laptop",
+     "a drone over a lone car on a road",
+     "a sunset as decoration",
+     "a city skyline time-lapse"
+    ]
+   }
+  },
+  {
+   "id": "collage",
+   "name": "The collage",
+   "intensity": 4,
+   "idea": "The product's story is assembled from cut-out photographs laid on a table, each with its own shadow.",
+   "story": {
+    "shape": "assembly",
+    "line": "Pieces of real photographs (the problem, the people, the place, the product) are cut out and laid down one by one until they form the whole; everything but the product is lifted away."
+   },
+   "world": {
+    "space": "layered",
+    "set": "A matte stone ground seen from above; photographs of the product's world cut out along their subjects' edges, printed with a thin paper border, landing on the ground and on each other; type laid down like the pieces.",
+    "planes": "3-5: the ground, the stacked pieces at their heights, and the type",
+    "light_kind": "raking-key",
+    "light": "One low key from the top left: every piece throws a shadow from its real height, the shadow sharpening from a 14 px to a 3 px edge as the piece settles, a contact shadow appearing in its last 24 px.",
+    "light_build": "cut-matte method: the shadow the piece's matte path offset z cot(elevation), two fixed blur levels cross-faded by opacity with the lift, a contact path grown 2 px; all ink plates under the pieces.",
+    "method": [
+     "cut-matte",
+     "photo-grade"
+    ],
+    "texture": "the ground is a photographed stone or paper texture graded to the stone recipe"
+   },
+   "palettes": [
+    {
+     "id": "stone-table",
+     "recipe": "stoneMid",
+     "accent": [
+      "red",
+      "blue",
+      "green"
+     ],
+     "proportions": {
+      "ground": 62,
+      "ink": 30,
+      "accent": 8
+     },
+     "notes": "a mid stone ground; pieces in a silver or matte grade with their own colour held back; ink type; the accent on the product piece only"
+    },
+    {
+     "id": "paper-table",
+     "recipe": "paperEditorial",
+     "accent": [
+      "red",
+      "green"
+     ],
+     "proportions": {
+      "ground": 64,
+      "ink": 28,
+      "accent": 8
+     },
+     "notes": "a neutral paper ground with one paper texture; pieces in a silver grade, the product piece in colour"
+    }
+   ],
+   "type_options": [
+    {
+     "id": "grotesk",
+     "sans": "a firm grotesk",
+     "weights": [
+      500,
+      700
+     ],
+     "case": "sentence case",
+     "notes": "type laid on the table at 120-200"
+    },
+    {
+     "id": "humanist",
+     "sans": "a humanist sans",
+     "weights": [
+      450,
+      620
+     ],
+     "case": "sentence case",
+     "notes": "personal stories"
+    }
+   ],
+   "camera": {
+    "class": "collage-crane",
+    "motion": "crane",
+    "animator": "An overhead crane: the camera rises as the collage grows and settles low on the product at the end.",
+    "in_shot": "A rise of 6-10 % per piece in scale on settleOut, a 20 px/s drift.",
+    "between": "No cuts inside the collage; one velocity cut into it and one out."
+   },
+   "cuts": {
+    "kind": "carried",
+    "grammar": "The collage is one continuous shot; pieces land on the beat; the seams in and out are carried.",
+    "carried_min": 0.7,
+    "seams": [
+     "velocity",
+     "morph",
+     "hard"
+    ],
+    "on_sound": "Each piece touches down on a beat (the contact is the hit); the lift-away is silent."
+   },
+   "type": {
+    "modes": [
+     "build"
+    ],
+    "recentre": "slot",
+    "cadence": "even",
+    "roles": [
+     "line",
+     "display",
+     "caption"
+    ],
+    "scale_contrast": "Pieces from 30 to 70 % of the frame against lines at 120; one display line at 200.",
+    "behaviour": "Words land like pieces (no shadow, no lift) in the gaps between pieces; a word never lands while a piece is falling."
+   },
+   "transitions": [
+    "Cutouts",
+    "cutoutState",
+    "carriedCut",
+    "creep"
+   ],
+   "signature": {
+    "name": "The settle",
+    "family": "paper-settle",
+    "shot": "A cut-out photograph drops from 140 px above the table, turning from 8 degrees to 2 over 34 f on settleOut, its shadow sliding 60 px in under it and sharpening from 14 px to 3 px; in its last 24 px the contact shadow appears and the frame kicks 4 px on touchdown.",
+    "build": "Cutouts: each piece a div clipped by its matte polygon (clip-path), placed by transform; its shadow and contact shadow as SVG paths under two fixed blur filters cross-faded by opacity (cutoutState); the kick a 4 px transform on the camera layer decaying over 12 f.",
+    "cost": "light",
+    "elements": 24,
+    "primitives": [
+     "Cutouts",
+     "cutoutState"
+    ],
+    "techniques": [
+     "tx-surface-edge-finish",
+     "cam-impact-kick"
+    ]
+   },
+   "signature_alt": {
+    "name": "The fan",
+    "shot": "A dozen cut-outs fan in from two corners and stack until they bury the frame, then scatter and leave one.",
+    "build": "Cutouts with staggered settles along two arcs; the scatter by transform on each piece.",
+    "primitives": [
+     "Cutouts"
+    ],
+    "techniques": [
+     "d3-card-fan-bury-scatter"
+    ]
+   },
+   "lockup": {
+    "kind": "subtract",
+    "shot": "Every piece lifts away (shadows lengthening, then gone) except the product's piece, which stays with the name laid beside it.",
+    "build": "cutoutState run backwards for every piece but one; Words for the name.",
+    "primitives": [
+     "Cutouts",
+     "cutoutState",
+     "Words"
+    ],
+    "techniques": [
+     "lc-subtract-to-one"
+    ]
+   },
+   "idea_sentences": [
+    "In this film, [the product's story] becomes a collage of real photographs laid on a table.",
+    "In this film, [the pieces the product brings together] become cut-outs landing one by one.",
+    "In this film, [the product] becomes the one piece left when the rest are lifted away."
+   ],
+   "fit": {
+    "formats": [
+     "launch",
+     "update",
+     "feature",
+     "vertical",
+     "loop"
+    ],
+    "paces": [
+     "calm",
+     "crisp"
+    ],
+    "ui": "optional",
+    "footage": "none",
+    "imagery": "sourced",
+    "seconds": [
+     8,
+     40
+    ],
+    "needs_also": [],
+    "keywords_required": false
+   },
+   "music": {
+    "mode": "track",
+    "bpm": [
+     96,
+     120
+    ],
+    "feel": "a dry, papery pulse; one soft hit per piece",
+    "ending": "button"
+   },
+   "primitives": [
+    "Cutouts",
+    "cutoutState",
+    "Photo",
+    "Words",
+    "Chain",
+    "carriedCut",
+    "creep",
+    "stagger"
+   ],
+   "techniques": [
+    "tx-surface-edge-finish",
+    "cam-impact-kick",
+    "d3-card-fan-bury-scatter",
+    "lc-subtract-to-one",
+    "cam-living-hold",
+    "tx-global-grain"
+   ],
+   "avoid_techniques": [
+    "tx-on-twos-cadence",
+    "ui-clutter-pileup-strip"
+   ],
+   "keywords": [
+    "story",
+    "team",
+    "community",
+    "history",
+    "magazine",
+    "editorial",
+    "craft",
+    "school",
+    "family",
+    "event",
+    "travel",
+    "archive"
+   ],
+   "skeleton": [
+    {
+     "beat": "first piece",
+     "share": 0.11,
+     "picture": "Frame 0: the bare table, the first cut-out already falling.",
+     "copy": null,
+     "signature": false
+    },
+    {
+     "beat": "assembly",
+     "share": 0.34,
+     "picture": "Pieces land on the beat, each with its shadow; the camera rises.",
+     "copy": {
+      "words": [
+       2,
+       4
+      ],
+      "what": "the problem in pieces"
+     },
+     "signature": false
+    },
+    {
+     "beat": "settle",
+     "share": 0.19,
+     "picture": "The settle: the product's piece lands, its shadow sharpening.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the product"
+     },
+     "signature": true
+    },
+    {
+     "beat": "lockup",
+     "share": 0.36,
+     "picture": "Everything lifts away but the product's piece; the name beside it.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the name"
+     },
+     "signature": false
+    }
+   ],
+   "avoid": [
+    "torn-paper edges and tape as decoration",
+    "kraft paper or yellowed paper tones",
+    "drop shadows that do not follow one key",
+    "cut-outs with fuzzy automatic edges",
+    "more than two pieces falling at once"
+   ],
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version number cut from a printed photograph, already dropping toward the table from 140 px above, its shadow sliding in under it.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is a new cut-out piece laid onto the growing collage with the product's changed screen printed on it, its shadow sharpening on contact while the camera creeps over the table.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "each new piece arrives from the side the last one left open, so the collage grows in one direction across the changes"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The settle: the product's own piece drops onto the collage, turning from 8 degrees to 2, its shadow sliding in and sharpening until it lies flat as printed paper.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "Every piece lifts away except the product's piece, which stays with the name and the version laid beside it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
+   "assets": {
+    "kind": [
+     "photo",
+     "art",
+     "texture"
+    ],
+    "count": [
+     5,
+     10
+    ],
+    "inventory": "List the pieces of the product's story that have a shape: the people (from behind or in silhouette), the tools, the objects, the places as a cut-out window, archive pictures from museum collections. Each piece needs a clean silhouette to trace. Name the phenomenon the product measures, changes or lives in, in its own words (tidal channels, swell lines, cloud streets, a glaze crawling, a kiln's flame), never the category (sea, ocean from above, nature): category queries return the stock archetypes.",
+    "queries": [
+     "[the object] isolated",
+     "[the tool] on white",
+     "[the place] postcard",
+     "[the subject] museum",
+     "[the material] texture"
+    ],
+    "sources": [
+     "openverse",
+     "commons",
+     "aic",
+     "met",
+     "nasa"
+    ],
+    "orientation": "any",
+    "min_width": 1600,
+    "grade": {
+     "look": "silver",
+     "accent": "the film's accent",
+     "notes": "pieces in one grade (silver or matte); the product's piece may keep its colour; tint is a one-shot device here, never the whole table"
+    },
+    "choose": "Pieces with clear outlines against plain backgrounds, lit from a similar side; trace the matte on a still once.",
+    "avoid": [
+     "handshakes",
+     "laptops with coffee",
+     "people pointing at screens",
+     "smiling stock portraits",
+     "glowing brains",
+     "clip art",
+     "a speedboat's wake from above",
+     "a wave exploding on rocks",
+     "a misty coast from a drone",
+     "time-lapse clouds",
+     "hands on a laptop",
+     "a drone over a lone car on a road",
+     "a sunset as decoration",
+     "a city skyline time-lapse"
+    ]
+   }
+  },
+  {
+   "id": "two-worlds",
+   "name": "Two worlds",
+   "intensity": 4,
+   "idea": "The frame is split between two real worlds, and the product moves the line between them.",
+   "story": {
+    "shape": "problem-turn",
+    "line": "Left the world without the product, right the world with it, both real and live; the product's action drags the divider until the better world fills the frame."
+   },
+   "world": {
+    "space": "flat",
+    "set": "Two pieces of real footage or two photographs of the same kind of place in two states (calm and storm, crowded and clear, then and now), sharing one horizon or one axis; a hairline divider between them that the product's action drives.",
+    "planes": "3: the two worlds and the divider with its readout",
+    "light_kind": "pool",
+    "light": "The world being revealed carries a soft one-hue lift of 0.06 L that travels with the divider, so the eye follows the edge.",
+    "light_build": "plate-light method: a baked one-hue plate clipped to the revealed side, moved by transform with the divider, opacity 0.15-0.25.",
+    "method": [
+     "plate-light",
+     "photo-grade",
+     "footage-clock"
+    ],
+    "texture": "both worlds share one baked grade and grain"
+   },
+   "palettes": [
+    {
+     "id": "field-split",
+     "recipe": "inkStage",
+     "accent": [
+      "teal",
+      "blue",
+      "red"
+     ],
+     "proportions": {
+      "ground": 60,
+      "ink": 32,
+      "accent": 8
+     },
+     "notes": "both worlds graded natural on a dark neutral ground; the better world may keep more of its own colour; the divider and its readout carry the accent"
+    },
+    {
+     "id": "slate-split",
+     "recipe": "slateMid",
+     "accent": [
+      "yellow",
+      "green"
+     ],
+     "proportions": {
+      "ground": 64,
+      "ink": 28,
+      "accent": 8
+     },
+     "notes": "a slate grade; the better world keeps its own colour, the other is graded silver"
+    }
+   ],
+   "type_options": [
+    {
+     "id": "grotesk",
+     "sans": "a grotesk with tabular figures",
+     "weights": [
+      500,
+      680
+     ],
+     "case": "sentence case",
+     "notes": "the readout at 120-200, lines at 120"
+    },
+    {
+     "id": "neo-grotesk",
+     "sans": "a neutral neo-grotesk",
+     "weights": [
+      450,
+      650
+     ],
+     "case": "sentence case",
+     "notes": "calmer subjects"
+    }
+   ],
+   "camera": {
+    "class": "divider-scrub",
+    "motion": "split",
+    "animator": "The divider is the camera: it slides, stops, and its position is the story; both worlds keep their own slow push.",
+    "in_shot": "A 3 % push on both worlds together; the divider moves on stdInOut with a 6 px/s living drift at rest.",
+    "between": "The divider's sweep is the transition; velocity cuts between pairs of worlds."
+   },
+   "cuts": {
+    "kind": "carried",
+    "grammar": "The divider's full sweep replaces a cut; between pairs, velocity cuts on the divider's direction.",
+    "carried_min": 0.7,
+    "seams": [
+     "wipe",
+     "velocity",
+     "hard"
+    ],
+    "on_sound": "The divider stops on downbeats; the full sweep ends on the biggest accent."
+   },
+   "type": {
+    "modes": [
+     "replace"
+    ],
+    "recentre": "none",
+    "cadence": "reading",
+    "roles": [
+     "line",
+     "display",
+     "caption"
+    ],
+    "scale_contrast": "A readout at 200 riding the divider against lines at 120 on one side.",
+    "behaviour": "Copy sits on the side it describes and is wiped with it; the readout rides the divider."
+   },
+   "transitions": [
+    "Wipe",
+    "Footage",
+    "carriedCut",
+    "launch"
+   ],
+   "signature": {
+    "name": "The divider sweep",
+    "family": "world-divide",
+    "shot": "The frame splits 50 % between the same coast in two states; the divider holds 1 s, then the product's readout drags it 100 % across in 40 f on stdInOut, a 0.06 L lift riding the revealed side, and the better world settles full frame with its 3 % push still running.",
+    "build": "Two Footage layers under one transform; the revealed side clipped by an inset clip-path driven by the divider's x (wipe method from fx/Wipe); the divider a 3 px div and the readout a Words layer by transform; the lift a baked plate clipped to the same side.",
+    "cost": "light",
+    "elements": 7,
+    "primitives": [
+     "Footage",
+     "Wipe",
+     "Words"
+    ],
+    "techniques": [
+     "pd-before-after-drag-wipe",
+     "lc-live-split-view"
+    ]
+   },
+   "signature_alt": {
+    "name": "The colour side",
+    "shot": "Both sides are one picture; the side the product touches comes into colour while the other stays in the duotone.",
+    "build": "One Footage twice (duotone and tint grades), the colour copy clipped to the touched side.",
+    "primitives": [
+     "Footage"
+    ],
+    "techniques": [
+     "cl-context-palette-shift"
+    ]
+   },
+   "lockup": {
+    "kind": "held-frame",
+    "shot": "The better world freezes on its last frame as the divider returns as a hairline, and the name sets on that line.",
+    "build": "Footage with a freeze at the lockup frame; the line a 3 px div scaled in by transform; Words for the name.",
+    "primitives": [
+     "Footage",
+     "Words"
+    ],
+    "techniques": [
+     "le-living-hold"
+    ]
+   },
+   "idea_sentences": [
+    "In this film, [life before and after the product] becomes two real worlds split by one line.",
+    "In this film, [the product's action] becomes the hand that drags the divider.",
+    "In this film, [the change the product makes] becomes a line sweeping across a real place."
+   ],
+   "fit": {
+    "formats": [
+     "launch",
+     "update",
+     "feature",
+     "vertical",
+     "sting"
+    ],
+    "paces": [
+     "calm",
+     "crisp"
+    ],
+    "ui": "optional",
+    "footage": "optional",
+    "imagery": "sourced",
+    "seconds": [
+     6,
+     30
+    ],
+    "needs_also": [],
+    "keywords_required": false
+   },
+   "music": {
+    "mode": "track",
+    "bpm": [
+     92,
+     122
+    ],
+    "feel": "two textures, one per side; the sweep lands on a lift",
+    "ending": "button"
+   },
+   "primitives": [
+    "Footage",
+    "footageTime",
+    "Wipe",
+    "Words",
+    "Chain",
+    "carriedCut",
+    "launch"
+   ],
+   "techniques": [
+    "pd-before-after-drag-wipe",
+    "lc-live-split-view",
+    "cl-context-palette-shift",
+    "le-living-hold",
+    "cam-living-hold",
+    "tx-global-grain"
+   ],
+   "avoid_techniques": [
+    "tr-cover-wipe",
+    "tr-subtract-reveal"
+   ],
+   "keywords": [
+    "before",
+    "after",
+    "change",
+    "clean",
+    "weather",
+    "home",
+    "renovation",
+    "health",
+    "travel",
+    "storage",
+    "climate",
+    "upgrade"
+   ],
+   "skeleton": [
+    {
+     "beat": "split",
+     "share": 0.18,
+     "picture": "Frame 0: both worlds already live, the divider centred.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the two states"
+     },
+     "signature": false
+    },
+    {
+     "beat": "problem",
+     "share": 0.15,
+     "picture": "The worse world widens; its line sits on its side.",
+     "copy": {
+      "words": [
+       2,
+       4
+      ],
+      "what": "the problem"
+     },
+     "signature": false
+    },
+    {
+     "beat": "sweep",
+     "share": 0.31,
+     "picture": "The divider sweep: the product drags the line across.",
+     "copy": null,
+     "signature": true
+    },
+    {
+     "beat": "proof",
+     "share": 0.12,
+     "picture": "A second pair of worlds, swept faster.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "one product fact"
+     },
+     "signature": false
+    },
+    {
+     "beat": "lockup",
+     "share": 0.24,
+     "picture": "The better world freezes; the divider returns as a hairline under the name.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the name"
+     },
+     "signature": false
+    }
+   ],
+   "avoid": [
+    "two worlds that share no horizon or axis",
+    "a divider with a handle drawn like a slider widget",
+    "a crossfade instead of the sweep",
+    "worlds graded in two hues",
+    "stock before-and-after of people"
+   ],
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version printed on the divider itself, the frame already split between the same place in two states, both halves drifting together.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is one place in its two states side by side, the product's changed readout pinned to the better half while both halves drift.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the next pair enters on a cut that keeps the divider where it was, so the line stays put while the worlds change around it"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The divider sweep: the product's readout drags the divider fully across in 40 f, a slight lift riding the revealed side, and the better world takes the frame.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The better world freezes on its last frame, the divider returns as a hairline, and the name and the version set on that line.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
+   "assets": {
+    "kind": [
+     "video",
+     "photo"
+    ],
+    "count": [
+     4,
+     6
+    ],
+    "inventory": "List the two states the product separates (crowded / clear, storm / calm, cluttered / tidy, night / day) and the one kind of place both happen in; search each state of that place. Name the phenomenon the product measures, changes or lives in, in its own words (tidal channels, swell lines, cloud streets, a glaze crawling, a kiln's flame), never the category (sea, ocean from above, nature): category queries return the stock archetypes.",
+    "queries": [
+     "[the place] [state one]",
+     "[the place] [state two]",
+     "[the place] from above",
+     "[the place] wide"
+    ],
+    "sources": [
+     "mixkit",
+     "commons",
+     "openverse",
+     "nasa"
+    ],
+    "orientation": "landscape",
+    "min_width": 1280,
+    "grade": {
+     "look": "natural",
+     "accent": "the film's accent",
+     "notes": "both sides natural; the better side may keep more of its own colour (--chroma 1.1 against 0.7)"
+    },
+    "choose": "Pairs with the same camera height and horizon; reject a pair whose perspective differs.",
+    "avoid": [
+     "handshakes",
+     "laptops with coffee",
+     "people pointing at screens",
+     "frowning stock faces for the before",
+     "generic city timelapses",
+     "a speedboat's wake from above",
+     "a wave exploding on rocks",
+     "a misty coast from a drone",
+     "time-lapse clouds",
+     "hands on a laptop",
+     "a drone over a lone car on a road",
+     "a sunset as decoration",
+     "a city skyline time-lapse"
+    ]
+   }
+  },
+  {
+   "id": "then-now",
+   "name": "Then and now",
+   "intensity": 3,
+   "idea": "An archive picture of the subject and today's footage of it share one line, and the film crosses from one to the other on it.",
+   "story": {
+    "shape": "call-response",
+    "line": "Each act calls with an archive picture (a print, an old photograph, a map) and answers with today's footage of the same thing on the same horizon; the product is the answer."
+   },
+   "world": {
+    "space": "perspective",
+    "set": "Public-domain archive pictures of the subject's world (museum prints, old photographs, maps) lying on a matte surface seen at a low angle, and today's footage of the same places or gestures; each pair aligned on one shared line (a horizon, a coast, a street).",
+    "planes": "3: the surface, the archive print with its paper edge, and today's footage",
+    "light_kind": "sun-arc",
+    "light": "The archive's flat overcast light turns into today's low sun: the key's height on the surface rises from 12 to 40 degrees across the film and the print's shadow shortens with it.",
+    "light_build": "the print's cast shadow as an ink plate offset z cot(elevation) (cut-matte method) with the elevation keyed across the film; today's footage graded one step brighter by a static filter.",
+    "method": [
+     "cut-matte",
+     "photo-grade"
+    ],
+    "texture": "the archive's own grain and halftone; today's footage with the film's baked grain"
+   },
+   "palettes": [
+    {
+     "id": "paper-archive",
+     "recipe": "paperEditorial",
+     "accent": [
+      "red",
+      "blue"
+     ],
+     "proportions": {
+      "ground": 66,
+      "ink": 26,
+      "accent": 8
+     },
+     "notes": "a neutral paper surface; the archive in a silver grade (never yellowed), today's footage natural; the accent only on now"
+    },
+    {
+     "id": "ink-archive",
+     "recipe": "inkStage",
+     "accent": [
+      "yellow",
+      "teal"
+     ],
+     "proportions": {
+      "ground": 68,
+      "ink": 24,
+      "accent": 8
+     },
+     "notes": "a dark surface; the archive lit like an object on it; the accent on the answer"
+    }
+   ],
+   "type_options": [
+    {
+     "id": "grotesk",
+     "sans": "a classic grotesk",
+     "weights": [
+      450,
+      650
+     ],
+     "case": "sentence case",
+     "notes": "dates and places at 46, lines at 120"
+    },
+    {
+     "id": "humanist",
+     "sans": "a humanist sans",
+     "weights": [
+      400,
+      600
+     ],
+     "case": "sentence case",
+     "notes": "personal histories"
+    }
+   ],
+   "camera": {
+    "class": "then-now",
+    "motion": "time",
+    "animator": "Time is the camera: the same framing jumps decades while the slow drift carries on unchanged.",
+    "in_shot": "A drift of 20-30 px/s and a 3 % push shared by both pictures of a pair.",
+    "between": "Matched cuts on the shared line with the drift at exactly the same rate; a wipe along the line for the signature."
+   },
+   "cuts": {
+    "kind": "carried",
+    "grammar": "Every then-to-now change keeps the drift (a matched cut or a wipe along the shared line); acts change on velocity cuts.",
+    "carried_min": 0.8,
+    "seams": [
+     "wipe",
+     "velocity",
+     "hard"
+    ],
+    "on_sound": "The crossing on a downbeat; the archive is quieter in the mix."
+   },
+   "type": {
+    "modes": [
+     "replace"
+    ],
+    "recentre": "none",
+    "cadence": "reading",
+    "roles": [
+     "line",
+     "caption",
+     "display"
+    ],
+    "scale_contrast": "Dates as captions at 46 against lines at 120 and the name at 200.",
+    "behaviour": "A date sits on the archive's paper edge; the line arrives only once today's footage holds."
+   },
+   "transitions": [
+    "Wipe",
+    "Footage",
+    "Photo",
+    "carriedCut",
+    "creep"
+   ],
+   "signature": {
+    "name": "The matched horizon",
+    "family": "matched-horizon",
+    "shot": "An archive print and today's clip share one horizon at 38 % of the frame height; with the drift running at 24 px/s on both, a wipe runs along the horizon in 18 f and the print's paper edge shows for 6 f as it passes, then today holds with the drift unchanged.",
+    "build": "Photo of the print (cut-matte shadow on the surface) and Footage of today under one shared drift transform; the wipe an inset clip-path on today's layer moving along the horizon (fx/Wipe); the paper edge a 4 px div riding the wipe's front.",
+    "cost": "light",
+    "elements": 6,
+    "primitives": [
+     "Photo",
+     "Footage",
+     "Wipe"
+    ],
+    "techniques": [
+     "tr-drift-matched-angle-cut"
+    ]
+   },
+   "signature_alt": {
+    "name": "The halftone turn",
+    "shot": "The archive picture's halftone dots swell and merge into today's footage over 0.8 s.",
+    "build": "A halftone of the print as an SVG dot field whose radii grow by a state function, over the Footage.",
+    "primitives": [
+     "Footage",
+     "Photo"
+    ],
+    "techniques": [
+     "tx-halftone-shading"
+    ]
+   },
+   "lockup": {
+    "kind": "resolve",
+    "shot": "The mark resolves out of the archive's grain on the last print as today's footage behind it comes to rest; the name sets in the line's place.",
+    "build": "The supplied mark as a mask on a sharp copy of the last picture over a coarse copy, the coarse copy's opacity falling; Words for the name.",
+    "primitives": [
+     "Photo",
+     "Words"
+    ],
+    "techniques": [
+     "pd-blur-resolve-load"
+    ]
+   },
+   "idea_sentences": [
+    "In this film, [the product's long history] becomes an archive picture answered by today's footage.",
+    "In this film, [the way it used to be done] becomes a museum print on the same horizon as now.",
+    "In this film, [the subject's past] becomes the call and [the product] becomes the answer."
+   ],
+   "fit": {
+    "formats": [
+     "launch",
+     "update",
+     "feature",
+     "walkthrough"
+    ],
+    "paces": [
+     "calm"
+    ],
+    "ui": "optional",
+    "footage": "optional",
+    "imagery": "sourced",
+    "seconds": [
+     10,
+     45
+    ],
+    "needs_also": [],
+    "keywords_required": false
+   },
+   "music": {
+    "mode": "track",
+    "bpm": [
+     72,
+     104
+    ],
+    "feel": "a slow figure that returns in each act, quieter under the archive",
+    "ending": "ring"
+   },
+   "primitives": [
+    "Photo",
+    "photoState",
+    "Footage",
+    "Wipe",
+    "Words",
+    "Chain",
+    "creep",
+    "carriedCut"
+   ],
+   "techniques": [
+    "tr-drift-matched-angle-cut",
+    "tx-halftone-shading",
+    "pd-blur-resolve-load",
+    "cam-living-hold",
+    "tx-global-grain",
+    "le-bookend-replay"
+   ],
+   "avoid_techniques": [
+    "cl-theme-flip-in-motion",
+    "tx-mosaic-resolve"
+   ],
+   "keywords": [
+    "history",
+    "anniversary",
+    "heritage",
+    "city",
+    "museum",
+    "archive",
+    "tradition",
+    "craft",
+    "map",
+    "travel",
+    "transport",
+    "version"
+   ],
+   "skeleton": [
+    {
+     "beat": "then",
+     "share": 0.18,
+     "picture": "Frame 0: the archive print on the surface, the drift already running; a date on its edge.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the date or place"
+     },
+     "signature": false
+    },
+    {
+     "beat": "now",
+     "share": 0.22,
+     "picture": "The matched horizon: the wipe along the shared line into today.",
+     "copy": null,
+     "signature": true
+    },
+    {
+     "beat": "second pair",
+     "share": 0.24,
+     "picture": "A second archive picture answered by a second clip on a matched cut.",
+     "copy": {
+      "words": [
+       2,
+       4
+      ],
+      "what": "what changed"
+     },
+     "signature": false
+    },
+    {
+     "beat": "product",
+     "share": 0.14,
+     "picture": "Today's footage holds; the product's moment sits in its quiet area.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the product"
+     },
+     "signature": false
+    },
+    {
+     "beat": "lockup",
+     "share": 0.22,
+     "picture": "The mark resolves out of the last print's grain; the name in the line's place.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the name"
+     },
+     "signature": false
+    }
+   ],
+   "avoid": [
+    "sepia or yellowed archive grades",
+    "fake film scratches",
+    "a crossfade from then to now",
+    "archive pictures with readable modern brands",
+    "pairs that do not share a line"
+   ],
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version printed on the paper edge of an archive photograph, its horizon at 38 % of the frame height, the drift already running at 24 px/s.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change pairs an archive print with today's clip of the same kind of place, the changed product state set in today's half as a short fragment.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the drift runs at one speed on both pictures, so each change slides in on the motion the last one left"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The matched horizon: an archive print and today's clip share one horizon, a wipe runs along it in 18 f and today holds with the product inside it.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The mark resolves out of the archive's grain on the last print as today's footage comes to rest; the name and the version set in the line's place.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
+   "assets": {
+    "kind": [
+     "art",
+     "photo",
+     "video"
+    ],
+    "count": [
+     4,
+     8
+    ],
+    "inventory": "List what the subject was before: the old tool, the old map of the place, the trade's archive photographs, the museum objects of its kind. Then today's footage of each one, from the same angle where possible. Name the phenomenon the product measures, changes or lives in, in its own words (tidal channels, swell lines, cloud streets, a glaze crawling, a kiln's flame), never the category (sea, ocean from above, nature): category queries return the stock archetypes.",
+    "queries": [
+     "[the place] old photograph",
+     "[the place] map",
+     "[the trade] print",
+     "[the object] museum",
+     "[the place] today aerial"
+    ],
+    "sources": [
+     "aic",
+     "met",
+     "commons",
+     "openverse",
+     "mixkit",
+     "nasa"
+    ],
+    "orientation": "landscape",
+    "min_width": 1600,
+    "grade": {
+     "look": "silver",
+     "accent": "the film's accent",
+     "notes": "archive in silver, today natural; never a yellowed archive grade"
+    },
+    "choose": "Archive pictures with a clear horizon or axis that today's footage can match; museum scans at full size.",
+    "avoid": [
+     "handshakes",
+     "laptops with coffee",
+     "old photographs of identifiable private people",
+     "war imagery",
+     "generic city timelapses",
+     "a speedboat's wake from above",
+     "a wave exploding on rocks",
+     "a misty coast from a drone",
+     "time-lapse clouds",
+     "hands on a laptop",
+     "a drone over a lone car on a road",
+     "a sunset as decoration",
+     "a city skyline time-lapse"
+    ]
+   }
+  },
+  {
+   "id": "long-photo",
+   "name": "One long photograph",
+   "intensity": 4,
+   "idea": "One very long photograph is the whole film, and the camera travels it end to end.",
+   "story": {
+    "shape": "journey",
+    "line": "The camera starts at one end of a single long picture (a coastline, a street, a scroll, a strip of the earth from orbit) and travels it; each stop along it is one product moment; at the far end it pulls back to show the whole."
+   },
+   "world": {
+    "space": "perspective",
+    "set": "A single photograph or a stitched strip at 4-10x the frame width (a panorama, a museum scroll, an orbital strip), laid as one plane seen slightly from above; product moments and lines pinned to places along it; depth slices part where the picture has a near edge.",
+    "planes": "3: the long picture's far plane, its near slice, and the pinned type",
+    "light_kind": "pool",
+    "light": "A soft one-hue pool travels with the camera along the picture, lifting the stretch being read by 0.06-0.10 L while the rest sits one step lower.",
+    "light_build": "plate-light method: one baked pool plate moved by transform at the camera's speed, opacity 0.2-0.3, over the photo layers; depth-slices method for the near edge.",
+    "method": [
+     "plate-light",
+     "depth-slices",
+     "photo-grade"
+    ],
+    "texture": "the photograph's own grain; one baked grade"
+   },
+   "palettes": [
+    {
+     "id": "slate-long",
+     "recipe": "slateMid",
+     "accent": [
+      "blue",
+      "teal"
+     ],
+     "proportions": {
+      "ground": 66,
+      "ink": 26,
+      "accent": 8
+     },
+     "notes": "the strip graded natural once (--aspect none); near-white type pinned to it; the accent on each stop's value"
+    },
+    {
+     "id": "field-long",
+     "recipe": "inkStage",
+     "accent": [
+      "teal",
+      "red"
+     ],
+     "proportions": {
+      "ground": 62,
+      "ink": 30,
+      "accent": 8
+     },
+     "notes": "a dark neutral stage for orbital or night strips; the strip keeps its own colour; the accent on each stop's value"
+    }
+   ],
+   "type_options": [
+    {
+     "id": "grotesk",
+     "sans": "a precise grotesk",
+     "weights": [
+      450,
+      650
+     ],
+     "case": "sentence case",
+     "notes": "stop labels at 46, lines at 120"
+    },
+    {
+     "id": "neo-grotesk",
+     "sans": "a neutral neo-grotesk",
+     "weights": [
+      500,
+      680
+     ],
+     "case": "sentence case",
+     "notes": "data-led stops (numbers at 200)"
+    }
+   ],
+   "camera": {
+    "class": "panorama-track",
+    "motion": "travel",
+    "animator": "One travel along the picture: the camera accelerates between stops, brakes at each, breathes, and pulls back at the end.",
+    "in_shot": "Between stops a reframe on strongInOut; at a stop a breathing zoom of 2-3 % and a 20 px/s drift.",
+    "between": "No cuts: the whole film is one shot along one picture."
+   },
+   "cuts": {
+    "kind": "one-take",
+    "grammar": "One continuous take; stops are holds inside it; the end is a pull-back, not a cut.",
+    "carried_min": 0.95,
+    "seams": [
+     "breath",
+     "fadeEnd"
+    ],
+    "on_sound": "Each stop lands on a downbeat; the travel between stops fills the bar."
+   },
+   "type": {
+    "modes": [
+     "build"
+    ],
+    "recentre": "jump",
+    "cadence": "reading",
+    "roles": [
+     "line",
+     "caption",
+     "display"
+    ],
+    "scale_contrast": "The picture at 4-10x the frame against labels at 46 and lines at 120; the final pull-back shows it as a band.",
+    "behaviour": "Each stop's words are pinned to their place on the picture and leave the frame with it."
+   },
+   "transitions": [
+    "Photo",
+    "reframeChain",
+    "scaleBreath",
+    "creep",
+    "parallax"
+   ],
+   "signature": {
+    "name": "The long pan",
+    "family": "long-pan",
+    "shot": "The camera travels 6x the frame width along one photograph in 3 stops, each move 0.8 s on strongInOut with a 2 % breath at the stop; at the far end it pulls back 5x in 1.4 s until the whole strip sits as a band 30 % of the frame high.",
+    "build": "Photo of the strip with its depth slices; the travel a reframeChain of camera shots over the photo layer (lib/camera-moves), the breath scaleBreath; the stops' type pinned by photoPoint; the pull-back a log-scale move.",
+    "cost": "light",
+    "elements": 10,
+    "primitives": [
+     "Photo",
+     "photoPoint",
+     "reframeChain",
+     "scaleBreath"
+    ],
+    "techniques": [
+     "ps-direction-per-act",
+     "cam-breathing-zoom"
+    ]
+   },
+   "signature_alt": {
+    "name": "The landing pull",
+    "shot": "From a close stop the camera pulls back across half the strip and the next value lands as the move settles.",
+    "build": "One log-scale move over the Photo; the value a Words layer starting at the settle.",
+    "primitives": [
+     "Photo",
+     "Words"
+    ],
+    "techniques": [
+     "cam-pull-lands-event"
+    ]
+   },
+   "lockup": {
+    "kind": "pull-back",
+    "shot": "The pull-back ends with the whole picture as a band across the frame, and the name sits under it.",
+    "build": "A log-scale camera move over the Photo; Words for the name.",
+    "primitives": [
+     "Photo",
+     "Words"
+    ],
+    "techniques": [
+     "le-living-hold"
+    ]
+   },
+   "idea_sentences": [
+    "In this film, [the product's journey] becomes one long photograph the camera travels.",
+    "In this film, [everything the product covers] becomes a strip of the world seen end to end.",
+    "In this film, [the steps of the product] become stops along one picture."
+   ],
+   "fit": {
+    "formats": [
+     "launch",
+     "update",
+     "walkthrough",
+     "feature"
+    ],
+    "paces": [
+     "calm"
+    ],
+    "ui": "optional",
+    "footage": "none",
+    "imagery": "sourced",
+    "seconds": [
+     10,
+     40
+    ],
+    "needs_also": [],
+    "keywords_required": false
+   },
+   "music": {
+    "mode": "track",
+    "bpm": [
+     80,
+     110
+    ],
+    "feel": "a steady walk with a downbeat for every stop",
+    "ending": "ring"
+   },
+   "primitives": [
+    "Photo",
+    "photoPoint",
+    "photoState",
+    "reframeChain",
+    "scaleBreath",
+    "parallax",
+    "Words",
+    "Chain",
+    "creep"
+   ],
+   "techniques": [
+    "ps-direction-per-act",
+    "cam-breathing-zoom",
+    "cam-pull-lands-event",
+    "le-living-hold",
+    "cam-living-hold",
+    "tx-global-grain"
+   ],
+   "avoid_techniques": [
+    "cam-zoom-out-hop",
+    "ps-single-camera-journey"
+   ],
+   "keywords": [
+    "journey",
+    "route",
+    "map",
+    "coast",
+    "timeline",
+    "history",
+    "travel",
+    "road",
+    "river",
+    "orbit",
+    "story",
+    "steps"
+   ],
+   "skeleton": [
+    {
+     "beat": "start",
+     "share": 0.15,
+     "picture": "Frame 0: one end of the picture, the camera already travelling.",
+     "copy": {
+      "words": [
+       2,
+       3
+      ],
+      "what": "the start"
+     },
+     "signature": false
+    },
+    {
+     "beat": "stops",
+     "share": 0.35,
+     "picture": "Two stops along the picture, a product moment pinned at each.",
+     "copy": {
+      "words": [
+       2,
+       4
+      ],
+      "what": "what happens on the way"
+     },
+     "signature": false
+    },
+    {
+     "beat": "pan",
+     "share": 0.28,
+     "picture": "The long pan to the far end and the pull-back.",
+     "copy": null,
+     "signature": true
+    },
+    {
+     "beat": "lockup",
+     "share": 0.22,
+     "picture": "The whole picture as a band; the name under it.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the name"
+     },
+     "signature": false
+    }
+   ],
+   "avoid": [
+    "a panorama under 4x the frame width",
+    "speed changes without stops",
+    "type that stays fixed while the picture travels",
+    "a fish-eye or warped stitch",
+    "stops that are only scenery"
+   ],
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the camera already travelling along one long photograph on strongInOut, the version printed small in the open sky of the first stop.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is a stop along the same photograph: the move brakes with a 2 % breath and the changed product state appears pinned to that place in the picture.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the camera leaves each stop the way it arrived, so the changes read as places along one continuous strip"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The long pan: the camera travels six frame widths along the one photograph in three stops of 0.8 s, past every change at once.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The camera pulls back until the whole picture is a band across the frame, and the name and the version sit under it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
+   "assets": {
+    "kind": [
+     "photo",
+     "art"
+    ],
+    "count": [
+     1,
+     2
+    ],
+    "inventory": "List the one continuous thing the product covers: a coastline, a street, a river, a timeline, a strip of the earth. Search for one very wide picture of it (a panorama, a museum scroll, an orbital strip). Name the phenomenon the product measures, changes or lives in, in its own words (tidal channels, swell lines, cloud streets, a glaze crawling, a kiln's flame), never the category (sea, ocean from above, nature): category queries return the stock archetypes.",
+    "queries": [
+     "[the phenomenon] from orbit",
+     "[the place] panorama",
+     "[the route] aerial strip",
+     "[the subject] scroll",
+     "[the place] wide panoramic"
+    ],
+    "sources": [
+     "commons",
+     "nasa",
+     "aic",
+     "met",
+     "openverse"
+    ],
+    "orientation": "landscape",
+    "min_width": 6000,
+    "grade": {
+     "look": "natural",
+     "accent": "the film's accent",
+     "notes": "grade the strip once and keep the full width (--aspect none)"
+    },
+    "choose": "A strip with evenly spread interest and at least three places worth stopping at; full resolution, never upscaled.",
+    "avoid": [
+     "handshakes",
+     "laptops with coffee",
+     "generic city skylines at dusk",
+     "a stitch with visible seams",
+     "glowing brains",
+     "a speedboat's wake from above",
+     "a wave exploding on rocks",
+     "a misty coast from a drone",
+     "time-lapse clouds",
+     "hands on a laptop",
+     "a drone over a lone car on a road",
+     "a sunset as decoration",
+     "a city skyline time-lapse"
+    ]
+   }
+  },
+  {
+   "id": "collection",
+   "name": "The open collection",
+   "intensity": 3,
+   "idea": "Paintings, prints and archive photographs from open museum collections are the world, and the product is a way of looking closer.",
+   "story": {
+    "shape": "whole-to-detail",
+    "line": "The film opens on one whole work, then goes in: a loupe finds the details the full frame cannot hold, works rush past like a wall seen at speed, and the name becomes a window onto them; the product is the act of looking closer, finding, comparing."
+   },
+   "world": {
+    "space": "layered",
+    "set": "Open-access paintings and prints (landscapes, seascapes, interiors, studies) graded into one look, full frame or as tiles on a dark wall; the brush and paper texture is the set. A loupe moves over them; the name is cut out of the ground with the works moving inside.",
+    "planes": "3: the work, the lens or the type window over it, and the copy",
+    "light_kind": "pool",
+    "light": "A soft pool under the lens lifts the detail it shows by 0.06 L while the rest of the work sits one step lower; on the dark wall the works are lit like hung pictures.",
+    "light_build": "plate-light method: a baked radial plate at 0.2-0.3 opacity moving with the lens; the works graded once (photo-grade).",
+    "method": [
+     "loupe",
+     "type-window",
+     "photo-grade"
+    ],
+    "texture": "the works' own brush and paper texture at full resolution; one baked grain"
+   },
+   "palettes": [
+    {
+     "id": "ink-gallery",
+     "recipe": "inkStage",
+     "accent": [
+      "blue",
+      "teal"
+     ],
+     "proportions": {
+      "ground": 64,
+      "ink": 28,
+      "accent": 8
+     },
+     "notes": "a deep wall; the works in a matte or ink-and-bone grade; paper type; the accent on the lens rim or one value"
+    },
+    {
+     "id": "paper-gallery",
+     "recipe": "paperEditorial",
+     "accent": [
+      "red",
+      "blue"
+     ],
+     "proportions": {
+      "ground": 66,
+      "ink": 26,
+      "accent": 8
+     },
+     "notes": "a pale wall for prints and drawings; ink type; never a yellowed grade"
+    }
+   ],
+   "type_options": [
+    {
+     "id": "grotesk",
+     "sans": "a precise grotesk",
+     "weights": [
+      500,
+      700
+     ],
+     "case": "lower case for the name, sentence case for lines",
+     "notes": "the name at 640-820 as a window, lines at 120, captions at 46"
+    },
+    {
+     "id": "neo-grotesk",
+     "sans": "a neutral neo-grotesk",
+     "weights": [
+      450,
+      650
+     ],
+     "case": "sentence case",
+     "notes": "catalogue numbers and dates as captions"
+    }
+   ],
+   "camera": {
+    "class": "loupe-glide",
+    "motion": "follow",
+    "animator": "The lens is the camera inside the frame: the work holds with a slow push while the loupe glides between details and brakes on each.",
+    "in_shot": "A 4-6 % linear push on the work; the lens moves 0.6-0.8 s between stops on strongInOut and holds a beat on each.",
+    "between": "A speed-ramped rush of works (velocity cuts, each work one to three frames at the peak) between the whole and the name; carried cuts elsewhere."
+   },
+   "cuts": {
+    "kind": "carried",
+    "grammar": "Holds on one work while the lens moves; a rush of works into the name on one carried travel; the lockup is the lens landing.",
+    "carried_min": 0.8,
+    "seams": [
+     "velocity",
+     "zoomThrough",
+     "hard"
+    ],
+    "on_sound": "Lens stops and the rush peak on the downbeats; the landing on the last hit."
+   },
+   "type": {
+    "modes": [
+     "build"
+    ],
+    "recentre": "none",
+    "cadence": "reading",
+    "roles": [
+     "line",
+     "caption",
+     "giant"
+    ],
+    "scale_contrast": "The name as a window at 75-90 % of the frame width against lines at 120 and captions at 46.",
+    "behaviour": "Lines sit in the work's quiet area while the lens moves elsewhere; the name's letters are windows, never filled type."
+   },
+   "transitions": [
+    "Lens",
+    "TypeMask",
+    "Montage",
+    "carriedCut",
+    "creep"
+   ],
+   "signature": {
+    "name": "The loupe",
+    "family": "loupe",
+    "shot": "A loupe 300 px across springs open on a painting's detail (2.2x), glides to a second detail in 0.7 s and holds a beat; then it flies home and shrinks to the o of the name in 0.75 s, still showing the painting magnified while the rest of the name sets around it.",
+    "build": "Lens over a Photo of the work: the photo drawn twice, the second copy scaled about the lens centre by a transform and clipped by a circle clip-path, the position, radius and zoom from a state function (lensState) over keyed stops, the home stop at the counter's centre and radius measured from the real font; the name as Words with the o left out, so the o is the lens.",
+    "cost": "light",
+    "elements": 6,
+    "primitives": [
+     "Lens",
+     "lensState",
+     "Photo",
+     "Words"
+    ],
+    "techniques": [
+     "le-device-becomes-mark"
+    ]
+   },
+   "signature_alt": {
+    "name": "The name as a window",
+    "shot": "The name cut out of the dark wall at 85 % of the frame width, works sliding inside the letters; the camera pushes through one letter's stem into the work.",
+    "build": "TypeMask with a Montage or a Photo as the fill.",
+    "primitives": [
+     "TypeMask",
+     "Montage",
+     "Photo"
+    ],
+    "techniques": [
+     "cam-crash-zoom-through"
+    ]
+   },
+   "lockup": {
+    "kind": "device-mark",
+    "shot": "The loupe lands as a counter of the name and stays a live window onto the last work; the platforms set under it.",
+    "build": "Lens home stop; Words for the rest of the name and the platforms.",
+    "primitives": [
+     "Lens",
+     "Words"
+    ],
+    "techniques": [
+     "le-device-becomes-mark",
+     "le-living-hold"
+    ]
+   },
+   "idea_sentences": [
+    "In this film, [what the product reveals] becomes the detail a loupe finds in a painting.",
+    "In this film, [the product's way of looking] becomes a lens moving over open-access works.",
+    "In this film, [the product's name] becomes a window onto a collection."
+   ],
+   "fit": {
+    "formats": [
+     "launch",
+     "update",
+     "feature",
+     "sting",
+     "loop"
+    ],
+    "paces": [
+     "calm",
+     "crisp"
+    ],
+    "ui": "optional",
+    "footage": "none",
+    "imagery": "sourced",
+    "seconds": [
+     6,
+     30
+    ],
+    "needs_also": [],
+    "keywords_required": false
+   },
+   "music": {
+    "mode": "track",
+    "bpm": [
+     84,
+     124
+    ],
+    "feel": "a clear pulse with one held breath for the lens and one push for the rush",
+    "ending": "ring"
+   },
+   "primitives": [
+    "Lens",
+    "lensState",
+    "lensPoint",
+    "Photo",
+    "photoState",
+    "TypeMask",
+    "Montage",
+    "Words",
+    "creep",
+    "carriedCut"
+   ],
+   "techniques": [
+    "le-device-becomes-mark",
+    "cam-crash-zoom-through",
+    "le-living-hold",
+    "tx-global-grain",
+    "cam-living-hold"
+   ],
+   "avoid_techniques": [
+    "cam-zoom-out-hop",
+    "tx-mosaic-resolve"
+   ],
+   "keywords": [
+    "art",
+    "museum",
+    "image",
+    "photo",
+    "camera",
+    "design",
+    "detail",
+    "zoom",
+    "inspect",
+    "search",
+    "archive",
+    "gallery",
+    "creative",
+    "visual",
+    "editor"
+   ],
+   "skeleton": [
+    {
+     "beat": "whole",
+     "share": 0.16,
+     "picture": "Frame 0: one whole work in its grade with a slow push; a two-word line in its quiet area.",
+     "copy": {
+      "words": [
+       2,
+       3
+      ],
+      "what": "what the product lets you do"
+     },
+     "signature": false
+    },
+    {
+     "beat": "loupe",
+     "share": 0.34,
+     "picture": "The loupe opens on a detail, glides to a second and holds.",
+     "copy": {
+      "words": [
+       2,
+       3
+      ],
+      "what": "the detail it finds"
+     },
+     "signature": true
+    },
+    {
+     "beat": "rush",
+     "share": 0.14,
+     "picture": "A speed-ramped rush of works on one carried travel, each work a few frames at the peak.",
+     "copy": null,
+     "signature": false
+    },
+    {
+     "beat": "name",
+     "share": 0.12,
+     "picture": "The last work holds; the name sets in its quiet area.",
+     "copy": {
+      "words": [
+       1,
+       1
+      ],
+      "what": "the name"
+     },
+     "signature": false
+    },
+    {
+     "beat": "lockup",
+     "share": 0.24,
+     "picture": "The loupe lands as a counter of the name; the platforms set.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "where it runs"
+     },
+     "signature": false
+    }
+   ],
+   "avoid": [
+    "a lens that shows a different picture from the one under it",
+    "magnifying a small file (the glass shows soft pixels)",
+    "gold frames, velvet ropes and museum-visitor stock",
+    "a sepia or yellowed grade",
+    "more than two lens stops before the name"
+   ],
+   "requires": [],
+   "update": {
+    "seconds": [
+     8,
+     20
+    ],
+    "needs_also": [],
+    "hook": {
+     "share": 0.14,
+     "picture": "Frame 0: the version set in the dark wall beside a framed work, the camera already creeping across the painting's surface toward its mark.",
+     "copy": {
+      "words": [
+       1,
+       2
+      ],
+      "what": "the version"
+     }
+    },
+    "change": {
+     "share": 0.2,
+     "picture": "Each change is a new work from the same collection, cut on the beat, with the product's changed state set in the wall space beside it as a one-line fragment.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the change, as a product fact"
+     },
+     "handoff": "the creep across each work continues in the next at 0.7 of its speed, so the collection reads as one walk along a wall"
+    },
+    "payoff": {
+     "share": 0.2,
+     "picture": "The loupe: a lens springs open on a detail of the last work at 2.2x, glides to a second detail and holds a beat, showing what the full frame cannot hold.",
+     "copy": null,
+     "signature": true
+    },
+    "end": {
+     "share": 0.16,
+     "picture": "The loupe flies home and shrinks into the o of the name, still live, and the name and the version set around it.",
+     "copy": {
+      "words": [
+       1,
+       3
+      ],
+      "what": "the name and the version"
+     }
+    }
+   },
+   "assets": {
+    "kind": [
+     "art",
+     "photo"
+    ],
+    "count": [
+     4,
+     14
+    ],
+    "inventory": "List what the product looks at or makes (images, designs, details, colour) and pick works whose subject rhymes with it: a wave for flow, a field for scale, a face for people, a street for cities. Prefer works whose originals are 4000 px or larger. Name the phenomenon the product measures, changes or lives in, in its own words (tidal channels, swell lines, cloud streets, a glaze crawling, a kiln's flame), never the category (sea, ocean from above, nature): category queries return the stock archetypes.",
+    "queries": [
+     "[the subject] painting",
+     "[the subject] woodblock print",
+     "[the subject] study",
+     "[the place] landscape painting",
+     "[the subject] museum"
+    ],
+    "sources": [
+     "met",
+     "aic",
+     "commons",
+     "openverse"
+    ],
+    "orientation": "landscape",
+    "min_width": 3000,
+    "grade": {
+     "look": "matte",
+     "accent": "the film's accent",
+     "notes": "one look for every work (matte, or silver for prints); grade once, before the cut; a duotone only as a one-shot device"
+    },
+    "choose": "Works with one strong detail for the lens and calm areas for copy; a set that shares a palette before the grade; originals at full size (a famous work can be fetched by its object id or file name).",
+    "avoid": [
+     "handshakes",
+     "laptops with coffee",
+     "glowing brains",
+     "museum visitors photographed from behind",
+     "works under restricted licences (a share-alike scan of a public-domain work is refused: take the museum's own CC0 file)",
+     "a speedboat's wake from above",
+     "a wave exploding on rocks",
+     "a misty coast from a drone",
+     "time-lapse clouds",
+     "hands on a laptop",
+     "a drone over a lone car on a road",
+     "a sunset as decoration",
+     "a city skyline time-lapse"
+    ]
+   }
+  }
+ ]
+}

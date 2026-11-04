@@ -23,6 +23,7 @@ For each issue, try to refute it. Treat it as a claim, not a fact.
    - `python3 scripts/sheet.py {{VIDEO}} --frames A-B --diff --width 480 --out {{WORKDIR}}/<id>.png` gives the frame-to-frame change.
    - For sound: `av.json` rows near the frame. To isolate a moment, cut it with `ffmpeg -ss T -t 1 -i {{VIDEO}} {{WORKDIR}}/<id>.wav` and measure onsets or levels in Python.
 2. **Watch it at speed.** A one-frame blemish on a small area inside a fast move is often invisible at 60 fps. A pop on a large area, or anything on a key beat, is not. Judge what a viewer sees at normal playback.
+   - **Text-flow issues are the exception** (B8, B9, K7, F11: words per frame, fragments arriving together, a fragment readable for under 1 s, text on too many frames). Verify them on the 12 fps sheet frames, counting words tile by tile, and against `COPY` and the `grid-check.ts` text-flow output, never by eye at speed: you know the copy already, and a viewer seeing it once does not.
 3. **Read the code the fix names.** Is the cause really there? Would the fix work, and could it break something else, such as a seam, a sync point or a hold budget in `grid-check.ts`?
 4. **Decide.** An issue is **rejected** when any of these holds:
    - the claim is wrong;
@@ -36,7 +37,8 @@ For each issue, try to refute it. Treat it as a claim, not a fact.
 
 - Evidence means frame numbers plus a measurement or a clearly described image. "Looks fine" is not evidence either way.
 - You may lower or raise a priority when the evidence shows it: **P0** is visible on a key beat or breaks the story, **P1** is noticeable on a normal viewing, **P2** is visible only on pause.
-- **Hard-ban issues** (IDs HB1–HB11) stay P0 wherever they show: do not reject or lower one because it is brief, small or off a key beat. Reject it only when the frames don't show it, or when `BRIEF.md` lists that exact thing as brand-supplied.
+- **Hard-ban issues** (IDs HB1–HB11) stay P0 wherever they show: do not reject or lower one because it is brief, small or off a key beat. Reject it only when the frames don't show it, when `BRIEF.md` lists that exact thing as brand-supplied, or when it is light, glow, a spectral accent, a dithered gradient or glass that is part of a device doing a job (`references/lighting.md` §5).
+- **Floor issues** (a failed motion or picture floor in `look.json`) stay P0 unless the measurement is shown to be wrong on the frames (an imagery box the audit misread: the fix is `--imagery`, not a lower priority).
 - Do not add new issues. List anything new you notice in `overall`.
 
 ## Return
@@ -51,7 +53,7 @@ Return JSON only, in the lens schema. `issues` holds only the confirmed issues, 
       "priority": "P0",
       "frame": "1920-1922",
       "problem": "VERIFIED: MAD 0.1 -> 31.7 -> 0.2 at f1921; the whole lockup is gone in 2 frames on the last beat",
-      "fix": { "file": "src/acts/Act6.tsx", "change": "exit by reversing the reveal over 20 f on E.in instead of the 6 f opacity fade" }
+      "fix": { "file": "src/acts/Act6.tsx", "change": "end on the lock: hold the assembled lockup in END with a 4 % creep instead of the 6 f opacity fade" }
     }
   ],
   "overall": "rejected: hook-too-slow — the line starts at f45 and reads by f60; seam-flash-a3 — a declared cut at f600",

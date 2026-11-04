@@ -10,7 +10,11 @@ lookahead, 80 ms release, ceiling 0.77 linear = -2.3 dBFS, which leaves room for
 level on sample 0 clicks and cuts in mid-action) and a raised-cosine fade-out of at least 10 ms
 (60 ms by default) onto the last sample -> last 480 samples zeroed.
 
-score.py imports sidechain_times(), finish() and measure(). Standalone use:
+score.py imports finish(), stage() and measure(). Two opt-in parameters for a film cut to a licensed
+track (the defaults and the CLI are unchanged): finish(..., glue=False) skips the saturation and air,
+which would recolour an already mastered track (glue=None, the default, keeps drive / air as given),
+and stage(x, lufs=-18.0) gain-stages a bed to that integrated loudness before the mix. measure()
+also reports PLR (true peak minus integrated loudness). Standalone use:
 
     python3 master.py mix.wav public/audio/soundtrack.wav --lufs -14 --ceiling 0.77
     python3 master.py music.wav ducked.wav --sidechain kick.wav --sc-depth 0.55 --lufs -14
@@ -88,17 +92,31 @@ def measure(x):
     tm, m = blocks(x, 0.4, 0.1)
     k = int(np.argmax(m))
     tail = x[-int(0.05 * SR):]
-    return {
+    rep = {
         'lufs': round(integrated(x), 2),
         'true_peak_db': round(true_peak_db(x), 2),
         'sample_peak_db': round(float(20 * np.log10(np.max(np.abs(x)) + 1e-12)), 2),
         'lra': round(lra(x), 2),
+        'plr': None,
         'momentary_max': round(float(m[k]), 2),
         'momentary_max_t': round(float(tm[k]), 3),
         'tail_50ms_db': round(float(20 * np.log10(np.sqrt(np.mean(tail ** 2)) + 1e-12)), 1),
         'last_480_zero': bool(np.all(x[-480:] == 0)),
         'seconds': round(len(x) / SR, 4),
     }
+    if np.isfinite(rep['lufs']) and rep['lufs'] > -70:
+        rep['plr'] = round(rep['true_peak_db'] - rep['lufs'], 2)  # peak-to-loudness ratio
+    return rep
+
+
+def stage(x, lufs=-18.0):
+    """x scaled to `lufs` integrated (a bed staged before the mix: a mastered track at -8..-10 LUFS comes
+    down 8-10 dB, which leaves headroom for effects over it). Silence comes back unchanged."""
+    x = np.asarray(x, dtype=np.float64)
+    cur = integrated(x)
+    if not np.isfinite(cur) or cur < -70:
+        return x
+    return x * 10 ** ((lufs - cur) / 20)
 
 
 # ------------------------------------------------------------------------------------------
@@ -214,6 +232,9 @@ def glue(x, drive=1.15, air=0.25):
     return x
 
 
+_glue = glue  # finish()'s own reference: its `glue` parameter shadows the name inside it
+
+
 def edge_fades(x, head=HEAD_FADE, tail=END_FADE_MIN):
     """Raised-cosine fade-in over `head` s from exact zero at sample 0, and fade-out over `tail` s
     to zero on the last sample. Run after the limiter, so nothing raises the edges again."""
@@ -231,8 +252,14 @@ def edge_fades(x, head=HEAD_FADE, tail=END_FADE_MIN):
 
 
 def finish(mix, lufs=-14.0, ceiling=0.77, mono_hz=120, comp=True, drive=1.15, air=0.25,
-           hp_hz=28, fade=0.0, end_fade=0.06, tail_zero=480):
-    """Full chain for a summed mix. Returns (master, info) where info has the limiter trace."""
+           hp_hz=28, fade=0.0, end_fade=0.06, tail_zero=480, glue=None):
+    """Full chain for a summed mix. Returns (master, info) where info has the limiter trace.
+    glue: None (default) = saturation and air as drive / air say; False = skip them (a film whose bed
+    is an already mastered track); True = on even with drive 0 (the default drive and air then)."""
+    if glue is False:
+        drive = 0
+    elif glue is True and not drive:
+        drive, air = 1.15, 0.25
     x = _stereo(mix)
     if hp_hz:
         x = signal.sosfilt(signal.butter(2, hp_hz, 'high', fs=SR, output='sos'), x, axis=0)
@@ -242,7 +269,7 @@ def finish(mix, lufs=-14.0, ceiling=0.77, mono_hz=120, comp=True, drive=1.15, ai
     if comp:
         x, gr = bus_comp(x)
     if drive:
-        x = glue(x, drive, air)
+        x = _glue(x, drive, air)
     if fade and fade > 0:
         t = np.arange(len(x)) / SR
         x = x * (np.clip((len(x) / SR - 0.03 - t) / fade, 0, 1) ** 2)[:, None]

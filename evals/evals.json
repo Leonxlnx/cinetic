@@ -18,6 +18,9 @@
         "The numbers and states agree with the story (the shares add up to the total; whoever paid does not owe themselves; statuses are consistent)",
         "No text is clipped, overlapping or too small to read at 1080p (UI text roughly >= 20 px), and the UI fills enough of the frame to read on a phone",
         "The product UI looks like a real, specific app (named people, real amounts, consistent states), not a generic dashboard or floating card",
+        "Film copy (outside the product UI) arrives as fragments of at most 4 words, one at a time: no frame shows more than about 4 words of it, and no sentence of 5 or more words lands as one block",
+        "Every fragment of film copy stays fully readable for at least 1 s before it leaves or the loop restarts",
+        "No overshoot, bounce or per-letter animation on copy",
         "The deliverables folder is clean: deliverables at the top level, QA material in a subfolder",
         "Respects the hard bans: no eyebrow/kicker labels, stacked taglines or filler text; no serif or italic type; no orange, amber, beige or cream; no neon or glow; no purple/violet/indigo or multi-hue gradients; no glassmorphism; no emoji, sparkles, particles or confetti (brand-supplied exceptions excepted)"
       ]
@@ -39,7 +42,10 @@
         "Integrated loudness -14 +-1.5 LUFS (social standard)",
         "An invented brand is visible: a distinctive mark (not a letter in a rounded square, not a generic block + dot) and a name lockup in the final seconds",
         "One clear idea is told visually and shows what the product does that a simpler product would not (a stranger could describe it with the sound off)",
-        "Total on-screen words (excluding product-UI strings) are 35 or fewer, with no stacked taglines or eyebrow labels",
+        "Total on-screen words (excluding product-UI strings) are 25 or fewer, with no stacked taglines or eyebrow labels",
+        "Copy arrives as fragments of 1-4 words revealed one after another, with picture between them: no frame shows more than about 8 words of film copy, and no sentence of 5 or more words lands as one block",
+        "Every fragment of film copy stays fully readable for at least 1 s, and film copy is visible on at most about two thirds of the frames",
+        "No overshoot, bounce or per-letter animation on copy (the one hero word excepted)",
         "No visible motion-blur artifacts: no stepped or ghosted copies and no smears longer than about a fifth of the frame on the fastest frames",
         "Hard cuts and the biggest moves land on audio hits (within about 3 frames)",
         "A brand kit is delivered: the logo as SVG (light and dark) plus transparent PNGs, and a square social avatar",
@@ -67,6 +73,7 @@
         "The logo is fully resolved and readable for at least 1.5 seconds before the end, at a size that fills a reasonable part of the frame (roughly a quarter of the width or more)",
         "The sound has a clear hit that lands with the logo resolving (checked in code or by audio timing)",
         "No intermediate frame of the name reveal spells a different word",
+        "The name settles without overshoot or bounce, and any line beside it arrives after the name has resolved, not together with it",
         "Respects the hard bans: no eyebrow/kicker labels, stacked taglines or filler text; no serif or italic type; no orange, amber, beige or cream; no neon or glow; no purple/violet/indigo or multi-hue gradients; no glassmorphism; no emoji, sparkles, particles or confetti (brand-supplied exceptions excepted)"
       ]
     },
@@ -89,8 +96,93 @@
         "The supplied paper #FBF7F0 (a cream the hard bans would otherwise catch) is kept and listed in BRIEF.md as a brand-supplied exception, and lint-film.mjs passes with its token marked // cinetic:brand-supplied",
         "A streak visibly builds over seven days in real product UI, with consistent dates and counts",
         "Text and key UI stay inside vertical-video safe zones (not under the top ~220 px or bottom ~420 px platform chrome) and are readable on a phone",
+        "Film copy arrives as fragments of at most 4 words, one at a time: no frame shows more than about 6 words of it, and no sentence of 5 or more words lands as one block",
+        "Every fragment of film copy stays fully readable for at least 1 s",
+        "No overshoot, bounce or per-letter animation on copy",
         "The sound is locked to the picture (hits land on visible events) and the film reads with the sound off",
         "Respects the hard bans: no eyebrow/kicker labels, stacked taglines or filler text; no serif or italic type; no orange, amber, beige or cream; no neon or glow; no purple/violet/indigo or multi-hue gradients; no glassmorphism; no emoji, sparkles, particles or confetti (brand-supplied exceptions excepted)"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "murmur-update-calm",
+      "prompt": "Make a 20-second update video for X: our voice-memo app Murmur now labels who is speaking in a recording. Something like \"here is the newest Murmur\" and then show it working. 1920x1080 with sound. Keep it calm, and never put a lot of text on screen at once.",
+      "expected_output": "A ~20 s 1920x1080 MP4 with sound: a calm update film whose copy arrives as short fragments, one at a time, split around the product (a setup fragment, the product acting, then the name), with speaker labels shown working in real product UI, readable holds that never freeze, text-free picture stretches and soft, sparse effects over a calm licensed music bed.",
+      "files": [],
+      "expectations": [
+        "A final MP4 exists at 1920x1080",
+        "Duration is 20 s (+-1 s)",
+        "Renders at 60 fps (smooth UI and type motion)",
+        "Colour is tagged BT.709 (correct HD playback colour)",
+        "No motion stutter (frozen frames inside motion runs <= 1% of frames)",
+        "Has an audio track",
+        "True peak <= -1.0 dBTP after encode (no clipping on social platforms)",
+        "Integrated loudness -14 +-1.5 LUFS: the film is cut to a licensed instrumental track with the effects levelled over it (every cinetic film has music; SKILL.md Step 5)",
+        "Film copy is cut into fragments of 1-4 words revealed one after another: no frame shows more than about 8 words of it, and no sentence of 5 or more words lands as one block",
+        "At least one sentence is split around the product: a setup fragment, then the product or the feature acting with no new text, then the payoff fragment (the 'here is the newest' -> product -> name pattern)",
+        "Every fragment stays fully readable for at least 1 s, and no 5 s window resolves more than about 6 words of film copy",
+        "Film copy is visible on at most about two thirds of the frames, with at least one stretch of 1.5 s or more showing the product with no text",
+        "The film never freezes: reading holds keep a slow drift or creep, and nothing outside a reading hold sits static for more than about 1.2 s",
+        "No overshoot, bounce or per-letter animation on copy; emphasis comes from one accent colour or from position",
+        "Speaker labels are shown working in real, specific product UI (named speakers, a plausible transcript, consistent timestamps), not a generic waveform or floating card",
+        "Each text fragment gets at most one soft sound, never one per word",
+        "The sound effects are earshot kit takes (audio/kit.json with its kit.lock.json); the delivered soundtrack has no draft voices (out/qa/score.json: draft false, nothing missing)",
+        "Respects the hard bans: no eyebrow/kicker labels, stacked taglines or filler text; no serif or italic type; no orange, amber, beige or cream; no neon or glow; no purple/violet/indigo or multi-hue gradients; no glassmorphism; no emoji, sparkles, particles or confetti (brand-supplied exceptions excepted)"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "lattice-launch-music",
+      "prompt": "We're launching Lattice, a tool that turns a team's scattered docs into one map you can search. Make a 25-second launch film for X and LinkedIn, cut to music: an instrumental track we can post without crediting anyone on screen. Invent the brand, and use real photography where it helps instead of only shapes drawn in code. 1920x1080 with sound.",
+      "expected_output": "A ~25 s 1920x1080 MP4 cut to one licensed instrumental track with earshot effects levelled over it: calm copy fragments over a rich picture in one dealt direction, real imagery graded into one look, one signature shot, a lockup on the music's stop, and any credit the licence asks for in the delivery folder, never on screen.",
+      "files": [],
+      "expectations": [
+        "A final MP4 exists at 1920x1080",
+        "Duration is 25 s (+-1 s)",
+        "Renders at 60 fps (smooth type and camera motion)",
+        "Colour is tagged BT.709 (correct HD playback colour)",
+        "No motion stutter (frozen frames inside motion runs <= 1% of frames)",
+        "Has an audio track",
+        "True peak <= -1.0 dBTP after encode (no clipping on social platforms)",
+        "Integrated loudness -14 +-1.5 LUFS: a film cut to music",
+        "The music is one licensed, human-made, instrumental track: its record (audio/music/<name>.licence.json) passes credits.py --check and quotes the licence as read on the item's own page (licence_seen)",
+        "The track and everything mixed from it stay out of git: no audio file is tracked in the film project",
+        "No credit, artist name or licence text appears in the picture; a credit the licence asks for is in out/deliver/CREDITS.md and the post description",
+        "The track is cut only at bar lines (audio/music/edit.json), and the payoff lands on a music event (a stop, an entry or the ending), never mid-phrase",
+        "The effects sit over the bed at their kit levels (each within +-2 dB of its role's bed_db in out/qa/score.json), with a stop-down before the payoff instead of a duck under every effect; no draft voices (draft false, nothing missing)",
+        "The film follows one direction dealt by deck.py, recorded in TREATMENT.md's Direction block, with one signature shot; its devices come from several families and none repeats as filler",
+        "Real imagery from sources whose licences need no credit (assets.mjs) carries at least one beat, graded into one look, with a private licence record per asset and no credit on screen",
+        "Film copy is cut into fragments of 1-4 words revealed one after another: no frame shows more than about 8 words of it, and no sentence of 5 or more words lands as one block",
+        "The picture clears look-audit.py's picture and motion floors on the final render: neutral grounds, one accent on what matters, the camera or the ground alive through every hold",
+        "Respects the hard bans: no eyebrow/kicker labels, stacked taglines or filler text; no serif or italic type; no orange, amber, beige or cream; no purple/violet/indigo; no neon; light, glow and spectral colour only as part of a device with a job, every gradient dithered with no banding; no emoji, sparkles, particles or confetti"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "ferry-update-v2",
+      "prompt": "Ferry 2.0 is out. Make a 15-second update video for X, with music, showing the three changes: offline sync, a command palette and shared folders. Show each one working in the app, not as a list of features. Use our brand: ink #111418, paper #F7F8FA, accent #2F6FEB, typeface Inter, and end on the version.",
+      "expected_output": "A ~15 s 1920x1080 MP4 cut to a licensed instrumental track: an update film that opens on the version or the mark, shows the three changes as product moments in Ferry's own brand, lands one payoff and ends on the version card.",
+      "files": [],
+      "expectations": [
+        "A final MP4 exists at 1920x1080",
+        "Duration is 15 s (+-1 s)",
+        "Renders at 60 fps (smooth UI motion)",
+        "Colour is tagged BT.709 (correct HD playback colour)",
+        "No motion stutter (frozen frames inside motion runs <= 1% of frames)",
+        "Has an audio track",
+        "True peak <= -1.0 dBTP after encode (no clipping on social platforms)",
+        "Integrated loudness -14 +-1.5 LUFS: a film cut to music",
+        "The music is one licensed, human-made, instrumental track: its record (audio/music/<name>.licence.json) passes credits.py --check and quotes the licence as read on the item's own page (licence_seen)",
+        "The track and everything mixed from it stay out of git: no audio file is tracked in the film project",
+        "No credit, artist name or licence text appears in the picture; a credit the licence asks for is in out/deliver/CREDITS.md and the post description",
+        "The track is cut only at bar lines (audio/music/edit.json), and the payoff lands on a music event (a stop, an entry or the ending), never mid-phrase",
+        "The effects sit over the bed at their kit levels (each within +-2 dB of its role's bed_db in out/qa/score.json), with a stop-down before the payoff instead of a duck under every effect; no draft voices (draft false, nothing missing)",
+        "Built as an update film (new-film.sh --format update): a hook on the version or the mark from frame 0, the three changes, one payoff, the end card with the version",
+        "Each change is a product moment: a state that changes in real, specific Ferry UI (files syncing offline, the palette filtering a command, a folder shared with named people), never a bullet list or three captions",
+        "Fragments of 1-3 words; no frame shows more than about 6 words of film copy",
+        "The supplied colours and typeface are used as given and recorded as brand-supplied (brand/brand.json from brand.py, cinetic:brand-supplied in code); the grounds sit on the brand's own greys and the accent stays on what matters",
+        "Each change beat runs about 2-4 s with its own device from a different family; no device returns as filler",
+        "Respects the hard bans apart from what the brand supplies: no eyebrow/kicker labels, stacked taglines or filler text; no serif or italic type; no neon; no emoji, sparkles, particles or confetti"
       ]
     }
   ]

@@ -30,6 +30,13 @@
 #   <Comp>.mp4                --variants A,B: each composition through render.sh (sharp master, or
 #                             blurred with --variant-samples)
 #   qa/manifest.json          every file with its probe facts and check results
+#   CREDITS.md,               a film cut to a licensed track (audio/score.json "music"): scripts/audio/credits.py
+#   CREDITS_description.txt   checks the licence record (allowed licence, licence_seen quoted from the item's own
+#                             page, the file unchanged, a CC BY credit line) and writes both; the description text
+#                             (CC BY credits, courtesy lines) is printed, ready to paste under the post. Delivery is
+#                             refused when the record fails, and for a soundtrack score.py rendered with --draft.
+#                             A stem, the bed or the decoded track is never delivered: the music travels only
+#                             inside the picture (an audio-only file in the output folder fails the run)
 #
 # Options:
 #   --out-dir DIR        output folder (default out/deliver)
@@ -52,10 +59,20 @@
 #                        --samples-from F): only when their timing is identical to the master's.
 #                        Without it, variants render sharp, which is right when their fastest
 #                        motion is <= 12 px/f.
+#   --score FILE         the film's score.json, for the credits gate (default audio/score.json)
+#   --score-report FILE  score.py's report (default out/qa/score.json): a --draft build is refused
+# When every check passes it removes the render parts render.sh keeps until every gate has passed
+# (out/render/<master name>, and each variant's), unless render.sh --keep marked them.
 # Exit 0 = everything written and every check passed, 1 = a step or check failed.
 set -euo pipefail
-
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# Python: $PYTHON when it is set (the interpreter of a full environment; new-film.sh and npm's scripts/py.mjs
+# honour it too), else the one scripts/py.mjs picks (python3, python or py -3, one that imports numpy first),
+# so the Microsoft Store alias is never run
+PYCMD=()
+if [[ -n "${PYTHON:-}" ]]; then PYCMD=("$PYTHON")
+else read -r -a PYCMD <<< "$(node "$SCRIPT_DIR/py.mjs" --which 2>/dev/null || echo python3)"; fi
+python3() { "${PYCMD[@]}" "$@"; }
 usage() { sed -n '2,/^set -euo/p' "${BASH_SOURCE[0]}" | sed '$d' | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 die() { echo "deliver.sh: $*" >&2; exit 1; }
 step() { echo "[deliver] $*" >&2; }
@@ -63,6 +80,7 @@ step() { echo "[deliver] $*" >&2; }
 OUTDIR=out/deliver; POSTER_FRAME=""; LOOP=0; GIF=0; WEBM=0; ALPHA=""; ALPHA_WEBM=0; VARIANTS=""
 GIF_FPS=25; GIF_W=960; GIF_MAX=8; GIF_DITHER=sierra2_4a; WEBM_CRF=""; ALPHA_FRAMES=""; ALPHA_PROPS=""
 ENTRY=src/index.ts; AUDIO=public/audio/soundtrack.wav; VSAMPLES=""; POS=(); POSTER_FROM=""; COMP=Film
+SCORE=audio/score.json; SREPORT=out/qa/score.json
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) usage 0 ;;
@@ -86,6 +104,8 @@ while [[ $# -gt 0 ]]; do
     --entry) ENTRY=${2:?}; shift ;;
     --audio) AUDIO=${2:?}; shift ;;
     --variant-samples) VSAMPLES=${2:?}; shift ;;
+    --score) SCORE=${2:?}; shift ;;
+    --score-report) SREPORT=${2:?}; shift ;;
     -*) die "unknown option $1 (see --help)" ;;
     *) POS+=("$1") ;;
   esac
@@ -99,10 +119,14 @@ mkdir -p "$OUTDIR/qa"
 QA="$OUTDIR/qa"
 NAME=$(basename "${MASTER%.*}")
 STATUS=0
+PARTS_DONE=("out/render/$NAME")  # render.sh's kept parts, removed once every check has passed
 CHECKS="$QA/.checks.jsonl"; : > "$CHECKS"
 note() { printf '%s\n' "$1" >> "$CHECKS"; }
 
-read -r W H FPS N HAS_AUDIO <<< "$(python3 - "$MASTER" <<'PY'
+# Python helpers whose output is captured are shell functions called inside $( ), because bash 3.2
+# (macOS) cannot parse a heredoc written inside $( ).
+probe_master() {  # probe_master FILE: width height fps frames has_audio
+  python3 - "$1" <<'PY'
 import json, subprocess, sys
 from fractions import Fraction
 d = json.loads(subprocess.run(['ffprobe', '-v', 'error', '-count_packets', '-show_streams', '-of', 'json', sys.argv[1]],
@@ -111,7 +135,28 @@ v = next(s for s in d['streams'] if s['codec_type'] == 'video')
 a = any(s['codec_type'] == 'audio' for s in d['streams'])
 print(v['width'], v['height'], float(Fraction(v['avg_frame_rate'])), v['nb_read_packets'], int(a))
 PY
-)"
+}
+music_state() {  # music_state SCORE REPORT: "track" | "none", and "draft" when score.py rendered with --draft
+  python3 - "$1" "$2" <<'PY'
+import json, os, sys
+score, report = sys.argv[1:3]
+m = 'none'
+if os.path.isfile(score):
+    v = json.load(open(score, encoding='utf-8')).get('music')
+    m = 'track' if isinstance(v, dict) or (isinstance(v, str) and v not in ('none', 'synth')) else 'none'
+d = 'draft' if os.path.isfile(report) and json.load(open(report, encoding='utf-8')).get('draft') else 'final'
+print(m, d)
+PY
+}
+read -r MUSIC_KIND BUILD <<< "$(music_state "$SCORE" "$SREPORT")"
+[[ "$BUILD" != draft ]] || die "the soundtrack in $SREPORT is a --draft build (placeholder voices): it is never delivered. Render the kit (npm run kit) and the soundtrack again (npm run audio)"
+if [[ "$MUSIC_KIND" == track ]]; then
+  step "credits: the film plays a licensed track; checking its record"
+  python3 "$SCRIPT_DIR/audio/credits.py" --score "$SCORE" --report "$SREPORT" --out "$OUTDIR" \
+    || die "credits gate refused the delivery (see above): a film with a track ships with a valid licence record and its credits"
+  note '{"file":"CREDITS.md","check":"credits","pass":true}'
+fi
+read -r W H FPS N HAS_AUDIO <<< "$(probe_master "$MASTER")"
 step "$MASTER: ${W}x${H}@${FPS}, $N frames, audio $([[ $HAS_AUDIO -eq 1 ]] && echo yes || echo no)"
 TO_RGB="scale=in_color_matrix=auto:in_range=auto:flags=accurate_rnd+full_chroma_int,format=rgb24"
 
@@ -152,8 +197,8 @@ elif [[ -f "$HF_LAST" ]]; then
 else
   WHY+=("no $ENTRY (Remotion) and no $HF_LAST (hf-finish.sh); pass --poster-from PNG")
 fi
-if [[ -n "$PSRC" ]]; then  # the clean still must show the master's frame: same size, same picture
-  if ! MATCH=$(python3 - "$CLEAN" "$QA/.poster-master.png" <<'PY'
+poster_match() {  # poster_match STILL MASTER_FRAME: prints the difference, exit 1 if they differ
+  python3 - "$1" "$2" <<'PY'
 import subprocess, sys
 import numpy as np
 def rgb(p):
@@ -172,7 +217,9 @@ mad, far = float(d.mean()), float((d.max(axis=2) > 32).mean())
 print(f'MAD {mad:.2f}, {100 * far:.2f}% of pixels off by > 32 levels')
 sys.exit(0 if mad <= 2.0 and far <= 0.0025 else 1)
 PY
-  ); then
+}
+if [[ -n "$PSRC" ]]; then  # the clean still must show the master's frame: same size, same picture
+  if ! MATCH=$(poster_match "$CLEAN" "$QA/.poster-master.png"); then
     WHY+=("$PSRC does not match the master's frame $PF ($MATCH): a stale render, the wrong --comp or frame")
     PSRC=""
   fi
@@ -225,7 +272,7 @@ if [[ $GIF -eq 1 ]]; then
   ffmpeg -v error -y -i "$MASTER" -i "$QA/.palette.png" -lavfi "$F[x];[x][1:v]paletteuse=dither=${GIF_DITHER}:diff_mode=rectangle" \
     -loop 0 "$OUTDIR/$NAME.gif"
   rm -f "$QA/.palette.png"
-  mb=$(python3 -c "import os;print(round(os.path.getsize('$OUTDIR/$NAME.gif')/1e6,2))")
+  mb=$(python3 -c 'import os, sys; print(round(os.path.getsize(sys.argv[1]) / 1e6, 2))' "$OUTDIR/$NAME.gif")
   if python3 -c "import sys; sys.exit(0 if $mb <= $GIF_MAX else 1)"; then
     note '{"file":"'"$NAME.gif"'","check":"size","pass":true,"mb":'"$mb"'}'
   else
@@ -238,7 +285,10 @@ fi
 if [[ $WEBM -eq 1 ]]; then
   [[ -z "$WEBM_CRF" ]] && { [[ $LOOP -eq 1 ]] && WEBM_CRF=26 || WEBM_CRF=32; }
   AUD=(-an); [[ $HAS_AUDIO -eq 1 && $LOOP -eq 0 ]] && AUD=(-c:a libopus -b:a 160k)
+  # setparams labels the master's BT.709 frames with all four tags (no conversion): ffmpeg 7.1 and
+  # newer tag the stream from the frames, over -color_primaries/-color_trc (finishing.md, section 4)
   ffmpeg -v error -y -i "$MASTER" -map 0:v:0 $([[ $HAS_AUDIO -eq 1 && $LOOP -eq 0 ]] && echo "-map 0:a:0") \
+    -vf setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv \
     -c:v libvpx-vp9 -crf "$WEBM_CRF" -b:v 0 -row-mt 1 -deadline good -cpu-used 2 -pix_fmt yuv420p \
     -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv ${AUD[@]+"${AUD[@]}"} "$OUTDIR/$NAME.webm" \
     || die "webm encode failed"
@@ -289,6 +339,7 @@ if [[ -n "$VARIANTS" ]]; then
     [[ -n "$VSAMPLES" ]] && VA+=(--blur --samples-from "$VSAMPLES" --samples "$QA/samples-$V.json")
     if bash "$SCRIPT_DIR/render.sh" "$V" "$OUTDIR/$V.mp4" ${VA[@]+"${VA[@]}"} --entry "$ENTRY"; then
       note '{"file":"'"$V.mp4"'","check":"render","pass":true}'
+      PARTS_DONE+=("out/render/$V")
     else
       note '{"file":"'"$V.mp4"'","check":"render","pass":false}'; STATUS=1
     fi
@@ -325,8 +376,20 @@ json.dump(m, open(os.path.join(outdir, 'qa', 'manifest.json'), 'w'), indent=1)
 for e in items:
     print(f"  {e['file']:<28} {e['mb']:>8.2f} MB  {e.get('codec', '')} {e.get('size', '')} {e.get('pix_fmt', '') or ''}", file=sys.stderr)
 PY
+# the music travels only inside the picture: no stem, bed or decoded track among the deliverables
+loose=$(find "$OUTDIR" -maxdepth 2 -type f \( -iname '*.wav' -o -iname '*.mp3' -o -iname '*.flac' -o -iname '*.ogg' -o -iname '*.m4a' \
+  -o -iname '*.aac' -o -iname '*.aif' -o -iname '*.aiff' -o -iname '*.opus' \) | head -5 | tr '\n' ' ')
+if [[ -n "$loose" ]]; then
+  echo "deliver.sh: an audio-only file is in $OUTDIR ($loose): a stem, the bed or a decoded track is never delivered (the licences allow the music only inside the film); remove it" >&2
+  STATUS=1
+fi
 rm -f "$CHECKS"
 stray=$(find "$OUTDIR" -maxdepth 1 -type f \( -name '*.json' -o -name 'sheet*' -o -name 'qa-*' -o -name '*.log' \) | head -3 | tr '\n' ' ')
 [[ -z "$stray" ]] || echo "deliver.sh: warning: QA files at the top of $OUTDIR ($stray); move them into $QA, the top level is for deliverables" >&2
+if [[ $STATUS -eq 0 ]]; then  # every gate has passed: the render parts render.sh kept go (a --keep mark stays)
+  for P in "${PARTS_DONE[@]}"; do
+    if [[ -f "$P/bundle.key" && ! -f "$P/.keep" ]]; then rm -rf "$P"; step "removed the render parts in $P"; fi
+  done
+fi
 step "$([[ $STATUS -eq 0 ]] && echo 'done' || echo 'FAILED a check'): $QA/manifest.json"
 exit $STATUS

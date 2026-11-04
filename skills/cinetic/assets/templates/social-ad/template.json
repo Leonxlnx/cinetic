@@ -1,0 +1,69 @@
+{
+ "name": "social-ad",
+ "about": "A short social ad (about 17-22 s) on a lit page, every seam hidden inside a motion, the product's own content built in code (its items as content tiles, its screen, the real marks of what it works with) or, where that content is pictures, real photographs (never drawn): the opener said in one confident move and spreading apart into a stack of what the product holds, the mark, the claim inside a field of that content with its last word on the accent pill, a label that rolls its last word over moving content, two imperatives, the lockup. Each slot plays one of two or three devices dealt per film from the name (src/deal.ts), so no two ads run one fixed sequence. new-film.sh --template social-ad lays these files over the Remotion starter.",
+ "engine": "remotion",
+ "pace": "crisp",
+ "type_family": "bold",
+ "bpm": 150,
+ "deal": {
+  "seed": "the product's name (src/ad.ts seed re-deals, devices pins a slot); src/deal.ts deals and documents each device",
+  "slots": {
+   "open": ["land", "build"],
+   "stack": ["pile", "fan"],
+   "brand": ["spin", "tile"],
+   "field": ["wall", "ring", "depth"],
+   "label": ["rivers", "ticker", "screen"],
+   "taglines": ["panel", "claim"],
+   "end": ["spin", "rise"]
+  }
+ },
+ "music": {
+  "required": true,
+  "slot": "audio/music/",
+  "about": "Every ad is cut to a licensed, human-made, instrumental track (references/music.md): a driving track whose downbeats carry the act lines and whose hits the landings, the mark and the rush ride; earshot effects mark what lands; never effects only.",
+  "pick": "find this film's own track: node scripts/music.mjs search --mood \"<the film's mood words>\" --bpm 140-160 --length <s>, then music.mjs sheet --measure and music.mjs get '#n' --to audio/music (its licence record beside it; never the last film's track); 140-160 BPM (or a half-time 70-80) with clear hits suits one bar an act (a slower track grows nothing; a faster one gives an act whose line cannot be read a bar more: src/timeline.ts BARS)",
+  "add": "bash scripts/new-film.sh <dir> --template social-ad --music <file> --title T --artist A --source S --page URL --licence L --seen-quote Q --seen-url URL, or later: python3 scripts/audio/track.py add <file> ...",
+  "then": [
+   "npx tsx -e \"const t = require('./src/timeline.ts'); console.log(t.BARS, t.DEAL)\"   (the bars at the track's tempo, and the dealt devices)",
+   "python3 scripts/audio/track.py edit --bars N --reveal-bar K --end auto  (its own ending, else a fade: never a cut)",
+   "python3 scripts/audio/track.py grid",
+   "python3 scripts/audio/track.py check"
+  ]
+ },
+ "next": [
+  "social ad: fill src/ad.ts (the script in plain words: the opener says what the product is with its name first, 2-7 words a line; the product's own items as tiles; the products it really works with as integrations),",
+  "  fetch the real marks of those products: node scripts/logos.mjs get <name> --film . (one per integration), then look at npx remotion still KitLogos,",
+  "  when what people keep in it is pictures, real photographs for ad.ts pictures: node scripts/assets.mjs search \"<subject>\" --kind photo --fit 4:5 --clean, sheet, get '#n' --to public/assets, grade (the cards and the curved rivers take them),",
+  "  see the devices the name deals (src/deal.ts; ad.ts seed re-deals), rebuild the product's items and screen from its real ones, then deal its direction:",
+  "  python3 scripts/deck.py --brief \"<one line>\" --format launch --have ui --options 3 (references/templates.md)"
+ ],
+ "copy": [
+  "src/ad.ts",
+  "src/deal.ts",
+  "src/timeline.ts",
+  "src/Film.tsx",
+  "src/Root.tsx",
+  "src/sync.ts",
+  "src/acts/stage.tsx",
+  "src/acts/Open.tsx",
+  "src/acts/Brand.tsx",
+  "src/acts/Field.tsx",
+  "src/acts/Label.tsx",
+  "src/acts/Taglines.tsx",
+  "src/acts/End.tsx",
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "keep_if_present": [
+  "src/brand/identity.ts",
+  "src/brand/logo.ts"
+ ],
+ "remove": [
+  "src/acts/Act1.tsx",
+  "src/acts/Act2.tsx",
+  "src/acts/Act3.tsx",
+  "src/acts/Act4.tsx",
+  "src/acts/ground.tsx",
+  "src/acts/plate.tsx"
+ ]
+}

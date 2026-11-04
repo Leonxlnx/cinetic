@@ -1,0 +1,3 @@
+Fixture for scripts/test/lint-film.test.mjs (a film folder with device palettes). expect: banned-color=1 off-token-color=2 device-palette=1 device-palette:warn=1
+fx/Spectrum.ts: a marked block covers its spectral run up to the blank line (banned stops included); a stray stop after it is off-token; a marker without its job is an error (its block is still covered).
+fx/Mask.tsx: a marker in the leading comment covers the whole file. scenes/Palette.ts: outside fx/ and lib/ the marker is not honoured (a warning) and its banned stop still fails.

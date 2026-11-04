@@ -1,264 +1,360 @@
 # Motion tokens
 
-Covers the house motion system: easing tokens and when to use each, spring presets and the damping rule, the `hitPulse` envelope, stagger and choreography constants, anticipation, landings and weight. Read it before Step 4 (Build), and whenever motion looks floaty, bouncy, uniform or mechanical.
+The house motion system: curves by role, special curves for primitives, spring presets and the one spring class, the
+duration, time-constant, stagger, typing and speed tables, velocity carried through cuts, holds that creep, overlap,
+oversized landings, stepped time, the pace knob and the `hitPulse` envelope. Read it before Step 6 (Build), and
+whenever motion looks floaty, bouncy, uniform or mechanical.
 
-The numbers are proven defaults, measured against Remotion 4.0.529 at 60 fps. Treat them as starting points: a brand with its own motion language wins, but keep it to a small set of named tokens.
+Everything lives in `src/lib/anim.ts` (curves, springs, tables), `src/lib/pace.ts` (the pace), `src/lib/handoff.ts`
+(carry, creep, overlap), `src/lib/continuity.ts` (glides, the optional hold creep, landing before a cut) and `src/lib/cadence.ts`
+(stepped and irregular time); HyperFrames carries the same numbers in
+`motion.js` (`scripts/test/mirror.test.mjs` keeps them equal). Numbers are house defaults with normal ranges at 60 fps
+(`f@60`); every helper takes the film's fps from the film context, so the same numbers give the same motion in
+seconds at 24, 25, 30 or 60 fps.
 
 **Contents**
 1. [The laws](#1-the-laws)
-2. [Easing tokens](#2-easing-tokens)
-3. [Springs](#3-springs)
-4. [Scale, zoom and stepped looks](#4-scale-zoom-and-stepped-looks)
-5. [hitPulse: the one envelope for punches and ticks](#5-hitpulse-the-one-envelope-for-punches-and-ticks)
-6. [Choreography and stagger](#6-choreography-and-stagger)
-7. [Anticipation, contact and landing](#7-anticipation-contact-and-landing)
-8. [Starter primitives](#8-starter-primitives)
-9. [Checks](#9-checks)
+2. [Curves by role](#2-curves-by-role)
+3. [Special curves](#3-special-curves)
+4. [Springs and the one spring class](#4-springs-and-the-one-spring-class)
+5. [Tables: durations, time constants, staggers, typing, speed](#5-tables)
+6. [Speed through cuts, holds that live, overlap](#6-speed-through-cuts-holds-that-live-overlap)
+7. [Scale: log space, oversized landings, breath](#7-scale-log-space-oversized-landings-breath)
+8. [Stepped and irregular time](#8-stepped-and-irregular-time)
+9. [The pace knob](#9-the-pace-knob)
+10. [hitPulse, anticipation, contact and landing](#10-hitpulse-anticipation-contact-and-landing)
+11. [The 1.1 names](#11-the-11-names)
+12. [Checks](#12-checks)
 
 ---
 
 ## 1. The laws
 
-- **All motion comes from `src/lib/anim.ts`**: `E` (easing tokens), `SPR` (spring presets), `tw`, `prog`, `mix`, `lmix`, `clamp`, `spr`, `hitPulse`, `squash`, `blurIn`, `blurOut`, `arrive`, `arriveK`, `depart`, `rand`, `fd`, `stagger`, `inertia`, and the types `Ease` and `Spr`. A raw `Easing.bezier(…)` or `Easing.spring` anywhere else is a lint error (`scripts/lint-film.mjs`), and spring configs belong in `SPR` for the same reason: consistent motion is what makes it read as a brand, and ad-hoc curves are what make it read as generated. Need a new curve or spring? Add a named token with a comment saying its job.
-- **Entrances decay, exits accelerate.** Things arrive fast and settle (`E.out`); they leave slowly then fast (`E.in`). Only the camera eases both ways.
-- **Fades run 10–14 f on `E.smooth`.** Never fade out on `E.out`: it puts half the change in the first frame, so the element pops to 55% and then drifts. A 6 f `E.in` fade does the reverse and vanishes in about one frame.
-- **Linear is for drift only** (a constant background creep, a clock). Anything that starts or stops uses a curve.
-- **Duration scales with distance.** `0.35 s + 1.35 ms per px`, clamped to 0.6–2.4 s for camera moves. The longest move in a film lasts at least 3× the shortest, or everything feels the same speed.
-- **Consecutive moves overlap by about 20 f** (more when the first move is slow), with the second starting on a zero-slope curve (`E.rest`, `E.smooth`). Two moves that each ease to rest and then restart read as stall-then-lurch (`references/camera.md` §6).
-- **One hero motion plus at most two supporting motions** at any moment. Stillness after motion is a tool; idle bobbing everywhere is noise.
-- **Speed limit:** anything faster than 12 px/f needs motion blur in the master (`references/finishing.md`); unblurred moves above about 20 px/f strobe. Pair fast with still: a 60–70 px/f whip reads best next to 0.3–0.6 px/f calm.
-- **Smooth, or it doesn't ship.** Jitter, pixel-snap stairs (`references/chromium-rendering.md`), single-frame pops and stall-then-lurch block the ship: the gate needs zero `forensics.py` fails and Finish at 5 (`references/review-loop.md` §10), however good the idea is.
-- **Discrete state reads whole frames.** Anything that switches (typed characters, labels, counters, layout thresholds) uses `fd(f)` (`Math.round`), so every motion-blur sub-sample of a frame agrees.
+- **All motion comes from the house files.** A raw `Easing.bezier(…)` or an inline spring config outside `lib/anim.ts`
+  is a lint error (`raw-easing`, `spring-config`). Need a new curve? Add a named token with a comment saying its job;
+  a retuned house curve gets a new name (`token-drift`).
+- **Vocabulary by role.** Every curve carries a family: **arrive** (peak speed on the first frame, a long settle:
+  entrances, inserts, landings), **reposition** (an S: moves inside a shot, camera reframes, whips), **leave** (ends at
+  speed: exits, ideally cut on their last frame) and **linear** (colour lerps, flash decays, drifts, counters,
+  log-scale zooms). `enter()`, `leave()` and `move()` refuse a curve of the wrong family (`ease-family`). Most
+  arrivals are front-loaded and most moves into a cut end at speed: grammar-score wants ≥ 71 % of each.
+- **Nothing on screen moves at a constant rate.** Every transform, position, scale, rotation, camera, blur and opacity
+  rides a curve, and most of them an exponential one (`lib/anim.ts`, p = the time share of the move, k = its rate):
+  a zoom runs in log space, `zoomAt(f, a, b, from, to, ease)` = from · (to / from)^ease(p), so a push or a dive reads as
+  one constant move to the eye; an arrival lands on expo out, `panTo()` = (1 - e^(-k p)) / (1 - e^(-k)); an exit leaves
+  on expo in, `exitTo()` = (e^(k p) - 1) / (e^k - 1), cut on its last frame; a pan or a travel inside a shot runs expo
+  in-out, `travel()` / `XP.travel`. `interpolate()` without an `easing`, `E.linear`, a raw `frame / n` ramp or a scale
+  tweened in value space on any of those properties fails `linear-motion`; only a true live rate (a clock, a real-time
+  progress bar, a counter's rate, a constant ambient drift) keeps a linear ramp, with `// lint-ok: <reason>`.
+- **Entrances decay, exits accelerate; never fade a statement out.** A statement leaves at speed (into a cut or a
+  mask at full opacity, or with a short fade in the last half of a moving exit). A standalone opacity fade of more
+  than 12 f@60 on a line is a tell (`fade-exit`). Opacity on type never runs on `E.linear` (`linear-opacity`).
+- **Type is solid early and moves while it lands.** A word reads as near-solid ink within 4-8 f@60: it cuts on at
+  35-100 %, rises out of a mask, or lands from a scale. A blur lasts 2-6 f, or rides a landing scale and clears on the
+  landing frame. Colour, not opacity, marks the newest word (the accent or a tint at full strength, cooling to ink over
+  13-18 f). Never two words half-faded and soft at once, never a soft reveal edge wider than about 1.2 em. A hero line
+  takes a confident preset (`HERO_PRESETS` in `fx/TypePresets`; `heroPreset()` turns a soft one into `crisp`), and its
+  exit carries it out at speed (`slide`, `drift`, `spread`, `collapse`), never a fade.
+- **Duration grows with distance.** Calm: 0.5 s + 1.6 ms per px, camera moves 0.9-3.0 s (crisp: 0.35 s + 1.35 ms/px,
+  0.6-2.4 s): `durFor(px, camera?)`. The slowest move in a film is at least 3× the fastest.
+- **One hero motion plus at most two supporting ones.** Ordinary moves stay under about 25 px/f; fast moves sit next
+  to real stillness and never happen while text is read.
+- **Never scale from zero.** An entrance starts oversized (1.28-1.9×) and settles (`fx/Oversize`, `scale-from-zero`).
+- **Smooth, or it doesn't ship.** Jitter, pixel-snap stairs, single-frame pops and stall-then-lurch block the ship
+  (zero `forensics.py` fails, Finish 5). Designed artifacts (steps, flashes, hard seams) are declared, so they read as
+  craft (`references/checks.md`).
+- **Continuous, or it reads as generated.** No state change happens in one frame (a film keeps one declared snap), no
+  hold freezes, every move lands before its cut, and each 3 s is built around one long carrying move rather than a
+  queue of short ones (§6 "Continuous motion"; the `forensics.py` motion gates).
+- **Discrete state reads whole frames.** Typed characters, labels, counters and layout switches use `fd(f)`
+  (`Math.round`), so every motion-blur sub-sample of a frame agrees.
+- **Pass the curve explicitly.** `prog(f, a, b, E.glideOut)`, never `prog(f, a, b)`: the default is a 1.1 arrival.
 
-```ts
-import { FPS } from '../timeline';
-/** Frames for a move of `px` pixels: 0.35 s + 1.35 ms/px, camera moves clamped to 0.6-2.4 s. */
-export const durFor = (px: number, camera = false) => {
-  const s = 0.35 + 0.00135 * px;
-  return Math.round((camera ? Math.min(2.4, Math.max(0.6, s)) : s) * FPS);
-};
-// durFor(150) = 33 f, durFor(350) = 49 f, durFor(1200, true) = 118 f
-```
+## 2. Curves by role
 
-## 2. Easing tokens
+`E` in `lib/anim.ts`. "t = .1" is the progress at 10 % of the time; durations are house values at 60 fps.
 
-`E` in `src/lib/anim.ts`, each an `Easing.bezier`. Values are the eased progress at 25% and 50% of the time; "peak" is where velocity is highest.
+| Token | Family | t = .1 | House dur | Use |
+|---|---|---|---|---|
+| `snapOut` | arrive | .50 | 32 f | words (opacity and rise as one), slot inserts, tiles, settles after a cut |
+| `glideOut` | arrive | .33 | 34 f | **the default arrival**: layers after a cut, slides, logo parts |
+| `settleOut` | arrive | .25 | 34 f | UI cards, slow camera and colour settles |
+| `softOut` | arrive | .16 | 34 f | tints, mask reveals, slow pushes under holds (an exponential, k 1.27) |
+| `liftOut` | arrive | .09 | 31 f | UI reframes: a short lunge (peak at t = .25), a long settle |
+| `jump` | arrive | (42 % in frame 1) | 22 f | line re-centre and make-room: 42 % in the first frame, 66 % by the second (exponential, k 12) |
+| `stdInOut` | reposition | .04 | 30 f | card repositioning, pull-backs, presses, a bar growing (peak at 35 %) |
+| `strongInOut` | reposition | .02 | 36 f | camera reframes and pans, lateral moves, colour cross-fades |
+| `whipBuild` | reposition | .02 | 28 f | whips: a long build, a short brake (peak speed at t = .55-.6) |
+| `anticipate` | reposition | (dips 4 %) | | one wind-up per film at most |
+| `softIn` | leave | .05 | 28 f | gentle exits, a logo shrinking before a cut |
+| `buildIn` | leave | .02 | 26 f | **the exit**: speed about ×1.11 a frame at the end |
+| `launchIn` | leave | .01 | 29 f | into a cut: speed about ×1.16 a frame at the end (×1.34 at 30 fps) |
+| `linear` | linear | .10 | | colour lerps and true live rates only (a clock, a real-time bar, a counter's rate, a constant ambient drift, each with `// lint-ok: <reason>`); never a move, a fade or a zoom (`linear-motion`) |
+| `XP.arrive` | arrive | .50 | | `expOut(7)`: pans landing, cards sliding home (`panTo()`) |
+| `XP.leave` | leave | .00 | | `expIn(6)`: exits and dives into a cut (`exitTo()`) |
+| `XP.travel` | reposition | .00 | | `expInOut(7)`: pans, travels, camera reframes, the default zoom curve (`travel()`, `zoomAt()`) |
 
-| Token | Bezier | 25% / 50% | Peak | Use for | Not for |
-|---|---|---|---|---|---|
-| `out` | .16,1,.3,1 | .83 / .97 | at start | arrivals, reveals, word entrances | fade-outs, anything leaving |
-| `outSoft` | .22,1,.36,1 | .77 / .96 | at start | gentle settles, secondary arrivals | hero impacts |
-| `in` | .7,0,.84,0 | .00 / .03 | at end | implosions, hard snaps out | short fades (vanishes in 1 f); ordinary exits into a cut (too steep) |
-| `exit` | .55,.055,.675,.19 | .04 / .15 | at end (2.7× mean) | exits into a cut: speed grows about ×1.1–1.2 per frame over the last 10–24 f, the cut on the fastest frame | arrivals |
-| `inOut` | .87,0,.13,1 | .04 / .50 | 50% (7.7× mean) | whips, lockup slides, morphs | slow moves (feels like a jump) |
-| `smooth` | .65,0,.35,1 | .07 / .50 | 50% (2.9×) | fades, drifts, holds, breath | arrivals (starts too slow) |
-| `ui` | .4,0,.2,1 | .24 / .78 | 30% | small UI changes: toggles, chips, rows | camera |
-| `cam` | .48,.1,0,.9 | .28 / .83 | 27% | camera pushes: slow start, early peak, long settle | UI |
-| `glide` | .47,.2,.15,1 | .27 / .82 | 31% | 150–350 px element moves with a soft landing | long travels |
-| `rest` | .45,0,.1,1 | .23 / .82 | 29% | any move that must end at rest; chaining after another move | impacts |
-| `contact` | .55,0,.9,.55 | .04 / .17 | at end (4.5× mean) | accelerating into an impact: it arrives with velocity | anything that should settle |
-| `whip` | .6,0,.15,1 | .10 / .75 | 39% | feature-to-feature whips, 24–30 f | holds |
-| `dolly` | .35,0,.65,1 | .15 / .50 | 50% (1.5×) | slow push through a hold | reveals |
-| `type` | .5,1,.89,1 | .44 / .75 | at start (2×) | an eased typewriter's character count (`TypeOn`) | motion of any kind |
-| `linear` | – | .25 / .50 | flat | drift, clocks, constant creep | anything that starts or stops |
+- **A film's role mix** sits near 55 % arrive, 16 % reposition, 19 % leave, 8 % linear, 2 % spring (grammar-score
+  `role-mix`). A film where every move is an in-out S reads as a slideshow; a film with no leave curves never cuts on
+  speed.
+- **`expOut(k)` and `expIn(k)`** are true exponentials normalised to land on 1 (`jump` is `expOut(12)`); `perFrame(r,
+  60, fps)` converts a per-frame ratio written at 60 fps.
+- **`Easing.spring()` is not an arrival curve:** it starts from zero velocity and feels late; use `spring()` for
+  physics and an arrive token for decaying arrivals.
+- Multi-segment moves take one easing per segment: `interpolate(f, [0, 18, 90, 104], [40, 0, 0, -40], { easing:
+  [E.snapOut, E.linear, E.buildIn], extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })`.
 
-- **A film uses about three easing characters** most of the time, typically `out` for arrivals, `cam` for the camera and `in` for exits, with the rest reserved for the moments that need them. Ten curves in equal measure read as no system.
-- **Specialist curves** that proved themselves in Tessel. Add them to `E` when a seam needs them:
+## 3. Special curves
 
-| Name | Bezier | Job |
+`M` holds the special curves that primitives use as their defaults, named for their job. A one-off curve for one
+moment stays a prop of that moment; it does not become a token.
+
+| Curve | Family | Job |
 |---|---|---|
-| `split` | .33,0,.1,1 | a window splitting open on a seam |
-| `close` | .55,0,.15,1 | a swing-shut that lands on the next act's first frame |
-| `pull` | .5,0,.12,1 | a long pull-back |
-| `iris` | .4,0,.7,.92 | an iris, applied in log space, landing with a little speed |
-| `shutter` | .2,.7,.2,1 | a collapse already moving on its first frame |
-| `hop` | .35,0,.7,.85 | eases off, lands with a little speed (ballistic hops) |
+| `M.rise` | arrive | a word's rise (`pace.riseDur`); its opacity rides the pace ease |
+| `M.press` | reposition | a press squeezing in |
+| `M.lockup` | reposition | a lockup slide: mark and name meeting (peak speed past the middle) |
+| `M.develop` | reposition | imagery developing from a tint to full colour |
+| `M.letterArc`, `M.letterGrow`, `M.letterSlide` | arrive / reposition | letters swinging up on an arc (about 4 % over), a first letter growing from the baseline, the letters sliding in after it |
+| `M.groupSettle` | arrive | a built word settling as one |
+| `M.pixelStair`, `M.demosaicZoom` | reposition / arrive | block size stepping out, and resolving back in |
+| `M.collagePush` | reposition | the slow push under a collage build |
+| `M.oversize` | arrive | an oversized landing settling to size |
+| `M.squeeze`, `M.swell` | reposition | a container gathering before it changes state; swelling into its next state |
+| `M.ringTighten` | reposition | a ring wipe tightening |
+| `M.focusSlide` | arrive | a word sliding home while it comes into focus |
 
-- **`Easing.spring()` is not expo-out.** It maps t ∈ [0,1] onto a normalized spring that starts from zero velocity: `Easing.spring({damping: 200})` gives 0.057 at t = 0.05 and 0.453 at t = 0.2, against 0.281 and 0.752 for `E.out`. It feels late and soft. The default config overshoots to 1.163. Use `spring()` for physics and `E.out` for decaying arrivals.
-- **Always clamp.** `interpolate()` extrapolates by default; `tw()` and `prog()` clamp both sides. A raw `interpolate` without `extrapolateLeft/Right: 'clamp'` is a lint error.
-- **Pass the curve explicitly.** Write `prog(f, a, b, E.smooth)`, not `prog(f, a, b)`, even where the default would do: a helper default of `E.out` caused four fade-out pops in Tessel.
+**Measured moves.** When a move is read from a clip frame by frame, keep the numbers instead of hunting for a token:
+`track(f, [[frame, value], ...])` draws a monotone cubic through the keys (no overshoot between two keys, the end
+values held outside them) and `trackLinear()` draws straight lines; `curveOf([0, ..., 1])` turns progress samples at
+t = 0, 1/n ... 1 into an ease for `prog()`. One table replaces a chain of tweens for a card's width, a pan's edge or
+a zoom. A measured curve is still a one-off for its moment: it lives in the act or the primitive's props.
 
-Multi-segment moves take one easing per segment (n − 1 for n keyframes):
+## 4. Springs and the one spring class
 
-```ts
-import { interpolate } from 'remotion';
-import { E } from '../lib/anim';
-// rise, hold, fall: in 18 f on out, hold, leave 14 f on in
-const y = (f: number) =>
-  interpolate(f, [0, 18, 90, 104], [40, 0, 0, -40], {
-    easing: [E.out, E.linear, E.in],
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-```
+`SPR` presets (Remotion configs, mass 1; ζ = damping / (2√(stiffness·mass)); settle = within 2 % of rest at 60 fps):
 
-## 3. Springs
+| Preset | ζ | Overshoot | Settle | Use |
+|---|---|---|---|---|
+| `critical` | 1.00 | 0 | 27 f | **the default** |
+| `criticalFast` | 1.00 | 0 | 18 f | markers, chips |
+| `criticalSlow` | 1.00 | 0 | 45 f | big objects, the camera |
+| `landing` | 0.59 | 9-11 % | 23 f | the house spring class: pill, bubble, aperture, logo |
+| `softLanding` | 0.66 | 4-7 % | 30 f | big framing objects |
+| `menu` | 0.65 | 6-10 % | 12 f | a menu or container snapping open |
+| `containerPop` | 0.54 | 12-13 % | 6 f | a container morph |
+| `wordDrop` | 0.57 | 11-12 % | 12 f | posterised word drops only |
+| `lazyWheel` | 0.50 | 15-17 % | 49 f | wheel pickers, after an anticipation dip |
+| `logoSwing` | 0.50 | 16-18 % | 59 f | a logo's rotation after a wind-up |
 
-`spring({frame, fps, config: {damping, stiffness, mass, overshootClamping}})` is real physics, and its frames can be computed for sound sync (`references/timing-grid.md` §7). Presets in `SPR`:
+- **One underdamped class per film.** `SPRING_CLASS` in `timeline.ts` names the one kind of element that springs
+  (the pill, the bubble, the logo), every time it moves; everything else settles critically. Two classes warn and three
+  error (`spring-budget`; tag a use `// spring: <class>`). Type never springs with overshoot.
+- **Overshoot belongs to a true landing**: an object arriving at a surface or a lock, with a contact you could put a
+  sound on. Clamp overshoot wherever it could collide or go negative (`overshootClamping`, or clamp the offset), and
+  snap to rest when `|1 − s| < 0.01`.
+- `spr(f, start, cfg)` is 0 before its start; `measureSpring` sizes a sequence; `src/lib/sync.ts` `hit()` and
+  `delayTo()` find the contact frame for the sound.
 
-| Preset | damping / stiffness / mass | ζ | Overshoot | 50% / 100% | Settles | Character, use |
-|---|---|---|---|---|---|---|
-| `snap` | 18 / 260 / 0.7 | 0.67 | 6% | 5 f / 10 f | 22 f | locks into place with a small overshoot: impacts, lock-ins |
-| `pop` | 11 / 180 / 0.6 | 0.53 | 14% | 5 f / 9 f | 32 f | a small object landing in its slot (a check badge that cannot collide): a true landing only, one of the 2 |
-| `land` | 14.5 / 200 / 1 | 0.51 | 15% | 6 f / 11 f | 40 f | a real bounce on a true landing: one of the 2 |
-| `micro` | 30 / 500 / 0.6 | 0.87 | 0.4% | 4 f / 11 f | 11 f | fast and precise: chips, badges, UI micro-states |
-| `firm` | 24 / 140 / 1 | 1.01 | 0% | 9 f / at rest | 38 f | the critically damped workhorse: UI arrivals |
-| `soft` | 26 / 120 / 1 | 1.19 | 0% | 10 f / at rest | 41 f | weighty: panels, cards, large type |
-| `heavy` | 30 / 90 / 1.4 | 1.34 | 0% | 13 f / at rest | 56 f | slow and massive: full-frame surfaces |
+## 5. Tables
 
-"Settles" is `measureSpring` (within 0.005 of rest). Configs that earned a name in Tessel and are worth adding to `SPR` when a film needs them:
+House numbers in `lib/anim.ts`, 60 fps frames unless noted. Pick the house value; move between short and long by size
+and importance.
 
-| Name | damping / stiffness / mass | Overshoot | Job |
+**`DUR`** (by class: shortest, short, **house**, long, longest), a selection:
+
+| Class | Frames | Class | Frames |
 |---|---|---|---|
-| impact | 23 / 320 / 1 | 7% | the upper limit for a visible impact |
-| detent | 24 / 380 / 0.6 | 1.6% | a reel or picker clicking home |
-| check | 12 / 220 / 0.5 | 11% | a tiny check badge landing (50% at 4 f): one of the 2 |
-| tile | 15 / 150 / 0.7 | 3.4% | tiles snapping into a grid (cue at 0.92) |
-| wordSlide | 20 / 170 / 0.9 | 1.3% | two words locking, clamped at the lock (reaches 1 at 19 f) |
+| `word` | 16, 24, **32**, 32, 57 | `ui` | 10, 20, **34**, 50, 70 |
+| `lineIn` | 12, 18, **28**, 54, 78 | `press` | 12, 17, **20**, 25, 32 |
+| `letter` | 12, 25, **34**, 45, 64 | `cursor` | 25, 31, **44**, 54, 90 |
+| `typeExit` | 7, 10, **17**, 24, 33 | `counter` | 24, 24, **34**, 80, 120 |
+| `exit` | 10, 15, **24**, 32, 44 | `morph` | 14, 16, **22**, 32, 49 |
+| `scaleIn` | 11, 20, **32**, 53, 81 | `mask` | 12, 17, **26**, 40, 58 |
+| `slideIn` | 15, 18, **30**, 39, 48 | `colour` | 12, 20, **34**, 54, 110 |
+| `whip` | 17, 21, **32**, 52, 94 | `zoomThrough` | 14, 24, **35**, 46, 75 |
+| `push` | 15, 28, **50**, 72, 86 | `pull` | 25, 30, **43**, 70, 129 |
+| `pan` | 27, 38, **48**, 72, 126 | `drift` | 18, 28, **49**, 82, 146 |
+| `logoPart` | 10, 20, **30**, 46, 80 | `hold` | 15, 24, **76**, 147, 302 |
 
-Rules:
-- **Default to critical damping**: `damping ≥ 2·√(stiffness·mass)` (ζ ≥ 1), or an ease. Bouncy springs everywhere are the most common tell of generated motion, and a hard ban (`SKILL.md`).
-- **Overshoot belongs only to a true landing**: an object arriving at a surface or a lock, with a contact you could put a sound on. Keep it to 1–7% (`snap`, `impact`), and use at most two visible landings per film, counting every `pop`, `land` or `check`. A card, a label, a chip or a camera that merely arrives never overshoots.
-- **Clamp overshoot wherever it could collide or go negative.** A piece arriving from the left must not pass its slot; a word sliding in must not close the word space (Tessel's "Everythingfits" frame). Either clamp the offset or set `overshootClamping: true`, which stops the spring dead on arrival; put the impact in a `hitPulse` punch instead.
-- **Snap the tail to rest** when `|1 − s| < 0.01`, so labels never creep a sub-pixel across a cut.
-- **A spring before its start frame is 0** (`spring()` returns 0 for negative frames), so `spr(f, start, cfg)` needs no guard.
+The full table (`typeOn`, `typeColour`, `typeScale`, `reflow`, `lineDraw`, `orbit`, `seamMove`, `collage`,
+`loader`, `ambient`, `focus`) is in `anim.ts`. A press is `PRESS`: squeeze 9, hold 3, release 10.
 
-```ts
-import { SPR, spr } from '../lib/anim';
+**`TAU`** (exponential time constants; for `expOut(k)` over d frames, k = d / tau; 99 % home after about 4.6 tau):
+marker 3, element 8, hero 17, world 30, UI exit 6, camera exit 19.
 
-// spr(f, start, cfg) = spring({ frame: f - start, fps: FPS, config: cfg })
-const s = (f: number, start: number) => {
-  const v = spr(f, start, SPR.snap);
-  return Math.abs(1 - v) < 0.01 ? 1 : v; // no sub-pixel creep at rest
-};
-// arrives from the left; never passes its slot, however the spring overshoots
-const pieceX = (f: number) => Math.min(0, (1 - s(f, 8)) * -1150);
-// geometry fed by overshoot is clamped, or Chromium keeps the stale SVG value
-const radius = (f: number) => Math.max(0, 30 * (1 - s(f, 8)));
-```
+**`STAG`** (staggers: shortest, short, **house**, long, longest): letter 2, 3, **4**, 8, 14; word 4, 7, **10**, 14, 14;
+row 6, 8, **9**, 10, 18; UI 2.5, 5, **7.5**, 17.5, 34; logo part 6, 6, **7**, 24, 30. Staggers are irregular by default
+(gap variation ≥ 0.15): a metronome stagger is a tell.
 
-- **`measureSpring({fps, config, threshold})`** returns the frames until the spring stays within `threshold` (default 0.005) of rest. Use it to size a `<Sequence>` or to start the next move once this one has truly settled.
-- **`spring({…, durationInFrames: n})`** stretches the same physics to a fixed length, which is handy when a spring must fit a bar. It keeps the overshoot shape, so recompute sync frames with it.
+**`ACCEL`** (gaps of an accelerating payoff): rows 18, 18, 14, 10, 8, 6, 6; montage 14 ×5, 10 ×3, 6 ×6; typing 5, 2,
+2, 1, 1, 1.
 
-## 4. Scale, zoom and stepped looks
+**`CPS`** (typing, characters per second): a human 19-45 (house 30, bursts of about 2); a prompt that speeds up from
+5 to 19; a stream 50-150.
 
-- **Scale and zoom interpolate in log space**: `lmix(a, b, t) = exp(mix(log a, log b, t))`. A linear 1 → 4 zoom spends most of its time at the small end and then rushes; log space feels like constant speed.
-- **`output: 'perceptual-scale'` is not log space.** It is area-linear: for 1 → 4 the midpoint is 2.92, against 2.0 for `lmix`. Use `lmix` for camera and iris moves.
-- **`posterize: n`** holds the input for n frames (`interpolate(f, [0, 10], [0, 1], {posterize: 3})` gives 0, 0, 0, 0.3, 0.3, 0.3, …). Use it only for a deliberate stop-motion look (`posterize: 5` at 60 fps reads as 12 fps), and never on text that must read smoothly.
+**`SPEED`** (px/s at 1080p: slow, house, fast): word rise 420, 630, 1080; UI card 390, 1080, 1900; slide-in 780,
+1860, 3200; cursor 1350, 1530, 2400; pan 570, 1700, 2640; whip peak 750, 1600, 3700 (never above 7400); hold drift
+6, 30, 90; a residual drift after a cut 45; motion blur becomes visible from about 900-1200.
 
-```ts
-import { E, lmix, prog } from '../lib/anim';
-// an iris that contracts from 80x onto a 28 px dot by the first beat, evenly paced
-const irisScale = (f: number, beat: number) => lmix(80, 1, prog(f, 0, beat, E.linear));
-```
+## 6. Speed through cuts, holds that live, overlap
 
-## 5. hitPulse: the one envelope for punches and ticks
+**A velocity-carried cut** (`lib/handoff.ts`) is two halves. `launch(f, cut, { vCut })`: the outgoing move
+accelerates into the cut and the cut frame is its fastest (house profile `LAUNCH`: the step k frames before the cut
+is vCut·e^(−0.47·k^0.76); the last frame grows the speed about ×1.6 at 60 fps, the frames before it ×1.3-1.5; a
+geometric build of ×1.11-1.16 a frame also works). `carry(f, start, { v0 | ratio, vCut })`: the incoming shot opens at
+a share of the outgoing speed (`CARRY.ratio` 0.4-1.4, house 0.7), drops fast (60 % of it at ×0.4 a frame), then
+decays slowly (×0.78-0.93 a frame, house 0.89) to a living residual of about 0.75 px a frame in the carried direction.
+Both halves take either sign: a negative `vCut` or `v0` moves left or up, the mirror image of the same curve.
+`carry(..., { settle: 60 })` brings the move to rest by that 60 fps frame instead (the last `settleOver`, house 24 f,
+ease out with no step in speed), so the camera locks for a read. `carriedCut()` puts both
+halves on one coordinate; `shotMove()` is a whole shot (opens carried, lives on its residual, launches into its own
+cut); `carryChain()` strings shots; `carryShot()` and `handoffShot()` carry a camera's x, y, log scale and roll
+through a cut. Declare the seam (`SEAMS`, kind `velocity`): forensics then fails it if direction or speed breaks
+(direction cosine ≥ 0.7, incoming 0.4-1.4× the outgoing, then decaying).
 
-Every punch, tick and beat pulse uses the same attack-decay envelope:
+**Holds rest.** The camera is still unless a shot declares a move; a hold may be completely still while the product
+changes in it (a value lands, a row fills, a cursor clicks, a line builds). No float, no drift, no idle push, no bobbing
+or breathing UI: those read as aimless and cheap. A creep, when a hold wants one, is sub-pixel and one way (`holdDrift`
+at most 0.2 px/f@60, 12 px/s; `creep()` at most about 1.5 %/s). A move that carries the cut speeds up into it over the
+last 12-20 f with `intoCut(f, cut, lead = 16)`. While text is read the frame stays under 90 px/s and 15 %/s. The gate is
+a dead stretch: 2.5 s outside the end lock where nothing at all changes (`forensics.py dead-stretch`, `motion-frozen`).
 
-```ts
-// in src/lib/anim.ts: t is in the film's frames; attack and tau are 60 fps frames
-export const hitPulse = (t: number, attack = 2, tau = 5) => {
-  const u = (t * 60) / FPS; // so a pulse lasts the same time at any fps
-  return u <= 0 || u > attack + 6 * tau ? 0 : u < attack ? Math.sin((u / attack) * (Math.PI / 2)) : Math.exp(-(u - attack) / tau);
-};
-```
+**Overlap and anticipation** (`OVERLAP`): a secondary move starts before its primary is 90 % home (`overlapAt(primary,
+0.9)`); the foreground lands about 20 f before the background (`leadBy(at, 20)`); the next element enters 0-1 f
+before the previous one leaves. Without overlap, two moves that each ease to rest read as stall-then-lurch.
 
-- **Shape:** rises on a quarter-sine to 1 at `attack` frames, then decays exponentially (0.37 at `attack + tau`, 0.05 at `attack + 3·tau`), and ends at `attack + 6·tau`. With the defaults it peaks 2 f after the cue and is gone by 32 f at 60 fps (1 f and 16 f at 30 fps: the input is scaled by 60/FPS, so every number in this file keeps its duration in seconds).
-- **Why not a half-sine:** `sin(π·t/N)` on a hard window has a velocity step at both ends (a visible clunk), and its peak lands N/2 frames after the sound: 6–8 f late in practice.
-- **Why 2 f after the sound:** picture that answers a sound a hair later reads as caused by it; picture that leads reads as "sound late".
-- **Repeating ticks take the max, independent causes add:** `Math.max(...beats.map((b) => hitPulse(f - b)))` so overlapping ticks never stack, and `1 + a·hitPulse(f - x) + b·hitPulse(f - y)` for two different impacts.
+### Continuous motion: glide, land, rest, land before the cut
 
-Amplitudes that worked (scale = `1 + amp · hitPulse(…)`):
+Generated motion has a measurable signature: many short events that start and stop in one frame, settles that fall from
+full speed to rest in a frame or two, moves cut while they are still fast, and a camera or a card that floats with no
+purpose. Crafted motion is one carrying move per few seconds with secondaries riding it, every move landing with a tail,
+and holds that rest while the product changes. `lib/continuity.ts` holds the fixes; `forensics.py` measures the result
+on the render (mean luma change at 160x90, one sample per 1/30 s) and `lint-film.mjs` catches the source patterns.
 
-| Use | Amplitude | Envelope |
-|---|---|---|
-| clock tick on a small dot | +18–30% | `hitPulse(t)` |
-| whole-mark beat punch in a hold | +1.5% | `hitPulse(t)` |
-| lock-in punch when a piece lands | +2.5–3% | `hitPulse(t)` |
-| payoff camera punch | +1.2% | `hitPulse(t, 3, 7)` |
-| word-lock punch | +1.8% | `hitPulse(t, 1, 4)` |
-| final blink of the mark | ≤ +10% (keep the mark's gaps ≥ 8 px) | `hitPulse(t)` |
-| contact squash | +8% wide, −10% tall | `squash(t)` = `hitPulse(t, 1, 4)` |
-
-## 6. Choreography and stagger
-
-| Pattern | Constant | Note |
-|---|---|---|
-| Statement words | 6 f apart, each 26 f on `E.out` | Tessel headlines ran 9 f / 28 f; a quiet descriptor 5 f / 24 f |
-| Burst words | 4 f apart | a punchy line landing on one beat |
-| Word exit | half the entry stagger, 16 f on `E.in` | exits are quicker than entrances |
-| Grids | 4 f per column, 6 f per row | reading order: left to right, then down |
-| Lists | 15 f per row (an 8th at 120 BPM) | locked to tempo |
-| A whole group | arrives within 30 f | longer reads as a queue, not a group |
-| "Human" gaps | irregular 7, 12, 18 f | clicks, keystroke bursts, a person's rhythm |
-| Spatial ripple | delay = distance / 60 px (1 f per 60 px) | from the cause outward, or from the centre |
-| Batch landings | 16th grid, 0–3 f seeded spread, first on the beat | `references/timing-grid.md` §5 |
-
-- **Order a stagger by importance, not by DOM order.** The element that carries the idea arrives first (or last, as the punchline); decoration never leads.
-- **A word reveal** (`src/fx/Words.tsx`): per word over 26 f on `E.out`, opacity 0 → 1, `translateY` 0.32 em → 0 through `arrive(p)`, blur 8 → 0 px (4–6 px for body lines, or none) through `blurIn(p, px)`, which is clear by 60% of the eased move. Blur only on entry, never left on readable text for more than 6 f. `blurIn` and `arrive` exist because Chromium steps blur radii (~0.5 px; under ~0.75 px renders fully sharp) and snaps vertical text to whole pixels, so a slow finish would snap into focus or settle in 1 px ticks (`references/chromium-rendering.md` §3, §15). Recipes for slams, locks and type that becomes the mark are in `references/copy-and-type.md` and `references/transitions.md`.
-
-```ts
-import { E, prog } from '../lib/anim';
-// a ripple from a cause at (cx, cy): each tile starts distance/60 frames after `at`
-type Tile = { x: number; y: number };
-const rippleIn = (f: number, at: number, t: Tile, cx: number, cy: number) => {
-  const start = at + Math.hypot(t.x - cx, t.y - cy) / 60;
-  return prog(f, start, start + 18, E.out);
-};
-// a grid: 4 f per column, 6 f per row
-const gridIn = (f: number, at: number, col: number, row: number) =>
-  prog(f, at + col * 4 + row * 6, at + col * 4 + row * 6 + 22, E.out);
-```
-
-## 7. Anticipation, contact and landing
-
-Weight comes from how a thing starts and stops. These recipes carry the exact numbers Tessel shipped with.
-
-- **Anticipation.** Before a hero move (not a UI tweak), pull 2–4% of the distance the opposite way over 6–10 f on `E.smooth`, then start the main move on a zero-slope curve (`E.rest`, `E.whip`). Use it once or twice per film; on every move it becomes cartoonish.
-- **Accelerate into contact.** A thing that hits something must still be moving on the contact frame: drive position with `E.contact` (or `E.in` over the last 10 f of a drop). An ease-out into a wall has no impact frame to put a sound on.
-- **Shape settles before position.** Width, height and radius finish 6 f before contact, on their own curve. Driving shape with the position ease crams the aspect change into the last 1–2 frames, where it reads as a cut.
-- **Contact squash.** On impact, widen and flatten against the contact edge: width × (1 + 0.08·q), height × (1 − 0.10·q), with `q = hitPulse(t, 1, 4)`, anchored at the edge it hit. `squash(t)` in `anim.ts` returns `{ along, across }` with exactly these factors.
-- **Landing settle**, for one of the film's two true landings only: `scale = 1 − exp(−t/4)·sin(t/1.6)·0.035`, plus an outline ring `exp(−t/9)` meaning "just moved".
-- **Falling card:** accelerate over 16 f with `((t + 16)/16)^2.2`, then settle `exp(−t/5)·sin(t/2.2)·10` px.
-- **Lift and fly:** lift over 14 f on `E.out` (z 70–130 px), travel on `E.inOut` with a `sin(π·t)·50` px arc, drop over the last 10 f on `E.in`. Ground shadow offset `(z·0.1, z·0.22)`, blur `3 + z·0.06` px, alpha `0.2 − 0.1·min(1, z/200)`. Paint lifted items above grounded ones (sort by z).
-- **Leaving for good:** drift 900 px off-frame while rising in z, fading over frames 22–46 of the move on `E.in`.
-
-```ts
-import { E, mix, prog, squash } from '../lib/anim';
-
-type R = { x: number; y: number; w: number; h: number };
-/** Move box a onto box b so it arrives with velocity at `to` and squashes against its bottom edge. */
-export const land = (f: number, from: number, to: number, a: R, b: R): R => {
-  const move = prog(f, from, to, E.contact); // centres accelerate into contact
-  const shape = prog(f, from, to - 6, E.inOut); // proportions settle 6 f early
-  const q = squash(f - to); // the impact, felt in the shape
-  const cx = mix(a.x + a.w / 2, b.x + b.w / 2, move);
-  const cy = mix(a.y + a.h / 2, b.y + b.h / 2, move);
-  const w = mix(a.w, b.w, shape) * q.across;
-  const h = mix(a.h, b.h, shape);
-  const hs = h * q.along; // squashed against its own bottom edge
-  return { x: cx - w / 2, y: cy + h / 2 - hs, w, h: hs };
-};
-```
-
-## 8. Starter primitives
-
-`src/fx/` in the Remotion starter holds tested versions of the moves generated films most often get wrong. Each is a pure function of the frame, placed by transform, built on `E`, `fd`, `arrive` and `blurIn`, with its failure mode in its doc comment. Defaults are 60 fps frames (converted with `f60`).
-
-| File | What it does | Defaults | Serves |
+| Rule | Number | Helper | Gate |
 |---|---|---|---|
-| `TypeOn.tsx` | typewriter with a caret; `typeOn()` gives the caret x (stepped and continuous, for a camera follow), `typeFrames()` the whole frame each key lands | 2 f per character on `E.type` (last key at ~80% of the box) or a linear `cps`; head fade 4 f; caret solid while typing, 30 f on / 30 f off when idle | prompts, search bars, a headline typed on |
-| `Scramble.tsx` | decode reveal: glyphs cycle through same-class, same-width glyphs, then lock; `scrambleFrames()` gives the lock frames | fade-in 10 f, hold 18 f, a lock every 3 f left to right (or seeded random), ~1.5 glyph changes per frame, cycling glyphs in `C.mute` | IDs, prices, codenames, a stat that resolves |
-| `Roll.tsx` | rolling digits in per-column masks; `countSteps()` turns a count into steps, so a fast count spins like an odometer | each changed digit slides 14 f on `E.out` through `arrive` (k from `arriveK`), starting 1 f before its step; count 60 f on `E.out`; tabular, fixed columns | counters, totals, a metric that counts up |
-| `Morph.tsx` | one rounded rect from state A to B (x, y, w, h, radius, fill, stroke, shadow) that clips each state's content, which stays put; `morphBox()` gives the geometry | 40 f on `E.inOut` (or a `SPR.firm` spring); content A out over the first 35%, B in over the last 40% | pill → card, button → panel, caret → pill |
-| `Iris.tsx` | reveal (or a solid accent flood) through a clip circle from a point; `close` reverses it | 24 f, radius 1 px → far corner + 2 px in log space on `E.out` (`E.in` closing); optional ring ahead of the edge | a glyph or button opening the next shot, the one accent flood |
-| `MaskRise.tsx` | words or lines rise from behind a clip under the baseline and leave through the top | 30 f per unit on `E.out` through `arrive` (k from `arriveK`), 5 f stagger; exit 16 f on `E.in`, half the stagger | headlines, captions, the closing line |
+| No state change in one frame | a list step, a selection box, a counter's roll or a field's width glides 16 f@60 on `E.glideOut` (8 f at 30 fps), smeared along its motion by a 180° shutter; a step that starts before the last has landed blends out of it | `fx/GlideStep` (a list: `HardStep`'s props), `glideValue`, `glideBox` | `motion-snap`: at most 0.6 undeclared one-frame changes per 3 s; lint `snap-step` |
+| One snap per film | a stepped list, a snap zoom or a line snap is the film's one snap device, declared through its `declares()` in `src/sync.ts` (declarations named alike, `tick-0` ... `tick-9`, are one device) | `fx/HardStep`, `fx/SnapZoom`, `fx/LineSnap` | `motion-snap`: more than 1 declared device fails; lint `snap-step` |
+| Holds rest, nothing dies | a hold may be completely still (house: no drift; a creep at most 0.2 px a 60 fps frame, one way); what changes in it is the product (a value, a row, a cursor, a line building). 2.5 s where nothing at all changes is a dead stretch | `holdDrift(f, from, { px, angle })` (house 0) | `motion-frozen` / `dead-stretch`: 2.5 s in a row where nothing changes fails (the opening 0.5 s, the end lock and declared freezes aside); lint `camera-float` (a drift over 0.2 px/f@60) |
+| Moves land with a tail | arrivals settle from their peak to 20 % of their speed over 4-6 f@30: `E.glideOut` over 16 f@60 or more, `E.settleOut` for UI cards. The 1.1 `E.out` over 16 f settles in 3 f@30 and the film's median drops under the gate | arrive tokens (§2) | `motion-decay`: a median under 3.5 f@30 fails |
+| One carrying move per 3 s | at most 2 primary moves per 3 s, each 48 f@60 or longer; secondaries overlap the primary by 30-50 % instead of queueing after it | `overlapAt`, `leadBy`, `camPath` | `motion-density`: more than 2 primary moves per 3 s fails; lint `move-queue` |
+| The camera moves with a purpose | the stage camera is still; an act declares a move only where it shows something: a push that closes on the control that changes, a track that follows what travels, a pull that reveals the whole (house push x1.06, pull x0.94, track 120 px, 72 f on `E.strongInOut`, from rest to rest); under a move the planes part (`Depth z`: a back layer 0.6, a near plane 1.35, the ground held at 0). A list scrolls when the product scrolls it (`scrollBy`), a landing settles on a short tail (`tail`, 16 px) and rests. No float, no sway, no bob, no breathing UI | `ActStage` `moves` / `stageMove`, `stageAt` (`lib/drift.ts`, `fx/Float`), `Depth`, `scrollBy`, `tail` | `camera-wander`: a slow pan or push one way and back inside a shot warns, in two shots fails; a camera that never rests warns; lint `camera-float`, `idle-bob`, `card-tilt` |
+| Land before the cut | a cut or an unmount waits until the move is under 10 % of its peak speed, unless a declared whip or velocity seam carries it across | `landBeforeCut(move, cut)` (throws at import with the frame it lands on), `latestStart(cut, dur, ease)`, `landedAt(move)` | `motion-stop`: a move going still in one frame from above 15 % of its peak fails; `motion-cut`: a cut into a braking move warns; lint `unmount-moving` |
 
-In `src/lib/`: `stagger(i, n, span, ease)` spreads starts over a span; `inertia(f, start, v0, decay = 0.89)` coasts a scroll that enters at peak speed (closed form; 8.6·v0 px of travel, within 0.5 px of rest after about 60 f); `zoomHandoff(t, v0, settle = 30)` in `camera.ts` continues a zoom-through at the outgoing log-scale speed (`zoomSpeed`) and decays it to rest, so the cut reads as one move (`references/transitions.md` §4.8).
+```ts
+const rows = <GlideStep frame={F} jump={ROW} at={[CUE.a, CUE.b, CUE.c]} width={W} height={H}>{list}</GlideStep>;
+const box = glideBox(F, [{ at: CUE.pick, value: picked }], resting);          // a selection box glides to its row
+const exitAt = landBeforeCut({ from: CUE.slide, dur: f60(34), ease: E.glideOut }, ACT.next.from); // fails at import if early
+<ActStage from={ACT.feed.from} moves={[stageMove(CUE.focus, 'push')]}><Feed /></ActStage> // Film.tsx: a declared push that lands
+const y = scrollBy(F, CUE.scroll, { pxS: 24, to: CUE.found }).y;             // the product scrolls its feed, then rests
+const t = tail(F, CUE.land, { angle: 0 });                                   // the card settles 16 px after it lands, then rests
+<Depth z={DRIFT.depth.back}>{backCards}</Depth>                              // the back layer lags the declared push: parallax
+```
 
-## 9. Checks
+## 7. Scale: log space, oversized landings, breath
 
-- `node scripts/lint-film.mjs src`: no raw curves outside `anim.ts`, no unclamped `interpolate`, no CSS transitions or animations.
-- Contact sheet at `--every 1` across every landing (`scripts/sheet.py`): the contact frame shows the squash, the frame before shows speed, and nothing interpenetrates on the overshoot frames.
-- `scripts/forensics.py` stalls and spikes: a stall between two moving stretches means a handoff eased to rest; a spike on a fade means an `E.out` fade-out.
+- **Scale and zoom interpolate in log space**: `lmix(a, b, t) = exp(mix(log a, log b, t))`, and `zoomAt(f, a, b, from,
+  to, ease = XP.travel)` = from · (to / from)^ease(p) is the house zoom: equal eased time buys an equal ratio. A scale
+  tweened in value space over a ratio of 1.6 or more fails `linear-motion` (it slows on screen as it grows). Remotion's
+  `perceptual-scale` output is area-linear, not log space.
+- **Oversized landing** (`OVERSIZE`, `fx/Oversize`): start at 1.28-1.9× and settle in 22-56 f on `M.oversize`, often
+  with a defocused start; this replaces every scale-from-zero.
+- **Scale breath around a cut** (`BREATH`, `lib/camera-moves.ts scaleBreath`): push 1-8 % into the cut over 10-20 f;
+  the next shot opens 5-12 % off and settles in 8-50 f, so the cut reads as one breath (`references/camera.md`).
+
+## 8. Stepped and irregular time
+
+- `lib/cadence.ts`: `stepFrame(f, { animFps })` (a layer at a lower cadence), `onTwos(f, on)`, `accel(n, first, last)`
+  (accelerating onsets), `reading(words, base)` (gaps from each word's length: the reading cadence), `irregular(seed,
+  n, mean, min, max)` (seeded human gaps).
+- `<Stepped fps={16}>` (`fx/Stepped`) runs its children on stepped time while the camera and footage outside stay
+  smooth; `on={2}` holds every pose two frames. It is built on a shifted `Sequence`, not `Freeze`, so nested sequences
+  see the right frame. Stepped layers get no shutter blur, and their range is declared (`STEPPED`), so forensics reads
+  the holds as craft. A stepped layer, like `HardStep`, is the film's one snap device (§6 "Continuous motion"): a
+  second one glides instead (`fx/GlideStep`, `glideValue`). `collage({...})` builds a stop-motion collage: elements born as cuts on irregular gaps (house
+  4 f average, 1-10 f), some re-cut larger a few frames later, a camera that steps on births and one slow push under
+  the whole build (`M.collagePush`).
+- Remotion's `posterize` holds an interpolation input for n frames; use `Stepped` for anything bigger than one value.
+
+## 9. The pace knob
+
+`PACE` in `lib/pace.ts` (`motion.js` in HyperFrames) holds every text default, in 60 fps frames (1.2: about 12 % quicker
+than 1.1 in every duration, never under the reading floor `READ_WPS`, 3 words a second). A film picks one with
+`PACE_NAME` in `timeline.ts` (calm unless the brief asks for energy); components read it from the film context, and
+`grid-check.ts` checks `COPY` against the same numbers (`scripts/gen-pace.mjs` copies the check numbers after an edit;
+`mirror.test.mjs` fails while they differ).
+
+| Field | Calm (default) | Crisp | Meaning |
+|---|---|---|---|
+| `wordDur`, `ease` | 28, `snapOut` | 23, `snapOut` | a word's fade-in |
+| `rise`, `riseDur` | 0.33 line box, 22 f on `M.rise` | 0.33, 19 f | a word's rise |
+| `stagger`, `cadence` | 11, reading | 8, reading | mean gap between word starts; each gap from the previous word's length |
+| `blur` | 0 | 0 | no entry blur on type by default (a focus-in word is a device: `FocusWord`) |
+| `exit`, `exitDur`, `exitFade` | auto, 15, 9 | auto, 12, 7 | exits accelerate: full opacity into a cut or a mask, otherwise a short fade in the move's last half |
+| `holdBase`, `holdPerWord`, `holdMin` | 36, 7, 52 | 28, 6, 36 | reading hold = max(holdMin, holdBase + holdPerWord·words); with the reveal never under 3 words a second (`READ_WPS`) |
+| `readMax` | 150 | 120 | a reading window counts as alive for at most this long |
+| `gapMin`, `gapMax` | 26, 90 | 16, 90 | picture beat between two fragments of a chain |
+| `maxNewWords`, `maxVisibleBuild`, `maxVisibleReplace` | 4, 8, 5 | 5, 10, 10 | words per fragment; words visible at once |
+| `maxWordsPerSec`, `avgWordsPerSec`, `maxWords` | 1.35, 1.0, 30 | 2.25, 1.35, 35 | copy rate and total |
+| `textShare`, `freeRun`, `maxGap` | 0.65, 90, 72 | 0.8, 60, 48 | share of frames with copy; the text-free run each 10 s; frames without an event |
+| `accentHold`, `accentCool` | 16, 12 | 6, 12 | the newest fragment holds the accent, then cools to ink linearly |
+| `recentre`, `recentreDur`, `recentreLead` | jump, 19, 0 | jump, 14, 0 | a build line re-centres with a jump on `E.jump` |
+| `move` | 0.44 s + 1.4 ms/px, camera 0.8-2.65 s | 0.31 s + 1.2 ms/px, 0.53-2.1 s | `durFor()` |
+| `fx` | MaskRise 9 f a unit, 9 apart, a linear head that stops, the last word 2.8× longer; TypeOn 2 f a character (30 cps); Scramble a lock every 3 f from the centre at 10 Hz; Roll 80 / 16; Morph 46; Iris 16 f in rate mode (×1.28 a frame) | the same, faster where it matters (MaskRise 9 f, 7 apart; Roll 53 / 12; Morph 35) | component defaults |
+
+A passage can run at the other tempo with a `pace={PACE.crisp}` prop. Both profiles build copy from fragments
+(`references/copy-and-type.md`).
+
+## 10. hitPulse, anticipation, contact and landing
+
+**`hitPulse(t, attack = 2, tau = 5)`** is the one envelope for every punch, tick and beat pulse: a quarter-sine to 1 at
+`attack` frames, then an exponential decay, gone at `attack + 6·tau` (60 fps frames, converted for the film).
+Repeating ticks take the max (`Math.max(...beats.map((b) => hitPulse(f - b)))`); independent causes add. Amplitudes
+(scale = 1 + amp·pulse): a clock tick on a small dot +18-30 %; a whole-mark beat punch +1.5 %; a lock-in punch
++2.5-3 %; a payoff camera punch +1.2 % (`hitPulse(t, 3, 7)`); a word-lock punch +1.8 % (`hitPulse(t, 1, 4)`). A
+half-sine on a hard window leaves velocity clunks and peaks 6-8 f late.
+
+- **Anticipation.** Before a hero move (not a UI tweak), pull 2-4 % of the distance the other way over 6-10 f, then
+  start the main move on a zero-slope curve (`E.anticipate` does both). Once or twice per film.
+- **Accelerate into contact.** A thing that hits something is still moving on the contact frame (a leave curve, or a
+  spring threshold of 0.92-1.0), so there is a frame to put a sound on.
+- **Shape settles before position.** Width, height and radius finish 6 f before contact, on their own curve.
+- **Contact squash.** On impact, widen 8 % and flatten 10 % against the contact edge, back over about 8 f:
+  `squash(t)` returns `{ along, across }`.
+- **Lift and fly.** Lift over 14 f (z 70-130 px), travel on a reposition curve with a `sin(π·t)·50` px arc, drop on a
+  leave curve over the last 10 f; the shadow comes from the key (`references/lighting.md`, `FloatShadow`).
+- **Vertical text** ends its rise on `arrive(p)` (and starts an exit on `depart(q)`), because the headless shell
+  snaps vertical text to whole pixels (`references/chromium-rendering.md`); `arriveK(px, dur, ease)` finds the stop.
+- **`blurIn(p, px)`** clears an entry blur by 60 % of the move; text lands sharp.
+
+## 11. The 1.1 names
+
+The 1.1 tokens keep their 1.1 shapes, so old acts and recipes render the same, and lint warns with the 1.2 name to
+use (`deprecated-token`):
+
+| 1.1 easing | Use instead | 1.1 spring | Use instead |
+|---|---|---|---|
+| `out`, `outSoft` | `snapOut` | `snap`, `land` | `landing` |
+| `in` | `launchIn` | `pop` | `containerPop` |
+| `exit`, `contact` | `buildIn` | `soft`, `firm`, `word` | `critical` |
+| `inOut`, `smooth` | `strongInOut` | `heavy`, `calm` | `criticalSlow` |
+| `ui`, `rest` | `stdInOut` | `micro`, `detent` | `criticalFast` |
+| `cam`, `glide` | `liftOut` | | |
+| `whip` | `whipBuild` | | |
+| `dolly` | `linear` (pushes on holds), `launchIn` (pushes into cuts) | | |
+
+`E.type` (an eased typewriter) and `E.expo` (the 1.1 glide re-centre) remain as named curves.
+
+## 12. Checks
+
+- `lint-film.mjs`: `raw-easing`, `spring-config`, `ease-family`, `token-drift`, `whip-shape`, `spring-budget`,
+  `spring-range`, `scale-from-zero`, `fade-exit`, `linear-opacity`, `linear-motion` (error), `deprecated-token`, `interpolate-clamp`, and the
+  continuous-motion rules `snap-step`, `camera-float`, `idle-bob`, `card-tilt`, `unmount-moving`, `move-queue`.
+- `grammar-score.mjs`: `role-mix`, `front-loaded`, `into-cuts`, `durations`, `staggers`, `holds`, `velocity-seams`,
+  `overlap` (`references/checks.md`).
+- `forensics.py`: `dead-stretch`, `camera-wander`, `carried-cut`, stalls between two moving stretches (a hand-over eased to rest), spikes
+  on fades, and the motion gates `motion-snap`, `motion-frozen`, `motion-decay`, `motion-density`, `motion-stop`,
+  `motion-cut` (§6 "Continuous motion").
+- Contact sheets at `--every 1` across every landing: the contact frame shows the squash, the frame before shows
+  speed, nothing interpenetrates on the overshoot frames.

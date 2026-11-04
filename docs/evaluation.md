@@ -10,16 +10,19 @@ cinetic asks an agent to do much more work than a plain attempt: invent a brand,
 
 Part of the question can be measured. Is the file the size, frame rate and length the brief asked for? Is the loudness on target? Does the loop have a seam? Do the hits land on their frames? The rest is judgement, which needs a comparison against a real alternative, made by judges who do not know which film came from which process. The evaluation does both and reports them separately.
 
-## The four briefs
+## The briefs
 
-[`evals/evals.json`](../evals/evals.json) holds four one-paragraph briefs, written the way a person would ask, each with a list of expectations the result is graded against. The films in the [README gallery](../README.md#gallery) were made from these same briefs.
+[`evals/evals.json`](../evals/evals.json) holds seven one-paragraph briefs, written the way a person would ask, each with a list of expectations the result is graded against. The judged rounds below used the first four. The fifth, a calm update film, was added in 1.1; the sixth and seventh, a launch film cut to music and a v2 update video in a supplied brand, were added in 1.2. None of the last three has been through a judged round yet.
 
 | # | Brief (id in `evals.json`) | Format | Sound | Expectations |
 |---|---|---|---|---|
-| 1 | Ledgerly Auto-Split (`ledgerly-feature-loop`) | 10 s landing-page loop, 1920x1080 | none; autoplays muted | 12 |
-| 2 | Kiln (`kiln-launch-teaser`) | 25 s launch teaser for X, 1920x1080, invented brand | yes | 15 |
-| 3 | Halden (`halden-logo-sting`) | 6 s logo sting, 1920x1080, plus a transparent version, invented logo | yes | 15 |
-| 4 | Quire Streaks (`quire-streaks-vertical`) | 12 s vertical video, 1080x1920, brand supplied | yes | 14 |
+| 1 | Ledgerly Auto-Split (`ledgerly-feature-loop`) | 10 s landing-page loop, 1920x1080 | none; autoplays muted | 15 |
+| 2 | Kiln (`kiln-launch-teaser`) | 25 s launch teaser for X, 1920x1080, invented brand | yes | 18 |
+| 3 | Halden (`halden-logo-sting`) | 6 s logo sting, 1920x1080, plus a transparent version, invented logo | yes | 16 |
+| 4 | Quire Streaks (`quire-streaks-vertical`) | 12 s vertical video, 1080x1920, brand supplied | yes | 17 |
+| 5 | Murmur (`murmur-update-calm`) | 20 s calm update film for X, 1920x1080 | yes, a calm music bed | 18 |
+| 6 | Lattice (`lattice-launch-music`) | 25 s launch film for X and LinkedIn, 1920x1080, invented brand, real photography | a licensed track | 18 |
+| 7 | Ferry (`ferry-update-v2`) | 15 s v2 update video for X, 1920x1080, brand supplied, three changes | a licensed track | 19 |
 
 Six checks appear in every brief: a final MP4 at the expected size (1080x1920 for the vertical brief, 1920x1080 for the rest, which the Kiln and Halden briefs do not state); the duration within a tolerance (from ±0.25 s on the loop to ±1.5 s on the teaser); 60 fps; colour tagged BT.709; no motion stutter (frozen frames inside motion runs at most 1% of frames); and the hard bans respected, with exceptions for anything the brand supplied.
 
@@ -64,6 +67,31 @@ A reading-tracker app ships Streaks next week. The brief asks for a 12-second ve
 
 This is the brief that tests whether a supplied brand overrides the bans.
 
+### 5. Murmur
+
+A voice-memo app now labels who is speaking; the brief asks for a calm 20-second update video for X, with sound, that never puts a lot of text on screen at once. The expectations check:
+- copy: fragments of 1–4 words, one at a time (no frame with more than about 8 words, no sentence of 5 or more words as one block), at least one sentence split around the product (setup fragment, the product acting with no new text, the payoff), every fragment readable for 1 s or more, at most about 6 words resolving in any 5 s, and copy on at most about two thirds of the frames;
+- motion: reading holds keep a slow drift, nothing outside a read sits still for more than about 1.2 s, and no overshoot, bounce or per-letter trick on copy;
+- sound: an audio track, true peak at or below -1.0 dBTP, integrated loudness of -14 ±1.5 LUFS (cut to a licensed instrumental track with the effects levelled over it; in 1.1 this brief expected effects only at -18), at most one soft sound per text fragment, and effects that are earshot kit takes with no draft voices;
+- the product: speaker labels working in real, specific UI.
+
+This is the brief that tests the calm pace and the fragment chains.
+
+### 6. Lattice
+
+A tool that turns a team's scattered docs into one searchable map; the brief asks for a 25-second launch film for X and LinkedIn, cut to an instrumental track that needs no credit on screen, with an invented brand and real photography. The expectations check:
+- the music: one licensed, human-made, instrumental track whose record passes `credits.py --check` and quotes the licence as read on the item's page; the track and anything mixed from it out of git; no credit in the picture (a credit the licence asks for goes into `CREDITS.md` and the post description); cuts only at bar lines, with the payoff on a music event;
+- the mix: -14 ±1.5 LUFS, true peak at or below -1.0 dBTP, each effect within ±2 dB of its kit level over the bed, a stop-down before the payoff instead of a duck under every effect, and no draft voices;
+- the picture: one direction dealt by `deck.py` with one signature shot, devices from several families, real imagery from no-credit sources graded into one look, fragments of 1–4 words, and the picture and motion floors of `look-audit.py` cleared on the final render.
+
+This is the brief that tests the music route, the deck and real imagery.
+
+### 7. Ferry
+
+"Ferry 2.0 is out": a 15-second update video for X with music, showing three changes (offline sync, a command palette, shared folders) working in the app, in a supplied brand (ink, paper, accent, typeface), ending on the version. The expectations check the update-film shape (a hook on the version or the mark from frame 0, the three changes, one payoff, the end card with the version), each change as a state that changes in real, specific UI rather than a list, fragments of 1–3 words, the supplied brand used as given and recorded as brand-supplied, a device per change from a different family, and the same music and mix checks as Lattice.
+
+This is the brief that tests the update format and brand intake together.
+
 ## Setup
 
 Each round ran every brief with cinetic at the version under test and compared the result against a baseline:
@@ -77,7 +105,7 @@ The baseline films were made once (the first three briefs in round 1; the Quire 
 | Expectation grader | yes; it reads each run's project files and notes, where the process shows | pass or fail for each expectation. Objective items (size, fps, duration, BT.709 tags, stutter, loop seam, loudness, true peak, the audio tail, and whether the audio, alpha and still files exist) are measured by script; the rest, including sync, are judged from frames, the audio and, where an expectation says so, the project files |
 | Neutral comparator | no | a senior creative director persona that picks the better film of the pair and scores both on eight dimensions from 1 to 5 (idea, motion, type and layout, colour and brand, product truth, sound, finish, brief fit): 40 points, or 35 for a silent film, where sound is not scored |
 | House-style comparator | no | the same comparison and rubric with a house style guide that restates the hard bans, plus the hard-ban violations it finds |
-| Previous-version comparator (from round 6) | no | the neutral comparison again, but against the film 0.5.0 made for the same brief in round 5 (0.9.0 had no judged round of its own), to show whether the new version moved forward on its own terms |
+| Previous-version comparator (from round 6) | no | the neutral comparison again, but against the film 0.5.0 made for the same brief in round 5 (1.0.0-beta had no judged round of its own), to show whether the new version moved forward on its own terms |
 
 For each pair, the two films were labelled A and B in a random order, and both comparators saw the same labels. The comparators saw only the delivered files, plus a contact sheet, sample frames and measured stats made the same way for both. They did not see the code, the agent's notes or the treatment, or which process made which film.
 
@@ -130,7 +158,7 @@ The neutral judge's preferences for the baseline fall into two groups.
 | 1 | Films were true of a simpler product; the story device drifted to a bare dot | 0.2.0: a specificity test at the concept gate, brand choices derived from three personality adjectives, a scored mark sheet |
 | 3 | The logo sting's mark read as a minus; the teaser's blue on slate read as a stock dev-tool look | 0.4.0: a 64 px misread test for marks, palettes drawn from the name's world, a note on framework-default blues |
 | 4 | Films were sparse, static at the end and quiet at the payoff | 0.5.0: the hero fills 40-70% of product shots, the last third keeps moving, music that leads the picture and resolves on a lockup chord, a payoff line |
-| 5 | Quiet stretches, end cards without a line saying what the product is, a loud sound on a still frame | 0.9.0: flagged quiet stretches get motion, a hook-energy warning, a required end-card descriptor, a still-hit warning in `av-audit.py`, a text-speed audit, counters that roll or cut |
+| 5 | Quiet stretches, end cards without a line saying what the product is, a loud sound on a still frame | 1.0.0-beta: flagged quiet stretches get motion, a hook-energy warning, a required end-card descriptor, a still-hit warning in `av-audit.py`, a text-speed audit, counters that roll or cut |
 | 6 | A 12 s film built all 14 techniques it drew and lost its one UI language; wide UI too small to read on a phone; bare numbers; a wordmark wipe that spelled "halder" on the way; a soft wash read as glow; stepped copies on moves too fast to blur | 1.0.0 (before round 7): draws sized to the film's length, built only where the concept carries them; push-ins of 2–5× and at most 1.7 s of wide UI; labels on data; no partial-glyph reveals; the wash flagged as glow; a too-fast gate in `render.sh --blur` |
 | 7 | A sound cued on a bar line after the word it belonged to had landed; a first second of a blinking caret; a letter mark that half-read as another word; a calm feed video mastered quiet; a loop whose poster frame did not name the product; two cuts inside acts that the blur turned into double exposures; an oversized opening line that read as a false start; a product first named at 19 s of 25 | 1.0.0 (release): sounds on the frame an arrival becomes readable, with a late-sound warning in `av-audit.py`; a still-opening gate in `forensics.py`; a word test for letter marks; −14 LUFS for every feed cut; loops that name the product on frame 0; hard cuts rendered sharp and a stop on a possible cut inside an act; an opening line that travels and hands straight over; the product named by a quarter of the runtime |
 
@@ -160,9 +188,11 @@ The difference is the extra work: building a brand, scoring and mastering the so
 - **Round 2 is missing.** A harness problem invalidated it, so 0.2.0 has no judged result.
 - **The released 1.0.0 is a little ahead of what was judged.** Round 7 tested a snapshot; the fixes from its findings (the sound timing, the still-opening gate, the word test, the feed loudness) shipped after it without a judged round of their own.
 - **The previous-version comparison reuses one film per brief.** The 0.5.0 films were made once, in round 5, so a 1.0.0 win against one of them is one draw, not a measured trend.
-- **Four short briefs.** No brief covers a UI walkthrough, a film longer than 25 s, or the social cut-downs.
+- **Short briefs, and only four judged.** No brief covers a UI walkthrough, a film longer than 25 s, or the social cut-downs, and the three briefs added since 1.1 have no judged results yet.
 
 ## Run your own evaluation
+
+`evals/evals.json` now holds seven briefs: the four of the judged rounds, a calm 20-second update film added with the fragment grammar in 1.1, and in 1.2 a launch film cut to music and a v2 update video in a supplied brand (see [CHANGELOG.md](../CHANGELOG.md)). The results above are for the first four briefs and the versions named in each round; 1.1 and 1.2 have not been through a judged round yet.
 
 This repository ships the briefs and expectations only, not a harness or judge prompts.
 

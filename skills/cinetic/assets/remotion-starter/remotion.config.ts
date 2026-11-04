@@ -22,10 +22,13 @@ const sandboxBrowser = (): string | null => {
 const browser = process.env.REMOTION_BROWSER || process.env.CHROMIUM_PATH || PINNED_BROWSER || sandboxBrowser();
 if (browser) Config.setBrowserExecutable(browser);
 
+// The bundle is built with Rspack (it ships with @remotion/bundler): the same frames, bit for bit, in seconds, where
+// webpack took one to eight minutes on a busy laptop. CINETIC_WEBPACK=1 goes back to webpack for one command.
+Config.setRspack(process.env.CINETIC_WEBPACK !== '1');
 // ANGLE gives the GPU code paths (WebGL, effects) a working GL backend in headless Linux.
 Config.setChromiumOpenGlRenderer('angle');
-// Intermediate frames: JPEG q95 (Remotion's default is q80, which blocks up soft gradients).
-// Use --image-format=png for dark gradient-heavy shots or alpha.
+// Intermediate frames: JPEG q95 (Remotion's default is q80, which blocks up soft gradients) for stills, sheets and
+// drafts; scripts/render.sh renders a master through lossless PNG (lit grounds band through JPEG).
 Config.setVideoImageFormat('jpeg');
 Config.setJpegQuality(95);
 // Deliverables: convert and tag every encode as BT.709 limited range, the way HD players decode

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tidepool: a made-up mark -->
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><title>Tidepool</title>
+<circle cx="40" cy="50" r="20" fill="#1A73E8"/>
+<g transform="translate(20 0)"><rect x="40" y="35" width="20" height="30" rx="4" fill="#34A853"/></g>
+</svg>

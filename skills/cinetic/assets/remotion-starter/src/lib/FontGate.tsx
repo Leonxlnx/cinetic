@@ -7,7 +7,7 @@ import { FACES } from '../brand/tokens';
  * Renders nothing until every face is decoded, then lets the frame render. No frame ever shows a
  * fallback face, and DOM/canvas text measurement (lib/measure.ts) always sees the real metrics:
  * a width measured before the font loads would be cached with the fallback's width.
- * `faces` are CSS font shorthands, one per weight/style in use: '600 16px "Geist Variable"'.
+ * `faces` are CSS font shorthands, one per weight/style in use: '600 16px "Inter Variable"'.
  */
 export const FontGate: React.FC<{ faces?: string[]; children: React.ReactNode }> = ({ faces = FACES, children }) => {
   const { delayRender, continueRender, cancelRender } = useDelayRender();

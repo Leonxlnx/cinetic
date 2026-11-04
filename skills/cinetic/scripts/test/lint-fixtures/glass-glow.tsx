@@ -1,4 +1,4 @@
-// Fixture. expect: glass=2 glow=5
+// Fixture. expect: glass=2 glow=5 gpu-cost:warn=2 (backdrop-filter also costs the GPU every frame)
 // (a ${C.accent} glow resolves through the tokens file; the starter test covers that case)
 import React from 'react';
 const C = { accent: '#1F86CD', ink: '#0D0E10' };

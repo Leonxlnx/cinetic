@@ -261,18 +261,23 @@ def main():
     dec = subprocess.Popen(['ffmpeg', '-v', 'error', *in_args, '-vf',
                             'scale=in_color_matrix=auto:in_range=auto:flags=accurate_rnd+full_chroma_int',
                             '-f', 'rawvideo', '-pix_fmt', 'rgb48le', '-'], stdout=subprocess.PIPE)
-    # the planes are quantized here and piped as they are: no scale filter, so no hidden dither
+    # the planes are quantized here and piped as they are, labelled BT.709 limited range by setparams
+    # so that ffmpeg converts nothing (a lossless encode decodes to the same planes). Unlabelled,
+    # ffmpeg 7.1 and newer insert a scaler that converts them from an assumed matrix (the colours
+    # shift: PSNR Y 22 dB in that lossless test) and, as the stream takes its tags from the frames,
+    # write no primaries or transfer.
     pix = 'yuv420p10le' if a.tenbit else 'yuv420p'
     gain, top, dtype = (4.0, 1023, '<u2') if a.tenbit else (1.0, 255, np.uint8)
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     x264 = (['-tune', a.tune] if a.tune else []) + (['-x264-params', a.x264_params] if a.x264_params else [])
-    # the tags describe the raw planes, so they go on the input. On the output side, ffmpeg 9 reads
-    # the untagged pipe as BT.601, auto-inserts a conversion to the requested bt709 matrix (shifting
-    # every colour) and still writes the file as bt709/unknown/unknown
+    # the tags describe the raw planes, so they go on the input (#3): on the output side alone, ffmpeg 9
+    # reads the untagged pipe as BT.601 and converts it to bt709 (shifting every colour). setparams
+    # labels the frames, whose tags ffmpeg 7.1+ writes to the file
     enc = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', pix, '-s', f'{W}x{H}',
                             '-r', f'{out_fps:g}',
                             '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
                             '-i', '-',
+                            '-vf', 'setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv',
                             '-c:v', 'libx264', '-preset', a.preset, '-crf', f'{a.crf:g}', *x264, '-pix_fmt', pix,
                             '-movflags', '+faststart', a.out], stdin=subprocess.PIPE)
 

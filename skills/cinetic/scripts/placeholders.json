@@ -1,0 +1,6 @@
+{
+ "about": "Words that mark text as unfinished. lint-film.mjs (placeholder-copy) and copy-check.py (placeholder, --ui) read this file; src/lib/placeholder.ts carries the same lists for the layout audit (scripts/test/placeholder.test.mjs keeps them equal). words: matched anywhere in a string, on word boundaries, any case. labels: a whole string that is only a generic label. numbered: a generic noun with a number and nothing else (Item 1, Card 3). A real product's own copy never needs any of them.",
+ "words": ["lorem", "ipsum", "dolor sit", "placeholder", "label text", "sample text", "sample copy", "dummy text", "dummy copy", "text here", "title here", "headline here", "copy here", "name here", "your text", "your title", "your headline", "your copy", "insert text", "add text", "type something", "asdf", "qwerty", "foobar", "john doe", "jane doe", "acme inc", "tbd"],
+ "labels": ["label", "text", "heading", "subheading", "subtitle", "caption", "button", "placeholder", "lorem", "foo", "baz", "xxx", "untitled text"],
+ "numbered": ["item", "label", "text", "title", "heading", "card", "feature", "name", "user", "product", "company", "project", "person", "tile", "image", "photo", "line"]
+}

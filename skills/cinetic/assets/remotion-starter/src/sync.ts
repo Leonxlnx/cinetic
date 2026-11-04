@@ -1,6 +1,7 @@
 // The sound events of the film, computed from the picture code. scripts/export-cues.ts calls the
-// default export and writes out/cues.json; scripts/audio/score.py turns each event into a tuned
-// sound on its exact frame (schema and recipes: references/sound.md).
+// default export and writes out/cues.json; scripts/audio/score.py voices each event with the
+// film's sound kit (audio/kit.json: the recorded take scripts/audio/sfx.mjs placed for its kind, the earshot take as the fallback) on its exact frame, levelled over
+// the film's licensed music track (audio/score.json "music"; schema, roles and levels: references/sound.md).
 //
 // The rules this file follows:
 // - Every sound has a visible cause, but not every picture event gets a sound: sound discrete
@@ -8,18 +9,26 @@
 //   motion silent, and let the music carry most cuts. A class of action, once sounded, is
 //   sounded every time.
 // - Impacts go on the contact frame, pops on the 50% frame, settles on the 97% frame, and a
-//   whoosh's apex on the velocity peak of the move it belongs to.
+//   whoosh's apex on the velocity peak of the move it belongs to (a launch peaks on its cut).
 // - Import the constants the acts animate with (they export them for this file) and compute the
 //   frame; a frame typed by hand drifts the first time an act is retimed.
-import { DOT_TRAVEL } from './acts/Act1';
-import { HERO, LOCKUP_MOVE } from './acts/Act2';
-import { MARK } from './brand/Mark';
-import { peak, settleOf } from './lib/sync';
-import { ACT, CUE, FPS, TOTAL, W } from './timeline';
+// - Text gets one soft `text` sound per fragment, on the frame its last word visibly comes to rest
+//   (chainResolves(), at the size and role the act sets it at), never one per word;
+//   what was just said is read in near-silence. The lockup is a stop-down and ONE clean element:
+//   score.py's stack guard warns when anything else lands within 3 f of it or leads into it.
+import { STATEMENT_SIZE, STATEMENT_SPEC } from './acts/Act1';
+import { MORPH } from './acts/Act3';
+import { KEY_PLAN } from './acts/Act4';
+import { chainResolves, declares as chainDeclares } from './fx/Chain';
+import { declares as gapDeclares } from './fx/InlineGap';
+import { declares as keyDeclares } from './fx/KeyLight';
+import { PACE } from './lib/pace';
+import { settleOf } from './lib/sync';
+import { ACT, copy, CUE, type Declares, FPS, PACE_NAME, type Salience, TOTAL } from './timeline';
 
 export type Kind =
   | 'tick' | 'tock' | 'hit' | 'land' | 'pop' | 'whoosh' | 'riser'
-  | 'drop' | 'key' | 'click' | 'snap' | 'swell' | 'bell' | 'suck';
+  | 'drop' | 'key' | 'click' | 'snap' | 'swell' | 'bell' | 'suck' | 'text';
 
 export type SoundEvent = {
   f: number; // absolute frame the sound belongs on (fractional is fine)
@@ -30,55 +39,66 @@ export type SoundEvent = {
   apexFrac?: number; // whoosh / suck: where in its length the loudest point sits (lands on f)
   dur?: number; // frames: whoosh, riser, swell and suck length
   variant?: string; // key: 'word' | 'space' | 'return' | 'back'; tick: 'crisp'; click: 'confirm'; land: 'light'; bell: 'motif'; pop: 'down'
+  action?: string; // what the picture does (scripts/audio/actions.py: 'card-land', 'click', 'toggle' ...): kit.py cast voices each action with its own sound
   id?: string; // a name for QA reports
+  structural?: true; // an act or section change, the reveal or the ending: it must land on a music event (av-audit music_sync, grid-check)
+  force?: true; // sound it even when a track accent already carries the moment
+  offset_ms?: number; // -500..500: overrides the kit role's offset for this event only (rare)
+  salience?: Salience; // what the moment asks of the eye: copy | hit | cut | move | life (see timeline.ts Salience)
 };
 
 /** Seconds to frames, for sound lengths. */
 const sec = (s: number) => Math.round(s * FPS);
-/** Screen x (px) to pan, scaled so nothing sits hard in one ear. */
-const panX = (x: number) => Math.max(-0.8, Math.min(0.8, ((x - W / 2) / (W / 2)) * 0.8));
-/** A mark piece's centre (mark units) to pan, with the mark at its hero position. */
-const panMark = (cx: number) => panX(HERO.x + (cx / 100) * HERO.size);
 /** The act a frame belongs to, so QA reports read "mark:dome" rather than a bare frame. */
 const actOf = (f: number) => Object.entries(ACT).find(([, a]) => f >= a.from && f < a.from + a.dur)?.[0] ?? 'tail';
+const pace = PACE[PACE_NAME];
 
-/** A move from frame a to b on `ease`: whoosh as long as the move with its apex on the velocity peak. */
-const move = (m: { from: number; to: number; ease: (t: number) => number }, weight: number, pan: number, id: string): SoundEvent => {
-  const apex = peak(m.from, m.to, m.ease);
-  const dur = Math.max(sec(0.3), m.to - m.from); // even a short whip gets 0.3 s of air
-  return { f: apex, kind: 'whoosh', weight, pan, dur, apexFrac: (apex - m.from) / (m.to - m.from), id };
+/**
+ * What the primitives the acts use do on purpose (each fx's declares(props, film), called with the
+ * props the acts pass): the statement's launch exit (a velocity seam on its cut), the picture in the
+ * line's gap cutting through its frames (one-frame steps) and the key light carrying the cut to the
+ * lockup (a light seam). export-cues writes them under declared.fx in out/cues.json; grid-check fails
+ * when the timeline's own declarations (SEAMS, STEPPED, FLASHES, CAMERA_BLUR) do not cover them.
+ */
+export const declares = (): (Declares & { id?: string })[] => [
+  { id: 'statement', ...chainDeclares({ ...STATEMENT_SPEC, id: 'statement' }, { pace }) },
+  { id: 'gap', ...gapDeclares({ swaps: [CUE.swapA, CUE.swapB], id: 'gap' }) },
+  { id: 'noon-lift', ...keyDeclares(KEY_PLAN) },
+];
+
+/** A launch into a cut: the whoosh's loudest point on the cut frame (its fastest), the tail running into the next shot. */
+const launchWhoosh = (cut: number, pan: number, id: string): SoundEvent => {
+  const dur = sec(0.45);
+  return { f: cut, kind: 'whoosh', weight: 0.9, pan, dur, apexFrac: 0.75, id };
 };
 
 export default function cues(): SoundEvent[] {
   const ev: SoundEvent[] = [];
 
-  // Act 1: each word pops ON its beat (the act starts it early by its 50% time) and the dot,
-  // waiting at the right end of the line, ticks with it. The pops climb the key's pentatonic.
-  [CUE.word1, CUE.word2, CUE.word3, CUE.word4].forEach((f, i) => {
-    ev.push({ f, kind: 'pop', weight: 0.9, pan: -0.35 + 0.2 * i, id: `word${i + 1}` }); // words run left to right
-    ev.push({ f, kind: 'tick', weight: 0.8, pan: 0.4, id: `dot-tick${i + 1}` });
-  });
-  // The line closes on E.contact and stops dead: the lock is a contact frame, tuned to the chord.
-  ev.push({ f: CUE.lock, kind: 'snap', weight: 1.2, pan: 0.1, id: 'lock' });
-  ev.push({ f: CUE.pulse, kind: 'tock', weight: 0.8, pan: 0.4, id: 'pulse' });
-  // The words leave as the dot sets off: one whoosh for the flight, travelling left with it.
-  ev.push(move(DOT_TRAVEL, 1, -0.5, 'dot-flight'));
-  // The flight ends at rest (E.rest), so its sound goes on the 97% settle, not on the act seam.
-  ev.push({ f: settleOf(DOT_TRAVEL.from, DOT_TRAVEL.to, DOT_TRAVEL.ease), kind: 'tock', weight: 0.7, pan: panMark(MARK.D.cx), id: 'dot-seats' });
+  // Act 1: one soft text sound as each fragment of the statement lands (at the statement's size and
+  // role), never one per word. Between them, the dot's landing is the picture beat's one sound, on its
+  // contact frame (the punch-in rides on it). The launch out of the line peaks on its cut.
+  chainResolves('statement', { size: STATEMENT_SIZE, role: 'display' }).forEach((f, i) => ev.push({ f, kind: 'text', weight: 0.8, pan: -0.1 + 0.2 * i, id: `fragment${i + 1}` }));
+  ev.push({ f: CUE.land, kind: 'land', variant: 'light', weight: 0.9, pan: 0.4, id: 'dot-lands' });
+  ev.push(launchWhoosh(STATEMENT_SPEC.exitAt, -0.5, 'line-launch'));
 
-  // Act 2: the dome and the block land on their contact frames (springs started early by delayTo).
-  ev.push({ f: CUE.pieceA, kind: 'land', weight: 1, pan: panMark(MARK.A.cx), id: 'dome' });
-  ev.push({ f: CUE.pieceB, kind: 'land', weight: 1, pan: panMark(MARK.B.x + MARK.B.w / 2), id: 'block' });
-  // The mark slides into the lockup while the name rides out to its right. The slide eases into
-  // the downbeat, where the camera punches: the name's lock rides on the drop instead of sitting
-  // on the slide's 97% frame 7 f earlier, where the two hits would flam.
-  ev.push(move(LOCKUP_MOVE, 0.7, 0.3, 'lockup-slide'));
-  ev.push({ f: CUE.lockup, kind: 'drop', weight: 1, id: 'lockup' }); // the payoff: the music lands on the tonic
-  ev.push({ f: CUE.lockup, kind: 'snap', weight: 0.8, pan: 0.2, id: 'name-locks' });
-  // The dot keeps the clock through the hold: the film ends on the tick it opened with.
-  ev.push({ f: CUE.tick1, kind: 'tick', weight: 1, pan: -0.15, id: 'hold-tick1' });
-  ev.push({ f: CUE.tick2, kind: 'tock', weight: 1.2, pan: -0.15, id: 'hold-tock' }); // the lower partner sits in the pad's band
-  ev.push({ f: CUE.tick3, kind: 'tick', weight: 1, pan: -0.15, id: 'hold-tick2' });
+  // Act 2 is mostly the music's: the plate and its light pass in silence; its one cut gets a dry tick.
+  ev.push({ f: CUE.plateCut, kind: 'tick', variant: 'crisp', weight: 0.6, pan: 0, id: 'plate-closer' });
+  // Act 3: the plate settles into the line's gap (97 % home), the words land, the gap cuts through its frames.
+  ev.push({ f: settleOf(MORPH.from, MORPH.from + MORPH.dur, MORPH.ease), kind: 'tock', weight: 0.6, pan: 0, id: 'plate-seats' });
+  chainResolves([copy('frame')], { size: STATEMENT_SIZE, role: 'display' }).forEach((f) => ev.push({ f, kind: 'text', weight: 0.8, pan: 0, id: 'every-frame' }));
+  ev.push({ f: CUE.swapA, kind: 'tick', variant: 'crisp', weight: 0.6, pan: 0, id: 'gap-frame-2' });
+  ev.push({ f: CUE.swapB, kind: 'tick', variant: 'crisp', weight: 0.6, pan: 0, id: 'gap-frame-3' });
+  ev.push(launchWhoosh(ACT.mark.from - 1, 0, 'line-drops'));
+
+  // Act 4: the dome and the block land on their contact frames (springs started early by delayTo); the cut
+  // to the lockup is a soft knock as the key climbs; the name locking is the payoff, one short hit in the
+  // launch kit after a stop-down. Its slide stays silent (a whoosh into the hit would stack onto it), and no
+  // ticks run through the hold: the name reads in near-silence over the music.
+  ev.push({ f: CUE.pieceA, kind: 'land', weight: 1, pan: -0.15, id: 'dome' });
+  ev.push({ f: CUE.pieceB, kind: 'land', weight: 1, pan: -0.25, id: 'block' });
+  ev.push({ f: CUE.lockCut, kind: 'tock', weight: 0.55, pan: 0, id: 'lockup-cut' });
+  ev.push({ f: CUE.lockup, kind: 'hit', weight: 1, pan: 0.1, id: 'lockup' });
 
   for (const e of ev) {
     if (!(e.f >= 0 && e.f < TOTAL)) throw new Error(`sync: ${e.id} at f=${e.f} is outside the film (0..${TOTAL - 1})`);

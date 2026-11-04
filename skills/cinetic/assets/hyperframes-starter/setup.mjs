@@ -15,7 +15,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const COPIES = [
   ['node_modules/gsap/dist/gsap.min.js', 'vendor/gsap.min.js'],
   // One line per face; the file names must match the @font-face url() in index.html.
-  ['node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2', 'fonts/geist-latin-wght-normal.woff2'],
+  ['node_modules/@fontsource-variable/inter/files/inter-latin-opsz-normal.woff2', 'fonts/inter-latin-opsz-normal.woff2'],
 ];
 
 let missing = 0;
