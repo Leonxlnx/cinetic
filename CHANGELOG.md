@@ -8,9 +8,74 @@ Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first 
 
 ## [Unreleased]
 
-## [1.2.0] - 2026-10-27
+## [1.5.0] - 2026-11-04
 
-cinetic 1.2 is built for the two films a product team makes most, the launch film and the update video. A film starts from a plain script that tells a stranger within 5 seconds what the product is and does. It shows that script one line at a time, each line with its own text animation, builds the product's screens in code in a lit place with depth, shows the real marks of the products it works with, and is cut to a licensed music track with a sound cast for each action. Seven film templates give a whole film's structure to start from, and new gates fail a film whose motion snaps, freezes or stops dead, or whose frame holds shapes and light with no job.
+cinetic 1.5 builds launch films and update videos from a bank of house scenes, at launch-film pace. Each point is a big line on clean ground and then one scene of 1.5-3 s. The scenes are dealt at random from the bank and vary from film to film. Nothing moves at a constant rate. The sound effects are real recordings.
+
+### The scene bank
+
+- `assets/remotion-starter/src/scenes` holds 34 house scenes, each one strong moment of 1.5-3 s and a pure function of its frame. Examples:
+  - a title that decodes while its call to action flies into the line, pressed by a real pointer;
+  - notifications stacking in depth, a URL scan opening a grid, a page flying in in 3D;
+  - a porthole that parts the line, the mark pulling back into the lockup, a ring of pictures the camera dives through;
+  - a colour flood, a glossy object among drifting shapes, a prism of light;
+  - a glass dome above the clouds, the product's output on real billboards, a push into a room's screen;
+  - and more.
+- Every scene takes the product's own words, screens, pictures, logo and palette as props, and its meta says its length, its props, the forms it takes over and hands on, big or quiet, and its sound cues.
+- Each scene's leading comment carries `cinetic:house-scene`, and lint-film checks it as a house device.
+- Tests: `house-scenes`, `ui-scenes`, `scene-tables`, `bank-d` and `bank-e` check every scene against its contract and its timing table, and that its subject is on screen by frame 6.
+
+### Launch and update films cast from the bank
+
+- `launch-simple` casts 8-12 scenes per film. The spine carries one element across the scene changes with varied handovers, and the lockup lives until the last frame.
+- `update` plays one line and one scene per change, in 8-20 s for two changes. It ends with the mark pulling back and the version landing on the bar line. Every length lives in `src/deal.ts` LIMITS, and a plan outside them stops with an error.
+- The deal is random. The seed is the film's name plus the last films' scenes, weighted toward the act's verb and toward big scenes, and away from what recent films used.
+  - At least 75 % of a film's scenes come from the bank, at most one scene is the film's own, no scene plays twice, and at most two come from the last film.
+  - Picking a scene by hand counts as a redraw and needs a stated reason.
+- A film keeps one ground, with at most one deliberate change.
+- A brand you invent never takes green. Films take the brand's palette or a designed one dealt per film.
+
+### Never linear
+
+- Nothing moves at a constant rate. Zooms run in log space (`zoomAt`), arrivals on expo out, exits on expo in, and travels on expo in-out (`lib/anim.ts`).
+- lint-film's new `linear-motion` error fails any linear move, fade, blur or zoom. Only a true live rate passes, with `// lint-ok: <reason>`.
+
+### Real sound effects
+
+- Sound effects are real licensed recordings. `scripts/audio/sfx-catalogue.json` lists 84 effects in 17 kinds, auditioned and measured, all from a library whose licence allows commercial films with no credit.
+- `node scripts/audio/sfx.mjs` picks a new set per film, downloads it with licence records (never committed) and places each effect on its cue frame. `sfx.mjs refine` re-picks what the mix masks.
+- earshot judges the mix and no longer makes the effects. Offline, synthesized takes play and the run says so.
+
+### Gates
+
+grid-check and forensics now fail a film for any of these:
+
+- **Timing:**
+  - a scene over 3 s (the film's own scenes too);
+  - one subject on screen for more than 4.5 s in a row.
+- **Lines:** a lone line under 6 % cap, in more than three chunks, or on screen for more than 1.2 s.
+- **Seams and grounds:**
+  - one seam kind used for more than 40 % of the seams;
+  - a speck left alone at a scene change;
+  - more than two ground changes.
+- **The lockup:**
+  - over 2.5 s, or held more than 2 s after its mark;
+  - leaving before the last frame;
+  - an empty last 0.3 s.
+- **Stillness:** a still run over 0.8 s before the lockup.
+- **The deal:** a plan that breaks the deal's rules.
+
+### Long mode
+
+When you give a film hours, each dealt scene gets its own polish pass against its recipe numbers, with stills side by side, before the next one.
+
+### CI
+
+Seventeen test files that had no CI step now run in one step: the spine and handover tests, the launch template tests and the scene bank tests. The sound step runs the effects tests.
+
+### Also in this release
+
+The work first planned as 1.2 ships here too. It is built for the two films a product team makes most, the launch film and the update video. A film starts from a plain script that tells a stranger within 5 seconds what the product is and does. It shows that script one line at a time, builds the product's screens in code in a lit place with depth, shows the real marks of the products it works with, and is cut to a licensed music track with a sound cast for each action. Seven film templates give a whole film's structure to start from, and gates fail a film whose motion snaps, freezes or stops dead, or whose frame holds shapes and light with no job.
 
 ### Templates and the template route
 
@@ -18,7 +83,7 @@ A template lays a whole film's structure over the Remotion starter: the timeline
 
 - `new-film.sh --template <name>` scaffolds from `assets/templates/<name>`. Its `template.json` lists the files it copies and the starter acts it removes, and its pace, tempo and type family become the film's defaults (`--bpm` and `--type` override them). `--format update` is the same as `--template update`.
 - Seven templates, all for Remotion:
-  - `update`, 15–23 s: "vX is out". The name over the version from frame 0, one product moment per change, the payoff and the end card with the version.
+  - `update`, 8–20 s: "vX is out". The name and the version on a clean ground, one line and one house scene per change, the mark pulling back into the lockup with the version.
   - `ui-walkthrough`, 25–40 s: the user's input becomes the output on one hidden cut, proof piles up, a claim, then the product's flow in steps and the output live.
   - `capability-reel`, 15–25 s: a ring of sources, one real record, a capability ticker, the claim on the accent and the end card. It also works as a launch film's close.
   - `camera-teaser`, 20–25 s: a dark teaser of the product's screens where the camera does the moving, with one 3D turn.
@@ -436,8 +501,8 @@ First version: a skill for directing, building and rendering launch films, produ
 - Guides: timing grid, motion tokens, camera, transitions, product UI, concept and story, copy and type, brand and color, sound, finishing, the Remotion and HyperFrames engines, 16 Chromium rendering traps, and 80 generated-look tells with fixes. `assets/TREATMENT.md` is the Step 1 template.
 - Evals: three briefs (a feature loop, a launch teaser and a logo sting), each with objective checks (size, duration, 60 fps and BT.709 tags, plus true peak on the two with sound and loudness on the teaser) and visual ones, used to compare runs with and without the skill.
 
-[Unreleased]: https://github.com/Leonxlnx/cinetic/compare/v1.2.0...HEAD
-[1.2.0]: https://github.com/Leonxlnx/cinetic/compare/v1.1.0...v1.2.0
+[Unreleased]: https://github.com/Leonxlnx/cinetic/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/Leonxlnx/cinetic/compare/v1.1.0...v1.5.0
 [1.1.0]: https://github.com/Leonxlnx/cinetic/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Leonxlnx/cinetic/compare/v1.0.0-beta...v1.0.0
 [1.0.0-beta]: https://github.com/Leonxlnx/cinetic/compare/v0.5.0...v1.0.0-beta
