@@ -10,14 +10,10 @@ compatibility: Needs Node 22+, ffmpeg 6+ with libx264, Python 3.11+ with numpy, 
 You are directing a short film, not animating a web page. Picture, words and sound are one system driven by one
 timeline file, and nothing is finished until it is rendered, measured and reviewed once against the standard below.
 
-- **Engines.** Remotion 4.0.529 (React, frame-driven) is the default, with every rich primitive. HyperFrames
-  0.8.79 (HTML, a paused GSAP timeline) mirrors the tokens and timeline contract for HTML projects
-  ([hyperframes-engine.md](references/hyperframes-engine.md)).
+- **Engines.** Remotion 4.0.529 (React, frame-driven) is the default. HyperFrames 0.8.79 (HTML, a paused GSAP timeline) mirrors the tokens and timeline contract for HTML projects ([hyperframes-engine.md](references/hyperframes-engine.md)).
 - **Paths.** Scripts work from the skill root and in a film project (`new-film.sh` copies them in); each prints `--help` (not the helpers `brand-svg.ts`, `hf-preflight.cjs`).
-- **Brand.** A supplied brand (logo, colours, fonts, screenshots, tone) wins over the house taste
-  ([brand-kits.md](references/brand-kits.md)); record any banned look it brings in `BRIEF.md`.
-- **Python.** Commands say `python3`: `node scripts/frames.mjs python` names the interpreter with
-  `scripts/requirements.txt`; set `PYTHON` to it once.
+- **Brand.** A supplied brand (logo, colours, fonts, screenshots, tone) wins over the house taste ([brand-kits.md](references/brand-kits.md)); record any banned look it brings in `BRIEF.md`.
+- **Python.** Commands say `python3`: `node scripts/frames.mjs python` names the interpreter with `scripts/requirements.txt`; set `PYTHON` to it once.
 
 ## The standard
 
@@ -33,8 +29,7 @@ Every film is held to these rules and numbers; the gates in brackets measure the
    around the element; first line by 1 s. (`grid-check.ts --part spine`, `forensics.py --spine`, empty-frame.)
 3. **The picture tells what the product does.** Each picture proves its line without repeating its words (input ->
    output, a count rising; "every" drawn as many at once); a line its picture already says is cut (`copy-check`
-   repeats, quantity). The first picture beat shows
-   the core action literally, with a real person giving the input where the input is human (real footage or a photo),
+   repeats, quantity). The first picture beat shows the core action literally, with a real person giving the input where the input is human (real footage or a photo),
    and the product's main act plays on screen (the input becoming the output in steps, never a cut from the request to
    the finished result); what it makes is rich and holds the brief's own subjects. With the words covered, every
    picture beat still reads. Data agrees when paused: newest first in a stack, counts and times that fit together, a
@@ -45,7 +40,7 @@ Every film is held to these rules and numbers; the gates in brackets measure the
    (`copy-check.py`, `--ui src`.)
 5. **Text with love: one face, voices that rotate, events.** Lines arrive in the film's one face, the voice turning
    line by line (build, blur-in, ink-in: never two lines in a row alike, [catalogue.md](references/catalogue.md) §1),
-   big (a line alone at a 9 % cap, never under 6 %; the claim bigger), whole or in 2-3 chunks, never word by word.
+   big (a line alone at a 9.2 % cap, never under 7 %; the claim bigger), whole or in 2-3 chunks, never word by word.
    One type event a film (a giant word with the product rising behind it, a line an object pushes apart, a
    decode, a build that re-centres). Emphasis is quiet: the key word in the accent on at most two lines, not always the
    last word; a box, marker, pill, underline or knockout only as the one signature. Every line reads at 3:1 against
@@ -53,8 +48,7 @@ Every film is held to these rules and numbers; the gates in brackets measure the
 6. **Scene changes that flow.** Every hard cut hides itself: inside a blur that makes both sides unreadable, an anchor
    held within 10 px, or a whip that carries the picture a fifth of the frame in its last 0.2 s, smeared; the kept
    ground alone hides nothing; never a cross-fade of two scenes or a cut torn across two frames; at most 10 % of hard
-   cuts bare (`forensics.py` carried-cut, ghost-cut).
-   The ground flips light-dark at most twice a film, each a declared colour event. Two or three seam kinds a film, none
+   cuts bare (`forensics.py` carried-cut, ghost-cut). The ground flips light-dark at most twice a film, each a declared colour event. Two or three seam kinds a film, none
    over 40 % of the scene changes, and one exit-then-enter, text-swap or match-cut in a film of four lines or more.
    Build them with `fx/Seam` ([transitions.md §2](references/transitions.md#2-recipes-at-60-fps)). (`forensics.py --seams`.)
 7. **Clean UI.** The product's real screens built in code at film size, every string the product's own: no bracket
@@ -63,11 +57,11 @@ Every film is held to these rules and numbers; the gates in brackets measure the
    widths measured, never guessed from a letter count (`lint-film.mjs`, `layout-audit.sh`).
 8. **Logos current, presented well.** Other products' marks come from `scripts/logos.mjs` in their newest official
    form, verified on the brand's own page within 12 months, in one presentation a film (a chip in the line, pills round
-   a centred line, or a wall), never a pill on every line or a drawn stand-in for a real mark (`logos.mjs check`). The end card is centred, built from the
+   a centred line, or a wall), never a pill on every line or a drawn stand-in for a real mark (`logos.mjs check`). The end card is built from the
    film's last element (the last picture's element becomes the mark, the last word the wordmark, the badge spins in),
    lands centred and keeps creeping in about its centre (never a slide off it) while the music rings out and the frame
-   settles out with it, the name once and the one fact under it. The logo is the brand's own or built from the film's last
-   element, never a sparkle, a star or a generic glyph (`forensics.py` end-drift, end-centre, audio-end).
+   settles out with it, the name once and the one fact under it. The logo is the brand's own, never a sparkle, a star or a
+   generic glyph (`forensics.py` end-drift, end-centre, audio-end).
 9. **Its own film, never a template.** One world for the whole film, one face and its voices, two
    or three moves, two or three seam kinds, one signature and one end-card design, picked from
    [catalogue.md](references/catalogue.md) and declared in `film.json`. The world (kind and hue), the voice, the signature
@@ -111,16 +105,13 @@ later look is cut from it:
 - **15 %:** brief, scaffold (seconds), direction, a script that passes `copy-check`, the track picked and fitted: the
   picture is cut to it, never watched without its sound (a silent film fails `forensics.py` audio).
 - **25 %:** the ending as stills: `node scripts/frames.mjs end` (the lockup, the name and the mark read).
-- **45 %:** a complete draft with its ending: `render.sh Film out/draft.mp4 --draft --max-min 9` (the whole film at
-  half size, fast encode, the current sound) and its sheet `out/qa/draft-sheet.png`.
-- **45-70 %:** the soundtrack, the review round on the draft (`frames.mjs sheet --from out/draft.mp4`, `grab`), fixes,
-  the draft again.
-- **70 %:** the final starts: `bash scripts/render.sh Film out/film.mp4 --max-min 9` (parts that resume: rerun until
-  exit 0). If it cannot finish in the time left, deliver the draft scaled up (`--from-draft out/draft.mp4`).
+- **45 %:** a complete draft with its ending: `render.sh Film out/draft.mp4 --draft --max-min 9` (the whole film at half size, fast encode, the current sound) and its sheet `out/qa/draft-sheet.png`.
+- **45-70 %:** the soundtrack, the review round on the draft (`frames.mjs sheet --from out/draft.mp4`, `grab`), fixes, the draft again.
+- **70 %:** the final starts: `bash scripts/render.sh Film out/film.mp4 --max-min 9` (parts that resume: rerun until exit 0). If it cannot finish in the time left, deliver the draft scaled up (`--from-draft out/draft.mp4`).
 
 ## The simple path
 
-Eight steps. Read a reference only when its step needs it.
+Read a reference only when its step needs it.
 
 **1. Brief and scaffold.** Write `BRIEF.md`: the spec line (`1920x1080@30, 25s, format: launch, audio:
 licensed track + launch kit`), what is supplied (a brand kit, a clip to feel like, footage, the products it works
@@ -170,8 +161,7 @@ with `node scripts/frames.mjs end` (the ending, first) and `still <frames>` (sev
 
 **6. Draft, sound and check.** `npm run check` (tsc, `lint-film.mjs`, `grid-check.ts`) clean, then the whole draft:
 `bash scripts/render.sh Film out/draft.mp4 --draft --max-min 9` (rerun until exit 0; the picked track under it until
-the mix exists). `npm run sound` (cues, kit and mix in one command; it ends PASS, FAIL
-or PARTIAL), the draft again.
+the mix exists). `npm run sound` (cues, kit and mix in one command; it ends PASS, FAIL or PARTIAL), the draft again.
 The fast gates: `npm run gates` (`forensics.py out/draft.mp4 --grammar-only`: the sound, cuts that hide, empty
 frames, freezes, legibility, the ending, the world; `copy-check.py --ui src`; `logos.mjs check`), `look-audit.py
 out/draft.mp4 --look` (no flat void or slab cards) and `bash scripts/layout-audit.sh Film --cues --scale 0.5` (text cut by the frame) ([checks.md](references/checks.md) §1).
@@ -179,13 +169,10 @@ out/draft.mp4 --look` (no flat void or slab cards) and `bash scripts/layout-audi
 **7. One review round.** `node scripts/frames.mjs sheet --from out/draft.mp4` (16 tiles; `--frames A-B --every N` for
 an act, `grab --from` for full frames), then the director pass
 ([director.md](assets/critics/director.md)): read the picture beats with the words ignored first (what
-does the product do in each?), then the standard above, item by item, with frames. Fix every P0 and
-the P1s time allows, then the draft again. A second round only when a gate fails
-([review-loop.md](references/review-loop.md) §1).
+does the product do in each?), then the standard above, item by item, with frames. Fix every P0 and the P1s time allows, then the draft again. A second round only when a gate fails ([review-loop.md](references/review-loop.md) §1).
 
-**8. Master and delivery.** By 70 % of the budget: `bash scripts/render.sh Film out/film.mp4 --max-min 9` (PNG frames,
-parts that resume: rerun until exit 0; `--blur` when the blur policy asks); out of time, `--from-draft out/draft.mp4`
-is the delivery. Full `forensics.py` on the master, then `bash scripts/deliver.sh out/film.mp4`
+**8. Master and delivery.** By 70 % of the budget: `bash scripts/render.sh Film out/film.mp4 --max-min 9` (PNG frames;
+`--blur` when the blur policy asks). Full `forensics.py` on the master, then `bash scripts/deliver.sh out/film.mp4`
 with the format's variants (it runs `credits.py`: credits go into `CREDITS.md`, never the picture), a short
 `README.md`, and `node scripts/film-diff.mjs --record` (the film joins the history; the run's minutes print).
 
@@ -200,7 +187,8 @@ with the format's variants (it runs `credits.py`: credits go into `CREDITS.md`, 
 | Feature loop | 4-15 s, whole bars | `--template none` | 1-2 lines, reads muted | MP4, WebM, GIF, seamless seam |
 | Logo sting | 3-8 s | `--template none` | the name and at most one line | MP4, ProRes 4444 alphas, poster |
 
-Recipes per format in [formats.md](references/formats.md).
+Recipes per format in [formats.md](references/formats.md). An update film: its lone line big, read whole in 1.2 s; no scene
+over 3 s (a typed change 3 s); the lockup snaps once, keeps moving, and the film ends 2 s after it forms; a plan outside `src/deal.ts` LIMITS fails: shorten the content, never raise a limit.
 Films render at 30 fps (a move over 25 px a frame is smeared; `--fps 60` for fast camera travel);
 a loop's last frame flows into frame 0 (`forensics.py --loop`, `render.sh --loop`).
 
@@ -260,8 +248,6 @@ camera films with shutter samples on fast frames); never upscale a final ([finis
 | update films; Remotion; HyperFrames; render artifacts | [update-films.md](references/update-films.md), [remotion-engine.md](references/remotion-engine.md), [hyperframes-engine.md](references/hyperframes-engine.md), [chromium-rendering.md](references/chromium-rendering.md) |
 
 ## Other tools
-
-These do the rest (each prints `--help`).
 
 | Need | Tool |
 |---|---|
