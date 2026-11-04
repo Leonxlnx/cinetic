@@ -130,8 +130,13 @@ try {
   check('a TypeError fails at once (one render call, exit 1)', r.status === 1 && renders().length === 1, `${renders().length} calls, exit ${r.status}`);
   check('gl.json untouched by a code error', fs.readFileSync(GLJSON, 'utf8') === before);
 
-  // 5. the probe: steady state, a margin for angle, software wins only for an hour
-  const probeWith = (env) => { const x = run(['gl', '--force'], env); return { x, g: JSON.parse(fs.readFileSync(GLJSON, 'utf8')) }; };
+  // 5. the probe: steady state, a margin for angle, software wins only for an hour. On Linux the probe also tries
+  // angle-egl and egl, which the stand-in does not time: they fail here, so the cases weigh angle against swangle
+  const linuxOnly = process.platform === 'linux' ? ['angle-egl', 'egl'] : [];
+  const probeWith = (env) => {
+    const x = run(['gl', '--force'], { ...env, STUB_FAIL_GL: [env.STUB_FAIL_GL, ...linuxOnly].filter(Boolean).join(',') });
+    return { x, g: JSON.parse(fs.readFileSync(GLJSON, 'utf8')) };
+  };
   let p = probeWith({ STUB_START_ANGLE: '900', STUB_FRAME_ANGLE: '10', STUB_FRAME_SWANGLE: '90' });
   check('slow start, fast frames: angle kept (whole calls would say swangle)', p.x.status === 0 && p.x.stdout.trim() === 'angle' && p.g.gl === 'angle' && !p.g.fallback, p.x.stdout + p.x.stderr);
   p = probeWith({ STUB_FRAME_ANGLE: '66', STUB_FRAME_SWANGLE: '60' });
