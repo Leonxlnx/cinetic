@@ -8,6 +8,10 @@ Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first 
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-11-04
+
+Three community contributions on top of 1.5.0: correct BT.709 tags on blurred masters with ffmpeg 9, a speed waiver that reaches the variants, line breaks owned by the layout, and style rules for the product as an object, a type voice and launch films in chapters.
+
 ### Added
 
 - `deliver.sh --variant-accept-fast A-B` passes the master's `--accept-fast` waiver on to blurred variants (`--variant-samples`), which reuse its samples and so stopped at the same fast frames. `Words` takes `breaks`, the word indices that start a new row, so the layout owns a line's breaks, and tags its line with `data-text` only while a word of it is on screen ([#4](https://github.com/Leonxlnx/cinetic/pull/4), thanks @ThomasKirst).
@@ -510,7 +514,8 @@ First version: a skill for directing, building and rendering launch films, produ
 - Guides: timing grid, motion tokens, camera, transitions, product UI, concept and story, copy and type, brand and color, sound, finishing, the Remotion and HyperFrames engines, 16 Chromium rendering traps, and 80 generated-look tells with fixes. `assets/TREATMENT.md` is the Step 1 template.
 - Evals: three briefs (a feature loop, a launch teaser and a logo sting), each with objective checks (size, duration, 60 fps and BT.709 tags, plus true peak on the two with sound and loudness on the teaser) and visual ones, used to compare runs with and without the skill.
 
-[Unreleased]: https://github.com/Leonxlnx/cinetic/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/Leonxlnx/cinetic/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/Leonxlnx/cinetic/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/Leonxlnx/cinetic/compare/v1.1.0...v1.5.0
 [1.1.0]: https://github.com/Leonxlnx/cinetic/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Leonxlnx/cinetic/compare/v1.0.0-beta...v1.0.0
