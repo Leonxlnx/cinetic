@@ -8,7 +8,7 @@
 //   arrive      peak speed on the first frame, a long settle: entrances, inserts, landings
 //   reposition  an S: moves inside a shot (cards, camera reframes, whips)
 //   leave       ends at speed: exits, ideally cut on their last frame
-//   linear      colour lerps, flash decays, drifts, counters, log-scale zooms
+//   linear      colour lerps and true live rates only (a clock, a real-time bar, a counter, an ambient drift): never a move
 // enter()/leave()/move() refuse a curve of the wrong family at compile time.
 import { Easing, interpolate, spring, SpringConfig } from 'remotion';
 import { PACE_NAME } from '../timeline';
@@ -170,7 +170,7 @@ export const E = {
   buildIn: tagEase(bz(0.525, 0.079, 0.724, 0.331), 'leave', 'buildIn'), // [.02] THE exit: speed about x1.11 a frame at 26 f; 26 f
   launchIn: tagEase(bz(0.556, 0.053, 0.835, 0.188), 'leave', 'launchIn'), // [.01] into a cut: speed about x1.16 a frame at 29 f (x1.34 at 30 fps); 29 f
   // LINEAR
-  linear: tagEase((t: number) => t, 'linear', 'linear'), // colour lerps, flash decays, drifts, counters, log-scale zooms (with lmix): exactly t
+  linear: tagEase((t: number) => t, 'linear', 'linear'), // colour lerps and true live rates only (lint-film linear-motion): exactly t
   // ---- 1.1 names, 1.1 shapes ----
   out: tagEase(bz(0.16, 1, 0.3, 1), 'arrive', 'out', 'snapOut'), // expo-out: arrivals and reveals (never for fade-outs)
   outSoft: tagEase(bz(0.22, 1, 0.36, 1), 'arrive', 'outSoft', 'snapOut'), // quint-out: gentle settles (glideOut for a softer arrival)
@@ -228,6 +228,51 @@ export const enter = (f: number, a: number, b: number, ease: Token<'arrive'> = E
 export const leave = (f: number, a: number, b: number, ease: Token<'leave'> = E.buildIn) => prog(f, a, b, ease);
 /** A move inside a shot on a reposition curve (default strongInOut). */
 export const move = (f: number, a: number, b: number, ease: Token<'reposition'> = E.strongInOut) => prog(f, a, b, ease);
+
+// ---- Exponential motion: nothing on screen moves at a constant rate --------------------------------------------
+// Zooms run in log space, pans and travels on exponential curves. p = clamp((f - a) / (b - a)) is the time share of
+// the move; k is the rate (the time constant is 1/k of the move). A linear ramp is for a true live rate only (a clock,
+// a real-time progress bar, a counter's rate, a constant ambient drift) and carries // lint-ok: <reason> in film code
+// (scripts/lint-film.mjs linear-motion).
+
+/**
+ * Exponential ease-in-out, expIn(k) into expOut(k) at the midpoint:
+ *   p < 1/2:  (e^(2kp) - 1) / (2 (e^k - 1))        p >= 1/2:  1/2 + (1 - e^(-k (2p - 1))) / (2 (1 - e^(-k)))
+ * From rest to rest with the peak speed at the middle; k = 7 covers about 88 % of the travel in the middle 30 % of the time.
+ */
+export const expInOut = (k: number): Ease => {
+  const i = expIn(k);
+  const o = expOut(k);
+  return (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t < 0.5 ? i(2 * t) / 2 : 0.5 + o(2 * t - 1) / 2);
+};
+
+/** The house exponential curves: an arrival (expo out), an exit (expo in) and a travel (expo in-out). */
+export const XP = {
+  arrive: tagEase(expOut(7), 'arrive', 'XP.arrive'), // (1 - e^(-7p)) / (1 - e^(-7)): 50 % at p = .10, 90 % at .33
+  leave: tagEase(expIn(6), 'leave', 'XP.leave'), // (e^(6p) - 1) / (e^6 - 1): leaves from rest, at peak speed on its last frame
+  travel: tagEase(expInOut(7), 'reposition', 'XP.travel'), // expo in-out: pans, travels, camera reframes
+};
+
+/**
+ * A zoom (a scale, a push, a dive, a pull-back) from `from` to `to` over frames [a, b], in log space:
+ *   s = from * (to / from)^ease(p)
+ * Equal eased time buys an equal ratio, so the push reads as one constant move to the eye (a linear scale slows on
+ * screen as it grows). Default ease XP.travel; an arrival push takes XP.arrive, a dive into a cut XP.leave.
+ */
+export const zoomAt = (f: number, a: number, b: number, from: number, to: number, ease: Ease = XP.travel) =>
+  lmix(from, to, ease(clamp((f - a) / Math.max(1e-6, b - a))));
+
+/** An arrival (a pan landing, a card sliding home): x = from + (to - from) (1 - e^(-k p)) / (1 - e^(-k)). */
+export const panTo = (f: number, a: number, b: number, from: number, to: number, k = 7) =>
+  mix(from, to, expOut(k)(clamp((f - a) / Math.max(1e-6, b - a))));
+
+/** An exit: x = from + (to - from) (e^(k p) - 1) / (e^k - 1). Leaves from rest at peak speed on its last frame: cut there. */
+export const exitTo = (f: number, a: number, b: number, from: number, to: number, k = 6) =>
+  mix(from, to, expIn(k)(clamp((f - a) / Math.max(1e-6, b - a))));
+
+/** A travel inside a shot (a pan, a camera reframe), from rest to rest: x = from + (to - from) expInOut(k)(p). */
+export const travel = (f: number, a: number, b: number, from: number, to: number, k = 7) =>
+  mix(from, to, expInOut(k)(clamp((f - a) / Math.max(1e-6, b - a))));
 
 /**
  * Spring presets (Remotion configs, mass 1 unless noted; zeta = damping / (2 sqrt(stiffness * mass))).
