@@ -13,7 +13,7 @@ import React from 'react';
 import { C, FONT } from '../brand/tokens';
 import { GlowPool } from '../fx/light';
 import { Icon } from '../kit/screens/base';
-import { clamp, rand } from '../lib/anim';
+import { clamp, E, rand } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { withAlpha } from '../lib/handover';
 import { paletteOf, type Palette, perFrame, type SceneMeta, tab, useClock } from './parts';
@@ -91,7 +91,7 @@ export const GlassPrompt: React.FC<GlassPromptProps> = ({ label, placeholder, pr
   const step = Math.abs(tab(t + 0.5, X) - tab(t - 0.5, X));
   const smear = t >= 24 ? step / 2 : 0; // a blur of half the frame's travel, along it
   const mb = smear > 1.5 ? BLURS.reduce((a, b) => (Math.abs(b - smear / 2.5) < Math.abs(a - smear / 2.5) ? b : a)) : 0;
-  const bright = 1 + 0.06 * clamp((t - 51) / 4);
+  const bright = 1 + 0.06 * E.snapOut(clamp((t - 51) / 4));
   const stage = `translate(${(cx - 962).toFixed(2)}px, 0px)`;
   const boxT = `translate(${(cx - B.w / 2).toFixed(2)}px, ${(cy - B.h / 2).toFixed(2)}px) scale(${s.toFixed(4)})`;
   // ---- the text in the box: placeholder, cut, then the request typing
@@ -103,10 +103,10 @@ export const GlassPrompt: React.FC<GlassPromptProps> = ({ label, placeholder, pr
   const streakOn = clamp((t - 6) / 2) * 0.6 + (t >= 8 ? 0.4 : 0);
   const bx = t < 32 ? tab(t, STREAK_B) - (cx - B.w / 2) : B.w * 0.27;
   const peakB = (t < 32 ? tab(t, STREAK_B_PEAK) : 120) / 170;
-  const glowA = clamp(t / 14);
+  const glowA = E.glideOut(clamp(t / 14));
   // the rim lights into a thin outline as the box lands and again through the whips
   const rimA = 0.2 + 0.18 * clamp((t - 4) / 4) * (1 - clamp((t - 14) / 8)) + 0.28 * clamp((t - 28) / 8) * (1 - clamp((t - 52) / 4));
-  const fieldA = clamp((t - 6) / 10);
+  const fieldA = E.glideOut(clamp((t - 6) / 10));
   const streak = (x: number, y: number, a: number) => (
     <>
       <div style={{ position: 'absolute', left: 0, top: 0, width: 220, height: 3, transform: `translate(${(x - 110).toFixed(1)}px, ${(y - 1.5).toFixed(1)}px)`, background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,${a.toFixed(3)}) 50%, rgba(255,255,255,0) 100%)`, mixBlendMode: 'screen' }} />

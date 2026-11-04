@@ -15,6 +15,7 @@
 import React, { useId } from 'react';
 import { Cursor } from '../fx/Cursor';
 import { type Logo, LogoMark } from '../brand/Mark';
+import { clamp, E } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { markOf, paletteOf, type Palette, type SceneMeta, span, tab, useClock } from './parts';
 import { bezier, hash, rgba, Stage1080 } from './stage1080';
@@ -74,7 +75,7 @@ export const glossState = (t: number) => {
   const s = G.push.s[0] + (G.push.s[1] - G.push.s[0]) * bezier(0.25, 0.1, 0.25, 1)(span(t, G.push.from, G.push.to));
   const heat = tab(t, G.heat.map((k) => [k[0], k[1]] as const));
   const d = t - G.pointer.press;
-  const press = d < 0 ? 1 : d < 3 ? 1 - 0.03 * (d / 3) : 1 + 0.03 * Math.exp(-(d - 3) / 4) * Math.cos((d - 3) / 3.2) - 0.03 * Math.exp(-(d - 3) / 1.2);
+  const press = d < 0 ? 1 : d < 3 ? 1 - 0.03 * E.snapOut(d / 3) : 1 + 0.03 * Math.exp(-(d - 3) / 4) * Math.cos((d - 3) / 3.2) - 0.03 * Math.exp(-(d - 3) / 1.2);
   const flare = d < 0 ? 0 : Math.exp(-d / 7) * Math.min(1, d / 2);
   const grow = G.hero.from + (1 - G.hero.from) * bezier(0.2, 0.7, 0.3, 1)(span(t, 0, 8)); // the hero arrives a little small
   return { s, heat, press, flare, grow };
@@ -85,11 +86,11 @@ export const glossPointer = (t: number) => {
   const P = GLOSS.pointer;
   if (t < P.in) return null;
   const p = bezier(0.2, 0.7, 0.3, 1)(span(t, P.in, P.in + 14));
-  const settle = span(t, P.in + 14, P.press);
+  const settle = E.stdInOut(span(t, P.in + 14, P.press));
   const x = P.from.x + (P.to.x - P.from.x) * p + (P.hover.x - P.to.x) * settle;
   const y = P.from.y + (P.to.y - P.from.y) * p + (P.hover.y - P.to.y) * settle;
   const d = t - P.press;
-  const press = d < 0 ? 0 : d < 3 ? 1 : Math.max(0, 1 - (d - 3) / 6);
+  const press = d < 0 ? 0 : d < 3 ? 1 : 1 - E.glideOut(clamp((d - 3) / 6));
   return { x, y, press, o: span(t, P.in, P.in + 2) };
 };
 

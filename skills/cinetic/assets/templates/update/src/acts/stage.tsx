@@ -8,7 +8,7 @@ import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { FONT, TYPE } from '../brand/tokens';
 import { DEAL, LINE_SIZE, LINES } from '../deal';
-import { clamp, E } from '../lib/anim';
+import { clamp, E, zoomAt } from '../lib/anim';
 import { useFilm } from '../lib/film';
 import { measureTracked } from '../lib/measure';
 import { pullbackScale } from '../scenes/mark-pullback';
@@ -19,15 +19,10 @@ import { EndScene, SceneOf } from './scenes';
 import { LineText } from './type';
 
 /**
- * A steady push toward the lens over a part (scale 1 -> 1 + pct %): it eases in over its first frames and then keeps its
- * speed to the cut, so the part never reads as a still frame.
+ * A push toward the lens over a part (scale 1 -> 1 + pct %), in log space on a soft exponential (E.softOut): it leaves
+ * at speed and is still moving at the cut, so the part never reads as a still frame.
  */
-const creep = (f: number, at: number, until: number, pct = 4.5) => {
-  const x = clamp((f - at) / Math.max(1, until - at));
-  const ease = 0.12;
-  const y = x < ease ? (x * x) / (2 * ease) : x - ease / 2;
-  return 1 + (pct / 100) * (y / (1 - ease / 2));
-};
+const creep = (f: number, at: number, until: number, pct = 4.5) => zoomAt(f, at, Math.max(at + 1, until), 1, 1 + pct / 100, E.softOut);
 /** An underdamped landing: 0 -> 1 with one small overshoot (the version mark's spring, timeline SPRING_CLASS). */
 const springLand = (x: number) => (x <= 0 ? 0 : x >= 1.6 ? 1 : 1 - Math.exp(-5.2 * x) * Math.cos(7.4 * x));
 
@@ -81,7 +76,7 @@ const HookView: React.FC<{ f: number }> = ({ f }) => {
           </div>
         )}
         {kind !== 'tag' && (kind === 'roll' ? f >= 6 : f >= HOOK.version) && (
-          <div style={{ position: 'absolute', left: vx, top: cy - pill / 2 + size * 0.02, transformOrigin: '0% 50%', transform: kind === 'roll' ? `scale(${(0.86 + 0.14 * E.snapOut(clamp((f - 6) / 12))).toFixed(4)})` : `scale(${(0.2 + 0.8 * pop).toFixed(4)})`, opacity: kind === 'roll' ? clamp((f - 6) / 6) : clamp(pop * 3) }}>
+          <div style={{ position: 'absolute', left: vx, top: cy - pill / 2 + size * 0.02, transformOrigin: '0% 50%', transform: kind === 'roll' ? `scale(${(0.86 + 0.14 * E.snapOut(clamp((f - 6) / 12))).toFixed(4)})` : `scale(${(0.2 + 0.8 * pop).toFixed(4)})`, opacity: kind === 'roll' ? E.snapOut(clamp((f - 6) / 6)) : clamp(pop * 3) }}>
             <VersionPill size={pill} text={UPDATE.version} from={kind === 'roll' ? UPDATE.from : undefined} roll={kind === 'roll' ? (f - HOOK.version) / 16 : 1} />
           </div>
         )}
@@ -142,7 +137,7 @@ const EndView: React.FC<{ f: number }> = ({ f }) => {
       <EndScene f={f} />
       {f >= CLOSE.versionIn && (
         <AbsoluteFill style={{ transform: `scale(${s.toFixed(5)})`, transformOrigin: `${cx}px ${cy}px` }}>
-          <div style={{ position: 'absolute', left: cx, top: cy + 68 * u + 46 * u, transform: `translate(-50%, ${((1 - k) * 26 * u).toFixed(2)}px) scale(${(0.7 + 0.3 * k).toFixed(4)})`, opacity: clamp(land * 4) }}>
+          <div style={{ position: 'absolute', left: cx, top: cy + 68 * u + 46 * u, transform: `translate(-50%, ${((1 - k) * 26 * u).toFixed(2)}px) scale(${(0.7 + 0.3 * k).toFixed(4)})`, opacity: E.snapOut(clamp(land * 4)) }}>
             <VersionPill size={pill} text={UPDATE.version} />
           </div>
         </AbsoluteFill>

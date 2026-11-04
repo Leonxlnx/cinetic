@@ -197,9 +197,9 @@ export const PhonePullback: React.FC<PhonePullbackProps> = ({ name, logo, search
   cornerArc(PR, PR, 180);
   const halo = mixColor(P.accent, P.ground, 0.45);
   // the press, the menu and the hover
-  const pressed = clamp(span(t, PHONE_PULLBACK.press, PHONE_PULLBACK.press + 2)) * (1 - span(t, PHONE_PULLBACK.press + 8, PHONE_PULLBACK.press + 10));
+  const pressed = clamp(E.snapOut(span(t, PHONE_PULLBACK.press, PHONE_PULLBACK.press + 2))) * (1 - E.glideOut(span(t, PHONE_PULLBACK.press + 8, PHONE_PULLBACK.press + 10)));
   const pop = t < PHONE_PULLBACK.menu[0] ? 0 : tab(t, POP);
-  const popA = span(t, PHONE_PULLBACK.menu[0], PHONE_PULLBACK.menu[0] + 4);
+  const popA = E.snapOut(span(t, PHONE_PULLBACK.menu[0], PHONE_PULLBACK.menu[0] + 4));
   const hover = E.glideOut(span(t, PHONE_PULLBACK.hover[0] + 6, PHONE_PULLBACK.hover[1]));
   // the pointer: from below the frame's right edge onto the "+", a half turn on the way, then up onto the first row
   const fab = corner(FAB.x + 6, FAB.y + 4);

@@ -50,13 +50,13 @@ const FOCUS_Y = 400; // the plane's origin on screen
 
 /** The camera at frame t for a page whose headline centre is `from` px down it: the plane's scroll, magnification and roll. */
 export const pageFlyCamera = (t: number, from: number) => {
-  const q = span(t, PAGE_FLY.travel[0], PAGE_FLY.travel[1]);
-  const m = track(q, ZOOM);
+  const tq = span(t, PAGE_FLY.travel[0], PAGE_FLY.travel[1]); // the measured zoom table shapes it
+  const m = track(tq, ZOOM);
   const a = (PAGE_FLY.tilt * Math.PI) / 180;
   // solve the plane offset that puts the headline at AIM on screen: y = T d / (m (d cos a + T sin a))
   const T = track(t, AIM) - FOCUS_Y;
   const y1 = (T * PERSP) / (m * (PERSP * Math.cos(a) + T * Math.sin(a)));
-  return { scroll: from - y1, m, z: PERSP * (1 - 1 / m), roll: -5.7 + 4.7 * E.glideOut(span(q, 0, 0.45)) };
+  return { scroll: from - y1, m, z: PERSP * (1 - 1 / m), roll: -5.7 + 4.7 * E.glideOut(span(tq, 0, 0.45)) };
 };
 /** Screen y of a point `yp` px down the page (roll ignored) for a camera from pageFlyCamera. */
 export const pageFlyScreenY = (yp: number, cam: ReturnType<typeof pageFlyCamera>) => {

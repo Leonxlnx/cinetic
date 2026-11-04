@@ -91,7 +91,7 @@ const Stage: React.FC<{ cam: Cam2; children: React.ReactNode; style?: React.CSSP
 const Glow: React.FC<{ f: number; at: number; x: number; y: number; r: number; fps: number; color?: string; peak?: number }> = ({ f, at, x, y, r, fps, color = C.white, peak = 0.8 }) => {
   const t = f - at;
   if (t < 0 || t > k60(30, fps)) return null;
-  const a = t < k60(4, fps) ? t / k60(4, fps) : t < k60(7, fps) ? 1 : 1 - E.softOut(clamp((t - k60(7, fps)) / k60(22, fps)));
+  const a = t < k60(4, fps) ? E.snapOut(t / k60(4, fps)) : t < k60(7, fps) ? 1 : 1 - E.softOut(clamp((t - k60(7, fps)) / k60(22, fps)));
   return <div style={{ position: 'absolute', left: x - r, top: y - r, width: 2 * r, height: 2 * r, borderRadius: '50%', background: `radial-gradient(closest-side, ${withAlpha(color, 1)} 0%, ${withAlpha(color, 0)} 100%)`, opacity: a * peak, mixBlendMode: 'screen' }} />;
 };
 

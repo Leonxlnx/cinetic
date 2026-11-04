@@ -236,14 +236,14 @@ export const CrystalHall: React.FC<CrystalHallProps> = ({ logo, palette, gl = 'a
   const coneHalf = tab(t, CONE_W);
   const drift = (t - CRYSTAL_HALL.cone[0]) / 50; // one slow swing of the cone's light across it
   const form = E.glideOut(span(t, CRYSTAL_HALL.form[0], CRYSTAL_HALL.form[1]));
-  const column = span(t, CRYSTAL_HALL.form[0] - 1, CRYSTAL_HALL.form[0] + 4);
-  const pillar = span(t, CRYSTAL_HALL.form[0], CRYSTAL_HALL.form[0] + 5);
+  const column = E.snapOut(span(t, CRYSTAL_HALL.form[0] - 1, CRYSTAL_HALL.form[0] + 4));
+  const pillar = E.snapOut(span(t, CRYSTAL_HALL.form[0], CRYSTAL_HALL.form[0] + 5));
   const columnMask = `linear-gradient(180deg, ${withAlpha(P.ink, 0)} 0%, ${withAlpha(P.ink, 1)} 30%, ${withAlpha(P.ink, 1)} 100%)`;
   const [f0, f1, f2, f3] = CRYSTAL_HALL.flash;
   const wLow = span(t, f0, f1) * (1 - 0.3 * span(t, f2, f3));
   const wUp = span(t, f1, f2) * (1 - 0.3 * span(t, f2, f3));
-  const core = clamp(span(t, f1 - 1, f1 + 1)) * (1 - 0.3 * span(t, f2, f3 + 4));
-  const markOn = logo ? span(t, f1 + 1, f2 + 1) : 0;
+  const core = clamp(E.snapOut(span(t, f1 - 1, f1 + 1))) * (1 - 0.3 * E.softOut(span(t, f2, f3 + 4)));
+  const markOn = logo ? E.snapOut(span(t, f1 + 1, f2 + 1)) : 0;
   // ---- the sphere's flight
   const sr = tab(t, FLY_R);
   const squash = 1 + 0.06 * Math.max(0, 1 - Math.abs(t - CRYSTAL_HALL.fly[1]) / 2);

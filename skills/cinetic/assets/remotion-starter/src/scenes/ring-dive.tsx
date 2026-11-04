@@ -18,7 +18,7 @@ import React from 'react';
 import { Cursor } from '../fx/Cursor';
 import { FONT } from '../brand/tokens';
 import { type Logo, LogoMark } from '../brand/Mark';
-import { track } from '../lib/anim';
+import { E, track, XP } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { paletteOf, type Palette, type SceneMeta, span, useClock } from './parts';
 import { hash, Picture, Stage1080 } from './stage1080';
@@ -78,7 +78,7 @@ export const ringCamera = (t: number) => ({
   phi: track(t, RING.phi),
   T: track(t, RING.T),
   spin: RING.spin * t,
-  yaw: RING.yaw.deg * (1 - span(t, RING.yaw.from, RING.yaw.to)),
+  yaw: RING.yaw.deg * (1 - E.stdInOut(span(t, RING.yaw.from, RING.yaw.to))),
 });
 
 /** The name's horizontal offset (px) and visibility at scene frame t (it cuts on, then brakes leftward). */
@@ -99,7 +99,7 @@ export const RingDive: React.FC<RingDiveProps> = ({ title, images = [], logo, pa
   const pal = paletteOf(palette);
   const cam = ringCamera(t);
   const P = focal(RING.fov);
-  const tint = 1 - span(t, RING.tint.full, RING.tint.gone);
+  const tint = 1 - E.stdInOut(span(t, RING.tint.full, RING.tint.gone));
   const name = ringName(t);
   const { w: cw, h: ch, r: cr } = RING.card;
   const n = Math.max(12, Math.round(cards));
@@ -113,7 +113,7 @@ export const RingDive: React.FC<RingDiveProps> = ({ title, images = [], logo, pa
   // the plane cursor rides the near rim while the band spins, then is swept out to the right by the dive
   const cur = (() => {
     if (!pointer || t < RING.band.from - 2 || t > RING.dive.from + 16) return null;
-    const ride = span(t, RING.band.from - 2, RING.band.from + 8);
+    const ride = XP.travel(span(t, RING.band.from - 2, RING.band.from + 8));
     const sweep = Math.pow(span(t, RING.dive.from + 2, RING.dive.from + 16), 2);
     return { x: 1530 - 46 * ride + 640 * sweep, y: 668 + 20 * sweep - 80 * sweep * sweep, o: span(t, RING.band.from - 2, RING.band.from + 1) };
   })();

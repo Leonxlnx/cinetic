@@ -123,7 +123,7 @@ export const Act4: React.FC = () => {
     width: W, height: H, pitch: pitchA, dist: distA, focal: 2.2 * H * zoomA, // the focal held while the camera closes in: a real push
     target: [mx + S / 2 + (0.12 * W) / zoomA, my + S / 2 + 10 * U - (carried - 200 * U) / (zoomA * Math.sin((pitchA * Math.PI) / 180))],
   };
-  const hold = prog(F, CUE.lockCut, ACT.mark.from + ACT.mark.dur, E.linear);
+  const hold = prog(F, CUE.lockCut, ACT.mark.from + ACT.mark.dur, E.softOut);
   const camB: ReliefCamera = { width: W, height: H, pitch: mix(58, 62, hold), target: [mx + lockW / 2, my + S / 2 + 30 * U], dist: 2.05 * H * lmix(1, 0.95, hold), focal: 2.05 * H * 1.1, yaw: mix(-3, 2, hold) }; // a dolly in on a held focal
 
   return (

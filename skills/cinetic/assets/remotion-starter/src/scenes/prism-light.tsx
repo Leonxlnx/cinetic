@@ -17,6 +17,7 @@
 // 5 -> 8 -> 2 px; caustic hot spot r 90 -> 140 -> 170 px; faces back to front CDG, CFD, CGA, CAF (CAF adds light where it
 // overlaps CGA).
 import React, { useId } from 'react';
+import { E } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { paletteOf, type Palette, type SceneMeta, useClock } from './parts';
 import { rgba, Stage1080 } from './stage1080';
@@ -206,9 +207,9 @@ export const PrismLight: React.FC<PrismLightProps> = ({ light, palette, exit = '
       // the glass: faces painted in their own coordinates (unit triangle (0,0) P0, (1,0) P1, (0,1) P2)
       const mtx = (p0: P2, p1: P2, p2: P2) => `matrix(${p1[0] - p0[0]} ${p1[1] - p0[1]} ${p2[0] - p0[0]} ${p2[1] - p0[1]} ${p0[0]} ${p0[1]})`;
       const tri = 'M 0 0 L 1 0 L 0 1 Z';
-      const glass = f >= 73.5 ? 1 : f >= 72 ? (f - 72) / 1.5 : 0;
-      const cfd = f >= 72 ? Math.min(1, (f - 71.5) / 1.5) : 0;
-      const cga = f >= 73 ? Math.min(1, (f - 72.5) / 1) : 0;
+      const glass = f >= 73.5 ? 1 : f >= 72 ? E.snapOut((f - 72) / 1.5) : 0;
+      const cfd = f >= 72 ? E.snapOut(Math.min(1, (f - 71.5) / 1.5)) : 0;
+      const cga = f >= 73 ? E.snapOut(Math.min(1, (f - 72.5) / 1)) : 0;
       const grey = f < 69 ? '#6A6A6A' : mixColor('#6B6B6B', '#807D79', Math.min(1, (f - 69) / 3));
       const hot = between(PRISM.hot, Math.min(72, Math.max(69, f)), (a, b, p) => [a[0] + (b[0] - a[0]) * p, a[1] + (b[1] - a[1]) * p, a[2] + (b[2] - a[2]) * p, mixColor(a[3], b[3], p)] as const);
       const facePoly = (p: P2[]) => p.map((q) => q.join(',')).join(' ');

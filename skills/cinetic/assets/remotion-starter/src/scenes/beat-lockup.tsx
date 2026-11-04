@@ -19,6 +19,7 @@ import { FONT } from '../brand/tokens';
 import { type Logo, LogoMark } from '../brand/Mark';
 import { mixColor } from '../lib/color';
 import { measureTracked } from '../lib/measure';
+import { E } from '../lib/anim';
 import { markOf, paletteOf, type Palette, type SceneMeta, span, useClock } from './parts';
 import { bezier, Picture, Stage1080 } from './stage1080';
 
@@ -89,7 +90,7 @@ export const BeatLockup: React.FC<BeatLockupProps> = ({ name, logo, images = [],
   const flip = end === 'flip' && f60 >= bt.wash;
   const tinting = end === 'flip' && f60 >= bt.tint && f60 < bt.wash;
   const dark = mixColor(pal.ink, '#000000', 0.25);
-  const washP = end === 'flip' ? span(f60, bt.wash, bt.wash + B.wash) : 0;
+  const washP = end === 'flip' ? E.stdInOut(span(f60, bt.wash, bt.wash + B.wash)) : 0;
   const ground = washP > 0 ? mixColor(dark, pal.ground, washP) : dark;
   const flash = washP > 0 ? 0.35 * Math.sin(Math.PI * Math.min(1, washP * 1.15)) : 0;
   const ink = flip ? mixColor('#FFFFFF', pal.accent, Math.min(1, washP * 1.6)) : tinting ? mixColor('#FFFFFF', pal.accent, 0.55) : '#FFFFFF';

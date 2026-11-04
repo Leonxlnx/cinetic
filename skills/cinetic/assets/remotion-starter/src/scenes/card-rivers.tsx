@@ -16,7 +16,7 @@
 // (expo-out); the swap cuts on at f37.5 at x1.21 and soft, x1.0 by f47, then shrinks steadily to x0.70 at the cut.
 import React from 'react';
 import { FONT } from '../brand/tokens';
-import { trackLinear } from '../lib/anim';
+import { clamp, E, trackLinear } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { paletteOf, type Palette, type SceneMeta, tab, useClock } from './parts';
 import { hash, Picture, rgba, Stage1080 } from './stage1080';
@@ -144,7 +144,7 @@ export const CardRivers: React.FC<CardRiversProps> = ({ words, images, palette, 
   const word = second ? words[1] : words[0];
   const sc = second ? tab(t, CARD_RIVERS.second) : words.length > 1 && t >= 36.5 ? 0 : tab(t, CARD_RIVERS.first);
   const rise = second ? 0 : tab(t, CARD_RIVERS.rise);
-  const wBlur = second ? 5 * Math.max(0, 1 - (t - CARD_RIVERS.swap) / 3.5) : 4 * Math.max(0, 1 - t / 2.5);
+  const wBlur = second ? 5 * (1 - E.snapOut(clamp((t - CARD_RIVERS.swap) / 3.5))) : 4 * (1 - E.snapOut(clamp(t / 2.5)));
   return (
     <Stage1080 W={W} H={H} ground={P.ground}>
       {cards.map((c) => {

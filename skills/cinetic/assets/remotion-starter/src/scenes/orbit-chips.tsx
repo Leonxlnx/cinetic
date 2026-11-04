@@ -17,6 +17,7 @@
 import React from 'react';
 import { FONT } from '../brand/tokens';
 import { BrandLogo, type LogoRef, logoName } from '../kit/logos';
+import { E } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { paletteOf, type Palette, type SceneMeta, span, tab, useClock } from './parts';
 import { bezier, expo, rgba, Stage1080 } from './stage1080';
@@ -91,7 +92,7 @@ export const orbitState = (t: number, exit: 'dip' | 'hold' = 'dip') => {
   const u = u24(t);
   const zoom = tab(u, ORBIT.zoom.map((k) => [k[0], k[1]] as const));
   const lineS = 1 + (ORBIT.line.from - 1) * Math.exp(-ORBIT.line.k * Math.max(0, u));
-  const dip = exit === 'dip' ? span(u, ORBIT.dip.from, ORBIT.dip.to) : 0;
+  const dip = exit === 'dip' ? E.stdInOut(span(u, ORBIT.dip.from, ORBIT.dip.to)) : 0;
   return { u, zoom, angle: ORBIT.orbit * u, lineS, dip };
 };
 
@@ -125,9 +126,9 @@ export const OrbitChips: React.FC<OrbitChipsProps> = ({ line, chips, palette, ex
     const k = O.dip.from + O.dip.out[Math.min(O.dip.out.length - 1, i)] + (i >= 4 ? 1 : 0);
     return exit === 'dip' ? 1 - span(u, k, k + 2.5) : 1;
   };
-  const stadium = exit === 'dip' ? span(u, O.dip.from + 7, O.dip.from + 10) : 0;
+  const stadium = exit === 'dip' ? E.stdInOut(span(u, O.dip.from + 7, O.dip.from + 10)) : 0;
   // the next card: a disc at the centre that grows and opens into a rounded card
-  const disc = exit === 'dip' ? span(u, O.dip.from + 7, O.dip.from + 8.5) : 0;
+  const disc = exit === 'dip' ? E.stdInOut(span(u, O.dip.from + 7, O.dip.from + 8.5)) : 0;
   const card = exit === 'dip' ? bezier(0.3, 0, 0.2, 1)(span(u, O.dip.from + 8.5, O.dip.from + 12)) : 0;
   const lineO = 1 - span(u, O.dip.from + 5, O.dip.from + 8);
   return (
@@ -143,7 +144,7 @@ export const OrbitChips: React.FC<OrbitChipsProps> = ({ line, chips, palette, ex
           const a = ((ph + d.speed * u) * Math.PI) / 180;
           const x = 960 + R * Math.cos(a);
           const y = 540 + R * Math.sin(a);
-          const o = 1 - span(u, O.dip.from, O.dip.from + 6);
+          const o = 1 - E.buildIn(span(u, O.dip.from, O.dip.from + 6));
           return (
             <div key={`${j}-${k}`} style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${x - 19.5}px, ${y - 19.5}px)`, width: 39, height: 39, borderRadius: 20, background: '#FFFFFF', boxShadow: '0 3px 9px rgba(0,0,0,0.06)', opacity: o }}>
               <div style={{ position: 'absolute', left: 16, top: 16, width: 7.5, height: 7.5, borderRadius: 4, background: pal.accent }} />
@@ -221,7 +222,7 @@ export const OrbitChips: React.FC<OrbitChipsProps> = ({ line, chips, palette, ex
       })}
       {small.map((c, i) => {
         const S = O.small[i];
-        const p = span(u, S.at, S.at + 3);
+        const p = E.snapOut(span(u, S.at, S.at + 3));
         if (p <= 0) return null;
         const k = shrinkAt(4 + i) * (0.6 + 0.4 * p);
         if (k <= 0) return null;

@@ -23,7 +23,7 @@ import { type Logo, LogoMark, logoParts, SAMPLE_MARK_SVG } from '../brand/Mark';
 import { DOME as DOME3D, GlassDome } from '../fx/three/GlassDome';
 import { draws3D, type GlMode } from '../fx/three/gl';
 import { BrandLogo, logoFile, logoOf, type LogoRef } from '../kit/logos';
-import { clamp } from '../lib/anim';
+import { clamp, E, expIn, lmix } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { measureTracked } from '../lib/measure';
 import { paletteOf, type Palette, type SceneMeta, span, tab, useClock } from './parts';
@@ -97,8 +97,8 @@ export const domeTiles = (t: number, n: number) => {
   const T = CLOUD_DOME.tiles;
   const D = CLOUD_DOME.disc;
   const m = domePush(t);
-  const p = clamp((t - 24) / (CLOUD_DOME.dur - 24));
-  const turn = T.turn * (0.72 * p + 0.28 * p * p);
+  const turnP = clamp((t - 24) / (CLOUD_DOME.dur - 24));
+  const turn = T.turn * expIn(0.8)(turnP); // a turn that gathers speed: (e^(0.8 p) - 1) / (e^0.8 - 1)
   const F = { x: D.cx, y: D.top - CLOUD_DOME.dome3.r * 0.55 }; // the push's focus: the middle of what is inside
   const el = (T.elev * Math.PI) / 180;
   return Array.from({ length: n }, (_, i) => {
@@ -143,7 +143,7 @@ export const CloudDome: React.FC<CloudDomeProps> = ({ line, accent, plate, scree
   const C0 = S.crane[0][1];
   const lift = tab(t, S.crane);
   const m = domePush(t);
-  const zoom = span(t, S.zoom[0], S.zoom[1]);
+  const zoom = E.launchIn(span(t, S.zoom[0], S.zoom[1]));
   const zoomBlur = 6 * zoom;
   const F = { x: D.cx, y: D.top - R * 0.55 };
   const size = S.cap / 0.727;
@@ -333,7 +333,7 @@ export const CloudDome: React.FC<CloudDomeProps> = ({ line, accent, plate, scree
   const plateScale = 1 + 0.25 * (m - 1);
   return (
     <Stage1080 W={W} H={H} ground={skyTop}>
-      <div style={{ position: 'absolute', inset: 0, transformOrigin: `${F.x}px ${F.y}px`, transform: zoom > 0 ? `scale(${(1 + 0.2 * zoom * zoom).toFixed(4)})` : undefined, filter: zoomBlur > 0.2 ? `blur(${zoomBlur.toFixed(2)}px)` : undefined }}>
+      <div style={{ position: 'absolute', inset: 0, transformOrigin: `${F.x}px ${F.y}px`, transform: zoom > 0 ? `scale(${lmix(1, 1.2, zoom).toFixed(4)})` : undefined, filter: zoomBlur > 0.2 ? `blur(${zoomBlur.toFixed(2)}px)` : undefined }}>
         {/* the sky: a pale field with two soft brighter puffs */}
         <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(420px 300px at 30% 52%, ${rgba(P.paper, 0.7)}, ${rgba(P.paper, 0)}), radial-gradient(520px 360px at 76% 30%, ${rgba(P.paper, 0.6)}, ${rgba(P.paper, 0)}), linear-gradient(180deg, ${skyTop}, ${skyLow})` }} />
         {/* the plate: rises from below at its own (farther) rate, its top edge melting into the sky; a haze that clears */}

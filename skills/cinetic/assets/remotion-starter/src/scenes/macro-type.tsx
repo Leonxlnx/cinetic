@@ -108,25 +108,25 @@ export const MacroType: React.FC<MacroTypeProps> = ({ placeholder, text, palette
   const clickT = MACRO_TYPE.click;
   // every state change glides over a few frames (the pointer turning into the text cursor, its click squash, its leaving,
   // the caret's blink): nothing in this scene jumps in one frame
-  const swap = span(t, 4, 6); // the arrow hands over to the text cursor
+  const swap = E.stdInOut(span(t, 4, 6)); // the arrow hands over to the text cursor
   const beam = t >= 4 && t < clickT + 6;
   const beamS = 1 - 0.28 * Math.sin(Math.PI * span(t, clickT - 1, clickT + 2));
-  const beamA = swap * (1 - span(t, clickT + 1, clickT + 6));
+  const beamA = swap * (1 - E.buildIn(span(t, clickT + 1, clickT + 6)));
   const bx = tab(t, BEAM_X);
   const by = tab(t, BEAM_Y);
   const shx = tab(t, SHADOW_X);
   const shy = tab(t, SHADOW_Y);
-  const bloom = t >= clickT + 2 ? span(t, clickT + 2, clickT + 8) * (1 - span(t, clickT + 10, clickT + 18)) : 0;
-  const caretA = t >= clickT + 1 && run < 0.5 ? clamp(0.5 + 1.6 * Math.cos((2 * Math.PI * (t - clickT - 1)) / 25)) * (1 - span(run, 0.2, 0.5)) : 0;
+  const bloom = t >= clickT + 2 ? E.snapOut(span(t, clickT + 2, clickT + 8)) * (1 - E.buildIn(span(t, clickT + 10, clickT + 18))) : 0;
+  const caretA = t >= clickT + 1 && run < 0.5 ? clamp(0.5 + 1.6 * Math.cos((2 * Math.PI * (t - clickT - 1)) / 25)) * (1 - E.buildIn(span(run, 0.2, 0.5))) : 0;
   const caretOn = caretA > 0.01;
   // the placeholder fades as the text cursor descends: gone before it lands (it never sits on the words)
-  const phA = 1 - span(t, 13, 21);
+  const phA = 1 - E.buildIn(span(t, 13, 21));
   // the pointer's return for the send button
-  const pIn = span(t, runFrom + 3, runFrom + 10);
+  const pIn = E.snapOut(span(t, runFrom + 3, runFrom + 10));
   const pClick = runFrom + 11;
   const ptrOn = click && t >= runFrom + 3;
   const ptr = { x: 1006 + 60 + (1 - E.glideOut(pIn)) * 420, y: 533 + 30 + (1 - E.glideOut(pIn)) * 560 };
-  const pressed = click ? span(t, pClick, pClick + 2) * (1 - 0.6 * span(t, pClick + 4, pClick + 9)) : 0;
+  const pressed = click ? E.snapOut(span(t, pClick, pClick + 2)) * (1 - 0.6 * E.glideOut(span(t, pClick + 4, pClick + 9))) : 0;
   const sendR = MACRO_TYPE.send.r * (1 - 0.12 * pressed);
   // the words: a word arrives in the accent and settles to ink 3 f after its last key (over 2 f)
   const words = wordsOf(typed.shown);
@@ -193,10 +193,10 @@ export const MacroType: React.FC<MacroTypeProps> = ({ placeholder, text, palette
       )}
       {beam && (
         <>
-          <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${bx - 60 + shx}px, ${by - 170 + shy}px)`, opacity: 0.6 * swap * (1 - span(t, clickT - 1, clickT + 1)), filter: 'blur(7px)' }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${bx - 60 + shx}px, ${by - 170 + shy}px)`, opacity: 0.6 * swap * (1 - E.buildIn(span(t, clickT - 1, clickT + 1))), filter: 'blur(7px)' }}>
             <Cartoon w={120} h={339} fill={shadowC} line={shadowC} stroke={8}>{beamParts}</Cartoon>
           </div>
-          <div style={{ position: 'absolute', left: 0, top: 0, transformOrigin: '60px 170px', transform: `translate(${bx - 60}px, ${by - 170}px) rotate(${(15 * (1 - span(t, 5, 8))).toFixed(2)}deg) scale(${beamS.toFixed(4)})`, opacity: beamA }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, transformOrigin: '60px 170px', transform: `translate(${bx - 60}px, ${by - 170}px) rotate(${(15 * (1 - E.glideOut(span(t, 5, 8)))).toFixed(2)}deg) scale(${beamS.toFixed(4)})`, opacity: beamA }}>
             <Cartoon w={120} h={339} fill={C.white} line={C.ink} stroke={8}>{beamParts}</Cartoon>
           </div>
         </>

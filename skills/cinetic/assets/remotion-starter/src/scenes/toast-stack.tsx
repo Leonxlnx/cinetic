@@ -18,7 +18,7 @@ import { C, FONT } from '../brand/tokens';
 import { type IconName } from '../kit/icons';
 import { type LogoRef } from '../kit/logos';
 import { Mark, skinOf } from '../kit/screens/base';
-import { clamp } from '../lib/anim';
+import { clamp, E, zoomAt } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { withAlpha } from '../lib/handover';
 import { paletteOf, perFrame, type Palette, type SceneMeta, span, tab, useClock } from './parts';
@@ -89,7 +89,7 @@ export const toastFirstTop = (t: number, n: number, withTotal = false) => {
   let s = 0;
   for (let j = 1; j < arrive.length; j++) s += tab(t - arrive[j], ENTRY);
   const y = slotAt(s)[0] + (withTotal ? 70 : 0) + climbFor(t, n, withTotal);
-  const k = (1 + 0.03 * span(t, TOASTS.rest, TOASTS.dur)) * (withTotal ? 0.94 : 1);
+  const k = zoomAt(t, TOASTS.rest, TOASTS.dur, 1, 1.03, E.softOut) * (withTotal ? 0.94 : 1);
   return 540 + (y - 540 + stackFrame(n, withTotal).shift) * k;
 };
 
@@ -121,7 +121,7 @@ export const ToastStack: React.FC<ToastStackProps> = ({ items, total, palette, f
   // the climb's speed smears the stack vertically once it is fast (over 30 px/f: the slow first frames stay sharp)
   const speed = Math.abs(climbFor(t + 0.5, list.length, !!total) - climbFor(t - 0.5, list.length, !!total));
   const smear = speed > 30 ? SMEAR.reduce((a, b) => (Math.abs(b - speed / 5) < Math.abs(a - speed / 5) ? b : a)) : 0;
-  const push = 1 + 0.03 * span(t, TOASTS.rest, TOASTS.dur);
+  const push = zoomAt(t, TOASTS.rest, TOASTS.dur, 1, 1.03, E.softOut);
   const lines = mixColor(ground, paper, 0.08);
   const arrivedShare = (j: number) => tab(t - arrive[j], ENTRY);
   const count = total ? total.from + (total.to - total.from) * (list.reduce((a, _, j) => a + arrivedShare(j), 0) / Math.max(1, list.length)) : 0;
@@ -146,7 +146,7 @@ export const ToastStack: React.FC<ToastStackProps> = ({ items, total, palette, f
       </svg>
       <div style={{ position: 'absolute', inset: 0, transform: `translateY(${centre.toFixed(2)}px) scale(${(push * fitK).toFixed(4)})`, transformOrigin: `960px ${(540 - centre).toFixed(1)}px`, filter: smear ? `url(#toast-stack-smear-${smear})` : undefined }}>
         {total && (
-          <div style={{ position: 'absolute', left: 0, top: 0, width: 1920, transform: `translate(0px, ${(60 + climb * 0.35).toFixed(1)}px)`, opacity: span(t, 2, 8), display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 22, fontFamily: FONT.text, color: paper, whiteSpace: 'pre' }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, width: 1920, transform: `translate(0px, ${(60 + climb * 0.35).toFixed(1)}px)`, opacity: E.snapOut(span(t, 2, 8)), display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 22, fontFamily: FONT.text, color: paper, whiteSpace: 'pre' }}>
             <span data-text="toast-total" style={{ fontSize: 84, fontWeight: 600, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
               {`${total.prefix ?? ''}${Math.round(count).toLocaleString('en-US')}${total.suffix ?? ''}`}
             </span>

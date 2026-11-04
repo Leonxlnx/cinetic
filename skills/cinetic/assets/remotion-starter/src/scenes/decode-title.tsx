@@ -15,7 +15,7 @@ import React from 'react';
 import { C, FONT } from '../brand/tokens';
 import { Cursor, pressAt } from '../fx/Cursor';
 import { Icon } from '../kit/screens/base';
-import { clamp, rand } from '../lib/anim';
+import { clamp, E, rand, XP } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { withAlpha } from '../lib/handover';
 import { measureTracked } from '../lib/measure';
@@ -192,7 +192,7 @@ export const DecodeTitle: React.FC<DecodeTitleProps> = ({ title, cta, palette, p
   const grid = `radial-gradient(circle at ${pitch / 2}px ${pitch / 2}px, ${withAlpha(dot, 0)} 0.8px, ${dot} 0.95px, ${dot} 2.2px, ${withAlpha(dot, 0)} 2.5px)`;
   // ---- the swirl: two broad soft arcs of the accent turning clockwise inside a wide glow
   const sw = span(t, 0, 6);
-  const swirlA = t < 13 ? clamp(Math.min(t / 2 + 0.4, 1) * (1 - span(t, 4, 12))) : 0;
+  const swirlA = t < 13 ? clamp((0.4 + 0.6 * E.snapOut(clamp(t / 1.2))) * (1 - E.buildIn(span(t, 4, 12)))) : 0;
   const rx = 240 + 160 * sw;
   const ry = 190 + 110 * sw;
   const rot = 6 * t;
@@ -215,8 +215,8 @@ export const DecodeTitle: React.FC<DecodeTitleProps> = ({ title, cta, palette, p
   const dip = (q: number) => q * q * (3 - 2 * q);
   const press = pointer ? 1 - 0.08 * (pt < -2 || pt > 6 ? 0 : pt <= 0 ? dip((pt + 2) / 2) : 1 - dip(pt / 6)) : 1;
   const ptrOn = pointer && flying && tf >= 1;
-  const ptrA = span(tf, 1, 3); // the pointer comes in with the button, over 2 frames
-  const toClick = span(t, DECODE.click - 3, DECODE.click - 0.5);
+  const ptrA = E.snapOut(span(tf, 1, 3)); // the pointer comes in with the button, over 2 frames
+  const toClick = XP.travel(span(t, DECODE.click - 3, DECODE.click - 0.5));
   const edge = { x: bx + btnW * 0.2 * sx, y: by - (btnH / 2) * sx + 6 };
   const hit = { x: seatX - btnW * 0.16, y: lay.btnCy + btnH * 0.12 };
   const ease = (q: number) => q * q * (3 - 2 * q);
@@ -245,7 +245,7 @@ export const DecodeTitle: React.FC<DecodeTitleProps> = ({ title, cta, palette, p
       {/* the dashes thrown out of the swirl */}
       {t < 22 &&
         // the field thins out and fades over its last frames (a dash never stops dead in one frame)
-        dashesAt(t).map((d, i) => <div key={i} style={{ position: 'absolute', left: 0, top: 0, width: d.w, height: d.h, background: tiers[d.tier], opacity: 1 - span(t, 15, 21.5), transform: `translate(${d.x.toFixed(1)}px, ${d.y.toFixed(1)}px)` }} />)}
+        dashesAt(t).map((d, i) => <div key={i} style={{ position: 'absolute', left: 0, top: 0, width: d.w, height: d.h, background: tiers[d.tier], opacity: 1 - E.buildIn(span(t, 15, 21.5)), transform: `translate(${d.x.toFixed(1)}px, ${d.y.toFixed(1)}px)` }} />)}
       {/* the title */}
       <div style={{ position: 'absolute', left: 0, top: 0, width: tw, height: size * 1.2, transform: `translate(${left0.toFixed(2)}px, ${lineTop.toFixed(2)}px)` }}>
         {/* the decode glow: a soft copy of the glyphs being born, in the accent */}
@@ -276,7 +276,7 @@ export const DecodeTitle: React.FC<DecodeTitleProps> = ({ title, cta, palette, p
         )}
         {/* the fine dark screen inside the letters once they rest */}
         {t >= 17 && (
-          <div aria-hidden style={{ ...titleStyle, color: 'transparent', backgroundImage: `radial-gradient(circle at ${pitch / 2}px ${pitch / 2}px, ${withAlpha(P.ground, 0.55)} 1.2px, ${withAlpha(P.ground, 0)} 2.2px)`, backgroundSize: `${pitch}px ${pitch}px`, padding: '.18em 0 .32em', margin: '-.18em 0 0', WebkitBackgroundClip: 'text', backgroundClip: 'text', opacity: span(t, 17, 19) }}>
+          <div aria-hidden style={{ ...titleStyle, color: 'transparent', backgroundImage: `radial-gradient(circle at ${pitch / 2}px ${pitch / 2}px, ${withAlpha(P.ground, 0.55)} 1.2px, ${withAlpha(P.ground, 0)} 2.2px)`, backgroundSize: `${pitch}px ${pitch}px`, padding: '.18em 0 .32em', margin: '-.18em 0 0', WebkitBackgroundClip: 'text', backgroundClip: 'text', opacity: E.snapOut(span(t, 17, 19)) }}>
             {title}
           </div>
         )}

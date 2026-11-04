@@ -16,7 +16,7 @@ import { Img } from 'remotion';
 import { type Logo, LogoMark } from '../brand/Mark';
 import { C, FONT } from '../brand/tokens';
 import { Icon } from '../kit/screens/base';
-import { clamp, E } from '../lib/anim';
+import { clamp, E, lmix } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { markOf, paletteOf, type Palette, perFrame, type SceneMeta, span, tab, useClock } from './parts';
 import { srcOf, Stage1080 } from './stage1080';
@@ -104,7 +104,7 @@ export const IrisInput: React.FC<IrisInputProps> = ({ plate, focus = [0.5, 0.5],
   const markR = t < IRIS_INPUT.open ? tab(t, MARK_R) : tab(t, HOLE_R);
   const markRot = t < 24 ? tab(t, MARK_ROT) : 90 + tab(t, HOLE_ROT);
   const dark = span(t, IRIS_INPUT.open, IRIS_INPUT.open + 5); // white -> the hole's near black, the fill colour itself
-  const holeA = 1 - 0.4 * span(t, 24, 36);
+  const holeA = 1 - 0.4 * E.stdInOut(span(t, 24, 36));
   const markFill = mixColor(white, mixColor(P.ground, C.ink, 0.6), dark);
   const fullFrame = R >= 1100;
   const mask = open && !fullFrame ? `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='1920' height='1080'><filter id='f'><feGaussianBlur stdDeviation='4'/></filter><path d='${irisPath(960, 540, R, lobeRot)}' fill='white' filter='url(#f)'/></svg>`)}")` : undefined;
@@ -117,9 +117,9 @@ export const IrisInput: React.FC<IrisInputProps> = ({ plate, focus = [0.5, 0.5],
   const PH = IRIS_INPUT.rest.h;
   const plusX = tab(tp, PLUS_X);
   const sendX = tab(tp, SEND_X);
-  const pushQ = span(t, IRIS_INPUT.push[0], IRIS_INPUT.push[1]);
-  const push = 1 + 0.12 * pushQ * pushQ * pushQ;
-  const micA = span(tp, 8, 13);
+  const pushQ = Math.pow(span(t, IRIS_INPUT.push[0], IRIS_INPUT.push[1]), 3); // gathers speed into the cut
+  const push = lmix(1, 1.12, pushQ); // a push in log space
+  const micA = E.snapOut(span(tp, 8, 13));
   // the placeholder: the first blurs in word by word, then hard swaps on an accelerating schedule
   const first = placeholders[0] ?? '';
   const firstWords = first.split(' ');
@@ -197,7 +197,7 @@ export const IrisInput: React.FC<IrisInputProps> = ({ plate, focus = [0.5, 0.5],
               <span data-text="iris-placeholder">{ph}</span>
             ) : (
               firstWords.map((w, i) => {
-                const a = span(tp, 9 + 6 * i, 12 + 6 * i);
+                const a = E.snapOut(span(tp, 9 + 6 * i, 12 + 6 * i));
                 return (
                   // focus-in: the first question blurs in word by word
                   <span key={i} style={{ opacity: 0.4 + 0.6 * a, filter: a < 1 ? `blur(${(6 * (1 - a)).toFixed(2)}px)` : undefined, visibility: tp >= 9 + 6 * i ? 'visible' : 'hidden' }}>
@@ -211,7 +211,7 @@ export const IrisInput: React.FC<IrisInputProps> = ({ plate, focus = [0.5, 0.5],
           <div style={{ position: 'absolute', left: 1350 - 26, top: PY + PH / 2 - 26, opacity: micA }}>
             <Icon name="mic" size={52} color={white} />
           </div>
-          <div style={{ position: 'absolute', left: 0, top: 0, width: 106, height: 106, borderRadius: 53, transform: `translate(${(sendX - 53).toFixed(2)}px, ${PY + PH / 2 - 53}px)`, background: P.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', filter: tp < 3 ? `blur(${(3 - tp) * 1.5}px)` : undefined }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, width: 106, height: 106, borderRadius: 53, transform: `translate(${(sendX - 53).toFixed(2)}px, ${PY + PH / 2 - 53}px)`, background: P.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', filter: tp < 3 ? `blur(${(4.5 * (1 - E.snapOut(clamp(tp / 3)))).toFixed(2)}px)` : undefined }}>
             <Icon name="send" size={46} color={white} />
           </div>
         </div>

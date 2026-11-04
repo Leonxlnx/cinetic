@@ -9,7 +9,7 @@
 import React from 'react';
 import { Img } from 'remotion';
 import { FONT } from '../brand/tokens';
-import { clamp, curveOf, E } from '../lib/anim';
+import { clamp, curveOf, E, zoomAt } from '../lib/anim';
 import { contrastRatio, mixColor } from '../lib/color';
 import { withAlpha } from '../lib/handover';
 import { baselineOf, measureTracked } from '../lib/measure';
@@ -77,9 +77,9 @@ export const HeldProductWord: React.FC<HeldProductWordProps> = ({ product, produ
       {/* the world behind: paper, the plates, the field */}
       {!onField && slot >= 1 && slot <= n ? <Img src={plates[slot - 1]} style={{ position: 'absolute', inset: 0, width: W, height: H, objectFit: 'cover', transform: `scale(${platePush.toFixed(4)})` }} /> : null}
       {!onField && slot === 0 ? <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 70% 60% at 45% 40%, ${P.paper}, ${mixColor(P.paper, P.ground, 0.9)})` }} /> : null}
-      {onField && backdrop ? <Img src={backdrop} style={{ position: 'absolute', inset: 0, width: W, height: H, objectFit: 'cover', transform: `scale(${(1 + 0.02 * span(t, HELD.word, HELD.dur)).toFixed(4)})` }} /> : null}
+      {onField && backdrop ? <Img src={backdrop} style={{ position: 'absolute', inset: 0, width: W, height: H, objectFit: 'cover', transform: `scale(${zoomAt(t, HELD.word, HELD.dur, 1, 1.02, E.softOut).toFixed(4)})` }} /> : null}
       {onField && !backdrop ? (
-        <div style={{ position: 'absolute', inset: 0, transform: `scale(${(1 + 0.02 * span(t, HELD.word, HELD.dur)).toFixed(4)})`, background: `radial-gradient(ellipse 42% 52% at 50% 46%, ${withAlpha(key, 0.9)} 0%, ${withAlpha(key, 0)} 100%), linear-gradient(180deg, ${sweepTop} 0%, ${sweepMid} 58%, ${mixColor(sweepMid, sweepFloor, 0.5)} 74%, ${sweepFloor} 100%)` }} />
+        <div style={{ position: 'absolute', inset: 0, transform: `scale(${zoomAt(t, HELD.word, HELD.dur, 1, 1.02, E.softOut).toFixed(4)})`, background: `radial-gradient(ellipse 42% 52% at 50% 46%, ${withAlpha(key, 0.9)} 0%, ${withAlpha(key, 0)} 100%), linear-gradient(180deg, ${sweepTop} 0%, ${sweepMid} 58%, ${mixColor(sweepMid, sweepFloor, 0.5)} 74%, ${sweepFloor} 100%)` }} />
       ) : null}
       {/* the line, behind the product */}
       {onField

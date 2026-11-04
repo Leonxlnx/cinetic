@@ -16,6 +16,7 @@ import React from 'react';
 import { FONT } from '../brand/tokens';
 import type { IconName } from '../kit/icons';
 import { Glyph } from '../kit/parts';
+import { E } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { paletteOf, type Palette, type SceneMeta, span, tab, useClock } from './parts';
 import { bezier, rgba, Stage1080 } from './stage1080';
@@ -168,7 +169,7 @@ export const KeyGlow: React.FC<KeyGlowProps> = ({ items, palette, frame }) => {
           const lab = labelKeys[i];
           const labelX = keyX(sl.col - lab.n);
           const labelW = K.key.w + (lab.n - 1) * K.pitch.x;
-          const labelOn = i === 0 ? span(t, sl.at - 3, sl.at) : span(t, sl.at - 8, sl.at - 5);
+          const labelOn = E.snapOut(i === 0 ? span(t, sl.at - 3, sl.at) : span(t, sl.at - 8, sl.at - 5));
           return (
             <React.Fragment key={i}>
               {/* the bloom pool: the accent spreading about a key width past the key (light under the caps, not a flat fill) */}

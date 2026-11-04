@@ -112,7 +112,7 @@ export const ScanGrid: React.FC<ScanGridProps> = ({ prefix = '', url, logo, acti
   const typed = typedAt(url, t * 2, { at: SCAN.type[0] * 2, cps: 26, fps: 60, seed: url });
   const caretOn = t < SCAN.click && (typed.since < 6 || Math.floor(t / 8) % 2 === 0);
   const press = pointer ? pressAt(t, SCAN.click, 30) : 0;
-  const flash = span(t, SCAN.click + 2, SCAN.click + 3) * (1 - span(t, SCAN.click + 4, SCAN.click + 9));
+  const flash = E.snapOut(span(t, SCAN.click + 2, SCAN.click + 3)) * (1 - E.glideOut(span(t, SCAN.click + 4, SCAN.click + 9)));
   const isBusy = t >= SCAN.click + 4;
   const fsz = 30; // the bar's type in the end view (x1.44 on the input's own shot)
   const actW = measureTracked(action, 28, 500, -0.005, FONT.ui) + 64 + 30;
@@ -126,11 +126,11 @@ export const ScanGrid: React.FC<ScanGridProps> = ({ prefix = '', url, logo, acti
   // ---- the pointer: rises from below onto the button, hovers, clicks
   const hit = { x: btnR - btnW * 0.42, y: L.bar.y + L.bar.h * 0.62 };
   const ptrIn = span(t, 8, 11);
-  const ptrY = hit.y + (1 - E.glideOut(ptrIn)) * 520 - 3 * span(t, 11, SCAN.click);
+  const ptrY = hit.y + (1 - E.glideOut(ptrIn)) * 520 - 3 * E.stdInOut(span(t, 11, SCAN.click));
   const ptrOn = pointer && t >= 8 && t < SCAN.tilt[1] + 2;
   // ---- the horizon glow (sinks and dims with the push) and the deep glow under the grid
-  const horizon = 1 - 0.8 * span(t, 0, SCAN.tilt[1]);
-  const deep = span(t, SCAN.rise[0] - 2, SCAN.rise[0] + 6);
+  const horizon = 1 - 0.8 * E.stdInOut(span(t, 0, SCAN.tilt[1]));
+  const deep = E.snapOut(span(t, SCAN.rise[0] - 2, SCAN.rise[0] + 6));
   // lint-ok: the world's planet horizon (a lit edge the stage has), not an end card
   const ellipse = `radial-gradient(closest-side, ${mixColor(P.ground, P.accent, 0.3)} 0%, ${mixColor(P.ground, P.accent, 0.45)} 60%, ${mixColor(P.accent, C.white, 0.25)} 82%, ${mixColor(P.accent, C.white, 0.8)} 95%, ${mixColor(P.accent, C.white, 0.92)} 98.5%, ${withAlpha(P.accent, 0)} 100%)`;
   const sky = `linear-gradient(0deg, ${withAlpha(P.accent, 0.6)} 0%, ${withAlpha(P.accent, 0.25)} 40%, ${withAlpha(P.accent, 0)} 100%)`;
@@ -201,11 +201,11 @@ export const ScanGrid: React.FC<ScanGridProps> = ({ prefix = '', url, logo, acti
         </div>
         {/* the grid */}
         {t >= SCAN.rise[0] - 2 && (
-          <div style={{ position: 'absolute', left: 0, top: 0, width: 1920, height: 1080, transform: `translate(0px, ${gridDy.toFixed(2)}px)`, filter: gridBlur > 0.2 ? `blur(${gridBlur.toFixed(2)}px)` : undefined, opacity: span(t, SCAN.rise[0] - 2, SCAN.rise[0] + 1) }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, width: 1920, height: 1080, transform: `translate(0px, ${gridDy.toFixed(2)}px)`, filter: gridBlur > 0.2 ? `blur(${gridBlur.toFixed(2)}px)` : undefined, opacity: E.snapOut(span(t, SCAN.rise[0] - 2, SCAN.rise[0] + 1)) }}>
             {cells.map((it, i) => {
               const x = L.cols[i % 3];
               const y = L.rows[Math.floor(i / 3)];
-              const colour = span(t, SCAN.colour[i] ?? SCAN.colour[5], (SCAN.colour[i] ?? SCAN.colour[5]) + 3);
+              const colour = E.stdInOut(span(t, SCAN.colour[i] ?? SCAN.colour[5], (SCAN.colour[i] ?? SCAN.colour[5]) + 3));
               return (
                 <div key={i} style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${x}px, ${y}px)`, width: L.tw }}>
                   <div style={{ position: 'relative', width: L.tw, height: L.th, borderRadius: 12, overflow: 'hidden', background: mixColor(C.white, P.accent, 0.06) }}>

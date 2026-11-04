@@ -12,7 +12,7 @@ import React from 'react';
 import { Img } from 'remotion';
 import { FONT } from '../brand/tokens';
 import { Cursor } from '../fx/Cursor';
-import { clamp, E } from '../lib/anim';
+import { clamp, E, zoomAt } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { withAlpha } from '../lib/handover';
 import { baselineOf, measureTracked } from '../lib/measure';
@@ -86,7 +86,7 @@ export const PortholeLine: React.FC<PortholeLineProps> = ({ top, bottom, accent,
   const accentWord = accent ?? botWords[botWords.length - 1];
   const onAt = (line: 0 | 1, i: number) => (line === 0 ? PORTHOLE.words.top : PORTHOLE.words.bottom) + i * PORTHOLE.words.every;
   // ---- the camera: a push x1.05 under the words, accelerating into the exit; the exit defocus
-  const push = 1 + 0.05 * span(t, PORTHOLE.words.top, 66) + 0.13 * E.launchIn(span(t, 64, PORTHOLE.dur));
+  const push = zoomAt(t, PORTHOLE.words.top, 66, 1, 1.05, E.softOut) + 0.13 * E.launchIn(span(t, 64, PORTHOLE.dur));
   const blur = tab(t, EXIT_BLUR) * u;
   // ---- the pointer: lands on the button, clicks, leaves as the colour drains
   const land = E.glideOut(span(t, 0, 7));
@@ -94,7 +94,7 @@ export const PortholeLine: React.FC<PortholeLineProps> = ({ top, bottom, accent,
   const curX = bx + (430 * (1 - land) + 30 + 360 * leave) * u;
   const curY = by + (360 * (1 - land) + 52 + 420 * leave) * u;
   const tp = t - PORTHOLE.press;
-  const press = tp <= 0 || tp >= 6 ? 0 : tp < 2 ? tp / 2 : 1 - (tp - 2) / 4;
+  const press = tp <= 0 || tp >= 6 ? 0 : tp < 2 ? E.snapOut(tp / 2) : 1 - E.glideOut((tp - 2) / 4);
   const line = (words: string[], li: 0 | 1, y: number) => (
     <div style={{ position: 'absolute', left: 0, top: 0, width: W, transform: `translateY(${y.toFixed(2)}px)`, textAlign: 'center', whiteSpace: 'pre', fontFamily: FONT.text, fontSize: size, fontWeight: 500, letterSpacing: '-0.01em', lineHeight: 1, color: P.ink }}>
       {words.map((w, i) => (

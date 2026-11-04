@@ -13,6 +13,7 @@
 // line sinks 65 px on an ease-in. The halo reaches 50 % at about 15 px, 10 % at about 70 px past an edge.
 import React from 'react';
 import { FONT } from '../brand/tokens';
+import { E } from '../lib/anim';
 import { mixColor } from '../lib/color';
 import { paletteOf, type Palette, type SceneMeta, tab, useClock } from './parts';
 import { Picture, rgba, Stage1080 } from './stage1080';
@@ -123,7 +124,7 @@ export const PhotoOrbit: React.FC<PhotoOrbitProps> = ({ line, images, palette, c
       </div>
       {places.filter((p) => p.z >= 0).map(tile)}
       {/* the last frames go to white with the flare: the cut the next scene opens on */}
-      {t > 67 ? <div style={{ position: 'absolute', inset: 0, background: P.paper, opacity: Math.min(1, (t - 67) / 1.5) * 0.8 }} /> : null}
+      {t > 67 ? <div style={{ position: 'absolute', inset: 0, background: P.paper, opacity: E.snapOut(Math.min(1, (t - 67) / 1.5)) * 0.8 }} /> : null}
     </Stage1080>
   );
 };
