@@ -28,6 +28,16 @@ import { barFloodMeta } from './bar-flood';
 import { typeFlipMeta } from './type-flip';
 import { prismLightMeta } from './prism-light';
 import { beatLockupMeta } from './beat-lockup';
+import { cloudDomeMeta } from './cloud-dome';
+import { photoOrbitMeta } from './photo-orbit';
+import { cardRiversMeta } from './card-rivers';
+import { siteFlipMeta } from './site-flip';
+import { ribbonRingMeta } from './ribbon-ring';
+import { phonePullbackMeta } from './phone-pullback';
+import { streetPosterMeta } from './street-poster';
+import { roomPushMeta } from './room-push';
+import { crystalHallMeta } from './crystal-hall';
+import { objectWindowMeta } from './object-window';
 
 export * from './parts';
 export { BlobsToMark, blobsToMarkMeta, type BlobsToMarkProps } from './blobs-to-mark';
@@ -54,6 +64,16 @@ export { BarFlood, barFloodMeta, type BarFloodProps } from './bar-flood';
 export { TypeFlip, typeFlipMeta, type TypeFlipProps } from './type-flip';
 export { PrismLight, prismLightMeta, type PrismLightProps } from './prism-light';
 export { BeatLockup, beatLockupMeta, beatLockupDur, type BeatLockupProps } from './beat-lockup';
+export { CloudDome, cloudDomeMeta, type CloudDomeProps } from './cloud-dome';
+export { PhotoOrbit, photoOrbitMeta, type PhotoOrbitProps } from './photo-orbit';
+export { CardRivers, cardRiversMeta, type CardRiversProps } from './card-rivers';
+export { SiteFlip, siteFlipMeta, type SiteFlipProps } from './site-flip';
+export { RibbonRing, ribbonRingMeta, type RibbonRingProps } from './ribbon-ring';
+export { PhonePullback, phonePullbackMeta, phoneCamera, phonePoint, quadMatrix, PHONE_PULLBACK, type PhoneCard, type PhonePullbackProps, type Quad } from './phone-pullback';
+export { StreetPoster, streetPosterMeta, streetPosterDur, plateAt, plateView, STREET_POSTER, type StreetPlate, type StreetPosterProps } from './street-poster';
+export { RoomPush, roomPushMeta, roomZoom, ROOM_PUSH, type RoomPlate, type RoomPushProps } from './room-push';
+export { CrystalHall, crystalHallMeta, crystalCamera, crystalFaces, CRYSTAL_HALL, type CrystalHallProps } from './crystal-hall';
+export { ObjectWindow, objectWindowMeta, windowPose, OBJECT_WINDOW, type ObjectWindowProps } from './object-window';
 
 /** Every house scene's meta entry, by id. */
 export const SCENES: Record<string, SceneMeta> = {
@@ -81,4 +101,14 @@ export const SCENES: Record<string, SceneMeta> = {
   [typeFlipMeta.id]: typeFlipMeta,
   [prismLightMeta.id]: prismLightMeta,
   [beatLockupMeta.id]: beatLockupMeta,
+  [cloudDomeMeta.id]: cloudDomeMeta,
+  [photoOrbitMeta.id]: photoOrbitMeta,
+  [cardRiversMeta.id]: cardRiversMeta,
+  [siteFlipMeta.id]: siteFlipMeta,
+  [ribbonRingMeta.id]: ribbonRingMeta,
+  [phonePullbackMeta.id]: phonePullbackMeta,
+  [streetPosterMeta.id]: streetPosterMeta,
+  [roomPushMeta.id]: roomPushMeta,
+  [crystalHallMeta.id]: crystalHallMeta,
+  [objectWindowMeta.id]: objectWindowMeta,
 };
