@@ -29,7 +29,7 @@ Every film is held to these rules and numbers; the gates in brackets measure the
    at most once a film; a line beside, above or below a picture at most once per 30 s. (`layout-audit.sh` placement.)
 2. **One element carried, the text mixed in.** Every scene change hands one element on (it grows, swells, flies,
    converges): never a cut from a line to a card, never the line-card-line-card loop, never an empty frame between
-   scenes. Lines alone only for the promise and the claim (0.5-2.3 s); between them inside the product's own words or
+   scenes. Lines alone only for the promise and the claim (read in 1.2 s); between them inside the product's own words or
    around the element; first line by 1 s. (`grid-check.ts --part spine`, `forensics.py --spine`, empty-frame.)
 3. **The picture tells what the product does.** Each picture proves its line without repeating its words (input ->
    output, a count rising; "every" drawn as many at once); a line its picture already says is cut (`copy-check`
@@ -45,8 +45,8 @@ Every film is held to these rules and numbers; the gates in brackets measure the
    (`copy-check.py`, `--ui src`.)
 5. **Text with love: one face, voices that rotate, events.** Lines arrive in the film's one face, the voice turning
    line by line (build, blur-in, ink-in: never two lines in a row alike, [catalogue.md](references/catalogue.md) §1),
-   in three sizes (a statement at 6-9 % cap, the lines a size down, the claim twice that); one-line statements 80 % or
-   more. One type event a film (a giant word with the product rising behind it, a line an object pushes apart, a
+   big (a line alone at a 9 % cap, never under 6 %; the claim bigger), whole or in 2-3 chunks, never word by word.
+   One type event a film (a giant word with the product rising behind it, a line an object pushes apart, a
    decode, a build that re-centres). Emphasis is quiet: the key word in the accent on at most two lines, not always the
    last word; a box, marker, pill, underline or knockout only as the one signature. Every line reads at 3:1 against
    what stands behind it, never held up by a grey halo. (`lint-film.mjs` emphasis, `forensics.py` legibility.)
@@ -55,7 +55,7 @@ Every film is held to these rules and numbers; the gates in brackets measure the
    ground alone hides nothing; never a cross-fade of two scenes or a cut torn across two frames; at most 10 % of hard
    cuts bare (`forensics.py` carried-cut, ghost-cut).
    The ground flips light-dark at most twice a film, each a declared colour event. Two or three seam kinds a film, none
-   over 45 % of the scene changes, and one exit-then-enter, text-swap or match-cut in a film of four lines or more.
+   over 40 % of the scene changes, and one exit-then-enter, text-swap or match-cut in a film of four lines or more.
    Build them with `fx/Seam` ([transitions.md §2](references/transitions.md#2-recipes-at-60-fps)). (`forensics.py --seams`.)
 7. **Clean UI.** The product's real screens built in code at film size, every string the product's own: no bracket
    slot, no stand-in number, no kit sample, no title cut with "...". Left edges of stacked rows within 4 px, inner
@@ -144,8 +144,8 @@ spine`. Its lines go in [TREATMENT.md](assets/TREATMENT.md) (the idea sentence f
 **3. World and scenes.** The deal (`src/dealt.ts`) holds the **world** where a template lights one: a designed place in
 the brand's hue; a photograph only of the brief's own subject (`node scripts/assets.mjs plate <kind>`, then `--pick <n>
 --to public/plates --accent '<accent>'`). Launch-simple casts 8-12 **house scenes** (`src/scenes`,
-1.5-3 s each, two big at least): named in the spine or dealt by the act's verb (`src/bank.ts`), painted
-in one designed palette (`src/palette.ts`), each point a line on clean ground and then its scene; for other
+1.5-3 s each, yours too, the lockup 2.5 s; two big at least): named in the spine or dealt by the act's verb
+(`src/bank.ts`), painted in one designed palette (`src/palette.ts`), each point a big line, then its scene; for other
 moves read the [motion library](references/motion-library/README.md). Parts: `fx/world`, `fx/light`
 ([lighting.md](references/lighting.md) §8), `fx/depth` ([camera.md](references/camera.md) §13), `fx/three`
 ([three.md](references/three.md)), `kit/screens` ([product-ui.md](references/product-ui.md) §15). Content: `node

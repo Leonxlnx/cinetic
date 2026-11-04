@@ -39,7 +39,7 @@ stop`) adds the gap to its one element and 1 s rings out after it.
 
 | Template | Length | Use it when | Shape |
 |---|---|---|---|
-| `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing to one case, point by point | 8-12 house scenes of the scene bank (`src/scenes`, 1.5-3 s each, two big at least) cast by `src/spine.ts` (one sentence as 3-5 acts, one case, one element handed on at every scene change), the rest dealt by each act's verb and varied film to film; lines alone on clean ground for the promise and one point; presses with a real pointer; a designed palette (one accent, white, near-black, the accent field) painted on each scene's own ground; the lockup a house scene; the direction you pick from the deck's three seeds the deal and the type pairing (`deck.py --direction <id> --why` writes `src/dealt.ts`) |
+| `launch-simple` (the default launch) | 15-30 s | most launch films: a product shown doing its thing to one case, point by point | 8-12 house scenes of the scene bank (`src/scenes`, 1.5-3 s each, a scene of your own too, the lockup 2.5 s; two big at least) cast by `src/spine.ts` (one sentence as 3-5 acts, one case, one element handed on at every scene change), the rest dealt by each act's verb and varied film to film; big lines alone on clean ground (a 9 % cap, read in 1.2 s) for the promise and one point; handovers varied (no kind over 40 %); presses with a real pointer; a designed palette (one accent, white, near-black, the accent field) painted on each scene's own ground; the lockup a house scene; the direction you pick from the deck's three seeds the deal and the type pairing (`deck.py --direction <id> --why` writes `src/dealt.ts`) |
 | none (the starter, `--template none`) | 15-45 s | a launch film whose idea is its own device | the dealt direction's skeleton |
 | `update` | 8-20 s (two changes run 9-12 s) | "vX is out": 2-3 changes, each understood at a glance | the hook (the name and the version on a clean ground, moving from the first frame), then each change as its line alone on the ground of its scene (big, whole or in 2-3 chunks, read in 1.2 s) and one house scene from the scene bank that proves it, 2-4 s a change (a typed one 3 s, no scene over 3 s) (a pointer pressing send into a porthole holding the change's picture as its line parts round it, a request typed at macro scale, notifications stacking in depth on the accent field, a page flown, pictures pumped into a row in depth ...), at least one big scene, two scenes joined on one element where they can; the mark pulls back into the lockup (one snap, the lockup gone 2 s after it forms) and the version lands on the bar line; every length in `src/deal.ts` LIMITS, a plan outside them fails; colours from the brand or a dealt palette |
 | `ui-walkthrough` | 25-40 s | the product's flow is the story: an input goes in, the product does visible work, an output comes out | promise, the input becoming the output (the signature), proof, a claim, the flow in steps, the output live, the end card |
@@ -71,15 +71,19 @@ and the one fact under the lockup. Then `src/content.ts` fills whatever a scene'
   (pictures, partner marks, a price table), never one the film already plays, seeded by the deck's direction or the
   name, so another product deals other scenes. Two big scenes at least (the plan print stars them).
 - **Each point, then its scene.** A line alone sits on clean ground (white, near-black or the accent field: never over
-  a blurred picture) for the promise and, once in a middle act, a point its key word then becomes; the scenes carry the
+  a blurred picture) for the promise and, once in a middle act, a point its key word then becomes. It is big (a cap of
+  9.2 % of the frame, the claim 11.2 %, never under 7 %: a long line takes two rows) and fast (whole up to four words,
+  else in two or three chunks, never typed word by word; read in 1.2 s at most, then its scene). The scenes carry the
   other statements themselves (a decoding title, a two-line statement parting round a porthole, a type poster) and the
-  product's own words. A press is a real pointer on the button, inside the scene.
-- **Fast, on the track.** Each scene plays at its own length (eased 0.9-1.1 so every change lands on the track's 8th);
-  the lockup holds, creeping, to the bar line that ends the body. The plan print gives the scene count, the median shot
-  (aim at 1.5-2.5 s) and the big scenes.
-- **Every change carried.** `HANDOVER_PLAN` pins each change to a handover the stage draws: the form table's drawn
-  recipe, else, into a scene that opens on its own picture, the way the element becomes that screen (a button drains
-  into a porthole, a pill or a page opens an iris, anything with a face grows into it), else a converge through a point.
+  product's own words. A press is a real pointer on a button that reads (decode-title's at 1.22 x its title's cap).
+- **Fast, on the track.** Every scene runs 1.5-3 s, a scene of your own too (the lockup 2.5 s): the timeline refuses a
+  longer one by name and length, and fits the body to the track as a whole (each house scene eased at most 1.2 x, the
+  changes on the 8th, the acts on their downbeats where the lengths allow, the body on whole bars). The plan print gives
+  the scene count, the median and longest shot, each line's read and cap, and every seam's kind.
+- **Every change carried, the seams varied.** `HANDOVER_PLAN` deals each change a handover the stage draws: the form
+  table's recipe first, then a flight, a grow, an iris or a porthole (from an element in sight), a swell, a converge
+  last; no kind on more than 40 % of the changes, pinned or not. The element is never left a speck on an empty ground
+  (forensics speck): the surroundings overlap at the cut, a line's parting words stay until it.
   `acts/bank.tsx` carries the element as a patch of the scene itself, scaled like a picture, the scene cutting its own
   copy out while it flies; the surroundings fade under the leaving element and arrive round the landing one, and the
   ground holds through the change. `grid-check.ts --part spine` and `forensics.py --spine` hold it.
@@ -89,8 +93,8 @@ and the one fact under the lockup. Then `src/content.ts` fills whatever a scene'
   `ground`), so it keeps its contrast with the brand's colour in it. Never a tinted wash, never a scene's demo colours.
 - **The end.** The lockup is a house scene (the mark born from two blobs, a line splitting round the wordmark, a bar
   flooding the frame) with the brand's mark (`scripts/brand.py`; an invented brand gets its own); the one fact arrives
-  under it once its move is done, the whole creeps in to the last frame and settles into its ground with the music's
-  ring-out (never cut mid-fade).
+  under it as its name is read (a cap of 3.6 %: legible, or left out), the whole creeps and is lit, and it settles into
+  its ground with the music's ring-out within 0.7 s: gone about 2 s after its mark is whole (never cut mid-fade).
 - **Sound cut to the picture.** `src/sync.ts`: every handover by its kind, each scene's own sounds (the keys, the
   click, the toasts, the snaps) on its fitted clock, one hit on the lockup; `npm run sound` mixes it over the fitted
   track.
