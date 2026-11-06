@@ -152,13 +152,16 @@ export function soundsFor(role, action = null) {
 /**
  * How earshot heard a catalogue sound as a kit role's sound (heard_as / not_heard_as: the actions and roles it was
  * asked about, z >= 2 with the forced choice against the cheap-synth descriptions won): 2 heard as it, 0 heard as
- * something else, 1 never asked.
+ * something else, 1 never asked. A role judged by the role's words is read by its own name where the sound was
+ * asked about it, as listen.py hears it (tick.crisp as "a short crisp tick", whoosh.long as "a long air whoosh").
  */
 export function heard(s, role, action = null) {
   const j = judgedAs(role, action);
   if (!j) return 1;
-  if (s.heard_as?.[j[0]]?.includes(j[1])) return 2;
-  return s.not_heard_as?.[j[0]]?.includes(j[1]) ? 0 : 1;
+  const asked = (ns, x) => s.heard_as?.[ns]?.includes(x) || s.not_heard_as?.[ns]?.includes(x);
+  const [ns, x] = j[0] === 'roles' && asked('roles', role) ? ['roles', role] : j;
+  if (s.heard_as?.[ns]?.includes(x)) return 2;
+  return s.not_heard_as?.[ns]?.includes(x) ? 0 : 1;
 }
 
 /** May a catalogue kind play this role? Only when the kind is one of the sounds the role is heard as. */

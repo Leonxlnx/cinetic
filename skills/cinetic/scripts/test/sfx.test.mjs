@@ -7,13 +7,14 @@
  *   1. The catalogue: at least 60 sounds, unique ids, every field (source, page, file_url, licence, role, align,
  *      onset, loudness, tags, earshot's verdict), every source free of a credit and of an account, links only (no
  *      audio beside it), earshot's forced choice won by every sound, every kind a role or an action lists is of
- *      its sound (IS, SOUNDS), the main kit roles served, a sound's heard lists naming every action and role its
- *      kind may play.
+ *      its sound (IS, SOUNDS), the main kit roles served, every sound's heard lists naming every action and role
+ *      its kind may play, no rejected sound left in.
  *   2. pick: the same film draws the same set, another film a different one, the last films' sounds held back,
  *      no sound on two roles, a sub-role read by its action (hit.logo_lock plays a low hit), and never a sound of
  *      another kind (a click as the pop, a key as the text note, a tone as the confirm, a cinematic sting as the
  *      logo lock), even when the catalogue's lists name one; a sound heard as the role's sound first (the test
- *      film's pop, text, logo lock, click and confirm in every film), then one never asked, then one heard as another.
+ *      film's pop, text, logo lock, click and confirm in every film, and 19 of its 24 roles), then one never asked,
+ *      then one heard as another; a role judged by its own words read by its own name.
  *   3. get on fixtures: each pick in audio/sfx/ with its licence record (every field credits.py checks, sha256 of
  *      the file), the history written; a second get keeps the files.
  *   4. Offline: --offline leaves every role to the synthesized takes and says FALLBACK, exit 0.
@@ -46,15 +47,20 @@ for (const s of cat.sounds) {
   ok(['onset', 'peak'].includes(s.align) && Array.isArray(s.tags) && s.tags.length >= 3, `${s.id}: align and tags`);
   ok(s.ear && typeof s.ear.p === 'number' && s.ear.p >= 0.5 && s.ear.query, `${s.id}: earshot heard its role over the cheap alternatives`);
 }
-for (const s of cat.sounds.filter((x) => x.heard_as || x.not_heard_as)) {
+for (const s of cat.sounds) {
   const asked = (ns) => [...(s.heard_as?.[ns] || []), ...(s.not_heard_as?.[ns] || [])];
-  ok(s.heard_as?.actions?.includes(s.ear.action) && typeof s.ear.z === 'number' && s.ear.z >= 2, `${s.id}: heard as the action it was taken for`);
+  const owed = (m) => Object.entries(m).filter(([, ks]) => ks.includes(s.role)).map(([x]) => x);
+  ok(s.heard_as && s.not_heard_as, `${s.id}: heard lists`);
+  // taken for an action of its kind; a kind no action lists (whoosh.long), for a kit role
+  const [ns, took] = owed(cat.actions).length ? ['actions', s.ear.action] : ['roles', s.ear.role];
+  ok(s.heard_as?.[ns]?.includes(took) && typeof s.ear.z === 'number' && s.ear.z >= 2, `${s.id}: heard as the ${ns === 'actions' ? 'action' : 'kit role'} it was taken for`);
   ok(asked('actions').every((x) => cat.actions[x]) && asked('roles').every((x) => cat.roles[x]), `${s.id}: asked about known actions and roles`);
   ok(new Set(asked('actions')).size === asked('actions').length && new Set(asked('roles')).size === asked('roles').length, `${s.id}: heard or not, never both`);
-  const owed = (m) => Object.entries(m).filter(([, ks]) => ks.includes(s.role)).map(([x]) => x);
   ok(owed(cat.actions).every((x) => asked('actions').includes(x)) && owed(cat.roles).every((x) => asked('roles').includes(x)),
     `${s.id}: asked about every action and role that lists its kind`);
 }
+const rejectedIds = new Set(cat.rejected.map((x) => x.id));
+ok(cat.sounds.every((s) => !rejectedIds.has(s.id)) && cat.rejected.every((x) => x.role && x.why), 'a rejected sound has its reason and is not in the catalogue');
 const kinds = new Set(cat.sounds.map((s) => s.role));
 for (const k of ['whoosh.short', 'whoosh.medium', 'whoosh.long', 'click.soft', 'click.hard', 'key', 'typing', 'notification',
   'shutter', 'impact', 'sub', 'riser', 'reverse', 'glass', 'paper', 'tick', 'lockup', 'pop', 'note']) ok(kinds.has(k), `kind ${k} in the catalogue`);
@@ -72,6 +78,9 @@ ok(soundsFor('whoosh.long.whip') === SOUNDS.actions.whip && soundsFor('tick.cris
   && soundsFor('hit', 'logo_lock') === SOUNDS.actions['logo-lock'] && soundsFor('nothing.known').length === 0, 'soundsFor reads like kindsFor');
 ok(JSON.stringify([judgedAs('hit', 'logo_lock'), judgedAs('hit.logo_lock'), judgedAs('tick.crisp'), judgedAs('text')])
   === JSON.stringify([['actions', 'logo-lock'], ['actions', 'logo-lock'], ['roles', 'tick'], ['roles', 'text']]), 'judgedAs: the action, else the role');
+const crisp = { heard_as: { actions: [], roles: ['tick.crisp'] }, not_heard_as: { actions: [], roles: ['tick'] } };
+ok(heard(crisp, 'tick.crisp') === 2 && heard(crisp, 'tick') === 0 && heard({}, 'tick.crisp') === 1 && heard(crisp, 'tick.crisp', 'detent') === 1,
+  'heard: a role by its own name where the sound was asked about it, else as judgedAs reads it');
 const beside = readdirSync(path.dirname(CATALOGUE)).filter((f) => /\.(wav|mp3|flac|ogg|aiff?)$/i.test(f));
 ok(beside.length === 0, 'no audio beside the catalogue');
 
@@ -113,6 +122,19 @@ for (let i = 0; i < 60; i++) {
   for (const r of ['pop', 'text', 'hit.logo_lock', 'click', 'click.confirm']) if (heard(p[r], r, ATLAS[r]) !== 2) unheard.push(`${r}: ${p[r]?.id}`);
 }
 ok(unheard.length === 0, `pop, text, logo lock, click and confirm heard as their sound (${[...new Set(unheard)].slice(0, 4).join('; ')})`);
+// every sound heard: the test film's whole cast, each role a sound heard as its sound in every film, but the roles no
+// sound is heard as (tick.crisp, snap) and those whose only heard sounds an earlier role may take (tock: tick; swell
+// and pop.shape: whoosh.short and each other)
+const CAST = { ...ATLAS, 'whoosh.long': 'swipe', 'whoosh.long.whip': 'whip', 'land.light': 'card-land', swell: 'shape', 'swell.swell': 'swell', hit: 'reveal', riser: 'build' };
+const FILM = ['tick', 'tick.crisp', 'tock', 'hit', 'land', 'land.light', 'pop', 'whoosh.short', 'whoosh.long', 'riser', 'swell', 'drop', 'key', 'key.space',
+  'key.return', 'click', 'click.confirm', 'snap', 'bell', 'text', 'whoosh.long.whip', 'swell.swell', 'pop.shape', 'hit.logo_lock'];
+const SHORT = new Set(['tick.crisp', 'snap', 'tock', 'swell', 'pop.shape']);
+const unheardFilm = [];
+for (let i = 0; i < 60; i++) {
+  const p = pick(cat, FILM, `film-${i}`, [], [], CAST);
+  for (const r of FILM) if (!SHORT.has(r) && heard(p[r], r, CAST[r]) !== 2) unheardFilm.push(`${r}: ${p[r]?.id}`);
+}
+ok(unheardFilm.length === 0, `the test film's 19 other roles heard as their sound (${[...new Set(unheardFilm)].slice(0, 4).join('; ')})`);
 
 // heard before never asked before heard as another, a fresh sound before a recent film's, and a real one over none
 // (the sounds heard as another rank best by quality and fill the TOP, so only the order of heard can pass)

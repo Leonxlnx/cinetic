@@ -1,7 +1,7 @@
 {
  "catalogue": 1,
  "updated": "2026-11-06",
- "about": "Real sound effects for cinetic films: links, never audio (the audio is fetched at film time by sfx.mjs into the film's audio/sfx/ with a licence record, and never committed). Each sound was auditioned with earshot (a forced choice between its role and cheap or cartoon alternatives) and measured: onset (first sample at 10 % of the peak), lead before it, peak, loudness, floor, centroid. align: onset roles put their transient on the cue frame, peak roles (whooshes, risers, swells) their loudest point. \"roles\" maps a kit role to the kinds that may play it; \"actions\" (the actions of scripts/audio/actions.py) wins where the cast names the role's action. Sounds added on 2026-11-06 carry heard_as and not_heard_as: the actions and kit roles their kind may play that earshot 0.4.1 heard their take as (the sound as kit.py real places it: 48 kHz, from just before it starts, at most 2.5 s, its lead-in trimmed for an onset role; z >= 2 for the best of the action's phrasings, the forced choice against four cheap-synth descriptions won), and the ones it heard as something else; sfx.mjs pick plays a heard sound first and one heard as something else last. Their onset, peak, end and loudness are kit.py's own measure_take (loudness: the loudest 400 ms and 50 ms), lead is kit.py lead_in, floor the 10th percentile of 50 ms levels.",
+ "about": "Real sound effects for cinetic films: links, never audio (the audio is fetched at film time by sfx.mjs into the film's audio/sfx/ with a licence record, and never committed). Each sound was auditioned with earshot (a forced choice between its role and cheap or cartoon alternatives) and measured: onset (first sample at 10 % of the peak), lead before it, peak, loudness, floor, centroid. align: onset roles put their transient on the cue frame, peak roles (whooshes, risers, swells) their loudest point. \"roles\" maps a kit role to the kinds that may play it; \"actions\" (the actions of scripts/audio/actions.py) wins where the cast names the role's action. Every sound carries heard_as and not_heard_as: the actions and kit roles its kind may play that earshot 0.4.1 heard its take as (the sound as kit.py real places it: 48 kHz, from just before it starts, at most 2.5 s, its lead-in trimmed for an onset role; z >= 2 for the best of the action's phrasings or the role's words, the forced choice against four cheap-synth descriptions won), and the ones it heard as something else; its ear is that verdict for the action it was taken for (a kind no action lists: the kit role), and a sound heard as none of them is in rejected. sfx.mjs pick plays a heard sound first and one heard as something else last. The onset, peak, end and loudness of the sounds added on 2026-11-06 are kit.py's own measure_take (loudness: the loudest 400 ms and 50 ms), lead is kit.py lead_in, floor the 10th percentile of 50 ms levels.",
  "sources": {
   "mixkit-sfx": {
    "name": "Mixkit",
@@ -238,10 +238,29 @@
     "mouse"
    ],
    "ear": {
-    "query": "a crisp hard mouse click",
+    "query": "a dry quick click",
     "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.51,
+    "action": "jump-cut",
+    "real": 0.9
+   },
+   "heard_as": {
+    "actions": [
+     "jump-cut",
+     "press",
+     "toggle",
+     "lock"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": [
+     "click",
+     "snap"
+    ]
    }
   },
   {
@@ -274,10 +293,29 @@
     "click"
    ],
    "ear": {
-    "query": "a crisp hard mouse click",
-    "p": 0.997,
-    "verdict": "plausible",
-    "top_alt": "a video game blip"
+    "query": "a dry quick click",
+    "p": 1,
+    "verdict": "strong",
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.61,
+    "action": "jump-cut",
+    "real": 0.06
+   },
+   "heard_as": {
+    "actions": [
+     "jump-cut",
+     "press",
+     "toggle",
+     "lock"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": [
+     "click",
+     "snap"
+    ]
    }
   },
   {
@@ -309,10 +347,30 @@
     "click"
    ],
    "ear": {
-    "query": "a crisp hard mouse click",
-    "p": 0.985,
-    "verdict": "weak",
-    "top_alt": "a video game blip"
+    "query": "a dry quick click",
+    "p": 0.998,
+    "verdict": "plausible",
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 2.9,
+    "action": "jump-cut",
+    "real": 0.11
+   },
+   "heard_as": {
+    "actions": [
+     "jump-cut",
+     "press"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "toggle",
+     "lock"
+    ],
+    "roles": [
+     "click",
+     "snap"
+    ]
    }
   },
   {
@@ -346,10 +404,29 @@
     "click"
    ],
    "ear": {
-    "query": "a crisp hard mouse click",
-    "p": 0.982,
-    "verdict": "weak",
-    "top_alt": "a video game blip"
+    "query": "a dry quick click",
+    "p": 0.993,
+    "verdict": "plausible",
+    "top_alt": "a video game blip",
+    "z": 2.66,
+    "action": "jump-cut",
+    "real": 0.85
+   },
+   "heard_as": {
+    "actions": [
+     "jump-cut",
+     "press",
+     "toggle",
+     "lock"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": [
+     "click",
+     "snap"
+    ]
    }
   },
   {
@@ -383,10 +460,30 @@
     "click"
    ],
    "ear": {
-    "query": "a crisp hard mouse click",
-    "p": 0.976,
-    "verdict": "no match",
-    "top_alt": "a cheesy comedy sound"
+    "query": "a dry quick click",
+    "p": 1,
+    "verdict": "plausible",
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 2.98,
+    "action": "jump-cut",
+    "real": 0.87
+   },
+   "heard_as": {
+    "actions": [
+     "jump-cut",
+     "toggle",
+     "lock"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "press"
+    ],
+    "roles": [
+     "click",
+     "snap"
+    ]
    }
   },
   {
@@ -583,10 +680,33 @@
     "click"
    ],
    "ear": {
-    "query": "a soft modern user interface click",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "query": "a small mechanical tick, a detent clicking over",
+    "p": 0.605,
+    "verdict": "weak",
+    "top_alt": "a video game blip",
+    "z": 2.06,
+    "action": "detent",
+    "real": 0.01
+   },
+   "heard_as": {
+    "actions": [
+     "detent"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "press",
+     "touch",
+     "toggle",
+     "letter"
+    ],
+    "roles": [
+     "tick",
+     "tick.crisp",
+     "land.light",
+     "click"
+    ]
    }
   },
   {
@@ -619,10 +739,33 @@
     "click"
    ],
    "ear": {
-    "query": "a soft modern user interface click",
-    "p": 1,
+    "query": "a small mechanical tick, a detent clicking over",
+    "p": 0.989,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a video game blip",
+    "z": 3.13,
+    "action": "detent",
+    "real": 0.05
+   },
+   "heard_as": {
+    "actions": [
+     "detent"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "press",
+     "touch",
+     "toggle",
+     "letter"
+    ],
+    "roles": [
+     "tick",
+     "tick.crisp",
+     "land.light",
+     "click"
+    ]
    }
   },
   {
@@ -655,10 +798,33 @@
     "click"
    ],
    "ear": {
-    "query": "a soft modern user interface click",
-    "p": 1,
+    "query": "a small mechanical tick, a detent clicking over",
+    "p": 0.995,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a video game blip",
+    "z": 3.4,
+    "action": "detent",
+    "real": 0.02
+   },
+   "heard_as": {
+    "actions": [
+     "detent"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "press",
+     "touch",
+     "toggle",
+     "letter"
+    ],
+    "roles": [
+     "tick",
+     "tick.crisp",
+     "land.light",
+     "click"
+    ]
    }
   },
   {
@@ -691,10 +857,33 @@
     "mouse"
    ],
    "ear": {
-    "query": "a soft modern user interface click",
-    "p": 0.999,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "query": "a small mechanical tick, a detent clicking over",
+    "p": 0.971,
+    "verdict": "weak",
+    "top_alt": "a video game blip",
+    "z": 2.24,
+    "action": "detent",
+    "real": 0.85
+   },
+   "heard_as": {
+    "actions": [
+     "detent"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "press",
+     "touch",
+     "toggle",
+     "letter"
+    ],
+    "roles": [
+     "tick",
+     "tick.crisp",
+     "land.light",
+     "click"
+    ]
    }
   },
   {
@@ -726,10 +915,33 @@
     "click"
    ],
    "ear": {
-    "query": "a soft modern user interface click",
-    "p": 0.996,
-    "verdict": "weak",
-    "top_alt": "a cheesy comedy sound"
+    "query": "a ratchet click",
+    "p": 0.999,
+    "verdict": "plausible",
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 2.7,
+    "action": "detent",
+    "real": 0.89
+   },
+   "heard_as": {
+    "actions": [
+     "detent"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "press",
+     "touch",
+     "toggle",
+     "letter"
+    ],
+    "roles": [
+     "tick",
+     "tick.crisp",
+     "land.light",
+     "click"
+    ]
    }
   },
   {
@@ -763,10 +975,33 @@
     "technology"
    ],
    "ear": {
-    "query": "a soft modern user interface click",
-    "p": 0.969,
+    "query": "a small mechanical tick, a detent clicking over",
+    "p": 0.936,
     "verdict": "weak",
-    "top_alt": "a cheesy comedy sound"
+    "top_alt": "a video game blip",
+    "z": 2.09,
+    "action": "detent",
+    "real": 0.16
+   },
+   "heard_as": {
+    "actions": [
+     "detent"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "press",
+     "touch",
+     "toggle",
+     "letter"
+    ],
+    "roles": [
+     "tick",
+     "tick.crisp",
+     "land.light",
+     "click"
+    ]
    }
   },
   {
@@ -916,10 +1151,26 @@
     "church-bell"
    ],
    "ear": {
-    "query": "a bright glass shimmer chime",
+    "query": "a struck bell note",
     "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.53,
+    "action": "chime",
+    "real": 0.94
+   },
+   "heard_as": {
+    "actions": [
+     "chime",
+     "success"
+    ],
+    "roles": [
+     "bell"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -953,46 +1204,26 @@
     "glass"
    ],
    "ear": {
-    "query": "a bright glass shimmer chime",
-    "p": 0.975,
-    "verdict": "no match",
-    "top_alt": "a cheesy comedy sound"
-   }
-  },
-  {
-   "id": "mixkit-3108",
-   "source": "mixkit-sfx",
-   "title": "Crystal chime",
-   "role": "glass",
-   "page": "https://mixkit.co/free-sound-effects/discover/chime/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/3108/3108.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 2,
-   "end_s": 1.24,
-   "onset_ms": 99,
-   "lead_ms": 31.8,
-   "peak_ms": 226,
-   "peak_db": -2.49,
-   "lufs": -13.1,
-   "l50_db": -12.8,
-   "floor_db": -167.6,
-   "centroid_hz": 10454,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "wide",
-    "chimes",
-    "sci-fi"
-   ],
-   "ear": {
-    "query": "a bright glass shimmer chime",
-    "p": 0.941,
-    "verdict": "strong",
-    "top_alt": "a cheesy comedy sound"
+    "query": "a struck bell note",
+    "p": 0.999,
+    "verdict": "weak",
+    "top_alt": "a video game blip",
+    "z": 2.35,
+    "action": "chime",
+    "real": 0.97
+   },
+   "heard_as": {
+    "actions": [
+     "chime",
+     "success"
+    ],
+    "roles": [
+     "bell"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -1026,10 +1257,32 @@
     "hit"
    ],
    "ear": {
-    "query": "a punchy deep impact hit",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "query": "a single clean low impact",
+    "p": 0.993,
+    "verdict": "weak",
+    "top_alt": "a rising synth whip sweep",
+    "z": 2.11,
+    "action": "reveal",
+    "real": 0.99
+   },
+   "heard_as": {
+    "actions": [
+     "reveal"
+    ],
+    "roles": [
+     "hit"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [
+     "logo-lock",
+     "thud",
+     "land",
+     "card-land"
+    ],
+    "roles": [
+     "land"
+    ]
    }
   },
   {
@@ -1064,46 +1317,32 @@
     "thud"
    ],
    "ear": {
-    "query": "a punchy deep impact hit",
+    "query": "a single clean low impact",
     "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
-   }
-  },
-  {
-   "id": "mixkit-757",
-   "source": "mixkit-sfx",
-   "title": "Falling hit",
-   "role": "impact",
-   "page": "https://mixkit.co/free-sound-effects/thud/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/757/757.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.55,
-   "end_s": 0.76,
-   "onset_ms": 44.2,
-   "lead_ms": 0.9,
-   "peak_ms": 67,
-   "peak_db": -0.1,
-   "lufs": -12.1,
-   "l50_db": -8.7,
-   "floor_db": -78.5,
-   "centroid_hz": 5363,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "medium",
-    "firm",
-    "wide",
-    "space-shooter",
-    "thud"
-   ],
-   "ear": {
-    "query": "a punchy deep impact hit",
-    "p": 0.782,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "verdict": "plausible",
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 2.57,
+    "action": "reveal",
+    "real": 0.98
+   },
+   "heard_as": {
+    "actions": [
+     "reveal",
+     "land",
+     "card-land"
+    ],
+    "roles": [
+     "hit"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [
+     "logo-lock",
+     "thud"
+    ],
+    "roles": [
+     "land"
+    ]
    }
   },
   {
@@ -1540,10 +1779,27 @@
     "typewriter"
    ],
    "ear": {
-    "query": "a single keyboard key press",
+    "query": "a mechanical keyboard key press",
     "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.23,
+    "action": "type",
+    "real": 0.88
+   },
+   "heard_as": {
+    "actions": [
+     "type"
+    ],
+    "roles": [
+     "key",
+     "key.space",
+     "key.return"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -1577,10 +1833,27 @@
     "office"
    ],
    "ear": {
-    "query": "a single keyboard key press",
+    "query": "a mechanical keyboard key press",
     "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.49,
+    "action": "type",
+    "real": 0.98
+   },
+   "heard_as": {
+    "actions": [
+     "type"
+    ],
+    "roles": [
+     "key",
+     "key.space",
+     "key.return"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -1614,10 +1887,27 @@
     "office"
    ],
    "ear": {
-    "query": "a single keyboard key press",
+    "query": "a mechanical keyboard key press",
     "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.75,
+    "action": "type",
+    "real": 0.98
+   },
+   "heard_as": {
+    "actions": [
+     "type"
+    ],
+    "roles": [
+     "key",
+     "key.space",
+     "key.return"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -1651,10 +1941,27 @@
     "office"
    ],
    "ear": {
-    "query": "a single keyboard key press",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "query": "a mechanical keyboard key press",
+    "p": 0.99,
+    "verdict": "weak",
+    "top_alt": "a video game blip",
+    "z": 2.13,
+    "action": "type",
+    "real": 0.87
+   },
+   "heard_as": {
+    "actions": [
+     "type"
+    ],
+    "roles": [
+     "key",
+     "key.space",
+     "key.return"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -1688,10 +1995,27 @@
     "office"
    ],
    "ear": {
-    "query": "a single keyboard key press",
+    "query": "a mechanical keyboard key press",
     "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "verdict": "plausible",
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 2.8,
+    "action": "type",
+    "real": 0.93
+   },
+   "heard_as": {
+    "actions": [
+     "type"
+    ],
+    "roles": [
+     "key",
+     "key.space",
+     "key.return"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -1724,124 +2048,27 @@
     "typewriter"
    ],
    "ear": {
-    "query": "a single keyboard key press",
+    "query": "a mechanical keyboard key press",
     "p": 0.996,
-    "verdict": "weak",
-    "top_alt": "a cheap synthesizer laser zap"
-   }
-  },
-  {
-   "id": "mixkit-2900",
-   "source": "mixkit-sfx",
-   "title": "Movie logo intro impact",
-   "role": "lockup",
-   "page": "https://mixkit.co/free-sound-effects/impact/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2900/2900.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 8.973,
-   "end_s": 8.34,
-   "onset_ms": 369,
-   "lead_ms": 366.9,
-   "peak_ms": 3720,
-   "peak_db": -1,
-   "lufs": -12,
-   "l50_db": -8.4,
-   "floor_db": -53.3,
-   "centroid_hz": 1684,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "wide",
-    "movie",
-    "cinematic",
-    "intro",
-    "impact"
-   ],
-   "ear": {
-    "query": "a big cinematic logo impact",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
-   }
-  },
-  {
-   "id": "mixkit-2901",
-   "source": "mixkit-sfx",
-   "title": "Epic movie impact",
-   "role": "lockup",
-   "page": "https://mixkit.co/free-sound-effects/impact/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2901/2901.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 5.145,
-   "end_s": 4.78,
-   "onset_ms": 123.6,
-   "lead_ms": 77.6,
-   "peak_ms": 1158.6,
-   "peak_db": -0.27,
-   "lufs": -11.8,
-   "l50_db": -8.1,
-   "floor_db": -56.4,
-   "centroid_hz": 1987,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "wide",
-    "movie",
-    "intro",
-    "swoosh",
-    "impact"
-   ],
-   "ear": {
-    "query": "a big cinematic logo impact",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
-   }
-  },
-  {
-   "id": "mixkit-2902",
-   "source": "mixkit-sfx",
-   "title": "Movie impact intro presentation",
-   "role": "lockup",
-   "page": "https://mixkit.co/free-sound-effects/impact/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2902/2902.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 5.994,
-   "end_s": 5.16,
-   "onset_ms": 94.3,
-   "lead_ms": 67,
-   "peak_ms": 1223.7,
-   "peak_db": -0.8,
-   "lufs": -10.4,
-   "l50_db": -7.5,
-   "floor_db": -75.7,
-   "centroid_hz": 2050,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "wide",
-    "movie",
-    "intro",
-    "impact",
-    "boom"
-   ],
-   "ear": {
-    "query": "a big cinematic logo impact",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "verdict": "plausible",
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 2.56,
+    "action": "type",
+    "real": 0.88
+   },
+   "heard_as": {
+    "actions": [
+     "type"
+    ],
+    "roles": [
+     "key",
+     "key.space",
+     "key.return"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -1875,10 +2102,23 @@
     "transition"
    ],
    "ear": {
-    "query": "a big cinematic logo impact",
-    "p": 1,
+    "query": "a deep cinematic hit",
+    "p": 0.917,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a rising synth whip sweep",
+    "z": 3.15,
+    "action": "reveal",
+    "real": 0.91
+   },
+   "heard_as": {
+    "actions": [
+     "reveal"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -1912,48 +2152,23 @@
     "transition"
    ],
    "ear": {
-    "query": "a big cinematic logo impact",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
-   }
-  },
-  {
-   "id": "mixkit-2919",
-   "source": "mixkit-sfx",
-   "title": "Movie trailer whoosh hit",
-   "role": "lockup",
-   "page": "https://mixkit.co/free-sound-effects/transition/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2919/2919.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 4.531,
-   "end_s": 3.42,
-   "onset_ms": 1585,
-   "lead_ms": 1240.6,
-   "peak_ms": 3169.8,
-   "peak_db": -0.33,
-   "lufs": -17.4,
-   "l50_db": -8.5,
-   "floor_db": -65.5,
-   "centroid_hz": 1169,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "warm",
-    "long",
-    "swell",
-    "narrow",
-    "movie",
-    "terror",
-    "wind",
-    "transition"
-   ],
-   "ear": {
-    "query": "a big cinematic logo impact",
-    "p": 0.994,
-    "verdict": "weak",
-    "top_alt": "a cheesy comedy sound"
+    "query": "a deep cinematic hit",
+    "p": 0.987,
+    "verdict": "plausible",
+    "top_alt": "a rising synth whip sweep",
+    "z": 2.86,
+    "action": "reveal",
+    "real": 0.95
+   },
+   "heard_as": {
+    "actions": [
+     "reveal"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -2281,10 +2496,26 @@
     "notification"
    ],
    "ear": {
-    "query": "a clean modern notification tone",
-    "p": 0.996,
-    "verdict": "strong",
-    "top_alt": "a cheesy comedy sound"
+    "query": "a soft rounded ding, a success",
+    "p": 0.978,
+    "verdict": "plausible",
+    "top_alt": "a video game blip",
+    "z": 2.6,
+    "action": "success",
+    "real": 0.04
+   },
+   "heard_as": {
+    "actions": [
+     "chime",
+     "success"
+    ],
+    "roles": [
+     "bell"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -2319,10 +2550,27 @@
     "notification"
    ],
    "ear": {
-    "query": "a clean modern notification tone",
-    "p": 0.993,
-    "verdict": "strong",
-    "top_alt": "a video game blip"
+    "query": "a soft rounded ding, a success",
+    "p": 0.863,
+    "verdict": "plausible",
+    "top_alt": "a video game blip",
+    "z": 2.63,
+    "action": "success",
+    "real": 0.02
+   },
+   "heard_as": {
+    "actions": [
+     "success"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "chime"
+    ],
+    "roles": [
+     "bell"
+    ]
    }
   },
   {
@@ -2357,10 +2605,27 @@
     "notification"
    ],
    "ear": {
-    "query": "a clean modern notification tone",
-    "p": 0.991,
-    "verdict": "strong",
-    "top_alt": "a cheesy comedy sound"
+    "query": "a soft rounded ding, a success",
+    "p": 0.97,
+    "verdict": "plausible",
+    "top_alt": "a video game blip",
+    "z": 2.78,
+    "action": "success",
+    "real": 0.02
+   },
+   "heard_as": {
+    "actions": [
+     "success"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "chime"
+    ],
+    "roles": [
+     "bell"
+    ]
    }
   },
   {
@@ -2394,10 +2659,27 @@
     "alerts"
    ],
    "ear": {
-    "query": "a clean modern notification tone",
-    "p": 0.987,
-    "verdict": "strong",
-    "top_alt": "a cheesy comedy sound"
+    "query": "a soft rounded ding, a success",
+    "p": 0.969,
+    "verdict": "plausible",
+    "top_alt": "a video game blip",
+    "z": 2.98,
+    "action": "success",
+    "real": 0.08
+   },
+   "heard_as": {
+    "actions": [
+     "success"
+    ],
+    "roles": [
+     "bell"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [
+     "chime"
+    ],
+    "roles": []
    }
   },
   {
@@ -2431,10 +2713,26 @@
     "notification"
    ],
    "ear": {
-    "query": "a clean modern notification tone",
-    "p": 0.985,
-    "verdict": "strong",
-    "top_alt": "a cheesy comedy sound"
+    "query": "a chime",
+    "p": 1,
+    "verdict": "plausible",
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 2.56,
+    "action": "chime",
+    "real": 0.65
+   },
+   "heard_as": {
+    "actions": [
+     "chime",
+     "success"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": [
+     "bell"
+    ]
    }
   },
   {
@@ -2468,10 +2766,27 @@
     "alerts"
    ],
    "ear": {
-    "query": "a clean modern notification tone",
-    "p": 0.909,
+    "query": "a soft rounded ding, a success",
+    "p": 0.99,
     "verdict": "strong",
-    "top_alt": "a cheesy comedy sound"
+    "top_alt": "a video game blip",
+    "z": 3.22,
+    "action": "success",
+    "real": 0.25
+   },
+   "heard_as": {
+    "actions": [
+     "success"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "chime"
+    ],
+    "roles": [
+     "bell"
+    ]
    }
   },
   {
@@ -2504,10 +2819,26 @@
     "paper"
    ],
    "ear": {
-    "query": "a sheet of paper sliding",
-    "p": 0.999,
+    "query": "a paper swipe",
+    "p": 0.992,
     "verdict": "plausible",
-    "top_alt": "a cheesy comedy sound"
+    "top_alt": "a rising synth whip sweep",
+    "z": 2.94,
+    "action": "swipe",
+    "real": 0.93
+   },
+   "heard_as": {
+    "actions": [
+     "swipe",
+     "slide"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "card-land"
+    ],
+    "roles": []
    }
   },
   {
@@ -2541,10 +2872,26 @@
     "office"
    ],
    "ear": {
-    "query": "a sheet of paper sliding",
-    "p": 0.983,
-    "verdict": "weak",
-    "top_alt": "a cheesy comedy sound"
+    "query": "a paper swipe",
+    "p": 0.944,
+    "verdict": "plausible",
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 2.52,
+    "action": "swipe",
+    "real": 0.95
+   },
+   "heard_as": {
+    "actions": [
+     "swipe"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "card-land",
+     "slide"
+    ],
+    "roles": []
    }
   },
   {
@@ -2578,10 +2925,26 @@
     "office"
    ],
    "ear": {
-    "query": "a sheet of paper sliding",
-    "p": 0.968,
-    "verdict": "weak",
-    "top_alt": "a cheesy comedy sound"
+    "query": "a paper swipe",
+    "p": 1,
+    "verdict": "strong",
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.71,
+    "action": "swipe",
+    "real": 0.94
+   },
+   "heard_as": {
+    "actions": [
+     "card-land",
+     "swipe"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "slide"
+    ],
+    "roles": []
    }
   },
   {
@@ -2615,10 +2978,26 @@
     "office"
    ],
    "ear": {
-    "query": "a sheet of paper sliding",
-    "p": 0.724,
-    "verdict": "no match",
-    "top_alt": "a cheesy comedy sound"
+    "query": "a card or a page swiped across a surface",
+    "p": 1,
+    "verdict": "strong",
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.31,
+    "action": "swipe",
+    "real": 0.98
+   },
+   "heard_as": {
+    "actions": [
+     "card-land",
+     "swipe"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "slide"
+    ],
+    "roles": []
    }
   },
   {
@@ -2755,10 +3134,29 @@
     "hit"
    ],
    "ear": {
-    "query": "a reverse cymbal swell",
-    "p": 1,
+    "query": "a short dark riser",
+    "p": 0.996,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a rising synth whip sweep",
+    "z": 3.02,
+    "action": "build",
+    "real": 0.91
+   },
+   "heard_as": {
+    "actions": [
+     "build",
+     "swell"
+    ],
+    "roles": [
+     "swell"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": [
+     "suck",
+     "riser"
+    ]
    }
   },
   {
@@ -2792,10 +3190,28 @@
     "whoosh"
    ],
    "ear": {
-    "query": "a reverse cymbal swell",
-    "p": 0.981,
-    "verdict": "plausible",
-    "top_alt": "a cheesy comedy sound"
+    "query": "a rising whoosh",
+    "p": 0.988,
+    "verdict": "strong",
+    "top_alt": "a rising synth whip sweep",
+    "z": 3.86,
+    "action": "build",
+    "real": 0.83
+   },
+   "heard_as": {
+    "actions": [
+     "build",
+     "swell"
+    ],
+    "roles": [
+     "suck",
+     "riser",
+     "swell"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -3052,10 +3468,27 @@
     "movie"
    ],
    "ear": {
-    "query": "a cinematic riser building tension",
-    "p": 1,
+    "query": "a reversed cymbal",
+    "p": 0.994,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a rising synth whip sweep",
+    "z": 4.26,
+    "action": "swell",
+    "real": 0.92
+   },
+   "heard_as": {
+    "actions": [
+     "build",
+     "swell"
+    ],
+    "roles": [
+     "riser",
+     "swell"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -3087,10 +3520,28 @@
     "synth"
    ],
    "ear": {
-    "query": "a cinematic riser building tension",
-    "p": 0.964,
-    "verdict": "plausible",
-    "top_alt": "a cheap synthesizer laser zap"
+    "query": "a short dark riser",
+    "p": 0.712,
+    "verdict": "weak",
+    "top_alt": "a rising synth whip sweep",
+    "z": 2.41,
+    "action": "build",
+    "real": 0.15
+   },
+   "heard_as": {
+    "actions": [
+     "build"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "swell"
+    ],
+    "roles": [
+     "riser",
+     "swell"
+    ]
    }
   },
   {
@@ -3126,7 +3577,23 @@
     "query": "a camera shutter click",
     "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.65,
+    "action": "shutter",
+    "real": 0.98
+   },
+   "heard_as": {
+    "actions": [
+     "jump-cut",
+     "shutter"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": [
+     "snap"
+    ]
    }
   },
   {
@@ -3161,7 +3628,24 @@
     "query": "a camera shutter click",
     "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 4.47,
+    "action": "shutter",
+    "real": 0.85
+   },
+   "heard_as": {
+    "actions": [
+     "shutter"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "jump-cut"
+    ],
+    "roles": [
+     "snap"
+    ]
    }
   },
   {
@@ -3196,7 +3680,24 @@
     "query": "a camera shutter click",
     "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 4.2,
+    "action": "shutter",
+    "real": 0.79
+   },
+   "heard_as": {
+    "actions": [
+     "shutter"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "jump-cut"
+    ],
+    "roles": [
+     "snap"
+    ]
    }
   },
   {
@@ -3231,7 +3732,24 @@
     "query": "a camera shutter click",
     "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 4.67,
+    "action": "shutter",
+    "real": 0.77
+   },
+   "heard_as": {
+    "actions": [
+     "shutter"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "jump-cut"
+    ],
+    "roles": [
+     "snap"
+    ]
    }
   },
   {
@@ -3264,9 +3782,26 @@
    ],
    "ear": {
     "query": "a camera shutter click",
-    "p": 0.999,
+    "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheesy comedy sound"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.38,
+    "action": "shutter",
+    "real": 0.72
+   },
+   "heard_as": {
+    "actions": [
+     "shutter"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "jump-cut"
+    ],
+    "roles": [
+     "snap"
+    ]
    }
   },
   {
@@ -3300,10 +3835,27 @@
     "cinematic"
    ],
    "ear": {
-    "query": "a deep sub bass drop",
-    "p": 0.998,
-    "verdict": "plausible",
-    "top_alt": "a cheap synthesizer laser zap"
+    "query": "a deep short sub thud",
+    "p": 0.953,
+    "verdict": "weak",
+    "top_alt": "a rising synth whip sweep",
+    "z": 2.47,
+    "action": "thud",
+    "real": 0.84
+   },
+   "heard_as": {
+    "actions": [
+     "thud"
+    ],
+    "roles": [
+     "drop"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [
+     "logo-lock"
+    ],
+    "roles": []
    }
   },
   {
@@ -3337,10 +3889,27 @@
     "drum"
    ],
    "ear": {
-    "query": "a deep sub bass drop",
-    "p": 0.998,
+    "query": "a deep short sub thud",
+    "p": 0.99,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.06,
+    "action": "thud",
+    "real": 0.05
+   },
+   "heard_as": {
+    "actions": [
+     "thud"
+    ],
+    "roles": [
+     "drop"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [
+     "logo-lock"
+    ],
+    "roles": []
    }
   },
   {
@@ -3374,10 +3943,27 @@
     "drum"
    ],
    "ear": {
-    "query": "a deep sub bass drop",
-    "p": 0.998,
+    "query": "a deep short sub thud",
+    "p": 0.985,
     "verdict": "strong",
-    "top_alt": "a cheesy comedy sound"
+    "top_alt": "a video game blip",
+    "z": 3.3,
+    "action": "thud",
+    "real": 0.05
+   },
+   "heard_as": {
+    "actions": [
+     "thud"
+    ],
+    "roles": [
+     "drop"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [
+     "logo-lock"
+    ],
+    "roles": []
    }
   },
   {
@@ -3411,10 +3997,27 @@
     "cinematic"
    ],
    "ear": {
-    "query": "a deep sub bass drop",
-    "p": 0.853,
+    "query": "a deep short sub thud",
+    "p": 0.992,
     "verdict": "weak",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 2.4,
+    "action": "thud",
+    "real": 0.52
+   },
+   "heard_as": {
+    "actions": [
+     "thud"
+    ],
+    "roles": [
+     "drop"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [
+     "logo-lock"
+    ],
+    "roles": []
    }
   },
   {
@@ -3554,10 +4157,30 @@
     "clock"
    ],
    "ear": {
-    "query": "a mechanical clock tick",
-    "p": 0.969,
-    "verdict": "weak",
-    "top_alt": "a cartoon sound effect"
+    "query": "a small mechanical tick, a detent clicking over",
+    "p": 1,
+    "verdict": "plausible",
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 2.91,
+    "action": "detent",
+    "real": 0.97
+   },
+   "heard_as": {
+    "actions": [
+     "detent"
+    ],
+    "roles": [
+     "tock"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [
+     "letter"
+    ],
+    "roles": [
+     "tick",
+     "tick.crisp"
+    ]
    }
   },
   {
@@ -3589,10 +4212,29 @@
     "clock"
    ],
    "ear": {
-    "query": "a mechanical clock tick",
-    "p": 0.558,
-    "verdict": "no match",
-    "top_alt": "a cheap synthesizer laser zap"
+    "query": "a ratchet click",
+    "p": 1,
+    "verdict": "strong",
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 4.13,
+    "action": "detent",
+    "real": 0.78
+   },
+   "heard_as": {
+    "actions": [
+     "detent"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "letter"
+    ],
+    "roles": [
+     "tick",
+     "tick.crisp",
+     "tock"
+    ]
    }
   },
   {
@@ -3627,10 +4269,23 @@
     "laptop"
    ],
    "ear": {
-    "query": "typing on a computer keyboard",
+    "query": "a mechanical keyboard key press",
     "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 4.26,
+    "action": "type",
+    "real": 0.98
+   },
+   "heard_as": {
+    "actions": [
+     "type"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -3663,10 +4318,23 @@
     "keyboard"
    ],
    "ear": {
-    "query": "typing on a computer keyboard",
+    "query": "a mechanical keyboard key press",
     "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.87,
+    "action": "type",
+    "real": 0.99
+   },
+   "heard_as": {
+    "actions": [
+     "type"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -3700,10 +4368,23 @@
     "office"
    ],
    "ear": {
-    "query": "typing on a computer keyboard",
+    "query": "a mechanical keyboard key press",
     "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.95,
+    "action": "type",
+    "real": 0.93
+   },
+   "heard_as": {
+    "actions": [
+     "type"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -3737,10 +4418,23 @@
     "office"
    ],
    "ear": {
-    "query": "typing on a computer keyboard",
+    "query": "a mechanical keyboard key press",
     "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.36,
+    "action": "type",
+    "real": 0.95
+   },
+   "heard_as": {
+    "actions": [
+     "type"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -3774,80 +4468,23 @@
     "laptop"
    ],
    "ear": {
-    "query": "typing on a computer keyboard",
-    "p": 0.911,
+    "query": "a mechanical keyboard key press",
+    "p": 1,
     "verdict": "weak",
-    "top_alt": "a cheesy comedy sound"
-   }
-  },
-  {
-   "id": "mixkit-1396",
-   "source": "mixkit-sfx",
-   "title": "Soft typing on a digital keyboard",
-   "role": "typing",
-   "page": "https://mixkit.co/free-sound-effects/type/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1396/1396.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 26.213,
-   "end_s": 25.18,
-   "onset_ms": 90.3,
-   "lead_ms": 0.3,
-   "peak_ms": 11802.7,
-   "peak_db": -9.28,
-   "lufs": -29.1,
-   "l50_db": -25.3,
-   "floor_db": -63.3,
-   "centroid_hz": 1373,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "narrow",
-    "type"
-   ],
-   "ear": {
-    "query": "typing on a computer keyboard",
-    "p": 0.854,
-    "verdict": "weak",
-    "top_alt": "a video game blip"
-   }
-  },
-  {
-   "id": "mixkit-1397",
-   "source": "mixkit-sfx",
-   "title": "Electronic typing",
-   "role": "typing",
-   "page": "https://mixkit.co/free-sound-effects/type/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1397/1397.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 2.129,
-   "end_s": 1.5,
-   "onset_ms": 0.9,
-   "lead_ms": 0.2,
-   "peak_ms": 751.9,
-   "peak_db": -1,
-   "lufs": -19.1,
-   "l50_db": -20.9,
-   "floor_db": -64.4,
-   "centroid_hz": 11143,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "narrow",
-    "type"
-   ],
-   "ear": {
-    "query": "typing on a computer keyboard",
-    "p": 0.574,
-    "verdict": "no match",
-    "top_alt": "a cartoon sound effect"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 2.39,
+    "action": "type",
+    "real": 0.98
+   },
+   "heard_as": {
+    "actions": [
+     "type"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -3882,47 +4519,23 @@
     "transition"
    ],
    "ear": {
-    "query": "a long deep cinematic whoosh",
-    "p": 1,
+    "query": "a long air whoosh",
+    "p": 0.998,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
-   }
-  },
-  {
-   "id": "mixkit-2408",
-   "source": "mixkit-sfx",
-   "title": "Storm coming whoosh",
-   "role": "whoosh.long",
-   "page": "https://mixkit.co/free-sound-effects/transition/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2408/2408.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 4.125,
-   "end_s": 4.06,
-   "onset_ms": 459.4,
-   "lead_ms": 316.7,
-   "peak_ms": 3617.8,
-   "peak_db": -3.48,
-   "lufs": -16.7,
-   "l50_db": -11.2,
-   "floor_db": -41.1,
-   "centroid_hz": 1277,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "narrow",
-    "storm",
-    "whoosh",
-    "transition"
-   ],
-   "ear": {
-    "query": "a long deep cinematic whoosh",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a rising synth whip sweep",
+    "z": 4.31,
+    "role": "whoosh.long",
+    "real": 0.64
+   },
+   "heard_as": {
+    "actions": [],
+    "roles": [
+     "whoosh.long"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -3956,46 +4569,23 @@
     "transition"
    ],
    "ear": {
-    "query": "a long deep cinematic whoosh",
-    "p": 0.999,
+    "query": "a long air whoosh",
+    "p": 0.99,
     "verdict": "strong",
-    "top_alt": "a cheesy comedy sound"
-   }
-  },
-  {
-   "id": "mixkit-787",
-   "source": "mixkit-sfx",
-   "title": "Cinematic whoosh stutter",
-   "role": "whoosh.long",
-   "page": "https://mixkit.co/free-sound-effects/discover/cinematic/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/787/787.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 2.517,
-   "end_s": 2.38,
-   "onset_ms": 871,
-   "lead_ms": 579,
-   "peak_ms": 1824.3,
-   "peak_db": -0.06,
-   "lufs": -11,
-   "l50_db": -6.4,
-   "floor_db": -79,
-   "centroid_hz": 2011,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "wide",
-    "cinematic",
-    "whoosh"
-   ],
-   "ear": {
-    "query": "a long deep cinematic whoosh",
-    "p": 0.734,
-    "verdict": "plausible",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a rising synth whip sweep",
+    "z": 5.07,
+    "role": "whoosh.long",
+    "real": 0.66
+   },
+   "heard_as": {
+    "actions": [],
+    "roles": [
+     "whoosh.long"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [],
+    "roles": []
    }
   },
   {
@@ -4028,10 +4618,29 @@
     "transition"
    ],
    "ear": {
-    "query": "a smooth cinematic whoosh transition",
-    "p": 1,
+    "query": "a fast air whoosh",
+    "p": 0.992,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a rising synth whip sweep",
+    "z": 4.73,
+    "action": "whip",
+    "real": 0.96
+   },
+   "heard_as": {
+    "actions": [
+     "whip",
+     "pass"
+    ],
+    "roles": [
+     "whoosh.short",
+     "whoosh.long"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [
+     "swipe"
+    ],
+    "roles": []
    }
   },
   {
@@ -4064,46 +4673,30 @@
     "whoosh"
    ],
    "ear": {
-    "query": "a smooth cinematic whoosh transition",
-    "p": 1,
+    "query": "a fast air whoosh",
+    "p": 0.968,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
-   }
-  },
-  {
-   "id": "mixkit-1493",
-   "source": "mixkit-sfx",
-   "title": "Swirling whoosh",
-   "role": "whoosh.medium",
-   "page": "https://mixkit.co/free-sound-effects/whoosh/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1493/1493.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 2.485,
-   "end_s": 2.28,
-   "onset_ms": 1012.2,
-   "lead_ms": 929.5,
-   "peak_ms": 1976.1,
-   "peak_db": -1,
-   "lufs": -13.8,
-   "l50_db": -12,
-   "floor_db": -53.4,
-   "centroid_hz": 3774,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "wide",
-    "whoosh",
-    "spin"
-   ],
-   "ear": {
-    "query": "a smooth cinematic whoosh transition",
-    "p": 0.999,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a rising synth whip sweep",
+    "z": 5.34,
+    "action": "whip",
+    "real": 0.76
+   },
+   "heard_as": {
+    "actions": [
+     "whip",
+     "pass"
+    ],
+    "roles": [
+     "whoosh.long"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [
+     "swipe"
+    ],
+    "roles": [
+     "whoosh.short"
+    ]
    }
   },
   {
@@ -4137,47 +4730,29 @@
     "transition"
    ],
    "ear": {
-    "query": "a smooth cinematic whoosh transition",
-    "p": 0.998,
+    "query": "a fast air whoosh",
+    "p": 0.98,
     "verdict": "strong",
-    "top_alt": "a cartoon sound effect"
-   }
-  },
-  {
-   "id": "mixkit-2639",
-   "source": "mixkit-sfx",
-   "title": "Quick metal transition sweep",
-   "role": "whoosh.medium",
-   "page": "https://mixkit.co/free-sound-effects/transition/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2639/2639.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 1.722,
-   "end_s": 1.54,
-   "onset_ms": 373.3,
-   "lead_ms": 198.6,
-   "peak_ms": 616.9,
-   "peak_db": -1.52,
-   "lufs": -13.6,
-   "l50_db": -11.5,
-   "floor_db": -168.8,
-   "centroid_hz": 3318,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "wide",
-    "sweeping",
-    "woosh",
-    "transition"
-   ],
-   "ear": {
-    "query": "a smooth cinematic whoosh transition",
-    "p": 0.994,
-    "verdict": "strong",
-    "top_alt": "a cartoon sound effect"
+    "top_alt": "a rising synth whip sweep",
+    "z": 3.64,
+    "action": "whip",
+    "real": 0.96
+   },
+   "heard_as": {
+    "actions": [
+     "whip",
+     "pass"
+    ],
+    "roles": [
+     "whoosh.short",
+     "whoosh.long"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [
+     "swipe"
+    ],
+    "roles": []
    }
   },
   {
@@ -4212,47 +4787,30 @@
     "transition"
    ],
    "ear": {
-    "query": "a smooth cinematic whoosh transition",
-    "p": 0.984,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
-   }
-  },
-  {
-   "id": "mixkit-2608",
-   "source": "mixkit-sfx",
-   "title": "Air zoom vacuum",
-   "role": "whoosh.medium",
-   "page": "https://mixkit.co/free-sound-effects/transition/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2608/2608.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 1.275,
-   "end_s": 0.56,
-   "onset_ms": 318.7,
-   "lead_ms": 176.1,
-   "peak_ms": 434.6,
-   "peak_db": -1,
-   "lufs": -14.5,
-   "l50_db": -10.7,
-   "floor_db": -74.1,
-   "centroid_hz": 2535,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "medium",
-    "soft",
-    "narrow",
-    "woosh",
-    "wind",
-    "transition"
-   ],
-   "ear": {
-    "query": "a smooth cinematic whoosh transition",
-    "p": 0.943,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "query": "a deep air whoosh",
+    "p": 0.657,
+    "verdict": "plausible",
+    "top_alt": "a rising synth whip sweep",
+    "z": 2.73,
+    "action": "pass",
+    "real": 0.85
+   },
+   "heard_as": {
+    "actions": [
+     "pass"
+    ],
+    "roles": [
+     "whoosh.long"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [
+     "swipe",
+     "whip"
+    ],
+    "roles": [
+     "whoosh.short"
+    ]
    }
   },
   {
@@ -4285,10 +4843,29 @@
     "hit"
    ],
    "ear": {
-    "query": "a smooth cinematic whoosh transition",
-    "p": 0.921,
-    "verdict": "plausible",
-    "top_alt": "a cheap synthesizer laser zap"
+    "query": "a fast air whoosh, a whip pan",
+    "p": 0.999,
+    "verdict": "strong",
+    "top_alt": "a rising synth whip sweep",
+    "z": 5.71,
+    "action": "whip",
+    "real": 0.91
+   },
+   "heard_as": {
+    "actions": [
+     "whip"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "swipe",
+     "pass"
+    ],
+    "roles": [
+     "whoosh.short",
+     "whoosh.long"
+    ]
    }
   },
   {
@@ -4321,10 +4898,30 @@
     "swoosh"
    ],
    "ear": {
-    "query": "a quick clean air whoosh",
-    "p": 1,
+    "query": "a fast air whoosh, a whip pan",
+    "p": 0.973,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a rising synth whip sweep",
+    "z": 5.3,
+    "action": "whip",
+    "real": 0.88
+   },
+   "heard_as": {
+    "actions": [
+     "whip"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "swipe",
+     "slide",
+     "pass",
+     "shape"
+    ],
+    "roles": [
+     "whoosh.short"
+    ]
    }
   },
   {
@@ -4358,10 +4955,30 @@
     "transition"
    ],
    "ear": {
-    "query": "a quick clean air whoosh",
-    "p": 1,
+    "query": "a fast air whoosh, a whip pan",
+    "p": 0.98,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a rising synth whip sweep",
+    "z": 3.39,
+    "action": "whip",
+    "real": 0.9
+   },
+   "heard_as": {
+    "actions": [
+     "swipe",
+     "slide",
+     "whip"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "pass",
+     "shape"
+    ],
+    "roles": [
+     "whoosh.short"
+    ]
    }
   },
   {
@@ -4396,10 +5013,30 @@
     "race-car"
    ],
    "ear": {
-    "query": "a quick clean air whoosh",
-    "p": 1,
+    "query": "a fast air whoosh",
+    "p": 0.965,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a rising synth whip sweep",
+    "z": 4.86,
+    "action": "whip",
+    "real": 0.85
+   },
+   "heard_as": {
+    "actions": [
+     "whip"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "swipe",
+     "slide",
+     "pass",
+     "shape"
+    ],
+    "roles": [
+     "whoosh.short"
+    ]
    }
   },
   {
@@ -4432,10 +5069,30 @@
     "woosh"
    ],
    "ear": {
-    "query": "a quick clean air whoosh",
-    "p": 1,
+    "query": "a fast air whoosh",
+    "p": 0.998,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a rising synth whip sweep",
+    "z": 4.61,
+    "action": "whip",
+    "real": 0.93
+   },
+   "heard_as": {
+    "actions": [
+     "slide",
+     "whip",
+     "pass",
+     "shape"
+    ],
+    "roles": [
+     "whoosh.short"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [
+     "swipe"
+    ],
+    "roles": []
    }
   },
   {
@@ -4469,10 +5126,30 @@
     "sword"
    ],
    "ear": {
-    "query": "a quick clean air whoosh",
-    "p": 0.999,
+    "query": "a fast air whoosh, a whip pan",
+    "p": 0.974,
     "verdict": "strong",
-    "top_alt": "a cartoon sound effect"
+    "top_alt": "a rising synth whip sweep",
+    "z": 4.26,
+    "action": "whip",
+    "real": 0.99
+   },
+   "heard_as": {
+    "actions": [
+     "whip"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "swipe",
+     "slide",
+     "pass",
+     "shape"
+    ],
+    "roles": [
+     "whoosh.short"
+    ]
    }
   },
   {
@@ -4506,47 +5183,30 @@
     "movie"
    ],
    "ear": {
-    "query": "a quick clean air whoosh",
-    "p": 0.991,
+    "query": "a fast air whoosh",
+    "p": 0.99,
     "verdict": "strong",
-    "top_alt": "a cheesy comedy sound"
-   }
-  },
-  {
-   "id": "mixkit-1490",
-   "source": "mixkit-sfx",
-   "title": "Fast whoosh transition",
-   "role": "whoosh.short",
-   "page": "https://mixkit.co/free-sound-effects/transition/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1490/1490.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 1.757,
-   "end_s": 0.76,
-   "onset_ms": 484,
-   "lead_ms": 419.6,
-   "peak_ms": 712.1,
-   "peak_db": -1.09,
-   "lufs": -15.5,
-   "l50_db": -13,
-   "floor_db": -71.9,
-   "centroid_hz": 5163,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "medium",
-    "swell",
-    "wide",
-    "woosh",
-    "whoosh",
-    "transition"
-   ],
-   "ear": {
-    "query": "a quick clean air whoosh",
-    "p": 0.975,
-    "verdict": "strong",
-    "top_alt": "a cheesy comedy sound"
+    "top_alt": "a rising synth whip sweep",
+    "z": 3.57,
+    "action": "whip",
+    "real": 0.98
+   },
+   "heard_as": {
+    "actions": [
+     "whip"
+    ],
+    "roles": [
+     "whoosh.short"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [
+     "swipe",
+     "slide",
+     "pass",
+     "shape"
+    ],
+    "roles": []
    }
   },
   {
@@ -4580,10 +5240,30 @@
     "sweep"
    ],
    "ear": {
-    "query": "a quick clean air whoosh",
-    "p": 0.946,
+    "query": "a fast air whoosh",
+    "p": 0.988,
     "verdict": "strong",
-    "top_alt": "a cheesy comedy sound"
+    "top_alt": "a rising synth whip sweep",
+    "z": 3.36,
+    "action": "whip",
+    "real": 0.94
+   },
+   "heard_as": {
+    "actions": [
+     "whip"
+    ],
+    "roles": [
+     "whoosh.short"
+    ]
+   },
+   "not_heard_as": {
+    "actions": [
+     "swipe",
+     "slide",
+     "pass",
+     "shape"
+    ],
+    "roles": []
    }
   },
   {
@@ -4616,82 +5296,30 @@
     "swoosh"
    ],
    "ear": {
-    "query": "a quick clean air whoosh",
-    "p": 0.898,
+    "query": "a fast air whoosh, a whip pan",
+    "p": 0.787,
     "verdict": "strong",
-    "top_alt": "a cartoon sound effect"
-   }
-  },
-  {
-   "id": "mixkit-166",
-   "source": "mixkit-sfx",
-   "title": "Fast small sweep transition",
-   "role": "whoosh.short",
-   "page": "https://mixkit.co/free-sound-effects/swoosh/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/166/166.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 0.781,
-   "end_s": 0.7,
-   "onset_ms": 137.9,
-   "lead_ms": 66.1,
-   "peak_ms": 296.3,
-   "peak_db": -0.09,
-   "lufs": -15.5,
-   "l50_db": -10,
-   "floor_db": -69.8,
-   "centroid_hz": 1621,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "medium",
-    "swell",
-    "wide",
-    "sweep",
-    "swoosh",
-    "transition"
-   ],
-   "ear": {
-    "query": "a quick clean air whoosh",
-    "p": 0.882,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
-   }
-  },
-  {
-   "id": "mixkit-1464",
-   "source": "mixkit-sfx",
-   "title": "Quick swoosh accent",
-   "role": "whoosh.short",
-   "page": "https://mixkit.co/free-sound-effects/swoosh/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1464/1464.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 1.1,
-   "end_s": 0.3,
-   "onset_ms": 16.4,
-   "lead_ms": 13.5,
-   "peak_ms": 104.1,
-   "peak_db": -1,
-   "lufs": -17,
-   "l50_db": -10.5,
-   "floor_db": -84.6,
-   "centroid_hz": 1235,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "short",
-    "soft",
-    "wide",
-    "swoosh"
-   ],
-   "ear": {
-    "query": "a quick clean air whoosh",
-    "p": 0.86,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.67,
+    "action": "whip",
+    "real": 0.99
+   },
+   "heard_as": {
+    "actions": [
+     "whip"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "swipe",
+     "slide",
+     "pass",
+     "shape"
+    ],
+    "roles": [
+     "whoosh.short"
+    ]
    }
   }
  ],
@@ -4985,6 +5613,86 @@
    "id": "mixkit-3150",
    "role": "note",
    "why": "earshot 0.4.1 did not hear its take as logo-lock (z 0.27, p 0.001), chime (z -0.39, p 0), success (z 0.96, p 0), text (z 1.18, p 0)"
+  },
+  {
+   "id": "mixkit-166",
+   "role": "whoosh.short",
+   "why": "earshot 0.4.1 did not hear its take as swipe (z 2.77, p 0.001), slide (z 3.57, p 0.017), whip (z 3.93, p 0.035), pass (z 2.39, p 0), shape (z 1.96, p 0)"
+  },
+  {
+   "id": "mixkit-757",
+   "role": "impact",
+   "why": "earshot 0.4.1 did not hear its take as logo-lock (z 0.75, p 0.03), reveal (z 2.31, p 0.062), thud (z 1.25, p 0.001), land (z 0.97, p 0), card-land (z 0.83, p 0.001)"
+  },
+  {
+   "id": "mixkit-787",
+   "role": "whoosh.long",
+   "why": "earshot 0.4.1 did not hear its take as whoosh.long (z 1.61, p 0.004) (no action lists its kind)"
+  },
+  {
+   "id": "mixkit-1396",
+   "role": "typing",
+   "why": "earshot 0.4.1 did not hear its take as type (z 0.33, p 0.506)"
+  },
+  {
+   "id": "mixkit-1397",
+   "role": "typing",
+   "why": "earshot 0.4.1 did not hear its take as type (z 1.17, p 0.895)"
+  },
+  {
+   "id": "mixkit-1464",
+   "role": "whoosh.short",
+   "why": "earshot 0.4.1 did not hear its take as swipe (z 2, p 0.001), slide (z 2.97, p 0.014), whip (z 4.31, p 0.462), pass (z 3.73, p 0.058), shape (z 2.64, p 0.004)"
+  },
+  {
+   "id": "mixkit-1490",
+   "role": "whoosh.short",
+   "why": "earshot 0.4.1 did not hear its take as swipe (z 2.84, p 0.019), slide (z 3.46, p 0.13), whip (z 3.07, p 0.013), pass (z 2.05, p 0), shape (z 1.53, p 0)"
+  },
+  {
+   "id": "mixkit-1493",
+   "role": "whoosh.medium",
+   "why": "earshot 0.4.1 did not hear its take as swipe (z 1.8, p 0.001), whip (z 3.56, p 0.117), pass (z 3.01, p 0.009)"
+  },
+  {
+   "id": "mixkit-2408",
+   "role": "whoosh.long",
+   "why": "earshot 0.4.1 did not hear its take as whoosh.long (z 3.56, p 0.49) (no action lists its kind)"
+  },
+  {
+   "id": "mixkit-2608",
+   "role": "whoosh.medium",
+   "why": "earshot 0.4.1 did not hear its take as swipe (z 3.36, p 0.04), whip (z 4.4, p 0.413), pass (z 3.13, p 0.003)"
+  },
+  {
+   "id": "mixkit-2639",
+   "role": "whoosh.medium",
+   "why": "earshot 0.4.1 did not hear its take as swipe (z 0.88, p 0.019), whip (z 1.99, p 0.332), pass (z 2.02, p 0.252)"
+  },
+  {
+   "id": "mixkit-2900",
+   "role": "lockup",
+   "why": "earshot 0.4.1 did not hear its take as reveal (z 0.96, p 0.088)"
+  },
+  {
+   "id": "mixkit-2901",
+   "role": "lockup",
+   "why": "earshot 0.4.1 did not hear its take as reveal (z 1.6, p 0)"
+  },
+  {
+   "id": "mixkit-2902",
+   "role": "lockup",
+   "why": "earshot 0.4.1 did not hear its take as reveal (z 2.14, p 0.002)"
+  },
+  {
+   "id": "mixkit-2919",
+   "role": "lockup",
+   "why": "earshot 0.4.1 did not hear its take as reveal (z 2.43, p 0.046)"
+  },
+  {
+   "id": "mixkit-3108",
+   "role": "glass",
+   "why": "earshot 0.4.1 did not hear its take as chime (z 0.98, p 0.689), success (z 1.15, p 0.264)"
   }
  ]
 }
