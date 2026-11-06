@@ -1,7 +1,7 @@
 {
  "catalogue": 1,
  "updated": "2026-11-06",
- "about": "Real sound effects for cinetic films: links, never audio (the audio is fetched at film time by sfx.mjs into the film's audio/sfx/ with a licence record, and never committed). Each sound was auditioned with earshot (a forced choice between its role and cheap or cartoon alternatives) and measured: onset (first sample at 10 % of the peak), lead before it, peak, loudness, floor, centroid. align: onset roles put their transient on the cue frame, peak roles (whooshes, risers, swells) their loudest point. \"roles\" maps a kit role to the kinds that may play it; \"actions\" (the actions of scripts/audio/actions.py) wins where the cast names the role's action. Sounds added on 2026-11-06 carry heard_as and not_heard_as: the actions and kit roles their kind may play that earshot 0.4.1 heard them as on the 2.5 s a film plays (z >= 2 for the best of the action's phrasings, the forced choice against four cheap-synth descriptions won), and the ones it heard as something else; sfx.mjs pick plays a heard sound first and one heard as something else last. Their onset, peak, end and loudness are kit.py's own measure_take (loudness: the loudest 400 ms and 50 ms), lead is kit.py lead_in, floor the 10th percentile of 50 ms levels.",
+ "about": "Real sound effects for cinetic films: links, never audio (the audio is fetched at film time by sfx.mjs into the film's audio/sfx/ with a licence record, and never committed). Each sound was auditioned with earshot (a forced choice between its role and cheap or cartoon alternatives) and measured: onset (first sample at 10 % of the peak), lead before it, peak, loudness, floor, centroid. align: onset roles put their transient on the cue frame, peak roles (whooshes, risers, swells) their loudest point. \"roles\" maps a kit role to the kinds that may play it; \"actions\" (the actions of scripts/audio/actions.py) wins where the cast names the role's action. Sounds added on 2026-11-06 carry heard_as and not_heard_as: the actions and kit roles their kind may play that earshot 0.4.1 heard their take as (the sound as kit.py real places it: 48 kHz, from just before it starts, at most 2.5 s, its lead-in trimmed for an onset role; z >= 2 for the best of the action's phrasings, the forced choice against four cheap-synth descriptions won), and the ones it heard as something else; sfx.mjs pick plays a heard sound first and one heard as something else last. Their onset, peak, end and loudness are kit.py's own measure_take (loudness: the loudest 400 ms and 50 ms), lead is kit.py lead_in, floor the 10th percentile of 50 ms levels.",
  "sources": {
   "mixkit-sfx": {
    "name": "Mixkit",
@@ -422,7 +422,7 @@
     "p": 1,
     "verdict": "weak",
     "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.18,
+    "z": 2.1,
     "action": "press",
     "real": 0.98
    },
@@ -473,11 +473,11 @@
     "metal"
    ],
    "ear": {
-    "query": "a dry quick click on a cut",
-    "p": 1,
-    "verdict": "plausible",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.86,
+    "query": "a dry quick click",
+    "p": 0.999,
+    "verdict": "weak",
+    "top_alt": "an 8-bit chiptune sound",
+    "z": 2.25,
     "action": "jump-cut",
     "real": 0.95
    },
@@ -532,13 +532,12 @@
     "p": 1,
     "verdict": "plausible",
     "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.88,
+    "z": 2.82,
     "action": "toggle",
     "real": 0.93
    },
    "heard_as": {
     "actions": [
-     "jump-cut",
      "toggle",
      "lock"
     ],
@@ -546,6 +545,7 @@
    },
    "not_heard_as": {
     "actions": [
+     "jump-cut",
      "press"
     ],
     "roles": [
@@ -798,11 +798,11 @@
     "click"
    ],
    "ear": {
-    "query": "a button click",
-    "p": 0.999,
+    "query": "a soft mouse click",
+    "p": 0.997,
     "verdict": "weak",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.17,
+    "top_alt": "a video game blip",
+    "z": 2.22,
     "action": "press",
     "real": 0.96
    },
@@ -856,11 +856,11 @@
     "click"
    ],
    "ear": {
-    "query": "a soft mouse click",
-    "p": 0.835,
+    "query": "a button click",
+    "p": 0.982,
     "verdict": "weak",
     "top_alt": "a video game blip",
-    "z": 2.08,
+    "z": 2.11,
     "action": "press",
     "real": 0.98
    },
@@ -868,21 +868,20 @@
     "actions": [
      "press",
      "toggle",
-     "detent",
      "letter"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "touch",
+     "detent"
     ],
     "roles": [
      "tick",
      "tick.crisp",
+     "land.light",
      "click"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "touch"
-    ],
-    "roles": [
-     "land.light"
     ]
    }
   },
@@ -1137,10 +1136,10 @@
    ],
    "ear": {
     "query": "a deep cinematic hit",
-    "p": 1,
+    "p": 0.999,
     "verdict": "plausible",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.94,
+    "top_alt": "a video game blip",
+    "z": 2.74,
     "action": "reveal",
     "real": 0.74
    },
@@ -1197,7 +1196,7 @@
     "p": 1,
     "verdict": "plausible",
     "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.62,
+    "z": 2.71,
     "action": "reveal",
     "real": 0.99
    },
@@ -1252,9 +1251,9 @@
    "ear": {
     "query": "a single clean low impact",
     "p": 1,
-    "verdict": "plausible",
+    "verdict": "weak",
     "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.67,
+    "z": 2.25,
     "action": "reveal",
     "real": 0.71
    },
@@ -1309,10 +1308,10 @@
    ],
    "ear": {
     "query": "a deep cinematic hit",
-    "p": 0.754,
+    "p": 0.838,
     "verdict": "weak",
     "top_alt": "a rising synth whip sweep",
-    "z": 2.11,
+    "z": 2.12,
     "action": "reveal",
     "real": 0.94
    },
@@ -1370,7 +1369,7 @@
     "p": 1,
     "verdict": "strong",
     "top_alt": "a cheap synthesizer laser zap",
-    "z": 3.55,
+    "z": 3.57,
     "action": "reveal",
     "real": 0.88
    },
@@ -1378,7 +1377,8 @@
     "actions": [
      "logo-lock",
      "reveal",
-     "thud"
+     "thud",
+     "card-land"
     ],
     "roles": [
      "hit"
@@ -1386,8 +1386,7 @@
    },
    "not_heard_as": {
     "actions": [
-     "land",
-     "card-land"
+     "land"
     ],
     "roles": [
      "land"
@@ -1426,10 +1425,10 @@
    ],
    "ear": {
     "query": "a deep cinematic hit",
-    "p": 0.573,
+    "p": 0.649,
     "verdict": "weak",
     "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.33,
+    "z": 2.35,
     "action": "reveal",
     "real": 0.93
    },
@@ -1487,7 +1486,7 @@
     "p": 1,
     "verdict": "strong",
     "top_alt": "a cheap synthesizer laser zap",
-    "z": 3.14,
+    "z": 3.04,
     "action": "reveal",
     "real": 0.62
    },
@@ -1958,6 +1957,66 @@
    }
   },
   {
+   "id": "mixkit-1107",
+   "source": "mixkit-sfx",
+   "title": "Page forward single chime",
+   "role": "note",
+   "page": "https://mixkit.co/free-sound-effects/interface/",
+   "file_url": "https://assets.mixkit.co/active_storage/sfx/1107/1107.wav",
+   "licence": "mixkit-sfx",
+   "align": "onset",
+   "dur_s": 1.689,
+   "end_s": 1.04,
+   "onset_ms": 138.9,
+   "lead_ms": 0,
+   "peak_ms": 299.2,
+   "peak_db": -5.03,
+   "lufs": -13.5,
+   "l50_db": -9.4,
+   "floor_db": -84.8,
+   "centroid_hz": 5487,
+   "channels": 2,
+   "sr": 44100,
+   "tags": [
+    "bright",
+    "long",
+    "swell",
+    "narrow",
+    "chimes",
+    "interface",
+    "page",
+    "paper"
+   ],
+   "ear": {
+    "query": "a kalimba or marimba note",
+    "p": 0.565,
+    "verdict": "weak",
+    "top_alt": "a rising synth whip sweep",
+    "z": 2.09,
+    "action": "text",
+    "real": 0.96
+   },
+   "heard_as": {
+    "actions": [
+     "text"
+    ],
+    "roles": []
+   },
+   "not_heard_as": {
+    "actions": [
+     "logo-lock",
+     "chime",
+     "success"
+    ],
+    "roles": [
+     "hit",
+     "click.confirm",
+     "bell",
+     "text"
+    ]
+   }
+  },
+  {
    "id": "mixkit-2323",
    "source": "mixkit-sfx",
    "title": "Quick guitar tone",
@@ -1989,10 +2048,10 @@
    ],
    "ear": {
     "query": "a kalimba or marimba note",
-    "p": 0.775,
+    "p": 0.836,
     "verdict": "plausible",
     "top_alt": "an 8-bit chiptune sound",
-    "z": 2.61,
+    "z": 2.58,
     "action": "text",
     "real": 0.72
    },
@@ -2051,7 +2110,7 @@
     "p": 1,
     "verdict": "strong",
     "top_alt": "a cheap synthesizer laser zap",
-    "z": 4.6,
+    "z": 4.18,
     "action": "text",
     "real": 0.96
    },
@@ -2110,7 +2169,7 @@
     "p": 1,
     "verdict": "strong",
     "top_alt": "a cheap synthesizer laser zap",
-    "z": 4.72,
+    "z": 4.38,
     "action": "text",
     "real": 0.96
    },
@@ -2168,7 +2227,7 @@
     "p": 1,
     "verdict": "strong",
     "top_alt": "a cheap synthesizer laser zap",
-    "z": 4.6,
+    "z": 4.23,
     "action": "text",
     "real": 0.96
    },
@@ -2176,7 +2235,6 @@
     "actions": [
      "logo-lock",
      "chime",
-     "success",
      "text"
     ],
     "roles": [
@@ -2187,7 +2245,9 @@
     ]
    },
    "not_heard_as": {
-    "actions": [],
+    "actions": [
+     "success"
+    ],
     "roles": []
    }
   },
@@ -2562,56 +2622,6 @@
    }
   },
   {
-   "id": "mixkit-1801",
-   "source": "mixkit-sfx",
-   "title": "Pot lid open",
-   "role": "pop",
-   "page": "https://mixkit.co/free-sound-effects/discover/lid/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1801/1801.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.071,
-   "end_s": 0.88,
-   "onset_ms": 199.9,
-   "lead_ms": 0.9,
-   "peak_ms": 228,
-   "peak_db": -16.02,
-   "lufs": -36.6,
-   "l50_db": -28.4,
-   "floor_db": -86,
-   "centroid_hz": 3706,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "medium",
-    "soft",
-    "wide",
-    "cooking"
-   ],
-   "ear": {
-    "query": "a mouth pop",
-    "p": 0.984,
-    "verdict": "weak",
-    "top_alt": "a video game blip",
-    "z": 2.08,
-    "action": "appear",
-    "real": 0.96
-   },
-   "heard_as": {
-    "actions": [
-     "appear"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": [
-     "pop"
-    ]
-   }
-  },
-  {
    "id": "mixkit-3000",
    "source": "mixkit-sfx",
    "title": "Liquid bubble",
@@ -2646,7 +2656,7 @@
     "p": 0.999,
     "verdict": "plausible",
     "top_alt": "a video game blip",
-    "z": 2.9,
+    "z": 2.89,
     "action": "appear",
     "real": 0.76
    },
@@ -2693,10 +2703,10 @@
    ],
    "ear": {
     "query": "a mouth pop",
-    "p": 0.998,
+    "p": 0.999,
     "verdict": "weak",
-    "top_alt": "a video game blip",
-    "z": 2.43,
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 2.25,
     "action": "appear",
     "real": 0.96
    },
@@ -2820,10 +2830,10 @@
    ],
    "ear": {
     "query": "a reverse swell",
-    "p": 0.991,
+    "p": 0.995,
     "verdict": "strong",
     "top_alt": "a rising synth whip sweep",
-    "z": 3.48,
+    "z": 3.39,
     "action": "swell",
     "real": 0.57
    },
@@ -2876,10 +2886,10 @@
    ],
    "ear": {
     "query": "a reverse swell",
-    "p": 0.989,
+    "p": 0.993,
     "verdict": "strong",
     "top_alt": "a rising synth whip sweep",
-    "z": 3.71,
+    "z": 3.66,
     "action": "swell",
     "real": 0.72
    },
@@ -2932,7 +2942,7 @@
    ],
    "ear": {
     "query": "a reverse swell",
-    "p": 0.613,
+    "p": 0.525,
     "verdict": "strong",
     "top_alt": "a rising synth whip sweep",
     "z": 3,
@@ -2987,68 +2997,13 @@
     "spin"
    ],
    "ear": {
-    "query": "a reverse swell",
-    "p": 0.955,
-    "verdict": "weak",
-    "top_alt": "a rising synth whip sweep",
-    "z": 2.25,
-    "action": "swell",
-    "real": 0.49
-   },
-   "heard_as": {
-    "actions": [
-     "build",
-     "swell"
-    ],
-    "roles": [
-     "swell"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": [
-     "suck",
-     "riser"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-2675",
-   "source": "mixkit-sfx",
-   "title": "Cinematic swell stark transition",
-   "role": "reverse",
-   "page": "https://mixkit.co/free-sound-effects/swell/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2675/2675.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 7.907,
-   "end_s": 7.05,
-   "onset_ms": 194,
-   "lead_ms": 0,
-   "peak_ms": 1157.4,
-   "peak_db": -1.59,
-   "lufs": -7.9,
-   "l50_db": -7.4,
-   "floor_db": -65.7,
-   "centroid_hz": 3541,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "wide",
-    "magic",
-    "intro"
-   ],
-   "ear": {
     "query": "a short dark riser",
-    "p": 0.676,
-    "verdict": "weak",
-    "top_alt": "a rising synth whip sweep",
-    "z": 2.06,
+    "p": 0.986,
+    "verdict": "plausible",
+    "top_alt": "a video game blip",
+    "z": 2.74,
     "action": "build",
-    "real": 0.54
+    "real": 0.49
    },
    "heard_as": {
     "actions": [
@@ -3492,10 +3447,10 @@
    ],
    "ear": {
     "query": "a deep short sub thud",
-    "p": 0.999,
-    "verdict": "plausible",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.58,
+    "p": 0.998,
+    "verdict": "weak",
+    "top_alt": "a video game blip",
+    "z": 2.47,
     "action": "thud",
     "real": 0.94
    },
@@ -3552,7 +3507,7 @@
     "p": 1,
     "verdict": "plausible",
     "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.92,
+    "z": 2.8,
     "action": "thud",
     "real": 0.97
    },
@@ -4878,28 +4833,23 @@
   },
   {
    "id": "mixkit-490",
-   "role": "impact",
+   "role": "sub",
    "why": "earshot 0.4.1 realness 0.08: likely code-synthesized"
   },
   {
    "id": "mixkit-549",
    "role": "impact",
-   "why": "earshot 0.4.1 did not hear it as reveal (z 2.72, p 0.245), logo-lock (z 1.13, p 0.001), thud (z 2.04, p 0.011), land (z 1.12, p 0.001)"
+   "why": "earshot 0.4.1 did not hear its take as logo-lock (z 1.05, p 0.001), reveal (z 2.76, p 0.417), thud (z 2.2, p 0.042), land (z 1.17, p 0.001), card-land (z 0.34, p 0)"
   },
   {
    "id": "mixkit-558",
    "role": "impact",
-   "why": "earshot 0.4.1 did not hear it as reveal (z 0.98, p 0.958), logo-lock (z 1.35, p 0.947), thud (z -0.55, p 0.01), land (z -0.4, p 0.008)"
+   "why": "earshot 0.4.1 did not hear its take as logo-lock (z 1.33, p 0.937), reveal (z 0.97, p 0.953), thud (z -0.53, p 0.009), land (z -0.38, p 0.007), card-land (z 0.38, p 0.698)"
   },
   {
    "id": "mixkit-678",
    "role": "reverse",
-   "why": "earshot 0.4.1 did not hear the 2.5 s a film plays as build (z 1.69, p 0.991), swell (z 0.46, p 0.867)"
-  },
-  {
-   "id": "mixkit-1107",
-   "role": "note",
-   "why": "earshot 0.4.1 did not hear it as text (z 1.76, p 0.086)"
+   "why": "earshot 0.4.1 did not hear its take as build (z 1.7, p 0.981), swell (z 1.43, p 0.991)"
   },
   {
    "id": "mixkit-1112",
@@ -4914,12 +4864,12 @@
   {
    "id": "mixkit-1126",
    "role": "click.soft",
-   "why": "earshot 0.4.1 did not hear it as press (z 1.31, p 0.034), toggle (z 0.43, p 0.009), touch (z 0.71, p 0.007), letter (z 1.97, p 0.439)"
+   "why": "earshot 0.4.1 did not hear its take as press (z 1.33, p 0.092), touch (z 0.33, p 0), toggle (z 0.69, p 0.005), detent (z 3.2, p 0.96), letter (z 2.09, p 0.332)"
   },
   {
    "id": "mixkit-1127",
    "role": "click.soft",
-   "why": "earshot 0.4.1 did not hear it as press (z 0.49, p 0.083), toggle (z 0.36, p 0.239), touch (z 0.43, p 0.103), letter (z 1.52, p 0.847)"
+   "why": "earshot 0.4.1 did not hear its take as press (z 0.61, p 0.175), touch (z -0.25, p 0.003), toggle (z 0.91, p 0.275), detent (z 3.8, p 0.999), letter (z 1.33, p 0.333)"
   },
   {
    "id": "mixkit-1129",
@@ -4947,6 +4897,11 @@
    "why": "earshot 0.4.1 realness 0.15: likely code-synthesized"
   },
   {
+   "id": "mixkit-1801",
+   "role": "pop",
+   "why": "earshot 0.4.1 did not hear its take as appear (z 1.91, p 0.99)"
+  },
+  {
    "id": "mixkit-2148",
    "role": "impact",
    "why": "earshot 0.4.1 realness 0.05: likely code-synthesized"
@@ -4954,32 +4909,32 @@
   {
    "id": "mixkit-2151",
    "role": "impact",
-   "why": "earshot 0.4.1 did not hear it as reveal (z 1.46, p 0.058), logo-lock (z 0.87, p 0.442), thud (z 1.69, p 0.083), land (z 1.19, p 0.013)"
+   "why": "earshot 0.4.1 did not hear its take as logo-lock (z 0.72, p 0.251), reveal (z 1.56, p 0.069), thud (z 1.66, p 0.06), land (z 1.21, p 0.011), card-land (z 1.58, p 0.314)"
   },
   {
    "id": "mixkit-2279",
    "role": "note",
-   "why": "a note ringing 2.2 s (a tonal effect rings 1.5 s at most)"
+   "why": "a note ringing 2.2 s after its onset (a tonal effect rings 1.5 s at most)"
   },
   {
    "id": "mixkit-2331",
    "role": "note",
-   "why": "a note ringing 5.6 s (a tonal effect rings 1.5 s at most)"
+   "why": "a note ringing 5.6 s after its onset (a tonal effect rings 1.5 s at most)"
   },
   {
    "id": "mixkit-2332",
    "role": "note",
-   "why": "a note ringing 3.2 s (a tonal effect rings 1.5 s at most)"
+   "why": "a note ringing 3.2 s after its onset (a tonal effect rings 1.5 s at most)"
   },
   {
    "id": "mixkit-2498",
    "role": "impact",
-   "why": "earshot 0.4.1 did not hear it as reveal (z 1.93, p 1), logo-lock (z 1.16, p 0.968), thud (z 0.99, p 0.918), land (z 1.83, p 0.997)"
+   "why": "earshot 0.4.1 did not hear its take as logo-lock (z 0.83, p 0.866), reveal (z 1.02, p 0.99), thud (z 0.7, p 0.726), land (z 1.83, p 0.996), card-land (z 0.73, p 0.967)"
   },
   {
    "id": "mixkit-2582",
    "role": "click.soft",
-   "why": "earshot 0.4.1 did not hear it as press (z 0.45, p 0.663), toggle (z 1.87, p 0.993), touch (z -0.41, p 0.02), letter (z 0.3, p 0.221)"
+   "why": "earshot 0.4.1 did not hear its take as press (z 0.46, p 0.644), touch (z -0.4, p 0.019), toggle (z 1.89, p 0.993), detent (z 1.89, p 0.968), letter (z 0.36, p 0.234)"
   },
   {
    "id": "mixkit-2659",
@@ -4997,14 +4952,19 @@
    "why": "earshot 0.4.1 realness 0.11: likely code-synthesized"
   },
   {
+   "id": "mixkit-2675",
+   "role": "reverse",
+   "why": "earshot 0.4.1 did not hear its take as build (z 1.89, p 0.87), swell (z 1.38, p 0.461)"
+  },
+  {
    "id": "mixkit-2820",
    "role": "note",
-   "why": "a note ringing 2.9 s (a tonal effect rings 1.5 s at most)"
+   "why": "a note ringing 2.9 s after its onset (a tonal effect rings 1.5 s at most)"
   },
   {
    "id": "mixkit-3018",
    "role": "pop",
-   "why": "earshot 0.4.1 did not hear it as appear (z 1.81, p 0.366)"
+   "why": "earshot 0.4.1 did not hear its take as appear (z 1.95, p 0.692)"
   },
   {
    "id": "mixkit-3069",
@@ -5014,17 +4974,17 @@
   {
    "id": "mixkit-3070",
    "role": "pop",
-   "why": "earshot 0.4.1 did not hear it as appear (z 1.15, p 0.612)"
+   "why": "earshot 0.4.1 did not hear its take as appear (z 1.16, p 0.635)"
   },
   {
    "id": "mixkit-3071",
    "role": "pop",
-   "why": "earshot 0.4.1 did not hear it as appear (z 1.47, p 0.995)"
+   "why": "earshot 0.4.1 did not hear its take as appear (z 1.44, p 0.994)"
   },
   {
    "id": "mixkit-3150",
    "role": "note",
-   "why": "earshot 0.4.1 did not hear it as text (z 1.23, p 0.001)"
+   "why": "earshot 0.4.1 did not hear its take as logo-lock (z 0.27, p 0.001), chime (z -0.39, p 0), success (z 0.96, p 0), text (z 1.18, p 0)"
   }
  ]
 }

@@ -10,7 +10,7 @@ Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first 
 
 ### Added
 
-- 26 real Mixkit effects in `scripts/audio/sfx-catalogue.json` (now 110 in 19 kinds), among them its first pops and plucked notes, and more low hits, clicks and reverse swells. Each one was taken for an action that earshot 0.4.1 heard it as, on the 2.5 s a film plays. That means z ≥ 2 for the best of the action's phrasings and the forced choice against four cheap-synth descriptions won; nothing earshot's realness calls code-synthesized was taken, and no note that rings past 1.5 s. Each new sound records which actions and kit roles of its kind earshot heard it as (`heard_as`) and which it did not (`not_heard_as`). The 30 candidates that did not pass are in `rejected` with the reason. The pop, the text note and the confirm now play a catalogue sound.
+- 25 real Mixkit effects in `scripts/audio/sfx-catalogue.json` (now 109 in 19 kinds), among them its first pops and plucked notes, and more low hits, clicks and reverse swells. Each one was taken for an action that earshot 0.4.1 heard it as, on its take as `kit.py real` places it (48 kHz, at most 2.5 s, lead-in trimmed): the sound a film plays. That means z ≥ 2 for the best of the action's phrasings and the forced choice against four cheap-synth descriptions won; nothing earshot's realness calls code-synthesized was taken, and no note that rings past 1.5 s. Each new sound records which actions and kit roles of its kind earshot heard it as (`heard_as`) and which it did not (`not_heard_as`). The 31 candidates that did not pass are in `rejected` with the reason. The pop, the text note and the confirm now play a catalogue sound.
 
 ### Fixed
 
