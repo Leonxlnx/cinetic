@@ -17,10 +17,19 @@
  *           audio/sfx/picks.json and records the film's sounds in the history (--no-history: neither reads nor
  *           writes it). --avoid ID[,ID]: sounds this film's mix or listening judged poorly (buried under the track,
  *           a cheap read): the role takes the next one, and picks.json remembers them.
- * get       downloads each pick (its file_url) into audio/sfx/<id>.wav, checks it is a WAV, and writes
- *           <id>.licence.json: the record credits.py and kit.py real check (source, page, file_url, the licence
- *           and its quote as read on the licence page, credit not required, limits). A file already there with
- *           its record is kept. The audio is never committed: the catalogue holds links, not sound.
+ * get       downloads each pick into audio/sfx/<id>.wav, checks it is a WAV, and writes <id>.licence.json: the
+ *           record credits.py and kit.py real check (source, page, file_url, the licence and its quote as read on
+ *           the licence page, credit not required, limits). A file already there with its record is kept. The audio
+ *           is never committed: the catalogue holds links, not sound. A sound is fetched one of three ways:
+ *             file_url      a WAV (Mixkit), saved as it is;
+ *             archive_url   + member: a pack's zip (Kenney, CC0): downloaded once per film into audio/sfx/.cache/
+ *                           (a link that answers with {"url": signed zip link} is followed, on the same host only,
+ *                           with the pack page as referer), the pack's licence file read again and checked, the
+ *                           member extracted and converted to WAV with ffmpeg (software decode);
+ *             transform     "reverse" (with "transform_s", default 2.2): a real recording's tail (its first
+ *                           transform_s seconds from the first sound) played backwards, so it ends on its hit:
+ *                           a swell made of a real recording, never a synthesized one. Applied by ffmpeg in the same
+ *                           call, recorded in the licence record's "modifications" and "transform".
  * place     kit.py real <file> --role <role> for every downloaded pick: the recording cut to 5 ms before its
  *           transient (onset-aligned on the cue frame), faded, peak-normalised and given the role's own mix keys
  *           (bed_db: its level over the track; offset_ms; min_gap_ms; width), three takes in audio/kit/
@@ -34,13 +43,15 @@
  * Offline: --offline, or a download that fails, leaves those roles to the kit's synthesized takes, and says so
  * loudly ("FALLBACK: synthesized effects"), with the roles listed in picks.json "fallback". A soundtrack still
  * renders; deliver only after a run with the network. Tests never use the network: --fixtures DIR (or
- * $CINETIC_SFX_FIXTURES) copies <id>.wav from DIR instead of downloading.
+ * $CINETIC_SFX_FIXTURES) copies <id>.wav from DIR instead of downloading (a pack's <slug>.zip in DIR stands in for
+ * the archive of a sound that has no <id>.wav there).
  *
  * Exit codes: 0 done (also a stated fallback), 1 a refused licence or a failed place, 2 bad arguments.
  */
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { inflateRawSync } from 'node:zlib';
 import { homedir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -85,11 +96,12 @@ export function kindsFor(cat, role, action = null) {
   return [];
 }
 
-/** A sound's rank inside its kind: earshot's forced choice first, then a clean onset and no hiss. */
+/** A sound's rank inside its kind: earshot's forced choice and its verdict first (strong before plausible), then a clean onset and no hiss. */
 export function quality(s) {
-  const ear = s.ear?.p ?? 0.5;
+  const ear = (s.ear?.p ?? 0.5) - ({ strong: 0, plausible: 0.05, weak: 0.15 }[s.ear?.verdict] ?? 0.1);
   const lead = Math.min(1, (s.lead_ms ?? 0) / 60);
-  const floor = s.floor_db != null ? Math.min(1, Math.max(0, (s.floor_db + 70) / 40)) : 0.5;
+  // the floor is the 10th percentile of 20 ms windows: a clip of a few milliseconds has none to read (it is all sound)
+  const floor = s.dur_s != null && s.dur_s < 0.15 ? 0 : s.floor_db != null ? Math.min(1, Math.max(0, (s.floor_db + 70) / 40)) : 0.5;
   return ear - 0.15 * lead - 0.1 * floor;
 }
 
@@ -106,30 +118,38 @@ export function pick(cat, roles, film, history = [], avoid = [], actions = {}) {
     const kinds = kindsFor(cat, role, actions[role]);
     let chosen = null;
     for (const kind of kinds) {
-      const pool = cat.sounds.filter((s) => s.role === kind && !used.has(s.id) && !banned.has(s.id)).sort((a, b) => quality(b) - quality(a) || (a.id < b.id ? -1 : 1));
+      // a recording plays once per film, whatever it was cut or reversed to ("of": the recording a transformed sound is made of)
+      const pool = cat.sounds.filter((s) => s.role === kind && !used.has(s.of || s.id) && !used.has(s.id) && !banned.has(s.id) && !banned.has(s.of)).sort((a, b) => quality(b) - quality(a) || (a.id < b.id ? -1 : 1));
       const fresh = pool.filter((s) => !recent.has(s.id));
       const from = (fresh.length ? fresh : pool).slice(0, TOP);
       if (!from.length) continue;
       chosen = from[hash(`${film}|${role}`) % from.length];
       break;
     }
-    if (chosen) { used.add(chosen.id); out[role] = chosen; }
+    if (chosen) { used.add(chosen.id); used.add(chosen.of || chosen.id); out[role] = chosen; }
   }
   return out;
 }
 
 /** The licence record of a catalogue sound (the record music.mjs get writes; credits.py check_record reads it). */
-export function licenceRecord(cat, s, { file, sha, bytes, date }) {
+export function licenceRecord(cat, s, { file, sha, bytes, date, seen = null }) {
   const L = cat.sources[s.source];
   if (!L || L.credit !== false) throw new Error(`${s.id}: source ${s.source} is not one a film may play without a credit`);
-  return {
+  const mods = [];
+  if (s.archive_url) mods.push('converted from the pack\'s OGG to WAV');
+  if (s.transform === 'reverse') mods.push(`its first ${transformSeconds(s)} s from the first sound played in reverse`);
+  mods.push('trimmed to its first gesture, faded and levelled for the film');
+  const rec = {
     record: 1, kind: 'sfx', file, sha256: sha, bytes, title: s.title, artist: L.name, source: L.name,
-    page: s.page, file_url: s.file_url, licence: L.licence, licence_id: L.licence_id, licence_url: L.url, credit_required: false,
+    page: s.page, file_url: s.file_url || s.archive_url, licence: L.licence, licence_id: L.licence_id, licence_url: L.url, credit_required: false,
     credit: null, content_id: 'unknown', ai_generated: false, vocals: false, checked: date, certificate: null,
-    licence_seen: { quote: L.quote, url: L.read_at, date: L.read },
-    limits: L.limits, modifications: 'trimmed to its first gesture, faded and levelled for the film',
+    licence_seen: { quote: seen?.quote || L.quote, url: seen?.url || (s.archive_url ? s.page : L.read_at), date: seen?.date || L.read },
+    limits: L.limits, modifications: mods.join('; '),
     found: { by: 'sfx.mjs', catalogue: s.id, role: s.role },
   };
+  if (s.member) rec.member = s.member;
+  if (s.transform) rec.transform = s.transform;
+  return rec;
 }
 
 /** The kit roles that are on (a role set to null is off). */
@@ -145,10 +165,10 @@ function isWav(buf) {
   return buf.length > 44 && buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WAVE';
 }
 
-async function download(url, ms = 40000) {
+async function download(url, ms = 40000, headers = {}) {
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      const r = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(ms), redirect: 'follow' });
+      const r = await fetch(url, { headers: { 'User-Agent': UA, ...headers }, signal: AbortSignal.timeout(ms), redirect: 'follow' });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return Buffer.from(await r.arrayBuffer());
     } catch (e) {
@@ -162,6 +182,91 @@ async function download(url, ms = 40000) {
 async function licenceStillHolds(L) {
   const html = (await download(L.read_at, 20000)).toString('utf8');
   return new RegExp(L.notice, 'i').test(html) && /commercial/i.test(html);
+}
+
+// ------------------------------------------------------------------------------------------------ archives and transforms
+/** One file of a zip archive (stored or deflated; the packs are small, no ZIP64): the bytes of `name`, or null. */
+export function zipMember(buf, name) {
+  let e = -1;
+  for (let i = buf.length - 22; i >= Math.max(0, buf.length - 22 - 65535); i--) if (buf.readUInt32LE(i) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error('not a zip archive');
+  const n = buf.readUInt16LE(e + 10);
+  let p = buf.readUInt32LE(e + 16);
+  for (let k = 0; k < n; k++) {
+    if (buf.readUInt32LE(p) !== 0x02014b50) throw new Error('broken zip directory');
+    const method = buf.readUInt16LE(p + 10), csize = buf.readUInt32LE(p + 20), nameLen = buf.readUInt16LE(p + 28);
+    const extra = buf.readUInt16LE(p + 30), comment = buf.readUInt16LE(p + 32), local = buf.readUInt32LE(p + 42);
+    const nm = buf.subarray(p + 46, p + 46 + nameLen).toString('utf8');
+    if (nm === name) {
+      if (buf.readUInt32LE(local) !== 0x04034b50) throw new Error('broken zip entry');
+      const start = local + 30 + buf.readUInt16LE(local + 26) + buf.readUInt16LE(local + 28);
+      const raw = buf.subarray(start, start + csize);
+      if (method === 0) return Buffer.from(raw);
+      if (method === 8) return inflateRawSync(raw);
+      throw new Error(`zip method ${method} is not supported`);
+    }
+    p += 46 + nameLen + extra + comment;
+  }
+  return null;
+}
+
+/** Seconds of a recording's tail a "reverse" transform keeps (from its first sound). */
+export const transformSeconds = (s) => (Number.isFinite(s.transform_s) && s.transform_s > 0 ? s.transform_s : 2.2);
+
+/**
+ * The ffmpeg filter of a catalogue transform, or null: "reverse" = from the first sound (-55 dB, 5 ms kept before it) the first
+ * transform_s seconds, the attack faded in over 4 ms (it becomes the end, so the swell stops without a click) and the whole played backwards.
+ */
+export function transformFilter(s) {
+  if (s.transform === 'reverse') return `silenceremove=start_periods=1:start_threshold=-55dB:start_silence=0.005,afade=t=in:st=0:d=0.004,atrim=duration=${transformSeconds(s)},areverse`;
+  return null;
+}
+
+/** in (any audio file ffmpeg reads) -> out (16-bit WAV at the file's own rate and channels), software decode; null or the error text. */
+function toWav(inFile, outFile, filter = null) {
+  const args = ['-y', '-v', 'error', '-i', inFile, ...(filter ? ['-af', filter] : []), '-c:a', 'pcm_s16le', outFile];
+  const r = spawnSync('ffmpeg', args, { encoding: 'utf8' });
+  if (r.error) return `ffmpeg is not installed (${r.error.code || r.error.message})`;
+  return r.status === 0 ? null : (r.stderr || 'ffmpeg failed').trim().split('\n').pop();
+}
+
+const slugOf = (page) => String(page || '').split('?')[0].split('/').filter(Boolean).pop() || 'pack';
+
+/**
+ * A catalogue sound's pack zip, once per film (audio/sfx/.cache/<hash of the link>.zip; `memo` holds it for the run).
+ * archive_url may be the zip, or a link that answers with {"url": the signed zip link} (Kenney's download button), asked
+ * with the pack page as referer; the signed link must stay on the same host.
+ */
+async function archiveFor(s, a, memo) {
+  if (memo.has(s.archive_url)) return memo.get(s.archive_url);
+  const cache = path.join(a.to, '.cache', `${createHash('sha256').update(s.archive_url).digest('hex').slice(0, 12)}.zip`);
+  let buf = null;
+  if (existsSync(cache)) buf = readFileSync(cache);
+  else if (a.fixtures) {
+    const src = path.join(a.fixtures, `${slugOf(s.page)}.zip`);
+    if (!existsSync(src)) throw new Error(`no fixture ${src}`);
+    buf = readFileSync(src);
+  } else if (a.offline) throw new Error('offline');
+  else {
+    buf = await download(s.archive_url, 40000, { Referer: s.page });
+    if (buf[0] === 0x7b) {   // {"url": "..."}: a signed link to the zip
+      const url = JSON.parse(buf.toString('utf8')).url;
+      if (!/^https:\/\//.test(url || '') || new URL(url).host !== new URL(s.archive_url).host) throw new Error('the download link leaves the pack\'s host');
+      buf = await download(url, 60000);
+    }
+  }
+  if (buf.length < 30 || buf.readUInt32LE(0) !== 0x04034b50) throw new Error('not a zip archive');
+  mkdirSync(path.dirname(cache), { recursive: true });
+  if (!existsSync(cache)) writeFileSync(cache, buf);
+  memo.set(s.archive_url, buf);
+  return buf;
+}
+
+/** The pack's licence file still grants what the catalogue recorded: its text, or null. */
+function packLicence(zip, L) {
+  const t = zipMember(zip, L.licence_member || 'License.txt');
+  const text = t ? t.toString('utf8').replace(/\s+/g, ' ').trim() : '';
+  return text && new RegExp(L.notice, 'i').test(text) && /commercial/i.test(text) ? text : null;
 }
 
 /** The interpreter kit.py runs in: --python, else the one scripts/py.mjs finds ([exe, ...args]). */
@@ -221,18 +326,37 @@ async function cmdGet(a, cat) {
   const doc = existsSync(pp) ? readJson(pp) : cmdPick(a, cat);
   const byId = new Map(cat.sounds.map((s) => [s.id, s]));
   const fallback = new Set();
+  const archives = new Map();   // a pack's zip is downloaded once per film
   let checked = null;
   for (const [role, p] of Object.entries(doc.roles)) {
     const s = byId.get(p.id);
     const file = path.join(a.to, p.file);
     const rec = file.replace(/\.wav$/, '.licence.json');
     if (existsSync(file) && existsSync(rec) && readJson(rec).sha256 === sha256(readFileSync(file))) continue;
-    let buf = null;
+    let buf = null, seen = null;
     try {
-      if (a.fixtures) {
-        const src = path.join(a.fixtures, `${s.id}.wav`);
-        if (!existsSync(src)) throw new Error(`no fixture ${src}`);
-        buf = readFileSync(src);
+      const fx = a.fixtures ? path.join(a.fixtures, `${s.id}.wav`) : null;
+      const cacheDir = path.join(a.to, '.cache');
+      if (fx && existsSync(fx)) {
+        buf = readFileSync(fx);   // a fixture is the finished file
+      } else if (s.archive_url) {
+        const zip = await archiveFor(s, a, archives);
+        const text = packLicence(zip, cat.sources[s.source]);
+        if (!text) {
+          console.error(`sfx: the licence file of ${s.page} no longer reads as recorded: refused (read it, then update the catalogue)`);
+          return 1;
+        }
+        seen = { quote: text.slice(0, 700), url: s.page, date: today() };
+        const member = zipMember(zip, s.member);
+        if (!member) throw new Error(`${s.member} is not in the pack`);
+        mkdirSync(cacheDir, { recursive: true });
+        const raw = path.join(cacheDir, `${s.id}.member${path.extname(s.member)}`), out = path.join(cacheDir, `${s.id}.wav`);
+        writeFileSync(raw, member);
+        const err = toWav(raw, out, transformFilter(s));
+        if (err) throw new Error(err);
+        buf = readFileSync(out);
+      } else if (a.fixtures) {
+        throw new Error(`no fixture ${fx}`);
       } else if (a.offline) {
         throw new Error('offline');
       } else {
@@ -242,6 +366,14 @@ async function cmdGet(a, cat) {
           return 1;
         }
         buf = await download(s.file_url);
+        if (transformFilter(s)) {
+          mkdirSync(cacheDir, { recursive: true });
+          const raw = path.join(cacheDir, `${s.id}.source.wav`), out = path.join(cacheDir, `${s.id}.wav`);
+          writeFileSync(raw, buf);
+          const err = toWav(raw, out, transformFilter(s));
+          if (err) throw new Error(err);
+          buf = readFileSync(out);
+        }
       }
       if (!isWav(buf)) throw new Error('not a WAV file');
     } catch (e) {
@@ -251,7 +383,7 @@ async function cmdGet(a, cat) {
     }
     mkdirSync(a.to, { recursive: true });
     writeFileSync(file, buf);
-    writeJson(rec, licenceRecord(cat, s, { file: p.file, sha: sha256(buf), bytes: buf.length, date: today() }));
+    writeJson(rec, licenceRecord(cat, s, { file: p.file, sha: sha256(buf), bytes: buf.length, date: today(), seen }));
   }
   doc.fallback = [...fallback];
   writeJson(pp, doc);
@@ -274,9 +406,10 @@ function cmdPlace(a, cat) {
   if (existsSync(lockPath)) {
     const lock = readJson(lockPath);
     const sfxDir = path.resolve(a.to);
+    const ours = new Set(cat.sounds.map((s) => `${s.id}.wav`));   // a take placed from this catalogue (not one the film's own library placed)
     let dropped = 0;
     for (const [role, r] of Object.entries(lock.roles || {})) {
-      const mine = r.file && path.resolve(r.file).startsWith(sfxDir + path.sep) && /^mixkit-|^[a-z]+-\d+/.test(path.basename(r.file));
+      const mine = r.file && path.resolve(r.file).startsWith(sfxDir + path.sep) && ours.has(path.basename(r.file));
       const now = doc.roles[role];
       if (mine && doc.catalogue && (!now || skip.has(role) || path.basename(r.file) !== now.file)) { delete lock.roles[role]; dropped++; }
     }
