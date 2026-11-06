@@ -8,12 +8,13 @@ import { getRemotionEnvironment } from 'remotion';
 import { LOGO, LOGO_SVG } from '../brand/logo';
 import { SAMPLE_MARK_SVG } from '../brand/Mark';
 import { CONTENT } from '../content';
-import { PLATES, splitLine } from '../deal';
+import { monolithWordOf, PLATES, splitLine } from '../deal';
 import {
   DecodeTitle, decodeTitleMeta, GlassPrompt, glassPromptMeta, MacroType, macroTypeDur, macroTypeMeta, MarkPullback, markPullbackMeta, OrbitChips, orbitChipsMeta,
   PageFly, pageFlyMeta, PhotoCounters, photoCountersMeta, PhotoRiver, photoRiverMeta, PortholeLine, portholeLineMeta, type SceneMeta, ToastStack, toastStackMeta,
   CardRivers, cardRiversMeta, CloudDome, cloudDomeMeta, CrystalHall, crystalHallMeta, ObjectWindow, objectWindowMeta, PhonePullback, phonePullbackMeta, PhotoOrbit, photoOrbitMeta,
   RibbonRing, ribbonRingMeta, RoomPush, roomPushMeta, SiteFlip, siteFlipMeta, StreetPoster, streetPosterMeta, type Quad, type StreetPlate,
+  BacklitLine, backlitLineMeta, MonolithWord, monolithWordMeta, WideLine, wideLineMeta,
 } from '../scenes';
 import { CHANGES, END_MOMENTS30, K30, MOMENTS30, pullbackFrame, sceneDur30, sceneFrame } from '../timeline';
 import { pictureOf, photosOf, rowsOf, spokenChange, UPDATE } from '../update';
@@ -22,7 +23,7 @@ import { scenePalette } from './look';
 import { toOklch } from '../lib/color';
 
 /** The scenes' own meta entries: the template's numbers (src/deal.ts SCENE_SPEC, src/timeline.ts MOMENTS30) must match them. */
-const METAS: Record<string, SceneMeta> = Object.fromEntries([decodeTitleMeta, glassPromptMeta, macroTypeMeta, markPullbackMeta, orbitChipsMeta, pageFlyMeta, photoCountersMeta, photoRiverMeta, portholeLineMeta, toastStackMeta, photoOrbitMeta, cardRiversMeta, siteFlipMeta, ribbonRingMeta, phonePullbackMeta, objectWindowMeta, crystalHallMeta, cloudDomeMeta, streetPosterMeta, roomPushMeta].map((m) => [m.id, m]));
+const METAS: Record<string, SceneMeta> = Object.fromEntries([decodeTitleMeta, glassPromptMeta, macroTypeMeta, markPullbackMeta, orbitChipsMeta, pageFlyMeta, photoCountersMeta, photoRiverMeta, portholeLineMeta, toastStackMeta, photoOrbitMeta, cardRiversMeta, siteFlipMeta, ribbonRingMeta, phonePullbackMeta, objectWindowMeta, crystalHallMeta, cloudDomeMeta, streetPosterMeta, roomPushMeta, monolithWordMeta, backlitLineMeta, wideLineMeta].map((m) => [m.id, m]));
 /** In the Studio, a scene whose meta drifted from the template's copy of its numbers says so once. */
 const checked = new Set<string>();
 const checkMeta = (id: string, dur30: number) => {
@@ -124,6 +125,15 @@ export const SceneOf: React.FC<{ i: number; f: number }> = ({ i, f }) => {
     }
     case 'object-window':
       return <ObjectWindow logo={brandLogo} done={show.kind === 'tap' ? show.action : 'Save'} palette={palette} pointer={!s.endless} frame={frame} />;
+    case 'monolith-word':
+      return <MonolithWord word={monolithWordOf(c) ?? c.title} palette={palette} frame={frame} />;
+    case 'backlit-line':
+      return <BacklitLine line={spokenChange(c)} palette={palette} frame={frame} />;
+    case 'wide-line': {
+      const key = (c.key ?? '').trim();
+      const line = spokenChange(c);
+      return <WideLine line={key && line.includes(key) ? line.replace(key, `*${key}*`) : line} palette={palette} frame={frame} />;
+    }
     case 'crystal-hall':
       return <CrystalHall logo={brandLogo} palette={palette} frame={frame} />;
     case 'cloud-dome': {

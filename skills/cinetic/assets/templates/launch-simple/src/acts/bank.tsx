@@ -43,6 +43,9 @@ import { ToastStack, toastStackMeta } from '../scenes/toast-stack';
 import { TypeFlip, typeFlipMeta } from '../scenes/type-flip';
 import { WordBuildBadge, wordBuildBadgeDur, wordBuildBadgeMeta } from '../scenes/word-build-badge';
 import { WordCards, wordCardsMeta } from '../scenes/word-cards';
+import { MonolithWord, monolithWordMeta } from '../scenes/monolith-word';
+import { BacklitLine, backlitLineMeta } from '../scenes/backlit-line';
+import { WideLine, wideLineMeta } from '../scenes/wide-line';
 import { CardRivers, cardRiversMeta } from '../scenes/card-rivers';
 import { PhonePullback, phonePullbackMeta } from '../scenes/phone-pullback';
 import { PhotoOrbit, photoOrbitMeta } from '../scenes/photo-orbit';
@@ -112,6 +115,9 @@ const SCENE: Record<string, { C: React.FC<Any>; meta: SceneMeta; dur?: (p: Any) 
   'ring-dive': { C: RingDive, meta: ringDiveMeta },
   'orbit-chips': { C: OrbitChips, meta: orbitChipsMeta },
   'type-flip': { C: TypeFlip, meta: typeFlipMeta },
+  'monolith-word': { C: MonolithWord, meta: monolithWordMeta },
+  'backlit-line': { C: BacklitLine, meta: backlitLineMeta },
+  'wide-line': { C: WideLine, meta: wideLineMeta },
   'cloud-dome': { C: CloudDome, meta: META3D['cloud-dome'] },
   'photo-orbit': { C: PhotoOrbit, meta: photoOrbitMeta },
   'card-rivers': { C: CardRivers, meta: cardRiversMeta },
@@ -217,6 +223,13 @@ const fillOf = (i: number, id: string): Record<string, unknown> => {
       const w = (line ?? ui[0] ?? name).split(/\s+/).filter(Boolean);
       return { word: w[0] ?? name, line: w.slice(1).join(' '), call: ui[1] ?? CONTENT.site?.cta ?? 'Get started', labels: ui.slice(2, 5) };
     }
+    // the giant type moments: the product's name as a lit solid; the act's line read by its light, or travelled at giant size
+    case 'monolith-word':
+      return { word: shortLine(ui[0] ?? name, 2) };
+    case 'backlit-line':
+      return { line: shortLine(line ?? ui[0] ?? cs.result ?? name, 4) };
+    case 'wide-line':
+      return { line: String(line ?? ui[0] ?? cs.result ?? name).trim().split(/\s+/).slice(0, 7).join(' ') }; // keeps its *accent*
     case 'cloud-dome': {
       const shot = def?.props?.screen as string | undefined;
       return { line: line ?? ui[0] ?? cs.result ?? name, plate: pic(SC.plates?.clouds) || CLOUD_SEA, screen: shot ? pic(shot) : undefined, logo: LOGO, gl: 'auto' };
