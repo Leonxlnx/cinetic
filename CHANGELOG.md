@@ -8,6 +8,10 @@ Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first 
 
 ## [Unreleased]
 
+### Fixed
+
+- `sfx.mjs pick` places a catalogue sound only in a role of its own kind. Each catalogue kind says what it is (`IS`), and each action and kit role says which sounds may play it (`SOUNDS`, from the words earshot judges its take by). On one test film it had placed a light switch as the pop, a typewriter click as the text note, a digital tone as the confirm and a cinematic swoosh sting as the logo lock, and earshot heard no match for any of them. A role with no sound of its kind keeps the kit's own takes. The catalogue's role and action lists lose the kinds that crossed over.
+
 ## [1.5.1] - 2026-11-04
 
 Three community contributions on top of 1.5.0: correct BT.709 tags on blurred masters with ffmpeg 9, a speed waiver that reaches the variants, line breaks owned by the layout, and style rules for the product as an object, a type voice and launch films in chapters.

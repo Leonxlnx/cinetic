@@ -41,23 +41,19 @@
    "tick"
   ],
   "tock": [
-   "tick",
-   "key"
+   "tick"
   ],
   "hit": [
    "impact"
   ],
   "land": [
-   "impact",
-   "paper"
+   "impact"
   ],
   "land.light": [
-   "paper",
    "click.soft"
   ],
   "pop": [
-   "pop",
-   "click.soft"
+   "pop"
   ],
   "whoosh.short": [
    "whoosh.short",
@@ -79,8 +75,7 @@
    "riser"
   ],
   "drop": [
-   "sub",
-   "impact"
+   "sub"
   ],
   "key": [
    "key"
@@ -89,17 +84,13 @@
    "key"
   ],
   "key.return": [
-   "click.hard",
    "key"
   ],
   "click": [
    "click.soft",
    "click.hard"
   ],
-  "click.confirm": [
-   "notification",
-   "click.hard"
-  ],
+  "click.confirm": [],
   "snap": [
    "shutter",
    "click.hard"
@@ -108,14 +99,10 @@
    "glass",
    "notification"
   ],
-  "text": [
-   "key",
-   "click.soft"
-  ]
+  "text": []
  },
  "actions": {
   "logo-lock": [
-   "lockup",
    "sub",
    "impact"
   ],
@@ -128,8 +115,7 @@
    "sub"
   ],
   "land": [
-   "impact",
-   "paper"
+   "impact"
   ],
   "card-land": [
    "paper",
@@ -153,8 +139,8 @@
    "whoosh.medium"
   ],
   "jump-cut": [
-   "whoosh.short",
-   "impact"
+   "click.hard",
+   "shutter"
   ],
   "press": [
    "click.soft",
@@ -168,19 +154,14 @@
    "click.soft"
   ],
   "lock": [
-   "click.hard",
-   "lockup"
-  ],
-  "error": [
    "click.hard"
   ],
+  "error": [],
   "appear": [
-   "click.soft",
    "pop"
   ],
   "shape": [
-   "whoosh.short",
-   "pop"
+   "whoosh.short"
   ],
   "build": [
    "riser",
@@ -206,17 +187,14 @@
    "shutter"
   ],
   "letter": [
-   "key",
-   "typing"
+   "click.soft",
+   "tick"
   ],
   "type": [
    "typing",
    "key"
   ],
-  "text": [
-   "key",
-   "click.soft"
-  ]
+  "text": []
  },
  "sounds": [
   {

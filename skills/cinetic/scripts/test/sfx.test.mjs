@@ -6,9 +6,12 @@
  *
  *   1. The catalogue: at least 60 sounds, unique ids, every field (source, page, file_url, licence, role, align,
  *      onset, loudness, tags, earshot's verdict), every source free of a credit and of an account, links only (no
- *      audio beside it), earshot's forced choice won by every sound, every kit role served by some kind.
+ *      audio beside it), earshot's forced choice won by every sound, every kind a role or an action lists is of
+ *      its sound (IS, SOUNDS), the main kit roles served.
  *   2. pick: the same film draws the same set, another film a different one, the last films' sounds held back,
- *      no sound on two roles, a sub-role read by its action (hit.logo_lock plays a lockup hit).
+ *      no sound on two roles, a sub-role read by its action (hit.logo_lock plays a low hit), and never a sound of
+ *      another kind (a click as the pop, a key as the text note, a tone as the confirm, a cinematic sting as the
+ *      logo lock), even when the catalogue's lists name one.
  *   3. get on fixtures: each pick in audio/sfx/ with its licence record (every field credits.py checks, sha256 of
  *      the file), the history written; a second get keeps the files.
  *   4. Offline: --offline leaves every role to the synthesized takes and says FALLBACK, exit 0.
@@ -20,7 +23,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFil
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CATALOGUE, kindsFor, pick, readJson } from '../audio/sfx.mjs';
+import { CATALOGUE, IS, SOUNDS, kindsFor, pick, plays, readJson, soundsFor } from '../audio/sfx.mjs';
 import { findPython } from '../py.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -44,21 +47,52 @@ for (const s of cat.sounds) {
 const kinds = new Set(cat.sounds.map((s) => s.role));
 for (const k of ['whoosh.short', 'whoosh.medium', 'whoosh.long', 'click.soft', 'click.hard', 'key', 'typing', 'notification',
   'shutter', 'impact', 'sub', 'riser', 'reverse', 'glass', 'paper', 'tick', 'lockup']) ok(kinds.has(k), `kind ${k} in the catalogue`);
-for (const r of Object.keys(cat.roles)) ok(kindsFor(cat, r).some((k) => kinds.has(k)), `kit role ${r} has a sound`);
+for (const [r, ks] of Object.entries(cat.roles)) {
+  ok(soundsFor(r).length > 0, `kit role ${r}: the sounds it is heard as`);
+  for (const k of ks) ok(plays(k, r), `kit role ${r} lists ${k}, a ${IS[k] || k}: one of its sounds (${soundsFor(r)})`);
+}
+for (const [x, ks] of Object.entries(cat.actions)) {
+  ok(SOUNDS.actions[x]?.length > 0, `action ${x}: the sounds it is heard as`);
+  for (const k of ks) ok(plays(k, 'role', x), `action ${x} lists ${k}, a ${IS[k] || k}: one of its sounds (${SOUNDS.actions[x]})`);
+}
+for (const r of ['tick', 'tock', 'hit', 'land', 'land.light', 'whoosh.short', 'whoosh.long', 'riser', 'swell', 'suck', 'drop', 'key',
+  'key.return', 'click', 'snap', 'bell']) ok(kindsFor(cat, r).some((k) => kinds.has(k) && plays(k, r)), `kit role ${r} has a sound of its kind`);
+ok(soundsFor('whoosh.long.whip') === SOUNDS.actions.whip && soundsFor('tick.crisp') === SOUNDS.roles.tick
+  && soundsFor('hit', 'logo_lock') === SOUNDS.actions['logo-lock'] && soundsFor('nothing.known').length === 0, 'soundsFor reads like kindsFor');
 const beside = readdirSync(path.dirname(CATALOGUE)).filter((f) => /\.(wav|mp3|flac|ogg|aiff?)$/i.test(f));
 ok(beside.length === 0, 'no audio beside the catalogue');
 
 // ------------------------------------------------------------------ 2. pick
-const ROLES = ['tick', 'hit', 'land', 'whoosh.short', 'whoosh.long', 'riser', 'drop', 'key', 'click', 'click.confirm', 'snap', 'bell', 'hit.logo_lock', 'whoosh.long.whip'];
+const ROLES = ['tick', 'hit', 'land', 'whoosh.short', 'whoosh.long', 'riser', 'drop', 'key', 'click', 'snap', 'bell', 'hit.logo_lock', 'whoosh.long.whip'];
 const a1 = pick(cat, ROLES, 'film-a'), a2 = pick(cat, ROLES, 'film-a'), b = pick(cat, ROLES, 'film-b');
 const ids = (p) => ROLES.map((r) => p[r]?.id);
 ok(JSON.stringify(ids(a1)) === JSON.stringify(ids(a2)), 'the same film draws the same set');
 ok(ids(a1).filter((x, i) => x !== ids(b)[i]).length >= 3, 'another film draws a different set');
 ok(new Set(ids(a1)).size === ROLES.length, 'every role a sound, none on two roles');
-ok(a1['hit.logo_lock'].role === 'lockup' && ['whoosh.medium', 'whoosh.short'].includes(a1['whoosh.long.whip'].role), 'a sub-role read by its action');
+ok(['impact', 'sub'].includes(a1['hit.logo_lock'].role) && ['whoosh.medium', 'whoosh.short'].includes(a1['whoosh.long.whip'].role), 'a sub-role read by its action');
 const held = pick(cat, ROLES, 'film-c', [{ film: 'film-a', ids: ids(a1) }]);
 const sizable = ROLES.filter((r) => kindsFor(cat, r).some((k) => cat.sounds.filter((s) => s.role === k).length > 4));
 ok(sizable.every((r) => !ids(a1).includes(held[r].id)), "the last film's sounds held back where the kind has room");
+
+// never a sound of another kind: the Atlas film's cast drawn for many films, also from lists that name the wrong kinds
+const ATLAS = { text: 'text', pop: 'appear', 'pop.shape': 'shape', 'hit.logo_lock': 'logo-lock', click: 'press', land: 'card-land', tick: 'detent', bell: 'chime' };
+const loose = {
+  ...cat,
+  roles: { ...cat.roles, pop: ['pop', 'click.soft'], text: ['key', 'click.soft'], 'click.confirm': ['notification', 'click.hard'], 'key.return': ['click.hard', 'key'] },
+  actions: { ...cat.actions, 'logo-lock': ['lockup', 'sub', 'impact'], appear: ['click.soft', 'pop'], text: ['key', 'click.soft'], shape: ['pop', 'whoosh.short'] },
+};
+const wrong = [];
+for (let i = 0; i < 60; i++) {
+  for (const c of [cat, loose]) {
+    const p = pick(c, [...Object.keys(ATLAS), 'click.confirm', 'key.return'], `film-${i}`, [], [], ATLAS);
+    for (const [r, s] of Object.entries(p)) if (!plays(s.role, r, ATLAS[r])) wrong.push(`${r}: ${s.id} ${s.role}`);
+    if (/^click\./.test(p.pop?.role) || ['key', 'click.soft'].includes(p.text?.role) || p['hit.logo_lock']?.role === 'lockup'
+      || p['click.confirm']?.role === 'notification' || p['key.return']?.role === 'click.hard') wrong.push(`film-${i}: a named wrong pick`);
+  }
+}
+ok(wrong.length === 0, `no role takes a sound of another kind (${[...new Set(wrong)].slice(0, 4).join('; ')})`);
+const lone = pick(loose, ['pop'], 'film-x');
+ok(!lone.pop || lone.pop.role === 'pop', 'a pop never falls back to a click');
 
 // ------------------------------------------------------------------ 3-5. the CLI on fixtures
 function wav(seconds = 0.4, sr = 48000) {   // a decaying 900 Hz click with 20 ms of quiet before it, 16-bit stereo
