@@ -113,6 +113,9 @@ export const carriedLine = (id: string, c: Change): { in: number; resolved: numb
   }
   if (id === 'decode-title') return { in: 1, resolved: 18, out: SCENE_SPEC[id].dur };
   if (id === 'orbit-chips') return { in: 0, resolved: 6, out: 43 };
+  // backlit-line is read as the lamp passes and stands clean once the front light is up; wide-line is whole after its pull-back
+  if (id === 'backlit-line') return { in: 0, resolved: 40, out: SCENE_SPEC[id].dur };
+  if (id === 'wide-line') return { in: 0, resolved: 50, out: SCENE_SPEC[id].dur };
   return null;
 };
 /** porthole-line's frames between the words of a line (scenes/porthole-line PORTHOLE.words.every: 0, each line whole). */
@@ -398,6 +401,9 @@ export const MOMENTS30: Record<string, (dur30: number) => Moment[]> = {
   'site-flip': () => [m(0, 'snap', 'block-1', 0.6), m(1, 'snap', 'block-2', 0.6), m(2, 'whoosh', 'sheet', 0.8), m(13, 'tick', 'sections', 0.3), m(28, 'whoosh', 'orbit', 0.5), m(33, 'pop', 'pictures', 0.5), m(52, 'whoosh', 'exit', 0.7)],
   'ribbon-ring': () => [m(0, 'swell', 'ring-in', 0.5), m(1, 'key', 'word-1', 0.4), m(11, 'key', 'word-2', 0.35), m(19, 'key', 'word-3', 0.35), m(30, 'whoosh', 'whip-up', 0.6), m(39, 'key', 'word-last', 0.4)],
   'phone-pullback': () => [m(0, 'whoosh', 'pull-back', 0.5), m(26, 'whoosh', 'pull-peak', 0.4), m(44, 'land', 'phone', 0.4), m(55, 'click', 'press', 0.8), m(58, 'pop', 'menu', 0.7), m(75, 'tick', 'row', 0.3)],
+  'monolith-word': () => [m(0, 'drop', 'lights-on', 0.85), m(3, 'whoosh', 'pull-back', 0.5), m(40, 'land', 'settle', 0.35)],
+  'backlit-line': () => [m(0, 'swell', 'lamp', 0.7), m(34, 'hit', 'front-light', 0.55)],
+  'wide-line': () => [m(0, 'whoosh', 'travel', 0.5), m(38, 'land', 'last-word', 0.45), m(42, 'whoosh', 'pull-back', 0.35)],
   'object-window': () => [m(0, 'whoosh', 'window-rises', 0.4), m(12, 'whoosh', 'turn', 0.5), m(30, 'swell', 'push', 0.4), m(58, 'click', 'mark-spot', 0.7), m(59, 'pop', 'marker', 0.5), m(74, 'click', 'done', 0.7)],
   'crystal-hall': () => [m(0, 'whoosh', 'sphere', 0.6), m(10, 'land', 'landing', 0.6), m(12, 'swell', 'crystal', 0.5), m(18, 'hit', 'cone', 0.8), m(58, 'riser', 'fill', 0.5), m(61, 'bell', 'flash', 0.7)],
   'cloud-dome': () => [m(4, 'riser', 'tilt', 0.4), m(17, 'whoosh', 'cloud-rush', 0.9), m(27, 'land', 'diorama', 0.7), m(29, 'swell', 'glass', 0.5), m(80, 'whoosh', 'push-cut', 0.7)],

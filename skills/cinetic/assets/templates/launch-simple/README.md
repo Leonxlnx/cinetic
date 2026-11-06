@@ -62,8 +62,11 @@ these files over the Remotion starter. references/spine.md is the grammar; this 
 | sells, prices, counts | `word-cards` (a price table), `photo-counters` (a picture) | card, count |
 | shows, browses | `photo-river`, `ring-dive`, `held-product-word` (pictures) | photo, word |
 | connects, syncs | `orbit-chips` (official partner marks) | card |
-| a statement (line) | `type-flip` (big), `decode-title` | word, button |
+| a statement (line) | `type-flip` (big), `decode-title`, the giant type moments `monolith-word`, `backlit-line`, `wide-line` (big) | word, button |
 | the lockup | `blobs-to-mark` (big), `line-to-wordmark`, `word-build-badge`, `bar-flood` (big) | mark |
+
+A line slot pulls toward the giant type moments (`type: true` in src/bank.ts, x2.5 in the deal), so most films get one
+line set at cap 18-25 % of the frame's height beside their quiet small text.
 
 Each scene keeps its own design: its camera, its type, its pointer, its timing. The film keeps ONE ground
 (`FILM_GROUND`: the value most of its scenes were designed on, the deal's on a tie) and paints every scene on it

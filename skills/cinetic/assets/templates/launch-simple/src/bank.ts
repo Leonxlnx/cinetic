@@ -35,6 +35,8 @@ export type BankEntry = {
   /** a lockup: where its mark lands whole and where its name is read, as shares of its length */
   lock?: number;
   name?: number;
+  /** a giant type moment (its line's cap 18 % of the frame's height or more): a line slot pulls toward it, so most films get one */
+  type?: boolean;
   /** the scene's text read from its props for a length that depends on it (frames at 30 fps) */
   durOf?: (p: Record<string, unknown>) => number;
 };
@@ -73,7 +75,10 @@ export const BANK: Record<string, BankEntry> = {
   'held-product-word': { id: 'held-product-word', dur: 64, big: true, ground: 'light', verbs: ['show', 'carry', 'hold', 'wear', 'use'], needs: ['product', 'pictures'], handIn: { form: 'photo', x: 790, y: 200, w: 340, h: 680 }, handOut: { form: 'photo', x: 770, y: 160, w: 380, h: 760 } },
   'ring-dive': { id: 'ring-dive', dur: 78, big: true, ground: 'light', verbs: ['show', 'browse', 'find', 'choose', 'collect'], needs: ['pictures'], handIn: null, handOut: { form: 'word', x: 820, y: 503, w: 280, h: 74 } },
   'orbit-chips': { id: 'orbit-chips', dur: 60, big: false, ground: 'light', verbs: ['connect', 'integrate', 'sync', 'link', 'import', 'work'], needs: ['logos'], handIn: { form: 'word', x: 516, y: 497, w: 888, h: 86 }, handOut: { form: 'card', x: 560, y: 200, w: 800, h: 680, r: 64 } },
-  'type-flip': { id: 'type-flip', dur: 56, big: true, ground: 'light', verbs: ['line', 'claim', 'start'], handIn: null, handOut: { form: 'word', x: 110, y: 70, w: 1700, h: 910 } },
+  'monolith-word': { id: 'monolith-word', dur: 66, big: true, ground: 'dark', verbs: ['launch', 'ship', 'introduce', 'meet', 'build', 'make', 'start', 'line', 'claim'], handIn: null, handOut: { form: 'word', x: 460, y: 400, w: 1000, h: 300 }, type: true },
+  'backlit-line': { id: 'backlit-line', dur: 62, big: true, ground: 'dark', verbs: ['line', 'claim', 'light', 'reveal', 'show', 'promise', 'start'], handIn: null, handOut: { form: 'word', x: 130, y: 430, w: 1660, h: 230 }, type: true },
+  'wide-line': { id: 'wide-line', dur: 70, big: true, ground: 'light', verbs: ['line', 'claim', 'say', 'write', 'read', 'keep', 'find'], handIn: null, handOut: { form: 'word', x: 134, y: 470, w: 1652, h: 140 }, type: true },
+  'type-flip': { id: 'type-flip', dur: 56, big: true, ground: 'light', verbs: ['line', 'claim', 'start'], handIn: null, handOut: { form: 'word', x: 110, y: 70, w: 1700, h: 910 }, type: true },
   // the newer scenes: each one point of the body, filled from the line, the pictures and src/content.ts (acts/bank.tsx fillOf)
   'cloud-dome': { id: 'cloud-dome', dur: 84, big: true, ground: 'light', verbs: ['line', 'connect', 'integrate', 'sync', 'work', 'run', 'automate', 'launch', 'open'], handIn: { form: 'word', x: 330, y: 430, w: 1260, h: 202 }, handOut: { form: 'world', x: 0, y: 0, w: 1920, h: 1080 } },
   'photo-orbit': { id: 'photo-orbit', dur: 69, big: true, ground: 'dark', verbs: ['line', 'show', 'see', 'shoot', 'picture', 'browse', 'collect', 'share'], needs: ['pictures'], handIn: null, handOut: { form: 'world', x: 0, y: 0, w: 1920, h: 1080 } },
@@ -156,8 +161,8 @@ export const DEAL_SEED = `${SCENE_SEED}#${HISTORY.slice(0, 3).map((f) => f.join(
 export const FLOOR_CAST = ['macro-type', 'page-fly', 'decode-title', 'toast-stack', 'blobs-to-mark'] as const;
 /** How a scene's weight falls when one of the last films played it (the last film first). */
 const RECENT_WEIGHT = [0.08, 0.3, 0.55, 0.8];
-/** The pull of a scene whose verbs hold the act's verb, of one that hands on the spine's form, of a big one. */
-const PULL = { verb: 3, form: 1.5, big: 1.8 } as const;
+/** The pull of a scene whose verbs hold the act's verb, of one that hands on the spine's form, of a big one, of a giant type moment in a line slot. */
+const PULL = { verb: 3, form: 1.5, big: 1.8, type: 2.5 } as const;
 
 export type DealAsk = { act: number; k: number; verb: string; form?: Form; last: boolean; line?: boolean; have: readonly Need[]; used: readonly string[]; seed?: string; history?: readonly (readonly string[])[]; floor?: string };
 /** A scene's weight in an act's deal: its verb, its form, its size, and how lately the last films played it. */
@@ -165,6 +170,7 @@ export const dealWeight = (e: BankEntry, stem: string, form: Form | undefined, h
   (e.verbs.some((v) => v === stem || stem.startsWith(v)) ? PULL.verb : 1) *
   (form && e.handOut.form === form ? PULL.form : 1) *
   (e.big ? PULL.big : 1) *
+  (e.type && stem === 'line' ? PULL.type : 1) *
   history.slice(0, RECENT_WEIGHT.length).reduce((a, f, j) => (f.includes(e.id) ? a * RECENT_WEIGHT[j] : a), 1);
 /**
  * The house scene a slot is dealt: a seeded weighted draw (DEAL_SEED: the film's name or direction and the films before

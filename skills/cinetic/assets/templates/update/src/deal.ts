@@ -172,6 +172,9 @@ export const HERO_META = [
   { id: 'cloud-dome', role: 'picture', family: 'logos', needs: ['logos'], prefer: 'middle', min: 2.8, fits: ['works', 'with', 'connect', 'sync', 'apps', 'tools', 'integrat', 'everywhere', 'cloud', 'plug'], about: 'the change\'s line on a pale sky; the camera tilts down through a rushing cloud onto the product under a glass dome above a cloud sea, the tools it works with orbiting as glass tiles' },
   { id: 'street-poster', role: 'picture', family: 'world', needs: ['picture', 'street'], prefer: 'proof', min: 2.0, dark: true, fits: ['publish', 'share', 'print', 'poster', 'post', 'everywhere', 'world', 'city', 'out', 'promote'], about: 'real street photographs cut one after another, each pulling back, every billboard carrying the change\'s picture in its perspective' },
   { id: 'room-push', role: 'picture', family: 'world', needs: ['picture', 'room'], prefer: 'middle', min: 2.2, fits: ['see', 'show', 'screen', 'present', 'meet', 'room', 'tv', 'big', 'share', 'open'], about: 'a real room appears as a render pass in the brand\'s colours and resolves to the photograph; the camera punches in and pushes into its screen until the change\'s picture is the frame' },
+  { id: 'monolith-word', role: 'picture', family: 'type', needs: [], prefer: 'first', min: 2.2, dark: true, fits: ['new', 'introduc', 'meet', 'launch', 'version', 'named', 'called', 'name', 'brand', 'here'], about: 'the change\'s word stands as a lit solid in a studio; the lights strike on as the camera pulls back from its bevel and orbits it' },
+  { id: 'backlit-line', role: 'picture', family: 'type', needs: [], prefer: 'first', min: 2.0, dark: true, fits: ['light', 'dark', 'mode', 'night', 'see', 'show', 'reveal', 'bright', 'clear', 'focus'], about: 'the change\'s line, cut through a wall, lights up letter by letter as a lamp passes behind it; then a front light brings it clean' },
+  { id: 'wide-line', role: 'picture', family: 'type', needs: [], prefer: 'middle', min: 2.3, fits: ['all', 'every', 'one', 'whole', 'more', 'bigger', 'wide', 'long', 'everything', 'anywhere'], about: 'the change\'s line set bigger than the frame: the camera travels it word by word, then pulls back to the whole line' },
   { id: 'mark-pullback', role: 'end', family: 'mark', needs: [], prefer: 'proof', min: 2.0, fits: [], about: 'the end: the brand\'s mark as a solid pulls back from an extreme close-up with a roll, one snap cut to the lockup assembling, which keeps a slow push; the version lands under it on the bar line' },
 ] as const satisfies readonly HeroMeta[];
 export type HeroId = (typeof HERO_META)[number]['id'];
@@ -213,6 +216,9 @@ export const SCENE_SPEC: Record<string, SceneSpec> = {
   'cloud-dome': { dur: 84, big: true, carries: false, tone: 'light', handIn: { form: 'word', x: 330, y: 430, w: 1260, h: 202 }, handOut: { form: 'world', x: 0, y: 0, w: 1920, h: 1080 }, exit: { kind: 'defocus' } },
   'street-poster': { dur: 60, big: true, carries: false, tone: 'dark', handIn: null, handOut: { form: 'photo', x: 0, y: 0, w: 1920, h: 1080 } },
   'room-push': { dur: 66, big: true, carries: false, tone: 'either', handIn: null, handOut: { form: 'window', x: 0, y: 0, w: 1920, h: 1080 } },
+  'monolith-word': { dur: 66, big: true, carries: false, tone: 'dark', handIn: null, handOut: { form: 'word', x: 460, y: 400, w: 1000, h: 300 } },
+  'backlit-line': { dur: 62, big: true, carries: true, tone: 'dark', handIn: null, handOut: { form: 'word', x: 130, y: 430, w: 1660, h: 230 } },
+  'wide-line': { dur: 70, big: true, carries: true, tone: 'light', handIn: null, handOut: { form: 'word', x: 134, y: 470, w: 1652, h: 140 } },
   'mark-pullback': { dur: 60, big: true, carries: false, tone: 'either', rest: 21, handIn: null, handOut: { form: 'mark', x: 630, y: 471, w: 660, h: 137 } },
 };
 /** The lockup's own frames (30 fps, scenes/mark-pullback PULLBACK): the one snap cut to the lockup assembling, settled. */
@@ -311,11 +317,24 @@ export const sceneFit = (id: string, c: Change): number => {
       return pic && PLATES.street.length ? 2 : 0;
     case 'room-push':
       return pic && PLATES.room ? 2 : 0;
+    // the giant type moments: a word as a lit solid (its key word or a short title), a short line read by its light, a
+    // longer line travelled at giant size
+    case 'monolith-word':
+      return monolithWordOf(c) ? (asks('monolith-word', c) ? 2 : 1) : 0;
+    case 'backlit-line':
+      return n >= 2 && n <= 4 ? (asks('backlit-line', c) ? 2 : 1) : 0;
+    case 'wide-line':
+      return n >= 3 && n <= 7 ? (asks('wide-line', c) ? 2 : 1) : 0;
     default:
       return 0;
   }
 };
 
+/** The word monolith-word stands up for a change: its key word, else its title, when either is one or two words. */
+export const monolithWordOf = (c: Change): string | null => {
+  const short = (s?: string) => (s && s.trim() && s.trim().split(/\s+/).length <= 2 ? s.trim() : null);
+  return short(c.key) ?? short(c.title);
+};
 /** A change's verb: its own, else its line's first word. */
 export const verbOf = (c: Change): string => (c.verb ?? c.words.replace(/\[\]/g, '').trim().split(/\s+/)[0] ?? '').toLowerCase();
 /** How many of a scene's `fits` words the change's verb and line touch. */
