@@ -15,7 +15,9 @@
  *           is what earshot listens for in it (SOUNDS: the action's own words in actions.py, else the role's in
  *           listen.py; IS: what each catalogue kind is): a click never plays a pop, a key never a note, a cinematic
  *           sting never a logo's single low hit, whatever the lists say; a role with no sound of its kind keeps the
- *           kit's own takes. Among the best few of each kind the film's own seed (its
+ *           kit's own takes. Inside its kinds a role takes a sound earshot heard as its action (or, without one, as
+ *           the role: a sound's heard_as), else one it was never asked about, and only last one it heard as
+ *           something else (not_heard_as): a real recording still plays. Among the best few the film's own seed (its
  *           name) chooses, a sound any of the last four films played is held back
  *           (~/.cinetic/sfx-history.json, or $CINETIC_HOME), and no sound plays two roles. Writes
  *           audio/sfx/picks.json and records the film's sounds in the history (--no-history: neither reads nor
@@ -127,18 +129,36 @@ export const SOUNDS = {
   },
 };
 
-/** The sounds that may play a kit role (read like kindsFor: its action, the role, a sub-role's action, its base); [] if none is known. */
-export function soundsFor(role, action = null) {
+/** What a kit role is judged as (read like kindsFor: its action, the role, a sub-role's action, its base): ['actions' | 'roles', name], or null. */
+export function judgedAs(role, action = null) {
   const norm = (x) => String(x || '').replace(/_/g, '-');
-  if (action && SOUNDS.actions[norm(action)]) return SOUNDS.actions[norm(action)];
-  if (SOUNDS.roles[role]) return SOUNDS.roles[role];
+  if (action && SOUNDS.actions[norm(action)]) return ['actions', norm(action)];
+  if (SOUNDS.roles[role]) return ['roles', role];
   const parts = role.split('.');
-  if (parts.length > 1 && SOUNDS.actions[norm(parts[parts.length - 1])]) return SOUNDS.actions[norm(parts[parts.length - 1])];
+  if (parts.length > 1 && SOUNDS.actions[norm(parts[parts.length - 1])]) return ['actions', norm(parts[parts.length - 1])];
   for (let k = parts.length - 1; k >= 1; k--) {
     const key = parts.slice(0, k).join('.');
-    if (SOUNDS.roles[key]) return SOUNDS.roles[key];
+    if (SOUNDS.roles[key]) return ['roles', key];
   }
-  return [];
+  return null;
+}
+
+/** The sounds that may play a kit role; [] if none is known. */
+export function soundsFor(role, action = null) {
+  const j = judgedAs(role, action);
+  return j ? SOUNDS[j[0]][j[1]] : [];
+}
+
+/**
+ * How earshot heard a catalogue sound as a kit role's sound (heard_as / not_heard_as: the actions and roles it was
+ * asked about, z >= 2 with the forced choice against the cheap-synth descriptions won): 2 heard as it, 0 heard as
+ * something else, 1 never asked.
+ */
+export function heard(s, role, action = null) {
+  const j = judgedAs(role, action);
+  if (!j) return 1;
+  if (s.heard_as?.[j[0]]?.includes(j[1])) return 2;
+  return s.not_heard_as?.[j[0]]?.includes(j[1]) ? 0 : 1;
 }
 
 /** May a catalogue kind play this role? Only when the kind is one of the sounds the role is heard as. */
@@ -152,10 +172,14 @@ export function quality(s) {
   return ear - 0.15 * lead - 0.1 * floor;
 }
 
+/** The order a role's sounds are tried in: [heard (2 heard as the role's sound, 1 never asked, 0 heard as another), not one the last films played]. */
+const STEPS = [[2, true], [1, true], [2, false], [1, false], [0, true], [0, false]];
+
 /**
  * The film's picks: {role: sound} for every role, each from the role's kinds (the first kind preferred) that are
- * of its sound (plays), the last films' sounds and this film's other picks held back, the film's seed choosing
- * among the best TOP.
+ * of its sound (plays), in the order of STEPS: a sound earshot heard as the role's sound before one it was never
+ * asked about, a sound the last films played only when no other is left, one heard as something else last (heard);
+ * this film's other picks held back, the film's seed choosing among the best TOP.
  */
 export function pick(cat, roles, film, history = [], avoid = [], actions = {}) {
   const recent = new Set(history.slice(-AVOID_FILMS).filter((h) => h.film !== film).flatMap((h) => h.ids || []));
@@ -165,13 +189,15 @@ export function pick(cat, roles, film, history = [], avoid = [], actions = {}) {
   for (const role of roles) {
     const kinds = kindsFor(cat, role, actions[role]).filter((k) => plays(k, role, actions[role]));
     let chosen = null;
-    for (const kind of kinds) {
-      const pool = cat.sounds.filter((s) => s.role === kind && !used.has(s.id) && !banned.has(s.id)).sort((a, b) => quality(b) - quality(a) || (a.id < b.id ? -1 : 1));
-      const fresh = pool.filter((s) => !recent.has(s.id));
-      const from = (fresh.length ? fresh : pool).slice(0, TOP);
-      if (!from.length) continue;
-      chosen = from[hash(`${film}|${role}`) % from.length];
-      break;
+    for (const [tier, fresh] of STEPS) {
+      for (const kind of kinds) {
+        const from = cat.sounds.filter((s) => s.role === kind && !used.has(s.id) && !banned.has(s.id) && heard(s, role, actions[role]) === tier
+          && !(fresh && recent.has(s.id))).sort((a, b) => quality(b) - quality(a) || (a.id < b.id ? -1 : 1)).slice(0, TOP);
+        if (!from.length) continue;
+        chosen = from[hash(`${film}|${role}`) % from.length];
+        break;
+      }
+      if (chosen) break;
     }
     if (chosen) { used.add(chosen.id); out[role] = chosen; }
   }

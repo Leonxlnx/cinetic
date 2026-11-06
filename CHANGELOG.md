@@ -8,9 +8,13 @@ Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first 
 
 ## [Unreleased]
 
+### Added
+
+- 26 real Mixkit effects in `scripts/audio/sfx-catalogue.json` (now 110 in 19 kinds), among them its first pops and plucked notes, and more low hits, clicks and reverse swells. Each one was taken for an action that earshot 0.4.1 heard it as, on the 2.5 s a film plays. That means z ≥ 2 for the best of the action's phrasings and the forced choice against four cheap-synth descriptions won; nothing earshot's realness calls code-synthesized was taken, and no note that rings past 1.5 s. Each new sound records which actions and kit roles of its kind earshot heard it as (`heard_as`) and which it did not (`not_heard_as`). The 30 candidates that did not pass are in `rejected` with the reason. The pop, the text note and the confirm now play a catalogue sound.
+
 ### Fixed
 
-- `sfx.mjs pick` places a catalogue sound only in a role of its own kind. Each catalogue kind says what it is (`IS`), and each action and kit role says which sounds may play it (`SOUNDS`, from the words earshot judges its take by). On one test film it had placed a light switch as the pop, a typewriter click as the text note, a digital tone as the confirm and a cinematic swoosh sting as the logo lock, and earshot heard no match for any of them. A role with no sound of its kind keeps the kit's own takes. The catalogue's role and action lists lose the kinds that crossed over.
+- `sfx.mjs pick` places a catalogue sound only in a role of its own kind. Each catalogue kind says what it is (`IS`), and each action and kit role says which sounds may play it (`SOUNDS`, from the words earshot judges its take by). On one test film it had placed a light switch as the pop, a typewriter click as the text note, a digital tone as the confirm and a cinematic swoosh sting as the logo lock, and earshot heard no match for any of them. A role with no sound of its kind keeps the kit's own takes. The catalogue's role and action lists lose the kinds that crossed over. Within its kinds, a role now plays a sound earshot heard as its sound first, then one earshot was never asked about, and one earshot heard as something else last (still a real recording). A sound the last films played gives way to a fresh one at each of the first two steps.
 
 ## [1.5.1] - 2026-11-04
 
