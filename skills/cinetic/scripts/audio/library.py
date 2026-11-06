@@ -485,15 +485,14 @@ def inner_listen(path, only, out_json):
         for a in s['actions']:
             if only and a not in only:
                 continue
-            q = AC.ACTIONS[a]['query']
-            try:
-                m = api.match(s['_file'], q, alts=SLOP)
+            try:  # the best heard of the action's phrasings, and its forced choice against the cheap-synth sounds
+                m = api.match(s['_file'], AC.phrasings(a), alts=SLOP)
             except Exception as e:  # noqa: BLE001
                 res.setdefault(s['id'], {})[a] = dict(error=f'{type(e).__name__}: {e}')
                 continue
             alts = sorted(m.get('alts') or [], key=lambda x: -x['p'])
             p = m.get('p_vs_alts')
-            res.setdefault(s['id'], {})[a] = dict(query=q, p=round(p, 3) if p is not None else None,
+            res.setdefault(s['id'], {})[a] = dict(query=m.get('query'), p=round(p, 3) if p is not None else None,
                                                   verdict=m.get('verdict'),
                                                   top_alt=alts[0]['query'] if alts else None,
                                                   alt_p=round(alts[0]['p'], 3) if alts else None,

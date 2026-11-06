@@ -8,6 +8,10 @@ Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first 
 
 ## [Unreleased]
 
+### Changed
+
+- earshot judges a sound for an action by the best heard of the action's description and two phrasings of what it sounds like (`HEAR` and `phrasings()` in `actions.py`: a source and a character, never the job in the film). Its ears hear a sound, not a job: "a soft rounded pop, something appearing" passed none of 9 real pops of the sound library and "one clean low hit under a logo" none of 4 logo hits, while the pops' own titles ("A soft mouth pop") were heard strong. Over the library's 195 real licensed effects the best of the three passed 176 for their own action (z >= 2; 152 before) and told the actions apart a little better (AUC 0.922, 0.912 before), at 15 % of the other actions passing (10 % before). The phrasings were written before any was scored. `library.py listen` (the library's order of fit) and `kit.py listen` (the kit report and its flags) use them; the bank lists keep the order heard with the description alone.
+
 ## [1.5.1] - 2026-11-04
 
 Three community contributions on top of 1.5.0: correct BT.709 tags on blurred masters with ffmpeg 9, a speed waiver that reaches the variants, line breaks owned by the layout, and style rules for the product as an object, a type voice and launch films in chapters.

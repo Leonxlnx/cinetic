@@ -5,7 +5,8 @@ actions.py: what each effect of a film is for, and the earshot bank sounds that 
 A kind (pop, tock, whoosh ...) says how loud and where an effect sits; the action says what the picture does:
 a card landing, a toggle, typing, a swipe, a logo lock, a transition through a shape. Every action has its own
 short list of bank sounds in order of fit (earshot's ears first: the members that win its forced choice of the
-action's own description against cheap-synth alternatives lead, the rest follow by how close they came), so a film
+action's own description against cheap-synth alternatives lead, the rest follow by how close they came; a sound is
+now judged by the best of that description and two phrasings of what it sounds like, HEAR), so a film
 never plays one generic whoosh or pop for everything, and
 `kit.py cast` gives each action of the film one sound (the same action always the same sound, alternating its
 takes), different actions different sounds, and avoids the previous film's signature sounds (the history in
@@ -153,6 +154,41 @@ ACTIONS = {
     'build': A(('riser',), (), ['pro_riser/air_gate', 'pro_riser/roll', 'riser/snatch', 'riser/dark', 'riser/build'],
                'a short dark riser', None),
 }
+# Two more ways to say what each action's sound is (its source, material, motion and character, never its job in the
+# film), written before any of them was scored. earshot keeps the best of the action's query and these
+# (phrasings()): its ears hear a sound, not a job ("something appearing", "a letter settling", "under a logo"), and
+# the question is put the way a listener would answer it. On 195 real licensed effects of the sound library, the best
+# of the three passed 176 sounds for their own action (z >= 2; 152 with the query alone), and told the actions apart
+# a little better (AUC of own against other actions 0.922, against 0.912), at 15 % of the other actions passing
+# (10 % before).
+HEAR = {
+    'logo-lock': ('a single low impact', 'a struck note ringing out'),
+    'error': ('a short error buzz', 'a short glitchy digital buzz'),
+    'letter': ('a tiny soft tap', 'a tiny click'),
+    'detent': ('a small mechanical tick', 'a ratchet click'),
+    'appear': ('a soft pop', 'a mouth pop'),
+    'jump-cut': ('a dry quick click', 'a short sharp snap'),
+    'touch': ('a light finger tap', 'a soft tap on glass'),
+    'lock': ('a short wooden knock', 'a plastic latch clicking shut'),
+    'press': ('a soft mouse click', 'a button click'),
+    'toggle': ('a light switch click', 'a small switch being flipped'),
+    'shutter': ('a camera shutter', 'a camera shutter click'),
+    'slide': ('a thin quick swish', 'a soft sliding swoosh'),
+    'type': ('a mechanical keyboard key press', 'a keyboard key click'),
+    'swipe': ('a paper swipe', 'a quick soft swoosh'),
+    'whip': ('a fast air whoosh', 'a whip swoosh'),
+    'card-land': ('paper dropped on a table', 'a soft slap of a card on a table'),
+    'land': ('a soft low thump', 'a soft thud'),
+    'success': ('a soft ding', 'a soft chime notification'),
+    'chime': ('a struck bell note', 'a chime'),
+    'text': ('a soft plucked or mallet note', 'a kalimba or marimba note'),
+    'reveal': ('a single clean low impact', 'a deep cinematic hit'),
+    'thud': ('a deep short sub thud', 'a low boom'),
+    'pass': ('a big low whoosh', 'a deep air whoosh'),
+    'shape': ('a soft air whoosh', 'a soft swoosh'),
+    'swell': ('a reverse swell', 'a reversed cymbal'),
+    'build': ('a short dark riser', 'a rising whoosh'),
+}
 ALIASES = {'card': 'card-land', 'logo': 'logo-lock', 'lockup': 'logo-lock', 'tap': 'touch', 'click': 'press',
            'switch': 'toggle', 'typing': 'type', 'key': 'type', 'snapzoom': 'shutter', 'zoom': 'shutter', 'morph': 'shape',
            'transition': 'pass', 'whoosh': 'whip', 'riser': 'build', 'cut': 'jump-cut', 'pop': 'appear', 'tick': 'detent'}
@@ -222,6 +258,16 @@ def family(sound):
     if parts[0] == 'fit' and len(parts) > 1:
         return 'fit/' + parts[1]
     return parts[0][4:] if parts[0].startswith('pro_') else parts[0]
+
+
+def phrasings(action):
+    """the descriptions earshot judges an action's sound by: its query, then HEAR's sound-only ones (no repeats);
+    earshot keeps the one it hears best"""
+    out = []
+    for q in (ACTIONS[action]['query'], *HEAR.get(action, ())):
+        if q not in out:
+            out.append(q)
+    return out
 
 
 def slug(action):

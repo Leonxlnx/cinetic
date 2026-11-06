@@ -76,6 +76,12 @@ def actions_of():
     check(all(a({'kind': k, 'id': 'x:y'}) == v for k, v in AC.DEFAULT.items()) and a({'kind': 'suck'}) is None,
           "each kind's default; a suck plays no action")
     check(all(set(s['sounds']) and s['query'] for s in AC.ACTIONS.values()), 'every action has sounds and a listening query')
+    check(set(AC.HEAR) == set(AC.ACTIONS) and all(len(h) == 2 and all(h) for h in AC.HEAR.values()),
+          'every action has two sound-only phrasings')
+    ph = {act: AC.phrasings(act) for act in AC.ACTIONS}
+    check(all(p[0] == AC.ACTIONS[act]['query'] and len(p) == len(set(p)) >= 2 for act, p in ph.items())
+          and ph['type'] == ['a mechanical keyboard key press', 'a keyboard key click'],
+          'phrasings: the query first, then the sound-only ones, never twice')
 
 
 # ------------------------------------------------------------------------------------------
