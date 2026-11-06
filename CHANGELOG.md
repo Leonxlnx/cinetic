@@ -8,6 +8,16 @@ Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first 
 
 ## [Unreleased]
 
+### Added
+
+- The sound-effects catalogue grew from 84 to 111 effects in 19 kinds, and a second source: Kenney's Interface Sounds, UI Audio, Impact Sounds and RPG Audio (CC0 1.0, commercial use, no credit, no account). The new sounds fill the thin kinds: ticks (6), pops (5), paper and card lands (6), glass (6), impacts (7), a real `swell` kind (6) and the click kinds. Every sound was heard with earshot and mixed over real music beds before it joined; `rejected` now records what was heard and refused, and why.
+- `sfx.mjs get` takes a sound from a pack's zip (`archive_url` + `member`: the zip is downloaded once per film, its licence file is read again and refused if it no longer reads as recorded, the OGG member is converted to WAV with ffmpeg) and makes a swell of a real recording played in reverse (`"transform": "reverse"`: its first 2.2 s from the first sound, so it ends on its hit; `of` names the recording, which plays once per film). The licence record names the pack, the member and the transform.
+
+### Changed
+
+- `pop`, `tick` and `swell` roles play their own kinds (a swell no longer borrows a reverse or a riser). A `click` and the `press` action play hard clicks first (earshot hears them as a mouse or button click; the soft tones read as a game blip), the `logo-lock` action plays a clean low hit (sub drops, then impacts) before the long cinematic lockups, `appear` plays pops before clicks and `pass` long whooshes before short ones. On one cast film (20 roles) kit.py listen flags 4 roles with the new catalogue where it flagged 7 with the old.
+- Sounds earshot or the music judged poorly left the catalogue: ticks of a wall clock, a masked set of lockup hits, weak clicks, paper and typing sounds.
+
 ## [1.5.1] - 2026-11-04
 
 Three community contributions on top of 1.5.0: correct BT.709 tags on blurred masters with ffmpeg 9, a speed waiver that reaches the variants, line breaks owned by the layout, and style rules for the product as an object, a type voice and launch films in chapters.
