@@ -38,6 +38,9 @@ import { streetPosterMeta } from './street-poster';
 import { roomPushMeta } from './room-push';
 import { crystalHallMeta } from './crystal-hall';
 import { objectWindowMeta } from './object-window';
+import { monolithWordMeta } from './monolith-word';
+import { backlitLineMeta } from './backlit-line';
+import { wideLineMeta } from './wide-line';
 
 export * from './parts';
 export { BlobsToMark, blobsToMarkMeta, type BlobsToMarkProps } from './blobs-to-mark';
@@ -74,6 +77,9 @@ export { StreetPoster, streetPosterMeta, streetPosterDur, plateAt, plateView, ST
 export { RoomPush, roomPushMeta, roomZoom, ROOM_PUSH, type RoomPlate, type RoomPushProps } from './room-push';
 export { CrystalHall, crystalHallMeta, crystalCamera, crystalFaces, CRYSTAL_HALL, type CrystalHallProps } from './crystal-hall';
 export { ObjectWindow, objectWindowMeta, windowPose, OBJECT_WINDOW, type ObjectWindowProps } from './object-window';
+export { MonolithWord, monolithCamera, monolithWordMeta, MONOLITH, type MonolithWordProps } from './monolith-word';
+export { BacklitLine, backlitLight, backlitLineMeta, BACKLIT, type BacklitLineProps } from './backlit-line';
+export { WideLine, wideCamera, wideLineMeta, wideWords, WIDE, type WideLineProps } from './wide-line';
 
 /** Every house scene's meta entry, by id. */
 export const SCENES: Record<string, SceneMeta> = {
@@ -111,4 +117,7 @@ export const SCENES: Record<string, SceneMeta> = {
   [roomPushMeta.id]: roomPushMeta,
   [crystalHallMeta.id]: crystalHallMeta,
   [objectWindowMeta.id]: objectWindowMeta,
+  [monolithWordMeta.id]: monolithWordMeta,
+  [backlitLineMeta.id]: backlitLineMeta,
+  [wideLineMeta.id]: wideLineMeta,
 };
