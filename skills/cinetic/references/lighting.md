@@ -375,6 +375,26 @@ mask over a tiled background, redrawn under moving UI, cost six times as much).
   line's width, 3x its height, fading in with the first word): a line over a bright band of cloud or haze reads at 3:1
   or better; a text-shadow halo round each letter only muddies them.
 
+### Solid things: a material, sides, a floor (`fx/light/Material`)
+
+A built object or world reads as a loading state when it is flat fills and hairlines (grey cells on a grey slab). It
+reads as a thing when it shows what it is made of, that it has sides, and where it stands. The parts, each a pure
+function of its props (the scene's camera and light drive them):
+
+| part | what it gives | drive it with |
+|---|---|---|
+| `faceFill(kind, base, sweep)` | a face in a material: `lacquer` (a lit crown, a soft reflected horizon, one sharp white band), `metal` (a hard horizon, a wide band), `matte` (a soft falloff, no band); `env: 'light'` on a white sweep (it reflects white, never black) | `sweep` 0..1: where the key's band crosses; the camera or the light moves it, never a loop |
+| `SolidType` | a word extruded: copies stepped back along `dir` into occlusion, a lit bevel on the key's edges (an offset copy, never a text stroke), the face in its material | `dir` (the back's screen direction: the camera's angle, swing it through 0 and the side swings across), `light` (0: off) |
+| `Studio` | a seamless sweep lit by one soft key behind the subject: a key pool on the wall, a floor pool, the corners falling off; dithered plates, no banding | `on` (the lights striking on), `scale`/`dx`/`dy` (the set moves a third as much as the subject: parallax) |
+| `FloorShadow`, `Reflection` | the contact line where it meets the floor in a wide penumbra; its mirror on a glossy floor fading from the contact | the subject's baseline and width |
+
+**Rules.** One key for the whole scene: the face's band, the bevel's side and the pool agree on where it is. A dark
+stage has a glossy floor (reflection and contact); a white sweep a matte one (a soft shadow, a whisper of falloff: a
+grey vignette reads as dirt). Clipped type is padded for its descenders (`fx/HueSweep` `clipText`). Cost: a 380 px
+extruded word with its reflection, like the other two scenes, about 3 s a frame on software GL at 1080p (a GPU
+renders several times faster). The house scenes `monolith-word`, `backlit-line` and `wide-line` are the giant type
+moments built this way (cap 20-26 % of the height); a film's own object or world takes the same parts.
+
 ## 9. Checks
 
 - A key light, a light field and stepped layers `declare()` what they do on purpose (light seams, stepped ranges);

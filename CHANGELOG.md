@@ -8,6 +8,12 @@ Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first 
 
 ## [Unreleased]
 
+### Added
+
+- Three giant type moments in the scene bank, each a big scene with its line at cap 20-26 % of the frame's height: `monolith-word` (the product's word as a lit solid in a studio: the lights strike on as the camera pulls back from its bevel and orbits it, so its extruded side swings across), `backlit-line` (a line cut through a wall lights up letter by letter as a lamp passes behind it, shafts streaming to the lens, then a front light brings it clean) and `wide-line` (a statement set bigger than the frame, travelled word by word at giant size and pulled back to the whole line). Both templates deal them: in launch-simple a line slot pulls toward a giant type moment, so most films pair one with their quiet small text; the update template plays them for short changes. Each reads the value of the ground it is given, so a film keeps one ground.
+- `fx/light/Material`: solid things. `faceFill` paints a face in a material (lacquer, polished metal, matte ceramic) under one key, aware of what surrounds it; `SolidType` extrudes a word with its sides falling into occlusion and a lit bevel; `Studio` is a seamless sweep lit by a soft key with its floor pool and falloff (dithered, no banding); `FloorShadow` and `Reflection` stand a thing on its floor. `references/lighting.md` says when a film's own object or world takes them instead of flat fills.
+- `scripts/test/bank-f.test.mjs`: the three scenes' contract (meta, palette, type size, log-space camera, never linear, both templates).
+
 ## [1.5.1] - 2026-11-04
 
 Three community contributions on top of 1.5.0: correct BT.709 tags on blurred masters with ffmpeg 9, a speed waiver that reaches the variants, line breaks owned by the layout, and style rules for the product as an object, a type voice and launch films in chapters.
