@@ -8,9 +8,21 @@ Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first 
 
 ## [Unreleased]
 
+### Added
+
+- 25 real Mixkit effects in `scripts/audio/sfx-catalogue.json`, among them its first pops and plucked notes, and more low hits, clicks and reverse swells. Each one was taken for an action that earshot 0.4.1 heard it as, on its take as `kit.py real` places it (48 kHz, at most 2.5 s, lead-in trimmed): the sound a film plays. That means z ≥ 2 for the best of the action's phrasings and the forced choice against four cheap-synth descriptions won; nothing earshot's realness calls code-synthesized was taken, and no note that rings past 1.5 s. Each new sound records which actions and kit roles of its kind earshot heard it as (`heard_as`) and which it did not (`not_heard_as`). The 31 candidates that did not pass are in `rejected` with the reason. The pop, the text note and the confirm now play a catalogue sound.
+
 ### Changed
 
+- The 84 sounds that were already in `sfx-catalogue.json` were judged the same way on their takes. Each was heard against every action and kit role that lists its kind; `whoosh.long`, which no action lists, by its kit role. Each now records `heard_as` and `not_heard_as`, and its `ear` is earshot 0.4.1's verdict on its take. The 16 that earshot heard as none of their kind's actions moved to `rejected` with the reason: four lockup stings, eight whooshes, two typing runs, a crystal chime and a falling hit. The catalogue now holds 93 sounds in 19 kinds, each with its heard lists.
+
 - earshot judges a sound for an action by the best heard of the action's description and two phrasings of what it sounds like (`HEAR` and `phrasings()` in `actions.py`: a source and a character, never the job in the film). Its ears hear a sound, not a job: "a soft rounded pop, something appearing" passed none of 9 real pops of the sound library and "one clean low hit under a logo" none of 4 logo hits, while the pops' own titles ("A soft mouth pop") were heard strong. Over the library's 195 real licensed effects the best of the three passed 176 for their own action (z >= 2; 152 before) and told the actions apart a little better (AUC 0.922, 0.912 before), at 15 % of the other actions passing (10 % before). The phrasings were written before any was scored. `library.py listen` (the library's order of fit) and `kit.py listen` (the kit report and its flags) use them; the bank lists keep the order heard with the description alone.
+
+### Fixed
+
+- `sfx.mjs pick` reads a kit role that is judged by its own words under its own name, as `listen.py` hears it, wherever a sound was asked about that role. `tick.crisp` is "a short crisp tick", and `whoosh.short` and `whoosh.long` are their own words. Before, it read `tick.crisp` as a plain tick, and the whooshes under a name no sound's heard lists named, so every whoosh counted as never asked.
+
+- `sfx.mjs pick` places a catalogue sound only in a role of its own kind. Each catalogue kind says what it is (`IS`), and each action and kit role says which sounds may play it (`SOUNDS`, from the words earshot judges its take by). On one test film it had placed a light switch as the pop, a typewriter click as the text note, a digital tone as the confirm and a cinematic swoosh sting as the logo lock, and earshot heard no match for any of them. A role with no sound of its kind keeps the kit's own takes. The catalogue's role and action lists lose the kinds that crossed over. Within its kinds, a role now plays a sound earshot heard as its sound first, then one earshot was never asked about, and one earshot heard as something else last (still a real recording). A sound the last films played gives way to a fresh one at each of the first two steps.
 
 ## [1.5.1] - 2026-11-04
 

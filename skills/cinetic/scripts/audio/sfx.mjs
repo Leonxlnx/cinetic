@@ -11,7 +11,13 @@
  *
  * pick      every kit role that is on gets one catalogue sound of its kind (scripts/audio/sfx-catalogue.json:
  *           "actions" for the action the cast gave the role, else "roles": a kit role -> the kinds that may play it;
- *           a sub-role such as hit.logo_lock or whoosh.long.whip reads its action). Among the best few of each kind the film's own seed (its
+ *           a sub-role such as hit.logo_lock or whoosh.long.whip reads its action). A role only ever takes a sound that
+ *           is what earshot listens for in it (SOUNDS: the action's own words in actions.py, else the role's in
+ *           listen.py; IS: what each catalogue kind is): a click never plays a pop, a key never a note, a cinematic
+ *           sting never a logo's single low hit, whatever the lists say; a role with no sound of its kind keeps the
+ *           kit's own takes. Inside its kinds a role takes a sound earshot heard as its action (or, without one, as
+ *           the role: a sound's heard_as), else one it was never asked about, and only last one it heard as
+ *           something else (not_heard_as): a real recording still plays. Among the best few the film's own seed (its
  *           name) chooses, a sound any of the last four films played is held back
  *           (~/.cinetic/sfx-history.json, or $CINETIC_HOME), and no sound plays two roles. Writes
  *           audio/sfx/picks.json and records the film's sounds in the history (--no-history: neither reads nor
@@ -85,6 +91,82 @@ export function kindsFor(cat, role, action = null) {
   return [];
 }
 
+/** What each catalogue kind is, as a sound (a kind not named here is its own). */
+export const IS = {
+  tick: 'tick', 'click.soft': 'click', 'click.hard': 'click', key: 'key', typing: 'key', shutter: 'shutter', pop: 'pop',
+  note: 'note', glass: 'bell', notification: 'tone', impact: 'hit', sub: 'sub', lockup: 'sting', paper: 'paper',
+  'whoosh.short': 'whoosh', 'whoosh.medium': 'whoosh', 'whoosh.long': 'whoosh', reverse: 'swell', swell: 'swell', riser: 'riser',
+};
+
+/**
+ * The sounds that may play each action and each kit role, from the words earshot's ears judge its take by (kit.py
+ * listen, listen.py --kit): an action's own (actions.py query and HEAR), else the role's (listen.py ROLE_QUERY).
+ */
+export const SOUNDS = {
+  actions: {
+    'logo-lock': ['hit', 'sub', 'note', 'bell'],   // one clean low hit under a logo; a struck note ringing out
+    reveal: ['hit', 'sub', 'sting'],               // a single clean low impact; a deep cinematic hit
+    thud: ['sub', 'hit'],                          // a deep short sub thud; a low boom
+    land: ['hit', 'sub'],                          // a soft low thump; a soft thud
+    'card-land': ['paper', 'hit'],                 // paper dropped on a table; a soft slap of a card on a table
+    swipe: ['paper', 'whoosh'], slide: ['whoosh', 'paper'], whip: ['whoosh'], pass: ['whoosh'], shape: ['whoosh', 'swell'],
+    'jump-cut': ['click', 'shutter'],              // a dry quick click; a short sharp snap
+    press: ['click'], touch: ['click'], toggle: ['click'],
+    lock: ['click', 'hit'],                        // a short wooden knock; a plastic latch clicking shut
+    error: ['buzz'],                               // a short error buzz
+    appear: ['pop'],                               // a soft pop; a mouth pop
+    build: ['riser', 'swell'], swell: ['swell', 'riser'],
+    detent: ['tick', 'click'], letter: ['click', 'tick'],
+    chime: ['bell', 'note', 'tone'], success: ['tone', 'bell', 'note'],
+    shutter: ['shutter'], type: ['key'],
+    text: ['note'],                                // a soft plucked or mallet note
+  },
+  roles: {
+    tick: ['tick', 'click'], tock: ['tick', 'click', 'hit'], hit: ['hit', 'sub', 'note', 'bell'], land: ['hit', 'sub'],
+    'land.light': ['click', 'tick'], pop: ['pop'], whoosh: ['whoosh'], suck: ['swell'], riser: ['riser', 'swell'],
+    swell: ['swell', 'riser'], drop: ['sub'], key: ['key'], click: ['click'], 'click.confirm': ['note'],
+    snap: ['shutter', 'click', 'hit'], bell: ['bell', 'note', 'tone'], text: ['note'],
+  },
+};
+
+/** What a kit role is judged as (read like kindsFor: its action, the role, a sub-role's action, its base): ['actions' | 'roles', name], or null. */
+export function judgedAs(role, action = null) {
+  const norm = (x) => String(x || '').replace(/_/g, '-');
+  if (action && SOUNDS.actions[norm(action)]) return ['actions', norm(action)];
+  if (SOUNDS.roles[role]) return ['roles', role];
+  const parts = role.split('.');
+  if (parts.length > 1 && SOUNDS.actions[norm(parts[parts.length - 1])]) return ['actions', norm(parts[parts.length - 1])];
+  for (let k = parts.length - 1; k >= 1; k--) {
+    const key = parts.slice(0, k).join('.');
+    if (SOUNDS.roles[key]) return ['roles', key];
+  }
+  return null;
+}
+
+/** The sounds that may play a kit role; [] if none is known. */
+export function soundsFor(role, action = null) {
+  const j = judgedAs(role, action);
+  return j ? SOUNDS[j[0]][j[1]] : [];
+}
+
+/**
+ * How earshot heard a catalogue sound as a kit role's sound (heard_as / not_heard_as: the actions and roles it was
+ * asked about, z >= 2 with the forced choice against the cheap-synth descriptions won): 2 heard as it, 0 heard as
+ * something else, 1 never asked. A role judged by the role's words is read by its own name where the sound was
+ * asked about it, as listen.py hears it (tick.crisp as "a short crisp tick", whoosh.long as "a long air whoosh").
+ */
+export function heard(s, role, action = null) {
+  const j = judgedAs(role, action);
+  if (!j) return 1;
+  const asked = (ns, x) => s.heard_as?.[ns]?.includes(x) || s.not_heard_as?.[ns]?.includes(x);
+  const [ns, x] = j[0] === 'roles' && asked('roles', role) ? ['roles', role] : j;
+  if (s.heard_as?.[ns]?.includes(x)) return 2;
+  return s.not_heard_as?.[ns]?.includes(x) ? 0 : 1;
+}
+
+/** May a catalogue kind play this role? Only when the kind is one of the sounds the role is heard as. */
+export const plays = (kind, role, action = null) => soundsFor(role, action).includes(IS[kind] || kind);
+
 /** A sound's rank inside its kind: earshot's forced choice first, then a clean onset and no hiss. */
 export function quality(s) {
   const ear = s.ear?.p ?? 0.5;
@@ -93,9 +175,14 @@ export function quality(s) {
   return ear - 0.15 * lead - 0.1 * floor;
 }
 
+/** The order a role's sounds are tried in: [heard (2 heard as the role's sound, 1 never asked, 0 heard as another), not one the last films played]. */
+const STEPS = [[2, true], [1, true], [2, false], [1, false], [0, true], [0, false]];
+
 /**
- * The film's picks: {role: sound} for every role, each from the role's kinds (the first kind preferred), the
- * last films' sounds and this film's other picks held back, the film's seed choosing among the best TOP.
+ * The film's picks: {role: sound} for every role, each from the role's kinds (the first kind preferred) that are
+ * of its sound (plays), in the order of STEPS: a sound earshot heard as the role's sound before one it was never
+ * asked about, a sound the last films played only when no other is left, one heard as something else last (heard);
+ * this film's other picks held back, the film's seed choosing among the best TOP.
  */
 export function pick(cat, roles, film, history = [], avoid = [], actions = {}) {
   const recent = new Set(history.slice(-AVOID_FILMS).filter((h) => h.film !== film).flatMap((h) => h.ids || []));
@@ -103,15 +190,17 @@ export function pick(cat, roles, film, history = [], avoid = [], actions = {}) {
   const used = new Set();
   const out = {};
   for (const role of roles) {
-    const kinds = kindsFor(cat, role, actions[role]);
+    const kinds = kindsFor(cat, role, actions[role]).filter((k) => plays(k, role, actions[role]));
     let chosen = null;
-    for (const kind of kinds) {
-      const pool = cat.sounds.filter((s) => s.role === kind && !used.has(s.id) && !banned.has(s.id)).sort((a, b) => quality(b) - quality(a) || (a.id < b.id ? -1 : 1));
-      const fresh = pool.filter((s) => !recent.has(s.id));
-      const from = (fresh.length ? fresh : pool).slice(0, TOP);
-      if (!from.length) continue;
-      chosen = from[hash(`${film}|${role}`) % from.length];
-      break;
+    for (const [tier, fresh] of STEPS) {
+      for (const kind of kinds) {
+        const from = cat.sounds.filter((s) => s.role === kind && !used.has(s.id) && !banned.has(s.id) && heard(s, role, actions[role]) === tier
+          && !(fresh && recent.has(s.id))).sort((a, b) => quality(b) - quality(a) || (a.id < b.id ? -1 : 1)).slice(0, TOP);
+        if (!from.length) continue;
+        chosen = from[hash(`${film}|${role}`) % from.length];
+        break;
+      }
+      if (chosen) break;
     }
     if (chosen) { used.add(chosen.id); out[role] = chosen; }
   }
@@ -211,7 +300,7 @@ function cmdPick(a, cat) {
     writeJson(hp, { films: films.slice(-40) });
   }
   console.log(`sfx: ${Object.keys(picks).length} roles get a recorded effect from the catalogue (${cat.sounds.length} sounds)`
-    + (none.length ? `; no catalogue kind for ${none.join(', ')} (the kit's own takes play)` : ''));
+    + (none.length ? `; no catalogue sound of their kind for ${none.join(', ')} (the kit's own takes play)` : ''));
   for (const [r, s] of Object.entries(picks)) console.log(`  ${r.padEnd(18)} ${s.id.padEnd(12)} ${s.title}`);
   return doc;
 }
