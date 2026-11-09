@@ -20,6 +20,9 @@
  *   6. Archives and transforms: zipMember reads a stored and a deflated member; get takes a sound from a pack's zip (a
  *      fixture), checks the pack's licence file (a refused licence exits 1), converts the member to WAV and, for a
  *      reverse transform, plays it backwards (these two need ffmpeg: skipped without).
+ *   7. Another format: a sound with "format": "mp3" (the Pixabay sounds Motionstash picked) is converted to WAV, and its
+ *      record names the creator, the sound's own page, Motionstash and why its licence is not read again (needs ffmpeg).
+ *   The catalogue also holds no sound that names a game, a brand or a device, and every rejected sound says why.
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -42,7 +45,7 @@ ok(new Set(cat.sounds.map((s) => s.id)).size === cat.sounds.length, 'unique ids'
 for (const s of cat.sounds) {
   const L = cat.sources[s.source];
   ok(L && L.credit === false && L.account === false, `${s.id}: a source with no credit and no account`);
-  const wavLink = /^https:\/\//.test(s.file_url || '') && /\.wav$/.test(s.file_url);
+  const wavLink = /^https:\/\//.test(s.file_url || '') && (/\.wav$/.test(s.file_url) || ['mp3'].includes(s.format));
   const packLink = /^https:\/\//.test(s.archive_url || '') && /^[\w./ -]+\.(ogg|wav|flac)$/i.test(s.member || '');
   ok((wavLink || packLink) && !(wavLink && packLink) && /^https:\/\//.test(s.page), `${s.id}: page and one file link (a WAV, or a pack's zip and the member)`);
   if (s.transform) ok(s.transform === 'reverse' && s.id === `${s.of}-rev` && s.transform_s > 0 && s.transform_s <= 2.5, `${s.id}: a reverse transform of a named recording (at most 2.5 s)`);
@@ -61,6 +64,16 @@ ok(heard('pop') >= 4 && heard('tick') >= 4 && heard('swell') >= 3, 'pops and tic
 ok(heard('impact') + heard('lockup') >= 4, 'impacts and lockup hits at least 4');
 ok(cat.sounds.filter((s) => s.role === 'swell').every((s) => s.transform === 'reverse'), 'a swell is a real recording played in reverse (never synthesized)');
 ok(cat.sources['kenney-cc0']?.licence_id === 'cc0' && cat.sources['kenney-cc0'].licence_member && cat.sounds.some((s) => s.source === 'kenney-cc0'), 'Kenney (CC0) is a source');
+// the Pixabay sounds Motionstash picked: each from their shared folder, with its creator and its own Pixabay page; credited as a courtesy
+const ms = cat.sources['pixabay-motionstash'], msSounds = cat.sounds.filter((s) => s.source === 'pixabay-motionstash');
+ok(ms?.licence_id === 'pixabay' && ms.recheck === false && ms.recheck_why && /motionstashco/.test(ms.via?.url || '') && /Motionstash/.test(ms.courtesy || '')
+  && /Standalone/.test(ms.quote) && /commercial/.test(ms.quote), 'Motionstash (Pixabay) is a source, with its licence as read and a courtesy credit');
+ok(msSounds.length >= 20 && msSounds.every((s) => s.creator && /^https:\/\/pixabay\.com\/sound-effects\/[\w-]+-\d+\/$/.test(s.page)
+  && /^https:\/\/drive\.usercontent\.google\.com\/download\?id=[\w-]+&export=download$/.test(s.file_url) && s.format === 'mp3'), 'each Motionstash sound: its creator, its Pixabay page and its file in the shared folder');
+// a game's, a brand's or a device's own sound never enters the catalogue, whatever its source
+const BRAND = /clash|royale|iphone|ipad|apple|tiktok|windows|xbox|playstation|nintendo|netflix|discord|whatsapp|skype|mac ?os/i;
+ok(!cat.sounds.some((s) => BRAND.test(`${s.title} ${s.page} ${s.id}`)), 'no sound names a game, a brand or a device');
+ok(cat.rejected.every((x) => x.id && x.why), 'every rejected sound says why');
 for (const r of Object.keys(cat.roles)) ok(kindsFor(cat, r).some((k) => kinds.has(k)), `kit role ${r} has a sound`);
 const beside = readdirSync(path.dirname(CATALOGUE)).filter((f) => /\.(wav|mp3|flac|ogg|aiff?)$/i.test(f));
 ok(beside.length === 0, 'no audio beside the catalogue');
@@ -248,6 +261,30 @@ writeFileSync(path.join(pk2, 'audio', 'kit.json'), JSON.stringify(pkit));
 run(pk2, ['pick', '--no-history', '--film', 'pk2', '--catalogue', path.join(packDir, 'cat.json')]);
 r = run(pk2, ['get', '--no-history', '--catalogue', path.join(packDir, 'cat.json'), '--fixtures', path.join(packDir, 'fx2')]);
 ok(r.status === 1 && /no longer reads as recorded/.test(r.stderr), `a pack whose licence file changed is refused (exit ${r.status}: ${r.stderr.trim().split('\n').pop()})`);
+
+// ------------------------------------------------------------------ 7. a sound in another format, from a source that cannot be read again
+// (the Motionstash picks: an MP3 from their shared folder, converted with ffmpeg; the record credits the creator and Motionstash)
+const msCat = { catalogue: 1, updated: '2026-11-09', roles: { click: ['click.soft'] }, actions: {},
+  sources: { 'pixabay-motionstash': cat.sources['pixabay-motionstash'] },
+  sounds: [{ ...msSounds[0], id: 'pixabay-1', role: 'click.soft' }], rejected: [] };
+const msDir = path.join(tmp, 'ms');
+mkdirSync(path.join(msDir, 'fx'), { recursive: true });
+writeFileSync(path.join(msDir, 'cat.json'), JSON.stringify(msCat));
+writeFileSync(path.join(msDir, 'fx', 'pixabay-1.mp3'), w);   // ffmpeg reads a file by its content: a WAV stands in for the MP3
+const mf = project('msfilm');
+writeFileSync(path.join(mf, 'audio', 'kit.json'), JSON.stringify({ ...pkit, roles: { click: pkit.roles.click } }));
+run(mf, ['pick', '--no-history', '--film', 'ms', '--catalogue', path.join(msDir, 'cat.json')]);
+r = run(mf, ['get', '--no-history', '--catalogue', path.join(msDir, 'cat.json'), '--fixtures', path.join(msDir, 'fx')]);
+if (ff.status === 0) {
+  const f = path.join(mf, 'audio', 'sfx', 'pixabay-1.wav');
+  ok(r.status === 0 && existsSync(f) && readFileSync(f).subarray(0, 4).toString('latin1') === 'RIFF', `get converts the sound's own format to a WAV (${(r.stdout + r.stderr).trim().split('\n').pop()})`);
+  const rec = existsSync(f) ? readJson(f.replace(/\.wav$/, '.licence.json')) : {};
+  ok(rec.licence_id === 'pixabay' && rec.artist === msSounds[0].creator && rec.licence_seen?.url === msSounds[0].page && rec.licence_recheck
+    && /Motionstash/.test(rec.credit || '') && rec.via?.name === 'Motionstash' && /converted from MP3/.test(rec.modifications || '') && rec.credit_required === false,
+  "the record names the creator, the sound's own page as where the licence was read, Motionstash, and the conversion");
+} else {
+  console.log('  (format conversion skipped: no ffmpeg on the PATH)');
+}
 
 console.log(`sfx.test: ${n - fails}/${n} passed`);
 process.exit(fails ? 1 : 0);

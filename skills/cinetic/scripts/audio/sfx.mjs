@@ -21,7 +21,11 @@
  *           record credits.py and kit.py real check (source, page, file_url, the licence and its quote as read on
  *           the licence page, credit not required, limits). A file already there with its record is kept. The audio
  *           is never committed: the catalogue holds links, not sound. A sound is fetched one of three ways:
- *             file_url      a WAV (Mixkit), saved as it is;
+ *             file_url      a WAV (Mixkit), saved as it is; with "format" (mp3) a file in that format, converted
+ *                           to WAV with ffmpeg: the Pixabay sounds Motionstash picked, from their shared folder
+ *                           (Pixabay answers scripts with a bot check, so that source has "recheck": false: its
+ *                           licence is kept as read by hand on each sound's own page, and the record says so and
+ *                           credits the sound's creator and Motionstash as a courtesy, though no credit is required);
  *             archive_url   + member: a pack's zip (Kenney, CC0): downloaded once per film into audio/sfx/.cache/
  *                           (a link that answers with {"url": signed zip link} is followed, on the same host only,
  *                           with the pack page as referer), the pack's licence file read again and checked, the
@@ -43,7 +47,7 @@
  * Offline: --offline, or a download that fails, leaves those roles to the kit's synthesized takes, and says so
  * loudly ("FALLBACK: synthesized effects"), with the roles listed in picks.json "fallback". A soundtrack still
  * renders; deliver only after a run with the network. Tests never use the network: --fixtures DIR (or
- * $CINETIC_SFX_FIXTURES) copies <id>.wav from DIR instead of downloading (a pack's <slug>.zip in DIR stands in for
+ * $CINETIC_SFX_FIXTURES) copies <id>.wav from DIR instead of downloading (an <id>.mp3 there is converted like a download; a pack's <slug>.zip in DIR stands in for
  * the archive of a sound that has no <id>.wav there).
  *
  * Exit codes: 0 done (also a stated fallback), 1 a refused licence or a failed place, 2 bad arguments.
@@ -137,16 +141,22 @@ export function licenceRecord(cat, s, { file, sha, bytes, date, seen = null }) {
   if (!L || L.credit !== false) throw new Error(`${s.id}: source ${s.source} is not one a film may play without a credit`);
   const mods = [];
   if (s.archive_url) mods.push('converted from the pack\'s OGG to WAV');
+  if (s.format && s.format !== 'wav' && !s.archive_url) mods.push(`converted from ${s.format.toUpperCase()} to WAV`);
   if (s.transform === 'reverse') mods.push(`its first ${transformSeconds(s)} s from the first sound played in reverse`);
   mods.push('trimmed to its first gesture, faded and levelled for the film');
   const rec = {
-    record: 1, kind: 'sfx', file, sha256: sha, bytes, title: s.title, artist: L.name, source: L.name,
+    record: 1, kind: 'sfx', file, sha256: sha, bytes, title: s.title, artist: s.creator || L.name, source: L.name,
     page: s.page, file_url: s.file_url || s.archive_url, licence: L.licence, licence_id: L.licence_id, licence_url: L.url, credit_required: false,
-    credit: null, content_id: 'unknown', ai_generated: false, vocals: false, checked: date, certificate: null,
-    licence_seen: { quote: seen?.quote || L.quote, url: seen?.url || (s.archive_url ? s.page : L.read_at), date: seen?.date || L.read },
+    // no credit is required; a source that asks for a courtesy line (the people who picked and made the sound) gets one anyway
+    credit: L.courtesy ? `"${s.title}"${s.creator ? ` by ${s.creator}` : ''} (${L.name}${L.via ? `: ${L.via.url}` : ''})` : null,
+    content_id: 'unknown', ai_generated: false, vocals: false, checked: date, certificate: null,
+    // a source that cannot be read again by a script (recheck: false) keeps the licence as read on the sound's own page, by hand
+    licence_seen: { quote: seen?.quote || L.quote, url: seen?.url || (s.archive_url || L.recheck === false ? s.page : L.read_at), date: seen?.date || L.read },
     limits: L.limits, modifications: mods.join('; '),
     found: { by: 'sfx.mjs', catalogue: s.id, role: s.role },
   };
+  if (L.recheck === false) rec.licence_recheck = L.recheck_why || 'not possible by a script';
+  if (L.via) rec.via = L.via;
   if (s.member) rec.member = s.member;
   if (s.transform) rec.transform = s.transform;
   return rec;
@@ -228,6 +238,16 @@ function toWav(inFile, outFile, filter = null) {
   const r = spawnSync('ffmpeg', args, { encoding: 'utf8' });
   if (r.error) return `ffmpeg is not installed (${r.error.code || r.error.message})`;
   return r.status === 0 ? null : (r.stderr || 'ffmpeg failed').trim().split('\n').pop();
+}
+
+/** A downloaded file in the sound's own format (an MP3, a WAV to reverse) -> WAV bytes, through ffmpeg in the film's audio/sfx/.cache/. */
+function convert(buf, s, cacheDir) {
+  mkdirSync(cacheDir, { recursive: true });
+  const raw = path.join(cacheDir, `${s.id}.source.${s.format || 'wav'}`), out = path.join(cacheDir, `${s.id}.wav`);
+  writeFileSync(raw, buf);
+  const err = toWav(raw, out, transformFilter(s));
+  if (err) throw new Error(err);
+  return readFileSync(out);
 }
 
 const slugOf = (page) => String(page || '').split('?')[0].split('/').filter(Boolean).pop() || 'pack';
@@ -327,7 +347,7 @@ async function cmdGet(a, cat) {
   const byId = new Map(cat.sounds.map((s) => [s.id, s]));
   const fallback = new Set();
   const archives = new Map();   // a pack's zip is downloaded once per film
-  let checked = null;
+  const checked = new Map();    // a source's licence page is read once per run
   for (const [role, p] of Object.entries(doc.roles)) {
     const s = byId.get(p.id);
     const file = path.join(a.to, p.file);
@@ -336,9 +356,12 @@ async function cmdGet(a, cat) {
     let buf = null, seen = null;
     try {
       const fx = a.fixtures ? path.join(a.fixtures, `${s.id}.wav`) : null;
+      const fxRaw = a.fixtures && s.format && s.format !== 'wav' ? path.join(a.fixtures, `${s.id}.${s.format}`) : null;
       const cacheDir = path.join(a.to, '.cache');
       if (fx && existsSync(fx)) {
         buf = readFileSync(fx);   // a fixture is the finished file
+      } else if (fxRaw && existsSync(fxRaw)) {
+        buf = convert(readFileSync(fxRaw), s, cacheDir);   // a fixture in the sound's own format (an MP3) goes through the conversion
       } else if (s.archive_url) {
         const zip = await archiveFor(s, a, archives);
         const text = packLicence(zip, cat.sources[s.source]);
@@ -360,20 +383,15 @@ async function cmdGet(a, cat) {
       } else if (a.offline) {
         throw new Error('offline');
       } else {
-        if (checked === null) checked = await licenceStillHolds(cat.sources[s.source]).catch(() => false);
-        if (!checked) {
-          console.error(`sfx: the licence page ${cat.sources[s.source].read_at} no longer reads as recorded: refused (read it, then update the catalogue)`);
+        const L = cat.sources[s.source];
+        // a source whose pages answer scripts with a bot check (recheck: false) keeps its licence as read by hand, and the record says so
+        if (L.recheck !== false && !checked.has(s.source)) checked.set(s.source, await licenceStillHolds(L).catch(() => false));
+        if (L.recheck !== false && !checked.get(s.source)) {
+          console.error(`sfx: the licence page ${L.read_at} no longer reads as recorded: refused (read it, then update the catalogue)`);
           return 1;
         }
         buf = await download(s.file_url);
-        if (transformFilter(s)) {
-          mkdirSync(cacheDir, { recursive: true });
-          const raw = path.join(cacheDir, `${s.id}.source.wav`), out = path.join(cacheDir, `${s.id}.wav`);
-          writeFileSync(raw, buf);
-          const err = toWav(raw, out, transformFilter(s));
-          if (err) throw new Error(err);
-          buf = readFileSync(out);
-        }
+        if (transformFilter(s) || (s.format && s.format !== 'wav')) buf = convert(buf, s, cacheDir);
       }
       if (!isWav(buf)) throw new Error('not a WAV file');
     } catch (e) {
@@ -454,7 +472,11 @@ function cmdList(a, cat) {
 }
 
 function cmdLicences(cat) {
-  for (const [id, L] of Object.entries(cat.sources)) console.log(`${id}: ${L.licence} (${L.url}), read ${L.read}: credit ${L.credit ? 'required' : 'not required'}; ${L.limits}`);
+  for (const [id, L] of Object.entries(cat.sources)) {
+    console.log(`${id}: ${L.licence} (${L.url}), read ${L.read}: credit ${L.credit ? 'required' : 'not required'}; ${L.limits}`);
+    if (L.via) console.log(`  ${L.courtesy || `picked and shared by ${L.via.name} (${L.via.url})`}`);
+    if (L.recheck === false) console.log(`  not read again at film time: ${L.recheck_why}`);
+  }
   for (const x of cat.not_used || []) console.log(`not used: ${x.source}: ${x.why}`);
   return 0;
 }
