@@ -403,6 +403,10 @@ python3 skills/cinetic/scripts/test/bash32.test.py
 
 CI runs all of these but the slow `cast.test.py` (provenance in release mode; lint-film, pick, deck, brand, like, assets, logos, music, copy-check, library and track; tokens, mirror and grid-check; the starter's primitive, continuity, handoff, transitions, depth and light, kit, moment, wordmark, logo-kit and type tests; type-family, score, scripts-docs, add-font, render-parts, bash32 and encode-tags), plus the forensics self-test, with the Remotion starter installed and type-checked, and also checks the SKILL.md frontmatter, the JSON and plugin manifests, that the skills CLI discovers the skill, Python, Node and shell syntax, and that no audio or video with sound is tracked by git. The shell scripts are also parsed with bash 3.2 (macOS's `/bin/bash`), in a container and on a macOS runner, which also runs the encode-tags test on a current ffmpeg. Bash 3.2 cannot parse a heredoc inside `$( )`: put such a heredoc in a shell function (`bash32.test.py` finds them). A change to a lint or text-flow rule needs a fixture in `skills/cinetic/scripts/test/lint-fixtures/`, and a change to a timeline check one in `grid-fixtures/`, that declares what it must produce. A change to the library goes into `techniques.json`; regenerate the readable pages with `python3 skills/cinetic/scripts/pick.py --write-docs skills/cinetic/references` (the index and each family's file in `references/library/`; `--markdown`, with `--family <name>` for one family, prints them); `pick.test.py` checks that they match.
 
+## Credits
+
+The recorded sound effects come from a curated catalogue of links (`sfx.mjs`): the Pixabay sounds [Motionstash](https://x.com/motionstashco) picked and shared, [Kenney](https://kenney.nl)'s CC0 packs and [Mixkit](https://mixkit.co/free-sound-effects/). No audio is in this repository: a film fetches what it plays, with its licence record. Thanks to Motionstash and to every sound's creator, each named in [docs/sound-credits.md](docs/sound-credits.md).
+
 ## License
 
 [MIT](LICENSE), copyright (c) 2026 Leonxlnx.
