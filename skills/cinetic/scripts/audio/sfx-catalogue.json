@@ -1,6 +1,6 @@
 {
  "catalogue": 1,
- "updated": "2026-11-06",
+ "updated": "2026-11-09",
  "about": "Real sound effects for cinetic films: links, never audio (the audio is fetched at film time by sfx.mjs into the film's audio/sfx/ with a licence record, and never committed). Each sound was auditioned with earshot (a forced choice between its role and cheap or cartoon alternatives: a laser zap, a video-game blip, an 8-bit sound, a cartoon effect, a comedy sound), measured: onset (first sample at 10 % of the peak), lead before it (to the first sample at 1 %), peak, loudness, floor (10th percentile of 20 ms windows), centroid, and mixed at its role's level over real music beds (a sound the bed masks in 3 of 4 tracks is refused). align: onset roles put their transient on the cue frame, peak roles (whooshes, risers, swells) their loudest point. \"roles\" maps a kit role to the kinds that may play it; \"actions\" (the actions of scripts/audio/actions.py) wins where the cast names the role's action. A sound is fetched as a WAV (file_url), from a pack's zip (archive_url + member, converted to WAV), or made of a real recording played in reverse (transform \"reverse\": the first transform_s seconds from its first sound, ending on its hit: the swells); \"of\" names the recording such a sound is made of, so a film plays it once. The ear query of a kind may be the kit's own description of the action (a tick: \"a small mechanical tick, a detent clicking over\"; a pop: \"a bubble pop\"; a card land: \"a card or a sheet landing on a table\"); it is stored with each sound.",
  "sources": {
   "mixkit-sfx": {
@@ -30,12 +30,33 @@
    "credit": false,
    "account": false,
    "limits": "none (CC0: the pack's files may be used, changed and redistributed); the zip comes from the pack page's own download button (no account, no key: a link that answers with a signed zip link, asked with the pack page as referer)"
+  },
+  "pixabay-motionstash": {
+   "name": "Pixabay, picked by Motionstash",
+   "licence": "Pixabay Content License",
+   "licence_id": "pixabay",
+   "url": "https://pixabay.com/service/license-summary/",
+   "read_at": "https://pixabay.com/service/terms/",
+   "read": "2026-11-09",
+   "notice": "Pixabay Content License",
+   "quote": "Free for use under the Pixabay Content License (each sound's own page) ... the Content for commercial or non-commercial purposes ... You do not need to credit Pixabay or the contributor of Content when you use it ... You cannot sell or distribute the Content (either in digital or physical form) on a Standalone basis. (Pixabay Terms: Content includes \"Audio\", which means music, sounds, sound effects and other audio representations and content.)",
+   "credit": false,
+   "account": false,
+   "courtesy": "Sound effects picked and shared by Motionstash (https://x.com/motionstashco), from Pixabay; each sound by its own creator, named in the record",
+   "via": {
+    "name": "Motionstash",
+    "url": "https://x.com/motionstashco",
+    "share": "https://drive.google.com/drive/folders/1ETrq1vRXkqrkwwMplt62ZcnyHwE-x6BT"
+   },
+   "recheck": false,
+   "recheck_why": "pixabay.com answers scripts with a bot check (HTTP 403 on 2026-11-09), so the licence cannot be read again at film time: the record keeps the terms as read on 2026-11-09 and each sound's own page, read the same day, which named the Pixabay Content License",
+   "limits": "use inside a larger work (a film); never sell or distribute the file on its own (no standalone distribution, so the audio is never committed: the film fetches it from Motionstash's shared folder); no sound that names or imitates a brand, a game or a device (the licence leaves trademarks and third-party rights to the user)"
   }
  },
  "not_used": [
   {
    "source": "Pixabay sound effects",
-   "why": "its licence allows commercial use without a credit, but its pages and downloads answer scripts with a bot check (HTTP 403 on 2026-11-04), so a film cannot fetch them without a browser and an account"
+   "why": "its licence allows commercial use without a credit, but pixabay.com answers scripts with a bot check (HTTP 403 on 2026-11-04 and 2026-11-09), so a film cannot search or download from Pixabay itself; the Pixabay sounds Motionstash picked and shared come from their shared folder instead (source pixabay-motionstash)"
   },
   {
    "source": "Freesound",
@@ -4281,6 +4302,906 @@
     "verdict": "strong",
     "top_alt": "a cheap synthesizer laser zap"
    }
+  },
+  {
+   "id": "pixabay-230554",
+   "source": "pixabay-motionstash",
+   "title": "woosh",
+   "creator": "RibhavAgrawal",
+   "role": "whoosh.short",
+   "page": "https://pixabay.com/sound-effects/woosh-230554/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1WRPcnltv91874A9cqhekmGbj-HamtBYc&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "peak",
+   "dur_s": 1.1494,
+   "end_s": 1.009,
+   "onset_ms": 408.5,
+   "lead_ms": 29.5,
+   "peak_ms": 451.4,
+   "peak_db": -0.1,
+   "lufs": -15,
+   "l50_db": -8.6,
+   "floor_db": -63.4,
+   "centroid_hz": 2895,
+   "channels": 2,
+   "sr": 44100,
+   "tags": [
+    "warm",
+    "medium",
+    "soft",
+    "whoosh"
+   ],
+   "ear": {
+    "query": "a quick clean air whoosh",
+    "p": 1,
+    "verdict": "strong",
+    "top_alt": "a cheap synthesizer laser zap"
+   }
+  },
+  {
+   "id": "pixabay-383769",
+   "source": "pixabay-motionstash",
+   "title": "Swoosh 015",
+   "creator": "Universfield",
+   "role": "whoosh.short",
+   "page": "https://pixabay.com/sound-effects/swoosh-015-383769/",
+   "file_url": "https://drive.usercontent.google.com/download?id=14dJkv0P1ZdJfRFTz85MC627OzqFCCart&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "peak",
+   "dur_s": 1.056,
+   "end_s": 0.7981,
+   "onset_ms": 286.1,
+   "lead_ms": 111.4,
+   "peak_ms": 501.4,
+   "peak_db": -1.9,
+   "lufs": -19.4,
+   "l50_db": -11.6,
+   "floor_db": -84.5,
+   "centroid_hz": 1444,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "warm",
+    "medium",
+    "soft",
+    "whoosh"
+   ],
+   "ear": {
+    "query": "a quick clean air whoosh",
+    "p": 1,
+    "verdict": "strong",
+    "top_alt": "a cheap synthesizer laser zap"
+   }
+  },
+  {
+   "id": "pixabay-454830",
+   "source": "pixabay-motionstash",
+   "title": "Swoosh 023",
+   "creator": "Universfield",
+   "role": "whoosh.medium",
+   "page": "https://pixabay.com/sound-effects/swoosh-023-454830/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1ORg6Ev9cDSL0inGI1gfEXo6YgcGtLXkR&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "peak",
+   "dur_s": 1.272,
+   "end_s": 1.1102,
+   "onset_ms": 188.3,
+   "lead_ms": 63.2,
+   "peak_ms": 472.7,
+   "peak_db": -3.7,
+   "lufs": -15.7,
+   "l50_db": -11.6,
+   "floor_db": -92.7,
+   "centroid_hz": 645,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "dark",
+    "medium",
+    "soft",
+    "whoosh"
+   ],
+   "ear": {
+    "query": "a smooth cinematic whoosh transition",
+    "p": 1,
+    "verdict": "strong",
+    "top_alt": "a cheap synthesizer laser zap"
+   }
+  },
+  {
+   "id": "pixabay-433006",
+   "source": "pixabay-motionstash",
+   "title": "Simple Whoosh 02",
+   "creator": "DRAGON-STUDIO",
+   "role": "whoosh.long",
+   "page": "https://pixabay.com/sound-effects/simple-whoosh-02-433006/",
+   "file_url": "https://drive.usercontent.google.com/download?id=11vEnFqtYLVGZClekXCMGwuhMi_eo3NKZ&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "peak",
+   "dur_s": 4.032,
+   "end_s": 3.3602,
+   "onset_ms": 590.5,
+   "lead_ms": 316.9,
+   "peak_ms": 1358.8,
+   "peak_db": 0,
+   "lufs": -12.2,
+   "l50_db": -4.8,
+   "floor_db": -75.4,
+   "centroid_hz": 238,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "dark",
+    "long",
+    "soft",
+    "whoosh"
+   ],
+   "ear": {
+    "query": "a long deep cinematic whoosh",
+    "p": 1,
+    "verdict": "strong",
+    "top_alt": "a cheap synthesizer laser zap"
+   }
+  },
+  {
+   "id": "pixabay-433612",
+   "source": "pixabay-motionstash",
+   "title": "Soft pop SFX",
+   "creator": "OxidVideos",
+   "role": "pop",
+   "page": "https://pixabay.com/sound-effects/soft-pop-sfx-433612/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1IUh4UNOBxvPNxBWHHtHLutdIZJex0yfM&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 0.192,
+   "end_s": 0.1324,
+   "onset_ms": 55.3,
+   "lead_ms": 31.3,
+   "peak_ms": 58.9,
+   "peak_db": -13.8,
+   "lufs": -32.2,
+   "l50_db": -26.1,
+   "floor_db": -90.4,
+   "centroid_hz": 4305,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "bright",
+    "short",
+    "soft",
+    "pop"
+   ],
+   "ear": {
+    "query": "a bubble pop",
+    "p": 0.999,
+    "verdict": "strong",
+    "top_alt": "a cartoon sound effect"
+   }
+  },
+  {
+   "id": "pixabay-188167",
+   "source": "pixabay-motionstash",
+   "title": "Multi Pop 2",
+   "creator": "floraphonic",
+   "role": "pop",
+   "page": "https://pixabay.com/sound-effects/multi-pop-2-188167/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1WC33sj34F1vEo1wJA0iH0vsUhdNquVek&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 0.216,
+   "end_s": 0.1634,
+   "onset_ms": 26,
+   "lead_ms": 1.4,
+   "peak_ms": 106.1,
+   "peak_db": -4.5,
+   "lufs": -18.3,
+   "l50_db": -14.7,
+   "floor_db": -70.9,
+   "centroid_hz": 1119,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "warm",
+    "short",
+    "sharp",
+    "pop"
+   ],
+   "ear": {
+    "query": "a bubble pop",
+    "p": 0.999,
+    "verdict": "strong",
+    "top_alt": "a cartoon sound effect"
+   }
+  },
+  {
+   "id": "pixabay-331049",
+   "source": "pixabay-motionstash",
+   "title": "Pop bubble click sound effect",
+   "creator": "u_edtmwfwu7c",
+   "role": "pop",
+   "page": "https://pixabay.com/sound-effects/pop-331049/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1ah05VxO9g7nM6Jlp8qd-xgpaP-92uZ7Z&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 0.9927,
+   "end_s": 0.3309,
+   "onset_ms": 256.5,
+   "lead_ms": 4,
+   "peak_ms": 260.8,
+   "peak_db": -0.5,
+   "lufs": -16.7,
+   "l50_db": -10.5,
+   "floor_db": -68.4,
+   "centroid_hz": 2710,
+   "channels": 1,
+   "sr": 44100,
+   "tags": [
+    "warm",
+    "short",
+    "sharp",
+    "pop"
+   ],
+   "ear": {
+    "query": "a bubble pop",
+    "p": 0.985,
+    "verdict": "strong",
+    "top_alt": "a cartoon sound effect"
+   }
+  },
+  {
+   "id": "pixabay-197887",
+   "source": "pixabay-motionstash",
+   "title": "UI Pop Up 2",
+   "creator": "floraphonic",
+   "role": "pop",
+   "page": "https://pixabay.com/sound-effects/ui-pop-up-2-197887/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1PeKfOUtWhUQuzLz516aYdlRQGvcn9-gu&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 0.456,
+   "end_s": 0.1276,
+   "onset_ms": 23.4,
+   "lead_ms": 0.1,
+   "peak_ms": 27.2,
+   "peak_db": -0.5,
+   "lufs": -13.6,
+   "l50_db": -8.5,
+   "floor_db": -160,
+   "centroid_hz": 1229,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "warm",
+    "short",
+    "sharp",
+    "pop"
+   ],
+   "ear": {
+    "query": "a bubble pop",
+    "p": 0.814,
+    "verdict": "strong",
+    "top_alt": "a cartoon sound effect"
+   }
+  },
+  {
+   "id": "pixabay-348820",
+   "source": "pixabay-motionstash",
+   "title": "soft subtle ui pop sfx",
+   "creator": "abhicreates",
+   "role": "pop",
+   "page": "https://pixabay.com/sound-effects/soft-subtle-ui-pop-sfx-348820/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1yfC5Vnr848blcy5eaCC5rtnq8HZbPaDi&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 0.5747,
+   "end_s": 0.5132,
+   "onset_ms": 58.5,
+   "lead_ms": 8.4,
+   "peak_ms": 120.1,
+   "peak_db": -2.1,
+   "lufs": -18.2,
+   "l50_db": -11.1,
+   "floor_db": -79.8,
+   "centroid_hz": 714,
+   "channels": 2,
+   "sr": 44100,
+   "tags": [
+    "dark",
+    "medium",
+    "soft",
+    "pop"
+   ],
+   "ear": {
+    "query": "a bubble pop",
+    "p": 0.984,
+    "verdict": "plausible",
+    "top_alt": "a cartoon sound effect"
+   }
+  },
+  {
+   "id": "pixabay-254777",
+   "source": "pixabay-motionstash",
+   "title": "Bubble",
+   "creator": "linhmitto",
+   "role": "pop",
+   "page": "https://pixabay.com/sound-effects/bubble-254777/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1r8VhBh05ceg05Q8-Ry6X9eeSrqLYETz_&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 0.6792,
+   "end_s": 0.5332,
+   "onset_ms": 84,
+   "lead_ms": 30.8,
+   "peak_ms": 471.2,
+   "peak_db": -5.5,
+   "lufs": -18.8,
+   "l50_db": -17.5,
+   "floor_db": -160,
+   "centroid_hz": 1106,
+   "channels": 2,
+   "sr": 44100,
+   "tags": [
+    "warm",
+    "medium",
+    "soft",
+    "pop"
+   ],
+   "ear": {
+    "query": "a bubble pop",
+    "p": 0.665,
+    "verdict": "strong",
+    "top_alt": "a cartoon sound effect"
+   }
+  },
+  {
+   "id": "pixabay-359721",
+   "source": "pixabay-motionstash",
+   "title": "UI Sounds pack 3 (7)",
+   "creator": "47313572",
+   "role": "click.soft",
+   "page": "https://pixabay.com/sound-effects/ui-sounds-pack-3-7-359721/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1IPyXmaMNk7AD-TmAgGZwLufwewd1kHLc&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 0.1306,
+   "end_s": 0.0851,
+   "onset_ms": 39.8,
+   "lead_ms": 0.7,
+   "peak_ms": 52.7,
+   "peak_db": -16.9,
+   "lufs": -32,
+   "l50_db": -27.4,
+   "floor_db": -160,
+   "centroid_hz": 1924,
+   "channels": 2,
+   "sr": 44100,
+   "tags": [
+    "warm",
+    "short",
+    "sharp",
+    "click"
+   ],
+   "ear": {
+    "query": "a soft modern user interface click",
+    "p": 1,
+    "verdict": "strong",
+    "top_alt": "a cheap synthesizer laser zap"
+   }
+  },
+  {
+   "id": "pixabay-358892",
+   "source": "pixabay-motionstash",
+   "title": "UI Sounds Pack 2 Sound (8)",
+   "creator": "47313572",
+   "role": "click.soft",
+   "page": "https://pixabay.com/sound-effects/ui-sounds-pack-2-sound-8-358892/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1g_EzM_uahsmpFTD5pn6HQsleW_k9hpqI&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 0.9404,
+   "end_s": 0.4606,
+   "onset_ms": 208.2,
+   "lead_ms": 18.1,
+   "peak_ms": 341.5,
+   "peak_db": 0,
+   "lufs": -12.2,
+   "l50_db": -7.7,
+   "floor_db": -160,
+   "centroid_hz": 590,
+   "channels": 2,
+   "sr": 44100,
+   "tags": [
+    "dark",
+    "medium",
+    "soft",
+    "click"
+   ],
+   "ear": {
+    "query": "a soft modern user interface click",
+    "p": 0.903,
+    "verdict": "strong",
+    "top_alt": "a cheap synthesizer laser zap"
+   }
+  },
+  {
+   "id": "pixabay-333525",
+   "source": "pixabay-motionstash",
+   "title": "Plop",
+   "creator": "CreatorsHome",
+   "role": "click.soft",
+   "page": "https://pixabay.com/sound-effects/plop-333525/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1AyoaCt75jRw57HpWzofmUiYzZ6xA_Uzk&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 0.336,
+   "end_s": 0.2928,
+   "onset_ms": 49.7,
+   "lead_ms": 3,
+   "peak_ms": 52.8,
+   "peak_db": -4.2,
+   "lufs": -21,
+   "l50_db": -17.6,
+   "floor_db": -73.5,
+   "centroid_hz": 2025,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "warm",
+    "short",
+    "sharp",
+    "click"
+   ],
+   "ear": {
+    "query": "a soft modern user interface click",
+    "p": 0.96,
+    "verdict": "strong",
+    "top_alt": "a cartoon sound effect"
+   }
+  },
+  {
+   "id": "pixabay-476367",
+   "source": "pixabay-motionstash",
+   "title": "bubble_pop_1",
+   "creator": "u_o8xh7gwsrj",
+   "role": "click.soft",
+   "page": "https://pixabay.com/sound-effects/bubble-pop-1-476367/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1hkvap1X73bpLnae2fF8Ut0CyVCyxLWdu&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 0.1045,
+   "end_s": 0.083,
+   "onset_ms": 63.2,
+   "lead_ms": 12.1,
+   "peak_ms": 69.1,
+   "peak_db": -9.4,
+   "lufs": -31.9,
+   "l50_db": -25.3,
+   "floor_db": -111.3,
+   "centroid_hz": 1274,
+   "channels": 2,
+   "sr": 44100,
+   "tags": [
+    "warm",
+    "short",
+    "soft",
+    "click"
+   ],
+   "ear": {
+    "query": "a soft modern user interface click",
+    "p": 0.977,
+    "verdict": "strong",
+    "top_alt": "a cartoon sound effect"
+   }
+  },
+  {
+   "id": "pixabay-463065",
+   "source": "pixabay-motionstash",
+   "title": "ImmersiveControl Button Click Sound",
+   "creator": "DenielCZ",
+   "role": "tick",
+   "page": "https://pixabay.com/sound-effects/button-click-sound-463065/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1r10vwvzwKZrQmC1tM7nblG1c-d9EKlfX&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 0.048,
+   "end_s": 0.0326,
+   "onset_ms": 26.2,
+   "lead_ms": 0.2,
+   "peak_ms": 28.3,
+   "peak_db": -6.2,
+   "lufs": -31.4,
+   "l50_db": -27.1,
+   "floor_db": -101.6,
+   "centroid_hz": 1810,
+   "channels": 1,
+   "sr": 48000,
+   "tags": [
+    "warm",
+    "short",
+    "sharp",
+    "tick"
+   ],
+   "ear": {
+    "query": "a small mechanical tick, a detent clicking over",
+    "p": 0.954,
+    "verdict": "strong",
+    "top_alt": "a cheap synthesizer laser zap"
+   }
+  },
+  {
+   "id": "pixabay-290204",
+   "source": "pixabay-motionstash",
+   "title": "Mouse click",
+   "creator": "MatthewVakaliuk73627",
+   "role": "click.hard",
+   "page": "https://pixabay.com/sound-effects/mouse-click-290204/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1b4ucWJP2mVFg-HIZWEkNf-FHGG3k4WFz&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 0.3657,
+   "end_s": 0.2047,
+   "onset_ms": 48.2,
+   "lead_ms": 4.6,
+   "peak_ms": 73,
+   "peak_db": -5.4,
+   "lufs": -25.8,
+   "l50_db": -23.8,
+   "floor_db": -160,
+   "centroid_hz": 4925,
+   "channels": 2,
+   "sr": 44100,
+   "tags": [
+    "bright",
+    "short",
+    "sharp",
+    "click"
+   ],
+   "ear": {
+    "query": "a crisp hard mouse click",
+    "p": 0.985,
+    "verdict": "plausible",
+    "top_alt": "a video game blip"
+   }
+  },
+  {
+   "id": "pixabay-352734",
+   "source": "pixabay-motionstash",
+   "title": "Computer Mouse Click",
+   "creator": "Universfield",
+   "role": "click.hard",
+   "page": "https://pixabay.com/sound-effects/computer-mouse-click-352734/",
+   "file_url": "https://drive.usercontent.google.com/download?id=18cu3mDCJBPQgI867VSFWPvTfS4W7lZM_&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 0.648,
+   "end_s": 0.4126,
+   "onset_ms": 160.7,
+   "lead_ms": 6.6,
+   "peak_ms": 163.2,
+   "peak_db": -13.5,
+   "lufs": -33.4,
+   "l50_db": -31.8,
+   "floor_db": -96.6,
+   "centroid_hz": 6807,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "bright",
+    "medium",
+    "sharp",
+    "click"
+   ],
+   "ear": {
+    "query": "a crisp hard mouse click",
+    "p": 0.994,
+    "verdict": "plausible",
+    "top_alt": "a video game blip"
+   }
+  },
+  {
+   "id": "pixabay-394001",
+   "source": "pixabay-motionstash",
+   "title": "Confirm Tap",
+   "creator": "ExistentialTaco",
+   "role": "impact",
+   "page": "https://pixabay.com/sound-effects/confirm-tap-394001/",
+   "file_url": "https://drive.usercontent.google.com/download?id=16hV6Yjn2U1kgFBj561P8r5G9tz4CVYiw&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 1.0971,
+   "end_s": 1.0696,
+   "onset_ms": 50.4,
+   "lead_ms": 1.6,
+   "peak_ms": 70.7,
+   "peak_db": -3.1,
+   "lufs": -17.7,
+   "l50_db": -11.5,
+   "floor_db": -80.8,
+   "centroid_hz": 1877,
+   "channels": 2,
+   "sr": 44100,
+   "tags": [
+    "warm",
+    "medium",
+    "sharp",
+    "impact"
+   ],
+   "ear": {
+    "query": "a soft low thump",
+    "p": 0.995,
+    "verdict": "plausible",
+    "top_alt": "a cartoon sound effect"
+   }
+  },
+  {
+   "id": "pixabay-268902",
+   "source": "pixabay-motionstash",
+   "title": "Shine 1",
+   "creator": "BenKirb",
+   "role": "notification",
+   "page": "https://pixabay.com/sound-effects/shine-1-268902/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1Ch62IR9YZHZmERauwR7qhauMGiR8xRvd&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 4.128,
+   "end_s": 2.4976,
+   "onset_ms": 64.6,
+   "lead_ms": 5.1,
+   "peak_ms": 184.9,
+   "peak_db": -19.2,
+   "lufs": -30.1,
+   "l50_db": -28.1,
+   "floor_db": -100.1,
+   "centroid_hz": 5188,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "bright",
+    "long",
+    "sharp",
+    "notification"
+   ],
+   "ear": {
+    "query": "a success chime",
+    "p": 0.999,
+    "verdict": "strong",
+    "top_alt": "a cheap synthesizer laser zap"
+   }
+  },
+  {
+   "id": "pixabay-363676",
+   "source": "pixabay-motionstash",
+   "title": "New Notification 013",
+   "creator": "Universfield",
+   "role": "notification",
+   "page": "https://pixabay.com/sound-effects/new-notification-013-363676/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1Sb-EpqIUT9RUgp2ic6hrV-ds1IpHPfl3&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 1.08,
+   "end_s": 0.4965,
+   "onset_ms": 79.5,
+   "lead_ms": 1.7,
+   "peak_ms": 138.2,
+   "peak_db": -7.7,
+   "lufs": -16.4,
+   "l50_db": -16.9,
+   "floor_db": -97.4,
+   "centroid_hz": 3186,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "warm",
+    "medium",
+    "sharp",
+    "notification"
+   ],
+   "ear": {
+    "query": "a success chime",
+    "p": 0.99,
+    "verdict": "strong",
+    "top_alt": "a cheesy comedy sound"
+   }
+  },
+  {
+   "id": "pixabay-363675",
+   "source": "pixabay-motionstash",
+   "title": "New Notification 012",
+   "creator": "Universfield",
+   "role": "notification",
+   "page": "https://pixabay.com/sound-effects/new-notification-012-363675/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1G_hbD85-ih4TMvlcomN93rCwG01WopSX&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 1.056,
+   "end_s": 0.812,
+   "onset_ms": 68.6,
+   "lead_ms": 11.7,
+   "peak_ms": 165.8,
+   "peak_db": -4.4,
+   "lufs": -18.4,
+   "l50_db": -15,
+   "floor_db": -97.1,
+   "centroid_hz": 3720,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "bright",
+    "medium",
+    "soft",
+    "notification"
+   ],
+   "ear": {
+    "query": "a clean modern notification tone",
+    "p": 0.984,
+    "verdict": "strong",
+    "top_alt": "a cheesy comedy sound"
+   }
+  },
+  {
+   "id": "pixabay-352461",
+   "source": "pixabay-motionstash",
+   "title": "New Notification 08",
+   "creator": "Universfield",
+   "role": "notification",
+   "page": "https://pixabay.com/sound-effects/new-notification-08-352461/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1bPs4Zzq3VH3wSDOxz4AIGNez6Ly4aTdz&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 1.128,
+   "end_s": 0.8276,
+   "onset_ms": 81.6,
+   "lead_ms": 4.2,
+   "peak_ms": 134.5,
+   "peak_db": -4.1,
+   "lufs": -19.8,
+   "l50_db": -14.4,
+   "floor_db": -91.5,
+   "centroid_hz": 2537,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "warm",
+    "medium",
+    "sharp",
+    "notification"
+   ],
+   "ear": {
+    "query": "a success chime",
+    "p": 0.998,
+    "verdict": "strong",
+    "top_alt": "a cheesy comedy sound"
+   }
+  },
+  {
+   "id": "pixabay-269292",
+   "source": "pixabay-motionstash",
+   "title": "notification 2",
+   "creator": "47313572",
+   "role": "notification",
+   "page": "https://pixabay.com/sound-effects/notification-2-269292/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1CdNwqjLmVq4Y7FaYQehFhqXVSZ-Roubu&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 2.142,
+   "end_s": 0.4593,
+   "onset_ms": 179.7,
+   "lead_ms": 0.3,
+   "peak_ms": 283.4,
+   "peak_db": -18.2,
+   "lufs": -33.8,
+   "l50_db": -29.4,
+   "floor_db": -160,
+   "centroid_hz": 1792,
+   "channels": 2,
+   "sr": 44100,
+   "tags": [
+    "warm",
+    "medium",
+    "sharp",
+    "notification"
+   ],
+   "ear": {
+    "query": "a success chime",
+    "p": 0.98,
+    "verdict": "strong",
+    "top_alt": "a cheesy comedy sound"
+   }
+  },
+  {
+   "id": "pixabay-352705",
+   "source": "pixabay-motionstash",
+   "title": "New Notification 09",
+   "creator": "Universfield",
+   "role": "notification",
+   "page": "https://pixabay.com/sound-effects/new-notification-09-352705/",
+   "file_url": "https://drive.usercontent.google.com/download?id=11bctNZvOP3z8G5qgLHAMpOEf9VpriXMi&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 1.152,
+   "end_s": 0.7902,
+   "onset_ms": 102.4,
+   "lead_ms": 3.3,
+   "peak_ms": 274.8,
+   "peak_db": -2.8,
+   "lufs": -13.2,
+   "l50_db": -11.7,
+   "floor_db": -85.2,
+   "centroid_hz": 1691,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "warm",
+    "medium",
+    "sharp",
+    "notification"
+   ],
+   "ear": {
+    "query": "a clean modern notification tone",
+    "p": 0.899,
+    "verdict": "strong",
+    "top_alt": "a cheesy comedy sound"
+   }
+  },
+  {
+   "id": "pixabay-371229",
+   "source": "pixabay-motionstash",
+   "title": "Keyboard Typing Fast",
+   "creator": "VirtualZero",
+   "role": "typing",
+   "page": "https://pixabay.com/sound-effects/keyboard-typing-fast-371229/",
+   "file_url": "https://drive.usercontent.google.com/download?id=1mmTN1jvU6BTqxQgdGf2lrUN0wGdMFYQF&export=download",
+   "format": "mp3",
+   "licence": "pixabay-motionstash",
+   "align": "onset",
+   "dur_s": 8.0457,
+   "end_s": 8.0275,
+   "onset_ms": 73,
+   "lead_ms": 30.7,
+   "peak_ms": 7973.7,
+   "peak_db": 0,
+   "lufs": -20.5,
+   "l50_db": -16.4,
+   "floor_db": -47.1,
+   "centroid_hz": 4694,
+   "channels": 2,
+   "sr": 44100,
+   "tags": [
+    "bright",
+    "long",
+    "soft",
+    "typing"
+   ],
+   "ear": {
+    "query": "a single keyboard key press",
+    "p": 1,
+    "verdict": "strong",
+    "top_alt": "a cheap synthesizer laser zap"
+   }
   }
  ],
  "rejected": [
@@ -4838,6 +5759,408 @@
    "id": "mixkit-911",
    "role": "notification",
    "why": "earshot heard \"a video game blip\" over \"a clean modern notification tone\" (p 0.248)"
+  },
+  {
+   "id": "motionstash-app-click-1",
+   "role": null,
+   "title": "App Click 1",
+   "why": "no Pixabay id in its name and no other source found: its origin and licence cannot be checked"
+  },
+  {
+   "id": "motionstash-app-click-11",
+   "role": null,
+   "title": "App Click 11",
+   "why": "no Pixabay id in its name and no other source found: its origin and licence cannot be checked"
+  },
+  {
+   "id": "motionstash-clash-royale-king-cry",
+   "role": null,
+   "title": "clash-royale-king-cry",
+   "why": "a sound from the game Clash Royale (Supercell): a game's own sound, not licensable"
+  },
+  {
+   "id": "pixabay-99325",
+   "role": null,
+   "title": "ipad_click-99325",
+   "why": "named as an Apple device or system sound (iPhone, iPad): a rip of a brand's own sound"
+  },
+  {
+   "id": "pixabay-336778",
+   "role": null,
+   "title": "iphone-keyboard-typing-sound-effect-336778",
+   "why": "named as an Apple device or system sound (iPhone, iPad): a rip of a brand's own sound"
+  },
+  {
+   "id": "pixabay-218138",
+   "role": null,
+   "title": "mensaje-de-texto-iphone-218138",
+   "why": "named as an Apple device or system sound (iPhone, iPad): a rip of a brand's own sound"
+  },
+  {
+   "id": "pixabay-391098",
+   "role": null,
+   "title": "son_duquotidient-message-envoye-iphone-apple-391098",
+   "why": "named as an Apple device or system sound (iPhone, iPad): a rip of a brand's own sound"
+  },
+  {
+   "id": "pixabay-228100",
+   "role": null,
+   "title": "nightfall-future-bass-music-228100",
+   "why": "a music track, not an effect (cinetic plays licensed tracks through music.mjs)"
+  },
+  {
+   "id": "motionstash-smartphone-notification",
+   "role": null,
+   "title": "smartphone-notification",
+   "why": "no Pixabay id in its name and no other source found: its origin and licence cannot be checked"
+  },
+  {
+   "id": "pixabay-360034",
+   "role": null,
+   "title": "tiktok_drop_sample_click3_kofi_by_miraclei-360034",
+   "why": "named for a brand (TikTok): may not play in a commercial film under the Pixabay licence"
+  },
+  {
+   "id": "pixabay-358894",
+   "role": null,
+   "title": "47313572-ui-sounds-pack-2-sound-7-358894",
+   "why": "earshot hears \"a soft modern user interface click\" (strong, p 0.86), but the kit's listening flags it (a cheap alternative, a video game blip, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-352449",
+   "role": null,
+   "title": "bright-notification-352449",
+   "why": "masked by the music in 4 of 4 real tracks at its role's level (score.py would call it buried)"
+  },
+  {
+   "id": "pixabay-272427",
+   "role": null,
+   "title": "bubble-pops-272427",
+   "why": "earshot hears \"a bubble pop\" (strong, p 1.00), but the kit's listening flags it (a cheap alternative, a cheap synthesizer laser zap, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-202966",
+   "role": null,
+   "title": "button-202966",
+   "why": "masked by the music in 4 of 4 real tracks at its role's level (score.py would call it buried)"
+  },
+  {
+   "id": "pixabay-328170",
+   "role": null,
+   "title": "creatorshome-sharp-pop-328170",
+   "why": "earshot hears \"a bubble pop\" (strong, p 1.00), but the kit's listening flags it (a cheap alternative, a cartoon sound effect, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-91468",
+   "role": null,
+   "title": "flipcard-91468",
+   "why": "masked by the music in 3 of 4 real tracks at its role's level (score.py would call it buried)"
+  },
+  {
+   "id": "pixabay-418728",
+   "role": null,
+   "title": "flowing-water-sound-effect-418728",
+   "why": "no kind fits: earshot's best read is \"a plucked or struck bell note\" (no match, p 0.92; 15.9 s)"
+  },
+  {
+   "id": "pixabay-6733",
+   "role": null,
+   "title": "freesound_community-appearance-effect-6733",
+   "why": "no kind fits: earshot's best read is \"a reverse swell\" (weak, p 0.42; 3.9 s)"
+  },
+  {
+   "id": "pixabay-317318",
+   "role": null,
+   "title": "game-start-317318",
+   "why": "earshot hears a notification, but the kit's listening hears a video-game sound"
+  },
+  {
+   "id": "pixabay-311809",
+   "role": null,
+   "title": "glitch-fx-transitions-8-311809",
+   "why": "no kind fits: earshot's best read is \"a camera shutter click\" (weak, p 0.88; 2.4 s)"
+  },
+  {
+   "id": "pixabay-351298",
+   "role": null,
+   "title": "happy-message-ping-351298",
+   "why": "earshot hears \"a clean modern notification tone\" (plausible, p 0.28), but the kit's listening flags it (a cheap alternative, a cheesy comedy sound, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-218128",
+   "role": null,
+   "title": "interface-digital-de-texto-text-digital-interface-218128",
+   "why": "earshot hears \"a small mechanical tick, a detent clicking over\" (strong, p 1.00), but the kit's listening flags it (a cheap alternative, a cheap synthesizer laser zap, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-188149",
+   "role": null,
+   "title": "marimba-bloop-2-188149",
+   "why": "earshot hears \"a bright glass shimmer chime\" (plausible, p 0.51), but the kit's listening flags it (a cheap alternative, a cheesy comedy sound, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-188151",
+   "role": null,
+   "title": "marimba-bloop-3-188151",
+   "why": "no kind fits: earshot's best read is \"a bubble pop\" (weak, p 0.41; 2.0 s)"
+  },
+  {
+   "id": "pixabay-198311",
+   "role": null,
+   "title": "minimal-pop-click-ui-11-198311",
+   "why": "earshot hears \"a soft modern user interface click\" (plausible, p 0.15), but the kit's listening flags it (a cheap alternative, a cartoon sound effect, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-269290",
+   "role": null,
+   "title": "notification-pluck-off-269290",
+   "why": "earshot hears \"a soft modern user interface click\" (plausible, p 0.95), but the kit's listening flags it (a cheap alternative, a video game blip, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-333292",
+   "role": null,
+   "title": "phone-typing-333292",
+   "why": "no kind fits: earshot's best read is \"a crisp hard mouse click\" (no match, p 0.97; 24.2 s)"
+  },
+  {
+   "id": "pixabay-269283",
+   "role": null,
+   "title": "pop-2-269283",
+   "why": "the one pop earshot does not flag as \"a soft pop\", but masked by the music in 3 of 4 real tracks at its role's level"
+  },
+  {
+   "id": "pixabay-402324",
+   "role": null,
+   "title": "pop-402324",
+   "why": "earshot hears \"a bubble pop\" (strong, p 0.56), but the kit's listening flags it (a cheap alternative, a cartoon sound effect, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-423716",
+   "role": null,
+   "title": "pop-sound-423716",
+   "why": "earshot hears \"a bubble pop\" (strong, p 1.00), but the kit's listening flags it (a cheap alternative, a cartoon sound effect, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-332448",
+   "role": null,
+   "title": "pop-up-notify-smooth-modern-332448",
+   "why": "masked by the music in 4 of 4 real tracks at its role's level (score.py would call it buried)"
+  },
+  {
+   "id": "pixabay-230502",
+   "role": null,
+   "title": "quick-double-swish-sfx-230502",
+   "why": "earshot hears \"a quick clean air whoosh\" (strong, p 1.00), but the kit's listening flags it (a cheap alternative, a cheap synthesizer laser zap, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-340131",
+   "role": null,
+   "title": "rope-creak-01-sound-effect-340131",
+   "why": "no kind fits: earshot's best read is \"a card or a sheet landing on a table\" (no match, p 0.49; 1.3 s)"
+  },
+  {
+   "id": "pixabay-350830",
+   "role": null,
+   "title": "sci-fi-sfx-1-350830",
+   "why": "no kind fits: earshot's best read is \"a camera shutter click\" (weak, p 0.99; 1.7 s)"
+  },
+  {
+   "id": "pixabay-350839",
+   "role": null,
+   "title": "sci-fi-sfx-13-350839",
+   "why": "earshot hears \"a punchy deep impact hit\" (strong, p 0.48), but the kit's listening flags it (a cheap alternative, a cheap synthesizer laser zap, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-350829",
+   "role": null,
+   "title": "sci-fi-sfx-4-350829",
+   "why": "earshot hears \"a camera shutter click\" (plausible, p 0.32), but the kit's listening flags it (a cheap alternative, a cheap synthesizer laser zap, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-350834",
+   "role": null,
+   "title": "sci-fi-sfx-7-350834",
+   "why": "earshot hears \"a camera shutter click\" (plausible, p 0.05), but the kit's listening flags it (a cheap alternative, a cheap synthesizer laser zap, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-363730",
+   "role": null,
+   "title": "sfx-acceptation-363730",
+   "why": "earshot hears \"a big cinematic logo impact\" (plausible, p 0.03), but the kit's listening flags it (a cheap alternative, a cheesy comedy sound, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-363728",
+   "role": null,
+   "title": "sfx-erreur-363728",
+   "why": "no kind fits: earshot's best read is \"one clean low hit under a logo\" (no match, p 0.27; 0.9 s)"
+  },
+  {
+   "id": "pixabay-268910",
+   "role": null,
+   "title": "shine-6-268910",
+   "why": "earshot hears \"a clean modern notification tone\" (strong, p 0.74), but the kit's listening flags it (a cheap alternative, a cheesy comedy sound, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-383737",
+   "role": null,
+   "title": "simple-pop-noise-383737",
+   "why": "earshot hears \"a bubble pop\" (strong, p 0.92), but the kit's listening flags it (a cheap alternative, a cartoon sound effect, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-382724",
+   "role": null,
+   "title": "simple-whoosh-382724",
+   "why": "earshot hears \"a quick clean air whoosh\" (strong, p 1.00), but the kit's listening flags it (a cheap alternative, a cheap synthesizer laser zap, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-451232",
+   "role": null,
+   "title": "soft-ui-pop-light-minimal-click-451232",
+   "why": "earshot hears \"a clean modern notification tone\" (strong, p 0.91), but the kit's listening flags it (a cheap alternative, a cheesy comedy sound, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-95840",
+   "role": null,
+   "title": "sonar-ping-95840",
+   "why": "earshot hears \"a success chime\" (strong, p 0.58), but the kit's listening flags it (a cheap alternative, a video game blip, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-340660",
+   "role": null,
+   "title": "success-340660",
+   "why": "earshot hears \"a clean modern notification tone\" (strong, p 0.73), but the kit's listening flags it (a cheap alternative, a cheesy comedy sound, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-352856",
+   "role": null,
+   "title": "swoosh-010-352856",
+   "why": "a clean whoosh, but buried deeper over the music beds than every whoosh already in the catalogue (median -5.9 dB over the bed)"
+  },
+  {
+   "id": "pixabay-383768",
+   "role": null,
+   "title": "swoosh-014-383768",
+   "why": "a forward swoosh earshot hears as a swell; the catalogue's swells are real recordings played in reverse, and its whoosh kinds already hold two Universfield swooshes of the same set"
+  },
+  {
+   "id": "pixabay-351021",
+   "role": null,
+   "title": "swoosh-06-351021",
+   "why": "earshot hears \"a quick clean air whoosh\" (strong, p 1.00), but the kit's listening flags it (a cheap alternative, a cheap synthesizer laser zap, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-359826",
+   "role": null,
+   "title": "swoosh-2-359826",
+   "why": "a clean whoosh, but buried deeper over the music beds than every whoosh already in the catalogue (median -6 dB over the bed)"
+  },
+  {
+   "id": "pixabay-149890",
+   "role": null,
+   "title": "swoosh-sound-effect-for-fight-scenes-or-transitions-2-149890",
+   "why": "earshot hears \"a quick clean air whoosh\" (strong, p 1.00), but the kit's listening flags it (a cheap alternative, a cheap synthesizer laser zap, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-30218",
+   "role": null,
+   "title": "text-sound-4-30218",
+   "why": "earshot hears \"a small mechanical tick, a detent clicking over\" (strong, p 1.00), but the kit's listening flags it (a cheap alternative, a cheap synthesizer laser zap, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-299883",
+   "role": null,
+   "title": "ui-interface-sound-26-299883",
+   "why": "earshot hears \"a big cinematic logo impact\" (plausible, p 0.08), but the kit's listening flags it (a cheap alternative, a cheap synthesizer laser zap, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-316482",
+   "role": null,
+   "title": "ui-pop-sound-316482",
+   "why": "masked by the music in 3 of 4 real tracks at its role's level (score.py would call it buried)"
+  },
+  {
+   "id": "pixabay-230495",
+   "role": null,
+   "title": "ui-processing-data-sequence-modern-interface-progress-02-230495",
+   "why": "no kind fits: earshot's best read is \"a small mechanical tick, a detent clicking over\" (no match, p 0.71; 12.1 s)"
+  },
+  {
+   "id": "pixabay-374229",
+   "role": null,
+   "title": "ui-sound-2-374229",
+   "why": "masked by the music in 3 of 4 real tracks at its role's level (score.py would call it buried)"
+  },
+  {
+   "id": "pixabay-270349",
+   "role": null,
+   "title": "ui-sound-270349",
+   "why": "masked by the music in 4 of 4 real tracks at its role's level (score.py would call it buried)"
+  },
+  {
+   "id": "pixabay-374228",
+   "role": null,
+   "title": "ui-sound-374228",
+   "why": "earshot hears \"a clean modern notification tone\" (strong, p 0.91), but the kit's listening flags it (a cheap alternative, a cheesy comedy sound, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-270300",
+   "role": null,
+   "title": "ui-sound-off-270300",
+   "why": "earshot hears \"a soft modern user interface click\" (strong, p 0.98), but the kit's listening flags it (a cheap alternative, a cheesy comedy sound, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-358893",
+   "role": null,
+   "title": "ui-sounds-pack-2-sound-1-358893",
+   "why": "no kind fits: earshot's best read is \"one clean low hit under a logo\" (weak, p 0.94; 2.1 s)"
+  },
+  {
+   "id": "pixabay-358896",
+   "role": null,
+   "title": "ui-sounds-pack-2-sound-2-358896",
+   "why": "earshot hears \"a reverse swell\" (strong, p 0.99), but the kit's listening flags it (a cheap alternative, a cartoon sound effect, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-358895",
+   "role": null,
+   "title": "ui-sounds-pack-2-sound-4-358895",
+   "why": "earshot hears \"a soft modern user interface click\" (strong, p 0.05), but the kit's listening flags it (a cheap alternative, a cheesy comedy sound, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-358891",
+   "role": null,
+   "title": "ui-sounds-pack-2-sound-6-358891",
+   "why": "earshot hears \"a clean modern notification tone\" (strong, p 0.17), but the kit's listening flags it (a cheap alternative, a cartoon sound effect, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-36061",
+   "role": null,
+   "title": "ui_sci-fi-sound-36061",
+   "why": "earshot hears \"a clean modern notification tone\" (strong, p 0.75), but the kit's listening flags it (a cheap alternative, a video game blip, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-232536",
+   "role": null,
+   "title": "victorabdo-spin-232536",
+   "why": "no kind fits: earshot's best read is \"a soft modern user interface click\" (weak, p 1.00; 3.7 s)"
+  },
+  {
+   "id": "pixabay-243483",
+   "role": null,
+   "title": "whoosh-arrow-start-243483",
+   "why": "earshot hears \"a quick clean air whoosh\" (strong, p 0.98), but the kit's listening flags it (a cheap alternative, a cheesy comedy sound, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-384629",
+   "role": null,
+   "title": "whoosh-end-384629",
+   "why": "earshot hears \"a reverse swell\" (strong, p 1.00), but the kit's listening flags it (a cheap alternative, a cheap synthesizer laser zap, outranks the role's description) or its kind is already full of stronger sounds"
+  },
+  {
+   "id": "pixabay-383019",
+   "role": null,
+   "title": "whoosh-velocity-383019",
+   "why": "a clean whoosh, but buried deeper over the music beds than every whoosh already in the catalogue (median -2 dB over the bed)"
   }
  ]
 }

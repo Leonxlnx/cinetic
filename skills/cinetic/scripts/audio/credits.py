@@ -248,9 +248,13 @@ def effect_records(score, base):
 def effect_line(rec):
     """(credits.md line, description line) of one real effect's valid record"""
     c = classify(rec.get('licence'))
-    return (f'- "{rec.get("title")}" ({rec.get("source")}, {rec.get("page")}): {c["name"]} ({rec.get("licence_url") or c["url"]}), '
-            'no credit required',
-            f'Sound effect: "{rec.get("title")}" ({rec.get("source")})')
+    # the sound's own creator, and whoever picked and shared it (a courtesy: no credit is required)
+    by = f' by {rec["artist"]}' if rec.get('artist') and rec.get('artist') != rec.get('source') else ''
+    via = rec.get('via') if isinstance(rec.get('via'), dict) and rec['via'].get('name') else None
+    thanks = f'; picked and shared by {via["name"]} ({via.get("url")})' if via else ''
+    return (f'- "{rec.get("title")}"{by} ({rec.get("source")}, {rec.get("page")}): {c["name"]} ({rec.get("licence_url") or c["url"]}), '
+            f'no credit required{thanks}',
+            f'Sound effect: "{rec.get("title")}"{by} ({rec.get("source")}{": " + via["url"] if via and via.get("url") else ""})')
 
 
 def records_of(score):
