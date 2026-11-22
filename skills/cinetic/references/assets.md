@@ -20,7 +20,8 @@ A film about a product that works with other products shows them as they are: th
 own mark, the model's own mark. Never redraw one, never stand a generic envelope or spark in for a real logo.
 
 - **Fast path:** `<Brand name="figma" />` draws the mark from Simple Icons, which can lag a brand's redesign (it may still
-  carry a retired mark): for any brand `node scripts/logos.mjs search <name>` shows the current one, and
+  carry a retired mark) and draws every mark in ONE colour: a multicolour mark (Figma, Slack, Google's apps, Microsoft's)
+  needs its official file. For any brand `node scripts/logos.mjs search <name>` shows the current one, and
   `node scripts/logos.mjs check` flags retired marks before the final. The mark from Simple Icons (path data CC0; trademarks belong to their owners)
   in its own colour. `<BrandTile name="figma" />` puts it on an app-icon tile. Names are Simple Icons slugs
   (`github`, `linear`, `notion`, `gmail`, `googlecalendar`, `claude`, `anthropic`, `figma`, `stripe`, `vercel`, `supabase`,

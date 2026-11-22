@@ -57,7 +57,7 @@ export const Music: React.FC<{
   breathLen?: number;
   /** Frame the music enters (silence before it: a quiet opener). */
   enterAt?: number;
-}> = ({ src, startFrom = 0, volume = 0.55, fadeIn = 6, fadeOut = 45, duck = [], duckBy = 0.45, breaths = [], breathLen = 6, enterAt = 0 }) => {
+}> = ({ src, startFrom = 0, volume = 0.55, fadeIn = 1, fadeOut = 45, duck = [], duckBy = 0.45, breaths = [], breathLen = 6, enterAt = 0 }) => {
   const { fps, durationInFrames } = useVideoConfig();
   return (
     <Sequence from={enterAt} layout="none" name="music">

@@ -151,9 +151,10 @@ export const shade = (hex: string, amt: number) => {
 };
 
 /** Film grain: animated, fine, subtle. 0.04-0.08 on dark grounds, 0.03 on light. Always the top layer. */
-export const Grain: React.FC<{ amount?: number; blend?: React.CSSProperties['mixBlendMode'] }> = ({ amount = 0.06, blend = 'overlay' }) => {
+export const Grain: React.FC<{ amount?: number; blend?: React.CSSProperties['mixBlendMode']; still?: boolean }> = ({ amount = 0.06, blend = 'overlay', still = false }) => {
   const frame = useCurrentFrame();
-  const seed = frame % 8;
+  // still: a fixed fibre (paper, card stock); otherwise film grain that moves every frame
+  const seed = still ? 3 : frame % 8;
   return (
     <AbsoluteFill style={{ pointerEvents: 'none', mixBlendMode: blend, opacity: amount * 6 }}>
       <svg width="100%" height="100%">
@@ -366,3 +367,48 @@ export const GlassPanel: React.FC<{ w?: number; h?: number; radius?: number; tin
     {children}
   </div>
 );
+
+/** Paper: a still fibre texture over a flat ground colour (editorial worlds). Put it under the content. */
+export const Paper: React.FC<{ color: string; fibre?: number }> = ({ color, fibre = 0.05 }) => (
+  <AbsoluteFill style={{ background: color }}>
+    <AbsoluteFill style={{ mixBlendMode: 'multiply', opacity: fibre * 8 }}>
+      <svg width="100%" height="100%">
+        <filter id="paper-fibre">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9 0.35" numOctaves="3" seed="7" stitchTiles="stitch" />
+          <feColorMatrix type="matrix" values="0 0 0 0 0.45  0 0 0 0 0.42  0 0 0 0 0.38  0 0 0 0.9 0" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#paper-fibre)" />
+      </svg>
+    </AbsoluteFill>
+  </AbsoluteFill>
+);
+
+/**
+ * A hand-drawn stroke: an SVG path that draws itself from `start` over `dur` frames, with a slight wobble so it reads as
+ * a pen, not a vector. Pass any path `d` (a sketch, an underline, a circle around a word).
+ */
+export const Stroke: React.FC<{ d: string; start: number; dur?: number; color?: string; width?: number; w?: number; h?: number; wobble?: number; style?: React.CSSProperties }> = ({
+  d,
+  start,
+  dur = 18,
+  color = '#2447F0',
+  width = 4,
+  w = 1920,
+  h = 1080,
+  wobble = 1.2,
+  style,
+}) => {
+  const frame = useCurrentFrame();
+  const p = at(frame, start, dur, ease.inOut);
+  const id = `wob${React.useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  if (frame < start) return null;
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible', ...style }}>
+      <filter id={id}>
+        <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="4" />
+        <feDisplacementMap in="SourceGraphic" scale={wobble * 3} />
+      </filter>
+      <path d={d} fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray="1 1" strokeDashoffset={1 - p} filter={`url(#${id})`} />
+    </svg>
+  );
+};

@@ -80,8 +80,8 @@ const style = { transform: `translateY(${mix(p, 80, 0) - q * 900}px) scale(${mix
 **`<Build words={['Your', 'work,', 'handled.']} times={[T.a, T.b, T.c]} born="#hex" style={{ fontSize, color }} />`** an append
 build: each word joins the centred line on its frame (put them on the music's plucks) and the line re-centres with most of
 the travel in the first frames, the new word riding in with it. Widths are measured from the real face.
-**`<Swap items={['design', 'code', 'ship']} start every={24} dur={12} />`** one slot whose word rolls to the next (items may be
-nodes: a mark plus a name).
+**`<Swap items={['design', 'code', 'ship']} start every={24} dur={12} times />`** one slot whose word rolls to the next (items may
+be nodes: a mark plus a name; `times` sets the frame each item takes over).
 **`<Typing text start cps={16} caret placeholder />`** and **`useTyped(text, start, cps)`** (returns `{ shown, done, doneAt }`):
 human cadence with seeded hesitations and pauses after punctuation; `keyFrames` is the frame of every key (put a key
 sound on some of them, drive a caret-following camera from them).
@@ -125,7 +125,9 @@ push and turn to add to a held camera. **`shake(frame, start, dur, amp)`** an im
 - **`lerpBox(p, a, b)`** (motion) one box becoming another: position, size and radius together, so a plate visibly becomes a
   bar that becomes a card.
 - **`<Glow x y r color strength pulse>`** a light sized to its source. **`<Sheen start dur angle>`** a light crossing glass once.
-- **`<Grain amount>`** (always the top layer, 0.03-0.08), **`<Vignette amount color>`**.
+- **`<Grain amount still>`** (always the top layer, 0.03-0.08; `still` for paper fibre), **`<Paper color fibre>`** a still paper
+  ground, **`<Stroke d start dur color width wobble>`** a hand-drawn line that draws itself (sketches, underlines, circles),
+  **`<Vignette amount color>`**.
 
 ## 5. Product UI
 
@@ -142,7 +144,8 @@ Fields: `surface ink muted line fill accent accentInk radius font mono shadow`.
 - **`<StatePill t states={[{ f, label, bg, ink, icon }]}>`**: a label that changes state on its frames (Connect -> Synced): a cut
   with a pop and a colour change. Show UI by state changes when a pointer would be fussy.
 - **`<Cursor keys={[{ f, x, y, curve }]} clicks={[frame]} size start exitAt>`**: a real arrow pointer; paths arc (never straight lines),
-  it leans into fast travel, idles with a 2 px drift at rest, presses dip it. `cursorAt(frame, keys)` gives its position for
+  it leans into fast travel, idles with a 2 px drift at rest, presses dip it; `follow={{ from, to, at: (f) => ({ x, y }) }}` makes it ride a dragged
+  object's own path. `cursorAt(frame, keys)` gives its position for
   things that follow it; `<CursorShadow keys size>` adds a landing shadow that converges as an oversized cursor lands.
 - **`<PartnerSurface t brand file kind="chat|tracker|mail|doc" title items={[{ f, who, text, meta }]} landAt>`**: the
   product's artefact landing inside another product (a message in a channel, an issue in a tracker): a generic surface
@@ -164,6 +167,8 @@ Each takes `from` and `to` (the two shots as nodes), `start`, `dur`, and renders
 - **`<Tiles cols rows order="diagonal" | "center" | "random" | "left" color>`** tiles sweep from the old shot to the new.
 - **`<Pixelate max>`** mosaic up, swap at the peak, resolve. **`<Push dir smear>`** both shots travel as one strip.
 - **`<ZoomThrough x y depth>`** fly into a point until it fills the frame, then the next shot settles from slightly zoomed in.
+- **`<TileFlip front back w h start cols rows wave>`** one element turning into another tile by tile (a sketch into the real
+  card).
 - **`<Flood from={{ x, y, w, h, r }} start dur color under to>`** a ground cut grown from an object's own box (a button, a
   card) until it fills the frame; `to` (the next shot) appears inside it; `source` keeps the object (a URL, a label)
   readable on top while it floods.

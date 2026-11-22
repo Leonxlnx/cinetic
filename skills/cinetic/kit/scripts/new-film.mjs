@@ -29,7 +29,7 @@ const copy = (rel, filter = () => true) => {
 };
 fs.mkdirSync(out, { recursive: true });
 for (const f of ['package.json', 'tsconfig.json', 'remotion.config.ts', '.gitignore']) copy(f);
-copy('scripts');
+copy('scripts', (p) => !p.endsWith('new-film.mjs'));
 copy('src/kit');
 for (const f of ['index.ts', 'Root.tsx', 'Sheet.tsx']) copy(`src/${f}`);
 copy('starter', () => true);

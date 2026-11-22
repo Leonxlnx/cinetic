@@ -226,16 +226,20 @@ export const Swap: React.FC<{
   every?: number;
   dur?: number;
   style?: React.CSSProperties;
-  /** Width animates to each word's width when set to 'auto-ch' (approximate, in ch units). */
+  /** Which way the old word leaves. */
   dir?: 'up' | 'down';
+  /** Exact frames each item takes over (items[i] from times[i]); overrides start + every. */
+  times?: number[];
   blur?: boolean;
-}> = ({ items, start = 0, every = 24, dur = 12, style, dir = 'up', blur = true }) => {
+}> = ({ items, start = 0, every = 24, dur = 12, style, dir = 'up', blur = true, times }) => {
   const frame = useCurrentFrame();
-  const t = frame - start;
-  const idx = Math.max(0, Math.min(items.length - 1, Math.floor(t / every)));
-  const local = t - idx * every;
-  const switching = idx < items.length - 1 && local > every - dur;
-  const p = switching ? ease.inOut((local - (every - dur)) / dur) : 0;
+  // item i takes over at frame takeAt(i); the roll into it starts `dur` frames earlier
+  const takeAt = (i: number) => (times ? times[i] : start + i * every);
+  let idx = 0;
+  for (let i = 0; i < items.length; i++) if (frame >= takeAt(i)) idx = i;
+  const next = idx + 1 < items.length ? takeAt(idx + 1) : Infinity;
+  const switching = next !== Infinity && frame > next - dur;
+  const p = switching ? ease.inOut((frame - (next - dur)) / dur) : 0;
   const s = dir === 'up' ? -1 : 1;
   const cell = (word: React.ReactNode, y: number, o: number, b: number) => (
     <span style={{ position: y === 0 && o === 1 ? 'relative' : 'absolute', left: 0, top: 0, display: 'inline-block', transform: `translateY(${y}em)`, opacity: o, filter: blur && b ? `blur(${b}px)` : undefined, whiteSpace: 'pre' }}>

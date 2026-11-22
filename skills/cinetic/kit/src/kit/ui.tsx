@@ -275,8 +275,19 @@ export const cursorAt = (frame: number, keys: CursorKey[]) => {
   return { x: l.x, y: l.y, v: 0 };
 };
 
-export const Cursor: React.FC<{ keys: CursorKey[]; clicks?: number[]; size?: number; start?: number; exitAt?: number; color?: string; outline?: string }> = ({
+export const Cursor: React.FC<{
+  keys: CursorKey[];
+  clicks?: number[];
+  size?: number;
+  start?: number;
+  exitAt?: number;
+  color?: string;
+  outline?: string;
+  /** While dragging (from..to), the pointer rides the dragged object's own path. */
+  follow?: { from: number; to: number; at: (frame: number) => { x: number; y: number } };
+}> = ({
   keys,
+  follow,
   clicks = [],
   size = 46,
   start = 0,
@@ -288,7 +299,9 @@ export const Cursor: React.FC<{ keys: CursorKey[]; clicks?: number[]; size?: num
   if (frame < start) return null;
   // leaving: it accelerates off toward the bottom-right edge over 12 frames, never just vanishes
   if (exitAt !== undefined && frame >= exitAt + 12) return null;
-  const { x: cx, y: cy, v } = cursorAt(frame, keys);
+  const dragging = follow && frame >= follow.from && frame <= follow.to;
+  const k = dragging && follow ? { ...follow.at(frame), v: 2 } : cursorAt(frame, keys);
+  const { x: cx, y: cy, v } = k;
   // alive at rest: a 2-3 px idle drift; leans a few degrees into fast travel
   const x = cx + (v < 0.5 ? Math.sin(frame / 11) * 2.2 : 0);
   const y = cy + (v < 0.5 ? Math.cos(frame / 13) * 1.6 : 0);

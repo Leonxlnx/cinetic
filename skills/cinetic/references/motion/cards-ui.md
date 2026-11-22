@@ -329,14 +329,13 @@ at the end. A code card can **peek** 30 px at the bottom before rising (`entranc
 - **`Bubble` arrival option:** `arrive="rise"` (cut on at full opacity, 40-70 px below, ease-out) besides the corner spring.
 - **`ThinkingMorph`:** dots pill -> tinted stretch -> sweeping white front -> card growing upward -> streamed text.
 - **`SendGlow`:** input -> blurred colour pill -> sent bubble.
-- **`Spinner`:** stepped 45 deg/frame arc that closes and becomes a check, with a text weight step.
 - **`StatusRows`:** 3-frame push, tinted newest word, top-down collapse.
 - **`Skeleton`** with a band resolve and synced sheen pulses; **`Develop`** layers for cards.
 - **`Cursor` upgrades:** idle drift and tilt wobble, dwell before clicks, a push toward the target on press, tilt into travel,
   enter-from-edge blur, a landing shadow that converges, variants (`arrow` | `hand` | `ibeam` | `character`), and an `end` frame.
 - **`ClickBloom`** and **`ClickDot`** (dot + ring + wash, persistent).
-- **`SelectionBox`**, **`Handles`** (blink, stretch, converge) and **`Marquee`**.
-- **`StatePill`:** Add -> Added style swaps (colour + label, no tween), and **`FieldToButton`**.
+- **`Handles`** (blink, stretch, converge) and **`Marquee`** (the kit has `Selection`, a box with corner handles).
+- **`FieldToButton`** (the kit has `StatePill` for Add -> Added swaps).
 - **`Connector`:** line draw-on with glow, idle fade, travelling dots.
 - **`Terminal` additions:** a multi-select / confirm prompt line type, and a `cursorStep` marker.
 - **`CodeCard`:** syntax-coloured code that can stream N chars or N lines per frame.

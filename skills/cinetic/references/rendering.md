@@ -12,7 +12,7 @@ Treat the user's machine with care.
 | one frame, full size | `node scripts/frames.mjs still --frame 240 --full` | seconds |
 | motion preview | `node scripts/frames.mjs render` (half size) | ~0.2-0.4 s per frame on a laptop CPU |
 | motion check | `node scripts/frames.mjs strip out/main-preview.mp4 --at 7.5 --dur 2` | seconds |
-| final | `node scripts/frames.mjs final` (picture + sound + loudness in one pass) | ~1 s per frame on software GL |
+| final | `node scripts/frames.mjs final` (picture + sound + loudness in one pass) | ~1-2.5 s per frame on software GL (textures, blurs and photos are the slow ones) |
 
 Read every sheet and strip you make (they are images): that is how you see the film. Judge motion from strips of a rendered
 preview, not from single frames.
@@ -27,15 +27,16 @@ preview, not from single frames.
 - **Long finals** (or a machine that limits how long one job may run): render the picture in silent parts, the sound once,
   and mux them:
   ```
-  node scripts/frames.mjs render --final --muted --range 0-399   --out out/part-a.mp4
-  node scripts/frames.mjs render --final --muted --range 400-799 --out out/part-b.mp4
+  node scripts/frames.mjs render --final --muted --range 0-199   --out out/part-a.mp4
+  node scripts/frames.mjs render --final --muted --range 200-399 --out out/part-b.mp4
   node scripts/frames.mjs audio                                   # out/audio.wav, the whole mix
   node scripts/frames.mjs mux out/part-a.mp4 out/part-b.mp4      # out/main.mp4
   ```
   `audio` still steps through every frame (about as long as a half-size preview, ~0.3-0.5 s a frame on a CPU): give it
   its own job. `mux` joins the parts without re-encoding, lays the sound on the picture's own start time (encoders shift the first
   frame by a few ms; joined parts with their own sound drift and click at every seam), and sets the loudness to -16 LUFS
-  with true peaks under -1.5 dBTP. It prints the master's loudness. Split on a scene's first frame.
+  with true peaks under -1.5 dBTP. It prints the master's loudness. Split on a scene's first frame, and size parts by
+  measured speed: time the first part and keep each one under ~70 % of any per-job limit (150-250 frames on a CPU).
 
 ## Master settings
 
