@@ -6,7 +6,7 @@ import { FieldnoteFilm, fieldnoteDuration } from './films/fieldnote/Film';
 import { LumenFilm, lumenDuration } from './films/lumen/Film';
 import { InkwellFilm, inkwellDuration } from './films/inkwell/Film';
 
-export const FILMS: Record<string, { component: React.FC; duration: number; fps: number }> = {
+export const FILMS: Record<string, { component: React.FC; duration: number; fps: number; width?: number; height?: number }> = {
   brief: { component: BriefFilm, duration: briefDuration, fps: 30 },
   forge: { component: ForgeFilm, duration: forgeDuration, fps: 30 },
   fieldnote: { component: FieldnoteFilm, duration: fieldnoteDuration, fps: 30 },

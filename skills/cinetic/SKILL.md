@@ -173,7 +173,7 @@ the artefact landing inside three real surfaces on a coral flood, a pull-back in
 - **An update / changelog film** ("v2.3 is out"): one beat per change, 8-20 s, the [film-grammar.md](references/film-grammar.md#update-film) structure.
 - **A loop for a landing page:** 6-12 s, the last frame continues into the first, no music.
 - **Vertical (9:16) or square:** re-lay out, never crop: compositions stack vertically, type wraps to 2-3 words a line,
-  the camera moves vertically. Set the composition size in `src/Root.tsx` (the Sheet and the kit's layout helpers assume
-1920x1080: lay the film out for its own frame).
+  the camera moves vertically. Give the film its size in `src/films.ts` (`width: 1080, height: 1920`); the sheet and
+  `check` follow it. `fillZoom`, `diveZoom` and `toScreen` take the frame size as their last arguments.
 - **Critique of an existing video:** `frames.mjs check <video>` for the measures, `frames.mjs strip <video> --at ...` for
   moments, then score with [taste.md](references/taste.md).

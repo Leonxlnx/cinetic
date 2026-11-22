@@ -39,7 +39,7 @@ fs.copyFileSync(path.join(kit, 'starter', 'Film.tsx'), path.join(out, 'src', 'fi
 fs.rmSync(path.join(out, 'starter'), { recursive: true, force: true });
 fs.writeFileSync(
   path.join(out, 'src', 'films.ts'),
-  `// The films in this project. Each registers as its own composition (and is reachable by the Sheet).\nimport type React from 'react';\nimport { Film, duration } from './films/main/Film';\n\nexport const FILMS: Record<string, { component: React.FC; duration: number; fps: number }> = {\n  main: { component: Film, duration, fps: 30 },\n};\n`,
+  `// The films in this project. Each registers as its own composition (and is reachable by the Sheet).\nimport type React from 'react';\nimport { Film, duration } from './films/main/Film';\n\nexport const FILMS: Record<string, { component: React.FC; duration: number; fps: number; width?: number; height?: number }> = {\n  // a vertical film: add width: 1080, height: 1920 (and lay the film out for that frame)\n  main: { component: Film, duration, fps: 30 },\n};\n`,
 );
 fs.writeFileSync(path.join(out, 'src', 'sfx.ts'), '// Written by scripts/sfx.mjs get (empty until you fetch sounds).\nexport const sfx = {} as const;\n');
 fs.mkdirSync(path.join(out, 'public'), { recursive: true });

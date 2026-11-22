@@ -10,13 +10,23 @@ export const Sheet: React.FC<{ film?: string; from?: number; to?: number; frames
   const end = to ?? F.duration - 1;
   const n = cols * cols;
   const list = frames ?? Array.from({ length: n }, (_, i) => Math.round(from + ((end - from) * i) / (n - 1)));
-  const w = 1920 / cols;
-  const h = 1080 / cols;
+  // lay the frames out at the film's own aspect (vertical and square films too): pick the grid that shows them biggest
+  const FW = F.width ?? 1920;
+  const FH = F.height ?? 1080;
+  let best = { c: cols, r: Math.ceil(list.length / cols), s: 0 };
+  for (let c = 1; c <= list.length; c++) {
+    const r = Math.ceil(list.length / c);
+    const sc = Math.min(1920 / (c * FW), 1080 / (r * FH));
+    if (sc > best.s) best = { c, r, s: sc };
+  }
+  const gc = best.c;
+  const w = FW * best.s;
+  const h = FH * best.s;
   return (
     <AbsoluteFill style={{ background: '#111' }}>
       {list.map((fr, i) => (
-        <div key={i} style={{ position: 'absolute', left: (i % cols) * w, top: Math.floor(i / cols) * h, width: w, height: h, overflow: 'hidden', outline: '1px solid #000' }}>
-          <div style={{ width: 1920, height: 1080, transform: `scale(${1 / cols})`, transformOrigin: '0 0', position: 'relative' }}>
+        <div key={i} style={{ position: 'absolute', left: (i % gc) * w, top: Math.floor(i / gc) * h, width: w, height: h, overflow: 'hidden', outline: '1px solid #000' }}>
+          <div style={{ width: FW, height: FH, transform: `scale(${best.s})`, transformOrigin: '0 0', position: 'relative' }}>
             <Freeze frame={fr}>
               <F.component />
             </Freeze>
