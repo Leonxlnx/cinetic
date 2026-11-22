@@ -208,6 +208,9 @@ shared WebGL renderer into each view's own canvas, so the 36-frame sheet never r
 `<ThreeCanvas>` per view does). `build(renderer)` makes the scene once; `draw(world, state, renderer)` poses it for a
 frame; keep `state` a small plain object. **`studioEnvironment(renderer, accent)`** is a dark studio of strip lights for
 metal and glass (`scene.environment = ...`, a `MeshPhysicalMaterial` with metalness 1, roughness 0.25-0.35).
+For glass use `transmission` on a `MeshPhysicalMaterial`; anything meant to show inside the glass (a beam, a glow sprite) needs
+`depthTest: false`, or the glass reads opaque. A light ray is a camera-facing ribbon with a soft hot-core and halo texture, not
+a cylinder (tubes show hard edges). GL frames render slowly on the CPU: keep `ss` at 1-1.25 and split finals into short parts.
 Light it from an environment, never flat; dive through it (a tunnel of the same object), tip it into a line or a dial: the
 object carries the film.
 
