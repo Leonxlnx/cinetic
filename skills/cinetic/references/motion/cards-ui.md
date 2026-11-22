@@ -352,7 +352,8 @@ The worked films `forge` and `fieldnote` build their hosts this way (read their 
 **Into the relay (the artefact is born in the beat before):** the thing the product just made (the rewritten sentence, the
 generated chart) lifts off its page as a plate and flies to the anchor in 12-16 f (`ease.inOut`, a small arc, scaling from
 its size on the page to its relay size), while the next ground floods out of the plate's own box (`Flood source={box}`). The
-first host cuts in the frame it lands. The worked film `inkwell` builds this (`Flight`).
+first host cuts in the frame it lands. `<Relay enter={{ f, from: { x, y, scale } }}>` does the flight; the worked film
+`inkwell` builds it by hand with the flood (`Flight`).
 
 **Out of the relay (into a wall):** start the wall on its centre item at the artefact's exact screen size (wall zoom =
 1 / the item's scale, pivot on the item), so the cut matches on the artefact; then pull back in log space and tilt while the

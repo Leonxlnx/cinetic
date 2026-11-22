@@ -398,7 +398,7 @@ export const GlassPanel: React.FC<{ w?: number; h?: number; radius?: number; tin
 );
 
 /** Paper: a still fibre texture over a flat ground colour (editorial worlds). Put it under the content. */
-export const Paper: React.FC<{ color: string; fibre?: number }> = ({ color, fibre = 0.05 }) => (
+export const Paper: React.FC<{ color?: string; fibre?: number }> = ({ color, fibre = 0.05 }) => (
   <AbsoluteFill style={{ background: color }}>
     <AbsoluteFill style={{ mixBlendMode: 'multiply', opacity: fibre * 8 }}>
       <svg width="100%" height="100%">

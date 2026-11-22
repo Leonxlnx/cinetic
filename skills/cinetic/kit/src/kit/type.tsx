@@ -271,7 +271,7 @@ export const Swap: React.FC<{
  * inside words. `cps` sets the average speed.
  */
 /** The frame each character of `text` appears on, typed from `start` at about `cps` characters a second (useTyped's cadence). */
-export const typingTimes = (text: string, start: number, fps = 30, cps = 16, seed = 3, burst?: number) => {
+export const typingTimes = (text: string, start: number, fps = 30, cps = 26, seed = 3, burst?: number) => {
   const per = fps / cps;
   const out: number[] = [];
   let t = start;
@@ -297,7 +297,7 @@ export const typingTimes = (text: string, start: number, fps = 30, cps = 16, see
   return out;
 };
 
-export const useTyped = (text: string, start: number, cps = 16, seed = 3, burst?: number) => {
+export const useTyped = (text: string, start: number, cps = 26, seed = 3, burst?: number) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   if (burst !== undefined) {
@@ -348,7 +348,7 @@ export const Typing: React.FC<{
   placeholderColor?: string;
   /** Type the first `burst` words, then land the rest at once. */
   burst?: number;
-}> = ({ text, start = 0, cps = 16, caret = true, caretColor = 'currentColor', style, placeholder, placeholderColor = 'rgba(128,128,128,.6)', burst }) => {
+}> = ({ text, start = 0, cps = 26, caret = true, caretColor = 'currentColor', style, placeholder, placeholderColor = 'rgba(128,128,128,.6)', burst }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { shown, done, doneAt } = useTyped(text, start, cps, 3, burst);

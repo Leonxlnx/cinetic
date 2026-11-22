@@ -85,7 +85,7 @@ that holds an object in the line: `{ slot: 190, node: <Brand name="claude" size=
 sentence like a word).
 **`<Swap items={['design', 'code', 'ship']} start every={24} dur={12} times />`** one slot whose word rolls to the next (items may
 be nodes: a mark plus a name; `times` sets the frame each item takes over; `enter` brings the first item in).
-**`<Typing text start cps={16} caret placeholder />`** and **`useTyped(text, start, cps)`** (returns `{ shown, done, doneAt }`):
+**`<Typing text start cps={26} caret placeholder />`** and **`useTyped(text, start, cps)`** (returns `{ shown, done, doneAt }`):
 human cadence with seeded hesitations and pauses after punctuation; `burst={3}` types three words and lands the rest at
 once (use it: reading along at typing speed is dead time); `keyFrames` is the frame of every key (put a key
 sound on some of them, drive a caret-following camera from them).
@@ -138,7 +138,7 @@ push and turn to add to a held camera. **`shake(frame, start, dur, amp)`** an im
   bar that becomes a card.
 - **`<Glow x y r color strength pulse>`** a light sized to its source. **`<Sheen start dur angle>`** a light crossing glass once.
 - **`<Grain amount still>`** (always the top layer, 0.03-0.08; `still` for paper fibre), **`<Paper color fibre>`** a still paper
-  ground, **`<Stroke d start dur color width wobble>`** a hand-drawn line that draws itself (sketches, underlines, circles),
+  ground (without `color`: only the fibre, to lay over other layers), **`<Stroke d start dur color width wobble>`** a hand-drawn line that draws itself (sketches, underlines, circles),
   **`<Vignette amount color>`**.
 
 ## 5. Product UI
@@ -161,7 +161,8 @@ Fields: `surface ink muted line fill accent accentInk radius font mono shadow`.
   things that follow it; `<CursorShadow keys size>` adds a landing shadow that converges as an oversized cursor lands.
 - **`<Relay anchor={{ x, y }} artefact={node} hosts={[{ f, node }]} lift>`**: integrations as a relay: the artefact pinned at
   one screen point, the hosts (each a full-frame composition you build: a full-bleed page, a tilted plane, a macro crop)
-  changing behind it on their frames, a small settle at each cut (`pose` on a host tilts the artefact with a tilted host). See [cards-ui.md](motion/cards-ui.md#relay).
+  changing behind it on their frames, a small settle at each cut (`pose` on a host tilts the artefact with a tilted host).
+  `enter={{ f, from: { x, y, scale } }}` flies the artefact in from where the product made it, landing on the first host. See [cards-ui.md](motion/cards-ui.md#relay).
 - **`<PartnerSurface t brand file kind="chat|tracker|mail|doc" title items={[{ f, who, text, meta }]} landAt>`**: the
   product's artefact landing inside another product (a message in a channel, an issue in a tracker): a generic surface
   with that product's real mark in the header; the item at `landAt` arrives lit. Integrations as use, not logo rows.

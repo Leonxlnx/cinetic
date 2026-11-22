@@ -126,6 +126,8 @@ sometimes a held frame) right before the climax and right before the reveal.
 ### 4.2 Shot and beat lengths (30 fps)
 - Statement or title card: 30-45 f. Titles are 2-4 words; nothing on screen should need more than 1.5 s to read.
 - Reading hold for a line: `words / 3 + 0.5` s minimum (a 9-word line: 105 f). Read it aloud at speed to check.
+  At the end the budget wins: a claim of four words or fewer, read while its image still moves, then a lockup of 1.2-2 s
+  with the claim staying as its subline. If the claim needs longer, shorten the claim, never lengthen the ending.
 - Feature chapter: 75-150 f, centrepiece up to 240 f.
 - Genre/flash montages: 9-18 f per shot; holographic texture cuts 2-8 f.
 - Transition beats: 6-12 f (they exist, but you should not notice them as beats).

@@ -199,7 +199,7 @@ export const InputBar: React.FC<{
   style?: React.CSSProperties;
   /** Type the first `burst` words, then land the rest at once. */
   burst?: number;
-}> = ({ t, text, start, w = 1100, size = 34, placeholder = 'Ask anything', cps = 15, leading, sendIcon, sendAt, style, burst }) => {
+}> = ({ t, text, start, w = 1100, size = 34, placeholder = 'Ask anything', cps = 26, leading, sendIcon, sendAt, style, burst }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { shown, done, doneAt } = useTyped(text, start, cps, 3, burst);
@@ -817,11 +817,34 @@ export const Relay: React.FC<{
   hosts: Array<{ f: number; node: React.ReactNode; pose?: string }>;
   /** px the artefact lifts at each cut. */
   lift?: number;
-}> = ({ anchor, artefact, hosts, lift = 14 }) => {
+  /**
+   * The artefact is born in the beat before: from frame `f` it flies from `from` (its centre and scale where the product
+   * made it) to the anchor, landing on the first host's frame. Draw the Relay above the previous scene.
+   */
+  enter?: { f: number; from: { x: number; y: number; scale?: number } };
+}> = ({ anchor, artefact, hosts, lift = 14, enter }) => {
   const frame = useCurrentFrame();
   let i = -1;
   for (let k = 0; k < hosts.length; k++) if (frame >= hosts[k].f) i = k;
-  if (i < 0) return null;
+  if (i < 0) {
+    if (!enter || frame < enter.f || !hosts.length) return null;
+    const p = ease.inOut(clamp((frame - enter.f) / Math.max(1, hosts[0].f - enter.f)));
+    return (
+      <AbsoluteFill style={{ pointerEvents: 'none' }}>
+        <div
+          style={{
+            position: 'absolute',
+            left: mix(p, enter.from.x, anchor.x),
+            top: mix(p, enter.from.y, anchor.y) - Math.sin(Math.PI * p) * lift * 1.5,
+            transform: `translate(-50%, -50%) scale(${mix(p, enter.from.scale ?? 1, 1.05)})`,
+            filter: `drop-shadow(0 ${mix(p, 6, 30)}px ${mix(p, 10, 34)}px rgba(0,0,0,${mix(p, 0.12, 0.3)}))`,
+          }}
+        >
+          {artefact}
+        </div>
+      </AbsoluteFill>
+    );
+  }
   const settle = at(frame, hosts[i].f, 10, ease.out);
   return (
     <AbsoluteFill>

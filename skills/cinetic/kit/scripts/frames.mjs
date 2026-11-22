@@ -285,7 +285,11 @@ if (cmd === 'sheet') {
   const fps = opt('fps', '15');
   const out = opt('out', `out/strip-${at}s.jpg`);
   ensureDir(out);
-  run('ffmpeg', ['-v', 'error', '-y', '-ss', at, '-t', dur, '-i', src, '-vf', `fps=${fps},scale=320:-2,tile=6x6:padding=2`, '-frames:v', '1', '-q:v', '4', '-threads', '2', out]);
+  // the grid fits the frames: few frames are drawn larger, never a sheet that is half black
+  const count = Math.max(1, Math.min(36, Math.ceil(Number(dur) * Number(fps))));
+  const cols = count <= 12 ? Math.min(4, count) : 6;
+  const rows = Math.ceil(count / cols);
+  run('ffmpeg', ['-v', 'error', '-y', '-ss', at, '-t', dur, '-i', src, '-vf', `fps=${fps},scale=${cols === 6 ? 320 : 480}:-2,tile=${cols}x${rows}:padding=2`, '-frames:v', '1', '-q:v', '4', '-threads', '2', out]);
   console.log(`strip: ${out}`);
 } else {
   console.log(fs.readFileSync(new URL(import.meta.url), 'utf8').split('\n').slice(1, 27).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));

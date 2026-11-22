@@ -79,9 +79,11 @@ component per section; see [kit.md](references/kit.md) for the API and the motio
 then the next. Overlap sections: the next one starts while the last one is still leaving. To find a move by what it
 does, search [INDEX.md](references/INDEX.md) (every recipe and section, one line each).
 
-**6. Look at it (after every section, and before you claim anything works).**
+**6. Look at it (after every section, and before you claim anything works).** Type-check first (`npx tsc --noEmit`).
 - `node scripts/frames.mjs sheet` renders the whole film as 36 frozen frames in one still: read the image.
 - `node scripts/frames.mjs sheet --frames 120,126,132,...` zooms in on one moment (a turn, a morph).
+  The sheet shows composition and rhythm, not small type: for any beat with UI text or a label, also render
+  `node scripts/frames.mjs still --frame N` at full size and read the words.
 - `node scripts/frames.mjs render` makes a half-size preview video; `node scripts/frames.mjs strip out/main-preview.mp4 --at 4.2`
   shows a moment at 15 frames a second, so you can judge motion, not just layout.
 - `node scripts/frames.mjs check out/main-preview.mp4` measures the preview against the bar of top studios' films (subject
