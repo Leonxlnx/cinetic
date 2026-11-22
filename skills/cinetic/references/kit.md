@@ -222,7 +222,8 @@ object carries the film.
   whooshes and swells, its peak) lands exactly on frame `at`. Spread the entries of `src/sfx.ts`: `{ at: T.press, ...sfx['mixkit-2568'], volume: 0.5 }`.
 - **`db(-6)`** dB to gain; **`beats(bpm, offsetFrame)`** a beat grid (`.at(n)`, `.bar(n)`, `.snap(f)`, `.half(f)`).
 - **`<Music src startFrom volume fadeIn fadeOut duck breaths breathLen enterAt>`**: the bed. `startFrom` (s) skips the intro,
-  `enterAt` (frame) starts it later, `duck` dips it under hits, `breaths` cuts it out for `breathLen` frames before a hit.
+  `enterAt` (frame) starts it later (the track plays from `startFrom` at that frame: to keep the track's beats on the film's
+  grid, the beat grid starts at `enterAt`), `duck` dips it under hits, `breaths` cuts it out for `breathLen` frames before a hit.
 
 ## 9. Fonts
 
@@ -234,10 +235,10 @@ object carries the film.
 ## 10. Project layout and scripts
 
 ```
-src/films/main/Film.tsx   the film (timeline T + sections)      src/films.ts    registers films (id, component, duration, fps)
-src/kit/                  the kit                                src/Sheet.tsx   the 16-frame storyboard composition
+src/films/main/Film.tsx   the film (timeline T + sections)      src/films.ts    registers films (id, component, duration, fps, size)
+src/kit/                  the kit                                src/Sheet.tsx   the 36-frame storyboard composition
 src/sfx.ts                fetched sounds (generated)             public/         sfx/, music/, logos/, images (never commit audio)
 scripts/frames.mjs        sheet | still | render | final | audio | mux | strip
-scripts/sfx.mjs           roles | list | get | pick | shortlist | music | credits
+scripts/sfx.mjs           roles | list | get | pick | shortlist | music | analyze | credits
 scripts/logos.mjs         search | get | list | check            scripts/new-film.mjs  start a project
 ```

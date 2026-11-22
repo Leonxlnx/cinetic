@@ -13,7 +13,9 @@
 //   node scripts/sfx.mjs music <url> --as <name> --page <url> --licence <id> [--credit "..."]
 //                                                   any other track whose licence page you have read (recorded in
 //                                                   public/music/music.json)
-//   node scripts/sfx.mjs credits                    print the CREDITS.md block for every sound and track used
+//   node scripts/sfx.mjs analyze public/music/bed.mp3   the track's tempo (from its kicks) and sections: where it is quiet,
+//                                                   where it lifts or drops; put the film's turns on them
+//   node scripts/sfx.mjs credits                    print the CREDITS.md block for every sound, track, picture and mark used
 //
 // The catalogue (scripts/sfx-catalogue.json) lists recordings whose licence allows commercial films, each with
 // its onset (lead) measured so <Sfx at={frame}> can land the transient exactly on the frame.
@@ -243,6 +245,50 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
   idx[name].startFrom = st;
   fs.writeFileSync(idxPath, JSON.stringify(idx, null, 2));
   console.log(`use: <Music src="music/${name}${ext}" startFrom={${st}} />` + (t?.bpm_measured ? `  (starts on a bar; beat grid in the film: beats(${t.bpm_measured}, 0) when the bed starts at frame 0)` : ''));
+} else if (cmd === 'analyze') {
+  // tempo by autocorrelation of the onset envelope; sections from 1 s loudness (dB)
+  const file = args[1];
+  if (!file) throw new Error('usage: sfx.mjs analyze <audio file>');
+  const SR = 4000;
+  const r = spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-ac', '1', '-ar', String(SR), '-f', 'f32le', '-'], { maxBuffer: 1 << 30 });
+  if (r.status !== 0) throw new Error(`ffmpeg could not read ${file}`);
+  const x = new Float32Array(r.stdout.buffer, r.stdout.byteOffset, Math.floor(r.stdout.length / 4));
+  const hop = 40; // 10 ms
+  const n = Math.floor(x.length / hop);
+  const e = new Float32Array(n);
+  for (let i = 0; i < n; i++) { let s = 0; for (let k = 0; k < hop; k++) { const v = x[i * hop + k]; s += v * v; } e[i] = Math.sqrt(s / hop); }
+  const on = new Float32Array(n);
+  for (let i = 1; i < n; i++) on[i] = Math.max(0, Math.log1p(e[i] * 50) - Math.log1p(e[i - 1] * 50));
+  const score = (lag) => { let s = 0; for (let i = 0; i + lag < n; i++) s += on[i] * on[i + lag]; return s; };
+  let best = 0, bestLag = 0;
+  for (let bpm = 70; bpm <= 180; bpm += 0.1) {
+    const lag = 6000 / bpm; // hops per beat (100 hops a second)
+    const l0 = Math.floor(lag), fr = lag - l0;
+    const s = score(l0) * (1 - fr) + score(l0 + 1) * fr + 0.5 * (score(Math.round(lag * 2)) + score(Math.round(lag * 4)));
+    if (s > best) { best = s; bestLag = bpm; }
+  }
+  let bpm = bestLag;
+  while (bpm < 85) bpm *= 2;
+  while (bpm > 170) bpm /= 2;
+  // the beat phase: the offset (within one beat) whose grid collects the most onsets
+  const beatHops = 6000 / bpm;
+  let bestPh = 0, phScore = -1;
+  for (let ph = 0; ph < beatHops; ph += 1) { let s = 0; for (let t = ph; t < n; t += beatHops) s += on[Math.round(t)] || 0; if (s > phScore) { phScore = s; bestPh = ph; } }
+  const secs = Math.floor(n / 100);
+  const lvl = [];
+  for (let s = 0; s < secs; s++) { let m = 0; for (let i = s * 100; i < (s + 1) * 100; i++) m += e[i] * e[i]; lvl.push(10 * Math.log10(m / 100 + 1e-10)); }
+  const peak = Math.max(...lvl);
+  console.log(`${path.basename(file)}: ${(x.length / SR).toFixed(1)} s, about ${bpm.toFixed(1)} BPM (a beat every ${(60 / bpm).toFixed(3)} s = ${((60 / bpm) * 30).toFixed(2)} frames at 30 fps), first beat at ${(bestPh / 100).toFixed(2)} s`);
+  console.log('level by second (dB below the loudest; # = loud):');
+  for (let s = 0; s < secs; s += 10) console.log(`  ${String(s).padStart(4)} s  ${lvl.slice(s, s + 10).map((v) => (v > peak - 3 ? '#' : v > peak - 8 ? '=' : v > peak - 16 ? '-' : '.')).join('')}`);
+  const events = [];
+  for (let s = 4; s < secs; s++) {
+    const before = (lvl[s - 1] + lvl[s - 2] + lvl[s - 3]) / 3;
+    if (lvl[s] < before - 8) events.push(`${s} s quiet (${(lvl[s] - before).toFixed(0)} dB): a breath, put a turn or a reveal after it`);
+    if (lvl[s] > before + 6) events.push(`${s} s lifts (+${(lvl[s] - before).toFixed(0)} dB): a drop, land the reveal on it`);
+  }
+  console.log(events.length ? events.map((v) => `  ${v}`).join('\n') : '  no clear gaps or drops: the track is even; cut on bars');
+  console.log('Check the tempo by ear (a measured tempo can be off by a few %); the shortlist values are estimates.');
 } else if (cmd === 'credits') {
   const all = readJson(path.join(film, 'public', 'sfx', 'sfx.json'), {});
   // only the sounds the film's code actually plays (sfx['id'] in src/)
@@ -251,7 +297,10 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
     for (const e of fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }) : []) {
       const p = path.join(d, e.name);
       if (e.isDirectory()) { if (e.name !== 'kit') walk(p); }
-      else if (/\.(tsx?|jsx?)$/.test(e.name) && e.name !== 'sfx.ts') for (const m of fs.readFileSync(p, 'utf8').matchAll(/sfx\[['"]([^'"]+)['"]\]/g)) used.add(m[1]);
+      else if (/\.(tsx?|jsx?)$/.test(e.name) && e.name !== 'sfx.ts') {
+        const src = fs.readFileSync(p, 'utf8');
+        for (const id of Object.keys(all)) if (src.includes(`'${id}'`) || src.includes(`"${id}"`)) used.add(id);
+      }
     }
   };
   walk(path.join(film, 'src'));
@@ -270,8 +319,11 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
   const marks = readJson(path.join(film, 'public', 'logos', 'logos.json'), null);
   if (marks?.logos) {
     console.log('\n## Marks\n');
-    for (const [, e] of Object.entries(marks.logos)) console.log(`- ${e.name}: trademark of ${e.owner ?? 'its owner'}; file from ${e.source ?? e.collection ?? 'an open collection'} (${e.licence ?? ''}). Used to show the product works with it.`);
+    for (const [, e] of Object.entries(marks.logos)) {
+      const f = e.files?.mark ?? Object.values(e.files ?? {})[0] ?? {};
+      console.log(`- ${e.name}: trademark of ${e.owner ?? 'its owner'}; mark file from ${f.from ?? 'an open collection'}${f.url ? ` (${f.url})` : ''}. Shown to say the product works with it.`);
+    }
   }
 } else {
-  console.log(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 17).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
+  console.log(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 21).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
 }

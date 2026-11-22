@@ -72,7 +72,8 @@ export const GridLines: React.FC<{
         height,
         backgroundImage: `linear-gradient(${color} ${thickness}px, transparent ${thickness}px), linear-gradient(90deg, ${color} ${thickness}px, transparent ${thickness}px)`,
         backgroundSize: `${size}px ${size}px`,
-        backgroundPosition: `${(width / 2) % size}px ${(height / 2) % size}px`,
+        // lines fall on multiples of `size` from the frame's top-left corner, so content can snap to the grid
+        backgroundPosition: `${(((width / 2 - 960) % size) + size) % size}px ${(((height / 2 - 540) % size) + size) % size}px`,
         maskImage: `radial-gradient(circle at 50% 50%, black ${mix(p, 0, 45)}%, transparent ${mix(p, 2, 70)}%)`,
         WebkitMaskImage: `radial-gradient(circle at 50% 50%, black ${mix(p, 0, 45)}%, transparent ${mix(p, 2, 70)}%)`,
         ...style,

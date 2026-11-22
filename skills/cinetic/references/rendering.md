@@ -12,7 +12,7 @@ Treat the user's machine with care.
 | one frame, full size | `node scripts/frames.mjs still --frame 240 --full` | seconds |
 | motion preview | `node scripts/frames.mjs render` (half size) | ~0.2-0.4 s per frame on a laptop CPU |
 | motion check | `node scripts/frames.mjs strip out/main-preview.mp4 --at 7.5 --dur 2` | seconds |
-| final | `node scripts/frames.mjs final` (picture + sound + loudness in one pass) | ~1-2.5 s per frame on software GL (textures, blurs and photos are the slow ones) |
+| final | `node scripts/frames.mjs final` (picture + sound + loudness in one pass) | ~0.5-2.5 s per frame on software GL (textures, blurs and photos are the slow ones) |
 
 Read every sheet and strip you make (they are images): that is how you see the film. Judge motion from strips of a rendered
 preview, not from single frames.

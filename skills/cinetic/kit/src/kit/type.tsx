@@ -96,7 +96,7 @@ export const Words: React.FC<WordsProps> = ({
   const d = dur ?? (arrive === 'blur' ? 16 : arrive === 'scale' ? 18 : 14);
   const accents = new Set(accent.map(norm));
 
-  const lines = by === 'line' ? text.split('\n') : [text];
+  const lines = text.split('\n');
   let unitIndex = 0;
 
   const unit = (content: string, key: string, isAccent: boolean) => {

@@ -24,7 +24,7 @@ own mark, the model's own mark. Never redraw one, never stand a generic envelope
   needs its official file. For any brand `node scripts/logos.mjs search <name>` shows the current one, and
   `node scripts/logos.mjs check` flags retired marks before the final. The mark from Simple Icons (path data CC0; trademarks belong to their owners)
   in its own colour. `<BrandTile name="figma" />` puts it on an app-icon tile. Names are Simple Icons slugs
-  (`github`, `linear`, `notion`, `gmail`, `googlecalendar`, `claude`, `anthropic`, `figma`, `stripe`, `vercel`, `supabase`,
+  (`github`, `linear`, `notion`, `gmail`, `visualstudiocode` is not one: fetch `visual studio code` with logos.mjs, `googlecalendar`, `claude`, `anthropic`, `figma`, `stripe`, `vercel`, `supabase`,
   `discord`, `zoom`, `jira`, `asana`, `dropbox`, `spotify`, `x`, `youtube`, `perplexity`, `huggingface`, `cursor`, ...).
 - **Official files:** some marks are missing from Simple Icons (their owners asked for removal: OpenAI/ChatGPT, Slack,
   Microsoft and its products, AWS, others) and some brands redrew their marks recently. Use
@@ -102,7 +102,9 @@ node scripts/sfx.mjs shortlist --energy 3 --bpm 100-125     # filter by --vibe, 
 node scripts/sfx.mjs music mixkit-tech-house-vibes-130       # -> public/music/bed.mp3 + its licence and credit
 node scripts/sfx.mjs music <url> --as bed --page <page you read> --licence cc-by-4.0 --credit "..."   # any other track
 ```
-Moods in the shortlist were tagged from catalogue data: audition the track (and its `startFrom`) before you lock the cut.
+Moods in the shortlist were tagged from catalogue data, and its tempos are estimates (one was off by 2 %): run
+`node scripts/sfx.mjs analyze public/music/bed.mp3` on the fetched track for its tempo, first beat and sections (the
+quiet stretch before a drop, the lift), then put the film's turns on them.
 Licences that work for a published launch film:
 - Mixkit Stock Music Free License (https://mixkit.co/license/#musicFree): web, social, ads; no credit needed; never
   redistribute the file or register it with a Content ID service.
