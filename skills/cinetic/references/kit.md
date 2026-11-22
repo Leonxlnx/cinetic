@@ -211,8 +211,14 @@ shared WebGL renderer into each view's own canvas, so the 36-frame sheet never r
 frame; keep `state` a small plain object. **`studioEnvironment(renderer, accent)`** is a dark studio of strip lights for
 metal and glass (`scene.environment = ...`, a `MeshPhysicalMaterial` with metalness 1, roughness 0.25-0.35).
 For glass use `transmission` on a `MeshPhysicalMaterial`; anything meant to show inside the glass (a beam, a glow sprite) needs
-`depthTest: false`, or the glass reads opaque. A light ray is a camera-facing ribbon with a soft hot-core and halo texture, not
-a cylinder (tubes show hard edges). GL frames render slowly on the CPU: keep `ss` at 1-1.25 and split finals into short parts.
+`depthTest: false`, or the glass reads opaque. GL frames render slowly on the CPU: keep `ss` at 1-1.25 and split finals into
+short parts.
+**`glRay(scene, color, { width, opacity, through })`** a ray of light: a ribbon that faces the lens with a soft hot core and
+halo (a tube shows hard edges). Add it in `build`; in `draw` call `ray.place(from, to, camera, strength)` and grow `to` to shoot
+it (`through: true` shows it inside glass).
+**`orbitCamera({ yaw, pitch, dist, tx, ty }, aspect, fov)`** a camera on an orbit, pure, so `draw` and the DOM pose the same
+camera for a frame. **`glPoint(camera, [x, y, z], width, height)`** where a 3D point lands in the frame (px): pin a label, a
+number or a line of type to a spot on the object.
 Light it from an environment, never flat; dive through it (a tunnel of the same object), tip it into a line or a dial: the
 object carries the film.
 
