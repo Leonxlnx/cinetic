@@ -1,17 +1,18 @@
-// "Inkwell": iteration 6 of the v2 kit, rebuilt after critic 2. ~9.7 s at 30 fps. An invented writing app with Claude
+// "Inkwell": iteration 7 of the v2 kit, rebuilt after critic 4. ~9.2 s at 30 fps. An invented writing app with Claude
 // inside every document. World: flat cream paper (no mesh), a serif voice, Inter for the product, one accent from the
-// partner's own mark (Claude's coral). Grounds: cream, a coral flood, ink. The rewritten sentence is the artefact: it lifts
-// out of the doc as a plate and stays pinned while three hosts cut around it (Gmail full-bleed on coral, a Notion page
-// tilted on ink, a markdown file as giant mono on cream), then the camera pulls back from it into a wall of every doc
-// while the highlight flips coral in a wave (the spectacle), and the wall drains into the ink drop of the mark.
+// partner's own mark (Claude's coral). Grounds: cream, a coral flood, ink.
+// Frame 0 is the document: the claim "Write with Claude." is its title, being written; the camera pushes down past it into
+// the body while Claude's mark flies out of the title into the prompt pill. The rewrite is seen in macro (the weak sentence
+// struck and falling, "Revenue grew 34 %." landing at ~145 px), then the camera pulls back and the line lifts off the page
+// as the plate. The plate stays pinned while three hosts cut around it (Gmail full-bleed on coral, a Notion page tilted on
+// ink, a markdown file as giant mono on cream). The markdown page becomes the centre cell of a wall of documents: the camera
+// pulls back while Claude's line lands in every document in a coral wave (the spectacle), and the wall drains into a big
+// ink drop that settles into the lockup.
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import {
-  accel,
   at,
   Brand,
-  Build,
-  Card,
   clamp,
   creep,
   Cues,
@@ -22,17 +23,15 @@ import {
   Icon,
   lightUI,
   logScale,
-  Marker,
   mix,
+  mixColor,
   Music,
   Paper,
   Relay,
   Spinner,
   springAt,
   springs,
-  Typing,
   useTextWidth,
-  Words,
   type Theme,
 } from '../../kit';
 import { sfx } from '../../sfx';
@@ -41,28 +40,31 @@ const INK = '#1C1A17';
 const CLAUDE = '#D97757';
 const CORAL_DEEP = '#B9603F';
 const CREAM = '#F6F1EA';
-const PLATE = '#FFFBF6';
 const MUTED = '#7A746B';
 const serif: React.CSSProperties = { fontFamily: fonts.serif, fontWeight: 400, letterSpacing: '-0.02em', color: INK };
 const ui: Theme = { ...lightUI, accent: CLAUDE, ink: INK, muted: MUTED, fill: '#F3EEE7', line: 'rgba(28,26,23,0.08)', radius: 26, font: fonts.inter };
-const glass: Theme = { ...ui, surface: 'rgba(255,255,255,0.9)', line: 'rgba(255,255,255,0.9)', shadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 24px 60px -18px rgba(90,60,30,0.35)' };
 
 const T = {
-  words: [-4, 6, 16, 26],
-  doc: 44,
-  select: 50,
-  ask: 56,
-  type: 58,
-  think: 70,
-  rewrite: 82,
-  flood: 104,
-  hA: 118,
-  hB: 140,
-  hC: 160,
-  wall: 182,
+  words: [-4, 3, 9, 15], // "Write" "with" [mark] "Claude." as the doc's title
+  push: 20, // the camera leaves the title for the body
+  select: 28,
+  ask: 30, // the prompt pill rises under the sentence
+  land: 36, // the mark from the title lands in the pill
+  type: 37,
+  think: 42,
+  rewrite: 52, // the weak sentence is struck
+  n: [61, 64, 67], // "Revenue" "grew" "34 %." in macro
+  pull: 80, // the camera pulls back from the macro
+  rest: 84, // "Every region beat plan."
+  flood: 98,
+  hA: 112, // MAIN HIT: the first relay host lands on the coral flood
+  hB: 134,
+  hC: 154,
+  wall: 176,
+  ev: 186, // the coral wave: Claude's line lands in every doc
   drain: 226,
-  lock: 248,
-  end: 284,
+  lock: 240,
+  end: 276,
 } as const;
 
 // the artefact's pinned point for the whole relay
@@ -101,104 +103,159 @@ const pivot = (s: number, extra = ''): React.CSSProperties => ({ transformOrigin
 /** Each host arrives with a small settle, so the cut lands like a push. */
 const settle = (f: number, start: number, amt = 0.05) => 1 + amt * (1 - at(f, start, 9, ease.out));
 
-// ---------------------------------------------------------------- 1. "Write with Claude." (the real mark joins the line)
-const GhostPage: React.FC = () => {
-  const f = useCurrentFrame();
-  // a page of text lines behind the title, drifting up at its own rate (the second plane, the doc to come)
-  const y = -90 * creep(f, -10, 70);
-  const widths = [0.92, 0.84, 0.97, 0.61, 0.88, 0.95, 0.72, 0.9, 0.8, 0.98, 0.55, 0.86, 0.93, 0.7, 0.9];
-  return (
-    <AbsoluteFill style={{ transform: `translateY(${y}px) rotate(-3deg) scale(1.1)`, filter: 'blur(1.5px)' }}>
-      {widths.map((w, i) => (
-        <div key={i} style={{ position: 'absolute', left: 150, top: 40 + i * 78, width: 1620 * w, height: 22, borderRadius: 11, background: i === 6 ? 'rgba(217,119,87,0.16)' : 'rgba(28,26,23,0.055)' }} />
-      ))}
-    </AbsoluteFill>
-  );
+// ---------------------------------------------------------------- 1-2. the document: title, push to the body, the rewrite in macro
+// A 2D camera over the page's world: the world point (x, y) sits at the frame's centre at zoom z (log-space between keys).
+type Key = { f: number; x: number; y: number; z: number; curve?: (t: number) => number };
+const PADL = 340; // the text's left edge on the page
+const TITLE_Y = 150;
+const TITLE_SIZE = 130;
+const PARA_Y = 500; // the sentence's first line (32 px, line height 48)
+const LINE_CY = PARA_Y + 24;
+const PILL_Y = 630;
+const CAM: Key[] = [
+  { f: 0, x: 870, y: 260, z: 1.6 },
+  { f: T.push, x: 872, y: 268, z: 1.68, curve: ease.inOut },
+  { f: T.land, x: 790, y: 600, z: 2.0, curve: ease.inOut }, // down past the title into the body
+  { f: T.rewrite, x: 800, y: 594, z: 2.15, curve: ease.inOut },
+  { f: T.n[2] - 1, x: 492, y: LINE_CY, z: 4.4, curve: ease.inOut }, // macro on the rewrite
+  { f: T.pull, x: 525, y: LINE_CY + 2, z: 4.6, curve: ease.inOut }, // ride along "34 %"
+  { f: T.flood - 4, x: 712, y: 578, z: 1.92, curve: ease.inOut }, // pull back: the whole line
+  { f: T.hA, x: 716, y: 578, z: 1.97, curve: ease.inOut },
+];
+const camAt = (f: number) => {
+  if (f <= CAM[0].f) return CAM[0];
+  for (let i = 1; i < CAM.length; i++) {
+    const a = CAM[i - 1];
+    const b = CAM[i];
+    if (f <= b.f) {
+      const p = (b.curve ?? ease.inOut)(clamp((f - a.f) / (b.f - a.f)));
+      return { f, x: mix(p, a.x, b.x), y: mix(p, a.y, b.y), z: logScale(a.z, b.z, p) };
+    }
+  }
+  return CAM[CAM.length - 1];
 };
+const worldStyle = (c: { x: number; y: number; z: number }, par = 1): React.CSSProperties => ({
+  position: 'absolute',
+  left: 0,
+  top: 0,
+  width: 1920,
+  height: 1080,
+  transformOrigin: '0 0',
+  transform: `translate(${960 - c.x * c.z * par}px, ${540 - c.y * c.z * par}px) scale(${c.z * par})`,
+});
 
-const SPACER = '   ';
-const Open: React.FC = () => {
-  const f = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const mark = springAt(f, fps, T.words[2] - 2, springs.pop);
-  const out = accel(f, T.doc - 6, 8, 1.5);
-  const push = 1 + 0.05 * creep(f, -4, T.doc);
-  // the mark sits in the spacer word: place it from the real widths, following Build's layout and re-centre
-  const tsz: React.CSSProperties = { ...serif, fontSize: 205 };
-  const wW = useTextWidth('Write', tsz);
-  const wWi = useTextWidth('with', tsz);
-  const wSp = useTextWidth(SPACER, tsz);
-  const wC = useTextWidth('Claude.', { ...tsz, fontStyle: 'italic' });
-  const gap = 0.26 * 205;
-  const lead = wW + wWi + 2 * gap + wSp / 2;
-  const x3 = lead - (wW + wWi + wSp + 2 * gap) / 2;
-  const x4 = lead - (wW + wWi + wSp + wC + 3 * gap) / 2;
-  return (
-    <AbsoluteFill style={{ opacity: 1 - out }}>
-      <GhostPage />
-      <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', transform: `scale(${push * logScale(1, 1.6, out)})` }}>
-        <div style={{ width: 1920 }}>
-          <Build words={['Write', 'with', SPACER, 'Claude.']} times={[...T.words]} born={CLAUDE} style={{ ...serif, fontSize: 205 }} wordStyle={(i) => (i === 3 ? { fontStyle: 'italic' } : undefined)} />
-        </div>
-        {f >= T.words[2] - 2 && (
-          <div style={{ position: 'absolute', left: 0, right: 0, top: 540 - 76, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
-            <div style={{ transform: `translateX(${mix(at(f, T.words[3], 9, ease.out), x3, x4)}px) scale(${mix(mark, 0.2, 1)}) rotate(${mix(mark, -40, 0)}deg)`, opacity: clamp(mark * 3) }}>
-              <Brand name="claude" size={140} />
-            </div>
-          </div>
-        )}
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
-// ---------------------------------------------------------------- 2. the document, already in macro: select, ask, rewrite
 const OLD = 'Our quarterly results were generally quite positive in most of the areas we looked at.';
-
-const docZoom = (f: number) => logScale(2.3, 1.75, at(f, T.doc, 20, ease.out)) * (1 + 0.05 * creep(f, T.ask, T.flood - T.ask));
-// where the rewritten sentence sits on screen when the flood starts (measured on a sheet at T.flood)
-const SENT = { left: 207, y: 463 };
+const OLD_W = OLD.split(' ');
+const NEW_W = NEW.split(' ');
+const NEW_T = [T.n[0], T.n[1], T.n[2], T.n[2], T.rest, T.rest + 1, T.rest + 3, T.rest + 4];
+const PROMPT = 'Sharper, with the numbers';
 
 const Doc: React.FC = () => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const arrive = at(f, T.doc, 20, ease.out);
-  const ask = springAt(f, fps, T.ask, springs.card);
-  const rewriting = f >= T.rewrite;
-  const zoom = docZoom(f);
+  const cam = camAt(f);
+  const titleStyle: React.CSSProperties = { ...serif, fontSize: TITLE_SIZE, lineHeight: 1 };
+  const wWrite = useTextWidth('Write', titleStyle);
+  const wWith = useTextWidth('with', titleStyle);
+  const gap = 0.26 * TITLE_SIZE;
+  const SLOT = 150;
+  const promptW = useTextWidth(PROMPT, { fontFamily: fonts.inter, fontSize: 30 });
+  // the mark: pops into the title's slot, then flies down into the prompt pill as the camera pushes
+  const pop = springAt(f, fps, T.words[2] - 2, springs.pop);
+  const fly = at(f, T.push + 2, T.land - T.push - 2, ease.inOut);
+  const markFrom = { x: PADL + wWrite + gap + wWith + gap + SLOT / 2, y: TITLE_Y + 72, s: 112 };
+  const markTo = { x: PADL + 26 + 20, y: PILL_Y + 14 + 20, s: 40 };
+  const markS = logScale(markFrom.s, markTo.s, fly) * mix(pop, 0.2, 1);
+  const pill = springAt(f, fps, T.ask, springs.card);
+  const pillOut = at(f, T.rewrite + 2, 8, ease.in);
+  const shown = f >= T.type + 3 ? PROMPT : f >= T.type ? 'Sharper,' : '';
+  const reflow = at(f, T.n[0], 14, ease.inOut); // the paragraphs under the sentence close the gap
+  const wordIn = (t: number) => (f >= t ? 1 : 0);
   return (
-    <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center' }}>
-      <div style={{ transform: `scale(${zoom}) translate(110px, 40px)`, filter: `blur(${mix(arrive, 8, 0)}px)` }}>
-        <Card t={ui} w={1180} h={700} pad={70} style={{ borderRadius: 30, boxShadow: 'inset 0 1.5px 0 #FFFFFF, 0 30px 70px -30px rgba(110,60,30,0.35)' }}>
-          <div style={{ fontFamily: fonts.inter, fontSize: 22, color: ui.muted, display: 'flex', gap: 14, alignItems: 'center', height: 30 }}>
-            <Brand name="googledocs" file="logos/google-docs.svg" size={30} /> Q3 board update · Draft
-          </div>
-          <div style={{ ...serif, fontSize: 76, marginTop: 30, lineHeight: 1.05 }}>Q3, in one page</div>
-          <div style={{ fontFamily: fonts.inter, fontSize: 32, lineHeight: 1.5, color: '#3B3732', marginTop: 34, width: 1000 }}>
-            {!rewriting ? (
-              <Marker start={T.select} dur={8} color="rgba(217,119,87,0.24)">
-                {OLD}
-              </Marker>
-            ) : (
-              <span style={{ fontWeight: 600, color: INK, opacity: f >= T.flood ? 0 : 1 }}>
-                <Words text={NEW} start={T.rewrite} arrive="cut" gap={2} align="left" width={1000} style={{ color: INK }} born={CLAUDE} settle={18} />
-              </span>
-            )}
-            <div style={{ marginTop: 22, color: '#8B857C' }}>Customer count is up in all four regions, led by APAC.</div>
-          </div>
-        </Card>
+    <AbsoluteFill style={{ overflow: 'hidden' }}>
+      {/* a second sheet behind the page, on its own parallax */}
+      <div style={worldStyle(cam, 0.94)}>
+        <div style={{ position: 'absolute', left: 330, top: 120, width: 1420, height: 1500, borderRadius: 30, background: '#EDE5DA', transform: 'rotate(2.4deg)', boxShadow: '0 30px 70px -30px rgba(110,60,30,0.3)', filter: 'blur(1.5px)' }} />
       </div>
-      {f >= T.ask && (
-        <div style={{ position: 'absolute', left: 260, top: 760, transform: `translateY(${mix(ask, 40, 0)}px) scale(${mix(ask, 0.85, 1)})`, opacity: clamp(ask * 2) }}>
-          <Card t={glass} pad={0} style={{ display: 'flex', alignItems: 'center', gap: 22, borderRadius: 999, padding: '22px 36px' }}>
-            <Brand name="claude" size={50} />
-            <span style={{ fontFamily: fonts.inter, fontSize: 44, color: INK }}>
-              <Typing text="Sharper, with the numbers" start={T.type} cps={34} burst={2} caretColor={CLAUDE} />
-            </span>
-            {f >= T.think && <Spinner start={T.think} doneAt={T.rewrite} size={46} color="#C8BFB4" done={CLAUDE} stroke={4} />}
-          </Card>
+      <div style={worldStyle(cam)}>
+        <div style={{ position: 'absolute', left: 250, top: 60, width: 1420, height: 1500, borderRadius: 30, background: '#FFFDF9', boxShadow: 'inset 0 1.5px 0 #FFFFFF, 0 30px 70px -30px rgba(110,60,30,0.35)' }} />
+        <div style={{ position: 'absolute', left: PADL, top: 92, fontFamily: fonts.inter, fontSize: 22, color: ui.muted, display: 'flex', gap: 14, alignItems: 'center', height: 30, whiteSpace: 'nowrap' }}>
+          <Brand name="googledocs" file="logos/google-docs.svg" size={30} /> Q3 board update · Draft
         </div>
-      )}
+        {/* the title is the claim, written on the page */}
+        <div style={{ position: 'absolute', left: PADL, top: TITLE_Y, display: 'flex', gap, whiteSpace: 'nowrap' }}>
+          {['Write', 'with', null, 'Claude.'].map((w, i) =>
+            w === null ? (
+              <div key={i} style={{ width: SLOT }} />
+            ) : (
+              <span
+                key={i}
+                style={{
+                  ...titleStyle,
+                  fontStyle: i === 3 ? 'italic' : undefined,
+                  opacity: wordIn(T.words[i]),
+                  color: mixColor(CLAUDE, INK, at(f, T.words[i], 12, ease.inOut)),
+                  transform: `translateY(${mix(at(f, T.words[i], 6, ease.out), 18, 0)}px)`,
+                  display: 'inline-block',
+                }}
+              >
+                {w}
+              </span>
+            ),
+          )}
+        </div>
+        {/* the weak sentence: highlighted, struck, falling away */}
+        <div style={{ position: 'absolute', left: PADL, top: PARA_Y, width: 880, fontFamily: fonts.inter, fontSize: 32, lineHeight: '48px', color: '#3B3732' }}>
+          {OLD_W.map((w, i) => {
+            const hl = at(f, T.select + i * 0.5, 3, ease.out);
+            const strike = at(f, T.rewrite + i * 0.3, 3, ease.out);
+            const fall = at(f, T.rewrite + 2 + i * 0.3, 7, ease.in);
+            return (
+              <span key={i} style={{ position: 'relative', display: 'inline-block', marginRight: '0.27em', background: `rgba(217,119,87,${0.22 * hl * (1 - strike)})`, opacity: 1 - fall, transform: `translateY(${fall * 46}px) rotate(${fall * (i % 2 ? 7 : -6)}deg)`, filter: `blur(${fall * 3}px)`, color: strike > 0 ? '#9C948A' : undefined }}>
+                {w}
+                <span style={{ position: 'absolute', left: -2, top: 25, height: 3, width: `calc(${strike * 100}% + 4px)`, background: CLAUDE, borderRadius: 2 }} />
+              </span>
+            );
+          })}
+        </div>
+        {/* the rewrite, cut on word by word in its place */}
+        <div style={{ position: 'absolute', left: PADL, top: PARA_Y, display: 'flex', gap: '0.27em', whiteSpace: 'nowrap', fontFamily: fonts.inter, fontWeight: 600, fontSize: 32, lineHeight: '48px', letterSpacing: '-0.015em', opacity: f >= T.flood ? 0 : 1 }}>
+          {NEW_W.map((w, i) => (
+            <span key={i} style={{ display: 'inline-block', opacity: wordIn(NEW_T[i]), color: mixColor(CLAUDE, INK, at(f, NEW_T[i] + 4, 12, ease.inOut)), transform: `translateY(${mix(at(f, NEW_T[i], 5, ease.out), 8, 0)}px)` }}>
+              {w}
+            </span>
+          ))}
+        </div>
+        {/* the rest of the page, closing up under the new line */}
+        <div style={{ position: 'absolute', left: PADL, top: mix(reflow, 750, 580), width: 900, fontFamily: fonts.inter, fontSize: 32, lineHeight: '48px', color: '#8B857C' }}>
+          Customer count is up in all four regions, led by APAC.
+          <div style={{ marginTop: 26, ...serif, fontSize: 52, color: INK }}>What changed</div>
+          <div style={{ marginTop: 14 }}>SMB churn fell to 3.1 % after the pricing change.</div>
+        </div>
+        {/* the prompt pill, under the sentence */}
+        {f >= T.ask && (
+          <div style={{ position: 'absolute', left: PADL, top: PILL_Y, transformOrigin: 'left center', transform: `translateY(${mix(pill, 30, 0) + pillOut * 30}px) scale(${mix(pill, 0.85, 1)})`, opacity: clamp(pill * 2) * (1 - pillOut) }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, borderRadius: 999, padding: '14px 26px', background: 'rgba(255,255,255,0.95)', boxShadow: 'inset 0 1px 0 #FFFFFF, inset 0 0 0 1.5px rgba(217,119,87,0.35), 0 16px 34px -14px rgba(90,60,30,0.4)' }}>
+              <div style={{ width: 40, height: 40, opacity: f >= T.land ? 1 : 0 }}>
+                <Brand name="claude" size={40} />
+              </div>
+              <span style={{ fontFamily: fonts.inter, fontSize: 30, color: INK, width: promptW + 4, whiteSpace: 'nowrap', lineHeight: '40px' }}>
+                {shown}
+                {f < T.think && <span style={{ display: 'inline-block', width: 3, height: 32, marginLeft: 2, verticalAlign: -5, background: CLAUDE, opacity: Math.floor(f / 6) % 2 ? 0.2 : 1 }} />}
+              </span>
+              <div style={{ width: 32, height: 32 }}>{f >= T.think && <Spinner start={T.think} doneAt={T.rewrite} size={32} color="#C8BFB4" done={CLAUDE} stroke={3.5} />}</div>
+            </div>
+          </div>
+        )}
+        {/* the mark itself: in the title, then carried into the pill */}
+        {f >= T.words[2] - 2 && f < T.land && (
+          <div style={{ position: 'absolute', left: mix(fly, markFrom.x, markTo.x), top: mix(fly, markFrom.y, markTo.y) - 60 * Math.sin(Math.PI * fly), width: 0, height: 0, opacity: clamp(pop * 3) }}>
+            <div style={{ position: 'absolute', left: -markS / 2, top: -markS / 2, transform: `rotate(${mix(pop, -40, 0) + 200 * fly}deg)` }}>
+              <Brand name="claude" size={markS} />
+            </div>
+          </div>
+        )}
+      </div>
     </AbsoluteFill>
   );
 };
@@ -206,18 +263,18 @@ const Doc: React.FC = () => {
 /** The sentence lifts off the page as the plate and flies to its pinned point while the coral floods out of it. */
 const PLATE_TEXT_X = FS * 0.52 + FS * 0.86 + FS * 0.38; // text offset inside the plate (padding + mark + gap)
 const PLATE_W = 1410; // measured plate width at FS (sheet r3-a)
-const S0 = (32 * docZoom(T.flood)) / FS;
+const CF = camAt(T.flood);
+const S0 = (32 * CF.z) / FS;
+const SENT = { left: 960 + (PADL - CF.x) * CF.z, y: 540 + (LINE_CY - CF.y) * CF.z };
 const SX = SENT.left - PLATE_TEXT_X * S0 + (PLATE_W * S0) / 2;
 // the coral grows out of the plate's own box
 const FROM = { x: SX, y: SENT.y, w: PLATE_W * S0, h: FS * 1.62 * S0, r: FS * 0.3 * S0 };
 const Flight: React.FC = () => {
   const f = useCurrentFrame();
   const p = at(f, T.flood, T.hA - T.flood, ease.inOut);
-  const sx = SX;
-  const s0 = S0;
   const lit = at(f, T.flood, 6, ease.out);
   return (
-    <div style={{ position: 'absolute', left: mix(p, sx, AX), top: mix(p, SENT.y, AY), transform: `translate(-50%, -50%) translateY(${-18 * Math.sin(Math.PI * p)}px) scale(${mix(p, s0, 1)})`, zIndex: 40 }}>
+    <div style={{ position: 'absolute', left: mix(p, SX, AX), top: mix(p, SENT.y, AY), transform: `translate(-50%, -50%) translateY(${-18 * Math.sin(Math.PI * p)}px) scale(${mix(p, S0, 1)})`, zIndex: 40 }}>
       <Line lit={lit} />
     </div>
   );
@@ -320,12 +377,8 @@ const HostNotion: React.FC = () => {
   );
 };
 
-/** Host C, a markdown note as giant mono on cream paper, in macro: the lines travel past the pinned sentence. */
-const HostMarkdown: React.FC = () => {
-  const f = useCurrentFrame();
-  const t = f - T.hC;
-  const zoom = logScale(1.22, 1.0, ease.out(clamp(t / 22)));
-  const drift = mix(ease.out(clamp(t / 22)), 70, 0);
+/** The markdown note's page in frame coordinates: drawn by host C, and again as the wall's centre cell (the match cut). */
+const MdPage: React.FC = () => {
   const mono: React.CSSProperties = { position: 'absolute', fontFamily: fonts.mono, fontSize: 88, color: INK, whiteSpace: 'pre', letterSpacing: '-0.02em', lineHeight: 1 };
   const gut: React.CSSProperties = { position: 'absolute', left: 60, fontFamily: fonts.mono, fontSize: 40, color: '#B5AA9C' };
   const LINES: Array<{ y: number; node: React.ReactNode }> = [
@@ -336,21 +389,34 @@ const HostMarkdown: React.FC = () => {
     { y: 1055, node: <><span style={{ color: CLAUDE }}>- </span>SMB churn, 3.1 %</> },
   ];
   return (
+    <>
+      <div style={{ position: 'absolute', left: 110, top: 44, display: 'flex', alignItems: 'center', gap: 22, fontFamily: fonts.mono, fontSize: 34, color: MUTED, whiteSpace: 'nowrap' }}>
+        <Brand name="obsidian" size={56} /> notes / q3-review.md
+      </div>
+      <div style={{ position: 'absolute', left: -60, right: -60, top: 128, height: 2, background: 'rgba(28,26,23,0.12)' }} />
+      {[...LINES, { y: AY, node: null }].map((l, i) => (
+        <React.Fragment key={i}>
+          <div style={{ ...gut, top: l.y - 20 }}>{[11, 12, 14, 15, 16, 13][i]}</div>
+          {l.node && <div style={{ ...mono, left: 190, top: l.y - 44 }}>{l.node}</div>}
+        </React.Fragment>
+      ))}
+      <div style={{ position: 'absolute', left: 0, width: 10, top: AY - 70, height: 140, background: CLAUDE }} />
+    </>
+  );
+};
+
+/** Host C, a markdown note as giant mono on cream paper, in macro: the lines travel past the pinned sentence. */
+const HostMarkdown: React.FC = () => {
+  const f = useCurrentFrame();
+  const t = f - T.hC;
+  const zoom = logScale(1.22, 1.0, ease.out(clamp(t / 22)));
+  const drift = mix(ease.out(clamp(t / 22)), 70, 0);
+  return (
     <AbsoluteFill style={{ overflow: 'hidden' }}>
       <Paper color={CREAM} fibre={0.05} />
       {/* back plane: header and lines move more than the pinned sentence */}
       <AbsoluteFill style={{ ...pivot(zoom), translate: `0 ${drift}px` }}>
-        <div style={{ position: 'absolute', left: 110, top: 44, display: 'flex', alignItems: 'center', gap: 22, fontFamily: fonts.mono, fontSize: 34, color: MUTED }}>
-          <Brand name="obsidian" size={56} /> notes / q3-review.md
-        </div>
-        <div style={{ position: 'absolute', left: -60, right: -60, top: 128, height: 2, background: 'rgba(28,26,23,0.12)' }} />
-        {[...LINES, { y: AY, node: null }].map((l, i) => (
-          <React.Fragment key={i}>
-            <div style={{ ...gut, top: l.y - 20 }}>{[11, 12, 14, 15, 16, 13][i]}</div>
-            {l.node && <div style={{ ...mono, left: 190, top: l.y - 44 }}>{l.node}</div>}
-          </React.Fragment>
-        ))}
-        <div style={{ position: 'absolute', left: 0, width: 10, top: AY - 70, height: 140, background: CLAUDE }} />
+        <MdPage />
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -368,29 +434,33 @@ const RelayBeat: React.FC = () => (
   />
 );
 
-// ---------------------------------------------------------------- 4. the wall (spectacle): every doc, the line flips coral in a wave
-const TITLES = ['Q3 board update', 'Launch plan', 'Hiring memo', 'Pricing FAQ', 'Offsite notes', 'Release notes 4.2', 'Investor letter', 'Support macros', 'Onboarding guide', 'Roadmap H1', 'Weekly digest', 'Press brief'];
+// ---------------------------------------------------------------- 4. the wall (spectacle): every doc, Claude's line lands in each
+const TITLES = ['Launch plan', 'Hiring memo', 'Pricing FAQ', 'Offsite notes', 'Release notes 4.2', 'Investor letter', 'Support macros', 'Onboarding guide', 'Roadmap H1', 'Weekly digest', 'Press brief', 'Q3 board update'];
 const CLAIMS = ['Ship date: May 12.', 'Two senior hires.', 'Plans start at $12.', 'Decisions, owners.', 'Faster sync, fewer taps.', 'Margin up 6 points.', 'Reply within 2 hours.', 'Day one, in 20 min.', 'Three bets, ranked.', 'Churn down to 2.4 %.', 'Live in 14 markets.'];
+const WEAK = ['We are generally hoping to ship at some point around May.', 'There are quite a few things we may want to look into.', 'Overall it seems like most of it is more or less on track.', 'It could possibly be somewhat faster in some cases.'];
 const BODY = ['Notes from Monday, owners in bold.', 'The short version for the team.', 'What changed since the last draft.', 'Open questions at the end.', 'Numbers as of Friday close.'];
 const MARKS: Array<{ name: string; file?: string }> = [{ name: 'googledocs', file: 'logos/google-docs.svg' }, { name: 'gmail' }, { name: 'notion' }, { name: 'obsidian' }];
-const COLS = 11;
-const ROWS = 9;
+const COLS = 13;
+const ROWS = 11;
 const CW = 440;
 const CH = 290;
 const GAP = 30;
-const PS = 0.22; // the plate's scale inside a cell; the wall starts at 1 / PS so the centre plate matches the relay's
+const PS = 0.22; // the centre plate's scale inside its cell; the wall starts at 1 / PS so it matches the relay's plate
+const PSC = 0.4; // the plate in every other doc, larger so the wave reads from far
 const PY = 196; // the plate's centre inside a cell
-const CC = 5;
-const CR = 4;
+const CC = 6;
+const CR = 5;
+const DMAX = Math.hypot(CC, CR);
+const pullCurve = (t: number) => 0.55 * ease.out(t) + 0.45 * ease.inOut(t);
 
 const WallBeat: React.FC = () => {
   const f = useCurrentFrame();
-  const pull = at(f, T.wall, T.drain - T.wall, ease.inOut);
-  const zoom = logScale(1 / PS, 0.38, pull);
+  const pull = at(f, T.wall, T.drain - T.wall + 6, pullCurve);
+  const zoom = logScale(1 / PS, 0.34, pull);
   const cx = CC * (CW + GAP) + CW / 2;
   const cy = CR * (CH + GAP) + PY;
   const ty = mix(pull, 0, 500 - AY);
-  const rx = mix(pull, 0, 20);
+  const rx = mix(pull, 0, 22);
   const rz = mix(pull, 0, -5) - 2 * at(f, T.wall + 30, T.lock - T.wall - 30, ease.inOut);
   const cells: React.ReactNode[] = [];
   for (let r = 0; r < ROWS; r++)
@@ -398,14 +468,14 @@ const WallBeat: React.FC = () => {
       const i = r * COLS + c;
       const d = Math.hypot(c - CC, r - CR);
       const centre = d === 0;
-      // the highlight flips to Claude's plate in a wave from the centre while the camera pulls back
-      const flip = centre ? 1 : at(f, T.wall + 8 + d * 3.4, 6, ease.out);
-      const coral = at(f, T.wall + 8 + d * 3.4, 6, ease.out);
-      const dark = !centre && (i * 7) % 17 === 4;
-      const kraft = !centre && !dark && (i * 5) % 7 === 3;
-      const flash = centre ? 0 : at(f, T.wall + 8 + d * 3.4, 3) * (1 - at(f, T.wall + 11 + d * 3.4, 10, ease.out));
-      // drain: edges first, each cell slides into the centre and shrinks toward the ink drop
-      const drain = at(f, T.drain + (6.4 - d) * 1.9, 10, ease.in);
+      // the event: Claude's line lands in each doc, a wave from the centre (the weak line struck, the coral plate in)
+      const t0 = T.ev + d * 3.2;
+      const e = at(f, t0, 7, ease.out);
+      const struck = at(f, t0 - 3, 3, ease.out);
+      const flash = at(f, t0, 3) * (1 - at(f, t0 + 3, 10, ease.out));
+      const kraft = !centre && (i * 5) % 7 === 3;
+      // drain: edges first, each cell slides into the centre under the growing ink drop
+      const drain = at(f, T.drain + (DMAX - d) * 0.5, 6, ease.in);
       const dx = (c - CC) * (CW + GAP);
       const dy = (r - CR) * (CH + GAP);
       const m = MARKS[(i * 5 + 2) % MARKS.length];
@@ -418,26 +488,37 @@ const WallBeat: React.FC = () => {
             top: cy - PY + dy * (1 - drain),
             width: CW,
             height: CH,
-            opacity: 1 - drain * 0.8,
-            transform: `scale(${1 - drain * 0.9})`,
+            opacity: 1 - drain,
+            transform: `scale(${1 - drain * 0.95})`,
             borderRadius: 18,
-            background: dark ? '#26231F' : kraft ? '#EFE4D6' : '#FFFDF9',
-            boxShadow: `inset 0 2px 0 #FFFFFF, 0 0 0 ${1 + 3 * flash}px rgba(217,119,87,${0.08 + 0.6 * flash}), 0 16px 26px -14px rgba(100,50,20,0.38)`,
-            padding: '24px 26px',
+            background: centre ? CREAM : kraft ? '#EFE4D6' : '#FFFDF9',
+            boxShadow: `inset 0 2px 0 #FFFFFF, 0 0 0 ${1 + 4 * flash}px rgba(217,119,87,${0.08 + 0.7 * flash}), 0 16px 26px -14px rgba(100,50,20,0.38)`,
             boxSizing: 'border-box',
             fontFamily: fonts.inter,
             overflow: 'hidden',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, whiteSpace: 'nowrap' }}>
-            <Brand name={m.name} file={m.file} size={26} />
-            <span style={{ fontFamily: fonts.serif, fontSize: 34, color: dark ? CREAM : INK }}>{centre ? 'Q3 board update' : TITLES[(i * 7 + 3) % TITLES.length]}</span>
+          {centre ? (
+            <div style={{ position: 'absolute', left: CW / 2 - AX * PS, top: PY - AY * PS, width: 1920, height: 1080, transformOrigin: '0 0', transform: `scale(${PS})` }}>
+              <MdPage />
+            </div>
+          ) : (
+            <>
+              <div style={{ position: 'absolute', left: 26, top: 24, display: 'flex', alignItems: 'center', gap: 12, whiteSpace: 'nowrap' }}>
+                <Brand name={m.name} file={m.file} size={26} />
+                <span style={{ fontFamily: fonts.serif, fontSize: 34, color: INK }}>{TITLES[(i * 7 + 3) % TITLES.length]}</span>
+              </div>
+              <div style={{ position: 'absolute', left: 26, right: 26, top: 80, fontSize: 17, lineHeight: 1.45, color: '#9A9288' }}>{BODY[(i * 3) % BODY.length]}</div>
+              {/* the weak line, struck as the wave arrives */}
+              <div style={{ position: 'absolute', left: 26, right: 26, top: PY - 24, fontSize: 18, lineHeight: '24px', color: '#6F685F', opacity: 1 - e }}>
+                <span style={{ backgroundImage: `linear-gradient(${CLAUDE}, ${CLAUDE})`, backgroundRepeat: 'no-repeat', backgroundSize: `${struck * 100}% 2px`, backgroundPosition: '0 55%' }}>{WEAK[(i * 3 + 1) % WEAK.length]}</span>
+              </div>
+            </>
+          )}
+          <div style={{ position: 'absolute', left: CW / 2, top: PY, transform: `translate(-50%, -50%) scale(${(centre ? PS : PSC) * (centre ? 1 : mix(e, 1.35, 1))})`, opacity: centre || e > 0 ? 1 : 0 }}>
+            <Line text={centre ? NEW : CLAIMS[(i * 3 + 1) % CLAIMS.length]} lit={1} coral={e} />
           </div>
-          <div style={{ fontSize: 17, lineHeight: 1.45, color: '#9A9288', marginTop: 10 }}>{BODY[(i * 3) % BODY.length]}</div>
-          <div style={{ position: 'absolute', left: CW / 2, top: PY, transform: `translate(-50%, -50%) scale(${PS})` }}>
-            <Line text={centre ? NEW : CLAIMS[(i * 3 + 1) % CLAIMS.length]} lit={flip} coral={coral} />
-          </div>
-          <div style={{ position: 'absolute', left: 26, right: 26, top: PY + 36, fontSize: 17, lineHeight: 1.45, color: '#9A9288' }}>{BODY[(i * 3 + 2) % BODY.length]}</div>
+          {!centre && <div style={{ position: 'absolute', left: 26, right: 26, top: PY + 40, fontSize: 17, lineHeight: 1.45, color: '#9A9288' }}>{BODY[(i * 3 + 2) % BODY.length]}</div>}
         </div>,
       );
     }
@@ -451,17 +532,22 @@ const WallBeat: React.FC = () => {
   );
 };
 
-// ---------------------------------------------------------------- 5. lockup (1.4 s): the ink drop the wall drained into
+// ---------------------------------------------------------------- 5. lockup (1.2 s): the wall drains into a big ink drop that settles into the mark
+const BIG = 2.8;
 const Lockup: React.FC = () => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const d = springAt(f, fps, T.lock - 8, springs.pop);
-  const word = at(f, T.lock + 2, 12, ease.out);
+  const grow = springAt(f, fps, T.drain, springs.pop);
+  const shrink = at(f, T.drain + 8, 10, ease.inOut);
+  const s = f < T.drain + 8 ? mix(grow, 0.1, BIG) : logScale(BIG, 1, shrink);
+  const word = at(f, T.lock, 12, ease.out);
   const dot = springAt(f, fps, T.lock + 16, springs.pop);
+  const wordW = useTextWidth('Inkwell', { ...serif, fontSize: 240, lineHeight: 1 });
+  const centreOff = (wordW + 40) / 2; // keeps the drop at the frame's centre until the word arrives
   return (
     <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', transform: `scale(${1 + 0.05 * at(f, T.lock - 8, T.end - T.lock + 8, ease.out)})` }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 40, transform: `translateX(${mix(word, 315, 0)}px)` }}>
-        <svg width={150} height={188} viewBox="0 0 100 125" style={{ transform: `scale(${mix(d, 0.15, 1)})`, overflow: 'visible' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 40, transform: `translateX(${mix(word, centreOff, 0)}px)` }}>
+        <svg width={150} height={188} viewBox="0 0 100 125" style={{ transform: `scale(${s})`, overflow: 'visible' }}>
           <path d="M50 4 C 64 34, 92 56, 92 82 A 42 42 0 0 1 8 82 C 8 56, 36 34, 50 4 Z" fill={INK} />
           <circle cx="36" cy="80" r={9 * dot} fill={CLAUDE} />
         </svg>
@@ -478,13 +564,15 @@ export const InkwellFilm: React.FC = () => {
   const f = useCurrentFrame();
   const s = sfx;
   const cues = [
-    ...T.words.map((w, i) => ({ at: w, ...s['mixkit-2533'], volume: i === 3 ? 0.5 : 0.32 })),
+    ...[0, 1, 3].map((i) => ({ at: T.words[i], ...s['mixkit-2533'], volume: i === 3 ? 0.5 : 0.32 })),
     { at: T.words[2] - 1, ...s['mixkit-3000'], volume: 0.45 },
     { at: T.select, ...s['mixkit-3124'], volume: 0.3 },
-    { at: T.ask, ...s['mixkit-3000'], volume: 0.3, rate: 1.1 },
+    { at: T.land, ...s['mixkit-3000'], volume: 0.3, rate: 1.1 },
     { at: T.type, ...s['mixkit-2533'], volume: 0.22 },
-    { at: T.type + 6, ...s['mixkit-2533'], volume: 0.26, rate: 0.9 },
+    { at: T.type + 3, ...s['mixkit-2533'], volume: 0.26, rate: 0.9 },
     { at: T.rewrite, ...s['mixkit-2867'], volume: 0.45 },
+    ...T.n.map((n, k) => ({ at: n, ...s['mixkit-2533'], volume: 0.3 + 0.12 * k, rate: 0.95 - 0.05 * k })),
+    { at: T.rest, ...s['mixkit-2568'], volume: 0.25 },
     { at: T.flood + 2, ...s['mixkit-168'], volume: 0.45 },
     { at: T.hA, ...s['mixkit-2299'], volume: 0.5 },
     { at: T.hA + 13, ...s['mixkit-2533'], volume: 0.4 },
@@ -492,22 +580,22 @@ export const InkwellFilm: React.FC = () => {
     { at: T.hB + 9, ...s['mixkit-2568'], volume: 0.3 },
     { at: T.hC, ...s['mixkit-2299'], volume: 0.42 },
     { at: T.wall, ...s['mixkit-1492'], volume: 0.4 },
-    ...[0, 1, 2, 3, 4, 5].map((k) => ({ at: T.wall + 8 + k * 4, ...s['mixkit-2568'], volume: 0.16 + 0.02 * k, rate: 0.9 + k * 0.05 })),
-    { at: T.drain + 8, ...s['mixkit-784'], volume: 0.35, maxS: 1 },
-    { at: T.lock - 6, ...s['mixkit-2299'], volume: 0.6 },
+    ...[0, 1, 2, 3, 4, 5, 6, 7].map((k) => ({ at: T.ev + k * 4, ...s['mixkit-2568'], volume: 0.16 + 0.02 * k, rate: 0.9 + k * 0.04 })),
+    { at: T.drain - 4, ...s['mixkit-784'], volume: 0.35, maxS: 1 },
+    { at: T.drain + 1, ...s['mixkit-2299'], volume: 0.55 },
     { at: T.lock + 16, ...s['mixkit-3124'], volume: 0.25 },
   ];
   return (
     <AbsoluteFill>
       <Paper color={CREAM} fibre={0.04} />
-      {f < T.doc + 1 && <Open />}
-      {f >= T.doc && f < T.hA && <Flood from={FROM} start={T.flood} dur={T.hA - T.flood} color={CLAUDE} under={<Doc />} />}
+      {f < T.hA && <Flood from={FROM} start={T.flood} dur={T.hA - T.flood} color={CLAUDE} under={<Doc />} />}
       {f >= T.flood && f < T.hA && <Flight />}
       {f >= T.hA && f < T.wall && <RelayBeat />}
-      {f >= T.wall && f < T.lock && <WallBeat />}
-      {f >= T.lock - 8 && <Lockup />}
+      {f >= T.wall && f < T.lock + 2 && <WallBeat />}
+      {f >= T.drain && <Lockup />}
       <Grain amount={0.025} />
-      <Music src="music/coffee-or-tea.mp3" startFrom={5.37} volume={1} breaths={[T.rewrite, T.hA]} breathLen={6} fadeOut={40} />
+      {/* main hit T.hA moved 118 -> 112: startFrom 5.37 + 6 / 30 */}
+      <Music src="music/coffee-or-tea.mp3" startFrom={5.57} volume={1} breaths={[T.rewrite, T.hA]} breathLen={6} fadeOut={40} />
       <Cues cues={cues} />
     </AbsoluteFill>
   );
