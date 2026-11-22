@@ -122,7 +122,7 @@ Run `node scripts/frames.mjs check` on the preview first: points 11-13 are measu
 | 11 | **Filled frames** | overview + `frames.mjs check` coverage | the subject spans 65 % of the width or more on average (top studios' films: 70-93 %); UI is in close-up; no small card centred on empty ground |
 | 12 | **Pace** | `frames.mjs check` pace | at most 20 % of the half-seconds before the lockup are nearly still (top studios' films: 9-16 %); mean beat 0.8-1.6 s |
 | 13 | **Composition variety** | `BEATS.md` composition tags + overview | no two adjacent beats share a composition; at least 4 different compositions; at least 2 ground cuts |
-| 14 | **The camera goes to the event** | overview, runs of 5+ thumbnails (1.2 s) in one framing | no beat over 1.2 s is seen from one camera position; when something new happens the camera is on it or travelling to it; nothing only changes inside a locked shot |
+| 14 | **The camera goes to the event** | overview, runs of 3+ thumbnails (0.7 s) in one framing | no framing holds longer than 0.7 s; when something new happens the camera is on it or travelling to it; nothing only changes inside a locked shot |
 | 15 | **The output seen big** | beat sheet | the product's answer, rewrite or result appears once in macro or as giant type (key words 120 px or more), not only at UI size; the spectacle beat lasts 1.5 s or more and reads |
 
 `frames.mjs check` passing is necessary, not sufficient. It measures pixels, so it cannot see these, which a viewer sees at

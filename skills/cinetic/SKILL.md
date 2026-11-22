@@ -66,7 +66,9 @@ name, its input -> output or its brand (a mosaic tool's tile, a writing app's in
 opens the film, carries the turns between beats, and becomes the end card. Then pick a structure from
 [film-grammar.md](references/film-grammar.md) and write one row per beat: frames, its composition tag, what the viewer sees, what moves and how, how it leaves into the
 next beat, the sound. Check the rows against quality 1 (a beat every 0.8-1.6 s), quality 3 (every row says how it hands
-off) and the hard rules (no two adjacent compositions alike, two ground cuts, a 2 s lockup) before writing code.
+off) and the hard rules (no two adjacent compositions alike, two ground cuts, a 2 s lockup) before writing code. Budget
+the length: the core demo gets about half the film, each further feature at most 1.2 s, and a row over 1.6 s names its
+second and third event. A 20 s film that could be 15 should be 15.
 
 **4. World.** Choose one world from [worlds.md](references/worlds.md) (or derive it from the brand). Write its tokens at the
 top of the film: ground, ink, accent, display face, UI theme (`lightUI` / `darkUI` spread with the brand), radius.
@@ -159,19 +161,22 @@ into a wall of documents that drains into the mark). Never copy their content; l
   Keep the product's artefact fixed on screen and change the host around it, each host in a different composition and
   bleeding off the frame (the message in a full-bleed chat, the same line as a cropped issue in a tracker, then as a row in
   an editor seen in macro), cut on the beat with the artefact carried ([cards-ui.md](references/motion/cards-ui.md#relay)).
-  The artefact spans 55 % of the frame's width or more in every host (`Relay` scales it up to that).
+  The artefact spans 55 % of the frame's width or more in every host (`Relay` scales it up to that) and is the largest
+  text in each host (60 px or more), not a thin strip on a white plate: set it on the accent or make it tall.
 - **One spectacle beat.** Every film has one shot that could never be a slide: a field of sixty replicas rising, a wall of
   real documents pulled back from, a city of blocks, light splitting into beams. Give it 1.5-2.5 s, not 1 (count its frames in `T`), keep it readable (it starts on
   the artefact the film has carried, large), make the quantity mean something (the accent does one thing across it: every
-  item flips, lights up, takes the artefact; `Wall event`) and name it in `BEATS.md` (a row tagged `spectacle`); a film
-  without that row is not ready to build. One spectacle, not two.
+  item flips, lights up, takes the artefact; `Wall event`) and keep its widest frame graphic: about 40 items or fewer in view,
+  every third or fourth inverse, the accent on a quarter of them at the peak, a count set large on it if there is one;
+  never hundreds of tiny pale cells. Name it in `BEATS.md` (a row tagged `spectacle`); a film without that row is not
+  ready to build. One spectacle, not two.
 - **One demo, end to end.** Show the product's core action once, completely. A second input or use case is a 1-2 s
   variation of the same shot, never a second full demo: that is how a 20 s film becomes 30.
 - **A finished state does not hold.** When a list is full, a number has landed or a card is complete, cut within half a
   second or keep it changing (the camera pushes, the next thing arrives on it). Never 1 s of a finished thing.
-- **The camera goes to the event.** Any beat longer than 1.2 s has at least two camera positions (a push, a ride along the
-  object, a cut to macro). Things changing inside a locked shot is a slide: when the next thing happens, the camera is
-  already travelling to it.
+- **The camera goes to the event.** No framing holds longer than 0.7 s: a push, a ride along the object, a cut to macro or
+  a new image, and the next event inside a beat changes a large part of the frame, not a label. Things changing inside a
+  locked shot is a slide: when the next thing happens, the camera is already travelling to it.
 - **The product's output is seen big once.** The answer, the rewrite, the result: show it once in macro or as giant type
   (its key words 120 px or more on screen) before or instead of showing it at UI size (`<Output>` lands the words giant,
   then carries them into the UI). Explaining is one claim per shot, set on or along the object, never a column of text
@@ -194,7 +199,8 @@ into a wall of documents that drains into the mark). Never copy their content; l
 - **Licensed sound only**, from the catalogue or a source whose licence you read; never synthesized music.
 - **Invented palettes:** no purple, no green, no purple-to-blue "AI" gradient. Derive from the product; one accent.
 - **Legibility:** every word on screen is readable when paused: on clean ground or a plate, big enough (statements
-  ~110-250 px at 1080p, UI text 30-44 px on screen after the camera's zoom), contrast at least 4.5:1. Text never crops
+  ~110-250 px at 1080p, UI text 30-44 px on screen after the camera's zoom), contrast at least 4.5:1. A word needed to
+  understand the beat (a figure's label, the line under a giant word, the CTA) is 34 px or more, never a small kicker. Text never crops
   inside its own box (a field, a bar, a chip): fit it (`useTextWidth`) or shorten it; only the frame edge may crop.
 - **Respect the brief's facts.** Never invent customer logos, testimonials or numbers presented as real; use the user's
   data or clearly fictional demo data.
