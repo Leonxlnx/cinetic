@@ -21,8 +21,8 @@ These eight qualities separate great launch films from template videos. Hold eve
 1. **Pace: a new beat every 0.8-1.6 s, a visible change every half second.** A 30 s film has 20-35 beats. Inside a beat,
    something larger than a caret changes at least every 0.5 s (a word joins, a block lands, the crop changes, a value
    steps). Each feature is one action and one visible result. The most common flaw is a hold that waits.
-2. **One world.** The film lives in one graphic language from first to last frame: one ground, one palette, one display
-   face, one material, two or three signature devices (see [worlds.md](references/worlds.md)). A supplied brand wins.
+2. **One world.** The film lives in one graphic language from first to last frame: one palette with 2-3 grounds (base,
+   accent flood, inverse), one display face, one material, two or three signature devices (see [worlds.md](references/worlds.md)). A supplied brand wins.
 3. **Continuity: nothing is ever just cut away.** One element becomes the next beat: the full stop grows into the next
    world, the button becomes the progress bar, the card rewrites itself, the camera dives into a tile and its inside is
    the next scene. Every scene change is carried by speed, shape, an object or light. Never a cross-fade, never an empty
@@ -64,8 +64,9 @@ green, no default AI gradient). Pull real names, numbers and integrations from w
 **3. Idea, then beats (write `BEATS.md`).** First find the film's one visual idea: a device taken from the product's
 name, its input -> output or its brand (a mosaic tool's tile, a writing app's ink, a model's light, a planner's page). It
 opens the film, carries the turns between beats, and becomes the end card. Then pick a structure from
-[film-grammar.md](references/film-grammar.md) and write one row per beat: frames, what the viewer sees, what moves and how, how it leaves into the next beat, the sound. Check the row list
-against quality 1 (an idea every 1-2 s) and quality 3 (every row says how it hands off) before writing code.
+[film-grammar.md](references/film-grammar.md) and write one row per beat: frames, its composition tag, what the viewer sees, what moves and how, how it leaves into the
+next beat, the sound. Check the rows against quality 1 (a beat every 0.8-1.6 s), quality 3 (every row says how it hands
+off) and the hard rules (no two adjacent compositions alike, two ground cuts, a 2 s lockup) before writing code.
 
 **4. World.** Choose one world from [worlds.md](references/worlds.md) (or derive it from the brand). Write its tokens at the
 top of the film: ground, ink, accent, display face, UI theme (`lightUI` / `darkUI` spread with the brand), radius.
@@ -87,7 +88,7 @@ does, search [INDEX.md](references/INDEX.md) (every recipe and section, one line
   coverage, change every half second, empty frames, ending length) and prints what to fix.
 Score the sheet with the rubric in [taste.md](references/taste.md) (13 points, render at 11+). Fix the three worst
 things, render again.
-Typical misses: an empty first frame, dead frames, things too small (UI text under 26 px at 1080p), the same layout
+Typical misses: an empty first frame, dead frames, things too small (UI text under 30 px on screen), the same layout
 beat after beat, a cut with nothing carried, a hold with no creep, text over a busy picture, everything the same size.
 
 **7. Sound.** `node scripts/sfx.mjs roles`, `node scripts/sfx.mjs list <role>`, `node scripts/sfx.mjs get <id> ...` fetches
@@ -124,9 +125,10 @@ Import everything from `src/kit` (`import { Words, Camera, ease, at } from '../.
 **Worked examples** (read one before your first film; they show the kit used idiomatically, one timeline `T` per film):
 `kit/src/films/brief/Film.tsx` (light product UI: a depth-ladder pile, a full stop that grows into the reveal, typing,
 thinking dots that become the answer card, a pointer that opens a row), `kit/src/films/forge/Film.tsx` (an isometric block
-world with type on the floor, a dive into a block's face that is a terminal, a caret-following camera, real marks in a
-ring), `kit/src/films/fieldnote/Film.tsx` (editorial paper and photographs: stepped photo cards, letters as windows, a
-dive into a letter, selections, a before/after), `kit/src/films/lumen/Film.tsx` (a dark stage: a beam that
+world: thirty labelled blocks, floor type facing the camera, a dive into a block's face that is a terminal in macro,
+three ground cuts carried by objects, integrations as surfaces, a counter tower; read its `BEATS.md`),
+`kit/src/films/fieldnote/Film.tsx` (editorial paper and photographs: a stepped mosaic, letters as changing windows, a
+dive into a letter stroke, a scan with punch-ins, a before/after, a flood from the divider, a lockup inside a letter), `kit/src/films/lumen/Film.tsx` (a dark stage: a beam that
 splits onto named benchmarks, the name on an amber flood, a real prompt answered under the light with punch-ins),
 `kit/src/films/inkwell/Film.tsx` (soft air and a serif voice: a partner's real mark joining a line, a rewrite in macro,
 the artefact landing inside three real surfaces on a coral flood, a pull-back into a wall that drains into the mark). Never copy their content; learn their moves.
@@ -152,7 +154,7 @@ the artefact landing inside three real surfaces on a coral flood, a pull-back in
 - **Licensed sound only**, from the catalogue or a source whose licence you read; never synthesized music.
 - **Invented palettes:** no purple, no green, no purple-to-blue "AI" gradient. Derive from the product; one accent.
 - **Legibility:** every word on screen is readable when paused: on clean ground or a plate, big enough (statements
-  ~110-220 px cap at 1080p, UI text 26-40 px), contrast at least 4.5:1.
+  ~110-250 px at 1080p, UI text 30-44 px on screen after the camera's zoom), contrast at least 4.5:1.
 - **Respect the brief's facts.** Never invent customer logos, testimonials or numbers presented as real; use the user's
   data or clearly fictional demo data.
 
@@ -161,5 +163,7 @@ the artefact landing inside three real surfaces on a coral flood, a pull-back in
 - **An update / changelog film** ("v2.3 is out"): one beat per change, 8-20 s, the [film-grammar.md](references/film-grammar.md#update-film) structure.
 - **A loop for a landing page:** 6-12 s, the last frame continues into the first, no music.
 - **Vertical (9:16) or square:** re-lay out, never crop: compositions stack vertically, type wraps to 2-3 words a line,
-  the camera moves vertically. Set the composition size in `src/films.ts` / `Root.tsx`.
-- **Critique of an existing video:** sheet it (`frames.mjs strip <video> --at ...`), then score with [taste.md](references/taste.md).
+  the camera moves vertically. Set the composition size in `src/Root.tsx` (the Sheet and the kit's layout helpers assume
+1920x1080: lay the film out for its own frame).
+- **Critique of an existing video:** `frames.mjs check <video>` for the measures, `frames.mjs strip <video> --at ...` for
+  moments, then score with [taste.md](references/taste.md).
