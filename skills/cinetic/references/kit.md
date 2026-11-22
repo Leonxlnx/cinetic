@@ -92,6 +92,8 @@ sound on some of them, drive a caret-following camera from them).
 **`<Odometer value from start dur prefix suffix sep decimals />`** digits on reels; low digits spin and blur, high digits tick over last
 (`decimals={1}` for 92.4).
 **`<Marker start dur color>`** a highlight sweeping in behind a word.
+**`useTextWidth(text, style)`** the laid-out width of a piece of text in the real face (place a tile, a mark or an underline
+exactly after a word).
 **`mixColor(a, b, p)`** blend two colours.
 
 ## 3. Camera
@@ -105,7 +107,8 @@ strongly depth reads: a large object hinged inside the world (a door, a lid) swi
 perspective, so give it its own layer with a longer one. To add an offset to a keyframed camera, add to the values
 `camAt(frame, keys)` returns (`cam={{ ...c, x: c.x + dx }}`); replacing `x`/`y` throws the keyframed pan away.
 **`<At x y z rx ry rz scale anchor>`** places a child in the world (z toward the camera).
-**`camSmear(frame, keys)`** motion blur in px from the camera's own speed (apply to the world group on fast moves).
+**`safeBox(frameW, frameH)`** the box type and the subject stay inside (vertical films: clear of the platform's UI at the top
+and bottom). **`camSmear(frame, keys)`** motion blur in px from the camera's own speed (apply to the world group on fast moves).
 **`fillZoom(w, h, frac = 0.8)`** the zoom that makes a w x h box fill the frame. **`diveZoom(w, h)`** the zoom at which a box
 exactly covers the frame (dive into an element, cut to its inside at that frame). **`toScreen(cam, x, y)`** where a world
 point lands on screen under a flat camera (start a flying card or a flood exactly where an object sits). **`drift(frame, dur, push, turn)`** a living
@@ -156,7 +159,7 @@ Fields: `surface ink muted line fill accent accentInk radius font mono shadow`.
   things that follow it; `<CursorShadow keys size>` adds a landing shadow that converges as an oversized cursor lands.
 - **`<Relay anchor={{ x, y }} artefact={node} hosts={[{ f, node }]} lift>`**: integrations as a relay: the artefact pinned at
   one screen point, the hosts (each a full-frame composition you build: a full-bleed page, a tilted plane, a macro crop)
-  changing behind it on their frames, a small settle at each cut. See [cards-ui.md](motion/cards-ui.md#relay).
+  changing behind it on their frames, a small settle at each cut (`pose` on a host tilts the artefact with a tilted host). See [cards-ui.md](motion/cards-ui.md#relay).
 - **`<PartnerSurface t brand file kind="chat|tracker|mail|doc" title items={[{ f, who, text, meta }]} landAt>`**: the
   product's artefact landing inside another product (a message in a channel, an issue in a tracker): a generic surface
   with that product's real mark in the header; the item at `landAt` arrives lit. Integrations as use, not logo rows.
@@ -175,7 +178,8 @@ Sizes that read on a phone screen: UI text 26-40 px, rows 30+ px, cards 900-1300
 Each takes `from` and `to` (the two shots as nodes), `start`, `dur`, and renders the right one outside the turn.
 - **`<Iris x y shape="circle" | "rounded" | svgPath ring>`** the next shot opens in a growing shape (log-space).
 - **`<Tiles cols rows order="diagonal" | "center" | "random" | "left" color>`** tiles sweep from the old shot to the new.
-- **`<Pixelate max>`** mosaic up, swap at the peak, resolve. **`<Push dir smear>`** both shots travel as one strip.
+- **`<Pixelate max>`** mosaic up, swap at the peak, resolve (a full-frame turn: its filter does not work on a small clipped
+  element). **`<Push dir smear>`** both shots travel as one strip.
 - **`<ZoomThrough x y depth>`** fly into a point until it fills the frame, then the next shot settles from slightly zoomed in.
 - **`<TileFlip front back w h start cols rows wave>`** one element turning into another tile by tile (a sketch into the real
   card).

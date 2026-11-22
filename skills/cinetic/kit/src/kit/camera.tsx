@@ -164,3 +164,15 @@ export const camSmear = (frame: number, keys: CamKey[], k = 0.6, max = 24) => {
   const px = Math.max(0, v - 6) * k * 0.1;
   return Math.min(max, px);
 };
+
+/**
+ * The safe box for type and the subject: on vertical films the platform's own UI covers the top ~12 % and the bottom
+ * ~20 %; on wide films keep 5 % all round. Returns { left, top, right, bottom, width, height } in px.
+ */
+export const safeBox = (frameW = 1920, frameH = 1080) => {
+  const vertical = frameH > frameW;
+  const top = Math.round(frameH * (vertical ? 0.12 : 0.05));
+  const bottom = Math.round(frameH * (vertical ? 0.2 : 0.05));
+  const side = Math.round(frameW * (vertical ? 0.06 : 0.05));
+  return { left: side, top, right: frameW - side, bottom: frameH - bottom, width: frameW - side * 2, height: frameH - top - bottom };
+};

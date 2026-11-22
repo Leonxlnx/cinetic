@@ -569,3 +569,33 @@ export const Build: React.FC<{
     </div>
   );
 };
+
+/**
+ * The laid-out width (px) of a piece of text in a given style, measured from the real face once the fonts have loaded
+ * (0 until then; the render waits). Place an object right after a word: the full stop that becomes a tile, a mark
+ * beside a name, an underline of the exact length.
+ */
+export const useTextWidth = (text: string, style: React.CSSProperties) => {
+  const [w, setW] = React.useState(0);
+  const [handle] = React.useState(() => delayRender('measure text'));
+  const key = JSON.stringify([text, style.fontFamily, style.fontSize, style.fontWeight, style.letterSpacing, style.fontStyle]);
+  React.useLayoutEffect(() => {
+    let alive = true;
+    document.fonts.ready.then(() => {
+      if (!alive) return;
+      const el = document.createElement('span');
+      Object.assign(el.style, { position: 'absolute', visibility: 'hidden', whiteSpace: 'pre', left: '-9999px', top: '0' });
+      for (const [k, v] of Object.entries(style)) (el.style as unknown as Record<string, string>)[k] = typeof v === 'number' && k !== 'fontWeight' && k !== 'lineHeight' ? `${v}px` : String(v);
+      el.textContent = text;
+      document.body.appendChild(el);
+      setW(el.offsetWidth);
+      el.remove();
+      continueRender(handle);
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, handle]);
+  return w;
+};

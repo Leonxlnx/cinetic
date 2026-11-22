@@ -813,7 +813,8 @@ const hexToRgb = (h: string) => {
 export const Relay: React.FC<{
   anchor: { x: number; y: number };
   artefact: React.ReactNode;
-  hosts: Array<{ f: number; node: React.ReactNode }>;
+  /** `pose`: a CSS transform for the artefact in that host (e.g. 'perspective(1800px) rotateX(18deg)' to ride a tilted plane). */
+  hosts: Array<{ f: number; node: React.ReactNode; pose?: string }>;
   /** px the artefact lifts at each cut. */
   lift?: number;
 }> = ({ anchor, artefact, hosts, lift = 14 }) => {
@@ -825,7 +826,7 @@ export const Relay: React.FC<{
   return (
     <AbsoluteFill>
       <AbsoluteFill>{hosts[i].node}</AbsoluteFill>
-      <div style={{ position: 'absolute', left: anchor.x, top: anchor.y, transform: `translate(-50%, -50%) translateY(${-lift * (1 - settle)}px) scale(${mix(settle, 1.05, 1)})`, filter: `drop-shadow(0 ${mix(settle, 22, 8)}px ${mix(settle, 30, 12)}px rgba(0,0,0,${mix(settle, 0.18, 0.28)}))`, zIndex: 50 }}>
+      <div style={{ position: 'absolute', left: anchor.x, top: anchor.y, transform: `translate(-50%, -50%) ${hosts[i].pose ?? ''} translateY(${-lift * (1 - settle)}px) scale(${mix(settle, 1.05, 1)})`, filter: `drop-shadow(0 ${mix(settle, 22, 8)}px ${mix(settle, 30, 12)}px rgba(0,0,0,${mix(settle, 0.18, 0.28)}))`, zIndex: 50 }}>
         {artefact}
       </div>
     </AbsoluteFill>
