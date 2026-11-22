@@ -407,6 +407,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [4. World](kit.md#4-world)
 - [5. Product UI](kit.md#5-product-ui)
 - [6. Turns](kit.md#6-turns)
+- [6b. Imagery (`imagery.tsx`)](kit.md#6b-imagery-imagerytsx)
 - [7. Marks and icons](kit.md#7-marks-and-icons)
 - [8. Sound](kit.md#8-sound)
 - [9. Fonts](kit.md#9-fonts)

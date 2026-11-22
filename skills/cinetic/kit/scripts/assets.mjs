@@ -1568,7 +1568,10 @@ export function bannedRegion(L, C, h) {
   const beige = h >= 31 && h < 118 && L >= 0.7 && C >= 0.007 && C < 0.1;
   const orange = h >= 31 && h < 96 && C >= 0.05;
   const purple = h >= 270 && h < 340 && C >= 0.02;
-  return neon || beige || orange || purple;
+  // cinetic 2: warm grounds and accents (cream, amber, coral, food) are allowed; only neon and purple are banned
+  void beige;
+  void orange;
+  return neon || purple;
 }
 const hueGap = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
 /**

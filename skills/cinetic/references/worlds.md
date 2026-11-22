@@ -78,13 +78,13 @@ are cuts; photographs and footage on every frame; hard cuts every 9-30 f; slow p
 (`turns.md` 8.5); letters as windows; outpaint window; selection handles that blink, stretch and converge into the mark;
 before/after by cut on one picture; the artefact in the world (pull-backs on print and screens).
 **Effects:** grain and speckle; one white flash cut; a texture montage once if the claim needs it. No glow, no motion blur.
-**Kit:** `Ground`, `GridLines`, `Img`, `Words` (cut/rise), `Scramble`, `Camera`, `Grain`; stepped clock `Math.floor(frame / 2) * 2`.
+**Kit:** `Ground`, `GridLines`, `Photo`, `Words` (cut/rise), `Scramble`, `Camera`, `Grain`; stepped clock `Math.floor(frame / 2) * 2`.
 
 ```tsx
 const fe = Math.floor(frame / 2) * 2;     // graphics on twos
 <Ground color="#F0EFEC">
   <GridLines size={120} color="#CDCDCD" />
-  <PictureCard src="img/still-04.jpg" x={keys(fe, [[0, 1500], [4, 1380], [12, 1380], [16, 1260]], ease.snap)} y={300} w={360} h={450} />
+  <Photo src="img/still-04.jpg" x={keys(fe, [[0, 1500], [4, 1380], [12, 1380], [16, 1260]], ease.snap)} y={300} w={360} h={450} />
   <Grain amount={0.03} />
 </Ground>
 ```
@@ -109,7 +109,7 @@ frame; pieces cut on, never slide.
 edge dots; pixel bridge if the mark has pixel heritage; glyph-append wordmark with re-centring by cuts; orbit tiles with bloom
 ends; card flip swap for stationery.
 **Effects:** grain on photos only; flat grounds perfectly clean; glow only on the end card.
-**Kit:** `Img`, `Words` (cut), `Camera`, `Pixelate`, stop-motion clock, `Grain` scoped to photos.
+**Kit:** `Photo`, `Words` (cut), `Camera`, `Pixelate`, stop-motion clock, `Grain` scoped to photos.
 **Avoid:** drop shadows on pieces, smooth slides of paper, a different grade per picture.
 
 ---
@@ -265,7 +265,7 @@ faces rendered at 1/6-1/9 scale and upscaled without smoothing for moments.
 mosaic; develop from white; glyph-append wordmark; glyph birth in a travelling glow on the end card; an exact replay of the
 mark's clip as the bookend.
 **Effects:** pixel devices, grain on photos only, one end-card glow.
-**Kit:** `Pixelate`, `Img`, `Words`, `Camera`, `Grain`, canvas upscaling for pixel faces.
+**Kit:** `Pixelate`, `Photo`, `Words`, `Camera`, `Grain`, canvas upscaling for pixel faces.
 **Avoid:** generic "glitch" (RGB tearing, VHS noise), square-only mosaics on non-pixel brands, dither on flat UI.
 
 ---
@@ -325,7 +325,7 @@ the table is for when it does not.
 - **Fonts:** the kit bundles four families; editorial worlds need a sturdy text serif with weights 500-600 and caps (Instrument
   Serif has a single weight), Swiss posters benefit from a grotesk with 800-900, pixel worlds need a pixel face. Add licensed
   open faces (e.g. via `@fontsource`) and document pairings.
-- **`PictureCard`, `Grade`, `HorizonGlow`, `LightCone`, `Halftone`, `EdgeDots`, `TileFlood`:** world-defining pieces listed in the
+- **`Grade` (a gradient map), `HorizonGlow`, `LightCone`, `Halftone`, `EdgeDots`, `TileFlood`:** world-defining pieces listed in the
   motion files' kit gaps.
 - **Palette guard:** a check that warns when an invented brand's palette contains purple/violet or green hues, or a default
   purple-to-blue gradient.

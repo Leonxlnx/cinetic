@@ -99,7 +99,10 @@ sound on some of them, drive a caret-following camera from them).
 `x, y` pan (px), `zoom` (log-space), `rx` tilts the world back (look down), `ry` turns, `rz` rolls. Each key's `curve` shapes the
 travel into it (default `ease.inOut`), or `curves: { pan, zoom, rot }` separately (a dive that swings in-out and zooms
 ease-in); `cut: true` jumps on that frame (punch-in, hard reframe). `cam={...}` sets a fixed camera;
-`origin="x% y%"` sets the point the zoom and orbit pivot on (default the centre).
+`origin="x% y%"` sets the point the zoom and orbit pivot on (default the centre); `perspective` (default 2200 px) sets how
+strongly depth reads: a large object hinged inside the world (a door, a lid) swings toward the lens with a short
+perspective, so give it its own layer with a longer one. To add an offset to a keyframed camera, add to the values
+`camAt(frame, keys)` returns (`cam={{ ...c, x: c.x + dx }}`); replacing `x`/`y` throws the keyframed pan away.
 **`<At x y z rx ry rz scale anchor>`** places a child in the world (z toward the camera).
 **`camSmear(frame, keys)`** motion blur in px from the camera's own speed (apply to the world group on fast moves).
 **`fillZoom(w, h, frac = 0.8)`** the zoom that makes a w x h box fill the frame. **`diveZoom(w, h)`** the zoom at which a box
@@ -179,6 +182,16 @@ Each takes `from` and `to` (the two shots as nodes), `start`, `dur`, and renders
 - **`<Flash start dur color>`** a burst of light that hides a swap at its peak.
 The strongest turns are built by hand from the scene's own objects (the full stop that grows, the card that becomes the next
 screen): see [turns.md](motion/turns.md).
+
+## 6b. Imagery (`imagery.tsx`)
+
+- **`<Photo src w h grade={{ dark, light, look }} develop zoom panX panY start dur radius position>`**: a picture that covers its
+  box, graded into the film's one look (`look` is a CSS filter for every picture); `develop` (0..1) cross-fades it from the
+  grade's duotone to true colour, the way a found or generated picture arrives; it drifts slowly (`zoom`, `panX/Y`).
+- **`<TextWindow text src reveal zoom position panX panY style>`**: letters as windows onto a picture (heavy faces, big sizes).
+- **`<Compare before after split w h line handle labels>`**: a before/after with a divider at `split` (0..1).
+- **`<Selection x y w h start dur color label>`**: a box with corner handles that draws itself around what the product found.
+- Pictures live in `public/` (`img/...`): the user's, or licensed and recorded (`assets.mjs`, see [assets.md](assets.md)).
 
 ## 7. Marks and icons
 

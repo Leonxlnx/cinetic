@@ -230,7 +230,7 @@ export const Flood: React.FC<{
     <AbsoluteFill>
       {!done && <AbsoluteFill>{under}</AbsoluteFill>}
       <AbsoluteFill style={{ clipPath: done ? undefined : `inset(${top}px ${1920 - right}px ${1080 - bottom}px ${left}px round ${r}px)`, background: color }}>
-        {to && <AbsoluteFill style={{ opacity: reveal ? 1 : clamp((p - 0.55) / 0.45) }}>{to}</AbsoluteFill>}
+        {to && <AbsoluteFill style={{ opacity: reveal ? 1 : clamp((p - 0.25) / 0.5) }}>{to}</AbsoluteFill>}
       </AbsoluteFill>
       {source && !done && <AbsoluteFill style={{ opacity: 1 - clamp((p - 0.5) / 0.3) }}>{source}</AbsoluteFill>}
     </AbsoluteFill>

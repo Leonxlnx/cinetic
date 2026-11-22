@@ -55,7 +55,9 @@ Never generated images. In order of preference:
 3. When the product's input is human (someone speaking, writing, cooking, paying), one licensed clip or photo of a real
    person doing it makes the film human: `node scripts/assets.mjs recipe "<the input>"` finds clips for 40 common inputs
    (`assets.mjs search` and `get` for anything else; with Python, numpy and opencv it also screens thumbnails for people
-   and text). Check the framing fits your use (a webcam tile needs someone facing the lens).
+   and text; without them it says so and still works). Keyless open collections are thin for everyday subjects (food,
+   interiors): if nothing fits, build the subject in code (words on shelves, objects as type) rather than force a poor
+   picture. Resize with `assets.mjs grade --width 1600` (`get --width` does not shrink every source). Check the framing fits your use (a webcam tile needs someone facing the lens).
 4. Licensed stock, downloaded by hand or script and recorded:
    - Unsplash (https://unsplash.com/license): free for commercial use, no attribution required (credit appreciated); not
      for building a competing service, not to sell unaltered copies.

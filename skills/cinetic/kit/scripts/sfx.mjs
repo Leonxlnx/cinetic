@@ -257,10 +257,20 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
   const s = Object.fromEntries(Object.entries(all).filter(([id]) => used.size === 0 || used.has(id)));
   const m = readJson(path.join(film, 'public', 'music', 'music.json'), {});
   console.log('## Sound\n');
-  for (const [name, t] of Object.entries(m)) console.log(`- Music: ${name} (${t.page}), licence ${t.licence}${t.credit ? `. ${t.credit}` : ''}`);
-  for (const [id, x] of Object.entries(s)) console.log(`- ${x.title} (${x.page}), licence ${x.licence}`);
-  const lic = cat.sources ?? {};
-  if (Object.keys(lic).length) console.log(`\nLicences: ${Object.entries(lic).map(([k, v]) => `${k}: ${v.licence_url ?? v.url ?? ''}`).join('; ')}`);
+  for (const [name, t] of Object.entries(m))
+    console.log(`- Music: "${t.title ?? name}"${t.artist ? ` by ${t.artist}` : ''} (${t.page}). Licence: ${t.licence} ${t.licenceUrl ?? LICENCE_URLS[t.licence] ?? ''}${t.credit ? `\n  Credit (required, keep it in the video description): ${t.credit}` : ''}`);
+  for (const [, x] of Object.entries(s)) console.log(`- Sound: "${x.title}" (${x.page}). Licence: ${x.licence} ${LICENCE_URLS[x.licence] ?? ''}`);
+  // photos, footage and marks recorded by assets.mjs and logos.mjs
+  const pics = readJson(path.join(film, 'assets', 'licences.json'), readJson(path.join(film, 'public', 'assets', 'licences.json'), null));
+  if (pics) {
+    console.log('\n## Pictures\n');
+    for (const p of Array.isArray(pics) ? pics : Object.values(pics.items ?? pics)) if (p && typeof p === 'object') console.log(`- ${p.title ?? p.file ?? p.name ?? 'picture'}${p.author ? ` by ${p.author}` : ''} (${p.page ?? p.url ?? ''}). Licence: ${p.licence ?? p.license ?? ''}`);
+  }
+  const marks = readJson(path.join(film, 'public', 'logos', 'logos.json'), null);
+  if (marks?.logos) {
+    console.log('\n## Marks\n');
+    for (const [, e] of Object.entries(marks.logos)) console.log(`- ${e.name}: trademark of ${e.owner ?? 'its owner'}; file from ${e.source ?? e.collection ?? 'an open collection'} (${e.licence ?? ''}). Used to show the product works with it.`);
+  }
 } else {
   console.log(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 17).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
 }

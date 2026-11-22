@@ -70,7 +70,7 @@ const videoStart = (file) => {
 const loudMux = (video, audioSrc, out) => {
   const off = videoStart(video);
   const a = off > 0.0005 ? ['-itsoffset', off.toFixed(4), '-i', audioSrc] : ['-i', audioSrc];
-  run('ffmpeg', ['-v', 'error', '-y', '-i', video, ...a, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11,alimiter=limit=0.83:level=false', '-ar', '48000', '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart', out]);
+  run('ffmpeg', ['-v', 'error', '-y', '-i', video, ...a, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11,alimiter=limit=0.79:level=false', '-ar', '48000', '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart', out]);
 };
 
 /** Measure a rendered film: coverage, pace, empty frames, the length of its ending (low-res analysis via ffmpeg). */
@@ -147,7 +147,7 @@ const report = (file) => {
 };
 
 if (cmd === 'sheet') {
-  const out = opt('out', `out/${film}-sheet.png`);
+  const out = opt('out', opt('frames') ? `out/${film}-moment.png` : `out/${film}-sheet.png`);
   ensureDir(out);
   const props = { film };
   if (opt('grid')) props.cols = Number(opt('grid'));
