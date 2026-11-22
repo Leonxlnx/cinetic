@@ -1,6 +1,6 @@
 {
  "updated": "2026-11-22",
- "about": "Curated shortlist of scriptable, commercially usable music for 20-60 s premium tech launch films. Every file_url answered HTTP 200 to curl -sI on 2026-11-22. Mood words, energy and good_for are inferred from catalogue tags/genre/BPM metadata, NOT from listening; audition before locking. BPM is only given where the source states it (Incompetech); Mixkit does not publish BPM. good_from_s is \"unknown\" everywhere: it needs a listen or beat analysis. All tracks are human-made library music; no Pixabay, no AI.",
+ "about": "Curated shortlist of scriptable, commercially usable music for 20-60 s premium tech launch films. Every file_url answered HTTP 200 on 2026-11-22. Mood words, energy and good_for are inferred from catalogue tags, genre and metadata, NOT from listening: audition before locking. bpm_measured and first_beat_s are measured from each file (a comb of the onsets over the whole track); tracks with a tempo_note have no steady grid. good_from_s is the second the track is established. sfx.mjs music measures the fetched file again and sfx.mjs fit places it. All tracks are human-made library music; no AI.",
  "licences": {
   "mixkit-music-free": {
    "name": "Mixkit Stock Music Free License",
@@ -38,8 +38,8 @@
     "update film"
    ],
    "vibe": "confident-minimal-electronic",
-   "note": "the track every worked film in kit/src/films uses",
-   "bpm_measured": 123.0,
+   "note": "the bed of the worked film forge (cut on its beat grid)",
+   "bpm_measured": 122.0,
    "duration_s": 102.4,
    "good_from_s": 1.07,
    "energy_4s": [
@@ -70,8 +70,8 @@
     0.04,
     0.0
    ],
-   "first_beat_s": 0.07,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.04,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-deep-urban-623",
@@ -111,7 +111,7 @@
    ],
    "vibe": "confident-minimal-electronic",
    "good_from_s": 15.51,
-   "bpm_measured": 123,
+   "bpm_measured": 124.0,
    "energy_4s": [
     0.31,
     0.33,
@@ -187,8 +187,8 @@
     0,
     0
    ],
-   "first_beat_s": 1.49,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.48,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-sonor-03-561",
@@ -228,7 +228,7 @@
    ],
    "vibe": "confident-minimal-electronic",
    "good_from_s": 17.83,
-   "bpm_measured": 143.6,
+   "bpm_measured": 157.8,
    "energy_4s": [
     0.77,
     0.76,
@@ -306,8 +306,9 @@
     0.11,
     0.01
    ],
-   "first_beat_s": 17.83,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.16,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)",
+   "tempo_note": "no steady grid found: place it by its sections (sfx.mjs analyze), not by beats"
   },
   {
    "id": "mixkit-dub-techno-groove-133",
@@ -346,7 +347,7 @@
    ],
    "vibe": "confident-minimal-electronic",
    "good_from_s": 0.56,
-   "bpm_measured": 123,
+   "bpm_measured": 123.0,
    "energy_4s": [
     0.72,
     0.76,
@@ -375,8 +376,8 @@
     0.03,
     0
    ],
-   "first_beat_s": 0.12,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.09,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-minimal-techno-02-161",
@@ -416,7 +417,7 @@
    ],
    "vibe": "confident-minimal-electronic",
    "good_from_s": 0.53,
-   "bpm_measured": 129.2,
+   "bpm_measured": 128.0,
    "energy_4s": [
     0.88,
     0.89,
@@ -443,8 +444,8 @@
     0.39,
     0
    ],
-   "first_beat_s": 0.07,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.03,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-minimal-emotion-160",
@@ -484,7 +485,7 @@
    ],
    "vibe": "confident-minimal-electronic",
    "good_from_s": 0.53,
-   "bpm_measured": 129.2,
+   "bpm_measured": 128.0,
    "energy_4s": [
     0.68,
     0.72,
@@ -518,8 +519,8 @@
     0.14,
     0.01
    ],
-   "first_beat_s": 0.07,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.41,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-deep-techno-ambience-134",
@@ -558,7 +559,7 @@
    ],
    "vibe": "confident-minimal-electronic",
    "good_from_s": 0.63,
-   "bpm_measured": 123,
+   "bpm_measured": 125.0,
    "energy_4s": [
     0.91,
     0.93,
@@ -592,8 +593,8 @@
     0.03,
     0.01
    ],
-   "first_beat_s": 0.14,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.12,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-slow-dive-121",
@@ -630,7 +631,7 @@
    ],
    "vibe": "confident-minimal-electronic",
    "good_from_s": 2.32,
-   "bpm_measured": 83.4,
+   "bpm_measured": 126.0,
    "energy_4s": [
     0.44,
     0.6,
@@ -657,8 +658,8 @@
     0.59,
     0.12
    ],
-   "first_beat_s": 1.63,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.14,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-autofahren-770",
@@ -697,7 +698,7 @@
    ],
    "vibe": "confident-minimal-electronic",
    "good_from_s": 49.88,
-   "bpm_measured": 117.5,
+   "bpm_measured": 117.0,
    "energy_4s": [
     0.25,
     0.27,
@@ -772,8 +773,8 @@
     0.25,
     0.19
    ],
-   "first_beat_s": 0.14,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.08,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-coffee-or-tea-1168",
@@ -813,7 +814,7 @@
    ],
    "vibe": "warm-modern",
    "good_from_s": 9.33,
-   "bpm_measured": 103.4,
+   "bpm_measured": 105.0,
    "energy_4s": [
     0.29,
     0.29,
@@ -848,8 +849,8 @@
     0.29,
     0
    ],
-   "first_beat_s": 0.19,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.16,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-tauro-596",
@@ -888,7 +889,7 @@
    ],
    "vibe": "warm-modern",
    "good_from_s": 14.84,
-   "bpm_measured": 161.5,
+   "bpm_measured": 97.2,
    "energy_4s": [
     0.1,
     0.52,
@@ -929,8 +930,9 @@
     0,
     0
    ],
-   "first_beat_s": 14.84,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.12,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)",
+   "tempo_note": "no steady grid found: place it by its sections (sfx.mjs analyze), not by beats"
   },
   {
    "id": "mixkit-down-the-river-111",
@@ -970,7 +972,7 @@
    ],
    "vibe": "warm-modern",
    "good_from_s": 0.79,
-   "bpm_measured": 80.7,
+   "bpm_measured": 81.0,
    "energy_4s": [
     0.46,
     0.51,
@@ -1007,8 +1009,8 @@
     0.01,
     0
    ],
-   "first_beat_s": 0.07,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.02,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-silver-lining-1191",
@@ -1046,7 +1048,7 @@
    ],
    "vibe": "warm-modern",
    "good_from_s": 10.24,
-   "bpm_measured": 99.4,
+   "bpm_measured": 100.0,
    "energy_4s": [
     0.48,
     0.52,
@@ -1073,8 +1075,8 @@
     0.84,
     0.02
    ],
-   "first_beat_s": 0.49,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.0,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-your-breath-634",
@@ -1114,7 +1116,7 @@
    ],
    "vibe": "warm-modern",
    "good_from_s": 15.79,
-   "bpm_measured": 117.5,
+   "bpm_measured": 120.0,
    "energy_4s": [
     0.25,
     0.3,
@@ -1177,8 +1179,8 @@
     0,
     0
    ],
-   "first_beat_s": 0.79,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.0,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-kraft-twerk-115",
@@ -1218,7 +1220,7 @@
    ],
    "vibe": "crisp-percussive",
    "good_from_s": 3.62,
-   "bpm_measured": 117.5,
+   "bpm_measured": 157.3,
    "energy_4s": [
     0.46,
     0.52,
@@ -1254,8 +1256,9 @@
     0.01,
     0
    ],
-   "first_beat_s": 0.58,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.27,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)",
+   "tempo_note": "no steady grid found: place it by its sections (sfx.mjs analyze), not by beats"
   },
   {
    "id": "mixkit-beating-break-174",
@@ -1295,7 +1298,7 @@
    ],
    "vibe": "crisp-percussive",
    "good_from_s": 0.7,
-   "bpm_measured": 129.2,
+   "bpm_measured": 130.0,
    "energy_4s": [
     0.8,
     0.83,
@@ -1326,7 +1329,7 @@
     0.01
    ],
    "first_beat_s": 0.21,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-the-greatest-comeback-1079",
@@ -1365,7 +1368,7 @@
    ],
    "vibe": "crisp-percussive",
    "good_from_s": 0.53,
-   "bpm_measured": 129.2,
+   "bpm_measured": 130.0,
    "energy_4s": [
     0.56,
     0.64,
@@ -1392,8 +1395,8 @@
     0.34,
     0
    ],
-   "first_beat_s": 0.07,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.04,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-sophisticated-58",
@@ -1432,7 +1435,7 @@
    ],
    "vibe": "crisp-percussive",
    "good_from_s": 19.13,
-   "bpm_measured": 129.2,
+   "bpm_measured": 130.0,
    "energy_4s": [
     0.31,
     0.51,
@@ -1461,8 +1464,8 @@
     0.61,
     0.04
    ],
-   "first_beat_s": 0.63,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.34,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-before-the-dawn-619",
@@ -1501,7 +1504,7 @@
    ],
    "vibe": "ambient-to-drop",
    "good_from_s": 1.63,
-   "bpm_measured": 117.5,
+   "bpm_measured": 115.0,
    "energy_4s": [
     0.59,
     0.67,
@@ -1579,8 +1582,8 @@
     0,
     0
    ],
-   "first_beat_s": 1.09,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.02,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-b-o-r-n-620",
@@ -1620,7 +1623,7 @@
    ],
    "vibe": "ambient-to-drop",
    "good_from_s": 20.94,
-   "bpm_measured": 129.2,
+   "bpm_measured": 132.0,
    "energy_4s": [
     0.36,
     0.42,
@@ -1678,8 +1681,8 @@
     0,
     0
    ],
-   "first_beat_s": 0.72,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.23,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-anthem-01-567",
@@ -1719,7 +1722,7 @@
    ],
    "vibe": "ambient-to-drop",
    "good_from_s": 7.76,
-   "bpm_measured": 129.2,
+   "bpm_measured": 130.0,
    "energy_4s": [
     0.29,
     0.43,
@@ -1767,8 +1770,8 @@
     0,
     0
    ],
-   "first_beat_s": 0.39,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.01,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-sonor-01-558",
@@ -1807,7 +1810,7 @@
    ],
    "vibe": "ambient-to-drop",
    "good_from_s": 23.8,
-   "bpm_measured": 83.4,
+   "bpm_measured": 84.0,
    "energy_4s": [
     0.06,
     0.15,
@@ -1885,8 +1888,8 @@
     0.13,
     0.01
    ],
-   "first_beat_s": 1.65,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.2,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-pop-track-03-729",
@@ -1926,7 +1929,7 @@
    ],
    "vibe": "playful-bright",
    "good_from_s": 4.48,
-   "bpm_measured": 107.7,
+   "bpm_measured": 109.0,
    "energy_4s": [
     0.35,
     0.81,
@@ -1954,8 +1957,8 @@
     0.16,
     0
    ],
-   "first_beat_s": 4.48,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.05,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-better-times-are-coming-173",
@@ -1995,7 +1998,7 @@
    ],
    "vibe": "playful-bright",
    "good_from_s": 0.67,
-   "bpm_measured": 117.5,
+   "bpm_measured": 120.0,
    "energy_4s": [
     0.81,
     0.88,
@@ -2024,8 +2027,8 @@
     0.11,
     0
    ],
-   "first_beat_s": 0.14,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.13,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-be-happy-942",
@@ -2065,7 +2068,7 @@
    ],
    "vibe": "playful-bright",
    "good_from_s": 0.53,
-   "bpm_measured": 117.5,
+   "bpm_measured": 120.0,
    "energy_4s": [
     0.74,
     0.76,
@@ -2093,8 +2096,8 @@
     0.01,
     0
    ],
-   "first_beat_s": 0.53,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.0,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-fight-till-the-end-81",
@@ -2132,7 +2135,7 @@
    ],
    "vibe": "playful-bright",
    "good_from_s": 3.13,
-   "bpm_measured": 172.3,
+   "bpm_measured": 87.0,
    "energy_4s": [
     0.47,
     0.66,
@@ -2162,8 +2165,8 @@
     0.71,
     0.17
    ],
-   "first_beat_s": 0.37,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.0,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-a-new-life-543",
@@ -2203,7 +2206,7 @@
    ],
    "vibe": "cinematic-minimal",
    "good_from_s": 25.15,
-   "bpm_measured": 129.2,
+   "bpm_measured": 128.0,
    "energy_4s": [
     0.01,
     0.03,
@@ -2231,8 +2234,8 @@
     0,
     0
    ],
-   "first_beat_s": 24.68,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.26,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-daniel-me-566",
@@ -2271,7 +2274,7 @@
    ],
    "vibe": "cinematic-minimal",
    "good_from_s": 67.36,
-   "bpm_measured": 161.5,
+   "bpm_measured": 123.0,
    "energy_4s": [
     0.18,
     0.45,
@@ -2322,8 +2325,8 @@
     0.01,
     0
    ],
-   "first_beat_s": 67.36,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.0,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-home-551",
@@ -2362,7 +2365,7 @@
    ],
    "vibe": "cinematic-minimal",
    "good_from_s": 32.23,
-   "bpm_measured": 143.6,
+   "bpm_measured": 141.0,
    "energy_4s": [
     0.05,
     0.09,
@@ -2402,8 +2405,8 @@
     0,
     0
    ],
-   "first_beat_s": 32.23,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.27,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-wheres-hope-1162",
@@ -2442,7 +2445,7 @@
    ],
    "vibe": "cinematic-minimal",
    "good_from_s": 9.31,
-   "bpm_measured": 112.3,
+   "bpm_measured": 110.0,
    "energy_4s": [
     0.43,
     0.44,
@@ -2472,8 +2475,8 @@
     0.31,
     0.08
    ],
-   "first_beat_s": 1.14,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.0,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "mixkit-south-waves-555",
@@ -2513,7 +2516,7 @@
    ],
    "vibe": "cinematic-minimal",
    "good_from_s": 2.37,
-   "bpm_measured": 117.5,
+   "bpm_measured": 115.0,
    "energy_4s": [
     0.46,
     0.9,
@@ -2563,8 +2566,8 @@
     0.05,
     0
    ],
-   "first_beat_s": 2.37,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.52,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "incompetech-brain-dance",
@@ -2595,7 +2598,7 @@
    ],
    "vibe": "confident-minimal-electronic",
    "good_from_s": 2.46,
-   "bpm_measured": 61.5,
+   "bpm_measured": 124.0,
    "energy_4s": [
     0.65,
     1,
@@ -2652,8 +2655,8 @@
     0.13,
     0.01
    ],
-   "first_beat_s": 2.46,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.02,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "incompetech-limit-70",
@@ -2684,7 +2687,7 @@
    ],
    "vibe": "warm-modern",
    "good_from_s": 1.81,
-   "bpm_measured": 103.4,
+   "bpm_measured": 103.0,
    "energy_4s": [
     0.61,
     0.66,
@@ -2763,8 +2766,9 @@
     0.63,
     0
    ],
-   "first_beat_s": 1.81,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.03,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)",
+   "tempo_note": "tempo as the composer states it; no steady grid was measured in the file: place it by its sections (sfx.mjs analyze)"
   },
   {
    "id": "incompetech-newer-wave",
@@ -2795,7 +2799,7 @@
    ],
    "vibe": "playful-bright",
    "good_from_s": 2.79,
-   "bpm_measured": 112.3,
+   "bpm_measured": 110.0,
    "energy_4s": [
     0.44,
     0.79,
@@ -2842,8 +2846,8 @@
     0.24,
     0.01
    ],
-   "first_beat_s": 2.79,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.3,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "incompetech-digital-lemonade",
@@ -2874,7 +2878,7 @@
    ],
    "vibe": "playful-bright",
    "good_from_s": 0.56,
-   "bpm_measured": 117.5,
+   "bpm_measured": 120.0,
    "energy_4s": [
     0.69,
     0.76,
@@ -2923,8 +2927,8 @@
     0.02,
     0
    ],
-   "first_beat_s": 0.07,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.03,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "incompetech-inspired",
@@ -2955,7 +2959,7 @@
    ],
    "vibe": "warm-modern",
    "good_from_s": 0.58,
-   "bpm_measured": 117.5,
+   "bpm_measured": 120.0,
    "energy_4s": [
     0.88,
     0.92,
@@ -3030,8 +3034,8 @@
     0.02,
     0
    ],
-   "first_beat_s": 0.07,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.03,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   },
   {
    "id": "incompetech-hypnothis",
@@ -3062,7 +3066,7 @@
    ],
    "vibe": "confident-minimal-electronic",
    "good_from_s": 18.34,
-   "bpm_measured": 103.4,
+   "bpm_measured": 104.0,
    "energy_4s": [
     0.71,
     0.78,
@@ -3136,8 +3140,9 @@
     0.47,
     0
    ],
-   "first_beat_s": 18.34,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.27,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)",
+   "tempo_note": "tempo as the composer states it; no steady grid was measured in the file: place it by its sections (sfx.mjs analyze)"
   },
   {
    "id": "incompetech-rising-tide",
@@ -3168,7 +3173,7 @@
    ],
    "vibe": "ambient-to-drop",
    "good_from_s": 0.63,
-   "bpm_measured": 107.7,
+   "bpm_measured": 106.0,
    "energy_4s": [
     0.96,
     0.79,
@@ -3241,8 +3246,9 @@
     0.28,
     0
    ],
-   "first_beat_s": 0.63,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.01,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)",
+   "tempo_note": "tempo as the composer states it; no steady grid was measured in the file: place it by its sections (sfx.mjs analyze)"
   },
   {
    "id": "incompetech-presenterator",
@@ -3273,7 +3279,7 @@
    ],
    "vibe": "crisp-percussive",
    "good_from_s": 0.53,
-   "bpm_measured": 129.2,
+   "bpm_measured": 130.0,
    "energy_4s": [
     0.93,
     0.98,
@@ -3340,8 +3346,8 @@
     0.73,
     0
    ],
-   "first_beat_s": 0.07,
-   "measured": "2026-11-22 librosa beat_track + rms"
+   "first_beat_s": 0.03,
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
   }
  ]
 }

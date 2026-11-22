@@ -102,9 +102,17 @@ node scripts/sfx.mjs shortlist --energy 3 --bpm 100-125     # filter by --vibe, 
 node scripts/sfx.mjs music mixkit-tech-house-vibes-130       # -> public/music/bed.mp3 + its licence and credit
 node scripts/sfx.mjs music <url> --as bed --page <page you read> --licence cc-by-4.0 --credit "..."   # any other track
 ```
-Moods in the shortlist were tagged from catalogue data, and its tempos are estimates (one was off by 2 %): run
-`node scripts/sfx.mjs analyze public/music/bed.mp3` on the fetched track for its tempo, first beat and sections (the
-quiet stretch before a drop, the lift), then put the film's turns on them.
+Moods in the shortlist were tagged from catalogue data. `sfx.mjs music` measures the tempo and the first beat from the
+fetched file itself and prints them (use that number for `beats()`, not a rounded one: a grid 1 % off drifts half a beat in
+25 s). Then place the track against the picture:
+```
+node scripts/sfx.mjs analyze public/music/bed.mp3                                  # its sections: the quiet stretch, the lift
+node scripts/sfx.mjs fit public/music/bed.mp3 --hit 112 --len 530 --cuts 50,96,187   # the start for this film
+```
+`fit` lists the starts that put the film's main hit (the reveal, the flood, the name) on a beat, best first: the music lifts
+there, there is music under the whole film, the opening is not silence. With `--cuts` it shows which cuts sit off the beat
+grid (move a cut a frame or two, or let a sound carry it). Choose the track for the film's world: a paper-and-serif film and
+a dark-stage film should not share a bed. `frames.mjs check` fails a film whose music runs out before it ends.
 Licences that work for a published launch film:
 - Mixkit Stock Music Free License (https://mixkit.co/license/#musicFree): web, social, ads; no credit needed; never
   redistribute the file or register it with a Content ID service.
@@ -113,8 +121,8 @@ Licences that work for a published launch film:
   licence covers what is published while it is active.
 Never synthesized or AI-generated music. Avoid tracks so popular viewers know them.
 
-Cut the music to the film: `startFrom` at a bar where the beat is already established, cues on its downbeats where you
-can (at 120 BPM a beat is 15 frames at 30 fps), a breath (`breaths`) before the reveal, and let it ring out under the end
+Cut the music to the film: `startFrom` from `fit` (or at a bar where the beat is already established), cues on its
+downbeats where you can (at 120 BPM a beat is 15 frames at 30 fps), a breath (`breaths`) before the reveal, and let it ring out under the end
 card rather than stopping dead.
 
 ## 7. CREDITS.md

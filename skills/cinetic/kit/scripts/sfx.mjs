@@ -15,7 +15,10 @@
 //                                                   public/music/music.json)
 //   node scripts/sfx.mjs analyze public/music/bed.mp3   the track's tempo (from its kicks) and sections: where it is quiet,
 //                                                   where it lifts or drops; put the film's turns on them
-//   node scripts/sfx.mjs credits                    print the CREDITS.md block for every sound, track, picture and mark used
+//   node scripts/sfx.mjs fit public/music/bed.mp3 --hit 104 --len 284 [--cuts 12,44,182]
+//                                                   where to start the track so the film's main hit lands on a beat
+//                                                   where the music lifts, and which cuts sit off the beat
+//   node scripts/sfx.mjs credits                   print the CREDITS.md block for every sound, track, picture and mark used
 //
 // The catalogue (scripts/sfx-catalogue.json) lists recordings whose licence allows commercial films, each with
 // its onset (lead) measured so <Sfx at={frame}> can land the transient exactly on the frame.
@@ -54,6 +57,48 @@ const flag = (name, dflt) => {
 };
 
 const ensure = (d) => fs.mkdirSync(d, { recursive: true });
+
+// A track's tempo and beat phase, measured from the file itself: autocorrelation of the onset envelope finds the tempo,
+// then a comb over the whole track refines it (a grid that is 1 % off drifts half a beat in 25 s).
+function measureTrack(file) {
+  const SR = 4000;
+  const r = spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-ac', '1', '-ar', String(SR), '-f', 'f32le', '-'], { maxBuffer: 1 << 30 });
+  if (r.status !== 0) throw new Error(`ffmpeg could not read ${file}`);
+  const x = new Float32Array(r.stdout.buffer, r.stdout.byteOffset, Math.floor(r.stdout.length / 4));
+  const hop = 40; // 10 ms
+  const n = Math.floor(x.length / hop);
+  const e = new Float32Array(n);
+  for (let i = 0; i < n; i++) { let s = 0; for (let k = 0; k < hop; k++) { const v = x[i * hop + k]; s += v * v; } e[i] = Math.sqrt(s / hop); }
+  const on = new Float32Array(n);
+  for (let i = 1; i < n; i++) on[i] = Math.max(0, Math.log1p(e[i] * 50) - Math.log1p(e[i - 1] * 50));
+  const score = (lag) => { let s = 0; for (let i = 0; i + lag < n; i++) s += on[i] * on[i + lag]; return s; };
+  let best = 0, bestLag = 0;
+  for (let bpm = 70; bpm <= 180; bpm += 0.1) {
+    const lag = 6000 / bpm; // hops per beat (100 hops a second)
+    const l0 = Math.floor(lag), fr = lag - l0;
+    const s = score(l0) * (1 - fr) + score(l0 + 1) * fr + 0.5 * (score(Math.round(lag * 2)) + score(Math.round(lag * 4)));
+    if (s > best) { best = s; bestLag = bpm; }
+  }
+  let bpm = bestLag;
+  while (bpm < 85) bpm *= 2;
+  while (bpm > 170) bpm /= 2;
+  // refine: the tempo and phase whose beat grid, laid over the whole track, collects the most onsets
+  const wide = new Float32Array(n);
+  for (let i = 1; i < n - 1; i++) wide[i] = on[i - 1] + on[i] + on[i + 1];
+  const comb = (b) => {
+    const bh = 6000 / b;
+    let top = -1, ph = 0;
+    for (let q = 0; q < bh; q += 1) { let s = 0; for (let t = q; t < n; t += bh) s += wide[Math.round(t)] || 0; if (s > top) { top = s; ph = q; } }
+    return { top, ph };
+  };
+  let fine = bpm, fineTop = -1, bestPh = 0;
+  for (let b = bpm * 0.985; b <= bpm * 1.015; b += 0.01) { const c = comb(b); if (c.top > fineTop) { fineTop = c.top; fine = b; bestPh = c.ph; } }
+  bpm = Math.round(fine * 100) / 100;
+  const secs = Math.floor(n / 100);
+  const lvl = [];
+  for (let s = 0; s < secs; s++) { let m = 0; for (let i = s * 100; i < (s + 1) * 100; i++) m += e[i] * e[i]; lvl.push(10 * Math.log10(m / 100 + 1e-10)); }
+  return { x, SR, n, e, on, bpm, beatHops: 6000 / bpm, bestPh, secs, lvl, peak: Math.max(...lvl) };
+}
 const readJson = (p, d) => (fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : d);
 
 async function download(url, out) {
@@ -236,49 +281,66 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
     fetched: new Date().toISOString().slice(0, 10),
   };
   fs.writeFileSync(idxPath, JSON.stringify(idx, null, 2));
-  // start on a bar: the first downbeat (a multiple of 4 beats from the first detected beat) at or after the point it gets going
+  // measure the tempo and the beat from the file itself (the shortlist's tempo is rough: fine for choosing, not for a grid)
+  let m = null;
+  try { m = measureTrack(out); } catch { /* no ffmpeg: keep the shortlist's values */ }
+  const bpm = m ? m.bpm : t?.bpm_measured;
+  const first = m ? m.bestPh / 100 : t?.first_beat_s;
+  // start on a beat four-beat steps from the first detected beat, at or after the point the track gets going
   let st = t?.good_from_s ?? 0;
-  if (t?.bpm_measured && t.first_beat_s !== undefined && t.first_beat_s !== null) {
-    const bar = (60 / t.bpm_measured) * 4;
-    st = +(t.first_beat_s + Math.ceil((st - t.first_beat_s) / bar) * bar).toFixed(2);
+  if (bpm && first !== undefined && first !== null) {
+    const bar = (60 / bpm) * 4;
+    st = +(first + Math.ceil((st - first) / bar) * bar).toFixed(2);
   }
-  idx[name].startFrom = st;
+  Object.assign(idx[name], { bpm, firstBeat: first, startFrom: st });
   fs.writeFileSync(idxPath, JSON.stringify(idx, null, 2));
-  console.log(`use: <Music src="music/${name}${ext}" startFrom={${st}} />` + (t?.bpm_measured ? `  (starts on a bar; beat grid in the film: beats(${t.bpm_measured}, 0) when the bed starts at frame 0)` : ''));
-} else if (cmd === 'analyze') {
+  const steady = bpm && Math.abs(bpm - Math.round(bpm)) <= 0.07;
+  console.log(`use: <Music src="music/${name}${ext}" startFrom={${st}} />` + (steady ? `  (${bpm} BPM measured from the file; beat grid: beats(${bpm}, 0) when the bed starts at frame 0)` : bpm ? `  (no steady beat grid found in the file${t?.bpm ? `; the composer states ${t.bpm} BPM` : ''}: place it by its sections)` : ''));
+  console.log(`then: node scripts/sfx.mjs fit public/music/${name}${ext} --hit <frame of the film's main hit> --len <frames>   (the start that lands the hit on a lift)`);
+} else if (cmd === 'analyze' || cmd === 'fit') {
   // tempo by autocorrelation of the onset envelope; sections from 1 s loudness (dB)
   const file = args[1];
-  if (!file) throw new Error('usage: sfx.mjs analyze <audio file>');
-  const SR = 4000;
-  const r = spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-ac', '1', '-ar', String(SR), '-f', 'f32le', '-'], { maxBuffer: 1 << 30 });
-  if (r.status !== 0) throw new Error(`ffmpeg could not read ${file}`);
-  const x = new Float32Array(r.stdout.buffer, r.stdout.byteOffset, Math.floor(r.stdout.length / 4));
-  const hop = 40; // 10 ms
-  const n = Math.floor(x.length / hop);
-  const e = new Float32Array(n);
-  for (let i = 0; i < n; i++) { let s = 0; for (let k = 0; k < hop; k++) { const v = x[i * hop + k]; s += v * v; } e[i] = Math.sqrt(s / hop); }
-  const on = new Float32Array(n);
-  for (let i = 1; i < n; i++) on[i] = Math.max(0, Math.log1p(e[i] * 50) - Math.log1p(e[i - 1] * 50));
-  const score = (lag) => { let s = 0; for (let i = 0; i + lag < n; i++) s += on[i] * on[i + lag]; return s; };
-  let best = 0, bestLag = 0;
-  for (let bpm = 70; bpm <= 180; bpm += 0.1) {
-    const lag = 6000 / bpm; // hops per beat (100 hops a second)
-    const l0 = Math.floor(lag), fr = lag - l0;
-    const s = score(l0) * (1 - fr) + score(l0 + 1) * fr + 0.5 * (score(Math.round(lag * 2)) + score(Math.round(lag * 4)));
-    if (s > best) { best = s; bestLag = bpm; }
+  if (!file) throw new Error(`usage: sfx.mjs ${cmd} <audio file>${cmd === 'fit' ? ' --hit <frame> --len <frames> [--cuts 12,44,104] [--fps 30]' : ''}`);
+  const { x, SR, n, e, on, bpm, beatHops, bestPh, secs, lvl, peak } = measureTrack(file);
+  if (cmd === 'fit') {
+    // where to start the track so the film's main hit lands on a beat where the music lifts, with music under the whole film
+    const fps = Number(flag('fps', 30));
+    const hit = Number(flag('hit'));
+    const len = Number(flag('len'));
+    if (!Number.isFinite(hit) || !Number.isFinite(len)) throw new Error('usage: sfx.mjs fit <audio file> --hit <frame of the main hit> --len <film length in frames> [--cuts 12,44,104] [--fps 30]');
+    const dB = (a, b) => { let m = 0, c = 0; for (let i = Math.max(0, Math.round(a * 100)); i < Math.min(n, Math.round(b * 100)); i++) { m += e[i] * e[i]; c++; } return c ? 10 * Math.log10(m / c + 1e-10) : -100; };
+    const onMax = Math.max(...on) || 1;
+    const cands = [];
+    for (let t = bestPh; t < n; t += beatHops) {
+      const b = t / 100; // a beat, in seconds of the track
+      const S = b - hit / fps;
+      if (S < 0 || S + len / fps > x.length / SR - 0.5) continue;
+      const lift = dB(b, b + 2) - dB(b - 2, b);
+      const body = dB(S, S + len / fps) - peak;
+      const open = dB(S, S + 1) - peak;
+      let kick = 0;
+      for (let i = Math.round(t) - 2; i <= Math.round(t) + 2; i++) kick = Math.max(kick, on[i] || 0);
+      const rank = Math.min(lift, 12) + 3 * (kick / onMax) + 1.5 * Math.min(0, body + 8) + 0.5 * Math.min(0, open + 22);
+      cands.push({ S, lift, body, open, rank });
+    }
+    cands.sort((a, b) => b.rank - a.rank);
+    const beatF = (60 / bpm) * fps;
+    console.log(`${path.basename(file)}: ${bpm.toFixed(2)} BPM, a beat every ${beatF.toFixed(2)} frames. Starts that put frame ${hit} on a beat (best first):`);
+    if (Math.abs(bpm - Math.round(bpm)) > 0.07) console.log('  (the measured tempo is not a clean number: this track may have no steady grid. Trust the lift, not the beat positions.)');
+    for (const c of cands.slice(0, 6)) console.log(`  startFrom={${c.S.toFixed(2)}}  the music ${c.lift >= 0 ? 'lifts +' : 'falls '}${c.lift.toFixed(0)} dB at the hit; under the film it sits ${c.body.toFixed(0)} dB below the track's loudest, the first second ${c.open.toFixed(0)} dB`);
+    if (!cands.length) console.log('  none: the track is shorter than the film from any beat');
+    const off = hit % beatF;
+    console.log(`Beat grid in the film: beats(${bpm.toFixed(2)}, ${off.toFixed(1)}) (frame ${hit} is a beat). Listen that it is the bar's first beat; if not, move startFrom by one beat (${(60 / bpm).toFixed(3)} s).`);
+    const cuts = (flag('cuts', '') || '').split(',').map(Number).filter((v) => Number.isFinite(v) && String(v) !== '');
+    if (cuts.length) {
+      const rows = cuts.map((c) => { const k = Math.round((c - off) / (beatF / 2)); const g = off + k * (beatF / 2); return { c, d: Math.round(g) - c, half: k % 2 !== 0 }; });
+      const onGrid = rows.filter((v) => Math.abs(v.d) <= 1).length;
+      console.log(`Cuts against the grid (beats and half beats): ${onGrid} of ${rows.length} within a frame.`);
+      for (const v of rows) console.log(`  frame ${String(v.c).padStart(4)}  ${v.d === 0 ? 'on' : `${v.d > 0 ? '+' : ''}${v.d} f to`} the ${v.half ? 'half beat' : 'beat'}${Math.abs(v.d) > 1 ? '  (move it, or leave it if a sound carries it)' : ''}`);
+    }
+    process.exit(0);
   }
-  let bpm = bestLag;
-  while (bpm < 85) bpm *= 2;
-  while (bpm > 170) bpm /= 2;
-  // the beat phase: the offset (within one beat) whose grid collects the most onsets
-  const beatHops = 6000 / bpm;
-  let bestPh = 0, phScore = -1;
-  for (let ph = 0; ph < beatHops; ph += 1) { let s = 0; for (let t = ph; t < n; t += beatHops) s += on[Math.round(t)] || 0; if (s > phScore) { phScore = s; bestPh = ph; } }
-  const secs = Math.floor(n / 100);
-  const lvl = [];
-  for (let s = 0; s < secs; s++) { let m = 0; for (let i = s * 100; i < (s + 1) * 100; i++) m += e[i] * e[i]; lvl.push(10 * Math.log10(m / 100 + 1e-10)); }
-  const peak = Math.max(...lvl);
-  console.log(`${path.basename(file)}: ${(x.length / SR).toFixed(1)} s, about ${bpm.toFixed(1)} BPM (a beat every ${(60 / bpm).toFixed(3)} s = ${((60 / bpm) * 30).toFixed(2)} frames at 30 fps), first beat at ${(bestPh / 100).toFixed(2)} s`);
+  console.log(`${path.basename(file)}: ${(x.length / SR).toFixed(1)} s, ${bpm.toFixed(2)} BPM (a beat every ${(60 / bpm).toFixed(3)} s = ${((60 / bpm) * 30).toFixed(2)} frames at 30 fps), first beat at ${(bestPh / 100).toFixed(2)} s`);
   console.log('level by second (dB below the loudest; # = loud):');
   for (let s = 0; s < secs; s += 10) console.log(`  ${String(s).padStart(4)} s  ${lvl.slice(s, s + 10).map((v) => (v > peak - 3 ? '#' : v > peak - 8 ? '=' : v > peak - 16 ? '-' : '.')).join('')}`);
   const events = [];
@@ -288,7 +350,7 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
     if (lvl[s] > before + 6) events.push(`${s} s lifts (+${(lvl[s] - before).toFixed(0)} dB): a drop, land the reveal on it`);
   }
   console.log(events.length ? events.map((v) => `  ${v}`).join('\n') : '  no clear gaps or drops: the track is even; cut on bars');
-  console.log('Check the tempo by ear (a measured tempo can be off by a few %); the shortlist values are estimates.');
+  console.log('The tempo is measured from this file (the shortlist values are rough, for choosing). Next: sfx.mjs fit <file> --hit <frame> --len <frames>.');
 } else if (cmd === 'credits') {
   const all = readJson(path.join(film, 'public', 'sfx', 'sfx.json'), {});
   // only the sounds the film's code actually plays (sfx['id'] in src/)
@@ -325,5 +387,5 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
     }
   }
 } else {
-  console.log(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 21).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
+  console.log(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 24).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
 }

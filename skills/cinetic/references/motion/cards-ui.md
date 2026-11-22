@@ -349,6 +349,15 @@ const AT = { x: 960, y: 560 };
 ```
 The worked films `forge` and `fieldnote` build their hosts this way (read their relay sections).
 
+**Into the relay (the artefact is born in the beat before):** the thing the product just made (the rewritten sentence, the
+generated chart) lifts off its page as a plate and flies to the anchor in 12-16 f (`ease.inOut`, a small arc, scaling from
+its size on the page to its relay size), while the next ground floods out of the plate's own box (`Flood source={box}`). The
+first host cuts in the frame it lands. The worked film `inkwell` builds this (`Flight`).
+
+**Out of the relay (into a wall):** start the wall on its centre item at the artefact's exact screen size (wall zoom =
+1 / the item's scale, pivot on the item), so the cut matches on the artefact; then pull back in log space and tilt while the
+other items resolve in a wave from the centre (delay = distance from the centre x 1.5-2 f). `inkwell` builds this (`WallBeat`).
+
 **Avoid:** three cards of one component on one ground (a carousel); logos as decoration; hosts that sit still while
 their text is read (each host holds under 0.8 s; the artefact is the thing to read).
 

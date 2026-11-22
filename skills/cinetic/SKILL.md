@@ -93,9 +93,10 @@ beat after beat, a cut with nothing carried, a hold with no creep, text over a b
 
 **7. Sound.** `node scripts/sfx.mjs roles`, `node scripts/sfx.mjs list <role>`, `node scripts/sfx.mjs get <id> ...` fetches
 judged, licensed recordings into `public/sfx` and writes `src/sfx.ts`; place them with `<Cues>` on the same `T` frames as
-the picture. Music: pick a licensed track ([assets.md](references/assets.md#music)), fetch it with `sfx.mjs music`, start
-it at a bar where it is already moving (`sfx.mjs shortlist` gives each track's tempo and the second its beat is going),
-duck it under the big hits, let it ring out under the end card.
+the picture. Music: pick a licensed track whose character is this film's world, not the default
+([assets.md](references/assets.md#music); `sfx.mjs shortlist`), fetch it with `sfx.mjs music`, then
+`sfx.mjs fit <track> --hit <frame> --len <frames>` gives the start that lands the film's main hit on a beat where the music
+lifts. Duck it under the big hits, let it ring out under the end card.
 
 **8. Final.** `node scripts/frames.mjs final` renders picture and sound and sets the loudness. For long films (or a
 time limit per job) render silent parts and mux them ([rendering.md](references/rendering.md)). Write `CREDITS.md` with
@@ -129,10 +130,11 @@ thinking dots that become the answer card, a pointer that opens a row), `kit/src
 world: thirty labelled blocks, floor type facing the camera, a dive into a block's face that is a terminal in macro,
 three ground cuts carried by objects, integrations as surfaces, a counter tower; read its `BEATS.md`),
 `kit/src/films/fieldnote/Film.tsx` (editorial paper and photographs: a stepped mosaic, letters as changing windows, a
-dive into a letter stroke, a scan with punch-ins, a before/after, a flood from the divider, a lockup inside a letter), `kit/src/films/lumen/Film.tsx` (a dark stage: a beam that
-splits onto named benchmarks, the name on an amber flood, a real prompt answered under the light with punch-ins),
-`kit/src/films/inkwell/Film.tsx` (soft air and a serif voice: a partner's real mark joining a line, a rewrite in macro,
-the artefact landing inside three real surfaces on a coral flood, a pull-back into a wall that drains into the mark). Never copy their content; learn their moves.
+dive into a letter stroke, a scan with punch-ins, a before/after, a flood from the divider, a lockup inside a letter), `kit/src/films/lumen/Film.tsx` (a dark stage and a 3D glass
+prism: the typed question becomes a beam, the beam fans into rays that light the numbers, a live 3D simulation as the
+answer, the name on an amber flood), `kit/src/films/inkwell/Film.tsx` (cream paper and a serif voice: a partner's real mark
+joining a line, a rewrite in macro, the rewritten sentence flying into a relay of three hosts on three grounds, a match cut
+into a wall of documents that drains into the mark). Never copy their content; learn their moves.
 
 ## Hard rules
 

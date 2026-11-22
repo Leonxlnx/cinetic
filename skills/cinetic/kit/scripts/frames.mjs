@@ -87,6 +87,33 @@ const loudness = (file) => {
   return { I: num(/I:\s+-?[\d.]+ LUFS/g), TP: num(/Peak:\s+-?[\d.]+ dBFS/g) };
 };
 
+/**
+ * A bed that runs out before the film does is silence no render reports. Reads the film's <Music> tags (literal src,
+ * startFrom and enterAt only) and compares the track's length with the film's.
+ */
+function musicRunsOut(dur) {
+  const dir = path.join(process.cwd(), 'src', 'films', film);
+  const out = [];
+  if (!fs.existsSync(dir)) return out;
+  for (const f of fs.readdirSync(dir)) {
+    if (!/\.tsx?$/.test(f)) continue;
+    const src = fs.readFileSync(path.join(dir, f), 'utf8');
+    for (const m of src.matchAll(/<Music\b[\s\S]*?\/>/g)) {
+      const file = m[0].match(/src=["']([^"']+)["']/)?.[1];
+      const start = m[0].match(/startFrom=\{\s*([\d.]+)\s*\}/)?.[1];
+      if (!file || start === undefined) continue;
+      const track = path.join(process.cwd(), 'public', file);
+      if (!fs.existsSync(track)) continue;
+      const len = parseFloat(spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', track], { encoding: 'utf8' }).stdout);
+      if (!Number.isFinite(len)) continue;
+      const enter = Number(m[0].match(/enterAt=\{\s*([\d.]+)\s*\}/)?.[1] ?? 0) / 30;
+      const until = enter + len - Number(start);
+      if (until < dur - 0.4) out.push(`music: ${file} runs out at ${Math.max(0, until).toFixed(1)} s of the ${dur.toFixed(1)} s film (the track is ${len.toFixed(0)} s long and starts at ${start} s): start it earlier (sfx.mjs fit finds the start)`);
+    }
+  }
+  return out;
+}
+
 /** Measure a rendered film: coverage, pace, empty frames, the length of its ending (low-res analysis via ffmpeg). */
 function checkFilm(file, lockupS) {
   const W = 192, H = 108, FPS = 4;
@@ -169,6 +196,7 @@ function checkFilm(file, lockupS) {
   if (isPreview && Number.isFinite(snd.TP) && snd.TP > -1) console.log('  (a preview is not limited: judge loudness and true peak on the muxed master)');
   if (!isPreview && Number.isFinite(snd.TP) && snd.TP > -1) fails.push(`sound: true peak ${snd.TP.toFixed(1)} dBTP clips; re-mux (frames.mjs mux) or lower the loudest cue`);
   if (!isPreview && Number.isFinite(snd.I) && (snd.I > -13 || snd.I < -20)) fails.push(`sound: ${snd.I.toFixed(1)} LUFS is off the -16 LUFS target`);
+  fails.push(...musicRunsOut(dur));
   console.log(fails.length ? `  FIX: ${fails.join('\n  FIX: ')}` : '  pass');
   if (!fails.length) console.log('  (passing is necessary, not sufficient: check cannot see a finished state that only creeps, a repeated layout, a second full demo or a weak idea; score the sheet with the rubric)');
 }
@@ -246,7 +274,7 @@ if (cmd === 'sheet') {
   fs.rmSync(list);
   console.log(`joined: ${out}`);
 } else if (cmd === 'check') {
-  checkFilm(args[1] ?? `out/${film}-preview.mp4`, Number(opt('lockup', '2')));
+  checkFilm(args[1] && !args[1].startsWith('--') ? args[1] : `out/${film}-preview.mp4`, Number(opt('lockup', '2')));
 } else if (cmd === 'strip') {
   const src = args[1];
   const at = opt('at', '0');

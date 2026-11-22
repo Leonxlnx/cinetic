@@ -253,7 +253,7 @@ object carries the film.
 src/films/main/Film.tsx   the film (timeline T + sections)      src/films.ts    registers films (id, component, duration, fps, size)
 src/kit/                  the kit                                src/Sheet.tsx   the 36-frame storyboard composition
 src/sfx.ts                fetched sounds (generated)             public/         sfx/, music/, logos/, images (never commit audio)
-scripts/frames.mjs        sheet | still | render | final | audio | mux | strip
-scripts/sfx.mjs           roles | list | get | pick | shortlist | music | analyze | credits
+scripts/frames.mjs        sheet | still | render | final | audio | mux | strip | check
+scripts/sfx.mjs           roles | list | get | pick | shortlist | music | analyze | fit | credits
 scripts/logos.mjs         search | get | list | check            scripts/new-film.mjs  start a project
 ```
