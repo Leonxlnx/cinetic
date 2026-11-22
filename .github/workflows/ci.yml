@@ -238,7 +238,7 @@ jobs:
           const dir = 'skills/cinetic/kit/scripts/';
           const sfx = JSON.parse(fs.readFileSync(dir + 'sfx-catalogue.json', 'utf8'));
           if (!Array.isArray(sfx.sounds) || sfx.sounds.length < 50) throw new Error('sfx catalogue: expected 50+ sounds');
-          for (const s of sfx.sounds) for (const k of ['id', 'role', 'file_url', 'licence']) if (!s[k]) throw new Error('sfx ' + s.id + ': missing ' + k);
+          for (const s of sfx.sounds) { for (const k of ['id', 'role', 'licence']) if (!s[k]) throw new Error('sfx ' + s.id + ': missing ' + k); if (!s.file_url && !s.archive_url) throw new Error('sfx ' + s.id + ': no file_url or archive_url'); }
           const music = JSON.parse(fs.readFileSync(dir + 'music-shortlist.json', 'utf8'));
           for (const t of music.tracks) for (const k of ['title', 'file_url', 'licence']) if (!t[k]) throw new Error('music ' + t.title + ': missing ' + k);
           JSON.parse(fs.readFileSync(dir + 'logo-brands.json', 'utf8'));
