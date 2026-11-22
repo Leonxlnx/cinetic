@@ -10,7 +10,7 @@
 // Each takes the outgoing shot as `from`, the incoming as `to`, a start frame and a duration. Put them in a
 // Sequence that spans both shots, or render `from`/`to` yourself and use the progress helpers.
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { at, clamp, ease, logScale, mix, rand, type Ease } from './motion';
 
 type TurnProps = { from: React.ReactNode; to: React.ReactNode; start: number; dur?: number; curve?: Ease };
@@ -216,20 +216,21 @@ export const Flood: React.FC<{
   reveal?: boolean;
 }> = ({ from, start, dur = 16, color, under, to, source, reveal = false }) => {
   const frame = useCurrentFrame();
+  const { width: FW, height: FH } = useVideoConfig();
   const p = at(frame, start, dur, ease.in);
   if (frame < start) return <AbsoluteFill>{under}</AbsoluteFill>;
   // grow each edge outward to (beyond) the frame edge, in log space so it accelerates evenly
   const k = logScale(1, 40, p) - 1;
   const left = Math.max(-40, from.x - from.w / 2 - k * Math.max(1, from.x - from.w / 2));
-  const right = Math.min(1960, from.x + from.w / 2 + k * Math.max(1, 1920 - from.x - from.w / 2));
+  const right = Math.min(FW + 40, from.x + from.w / 2 + k * Math.max(1, FW - from.x - from.w / 2));
   const top = Math.max(-40, from.y - from.h / 2 - k * Math.max(1, from.y - from.h / 2));
-  const bottom = Math.min(1120, from.y + from.h / 2 + k * Math.max(1, 1080 - from.y - from.h / 2));
+  const bottom = Math.min(FH + 40, from.y + from.h / 2 + k * Math.max(1, FH - from.y - from.h / 2));
   const r = mix(p, from.r ?? 24, 0);
   const done = frame >= start + dur;
   return (
     <AbsoluteFill>
       {!done && <AbsoluteFill>{under}</AbsoluteFill>}
-      <AbsoluteFill style={{ clipPath: done ? undefined : `inset(${top}px ${1920 - right}px ${1080 - bottom}px ${left}px round ${r}px)`, background: color }}>
+      <AbsoluteFill style={{ clipPath: done ? undefined : `inset(${top}px ${FW - right}px ${FH - bottom}px ${left}px round ${r}px)`, background: color }}>
         {to && <AbsoluteFill style={{ opacity: reveal ? 1 : clamp((p - 0.25) / 0.5) }}>{to}</AbsoluteFill>}
       </AbsoluteFill>
       {source && !done && <AbsoluteFill style={{ opacity: 1 - clamp((p - 0.5) / 0.3) }}>{source}</AbsoluteFill>}

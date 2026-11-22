@@ -169,7 +169,8 @@ if (cmd === 'roles') {
   for (const s of sounds) (by[s.role] ??= []).push(s);
   for (const [r, list] of Object.entries(by)) {
     const good = list.filter((s) => verdict(s) !== 'weak').length;
-    console.log(`${r.padEnd(14)} ${String(good).padStart(2)} good / ${list.length}   e.g. ${list[0].title}`);
+    const ex = list.find((s) => verdict(s) === 'strong') ?? list.find((s) => verdict(s) !== 'weak') ?? list[0];
+    console.log(`${r.padEnd(14)} ${String(good).padStart(2)} good / ${list.length}   e.g. ${ex.title} (${ex.id})`);
   }
 } else if (cmd === 'list') {
   const role = args[1] && !args[1].startsWith('--') ? args[1] : null;

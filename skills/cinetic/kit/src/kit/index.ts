@@ -8,4 +8,5 @@ export * from './turns';
 export * from './sound';
 export * from './icons';
 export * from './imagery';
+export * from './gl';
 export { fonts } from './fonts';

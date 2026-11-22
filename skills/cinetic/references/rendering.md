@@ -41,8 +41,8 @@ preview, not from single frames.
 ## Master settings
 
 `remotion.config.ts`: H.264, CRF 16, yuv420p, BT.709, JPEG frames at quality 92. 1920x1080, 30 fps by default; use 60 fps
-only if the film has fast UI scrolling and the machine can afford twice the frames. For vertical films set 1080x1920 on
-the composition in `src/Root.tsx` (and lay the film out for it).
+only if the film has fast UI scrolling and the machine can afford twice the frames. For vertical films give the film
+`width: 1080, height: 1920` in `src/films.ts` (and lay the film out for it).
 
 ## Cost of effects (software GL)
 

@@ -7,7 +7,8 @@ import { Words, Camera, At, ease, at, mix, springAt, springs, Card, Brand, Cues,
 import { sfx } from '../../sfx'; // written by scripts/sfx.mjs get
 ```
 
-Frames are 30 fps unless you change `src/films.ts`. Positions are px in a 1920x1080 frame. Every component reads the
+Frames are 30 fps unless you change `src/films.ts`. Positions are px in the film's frame (1920x1080 unless the film sets
+`width`/`height` in `src/films.ts`; `useVideoConfig()` gives them). Every component reads the
 current frame itself; you pass **start frames** taken from the film's timeline object `T`.
 
 ## Contents
@@ -81,7 +82,7 @@ const style = { transform: `translateY(${mix(p, 80, 0) - q * 900}px) scale(${mix
 build: each word joins the centred line on its frame (put them on the music's plucks) and the line re-centres with most of
 the travel in the first frames, the new word riding in with it. Widths are measured from the real face.
 **`<Swap items={['design', 'code', 'ship']} start every={24} dur={12} times />`** one slot whose word rolls to the next (items may
-be nodes: a mark plus a name; `times` sets the frame each item takes over).
+be nodes: a mark plus a name; `times` sets the frame each item takes over; `enter` brings the first item in).
 **`<Typing text start cps={16} caret placeholder />`** and **`useTyped(text, start, cps)`** (returns `{ shown, done, doneAt }`):
 human cadence with seeded hesitations and pauses after punctuation; `burst={3}` types three words and lands the rest at
 once (use it: reading along at typing speed is dead time); `keyFrames` is the frame of every key (put a key
@@ -195,6 +196,16 @@ screen): see [turns.md](motion/turns.md).
 - **`<Compare before after split w h line handle labels>`**: a before/after with a divider at `split` (0..1).
 - **`<Selection x y w h start dur color label>`**: a box with corner handles that draws itself around what the product found.
 - Pictures live in `public/` (`img/...`): the user's, or licensed and recorded (`assets.mjs`, see [assets.md](assets.md)).
+
+## 6c. A hero object in 3D (`gl.tsx`)
+
+**`<GLView id build draw state width height ss>`** draws a three.js world (a ring, a device, a glass solid) with ONE
+shared WebGL renderer into each view's own canvas, so the 36-frame sheet never runs out of WebGL contexts (a
+`<ThreeCanvas>` per view does). `build(renderer)` makes the scene once; `draw(world, state, renderer)` poses it for a
+frame; keep `state` a small plain object. **`studioEnvironment(renderer, accent)`** is a dark studio of strip lights for
+metal and glass (`scene.environment = ...`, a `MeshPhysicalMaterial` with metalness 1, roughness 0.25-0.35).
+Light it from an environment, never flat; dive through it (a tunnel of the same object), tip it into a line or a dial: the
+object carries the film.
 
 ## 7. Marks and icons
 

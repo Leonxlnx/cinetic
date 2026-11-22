@@ -32,6 +32,8 @@ own mark, the model's own mark. Never redraw one, never stand a generic envelope
   from open collections (or the brand's own press-kit file with `--file`), writes it to `public/logos/`, and records source,
   licence and trademark owner in `public/logos/logos.json`. Then `<Brand name="openai" file="logos/openai.svg" />`.
   `node scripts/logos.mjs check` flags retired marks.
+- **No official mark?** Some products have none in any collection (an OS feature, a sub-app like a health or wallet
+  app). Use the parent brand's mark with the product's name set in type beside it; never draw the icon.
 - **Use marks nominatively:** to show that the product works with them. Never imply an endorsement the user did not state.
 - **Presentation:** marks keep their proportions and colours; on a dark ground use the brand's own light version (or
   `color="#fff"` for a mono mark if the brand allows it). One presentation per film (tiles in a row, chips in a line, a wall).

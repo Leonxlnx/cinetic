@@ -192,15 +192,17 @@ export const Vignette: React.FC<{ amount?: number; color?: string }> = ({ amount
 
 /** A soft light that sits behind a hero element and breathes. Sized to its source: a glow is never bigger than ~2x its object. */
 export const Glow: React.FC<{ x?: number; y?: number; r?: number; color: string; strength?: number; pulse?: number }> = ({
-  x = 960,
-  y = 540,
+  x: gx,
+  y: gy,
   r = 420,
   color,
   strength = 0.55,
   pulse = 0.08,
 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, width: FW, height: FH } = useVideoConfig();
+  const x = gx ?? FW / 2;
+  const y = gy ?? FH / 2;
   const k = 1 + Math.sin((frame / fps) * 1.4) * pulse;
   return (
     <div
@@ -309,12 +311,15 @@ export const DepthStack: React.FC<{
 export const Beam: React.FC<{ open: number; color: string; x?: number; w0?: number; w1?: number; floor?: number; strength?: number }> = ({
   open,
   color,
-  x = 960,
+  x: bx,
   w0 = 60,
   w1 = 700,
-  floor = 860,
+  floor: bfloor,
   strength = 0.85,
 }) => {
+  const { width: FW, height: FH } = useVideoConfig();
+  const x = bx ?? FW / 2;
+  const floor = bfloor ?? FH * 0.8;
   const a = w0 * open;
   const b = w1 * open;
   return (
@@ -334,7 +339,12 @@ export const Beam: React.FC<{ open: number; color: string; x?: number; w0?: numb
 };
 
 /** The pool a beam (or a lamp) leaves on the floor: an ellipse of light. */
-export const Pool: React.FC<{ open: number; color: string; x?: number; y?: number; w?: number; h?: number }> = ({ open, color, x = 960, y = 860, w = 1400, h = 240 }) => (
+export const Pool: React.FC<{ open: number; color: string; x?: number; y?: number; w?: number; h?: number }> = ({ open, color, x: px, y: py, w: pw, h = 240 }) => {
+  const { width: FW, height: FH } = useVideoConfig();
+  const x = px ?? FW / 2;
+  const y = py ?? FH * 0.8;
+  const w = pw ?? FW * 0.73;
+  return (
   <div
     style={{
       position: 'absolute',
@@ -349,7 +359,8 @@ export const Pool: React.FC<{ open: number; color: string; x?: number; y?: numbe
       pointerEvents: 'none',
     }}
   />
-);
+  );
+};
 
 /**
  * Glass done right on a dark or flat ground: a lit gradient (not a backdrop blur over nothing), a bright top rim, a

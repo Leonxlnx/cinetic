@@ -230,9 +230,14 @@ export const Swap: React.FC<{
   dir?: 'up' | 'down';
   /** Exact frames each item takes over (items[i] from times[i]); overrides start + every. */
   times?: number[];
+  /** The first item rises in at its own frame (instead of being there already). */
+  enter?: boolean;
   blur?: boolean;
-}> = ({ items, start = 0, every = 24, dur = 12, style, dir = 'up', blur = true, times }) => {
+}> = ({ items, start = 0, every = 24, dur = 12, style, dir = 'up', blur = true, times, enter = false }) => {
   const frame = useCurrentFrame();
+  const first = times ? times[0] : start;
+  if (enter && frame < first) return <span style={{ display: 'inline-block', ...style }} />;
+  const entering = enter && frame < first + dur ? 1 - ease.out((frame - first) / dur) : 0;
   // item i takes over at frame takeAt(i); the roll into it starts `dur` frames earlier
   const takeAt = (i: number) => (times ? times[i] : start + i * every);
   let idx = 0;
@@ -255,7 +260,7 @@ export const Swap: React.FC<{
           {cell(items[idx + 1], -s * (1 - p) * 1.1, p, (1 - p) * 10)}
         </>
       ) : (
-        cell(items[idx], 0, 1, 0)
+        cell(items[idx], entering * 1.1, 1 - entering, entering * 10)
       )}
     </span>
   );

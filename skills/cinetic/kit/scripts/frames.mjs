@@ -150,8 +150,10 @@ function checkFilm(file, lockupS) {
   if (slow.length > pace.length * 0.2) fails.push('pace: something visible must change every half second (a word, a block, a crop, a value)');
   if ((frames[0] && frames[0].fill < 0.015) || longest / FPS >= 1) fails.push(`empty frames: ${frames[0] && frames[0].fill < 0.015 ? 'frame 0 is empty' : `${(longest / FPS).toFixed(1)} s of nothing from ${runAt.toFixed(1)} s`}`);
   if (endStill > Math.max(2.5, dur * 0.12)) fails.push('the ending is too long: lockup at most 2 s, all end type at most 15 % of the film');
-  if (Number.isFinite(snd.TP) && snd.TP > -1) fails.push(`sound: true peak ${snd.TP.toFixed(1)} dBTP clips; re-mux (frames.mjs mux) or lower the loudest cue`);
-  if (Number.isFinite(snd.I) && (snd.I > -13 || snd.I < -20)) fails.push(`sound: ${snd.I.toFixed(1)} LUFS is off the -16 LUFS target`);
+  const isPreview = /preview/i.test(path.basename(file));
+  if (isPreview && Number.isFinite(snd.TP) && snd.TP > -1) console.log('  (a preview is not limited: judge loudness and true peak on the muxed master)');
+  if (!isPreview && Number.isFinite(snd.TP) && snd.TP > -1) fails.push(`sound: true peak ${snd.TP.toFixed(1)} dBTP clips; re-mux (frames.mjs mux) or lower the loudest cue`);
+  if (!isPreview && Number.isFinite(snd.I) && (snd.I > -13 || snd.I < -20)) fails.push(`sound: ${snd.I.toFixed(1)} LUFS is off the -16 LUFS target`);
   console.log(fails.length ? `  FIX: ${fails.join('\n  FIX: ')}` : '  pass');
 }
 
