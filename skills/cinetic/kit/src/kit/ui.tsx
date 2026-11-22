@@ -1,7 +1,7 @@
 // Product UI, built in code at film size. Real strings, real icons, generous padding, one radius family.
 // Each piece arrives on its own (springs and expo-out), and a real arrow pointer drives it.
 import React from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { at, clamp, ease, mix, springAt, springs, type Ease } from './motion';
 import { useTyped } from './type';
 import { Brand } from './icons';
@@ -802,4 +802,32 @@ export const PartnerSurface: React.FC<{
 const hexToRgb = (h: string) => {
   const n = parseInt(h.replace('#', '').slice(0, 6), 16);
   return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+};
+
+/**
+ * A relay: one artefact (a chip, a line, a chart) pinned at a screen point while the host products change around it on
+ * their frames. Each host is a full-frame node in its own composition (full-bleed page, tilted plane, macro crop), drawn
+ * behind the artefact; at each cut the artefact settles (a small lift and a shadow that closes in), so it reads as the
+ * same object carried through every product. Hosts should pivot their own motion on `anchor` so it never jumps.
+ */
+export const Relay: React.FC<{
+  anchor: { x: number; y: number };
+  artefact: React.ReactNode;
+  hosts: Array<{ f: number; node: React.ReactNode }>;
+  /** px the artefact lifts at each cut. */
+  lift?: number;
+}> = ({ anchor, artefact, hosts, lift = 14 }) => {
+  const frame = useCurrentFrame();
+  let i = -1;
+  for (let k = 0; k < hosts.length; k++) if (frame >= hosts[k].f) i = k;
+  if (i < 0) return null;
+  const settle = at(frame, hosts[i].f, 10, ease.out);
+  return (
+    <AbsoluteFill>
+      <AbsoluteFill>{hosts[i].node}</AbsoluteFill>
+      <div style={{ position: 'absolute', left: anchor.x, top: anchor.y, transform: `translate(-50%, -50%) translateY(${-lift * (1 - settle)}px) scale(${mix(settle, 1.05, 1)})`, filter: `drop-shadow(0 ${mix(settle, 22, 8)}px ${mix(settle, 30, 12)}px rgba(0,0,0,${mix(settle, 0.18, 0.28)}))`, zIndex: 50 }}>
+        {artefact}
+      </div>
+    </AbsoluteFill>
+  );
 };

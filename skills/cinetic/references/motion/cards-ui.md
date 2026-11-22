@@ -341,10 +341,13 @@ around it, the host changes on the beat, each in a different composition.
 ```tsx
 // the artefact sits at the same screen point in all three; only the host around it changes
 const AT = { x: 960, y: 560 };
-{f < T.hostB && <HostChat landAt={T.hostA} anchor={AT} />}
-{f >= T.hostB && f < T.hostC && <HostTracker anchor={AT} zoom={2.8} />}
-{f >= T.hostC && <HostDoc anchor={AT} ground={ACCENT} />}
+<Relay anchor={AT} artefact={<EndpointChip />} hosts={[
+  { f: T.hostA, node: <HostChat anchor={AT} /> },                 // full-bleed, on the base ground
+  { f: T.hostB, node: <HostTracker anchor={AT} zoom={2.8} /> },   // macro, on the inverse ground
+  { f: T.hostC, node: <HostDoc anchor={AT} ground={ACCENT} /> },  // tilted plane, on the accent flood
+]} />
 ```
+The worked films `forge` and `fieldnote` build their hosts this way (read their relay sections).
 
 **Avoid:** three cards of one component on one ground (a carousel); logos as decoration; hosts that sit still while
 their text is read (each host holds under 0.8 s; the artefact is the thing to read).

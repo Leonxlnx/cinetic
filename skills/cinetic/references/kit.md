@@ -153,6 +153,9 @@ Fields: `surface ink muted line fill accent accentInk radius font mono shadow`.
   it leans into fast travel, idles with a 2 px drift at rest, presses dip it; `follow={{ from, to, at: (f) => ({ x, y }) }}` makes it ride a dragged
   object's own path. `cursorAt(frame, keys)` gives its position for
   things that follow it; `<CursorShadow keys size>` adds a landing shadow that converges as an oversized cursor lands.
+- **`<Relay anchor={{ x, y }} artefact={node} hosts={[{ f, node }]} lift>`**: integrations as a relay: the artefact pinned at
+  one screen point, the hosts (each a full-frame composition you build: a full-bleed page, a tilted plane, a macro crop)
+  changing behind it on their frames, a small settle at each cut. See [cards-ui.md](motion/cards-ui.md#relay).
 - **`<PartnerSurface t brand file kind="chat|tracker|mail|doc" title items={[{ f, who, text, meta }]} landAt>`**: the
   product's artefact landing inside another product (a message in a channel, an issue in a tracker): a generic surface
   with that product's real mark in the header; the item at `landAt` arrives lit. Integrations as use, not logo rows.
