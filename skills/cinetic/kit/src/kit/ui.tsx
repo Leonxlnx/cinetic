@@ -1,7 +1,7 @@
 // Product UI, built in code at film size. Real strings, real icons, generous padding, one radius family.
 // Each piece arrives on its own (springs and expo-out), and a real arrow pointer drives it.
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, continueRender, delayRender, useCurrentFrame, useVideoConfig } from 'remotion';
 import { at, clamp, ease, mix, springAt, springs, type Ease } from './motion';
 import { useTyped } from './type';
 import { Brand } from './icons';
@@ -687,7 +687,9 @@ export const Spinner: React.FC<{ start: number; doneAt: number; size?: number; c
 /**
  * A wall of many: the same kind of thing in quantity (documents, components, runs, customers' screens), the scale jump
  * that says "all of it". Items fill in from the centre (or a corner) in a fast, compressing wave; pair it with a camera
- * pull-back. `render(i)` draws item i at w x h.
+ * pull-back. `render(i, e)` draws item i at w x h; `e` is the item's progress (0-1) in the `event` wave, a second wave
+ * from the same origin on which every item does something (flips from sketch to real, takes the accent, lights a line):
+ * that is what makes a wall mean something. `start` far in the past shows the wall complete (a match cut into it).
  */
 export const Wall: React.FC<{
   cols: number;
@@ -699,9 +701,11 @@ export const Wall: React.FC<{
   /** Frames for the whole wave. */
   wave?: number;
   from?: 'center' | 'left' | 'top';
-  render: (i: number) => React.ReactNode;
+  /** The event wave: starts at `at`, crosses the wall in `wave` frames (default 20), each item takes `dur` (default 10). */
+  event?: { at: number; wave?: number; dur?: number };
+  render: (i: number, e: number) => React.ReactNode;
   style?: React.CSSProperties;
-}> = ({ cols, rows, w, h, gap = 24, start, wave = 24, from = 'center', render, style }) => {
+}> = ({ cols, rows, w, h, gap = 24, start, wave = 24, from = 'center', event, render, style }) => {
   const frame = useCurrentFrame();
   const W = cols * w + (cols - 1) * gap;
   const H = rows * h + (rows - 1) * gap;
@@ -714,9 +718,10 @@ export const Wall: React.FC<{
       const s = start + Math.pow(d / maxD, 0.8) * wave;
       if (frame < s) continue;
       const p = at(frame, s, 10, ease.out);
+      const e = event ? at(frame, event.at + Math.pow(d / maxD, 0.8) * (event.wave ?? 20), event.dur ?? 10, ease.inOut) : 0;
       items.push(
         <div key={i} style={{ position: 'absolute', left: c * (w + gap), top: r * (h + gap), width: w, height: h, opacity: clamp(p * 2), transform: `scale(${mix(p, 0.85, 1)})` }}>
-          {render(i)}
+          {render(i, e)}
         </div>,
       );
     }
@@ -822,21 +827,49 @@ export const Relay: React.FC<{
    * made it) to the anchor, landing on the first host's frame. Draw the Relay above the previous scene.
    */
   enter?: { f: number; from: { x: number; y: number; scale?: number } };
-}> = ({ anchor, artefact, hosts, lift = 14, enter }) => {
+  /**
+   * The artefact is the thing to read: it spans at least this share of the frame's width (default 0.55) and is scaled up
+   * when it is built smaller. 0 turns this off (an artefact that is tall, not wide).
+   */
+  minWidth?: number;
+}> = ({ anchor, artefact, hosts, lift = 14, enter, minWidth = 0.55 }) => {
   const frame = useCurrentFrame();
+  const { width: frameW } = useVideoConfig();
+  // measure the artefact once, in a hidden copy that is always mounted (every render tab gets the same size)
+  const probe = React.useRef<HTMLDivElement>(null);
+  const [natural, setNatural] = React.useState(0);
+  const [handle] = React.useState(() => delayRender('measure the relay artefact'));
+  React.useLayoutEffect(() => {
+    let alive = true;
+    document.fonts.ready.then(() => {
+      if (!alive) return;
+      if (probe.current) setNatural(probe.current.offsetWidth);
+      continueRender(handle);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [handle]);
+  const grow = minWidth > 0 && natural > 0 ? Math.max(1, (minWidth * frameW) / natural) : 1;
+  const measure = (
+    <div ref={probe} style={{ position: 'absolute', left: 0, top: 0, visibility: 'hidden', pointerEvents: 'none' }}>
+      {artefact}
+    </div>
+  );
   let i = -1;
   for (let k = 0; k < hosts.length; k++) if (frame >= hosts[k].f) i = k;
   if (i < 0) {
-    if (!enter || frame < enter.f || !hosts.length) return null;
+    if (!enter || frame < enter.f || !hosts.length) return measure;
     const p = ease.inOut(clamp((frame - enter.f) / Math.max(1, hosts[0].f - enter.f)));
     return (
       <AbsoluteFill style={{ pointerEvents: 'none' }}>
+        {measure}
         <div
           style={{
             position: 'absolute',
             left: mix(p, enter.from.x, anchor.x),
             top: mix(p, enter.from.y, anchor.y) - Math.sin(Math.PI * p) * lift * 1.5,
-            transform: `translate(-50%, -50%) scale(${mix(p, enter.from.scale ?? 1, 1.05)})`,
+            transform: `translate(-50%, -50%) scale(${mix(p, enter.from.scale ?? 1, 1.05 * grow)})`,
             filter: `drop-shadow(0 ${mix(p, 6, 30)}px ${mix(p, 10, 34)}px rgba(0,0,0,${mix(p, 0.12, 0.3)}))`,
           }}
         >
@@ -849,7 +882,8 @@ export const Relay: React.FC<{
   return (
     <AbsoluteFill>
       <AbsoluteFill>{hosts[i].node}</AbsoluteFill>
-      <div style={{ position: 'absolute', left: anchor.x, top: anchor.y, transform: `translate(-50%, -50%) ${hosts[i].pose ?? ''} translateY(${-lift * (1 - settle)}px) scale(${mix(settle, 1.05, 1)})`, filter: `drop-shadow(0 ${mix(settle, 22, 8)}px ${mix(settle, 30, 12)}px rgba(0,0,0,${mix(settle, 0.18, 0.28)}))`, zIndex: 50 }}>
+      {measure}
+      <div style={{ position: 'absolute', left: anchor.x, top: anchor.y, transform: `translate(-50%, -50%) ${hosts[i].pose ?? ''} translateY(${-lift * (1 - settle)}px) scale(${mix(settle, 1.05, 1) * grow})`, filter: `drop-shadow(0 ${mix(settle, 22, 8)}px ${mix(settle, 30, 12)}px rgba(0,0,0,${mix(settle, 0.18, 0.28)}))`, zIndex: 50 }}>
         {artefact}
       </div>
     </AbsoluteFill>

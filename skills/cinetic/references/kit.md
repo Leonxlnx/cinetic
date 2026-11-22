@@ -69,7 +69,8 @@ const style = { transform: `translateY(${mix(p, 80, 0) - q * 900}px) scale(${mix
 - `gap` (frames between units, compressing), `dur` (frames per unit), `times` (exact start frame per unit).
 - `born="#hex"` + `settle`: each unit is born in a colour and settles to the line colour (fresh words glow).
 - `accent={['word']}` + `accentStyle`: style chosen words (colour, italic serif).
-- `leaveAt`, `leave: 'rise' | 'fall' | 'blur' | 'scale'`, `leaveDur`.
+- `leaveAt`, `leave: 'rise' | 'fall' | 'blur' | 'scale'`, `leaveDur`: from `leaveAt` the words go and stay gone (rise and fall
+  travel out behind a mask, blur and scale fade). Give `leaveAt` up front; without it the words stay.
 - `style` must carry the colour when you use `born`. `align`, `width`.
 
 ```tsx
@@ -94,6 +95,9 @@ sound on some of them, drive a caret-following camera from them).
 **`<Odometer value from start dur prefix suffix sep decimals />`** digits on reels; low digits spin and blur, high digits tick over last
 (`decimals={1}` for 92.4).
 **`<Marker start dur color>`** a highlight sweeping in behind a word.
+**`<Output text start hold travel from={{ x, y, size }} to={{ x, y, size }} born style />`** the product's result seen big once:
+its key words cut on giant (`from`), hold while they creep, then travel into their place in the UI at UI size (`to`); draw the
+UI's own copy from `outputLanded(start, hold, travel)`.
 **`useTextWidth(text, style)`** the laid-out width of a piece of text in the real face (place a tile, a mark or an underline
 exactly after a word).
 **`mixColor(a, b, p)`** blend two colours.
@@ -112,7 +116,7 @@ perspective, so give it its own layer with a longer one. To add an offset to a k
 **`safeBox(frameW, frameH)`** the box type and the subject stay inside (vertical films: clear of the platform's UI at the top
 and bottom). **`camSmear(frame, keys)`** motion blur in px from the camera's own speed (apply to the world group on fast moves).
 **`fillZoom(w, h, frac = 0.8)`** the zoom that makes a w x h box fill the frame. **`diveZoom(w, h)`** the zoom at which a box
-exactly covers the frame (dive into an element, cut to its inside at that frame). **`toScreen(cam, x, y)`** where a world
+exactly covers the frame (dive into an element, cut to its inside at that frame). **`toScreen(cam, x, y, z?, { perspective, frameW, frameH })`** where a world
 point lands on screen under a flat camera (start a flying card or a flood exactly where an object sits). **`drift(frame, dur, push, turn)`** a living
 push and turn to add to a held camera. **`shake(frame, start, dur, amp)`** an impact shake.
 
@@ -162,14 +166,17 @@ Fields: `surface ink muted line fill accent accentInk radius font mono shadow`.
 - **`<Relay anchor={{ x, y }} artefact={node} hosts={[{ f, node }]} lift>`**: integrations as a relay: the artefact pinned at
   one screen point, the hosts (each a full-frame composition you build: a full-bleed page, a tilted plane, a macro crop)
   changing behind it on their frames, a small settle at each cut (`pose` on a host tilts the artefact with a tilted host).
-  `enter={{ f, from: { x, y, scale } }}` flies the artefact in from where the product made it, landing on the first host. See [cards-ui.md](motion/cards-ui.md#relay).
+  `enter={{ f, from: { x, y, scale } }}` flies the artefact in from where the product made it, landing on the first host.
+  The artefact is scaled up to span `minWidth` of the frame (default 0.55; 0 turns it off): it is the thing to read. See [cards-ui.md](motion/cards-ui.md#relay).
 - **`<PartnerSurface t brand file kind="chat|tracker|mail|doc" title items={[{ f, who, text, meta }]} landAt>`**: the
   product's artefact landing inside another product (a message in a channel, an issue in a tracker): a generic surface
   with that product's real mark in the header; the item at `landAt` arrives lit. Integrations as use, not logo rows.
 - **`<Spinner start doneAt size color done>`**: working -> done: an arc stepping 45 degrees a frame that closes into a check.
-- **`<Wall cols rows w h gap start wave from render={(i) => ...}>`**: the same thing in quantity, filling in a compressing
+- **`<Wall cols rows w h gap start wave from event={{ at }} render={(i, e) => ...}>`**: the same thing in quantity, filling in a compressing
   wave from the centre; pair it with a camera pull-back for the "all of it" scale jump. Every item must be real content
-  (a real title, real lines), never grey placeholder bars.
+  (a real title, real lines), never grey placeholder bars. `event={{ at, wave }}` starts a second wave from the same origin and
+  `render(i, e)` receives the item's progress in it (0-1): every item does one thing (flips from sketch to real, takes the
+  accent, lights its line), which is what makes the quantity mean something. `start` far in the past shows the wall whole.
 - **`<ChatStack t msgs={[{ f, from, text }]} w bottom size fadeAbove>`**: a bottom-anchored chat; each message cuts on and rises,
   older ones move up and blur by recency.
 - **`focusStyles(p, accent)`** returns `{ chosen, rest }` styles to isolate one element (ring + lift vs blur + dim).
@@ -184,7 +191,7 @@ Each takes `from` and `to` (the two shots as nodes), `start`, `dur`, and renders
 - **`<Pixelate max>`** mosaic up, swap at the peak, resolve (a full-frame turn: its filter does not work on a small clipped
   element). **`<Push dir smear>`** both shots travel as one strip.
 - **`<ZoomThrough x y depth>`** fly into a point until it fills the frame, then the next shot settles from slightly zoomed in.
-- **`<TileFlip front back w h start cols rows wave>`** one element turning into another tile by tile (a sketch into the real
+- **`<TileFlip front back w h start cols rows wave bg>`** one element turning into another tile by tile (a sketch into the real
   card).
 - **`<Flood from={{ x, y, w, h, r }} start dur color under to>`** a ground cut grown from an object's own box (a button, a
   card) until it fills the frame; `to` (the next shot) appears inside it (`reveal` shows it at full opacity, a window

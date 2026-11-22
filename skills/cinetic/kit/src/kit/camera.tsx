@@ -145,12 +145,30 @@ export const useFrameInfo = () => {
 export const diveZoom = (w: number, h: number, frameW = 1920, frameH = 1080) => Math.max(frameW / w, frameH / h);
 
 /**
- * Where a world point lands on screen under a flat camera (zoom and pan about the centre; tilt ignored). Use it to start
- * screen-space things (a flying card, a flood) exactly where an object sits in the world.
+ * Where a world point lands on screen under a `<Camera>` (pan, zoom, tilt, turn and roll, with its perspective). Use it to
+ * start screen-space things (a flying card, a flood, a pointer, a label) exactly where an object sits in the world.
+ * `z` is the point's depth (translateZ); pass the Camera's `perspective` and the frame size when they are not the defaults.
  */
-export const toScreen = (cam: { x?: number; y?: number; zoom?: number }, x: number, y: number) => {
-  const z = cam.zoom ?? 1;
-  return { x: 960 + (x - (cam.x ?? 0) - 960) * z, y: 540 + (y - (cam.y ?? 0) - 540) * z };
+export const toScreen = (cam: Cam, x: number, y: number, z = 0, o: { perspective?: number; frameW?: number; frameH?: number } = {}) => {
+  const c = read(cam);
+  const W = o.frameW ?? 1920;
+  const H = o.frameH ?? 1080;
+  const d = o.perspective ?? 2200;
+  const rad = Math.PI / 180;
+  // the Camera's transform, applied right to left: pan, roll (Z), turn (Y), tilt (X), zoom
+  let px = x - W / 2 - c.x;
+  let py = y - H / 2 - c.y;
+  let pz = z;
+  const [sz, cz] = [Math.sin(c.rz * rad), Math.cos(c.rz * rad)];
+  [px, py] = [px * cz - py * sz, px * sz + py * cz];
+  const [sy, cy] = [Math.sin(c.ry * rad), Math.cos(c.ry * rad)];
+  [px, pz] = [px * cy + pz * sy, -px * sy + pz * cy];
+  const [sx, cx] = [Math.sin(c.rx * rad), Math.cos(c.rx * rad)];
+  [py, pz] = [py * cx - pz * sx, py * sx + pz * cx];
+  px *= c.zoom;
+  py *= c.zoom;
+  const k = d / Math.max(1, d - pz);
+  return { x: W / 2 + px * k, y: H / 2 + py * k, scale: c.zoom * k };
 };
 
 /** The zoom that makes a w x h box fill `frac` of the frame (the tighter of width and height). Fill the frame with the subject. */

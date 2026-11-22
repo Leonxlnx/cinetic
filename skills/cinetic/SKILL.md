@@ -116,7 +116,7 @@ Import everything from `src/kit` (`import { Words, Camera, ease, at } from '../.
 |---|---|
 | timing | `at(frame, start, dur, ease.out)` -> 0..1, `mix(p, a, b)`, `springAt(frame, fps, start, springs.card)`, `stagger(i)`, `accel()` for exits, `creep()` for holds, `keys()` for keyframes, `logScale()` for zooms |
 | curves | `ease.out` (arrive), `ease.soft` (heavy arrive), `ease.snap` (UI pop), `ease.inOut` / `ease.glide` (travel), `ease.in` (leave), `ease.back` (land with weight) |
-| type | `<Words text arrive="rise\|blur\|scale\|drop\|slide\|flip\|cut" by="word\|char\|line" born accent leaveAt times>`, `<Build words times>` (append with a re-centre jump), `<Swap items>`, `<Typing>`, `<Scramble>`, `<Odometer>`, `<Marker>` |
+| type | `<Words text arrive="rise\|blur\|scale\|drop\|slide\|flip\|cut" by="word\|char\|line" born accent leaveAt times>`, `<Build words times>` (append with a re-centre jump), `<Swap items>`, `<Typing>`, `<Scramble>`, `<Odometer>`, `<Marker>`, `<Output>` (the result giant, then into the UI) |
 | camera | `<Camera keys={[{f, x, y, zoom, rx, ry, rz}]}>` (a 3D stage), `<At x y z rx ry>` places things in it, `fillZoom()`, `drift()`, `shake()` |
 | world | `<Ground>`, `<Aura>` (soft living gradient), `<GridLines>`, `<Box>` (a solid CSS 3D block with content on its faces), `<DepthStack>` (a pile that pushes back), `<Beam>` / `<Pool>` (shaped light), `<GlassPanel>`, `<Glow>`, `<Sheen>`, `<Grain>`, `<Vignette>` |
 | product UI | `<Card>`, `<Window>`, `<InputBar>` (typing + send), `<Bubble>`, `<ChatStack>`, `<Thinking>`, `<Row>`, `<Chip>`, `<Toast>`, `<Terminal>`, `<Relay>` + `<PartnerSurface>` (the artefact carried through other products), `<Progress>`, `<Spinner>` (working -> check), `<StatePill>`, `<Wall>` (many of a thing), `<Button pressAt>`, `<Avatar>`, `<Cursor keys clicks exitAt>` (a real arrow pointer, arcing paths, presses), `focusStyles()`, `useArrive()` |
@@ -151,15 +151,19 @@ into a wall of documents that drains into the mark). Never copy their content; l
   on downbeats, carried by an object (a flood from a button, a block that fills the frame).
 - **Short endings.** The lockup lasts at most 2 s (60 f) and grows out of an object already on screen; all end type
   (claim + lockup) is at most 15 % of the film, and the claim sits over a moving image, not alone on a ground. No mid-film
-  brand card in films under 30 s.
+  brand card in films under 30 s, and a line of the claim is said once (never spent mid-film and repeated at the end). The
+  frame before the lockup is never a blank ground: the wall's tiles gather into a tile mark, lines slide into a line mark,
+  the last ink becomes the drop.
 - **Integrations are a relay, not a row.** Never a row of logo tiles, and never two or three same-layout cards in a row.
   Keep the product's artefact fixed on screen and change the host around it, each host in a different composition and
   bleeding off the frame (the message in a full-bleed chat, the same line as a cropped issue in a tracker, then as a row in
   an editor seen in macro), cut on the beat with the artefact carried ([cards-ui.md](references/motion/cards-ui.md#relay)).
+  The artefact spans 55 % of the frame's width or more in every host (`Relay` scales it up to that).
 - **One spectacle beat.** Every film has one shot that could never be a slide: a field of sixty replicas rising, a wall of
   real documents pulled back from, a city of blocks, light splitting into beams. Give it 1.5-2.5 s, not 1 (count its frames in `T`), keep it readable (it starts on
-  the artefact the film has carried, large) and name it in `BEATS.md` (a row tagged `spectacle`); a film without that row is
-  not ready to build.
+  the artefact the film has carried, large), make the quantity mean something (the accent does one thing across it: every
+  item flips, lights up, takes the artefact; `Wall event`) and name it in `BEATS.md` (a row tagged `spectacle`); a film
+  without that row is not ready to build. One spectacle, not two.
 - **One demo, end to end.** Show the product's core action once, completely. A second input or use case is a 1-2 s
   variation of the same shot, never a second full demo: that is how a 20 s film becomes 30.
 - **A finished state does not hold.** When a list is full, a number has landed or a card is complete, cut within half a
@@ -168,8 +172,9 @@ into a wall of documents that drains into the mark). Never copy their content; l
   object, a cut to macro). Things changing inside a locked shot is a slide: when the next thing happens, the camera is
   already travelling to it.
 - **The product's output is seen big once.** The answer, the rewrite, the result: show it once in macro or as giant type
-  (its key words 120 px or more on screen) before or instead of showing it at UI size. Explaining is one claim per shot, set
-  on or along the object, never a column of text beside it.
+  (its key words 120 px or more on screen) before or instead of showing it at UI size (`<Output>` lands the words giant,
+  then carries them into the UI). Explaining is one claim per shot, set on or along the object, never a column of text
+  beside it. Name the beat in `BEATS.md` (a row tagged `output-big`), like the spectacle.
 - **A series rotates its compositions.** Three features, three metrics, three hosts: each in a different composition
   (macro, giant type, split, surface), never the same layout three times with the label swapped.
 - **The biggest word names the right thing.** The largest word on screen is the product, its object or its benefit, never

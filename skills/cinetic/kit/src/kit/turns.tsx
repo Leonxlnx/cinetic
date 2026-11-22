@@ -242,7 +242,7 @@ export const Flood: React.FC<{
  * One element turns into another tile by tile (a sketch flipping into the real card, a photo into its UI): a grid of tiles
  * over the element's box, each flipping in 3D from `front` to `back` in a diagonal wave. Place it where the element sits.
  */
-export const TileFlip: React.FC<{ front: React.ReactNode; back: React.ReactNode; w: number; h: number; start: number; cols?: number; rows?: number; wave?: number; flip?: number }> = ({
+export const TileFlip: React.FC<{ front: React.ReactNode; back: React.ReactNode; w: number; h: number; start: number; cols?: number; rows?: number; wave?: number; flip?: number; /** A ground under each tile's face (a transparent sketch would let what is behind show through mid-flip). */ bg?: string }> = ({
   front,
   back,
   w,
@@ -252,6 +252,7 @@ export const TileFlip: React.FC<{ front: React.ReactNode; back: React.ReactNode;
   rows = 4,
   wave = 16,
   flip = 8,
+  bg,
 }) => {
   const frame = useCurrentFrame();
   const tw = w / cols;
@@ -264,7 +265,7 @@ export const TileFlip: React.FC<{ front: React.ReactNode; back: React.ReactNode;
       const showBack = p >= 0.5;
       const ang = showBack ? mix((p - 0.5) * 2, -90, 0) : mix(p * 2, 0, 90);
       tiles.push(
-        <div key={`${r}-${c}`} style={{ position: 'absolute', left: c * tw, top: r * th, width: tw + 0.5, height: th + 0.5, overflow: 'hidden', transform: `perspective(900px) rotateY(${ang}deg)` }}>
+        <div key={`${r}-${c}`} style={{ position: 'absolute', left: c * tw, top: r * th, width: tw + 0.5, height: th + 0.5, overflow: 'hidden', background: bg, transform: `perspective(900px) rotateY(${ang}deg)` }}>
           <div style={{ position: 'absolute', left: -c * tw, top: -r * th, width: w, height: h }}>{showBack ? back : front}</div>
         </div>,
       );

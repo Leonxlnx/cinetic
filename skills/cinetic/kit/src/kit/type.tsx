@@ -609,3 +609,50 @@ export const useTextWidth = (text: string, style: React.CSSProperties) => {
   }, [key, handle]);
   return w;
 };
+
+/**
+ * The product's output seen big once: the key words of the answer (a number, a sentence, a result) cut on giant, hold
+ * while they creep, then travel into their place in the UI at UI size. `from` and `to` are the text's centre and font
+ * size, in px of the frame (or of the world it sits in). After `landed` (start + hold + travel) the UI's own copy takes
+ * over: draw it from that frame and stop drawing this.
+ */
+export const Output: React.FC<{
+  text: string;
+  start: number;
+  /** Frames it stays giant (default 24: long enough to read two or three words). */
+  hold?: number;
+  /** Frames of the travel into the UI (default 10). */
+  travel?: number;
+  from: { x: number; y: number; size: number };
+  to: { x: number; y: number; size: number };
+  /** Born in this colour, settling to the style's colour. */
+  born?: string;
+  style?: React.CSSProperties;
+}> = ({ text, start, hold = 24, travel = 10, from, to, born, style }) => {
+  const frame = useCurrentFrame();
+  if (frame < start || frame > start + hold + travel) return null;
+  const p = ease.inOut(clamp((frame - start - hold) / travel));
+  // size in log space, so the shrink reads as one move; a slow creep while it holds
+  const size = from.size * Math.pow(to.size / from.size, p) * (1 + 0.035 * clamp((frame - start) / hold) * (1 - p));
+  const color = born ? mixColor(born, (style?.color as string) ?? '#000000', at(frame, start, 12, ease.inOut)) : undefined;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: mix(p, from.x, to.x),
+        top: mix(p, from.y, to.y),
+        transform: 'translate(-50%, -50%)',
+        whiteSpace: 'nowrap',
+        lineHeight: 1,
+        ...style,
+        fontSize: size,
+        color: color ?? style?.color,
+      }}
+    >
+      {text}
+    </div>
+  );
+};
+
+/** The frame an `<Output>` has landed in the UI. */
+export const outputLanded = (start: number, hold = 24, travel = 10) => start + hold + travel;

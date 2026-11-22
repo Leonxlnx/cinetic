@@ -128,7 +128,7 @@ card rather than stopping dead.
 ## 7. CREDITS.md
 
 ```
-node scripts/sfx.mjs credits > CREDITS.md     # sounds and music with their pages and licences
+node scripts/sfx.mjs credits > CREDITS.md     # sounds, music, pictures and every mark the film draws, with pages and licences
 ```
-then add the marks (`public/logos/logos.json`: name, source, licence, owner), fonts (name, OFL) and any photo or footage
-(page, author, licence). Deliver it with the film.
+then add the fonts (name, OFL) and any photo or footage the script did not fetch (page, author, licence). Deliver it with
+the film.

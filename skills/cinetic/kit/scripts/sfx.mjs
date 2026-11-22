@@ -379,13 +379,24 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
     for (const p of Array.isArray(pics) ? pics : Object.values(pics.items ?? pics)) if (p && typeof p === 'object') console.log(`- ${p.title ?? p.file ?? p.name ?? 'picture'}${p.author ? ` by ${p.author}` : ''} (${p.page ?? p.url ?? ''}). Licence: ${p.licence ?? p.license ?? ''}`);
   }
   const marks = readJson(path.join(film, 'public', 'logos', 'logos.json'), null);
+  // marks drawn from the icon set (<Brand name="github" />, no file): found in the film's code
+  const drawn = new Set();
+  const scan = (d) => {
+    for (const e of fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }) : []) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) { if (e.name !== 'kit') scan(p); }
+      else if (/\.(tsx?|jsx?)$/.test(e.name)) for (const m of fs.readFileSync(p, 'utf8').matchAll(/<Brand(?:Tile)?\b[^>]*?\bname=["']([a-z0-9-]+)["'][^>]*>/g)) if (!/\bfile=/.test(m[0])) drawn.add(m[1]);
+    }
+  };
+  scan(path.join(film, 'src'));
+  if (marks?.logos || drawn.size) console.log('\n## Marks\n');
   if (marks?.logos) {
-    console.log('\n## Marks\n');
     for (const [, e] of Object.entries(marks.logos)) {
       const f = e.files?.mark ?? Object.values(e.files ?? {})[0] ?? {};
       console.log(`- ${e.name}: trademark of ${e.owner ?? 'its owner'}; mark file from ${f.from ?? 'an open collection'}${f.url ? ` (${f.url})` : ''}. Shown to say the product works with it.`);
     }
   }
+  for (const n of drawn) console.log(`- ${n}: trademark of its owner; mark drawn from Simple Icons (path data CC0, https://simpleicons.org). Shown to say the product works with it.`);
 } else {
   console.log(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 24).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
 }
