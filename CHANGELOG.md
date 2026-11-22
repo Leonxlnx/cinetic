@@ -6,7 +6,51 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first public release. Each was run against the briefs in `evals/evals.json` (the round on 0.2.0 was invalidated by a harness problem and is not reported), and the findings of each reported round became rules in the next version (see [docs/evaluation.md](docs/evaluation.md)). Each version up to 0.5.0 was committed from the snapshot that was evaluated, so every tag's tree is exactly the version that was tested; commit times between two tags are approximate.
 
-## [Unreleased]
+## [Unreleased]: cinetic 2
+
+A rework. The gap between a template video and a launch film by a top studio is direction, not effects, so the skill now
+gives the agent a director's method, a kit that looks premium by default, and a measured bar, and gets out of its way.
+
+### Changed
+
+- `SKILL.md` is a director's playbook: eight qualities (a beat every 0.8-1.6 s with a visible change every half second;
+  one world; nothing just cut away; front-loaded motion that is never linear or dead still; type as an event; the real
+  product, really used; filled frames with depth; sound designed with the picture), a short default path (project, brief,
+  one visual idea, beats tagged by composition, world, build, look, sound, final), the kit at a glance and hard rules
+  (frame 0 never empty, vary the frame, cut the ground at least twice, a lockup of at most 2 s, integrations as surfaces).
+- References are organised by what moves: `motion/text`, `entrances`, `exits`, `turns`, `camera`, `cards-ui`, `imagery`,
+  `effects`, plus `film-grammar` (sections, chaining, rhythm, two clocks, four structures, an update-film structure and a
+  composition table), `worlds` (ten graphic languages), `taste` (the tells of generated video, a 13-point rubric),
+  `sound-design`, `kit`, `assets`, `rendering` and an `INDEX` of every recipe.
+- Requirements drop to Node 22 and ffmpeg: no Python, no earshot, no HyperFrames path.
+
+### Added
+
+- `kit/`: one Remotion project every film starts from (`new-film.mjs`), with `src/kit/` modules for motion (house curves,
+  springs, `at`, `accel`, `creep`, `carry`, `logScale`, a stepped clock), type (`Words`, an append `Build` that
+  re-centres, `Swap`, `Typing`, `Scramble`, `Odometer`, `Marker`), a 3D `Camera`, world pieces (`Box` with content on its
+  faces, `DepthStack`, `GridLines`, `Aura`, `Beam`, `Pool`, `GlassPanel`, grain), product UI (cards, windows, chat,
+  `ChatStack`, input bar, terminal, `StatePill`, `Spinner`, `Wall`, `PartnerSurface`, a real arrow pointer), turns
+  (`Flood`, `Iris`, `Tiles`, `Pixelate`, `Push`, `ZoomThrough`, `Flash`), imagery (`Photo` with one grade and a duotone
+  develop, `TextWindow`, `Compare`, `Selection`), real marks (`Brand` from Simple Icons or official files, Lucide `Icon`)
+  and sound locked to picture (`Cues` landing each transient or peak on its frame, `Music` with an entry frame, ducks and
+  breath gaps, `db`, a beat grid).
+- `frames.mjs`: a 36-frame storyboard in one still, stills, half-size previews, `final` (picture, sound and loudness to
+  -16 LUFS in one pass), silent parts plus one audio render plus `mux` for long films, motion strips, and `check`, which
+  measures a preview's frame coverage, pace, empty frames and ending against thresholds calibrated on top studios' films.
+- `sfx.mjs`: the judged effects catalogue by role, with Kenney CC0 ticks, drops and cloth fetched from their zips and
+  reversed swells made from real hits; `shortlist` and `music` for 38 licensed tracks measured for tempo, start point and
+  energy; credits with licence links.
+- Five worked films in `kit/src/films/` (light product UI, an isometric block world, editorial photographs, a dark stage
+  of shaped light, soft air with a partner's real mark).
+
+### Removed
+
+- The house scene bank, the film templates, the deal, the numeric gates and their Python scripts, the HyperFrames
+  starter and the earshot kit path. They remain in the git history and in release 1.5.1.
+
+### Sound catalogue work carried over from 1.5 development
+
 
 ### Added
 
