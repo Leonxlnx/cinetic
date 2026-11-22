@@ -1,9 +1,11 @@
-// "Lumen 2": rework 5 of the v2 kit. ~12 s at 30 fps. An invented AI model launch.
-// One idea: the question is light. A prompt typed in macro collapses into a line of light, the line strikes a real glass
-// prism (three.js, lit by a studio environment) and splits into a fan of amber rays; three of them strike the benchmark
-// numbers. The context ray floods the frame warm white and the answer is on the page: three clauses, each driving a live
-// simulation the model wrote (a brass top that spins, precesses, widens and falls). The precession ring opens the amber
-// lockup. Grounds: dark stage -> bone page -> amber.
+// "Lumen 2": rework 6 of the v2 kit. ~9.5 s at 30 fps. An invented AI model launch.
+// One idea: the question is light. A prompt is typed (three words, then the rest lands at once), its letters squash into
+// a line of light, the line becomes the beam that strikes a real glass prism (three.js, lit by a studio environment) and
+// the prism fans it into amber rays. The camera rides each ray to its impact, where a benchmark figure is born large.
+// The last ray widens into the page and the answer is a live simulation the model wrote: a brass top, one claim per shot,
+// each claim set on the object (the L vector pierces "Angular momentum.", "precession." runs along the ring the stem
+// draws, "Friction wins." lands as the top hits the floor). The stem's tip, which drew the ring, opens the amber lockup.
+// Grounds: dark stage -> bone page -> amber.
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import * as THREE from 'three';
@@ -15,59 +17,63 @@ import {
   Cues,
   ease,
   Flash,
-  Flood,
   fonts,
   GLView,
   Grain,
-  keys,
   logScale,
   mix,
   mixColor,
   Music,
   Odometer,
+  shake,
   studioEnvironment,
   typingTimes,
   useTyped,
   Vignette,
   Words,
+  type Ease,
 } from '../../kit';
 import { sfx } from '../../sfx';
+import { useTextWidthSlow } from './fit';
 
 const INK = '#07080B';
 const AMBER = '#FFB547';
-const DEEP = '#D9820B'; // amber that reads on bone (the trace, the ring)
+const DEEP = '#D9820B'; // amber that reads on bone (the trace, the ring, "precession.")
 const BONE = '#F3EEE4';
 const PAGE_INK = '#16130F';
 const display: React.CSSProperties = { fontFamily: fonts.geist, fontWeight: 600, letterSpacing: '-0.05em' };
-const mono: React.CSSProperties = { fontFamily: fonts.mono, letterSpacing: '0.08em', textTransform: 'uppercase' };
+// small labels: quiet sentence case in the UI face (no uppercase mono kickers)
+const mono: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 560, letterSpacing: '-0.005em' };
 
 const T = {
-  send: 32, // enter: the prompt collapses into a line of light
-  hit: 44, // the line strikes the prism
-  settle: 106, // the camera has pulled back to the whole spectrum
-  nums: [98, 114, 130],
-  flood: 152, // the context ray floods the frame warm white
-  answer: 166, // the page, opened in macro on the 0.9 s badge
-  chunks: [186, 216, 246],
-  fall: 284,
-  iris: 300,
-  word: 308, // the name cuts on inside the opening ring
-  lock: 314,
-  end: 362,
+  send: 24, // enter: the letters squash into a line of light
+  line: 31, // the line of light swings onto the beam's path
+  hit: 38, // the beam strikes the prism (the music's main hit)
+  fan: 54, // pulled back: the whole fan of rays
+  nums: [66, 90, 114], // the camera, riding ray i, arrives with it at its impact: the figure is born
+  flood: 124, // the context ray widens into the page; the simulation is already running inside it
+  claims: [134, 175, 208], // "Angular momentum." / "Gravity becomes precession." / "Friction" (+ "wins." on impact)
+  shotB: 166, // whip from the orbit to the macro on the stem
+  widen: 192, // spin drops, the circle widens
+  fall: 208,
+  impact: 220, // the rim hits the floor: cut low, "wins."
+  iris: 234, // the precession ring opens into amber
+  word: 244,
+  end: 286,
 } as const;
 
 const W = 1920;
 const H = 1080;
 const DEG = Math.PI / 180;
 
-// ================================================================ the prism world (three.js)
-type Cam = { yaw: number; pitch: number; dist: number; tx: number; ty: number };
+// ================================================================ cameras
+type Cam = { yaw: number; pitch: number; dist: number; tx: number; ty: number; tz: number };
 const orbitCam = (c: Cam, aspect = W / H, fov = 32) => {
   const cam = new THREE.PerspectiveCamera(fov, aspect, 0.1, 200);
   const y = c.yaw * DEG;
   const p = c.pitch * DEG;
-  cam.position.set(c.tx + c.dist * Math.sin(y) * Math.cos(p), c.ty + c.dist * Math.sin(p), c.dist * Math.cos(y) * Math.cos(p));
-  cam.lookAt(c.tx, c.ty, 0);
+  cam.position.set(c.tx + c.dist * Math.sin(y) * Math.cos(p), c.ty + c.dist * Math.sin(p), c.tz + c.dist * Math.cos(y) * Math.cos(p));
+  cam.lookAt(c.tx, c.ty, c.tz);
   cam.updateMatrixWorld();
   cam.updateProjectionMatrix();
   return cam;
@@ -76,24 +82,39 @@ const toPx = (cam: THREE.Camera, v: THREE.Vector3) => {
   const p = v.clone().project(cam);
   return { x: ((p.x + 1) / 2) * W, y: ((1 - p.y) / 2) * H };
 };
-const onPlaneZ0 = (cam: THREE.PerspectiveCamera, sx: number, sy: number) => {
-  const q = new THREE.Vector3((sx / W) * 2 - 1, 1 - (sy / H) * 2, 0.5).unproject(cam);
-  const dir = q.sub(cam.position).normalize();
-  const t = -cam.position.z / dir.z;
-  return cam.position.clone().add(dir.multiplyScalar(t));
+const lerpCam = (a: Cam, b: Cam, p: number): Cam => ({
+  yaw: mix(p, a.yaw, b.yaw),
+  pitch: mix(p, a.pitch, b.pitch),
+  dist: logScale(a.dist, b.dist, p),
+  tx: mix(p, a.tx, b.tx),
+  ty: mix(p, a.ty, b.ty),
+  tz: mix(p, a.tz, b.tz),
+});
+// a camera path: each key's curve shapes the travel into it; `cut` jumps on that key's frame
+type CamKey = { f: number; c: Cam; curve?: Ease; cut?: boolean };
+const camPath = (f: number, ks: CamKey[]): Cam => {
+  if (f <= ks[0].f) return ks[0].c;
+  for (let i = 1; i < ks.length; i++) {
+    const b = ks[i];
+    if (f < b.f) {
+      const a = ks[i - 1];
+      if (b.cut) return a.c;
+      return lerpCam(a.c, b.c, (b.curve ?? ease.inOut)(clamp((f - a.f) / (b.f - a.f))));
+    }
+  }
+  return ks[ks.length - 1].c;
 };
+const r4 = (v: number) => Math.round(v * 1e4) / 1e4;
+const roundCam = (c: Cam): Cam => ({ yaw: r4(c.yaw), pitch: r4(c.pitch), dist: r4(c.dist), tx: r4(c.tx), ty: r4(c.ty), tz: r4(c.tz) });
+const nearAngle = (deg: number, ref: number) => deg + 360 * Math.round((ref - deg) / 360);
 
-const NUMS_CAM: Cam = { yaw: 0, pitch: 3, dist: 12, tx: 3.2, ty: -0.6 };
+// ================================================================ the prism world (three.js)
 const SRC = new THREE.Vector3(-12, 3.3, 0);
 const ENTRY = new THREE.Vector3(-0.56, 0.3, 0);
 const EXIT = new THREE.Vector3(0.68, 0.05, 0);
-// where the three main rays strike: chosen on screen in the final framing, put back into the world
-const TARGETS: [number, number][] = [
-  [1000, 262],
-  [1000, 560],
-  [1000, 858],
-];
-const ENDS = TARGETS.map(([sx, sy]) => onPlaneZ0(orbitCam(NUMS_CAM), sx, sy));
+const BEAM_FROM = SRC.clone().lerp(ENTRY, 0.5);
+// where the three main rays strike (the figures are born there)
+const ENDS = [new THREE.Vector3(4.0, 1.75, 0), new THREE.Vector3(4.6, 0.1, 0), new THREE.Vector3(4.1, -1.05, 0)];
 const angleTo = (v: THREE.Vector3) => Math.atan2(v.y - EXIT.y, v.x - EXIT.x);
 const A0 = angleTo(ENDS[0]);
 const A1 = angleTo(ENDS[1]);
@@ -103,6 +124,36 @@ const FAN = Array.from({ length: 13 }, (_, i) => {
   const c = i <= 6 ? mixColor('#FFF2D2', AMBER, i / 6) : mixColor(AMBER, '#FF8A2A', (i - 6) / 6);
   return { a, c, main: i === 0 ? 0 : i === 6 ? 1 : i === 12 ? 2 : -1 };
 });
+
+// the prism camera: a slow creep on the glass, a pull back to the whole fan, then it rides each ray to its impact
+const C_PROMPT: Cam = { yaw: -36, pitch: 7, dist: 4.5, tx: -0.05, ty: 0.15, tz: 0 };
+const C_HIT: Cam = { yaw: -31, pitch: 6.5, dist: 4.35, tx: -0.02, ty: 0.15, tz: 0 };
+const C_FAN: Cam = { yaw: -15, pitch: 5, dist: 8.8, tx: 1.9, ty: 0.3, tz: 0 };
+const RIDE = [
+  { yaw: -26, pitch: 7, dist: 4.1 },
+  { yaw: -17, pitch: 3, dist: 4.1 },
+  { yaw: -31, pitch: 11, dist: 4.1 },
+];
+// the impact sits left of centre, the figure runs to the right of it
+const ride = (i: number, p: THREE.Vector3, push = 1): Cam => {
+  const r = RIDE[i];
+  const off = 0.5 * (r.dist / 4.1);
+  return { yaw: r.yaw, pitch: r.pitch, dist: r.dist * push, tx: p.x + off * Math.cos(r.yaw * DEG), ty: p.y + 0.02, tz: -off * Math.sin(r.yaw * DEG) };
+};
+const midRay = (i: number) => EXIT.clone().lerp(ENDS[i], 0.5);
+const PRISM_KEYS: CamKey[] = [
+  { f: 0, c: C_PROMPT },
+  { f: T.hit, c: C_HIT, curve: ease.out },
+  { f: T.fan, c: C_FAN, curve: ease.out },
+  { f: T.nums[0], c: ride(0, ENDS[0]), curve: ease.inOut },
+  { f: T.nums[0] + 10, c: ride(0, ENDS[0], 0.92), curve: ease.out },
+  { f: T.nums[1] - 8, c: ride(1, midRay(1)), curve: ease.in },
+  { f: T.nums[1], c: ride(1, ENDS[1]), curve: ease.out },
+  { f: T.nums[1] + 10, c: ride(1, ENDS[1], 0.92), curve: ease.out },
+  { f: T.nums[2] - 8, c: ride(2, midRay(2)), curve: ease.in },
+  { f: T.nums[2], c: ride(2, ENDS[2]), curve: ease.out },
+  { f: T.flood + 16, c: ride(2, ENDS[2], 0.86), curve: ease.out },
+];
 
 const canvasTex = (w: number, h: number, paint: (g: CanvasRenderingContext2D) => void) => {
   const c = document.createElement('canvas');
@@ -133,7 +184,7 @@ type PrismWorld = {
   dust: THREE.Points;
   dustBase: Float32Array;
 };
-type PrismState = { cam: Cam; beam: number; inner: number; split: number; reach: number[]; spin: number; t: number };
+type PrismState = { cam: Cam; beam: number; inner: number; split: number; reach: number[]; pulse: number[]; spin: number; t: number };
 
 // rays are ribbons that turn about their own axis to face the lens, textured with a soft profile of light (a hot core,
 // a halo, a wide bloom), so a ray never shows a hard cylinder edge
@@ -219,7 +270,7 @@ const buildPrism = (r: THREE.WebGLRenderer): PrismWorld => {
     new THREE.MeshBasicMaterial({
       toneMapped: false,
       map: canvasTex(512, 256, (g) => {
-        const grd = g.createRadialGradient(250, 150, 0, 250, 150, 280);
+        const grd = g.createRadialGradient(270, 150, 0, 270, 150, 280);
         grd.addColorStop(0, '#4A3518');
         grd.addColorStop(0.4, '#1C140A');
         grd.addColorStop(1, '#08090C');
@@ -235,8 +286,8 @@ const buildPrism = (r: THREE.WebGLRenderer): PrismWorld => {
     new THREE.MeshBasicMaterial({ map: radial, color: new THREE.Color(AMBER), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
   );
   pool.rotation.x = -Math.PI / 2;
-  pool.position.set(2.6, -1.44, 0.3);
-  pool.scale.set(11, 4.2, 1);
+  pool.position.set(3.0, -1.44, 0.3);
+  pool.scale.set(12, 4.4, 1);
   scene.add(pool);
   // the prism: a bevelled triangular glass solid (the bevels catch the studio strips: real rims)
   const shape = new THREE.Shape();
@@ -277,7 +328,7 @@ const buildPrism = (r: THREE.WebGLRenderer): PrismWorld => {
     scene.add(sp);
     return sp;
   };
-  const incoming = mkRay('#FFF5E4', [0.32], [1.15], false);
+  const incoming = mkRay('#FFF5E4', [0.32], [1.15], false, true); // drawn through the glass's near face
   const inner = mkRay('#FFE9C2', [0.3], [0.85], false, true); // seen through the glass
   const fan = FAN.map((x) => mkRay(x.c, x.main >= 0 ? [0.26] : [0.17], x.main >= 0 ? [1] : [0.6], true));
   const solid = [0, 1, 2].map((i) => mkRay(FAN[i * 6].c, [0.28], [1.05], false));
@@ -299,7 +350,7 @@ const buildPrism = (r: THREE.WebGLRenderer): PrismWorld => {
   keyIn.position.set(ENTRY.x - 0.4, ENTRY.y + 0.2, 0.6);
   scene.add(keyOut, keyIn);
   // haze: motes that only exist where the light is (seeded along the beam and inside the fan)
-  const N = 420;
+  const N = 460;
   const base = new Float32Array(N * 3);
   let seed = 11;
   const rnd = () => {
@@ -308,11 +359,11 @@ const buildPrism = (r: THREE.WebGLRenderer): PrismWorld => {
   };
   for (let i = 0; i < N; i++) {
     let p: THREE.Vector3;
-    if (i < N * 0.35) {
+    if (i < N * 0.3) {
       p = SRC.clone().lerp(ENTRY, rnd());
     } else {
-      const a = mix(rnd(), A0 - 0.04, A2 + 0.04);
-      const d = mix(Math.pow(rnd(), 0.7), 0.3, 3.6);
+      const a = mix(rnd(), A2 - 0.04, A0 + 0.04);
+      const d = mix(Math.pow(rnd(), 0.7), 0.3, 4.4);
       p = new THREE.Vector3(EXIT.x + Math.cos(a) * d, EXIT.y + Math.sin(a) * d, 0);
     }
     base[i * 3] = p.x + (rnd() - 0.5) * 0.35;
@@ -336,20 +387,21 @@ const drawPrism = (w: PrismWorld, s: PrismState, r: THREE.WebGLRenderer, pw: num
   viewPos.copy(cam.position);
   w.prism.rotation.y = s.spin * DEG;
   w.prism.rotation.x = 4 * DEG;
-  placeRay(w.incoming, SRC, SRC.clone().lerp(ENTRY, s.beam), 1);
+  // the beam starts off-frame but in front of every camera (a ribbon through the lens would turn edge-on)
+  placeRay(w.incoming, BEAM_FROM, SRC.clone().lerp(ENTRY, s.beam), s.beam > 0 ? 1 : 0);
   placeRay(w.inner, ENTRY, ENTRY.clone().lerp(EXIT, s.inner), s.inner > 0 ? 1 : 0);
-  const fanLen = 3.7 * s.split;
+  const fanLen = 4.4 * s.split;
   FAN.forEach((x, i) => {
     const dir = new THREE.Vector3(Math.cos(x.a), Math.sin(x.a), 0);
     if (x.main >= 0) {
       const k = s.reach[x.main];
       const full = ENDS[x.main].distanceTo(EXIT);
-      // the main ray: a fading spray until it is sent to its number, then a solid ray that ends on it
+      // the main ray: a fading spray until it is sent to its figure, then a solid ray that shoots to the impact
       placeRay(w.fan[i], EXIT, EXIT.clone().addScaledVector(dir, fanLen), s.split * (1 - k));
-      placeRay(w.solid[x.main], EXIT, EXIT.clone().addScaledVector(dir, mix(k, Math.min(fanLen, full * 0.6), full)), k > 0 ? 1 : 0);
+      placeRay(w.solid[x.main], EXIT, EXIT.clone().addScaledVector(dir, full * mix(k, 0.4, 1)), k > 0 ? 1 : 0);
       const hit = w.hits[x.main];
-      hit.visible = k > 0.95;
-      hit.scale.setScalar(1.1 + 0.6 * clamp((1 - k) * 20));
+      hit.visible = k > 0.98;
+      hit.scale.setScalar(0.9 + 0.7 * s.pulse[x.main]);
     } else {
       placeRay(w.fan[i], EXIT, EXIT.clone().addScaledVector(dir, fanLen), s.split);
     }
@@ -376,112 +428,149 @@ const drawPrism = (w: PrismWorld, s: PrismState, r: THREE.WebGLRenderer, pw: num
   r.render(w.scene, cam);
 };
 
+const BEAM_HANDOFF = 0.965; // the DOM line of light ends here on the beam; the 3D beam takes over from it
 const prismState = (f: number): PrismState => {
-  const travel = at(f, T.hit - 6, T.settle - T.hit + 6, ease.glide);
   const pre = at(f, 0, T.hit, ease.out);
-  const push = 1 - 0.035 * creep(f, T.settle, 60);
-  const cam: Cam = {
-    yaw: mix(travel, -36 + 4 * pre, 0),
-    pitch: mix(travel, 7, NUMS_CAM.pitch),
-    dist: logScale(4.5, NUMS_CAM.dist, travel) * push,
-    tx: mix(Math.pow(travel, 1.2), -0.05, NUMS_CAM.tx),
-    ty: mix(travel, 0.15, NUMS_CAM.ty),
-  };
-  const r4 = (v: number) => Math.round(v * 1e4) / 1e4;
+  const c = camPath(f, PRISM_KEYS);
+  const cam = f < T.hit ? { ...c, yaw: mix(pre, C_PROMPT.yaw, C_HIT.yaw) } : c;
   return {
-    cam: { yaw: r4(cam.yaw), pitch: r4(cam.pitch), dist: r4(cam.dist), tx: r4(cam.tx), ty: r4(cam.ty) },
-    beam: r4(at(f, T.send + 4, T.hit - T.send - 4, ease.in)),
+    cam: roundCam(cam),
+    beam: f < T.line + 4 ? 0 : r4(mix(at(f, T.line + 4, T.hit - T.line - 5, ease.out), BEAM_HANDOFF, 1)),
     inner: r4(at(f, T.hit, 5, ease.out)),
     split: r4(at(f, T.hit + 4, 16, ease.out)),
-    reach: T.nums.map((n) => r4(at(f, n - 7, 7, ease.in))),
-    spin: r4(mix(at(f, 0, T.settle, ease.inOut), -8, 6)),
+    reach: T.nums.map((n, i) => r4(at(f, n - (i === 0 ? 10 : 8), i === 0 ? 10 : 8, i === 0 ? ease.inOut : ease.out))),
+    pulse: T.nums.map((n) => (f >= n ? r4(1 - at(f, n, 10, ease.out)) : 0)),
+    spin: r4(mix(at(f, 0, T.fan + 20, ease.inOut), -8, 6)),
     t: f,
   };
 };
 
-// ---------------------------------------------------------------- 1. the prompt in macro, then light
+// ---------------------------------------------------------------- 1. the question, then light
 const PROMPT = 'Why does a spinning top stay upright?';
-const TYPE_AT = -14;
+const TYPE_AT = -12;
+const P_STYLE: React.CSSProperties = { ...display, fontWeight: 520, fontSize: 132 };
+const BAR = { x: 64, y: 340, w: 1792, h: 400 };
+const TEXT_X = BAR.x + 84;
 
+// the letters squash into a line of light, left to right; the line swings onto the beam's path and hands over to it
 const Prompt: React.FC = () => {
   const f = useCurrentFrame();
+  const w132 = useTextWidthSlow(PROMPT, P_STYLE);
+  // fit the question inside its own bar (only the frame edge may crop, never the box)
+  const size = w132 > 0 ? Math.min(132, (132 * (BAR.w - 84 * 2 - 24)) / w132) : 110;
+  const width = w132 > 0 ? (w132 * size) / 132 : 1500;
   const typed = useTyped(PROMPT, TYPE_AT, 20, 3, 3);
-  const squash = at(f, T.send, 6, ease.in);
-  const shoot = accel(f, T.send + 5, 7, 1.6);
   const barOut = accel(f, T.send, 9, 1.5);
-  const push = 1 + 0.03 * creep(f, 0, 40);
+  const push = 1 + 0.06 * creep(f, 0, 34);
+  const textTop = 548 - size * 0.52;
+  const sx = (x: number) => 960 + (x - 960) * push;
+  const sy = (y: number) => 540 + (y - 540) * push;
   if (f > T.hit) return null;
+  // the line of light: from the squashed text to the beam's path in the prism camera
+  const cam = orbitCam(prismState(f).cam);
+  const b = toPx(cam, SRC.clone().lerp(ENTRY, BEAM_HANDOFF));
+  const a0 = toPx(cam, SRC.clone().lerp(ENTRY, 0.7));
+  const dx = b.x - a0.x;
+  const dy = b.y - a0.y;
+  const dl = Math.hypot(dx, dy) || 1;
+  const a = { x: b.x - (dx / dl) * 3200, y: b.y - (dy / dl) * 3200 };
+  const m = at(f, T.line, 4, ease.inOut);
+  const lineY = sy(textTop + size * 0.56);
+  const L0 = { x: mix(m, sx(TEXT_X), a.x), y: mix(m, lineY, a.y) };
+  const L1 = { x: mix(m, sx(TEXT_X + width), b.x), y: mix(m, lineY, b.y) };
+  const lineOn = f >= T.line && f < T.line + 7;
+  const lineFade = 1 - at(f, T.line + 4, 3, ease.in);
+  const len = Math.hypot(L1.x - L0.x, L1.y - L0.y);
+  const ang = Math.atan2(L1.y - L0.y, L1.x - L0.x);
   return (
-    <AbsoluteFill style={{ transform: `scale(${push})` }}>
-      {/* the input, cropped off the right edge: a lit glass surface with the prism glinting behind it */}
-      <div
-        style={{
-          position: 'absolute',
-          left: 70,
-          right: -80,
-          top: 540 - 190,
-          height: 380,
-          borderRadius: 56,
-          background: 'linear-gradient(172deg, rgba(255,240,215,.11), rgba(255,255,255,.025) 60%)',
-          boxShadow: 'inset 0 2px 0 rgba(255,214,160,.55), inset 0 0 0 1.5px rgba(255,255,255,.09), 0 50px 90px -30px rgba(0,0,0,.9)',
-          transform: `translateY(${barOut * 760}px)`,
-          opacity: 1 - barOut,
-        }}
-      />
-      <div style={{ ...mono, position: 'absolute', left: 150, top: 400, fontSize: 30, color: AMBER, opacity: 1 - squash }}>Ask Lumen 2</div>
-      <div style={{ position: 'absolute', left: 150, right: 170, top: 452, display: 'flex', justifyContent: 'flex-end' }}>
+    <AbsoluteFill>
+      <AbsoluteFill style={{ transform: `scale(${push})` }}>
+        {/* the input: a lit glass surface with the prism glinting behind it; the question fits inside it */}
         <div
           style={{
-            minWidth: '100%',
-            whiteSpace: 'pre',
-            ...display,
-            fontWeight: 520,
-            fontSize: 132,
-            lineHeight: 1.05,
-            color: mixColor('#F4F2EE', '#FFFFFF', squash),
-            transformOrigin: '0% 55%',
-            transform: `translateX(${shoot * 2600}px) scaleY(${1 - 0.975 * squash}) scaleX(${1 + 0.3 * squash})`,
-            textShadow: squash > 0 ? `0 0 ${30 * squash}px ${AMBER}` : undefined,
-            filter: shoot > 0 ? `blur(${shoot * 10}px)` : undefined,
+            position: 'absolute',
+            left: BAR.x,
+            top: BAR.y,
+            width: BAR.w,
+            height: BAR.h,
+            borderRadius: 56,
+            background: 'linear-gradient(172deg, rgba(255,240,215,.11), rgba(255,255,255,.025) 60%)',
+            boxShadow: 'inset 0 2px 0 rgba(255,214,160,.55), inset 0 0 0 1.5px rgba(255,255,255,.09), 0 50px 90px -30px rgba(0,0,0,.9)',
+            transform: `translateY(${barOut * 760}px)`,
+            opacity: 1 - barOut,
           }}
-        >
-          {typed.shown}
-          <span style={{ display: 'inline-block', width: 8, height: 118, background: AMBER, marginLeft: 6, transform: 'translateY(16px)', opacity: squash > 0 ? 0 : 1 }} />
-        </div>
-      </div>
+        />
+        <div style={{ ...mono, position: 'absolute', left: TEXT_X + 4, top: textTop - 58, fontSize: 32, color: AMBER, opacity: 1 - at(f, T.send, 5) }}>Ask Lumen 2</div>
+        {f < T.line + 1 && (
+          <div style={{ position: 'absolute', left: TEXT_X, top: textTop, whiteSpace: 'pre', ...P_STYLE, fontSize: size, lineHeight: 1.12 }}>
+            {typed.shown.split('').map((ch, i) => {
+              const q = at(f, T.send + i * 0.06, 5, ease.in);
+              return (
+                <span
+                  key={i}
+                  style={{
+                    display: 'inline-block',
+                    whiteSpace: 'pre',
+                    color: mixColor('#F4F2EE', '#FFF6E2', q),
+                    transformOrigin: '50% 56%',
+                    transform: `scaleY(${1 - 0.97 * q})`,
+                    textShadow: q > 0 ? `0 0 ${34 * q}px ${AMBER}` : undefined,
+                  }}
+                >
+                  {ch}
+                </span>
+              );
+            })}
+            <span style={{ display: 'inline-block', width: 8, height: size * 0.88, background: AMBER, marginLeft: 6, transform: `translateY(${size * 0.12}px)`, opacity: f >= T.send ? 0 : 1 }} />
+          </div>
+        )}
+      </AbsoluteFill>
+      {lineOn && (
+        <div
+          style={{
+            position: 'absolute',
+            left: L0.x,
+            top: L0.y - 4,
+            width: len,
+            height: 8,
+            borderRadius: 4,
+            transformOrigin: '0 50%',
+            transform: `rotate(${ang}rad)`,
+            background: 'linear-gradient(90deg, rgba(255,246,226,.0), #FFF6E2 30%, #FFFFFF)',
+            boxShadow: `0 0 26px 8px ${AMBER}AA, 0 0 70px 20px ${AMBER}55`,
+            opacity: lineFade,
+          }}
+        />
+      )}
     </AbsoluteFill>
   );
 };
 
-// ---------------------------------------------------------------- 2-3. the prism: the light splits, the rays strike the numbers
+// ---------------------------------------------------------------- 2. the prism: the camera rides each ray to its figure
 const NUMS = [
   { label: 'Math', v: 92.4, d: 1, suffix: '%' },
   { label: 'Code', v: 81.0, d: 1, suffix: '%' },
   { label: 'Context', v: 1, d: 0, suffix: 'M tokens' },
 ];
+const NUM_SIZE = 380;
 
-const NumberText: React.FC<{ i: number; x: number; y: number; color: string; glow?: string; dx?: number }> = ({ i, x, y, color, glow, dx = 0 }) => {
+const NumberText: React.FC<{ i: number; x: number; y: number; size: number; color: string; glow?: string; scale?: number }> = ({ i, x, y, size, color, glow, scale = 1 }) => {
   const n = NUMS[i];
   return (
-    <div style={{ position: 'absolute', left: x, top: y - 106, transform: `translateX(${dx}px)`, whiteSpace: 'nowrap' }}>
-      <div style={{ ...mono, position: 'absolute', top: -30, left: 8, fontSize: 28, color: glow ? AMBER : color }}>{n.label}</div>
-      <div style={{ ...display, fontSize: 226, lineHeight: 0.95, color, textShadow: glow }}>
-        <Odometer value={n.v} decimals={n.d} start={T.nums[i]} dur={16} sep="" />
-        <span style={{ fontSize: 84, letterSpacing: '-0.02em', marginLeft: 10 }}>{n.suffix}</span>
+    <div style={{ position: 'absolute', left: x, top: y - size * 0.5, transformOrigin: '0% 50%', transform: `scale(${scale})`, whiteSpace: 'nowrap' }}>
+      <div style={{ ...mono, position: 'absolute', top: -size * 0.13, left: size * 0.04, fontSize: Math.max(30, size * 0.125), color: AMBER }}>{n.label}</div>
+      <div style={{ ...display, fontSize: size, lineHeight: 0.95, color, textShadow: glow }}>
+        <Odometer value={n.v} decimals={n.d} start={T.nums[i]} dur={11} sep="" />
+        <span style={{ fontSize: size * 0.36, letterSpacing: '-0.02em', marginLeft: size * 0.04 }}>{n.suffix}</span>
       </div>
     </div>
   );
 };
 
-const numberBox = (f: number, i: number) => {
-  const cam = orbitCam(prismState(f).cam);
-  const p = toPx(cam, ENDS[i]);
-  return { x: p.x + 30, y: p.y };
-};
-
 const Stage: React.FC = () => {
   const f = useCurrentFrame();
   const s = prismState(f);
+  const cam = orbitCam(s.cam);
   const blur = mix(at(f, T.send, 12, ease.out), 14, 0);
   const dim = mix(at(f, T.send, 12, ease.out), 0.55, 1);
   return (
@@ -492,49 +581,110 @@ const Stage: React.FC = () => {
       {NUMS.map((n, i) => {
         const on = T.nums[i];
         if (f < on) return null;
-        const { x, y } = numberBox(f, i);
-        const p = at(f, on, 10, ease.out);
+        const p = toPx(cam, ENDS[i]);
+        // born at the impact, sized by the camera's distance (it rides away with the world)
+        const size = NUM_SIZE * (RIDE[i].dist / cam.position.distanceTo(ENDS[i]));
         const born = at(f, on, 14, ease.out);
-        return <NumberText key={n.label} i={i} x={x} y={y} dx={mix(p, -40, 0)} color={mixColor(AMBER, '#F4F2EE', born)} glow={`0 0 ${mix(born, 60, 26)}px ${AMBER}55`} />;
+        return (
+          <NumberText
+            key={n.label}
+            i={i}
+            x={p.x + size * 0.1}
+            y={p.y}
+            size={size}
+            scale={mix(at(f, on, 10, ease.out), 1.22, 1)}
+            color={mixColor(AMBER, '#F7F3EC', born)}
+            glow={`0 0 ${mix(born, 70, 30)}px ${AMBER}66`}
+          />
+        );
       })}
       <Vignette amount={0.4} />
     </AbsoluteFill>
   );
 };
 
-// ================================================================ the answer: a page and a live simulation (three.js)
+// ---------------------------------------------------------------- the seam: the context ray widens into the page
+const bandAt = (f: number) => {
+  const cam = orbitCam(prismState(f).cam);
+  const a = toPx(cam, EXIT);
+  const b = toPx(cam, ENDS[2]);
+  const ang = Math.atan2(b.y - a.y, b.x - a.x);
+  const p = at(f, T.flood, 14, ease.glide);
+  return { c: b, ang, hw: logScale(14, 1500, p), p };
+};
+const bandPoly = (c: { x: number; y: number }, ang: number, hw: number) => {
+  const u = { x: Math.cos(ang), y: Math.sin(ang) };
+  const n = { x: -u.y, y: u.x };
+  const pts = [
+    [c.x - u.x * 4000 + n.x * hw, c.y - u.y * 4000 + n.y * hw],
+    [c.x + u.x * 4000 + n.x * hw, c.y + u.y * 4000 + n.y * hw],
+    [c.x + u.x * 4000 - n.x * hw, c.y + u.y * 4000 - n.y * hw],
+    [c.x - u.x * 4000 - n.x * hw, c.y - u.y * 4000 - n.y * hw],
+  ];
+  return `polygon(${pts.map(([x, y]) => `${x.toFixed(1)}px ${y.toFixed(1)}px`).join(', ')})`;
+};
+const BandGlow: React.FC<{ c: { x: number; y: number }; ang: number; hw: number }> = ({ c, ang, hw }) => {
+  const h = hw * 2 + 160;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: c.x - 4000,
+        top: c.y - h / 2,
+        width: 8000,
+        height: h,
+        transformOrigin: '50% 50%',
+        transform: `rotate(${ang}rad)`,
+        background: `linear-gradient(180deg, rgba(255,181,71,0), rgba(255,200,120,.55) ${(60 / h) * 100}%, #FFF4E0 ${(80 / h) * 100}%, #FFF4E0 ${100 - (80 / h) * 100}%, rgba(255,200,120,.55) ${100 - (60 / h) * 100}%, rgba(255,181,71,0))`,
+        filter: 'blur(10px)',
+      }}
+    />
+  );
+};
+
+// ================================================================ the answer: a live simulation, one claim per shot (three.js)
 const L = 1.42; // the top's height (tip to stem)
 type TopWorld = { scene: THREE.Scene; prec: THREE.Group; tilt: THREE.Group; spin: THREE.Group; shaft: THREE.Mesh; head: THREE.Mesh; trace: THREE.Mesh };
 
 const topPose = (g: number) => {
-  const [c1, c2, c3] = T.chunks;
-  const gg = Math.min(g, T.fall + 12);
-  const widen = at(g, c3, T.fall - c3, ease.inOut);
-  const drop = at(g, T.fall, 12, ease.in);
-  const k = g - T.fall - 12;
+  const gg = Math.min(g, T.impact);
+  const widen = at(g, T.widen, T.fall - T.widen, ease.inOut);
+  const drop = at(g, T.fall, T.impact - T.fall, ease.in);
+  const k = g - T.impact;
   const bounce = k > 0 ? Math.sin(k * 0.9) * Math.exp(-k * 0.3) * 0.07 : 0;
   const nut = 0.01 * Math.sin(g * 0.7) * (1 - drop);
-  const theta = 0.22 + nut + (0.5 - 0.22) * widen + (0.8 - 0.5) * drop - bounce;
-  const phi = 2.77 + 0.075 * (gg - T.answer) + 0.0017 * Math.max(0, gg - c3) ** 2;
-  const psi = 0.42 * (gg - T.answer) - 0.0045 * Math.max(0, gg - c3) ** 2;
-  const arrow = at(g, c1, 10, ease.out) * (1 - at(g, T.fall - 4, 8, ease.in));
-  return { theta, phi, psi, arrow, trace: g >= c2 };
+  const theta = 0.2 + nut + (0.48 - 0.2) * widen + (0.8 - 0.48) * drop - bounce;
+  const phi = 2.77 + 0.1 * (gg - T.flood) + 0.002 * Math.max(0, gg - T.widen) ** 2;
+  const psi = 0.42 * (gg - T.flood) - 0.004 * Math.max(0, gg - T.widen) ** 2;
+  const arrow = at(g, T.claims[0] - 2, 10, ease.out) * (1 - at(g, T.shotB - 2, 6, ease.in));
+  return { theta, phi, psi, arrow };
 };
+const axisAt = (theta: number, phi: number, len: number) => new THREE.Vector3(-len * Math.sin(theta) * Math.cos(phi), len * Math.cos(theta), len * Math.sin(theta) * Math.sin(phi));
 const stemAt = (g: number, len = L) => {
   const { theta, phi } = topPose(g);
-  return new THREE.Vector3(-len * Math.sin(theta) * Math.cos(phi), len * Math.cos(theta), len * Math.sin(theta) * Math.sin(phi));
+  return axisAt(theta, phi, len);
 };
-const simCam = (g: number) => {
-  const a = mix(at(g, T.answer, T.iris - T.answer, ease.inOut), -0.2, 0.12);
-  const d = 5.3 - 0.3 * at(g, T.chunks[1], 40, ease.inOut);
-  const lx = -1.32;
-  const cam = new THREE.PerspectiveCamera(30, W / H, 0.1, 100);
-  cam.position.set(lx + d * Math.sin(a), 2.2, d * Math.cos(a));
-  cam.lookAt(lx, 1.02, 0);
-  cam.updateMatrixWorld();
-  cam.updateProjectionMatrix();
-  return cam;
-};
+
+// the cameras of the answer: an orbit with the L vector, a macro on the stem, a follow of the fall, a cut low on impact
+const REST = topPose(T.impact + 30);
+const FALLEN = axisAt(REST.theta, REST.phi, 0.55);
+// the direction the top leans as it falls (the yaw a camera would need to look straight down its stem)
+const YAW_AXIS = Math.atan2(-Math.cos(REST.phi), Math.sin(REST.phi)) / DEG;
+const YAW_FOLLOW = nearAngle(YAW_AXIS + 90, 40); // side on: it falls across the frame
+const YAW_LOW = nearAngle(YAW_AXIS - 50, YAW_FOLLOW); // three-quarter on its lit crown, from the key light's side
+const B_MID_YAW = 17;
+const ANSWER_KEYS: CamKey[] = [
+  { f: T.flood, c: { yaw: -52, pitch: 9, dist: 3.75, tx: 0, ty: 0.74, tz: 0 } },
+  { f: T.shotB, c: { yaw: -16, pitch: 7, dist: 3.3, tx: 0, ty: 0.74, tz: 0 }, curve: ease.out },
+  { f: T.shotB + 8, c: { yaw: 6, pitch: 15, dist: 2.55, tx: 0, ty: 1.3, tz: 0 }, curve: ease.inOut },
+  { f: T.widen + 8, c: { yaw: 28, pitch: 12, dist: 2.4, tx: 0, ty: 1.28, tz: 0 }, curve: ease.out },
+  { f: T.fall, c: { yaw: YAW_FOLLOW - 12, pitch: 9, dist: 3.7, tx: FALLEN.x * 0.4, ty: 0.62, tz: FALLEN.z * 0.4 }, curve: ease.inOut },
+  { f: T.impact, c: { yaw: YAW_FOLLOW, pitch: 7, dist: 3.9, tx: FALLEN.x, ty: 0.3, tz: FALLEN.z }, curve: ease.in },
+  { f: T.impact, c: { yaw: YAW_LOW, pitch: 16, dist: 4.1, tx: FALLEN.x, ty: 0.3, tz: FALLEN.z }, cut: true },
+  { f: T.end, c: { yaw: YAW_LOW - 10, pitch: 13, dist: 3.7, tx: FALLEN.x, ty: 0.3, tz: FALLEN.z }, curve: ease.out },
+];
+const answerCam = (g: number) => roundCam(camPath(g, ANSWER_KEYS));
+const simCam = (c: Cam, aspect = W / H) => orbitCam(c, aspect, 30);
 
 const buildTop = (r: THREE.WebGLRenderer): TopWorld => {
   r.shadowMap.enabled = true;
@@ -574,8 +724,8 @@ const buildTop = (r: THREE.WebGLRenderer): TopWorld => {
   prec.add(tilt);
   scene.add(prec);
   const arrowMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(PAGE_INK) });
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1, 12), arrowMat);
-  const head = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.22, 24), arrowMat);
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 1, 12), arrowMat);
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.24, 24), arrowMat);
   tilt.add(shaft, head);
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.26, color: new THREE.Color('#4A3112') }));
   ground.rotation.x = -Math.PI / 2;
@@ -597,7 +747,8 @@ const buildTop = (r: THREE.WebGLRenderer): TopWorld => {
   return { scene, prec, tilt, spin, shaft, head, trace };
 };
 
-const drawTop = (w: TopWorld, s: { g: number }, r: THREE.WebGLRenderer, pw: number, ph: number) => {
+const TRACE_FROM = T.shotB - 4;
+const drawTop = (w: TopWorld, s: { g: number; cam: Cam }, r: THREE.WebGLRenderer, pw: number, ph: number) => {
   r.shadowMap.enabled = true;
   const g = s.g;
   const p = topPose(g);
@@ -608,107 +759,90 @@ const drawTop = (w: TopWorld, s: { g: number }, r: THREE.WebGLRenderer, pw: numb
   w.shaft.visible = w.head.visible = p.arrow > 0.01;
   w.shaft.scale.set(1, Math.max(0.001, len), 1);
   w.shaft.position.y = len / 2;
-  w.head.position.y = len + 0.08;
-  // the trace of the stem's tip, from the moment precession is named
+  w.head.position.y = len + 0.1;
+  // the trace of the stem's tip: the precession ring, drawn from the macro on the stem
   const pts: THREE.Vector3[] = [];
-  const g0 = T.chunks[1];
-  const g1 = Math.min(g, T.fall + 12);
-  for (let x = g0; x <= g1; x += 0.5) pts.push(stemAt(x));
+  const g1 = Math.min(g, T.impact);
+  for (let x = TRACE_FROM; x <= g1; x += 0.5) pts.push(stemAt(x));
   w.trace.geometry.dispose();
-  w.trace.geometry = pts.length > 2 ? new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), pts.length * 2, 0.016, 6, false) : new THREE.BufferGeometry();
-  const cam = simCam(g);
-  cam.aspect = pw / ph;
-  cam.updateProjectionMatrix();
-  r.render(w.scene, cam);
+  w.trace.geometry = pts.length > 2 ? new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), pts.length * 2, 0.015, 6, false) : new THREE.BufferGeometry();
+  r.render(w.scene, simCam(s.cam, pw / ph));
 };
 
-const ANSWER = [
-  { b: 'Angular momentum.', t: 'The spin holds the axis steady.' },
-  { b: 'Gravity becomes precession.', t: 'It turns the fall into a slow circle.' },
-  { b: 'Friction wins.', t: 'Spin drops, the circle widens, it falls.' },
-];
-const BADGE = { x: 130, y: 258, w: 560, h: 64 };
-const BADGE_C = { x: BADGE.x + BADGE.w / 2, y: BADGE.y + BADGE.h / 2 };
-
-const pageTransform = (f: number) => {
-  const p = at(f, T.answer, 24, ease.out);
-  const s = logScale(3.1, 1, p) * (1 + 0.035 * creep(f, T.answer + 24, 110));
-  const tx = (960 - BADGE_C.x) * (1 - p);
-  const ty = (540 - BADGE_C.y) * (1 - p);
-  return { s, tx, ty, p };
+// the back half of a ring around the top's axis, as a screen path (left to right): type set along the precession
+const arcPath = (cam: THREE.Camera, R: number, h: number, centre: number, span: number) => {
+  const pts: { x: number; y: number }[] = [];
+  for (let i = 0; i <= 48; i++) {
+    const a = centre - span + (2 * span * i) / 48;
+    pts.push(toPx(cam, new THREE.Vector3(R * Math.cos(a), h, R * Math.sin(a))));
+  }
+  if (pts[0].x > pts[pts.length - 1].x) pts.reverse();
+  return `M ${pts.map((p) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' L ')}`;
 };
-const pageToScreen = (f: number, x: number, y: number) => {
-  const { s, tx, ty } = pageTransform(f);
-  return { x: BADGE_C.x + (x - BADGE_C.x) * s + tx, y: BADGE_C.y + (y - BADGE_C.y) * s + ty };
+// the far side of the ring for the macro's mean camera, fixed in the world (the type turns with the world, not the frame)
+const PHI_FAR = Math.atan2(Math.cos(B_MID_YAW * DEG), Math.sin(B_MID_YAW * DEG)) + Math.PI;
+
+const claimLeave = (f: number, start: number) => {
+  const q = accel(f, start, 8, 1.5);
+  return { transform: `translateY(${-q * 700}px)`, filter: q > 0.05 ? `blur(${q * 14}px)` : undefined, opacity: 1 - q * 0.6 };
 };
 
 const Answer: React.FC = () => {
   const f = useCurrentFrame();
-  const { s, tx, ty } = pageTransform(f);
-  const cam = simCam(f);
+  const c = answerCam(f);
+  const cam = simCam(c);
   const pose = topPose(f);
-  const tip = toPx(cam, stemAt(f, 1.95 * pose.arrow + 0.25));
-  const stem = toPx(cam, stemAt(f));
-  // the iris: the precession ring opens into the amber ground
-  const ringC = toPx(cam, new THREE.Vector3(0, L * Math.cos(topPose(T.iris).theta), 0));
-  const irisAt = pageToScreen(f, ringC.x, ringC.y);
-  const iris = at(f, T.iris, T.lock - T.iris, ease.in);
+  const tip = toPx(cam, stemAt(f, 1.95 * pose.arrow + 0.3));
+  const inA = f < T.shotB + 8;
+  const inB = f >= T.shotB && f < T.widen + 13;
+  const inC = f >= T.fall - 2;
+  // the iris: the stem's tip, the point that drew the precession ring, opens into the amber ground
+  const ringC = toPx(cam, stemAt(f));
+  const iris = at(f, T.iris, T.word - T.iris, ease.in);
+  const arcId = `lumen-arc-${f}`;
+  const slide = at(f, T.claims[1] + 3, 12, ease.out);
   return (
     <AbsoluteFill style={{ background: BONE }}>
-      <AbsoluteFill style={{ transformOrigin: `${BADGE_C.x}px ${BADGE_C.y}px`, transform: `translate(${tx}px, ${ty}px) scale(${s})` }}>
-        <GLView id="lumen-top" build={buildTop} draw={drawTop} state={{ g: f }} width={W} height={H} ss={1} />
-        {/* the labels of the figure, pinned to the simulation */}
-        {pose.arrow > 0.3 && (
-          <div style={{ position: 'absolute', left: tip.x + 18, top: tip.y - 40, fontFamily: fonts.serif, fontStyle: 'italic', fontSize: 64, color: PAGE_INK, opacity: clamp((pose.arrow - 0.3) * 3) }}>L</div>
-        )}
-        {pose.trace && f < T.fall && (
-          <div style={{ position: 'absolute', left: stem.x + 28, top: stem.y - 92, fontFamily: fonts.serif, fontStyle: 'italic', fontSize: 64, color: DEEP, opacity: at(f, T.chunks[1] + 4, 6) }}>Ω</div>
-        )}
-        <div style={{ ...mono, position: 'absolute', right: 70, bottom: 54, fontSize: 26, color: '#7A6F5E' }}>Simulation written by Lumen 2 · 240 Hz</div>
-        {/* the page */}
-        <div style={{ position: 'absolute', left: 130, top: 150, width: 820 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 22 }}>
-            <span style={{ ...mono, fontSize: 26, color: '#8A7F6C' }}>You</span>
-            <span style={{ fontFamily: fonts.inter, fontSize: 40, color: '#3B352C', letterSpacing: '-0.01em' }}>{PROMPT}</span>
-          </div>
-        </div>
-        <div
-          style={{
-            ...mono,
-            position: 'absolute',
-            left: BADGE.x,
-            top: BADGE.y,
-            width: BADGE.w,
-            height: BADGE.h,
-            borderRadius: 32,
-            background: AMBER,
-            color: '#2A1A04',
-            fontSize: 28,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: `inset 0 1.5px 0 rgba(255,255,255,.55), 0 10px 30px -10px ${DEEP}99`,
-          }}
-        >
-          Lumen 2 · thought for 0.9 s
-        </div>
-        {ANSWER.map((a, i) => {
-          const c = T.chunks[i];
-          if (f < c) return null;
-          const q = at(f, c, 8, ease.out);
-          const q2 = at(f, c + 6, 8, ease.out);
-          return (
-            <div key={i} style={{ position: 'absolute', left: 130, top: 380 + i * 190, width: 1060 }}>
-              <div style={{ ...display, fontWeight: 640, fontSize: 68, letterSpacing: '-0.04em', color: PAGE_INK, transform: `translateY(${mix(q, 26, 0)}px)`, opacity: clamp(q * 3) }}>
-                <span style={{ color: i === 1 && f < T.chunks[2] ? '#A85F00' : PAGE_INK }}>{a.b}</span>
-              </div>
-              <div style={{ fontFamily: fonts.inter, fontSize: 42, color: '#4A4337', marginTop: 6, transform: `translateY(${mix(q2, 20, 0)}px)`, opacity: f >= c + 6 ? clamp(q2 * 3) : 0 }}>{a.t}</div>
+      <AbsoluteFill style={{ transform: shake(f, T.impact, 8, 9) }}>
+        {/* behind the object: the claims of the orbit and the macro (the top and the L vector pass in front of them) */}
+        {inA && (
+          <div style={{ position: 'absolute', left: 0, width: W, top: 58, textAlign: 'center', ...claimLeave(f, T.shotB - 2) }}>
+            <div style={{ ...display, fontSize: 204, lineHeight: 1, transform: `translateX(${mix(at(f, T.flood, T.shotB - T.flood, ease.out), 50, -40)}px)` }}>
+              <Words text="Angular momentum." start={T.claims[0]} arrive="rise" gap={4} style={{ color: PAGE_INK }} />
             </div>
-          );
-        })}
+          </div>
+        )}
+        {inB && (
+          <AbsoluteFill style={claimLeave(f, T.widen + 4)}>
+            <div style={{ position: 'absolute', left: 0, width: W, top: 34, textAlign: 'center', ...display, fontSize: 184, lineHeight: 1 }}>
+              <Words text="Gravity becomes" start={T.claims[1]} arrive="rise" gap={4} style={{ color: PAGE_INK }} />
+            </div>
+            <svg width={W} height={H} style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
+              <defs>
+                <path id={arcId} d={arcPath(cam, 1.2, 1.32, PHI_FAR, 1.35)} />
+              </defs>
+              <text fill={DEEP} style={{ ...display, fontSize: 236, letterSpacing: '-0.045em' }} opacity={clamp(slide * 4)}>
+                <textPath href={`#${arcId}`} startOffset={`${mix(slide, 82, 50)}%`} textAnchor="middle">
+                  precession.
+                </textPath>
+              </text>
+            </svg>
+          </AbsoluteFill>
+        )}
+        <GLView id="lumen-top" build={buildTop} draw={drawTop} state={{ g: f, cam: c }} width={W} height={H} ss={1} />
+        {/* on the object: the vector's name at its tip */}
+        {pose.arrow > 0.3 && tip.y > 30 && (
+          <div style={{ position: 'absolute', left: tip.x + 22, top: tip.y - 30, fontFamily: fonts.serif, fontStyle: 'italic', fontSize: 92, color: PAGE_INK, opacity: clamp((pose.arrow - 0.3) * 3) }}>L</div>
+        )}
+        {/* the fall: "Friction" as it tips, "wins." on the impact, in front of the floor */}
+        {inC && (
+          <div style={{ position: 'absolute', left: 0, width: W, top: 764, textAlign: 'center', ...display, fontSize: 260, lineHeight: 1 }}>
+            <Words text="Friction wins." times={[T.claims[2], T.impact]} arrive="rise" style={{ color: PAGE_INK }} />
+          </div>
+        )}
       </AbsoluteFill>
       {f >= T.iris && (
-        <AbsoluteFill style={{ clipPath: `circle(${logScale(70, 2400, iris)}px at ${irisAt.x}px ${irisAt.y}px)` }}>
+        <AbsoluteFill style={{ clipPath: `circle(${logScale(60, 2400, iris)}px at ${ringC.x}px ${ringC.y}px)` }}>
           <Lockup />
         </AbsoluteFill>
       )}
@@ -716,34 +850,34 @@ const Answer: React.FC = () => {
   );
 };
 
-// ---------------------------------------------------------------- lockup: the amber ground the ring opened (1.7 s)
+// ---------------------------------------------------------------- lockup: the amber ground the ring opened (1.6 s)
 const Lockup: React.FC = () => {
   const f = useCurrentFrame();
-  const sweep = at(f, T.lock + 8, 30, ease.inOut);
-  const ring = at(f, T.lock - 14, 60, ease.out);
+  const sweep = at(f, T.word + 8, 28, ease.inOut);
+  const ring = at(f, T.iris, 50, ease.out);
   const mask = `linear-gradient(100deg, transparent ${mix(sweep, -30, 100)}%, black ${mix(sweep, -18, 112)}%, transparent ${mix(sweep, -6, 124)}%)`;
   return (
     <AbsoluteFill style={{ background: AMBER, justifyContent: 'center', alignItems: 'center' }}>
       <div
         style={{
           position: 'absolute',
-          left: 960 - mix(ring, 900, 1250),
-          top: 560 - mix(ring, 900, 1250),
-          width: mix(ring, 1800, 2500),
-          height: mix(ring, 1800, 2500),
+          left: 960 - mix(ring, 700, 1250),
+          top: 560 - mix(ring, 700, 1250),
+          width: mix(ring, 1400, 2500),
+          height: mix(ring, 1400, 2500),
           borderRadius: '50%',
           border: `4px solid ${DEEP}`,
           opacity: 0.55 * (1 - ring),
         }}
       />
-      <div style={{ transform: `scale(${logScale(1.12, 1, at(f, T.word, 18, ease.out)) * (1 + 0.025 * creep(f, T.lock + 10, 40))})`, textAlign: 'center' }}>
+      <div style={{ transform: `scale(${logScale(1.12, 1, at(f, T.word, 18, ease.out)) * (1 + 0.025 * creep(f, T.word + 10, 40))})`, textAlign: 'center' }}>
         <div style={{ position: 'relative' }}>
           <div style={{ ...display, fontSize: 430, lineHeight: 0.9 }}>
             <Words text="Lumen 2" start={T.word} by="char" arrive="cut" gap={1.4} style={{ color: INK }} />
           </div>
-          <div style={{ ...display, fontSize: 430, lineHeight: 0.9, position: 'absolute', inset: 0, color: '#FFF6E6', WebkitMaskImage: mask, maskImage: mask, opacity: f >= T.lock + 6 ? 1 : 0 }}>Lumen 2</div>
+          <div style={{ ...display, fontSize: 430, lineHeight: 0.9, position: 'absolute', inset: 0, color: '#FFF6E6', WebkitMaskImage: mask, maskImage: mask, opacity: f >= T.word + 6 ? 1 : 0 }}>Lumen 2</div>
         </div>
-        <div style={{ ...mono, fontSize: 36, color: '#3A2600', marginTop: 34, opacity: f >= T.lock + 14 ? 1 : 0 }}>Available today · lumen.ai/2</div>
+        <div style={{ ...mono, fontSize: 36, color: '#3A2600', marginTop: 34, opacity: f >= T.word + 12 ? 1 : 0 }}>Available today · lumen.ai/2</div>
       </div>
     </AbsoluteFill>
   );
@@ -753,35 +887,40 @@ export const LumenFilm: React.FC = () => {
   const f = useCurrentFrame();
   const s = sfx;
   const keysAt = typingTimes(PROMPT, TYPE_AT, 30, 20, 3, 3).filter((k) => k >= 0);
-  const fl = numberBox(T.flood, 2);
+  const band = f >= T.flood && f < T.flood + 16 ? bandAt(f) : null;
   const cues = [
     ...[keysAt[0], keysAt[3], keysAt[keysAt.length - 1]].map((k, i) => ({ at: k, ...s['mixkit-2533'], volume: 0.32 + i * 0.05 })),
     { at: T.send, ...s['mixkit-3124'], volume: 0.45 },
-    { at: T.send + 6, ...s['mixkit-168'], volume: 0.35 },
+    { at: T.line, ...s['mixkit-168'], volume: 0.35 },
     { at: T.hit, ...s['mixkit-784'], volume: 0.45 },
     { at: T.hit, ...s['mixkit-2299'], volume: 0.95 },
     { at: T.hit + 6, ...s['mixkit-1492'], volume: 0.3 },
     ...T.nums.map((t, i) => ({ at: t, ...s['mixkit-2568'], volume: 0.42, rate: 0.95 + i * 0.08 })),
     ...T.nums.map((t) => ({ at: t + 3, ...s['mixkit-1049'], volume: 0.18 })),
-    { at: T.flood + 4, ...s['mixkit-175'], volume: 0.4 },
-    { at: T.answer + 2, ...s['mixkit-2867'], volume: 0.3 },
-    ...T.chunks.map((t, i) => ({ at: t, ...s['mixkit-3000'], volume: 0.28, rate: 1 + i * 0.06 })),
-    { at: T.fall + 12, ...s['mixkit-2384'], volume: 0.4 },
+    ...[T.nums[1] - 8, T.nums[2] - 8].map((t) => ({ at: t + 3, ...s['mixkit-175'], volume: 0.22 })),
+    { at: T.flood + 6, ...s['mixkit-175'], volume: 0.4 },
+    ...T.claims.map((t, i) => ({ at: t, ...s['mixkit-3000'], volume: 0.28, rate: 1 + i * 0.06 })),
+    { at: T.shotB + 4, ...s['mixkit-168'], volume: 0.25 },
+    { at: T.impact, ...s['mixkit-2384'], volume: 0.45 },
+    { at: T.impact, ...s['mixkit-2299'], volume: 0.4 },
     { at: T.iris + 4, ...s['mixkit-168'], volume: 0.3 },
-    { at: T.lock, ...s['mixkit-2299'], volume: 0.7 },
+    { at: T.word, ...s['mixkit-2299'], volume: 0.7 },
   ];
   return (
     <AbsoluteFill style={{ background: INK }}>
       {f < T.flood + 16 && <Stage />}
       {f < T.hit + 1 && <Prompt />}
-      {f >= T.flood && f < T.answer && (
-        <Flood from={{ x: fl.x + 250, y: fl.y, w: 500, h: 230, r: 40 }} start={T.flood} dur={T.answer - T.flood} color={BONE} source={<NumberText i={2} x={fl.x} y={fl.y} color={PAGE_INK} />} />
+      {band && <BandGlow c={band.c} ang={band.ang} hw={band.hw} />}
+      {band && band.hw * 0.85 - 160 > 0 && (
+        <AbsoluteFill style={{ clipPath: bandPoly(band.c, band.ang, band.hw * 0.85 - 160), opacity: clamp((band.hw * 0.85 - 160) / 260) }}>
+          <Answer />
+        </AbsoluteFill>
       )}
-      {f >= T.answer && f < T.lock && <Answer />}
-      {f >= T.lock && <Lockup />}
+      {f >= T.flood + 16 && f < T.word && <Answer />}
+      {f >= T.word && <Lockup />}
       <Flash start={T.hit - 2} dur={8} color="#FFF1DA" strength={0.4} />
       <Grain amount={0.045} />
-      <Music src="music/wheres-hope.mp3" startFrom={7.26} volume={1} breaths={[T.hit]} breathLen={8} duck={[T.hit, T.lock]} fadeOut={36} />
+      <Music src="music/wheres-hope.mp3" startFrom={7.46} volume={1} breaths={[T.hit]} breathLen={8} duck={[T.hit, T.word]} fadeOut={36} />
       <Cues cues={cues} />
     </AbsoluteFill>
   );
