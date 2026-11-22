@@ -717,7 +717,7 @@ export const FieldnoteFilm: React.FC = () => {
       {f >= T.relay && f < T.lock && <Relay />}
       {f >= T.lock && <Lockup />}
       <Grain amount={0.03} />
-      <Music src="music/tech-house-vibes.mp3" startFrom={60 - (T.earth - 2) / 30} volume={0.45} enterAt={0} breaths={[T.land, T.lock]} breathLen={6} fadeOut={50} />
+      <Music src="music/sonor-01.mp3" startFrom={20.54} volume={0.4} enterAt={0} breaths={[T.land, T.lock]} breathLen={6} fadeOut={50} />
       <Cues cues={cues} />
     </AbsoluteFill>
   );

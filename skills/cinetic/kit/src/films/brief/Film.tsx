@@ -595,7 +595,7 @@ export const BriefFilm: React.FC = () => {
       {f >= T.lock + 14 && <Lockup />}
       <Vignette amount={0.1} color="60,40,20" />
       <Grain amount={0.035} />
-      <Music src="music/tech-house-vibes.mp3" startFrom={7.8} volume={0.5} duck={[T.grow + 16, T.ink + 12, T.lock + 12]} breaths={[T.grow + 16, T.proofIn]} fadeOut={40} />
+      <Music src="music/your-breath.mp3" startFrom={11.77} volume={0.7} duck={[T.grow + 16, T.ink + 12, T.lock + 12]} breaths={[T.grow + 16, T.proofIn]} fadeOut={40} />
       <Cues cues={cues} />
     </AbsoluteFill>
   );

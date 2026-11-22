@@ -781,7 +781,7 @@ export const LumenFilm: React.FC = () => {
       {f >= T.lock && <Lockup />}
       <Flash start={T.hit - 2} dur={8} color="#FFF1DA" strength={0.4} />
       <Grain amount={0.045} />
-      <Music src="music/tech-house-vibes.mp3" startFrom={92} volume={0.5} breaths={[T.hit]} breathLen={8} duck={[T.hit, T.lock]} fadeOut={36} />
+      <Music src="music/wheres-hope.mp3" startFrom={7.26} volume={1} breaths={[T.hit]} breathLen={8} duck={[T.hit, T.lock]} fadeOut={36} />
       <Cues cues={cues} />
     </AbsoluteFill>
   );
