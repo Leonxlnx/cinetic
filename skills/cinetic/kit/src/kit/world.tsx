@@ -100,7 +100,9 @@ export const Box: React.FC<{
   radius?: number;
   edge?: string;
   style?: React.CSSProperties;
-}> = ({ w, d, h, color, top, front, side, topContent, frontContent, sideContent, radius = 0, edge, style }) => {
+  /** A soft contact shadow on the floor under the block (0 = none). Objects without one float and read code-made. */
+  shadow?: number;
+}> = ({ w, d, h, color, top, front, side, topContent, frontContent, sideContent, radius = 0, edge, style, shadow = 0.35 }) => {
   const face = (bg: string, ww: number, hh: number, transform: string, content?: React.ReactNode, key?: string) => (
     <div
       key={key}
@@ -126,6 +128,21 @@ export const Box: React.FC<{
   );
   return (
     <div style={{ position: 'absolute', transformStyle: 'preserve-3d', ...style }}>
+      {shadow > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            left: -w * 0.62 + w * 0.08,
+            top: -d * 0.62 + d * 0.1,
+            width: w * 1.24,
+            height: d * 1.24,
+            borderRadius: Math.max(radius, Math.min(w, d) * 0.12),
+            background: `rgba(0,0,0,${shadow})`,
+            filter: `blur(${Math.max(6, Math.min(w, d) * 0.08 + h * 0.06)}px)`,
+            transform: 'translateZ(0.5px)',
+          }}
+        />
+      )}
       {/* top face, lying in the XY plane at z = h (the camera looks down on it when rx > 0) */}
       {face(top ?? color, w, d, `translateZ(${h}px)`, topContent, 't')}
       {/* front face (toward +y) */}

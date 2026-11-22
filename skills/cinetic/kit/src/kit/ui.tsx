@@ -36,7 +36,7 @@ export const lightUI: Theme = {
   radius: 22,
   font: 'Inter Variable, Inter, system-ui, sans-serif',
   mono: 'Geist Mono Variable, ui-monospace, monospace',
-  shadow: '0 1px 2px rgba(15,23,42,.06), 0 12px 28px -6px rgba(15,23,42,.14), 0 40px 80px -20px rgba(15,23,42,.18)',
+  shadow: 'inset 0 1px 0 rgba(255,255,255,.9), 0 1px 2px rgba(15,23,42,.06), 0 12px 28px -6px rgba(15,23,42,.14), 0 40px 80px -20px rgba(15,23,42,.18)',
 };
 
 export const darkUI: Theme = {
@@ -50,7 +50,7 @@ export const darkUI: Theme = {
   radius: 22,
   font: 'Inter Variable, Inter, system-ui, sans-serif',
   mono: 'Geist Mono Variable, ui-monospace, monospace',
-  shadow: '0 0 0 1px rgba(255,255,255,.06), 0 24px 60px -12px rgba(0,0,0,.6)',
+  shadow: 'inset 0 1px 0 rgba(255,255,255,.10), 0 0 0 1px rgba(255,255,255,.06), 0 24px 60px -12px rgba(0,0,0,.6)',
 };
 
 /**
@@ -197,10 +197,12 @@ export const InputBar: React.FC<{
   /** Frame the send button is pressed (it dips and flashes). */
   sendAt?: number;
   style?: React.CSSProperties;
-}> = ({ t, text, start, w = 1100, size = 34, placeholder = 'Ask anything', cps = 15, leading, sendIcon, sendAt, style }) => {
+  /** Type the first `burst` words, then land the rest at once. */
+  burst?: number;
+}> = ({ t, text, start, w = 1100, size = 34, placeholder = 'Ask anything', cps = 15, leading, sendIcon, sendAt, style, burst }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { shown, done, doneAt } = useTyped(text, start, cps);
+  const { shown, done, doneAt } = useTyped(text, start, cps, 3, burst);
   const blink = !done || Math.floor((frame - doneAt) / (fps * 0.5)) % 2 === 0;
   const hasText = shown.length > 0;
   const press = sendAt !== undefined ? at(frame, sendAt, 4, ease.out) - at(frame, sendAt + 4, 10, ease.out) : 0;

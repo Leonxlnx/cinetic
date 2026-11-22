@@ -323,6 +323,32 @@ at the end. A code card can **peek** 30 px at the bottom before rising (`entranc
 
 ---
 
+## Relay
+
+**What:** "it works with everything" shown as one artefact travelling through the host products, not as a row of logos
+or a stack of same-layout cards. The artefact (a line of text, a task, a chart, an endpoint) stays at one place on screen;
+around it, the host changes on the beat, each in a different composition.
+
+**Recipe (30 fps, 3 hosts in 1.8-2.4 s):**
+1. Host A, `full-ui`: the artefact lands in a full-bleed chat (`PartnerSurface kind="chat"` at w 2200, cropped by the frame,
+   camera 1.3x on the landed item, `landAt` lights it). 18-24 f.
+2. Cut on the beat to host B, `macro`: the same artefact as a row in a tracker, the camera at 2.5-3x so only the row, its
+   check and the tracker's mark read; the artefact's screen position is unchanged (a match cut on it). 14-18 f.
+3. Cut to host C, `type-on-surface` or `split`: the artefact inside an editor or a doc, the host's ground taking the
+   world's flood colour (not a white card). 18-24 f.
+4. Pull back or flood out of host C into the next beat.
+
+```tsx
+// the artefact sits at the same screen point in all three; only the host around it changes
+const AT = { x: 960, y: 560 };
+{f < T.hostB && <HostChat landAt={T.hostA} anchor={AT} />}
+{f >= T.hostB && f < T.hostC && <HostTracker anchor={AT} zoom={2.8} />}
+{f >= T.hostC && <HostDoc anchor={AT} ground={ACCENT} />}
+```
+
+**Avoid:** three cards of one component on one ground (a carousel); logos as decoration; hosts that sit still while
+their text is read (each host holds under 0.8 s; the artefact is the thing to read).
+
 ## Not in the kit yet (build these by hand from the recipes above)
 
 - **`Fan`:** cards from behind with lag, tilt, rotateY, darkening, collapse and fly-off.

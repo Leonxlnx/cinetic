@@ -83,7 +83,8 @@ the travel in the first frames, the new word riding in with it. Widths are measu
 **`<Swap items={['design', 'code', 'ship']} start every={24} dur={12} times />`** one slot whose word rolls to the next (items may
 be nodes: a mark plus a name; `times` sets the frame each item takes over).
 **`<Typing text start cps={16} caret placeholder />`** and **`useTyped(text, start, cps)`** (returns `{ shown, done, doneAt }`):
-human cadence with seeded hesitations and pauses after punctuation; `keyFrames` is the frame of every key (put a key
+human cadence with seeded hesitations and pauses after punctuation; `burst={3}` types three words and lands the rest at
+once (use it: reading along at typing speed is dead time); `keyFrames` is the frame of every key (put a key
 sound on some of them, drive a caret-following camera from them).
 **`typingTimes(text, start, fps, cps)`** the same cadence as a pure function (key sounds, cameras outside the component).
 **`<Scramble text start per={1.5} flicker={8} />`** letters decode from glyphs, left to right: short labels only.
@@ -117,7 +118,8 @@ push and turn to add to a held camera. **`shake(frame, start, dur, amp)`** an im
 
 - **`<Ground color>`** flat ground. **`<Aura base blobs={[{ color, x, y, r }]} speed>`** a slow living gradient of soft fields.
 - **`<GridLines size color thickness start reveal>`** a line grid; inside a `Camera` with `rx` it becomes a floor.
-- **`<Box w d h color top front side topContent frontContent sideContent radius edge>`** a solid CSS 3D block; content sits *on*
+- **`<Box w d h color top front side topContent frontContent sideContent radius edge shadow>`** a solid CSS 3D block with a
+  contact shadow on the floor (`shadow={0}` for none); content sits *on*
   its faces (type and UI printed on objects). Light from the top-left. `shade(hex, amt)` darkens or lightens.
 - **`<DepthStack items={[{ f, node }]} x y scale lift blur dim push rise>`** a depth ladder: each arrival pushes the older items back
   a slot (smaller, lifted, blurred, dimmer).

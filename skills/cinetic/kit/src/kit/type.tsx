@@ -266,21 +266,35 @@ export const Swap: React.FC<{
  * inside words. `cps` sets the average speed.
  */
 /** The frame each character of `text` appears on, typed from `start` at about `cps` characters a second (useTyped's cadence). */
-export const typingTimes = (text: string, start: number, fps = 30, cps = 16, seed = 3) => {
+export const typingTimes = (text: string, start: number, fps = 30, cps = 16, seed = 3, burst?: number) => {
   const per = fps / cps;
   const out: number[] = [];
   let t = start;
+  let words = 0;
+  let burstAt = -1;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
+    if (burstAt >= 0) {
+      // after the burst point the rest lands within 2 frames: the viewer has the idea, do not make them read along
+      out.push(Math.ceil(burstAt + 1 + (i % 2)));
+      continue;
+    }
     t += per + (rand(i * 7.3 + seed) - 0.5) * per * 0.9 + (c === ' ' ? per * 0.6 : c === ',' || c === '.' ? per * 2.5 : 0);
     out.push(Math.ceil(t));
+    if (c === ' ') words++;
+    if (burst !== undefined && words >= burst && burstAt < 0) burstAt = t;
   }
   return out;
 };
 
-export const useTyped = (text: string, start: number, cps = 16, seed = 3) => {
+export const useTyped = (text: string, start: number, cps = 16, seed = 3, burst?: number) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  if (burst !== undefined) {
+    const keyFrames = typingTimes(text, start, fps, cps, seed, burst);
+    const shownN = keyFrames.filter((k) => frame >= k).length;
+    return { shown: text.slice(0, shownN), done: shownN >= text.length, doneAt: keyFrames[keyFrames.length - 1] ?? start, keyFrames };
+  }
   const per = fps / cps;
   let t = start;
   let shown = 0;
@@ -322,10 +336,12 @@ export const Typing: React.FC<{
   style?: React.CSSProperties;
   placeholder?: string;
   placeholderColor?: string;
-}> = ({ text, start = 0, cps = 16, caret = true, caretColor = 'currentColor', style, placeholder, placeholderColor = 'rgba(128,128,128,.6)' }) => {
+  /** Type the first `burst` words, then land the rest at once. */
+  burst?: number;
+}> = ({ text, start = 0, cps = 16, caret = true, caretColor = 'currentColor', style, placeholder, placeholderColor = 'rgba(128,128,128,.6)', burst }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { shown, done, doneAt } = useTyped(text, start, cps);
+  const { shown, done, doneAt } = useTyped(text, start, cps, 3, burst);
   const blinkOn = !done || Math.floor((frame - doneAt) / (fps * 0.5)) % 2 === 0;
   return (
     <span style={{ whiteSpace: 'pre', ...style }}>

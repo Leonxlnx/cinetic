@@ -343,6 +343,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [8.2 Terminal](motion/cards-ui.md#82-terminal)
   - [8.3 Code card](motion/cards-ui.md#83-code-card)
 - [9. Worlds for UI](motion/cards-ui.md#9-worlds-for-ui)
+- [Relay](motion/cards-ui.md#relay)
 
 ## [motion/imagery.md](motion/imagery.md): Imagery: photos, footage and 3D renders
 

@@ -144,9 +144,19 @@ the artefact landing inside three real surfaces on a coral flood, a pull-back in
   on downbeats, carried by an object (a flood from a button, a block that fills the frame).
 - **Short endings.** The lockup lasts at most 2 s (60 f) and grows out of an object already on screen; all end type
   (claim + lockup) is at most 15 % of the film. No mid-film brand card in films under 30 s.
-- **Integrations are surfaces, not logo rows.** Show the product's artefact landing inside the other product (a message in
-  its chat, a row in its tracker, a doc in its editor: `<PartnerSurface>`), the mark in its header. A row of logo tiles at
-  most once, as a quick stamp.
+- **Integrations are a relay, not a row.** Never a row of logo tiles, and never two or three same-layout cards in a row.
+  Keep the product's artefact fixed on screen and change the host around it, each host in a different composition and
+  bleeding off the frame (the message in a full-bleed chat, the same line as a cropped issue in a tracker, then as a row in
+  an editor seen in macro), cut on the beat with the artefact carried ([cards-ui.md](references/motion/cards-ui.md#relay)).
+- **One spectacle beat.** Every film has one shot that could never be a slide: a field of sixty replicas rising, a wall of
+  real documents pulled back from, a city of blocks, light splitting into beams. Give it 1.5-2.5 s, not 1.
+- **Two moving planes, lit.** Every beat has at least two depth planes moving at different rates (the subject and
+  something behind or in front of it), and objects sit in light: a contact shadow, a lit edge, a cast glow. One flat
+  element on an empty ground reads code-made.
+- **Commit to the ground.** Surfaces take the world's colours (a card tinted with the ground, a dark surface on a light
+  flood); white cards on every ground is the template look.
+- **Type fast, not along.** In product UI, type the first two or three words and land the rest at once (`burst`); the
+  viewer must never read along at typing speed.
 - **Real marks only.** A company or product logo is its official mark (`<Brand>` or `logos.mjs get`), never redrawn, never a
   generic glyph. The product's own logo: the user's file, or for an invented product a simple mark you design for it.
 - **No generated images.** Pictures are code, the product's real screens, or licensed photos/footage
