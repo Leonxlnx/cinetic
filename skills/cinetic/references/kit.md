@@ -80,7 +80,9 @@ const style = { transform: `translateY(${mix(p, 80, 0) - q * 900}px) scale(${mix
 
 **`<Build words={['Your', 'work,', 'handled.']} times={[T.a, T.b, T.c]} born="#hex" style={{ fontSize, color }} />`** an append
 build: each word joins the centred line on its frame (put them on the music's plucks) and the line re-centres with most of
-the travel in the first frames, the new word riding in with it. Widths are measured from the real face.
+the travel in the first frames, the new word riding in with it. Widths are measured from the real face. A word may be a slot
+that holds an object in the line: `{ slot: 190, node: <Brand name="claude" size={170} /> }` (width in px; the mark joins the
+sentence like a word).
 **`<Swap items={['design', 'code', 'ship']} start every={24} dur={12} times />`** one slot whose word rolls to the next (items may
 be nodes: a mark plus a name; `times` sets the frame each item takes over; `enter` brings the first item in).
 **`<Typing text start cps={16} caret placeholder />`** and **`useTyped(text, start, cps)`** (returns `{ shown, done, doneAt }`):

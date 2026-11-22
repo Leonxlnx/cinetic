@@ -488,8 +488,11 @@ export const Marker: React.FC<{
  * most of the travel in the first frames (a jump, not a slide). The new word rides in with the line. Widths are
  * measured from a hidden copy, so any face and size works. One line; split long copy into two Builds.
  */
+/** A word of a Build: text, or a slot of a fixed width (px) that holds an object in the line (a mark, a tile, a chip). */
+export type BuildWord = string | { slot: number; node?: React.ReactNode };
+
 export const Build: React.FC<{
-  words: string[];
+  words: BuildWord[];
   times: number[];
   /** Frames the re-centre takes (most of it in the first 2). */
   dur?: number;
@@ -549,8 +552,8 @@ export const Build: React.FC<{
       {/* hidden copy for measuring */}
       <div ref={ref} style={{ position: 'absolute', visibility: 'hidden', whiteSpace: 'nowrap', left: 0, top: 0 }}>
         {words.map((w, i) => (
-          <span key={i} data-w="1" style={{ display: 'inline-block', ...wordStyle?.(i) }}>
-            {w}
+          <span key={i} data-w="1" style={{ display: 'inline-block', whiteSpace: 'pre', ...(typeof w === 'string' ? wordStyle?.(i) : { width: w.slot }) }}>
+            {typeof w === 'string' ? w : null}
           </span>
         ))}
       </div>
@@ -561,8 +564,15 @@ export const Build: React.FC<{
           const x = cur[i] - shift * (1 - p);
           const c = born && frame < times[i] + settle + 1 ? mixColor(born, (style?.color as string) ?? '#000000', at(frame, times[i], settle, ease.inOut)) : undefined;
           return (
-            <span key={i} style={{ position: 'absolute', left: '50%', top: 0, transform: `translateX(${x}px)`, whiteSpace: 'nowrap', color: c, ...wordStyle?.(i) }}>
-              {w}
+            <span
+              key={i}
+              style={
+                typeof w === 'string'
+                  ? { position: 'absolute', left: '50%', top: 0, transform: `translateX(${x}px)`, whiteSpace: 'pre', color: c, ...wordStyle?.(i) }
+                  : { position: 'absolute', left: '50%', top: 0, transform: `translateX(${x}px)`, width: w.slot, height: '1.2em', display: 'flex', alignItems: 'center', justifyContent: 'center' }
+              }
+            >
+              {typeof w === 'string' ? w : w.node}
             </span>
           );
         })}
