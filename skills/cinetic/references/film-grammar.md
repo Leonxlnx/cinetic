@@ -280,7 +280,12 @@ it); no intro longer than 1.2 s; the version number is the only number that anim
 
 ## Compositions
 
-Tag every row of `BEATS.md` with one of these. No two adjacent rows share a composition; a film uses at least four.
+Tag every row of `BEATS.md` with one of these. No two adjacent rows share a composition; a film uses at least four, and
+exactly one row also carries the tag `spectacle` (the shot that could never be a slide, 1.5-2.5 s).
+
+Length by format (shorter is nearly always better): update film 8-18 s, teaser 10-15 s, feature film 15-22 s, launch film
+20-30 s. A film runs long when it shows a second full demo: show the core action once, end to end, and any other input
+as a 1-2 s variation of the same shot.
 
 | Tag | What fills the frame | Typical use |
 |---|---|---|

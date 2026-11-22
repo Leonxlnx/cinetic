@@ -144,13 +144,23 @@ the artefact landing inside three real surfaces on a coral flood, a pull-back in
 - **Cut the ground.** The world has 2-3 grounds (base, accent flood, inverse); the film cuts between them at least twice,
   on downbeats, carried by an object (a flood from a button, a block that fills the frame).
 - **Short endings.** The lockup lasts at most 2 s (60 f) and grows out of an object already on screen; all end type
-  (claim + lockup) is at most 15 % of the film. No mid-film brand card in films under 30 s.
+  (claim + lockup) is at most 15 % of the film, and the claim sits over a moving image, not alone on a ground. No mid-film
+  brand card in films under 30 s.
 - **Integrations are a relay, not a row.** Never a row of logo tiles, and never two or three same-layout cards in a row.
   Keep the product's artefact fixed on screen and change the host around it, each host in a different composition and
   bleeding off the frame (the message in a full-bleed chat, the same line as a cropped issue in a tracker, then as a row in
   an editor seen in macro), cut on the beat with the artefact carried ([cards-ui.md](references/motion/cards-ui.md#relay)).
 - **One spectacle beat.** Every film has one shot that could never be a slide: a field of sixty replicas rising, a wall of
-  real documents pulled back from, a city of blocks, light splitting into beams. Give it 1.5-2.5 s, not 1.
+  real documents pulled back from, a city of blocks, light splitting into beams. Give it 1.5-2.5 s, not 1, and name it in
+  `BEATS.md` (a row tagged `spectacle`); a film without that row is not ready to build.
+- **One demo, end to end.** Show the product's core action once, completely. A second input or use case is a 1-2 s
+  variation of the same shot, never a second full demo: that is how a 20 s film becomes 30.
+- **A finished state does not hold.** When a list is full, a number has landed or a card is complete, cut within half a
+  second or keep it changing (the camera pushes, the next thing arrives on it). Never 1 s of a finished thing.
+- **A series rotates its compositions.** Three features, three metrics, three hosts: each in a different composition
+  (macro, giant type, split, surface), never the same layout three times with the label swapped.
+- **The biggest word names the right thing.** The largest word on screen is the product, its object or its benefit, never
+  an incidental noun from the story (a viewer reads the biggest word as the brand).
 - **Two moving planes, lit.** Every beat has at least two depth planes moving at different rates (the subject and
   something behind or in front of it), and objects sit in light: a contact shadow, a lit edge, a cast glow. One flat
   element on an empty ground reads code-made.
@@ -174,7 +184,8 @@ the artefact landing inside three real surfaces on a coral flood, a pull-back in
 - **An update / changelog film** ("v2.3 is out"): one beat per change, 8-20 s, the [film-grammar.md](references/film-grammar.md#update-film) structure.
 - **A loop for a landing page:** 6-12 s, the last frame continues into the first, no music.
 - **Vertical (9:16) or square:** re-lay out, never crop: compositions stack vertically, type wraps to 2-3 words a line,
-  the camera moves vertically. Give the film its size in `src/films.ts` (`width: 1080, height: 1920`); the sheet and
+  the camera moves vertically. Keep type and the subject out of the top 12 % and the bottom 20 % (the platform's own UI
+  sits there), and fit giant type to the width: a key word is never cut off by the frame edge. Give the film its size in `src/films.ts` (`width: 1080, height: 1920`); the sheet and
   `check` follow it. `fillZoom`, `diveZoom` and `toScreen` take the frame size as their last arguments.
 - **Critique of an existing video:** `frames.mjs check <video>` for the measures, `frames.mjs strip <video> --at ...` for
   moments, then score with [taste.md](references/taste.md).

@@ -123,5 +123,10 @@ Run `node scripts/frames.mjs check` on the preview first: points 11-13 are measu
 | 12 | **Pace** | `frames.mjs check` pace | at most 20 % of the half-seconds before the lockup are nearly still (top studios' films: 9-16 %); mean beat 0.8-1.6 s |
 | 13 | **Composition variety** | `BEATS.md` composition tags + overview | no two adjacent beats share a composition; at least 4 different compositions; at least 2 ground cuts |
 
+`frames.mjs check` passing is necessary, not sufficient. It measures pixels, so it cannot see these, which a viewer sees at
+once: a finished state that only creeps (a full list, a landed number held for a second), the same layout three beats in a
+row with the label swapped, a second full demo that makes the film 10 s too long, a biggest word that names the wrong
+thing. Look for each on the sheet before you render the final.
+
 Also log three numbers per film, they catch most problems: **mean beat length** (target 0.8-1.6 s for films under 30 s), **number of true hard cuts
 vs carried seams** (most seams carried), and **frames moving > 10 px/f at each cut** (every cut except the lockup).

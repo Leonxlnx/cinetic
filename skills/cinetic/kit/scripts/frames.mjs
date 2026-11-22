@@ -136,10 +136,21 @@ function checkFilm(file, lockupS) {
   for (const x of frames) {
     if (x.t < dur - 0.6 && x.fill < 0.015) { run++; if (run > longest) { longest = run; runAt = x.t - (run - 1) / FPS; } } else run = 0;
   }
+  // the longest stretches: an average hides 2-3 s of small centred cards or a finished state that just sits there
+  const longestRun = (list, isBad, step) => {
+    let r = 0, best = 0, at = 0;
+    for (const x of list) {
+      if (isBad(x)) { r++; if (r > best) { best = r; at = x.t - (r - 1) * step; } } else r = 0;
+    }
+    return { s: best * step, at };
+  };
+  const sparseRun = longestRun(body, (x) => Math.max(x.width, x.height * 0.8) < 0.45, 1 / FPS);
+  const stillRun = longestRun(pace.filter((x) => x.t > 0.2 && x.t < dur - lockupS - 0.5), (x) => x.d < 0.012, 0.5);
   const fmt = (list) => list.slice(0, 12).map((x) => x.t.toFixed(1)).join(', ') + (list.length > 12 ? ' ...' : '');
   console.log(`check: ${file} (${dur.toFixed(1)} s)`);
   console.log(`  coverage   mean subject width ${(avgW * 100).toFixed(0)} % of the frame; ${sparse.length} of ${body.length} samples under 45 %${sparse.length ? `  [at ${fmt(sparse)} s]` : ''}`);
   console.log(`  pace       ${slow.length} of ${pace.length} half-seconds with almost nothing changing${slow.length ? `  [from ${fmt(slow)} s]` : ''}`);
+  console.log(`  stretches  longest sparse run ${sparseRun.s.toFixed(1)} s${sparseRun.s ? ` (from ${sparseRun.at.toFixed(1)} s)` : ''}; longest still stretch ${stillRun.s.toFixed(1)} s${stillRun.s ? ` (from ${stillRun.at.toFixed(1)} s)` : ''}`);
   console.log(`  empty      ${empty.length} near-empty samples${empty.length ? `  [at ${fmt(empty)} s]` : ''}${frames[0] && frames[0].fill < 0.015 ? '  FRAME 0 IS EMPTY' : ''}`);
   console.log(`  ending     the last ${endStill.toFixed(1)} s are nearly still (${((endStill / dur) * 100).toFixed(0)} % of the film)`);
   const snd = loudness(file);
@@ -148,6 +159,10 @@ function checkFilm(file, lockupS) {
   if (avgW < 0.65) fails.push('frames are sparse: fill them (subject 65 %+ of the width, or bleed off an edge; UI in close-up)');
   if (sparse.length > body.length * 0.25) fails.push('too many sparse frames');
   if (slow.length > pace.length * 0.2) fails.push('pace: something visible must change every half second (a word, a block, a crop, a value)');
+  // limits set generously (2.5 s still, 3.5 s sparse): this catches a true freeze or a long stretch of small things, not a slow
+  // creep over a finished state (pixels still change there): judge that by eye with the rubric
+  if (stillRun.s > 2.5) fails.push(`a ${stillRun.s.toFixed(1)} s stretch from ${stillRun.at.toFixed(1)} s where almost nothing changes`);
+  if (sparseRun.s > 3.5) fails.push(`${sparseRun.s.toFixed(1)} s of small, sparse frames from ${sparseRun.at.toFixed(1)} s: fill the frame`);
   if ((frames[0] && frames[0].fill < 0.015) || longest / FPS >= 1) fails.push(`empty frames: ${frames[0] && frames[0].fill < 0.015 ? 'frame 0 is empty' : `${(longest / FPS).toFixed(1)} s of nothing from ${runAt.toFixed(1)} s`}`);
   if (endStill > Math.max(2.5, dur * 0.12)) fails.push('the ending is too long: lockup at most 2 s, all end type at most 15 % of the film');
   const isPreview = /preview/i.test(path.basename(file));
@@ -155,6 +170,7 @@ function checkFilm(file, lockupS) {
   if (!isPreview && Number.isFinite(snd.TP) && snd.TP > -1) fails.push(`sound: true peak ${snd.TP.toFixed(1)} dBTP clips; re-mux (frames.mjs mux) or lower the loudest cue`);
   if (!isPreview && Number.isFinite(snd.I) && (snd.I > -13 || snd.I < -20)) fails.push(`sound: ${snd.I.toFixed(1)} LUFS is off the -16 LUFS target`);
   console.log(fails.length ? `  FIX: ${fails.join('\n  FIX: ')}` : '  pass');
+  if (!fails.length) console.log('  (passing is necessary, not sufficient: check cannot see a finished state that only creeps, a repeated layout, a second full demo or a weak idea; score the sheet with the rubric)');
 }
 
 /** Print the master's length, size and loudness. */
