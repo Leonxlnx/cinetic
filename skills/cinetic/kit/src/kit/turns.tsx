@@ -212,7 +212,9 @@ export const Flood: React.FC<{
   to?: React.ReactNode;
   /** Drawn on top of the flood until it fills the frame: the object it grows from (a URL, a label) stays readable. */
   source?: React.ReactNode;
-}> = ({ from, start, dur = 16, color, under, to, source }) => {
+  /** reveal: `to` shows at full opacity inside the growing shape (a window opening), instead of fading in late. */
+  reveal?: boolean;
+}> = ({ from, start, dur = 16, color, under, to, source, reveal = false }) => {
   const frame = useCurrentFrame();
   const p = at(frame, start, dur, ease.in);
   if (frame < start) return <AbsoluteFill>{under}</AbsoluteFill>;
@@ -228,7 +230,7 @@ export const Flood: React.FC<{
     <AbsoluteFill>
       {!done && <AbsoluteFill>{under}</AbsoluteFill>}
       <AbsoluteFill style={{ clipPath: done ? undefined : `inset(${top}px ${1920 - right}px ${1080 - bottom}px ${left}px round ${r}px)`, background: color }}>
-        {to && <AbsoluteFill style={{ opacity: clamp((p - 0.55) / 0.45) }}>{to}</AbsoluteFill>}
+        {to && <AbsoluteFill style={{ opacity: reveal ? 1 : clamp((p - 0.55) / 0.45) }}>{to}</AbsoluteFill>}
       </AbsoluteFill>
       {source && !done && <AbsoluteFill style={{ opacity: 1 - clamp((p - 0.5) / 0.3) }}>{source}</AbsoluteFill>}
     </AbsoluteFill>

@@ -734,12 +734,12 @@ export const PartnerSurface: React.FC<{
   file?: string;
   kind: 'chat' | 'tracker' | 'mail' | 'doc';
   title: string;
-  items: Array<{ f: number; who?: string; text: React.ReactNode; meta?: string; color?: string; done?: number }>;
+  items: Array<{ f: number; who?: string; text: React.ReactNode; meta?: string; color?: string; done?: number; mark?: React.ReactNode }>;
   landAt?: number;
   w?: number;
   h?: number;
   size?: number;
-}> = ({ t, brand, file, kind, title, items, landAt, w = 1100, h = 640, size = 30 }) => {
+}> = ({ t, brand, file, kind, title, items, landAt, w = 1100, h, size = 30 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   return (
@@ -783,7 +783,10 @@ export const PartnerSurface: React.FC<{
                     {it.who} {it.meta && <span style={{ color: t.muted, fontWeight: 500, fontSize: size * 0.68, marginLeft: 8 }}>{it.meta}</span>}
                   </div>
                 )}
-                <div style={{ fontSize: size, lineHeight: 1.35, color: t.ink, marginTop: it.who && kind !== 'tracker' ? 2 : 0 }}>{it.text}</div>
+                <div style={{ fontSize: size, lineHeight: 1.35, color: t.ink, marginTop: it.who && kind !== 'tracker' ? 2 : 0, display: 'flex', alignItems: 'center', gap: size * 0.35 }}>
+                  {it.mark}
+                  <span>{it.text}</span>
+                </div>
               </div>
               {kind === 'tracker' && it.meta && <div style={{ fontSize: size * 0.75, color: t.muted, fontFamily: t.mono }}>{it.meta}</div>}
             </div>

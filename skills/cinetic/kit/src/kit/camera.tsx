@@ -155,3 +155,12 @@ export const toScreen = (cam: { x?: number; y?: number; zoom?: number }, x: numb
 
 /** The zoom that makes a w x h box fill `frac` of the frame (the tighter of width and height). Fill the frame with the subject. */
 export const fillZoom = (w: number, h: number, frac = 0.8, frameW = 1920, frameH = 1080) => Math.min((frac * frameW) / w, (frac * frameH) / h);
+
+/** Motion blur from the camera's own speed: px of blur for the frame (0 when it barely moves). Use on the world group. */
+export const camSmear = (frame: number, keys: CamKey[], k = 0.6, max = 24) => {
+  const a = camAt(frame, keys);
+  const b = camAt(frame - 1, keys);
+  const v = Math.hypot(a.x - b.x, a.y - b.y) + Math.abs(Math.log(a.zoom / b.zoom)) * 900 + (Math.abs(a.rx - b.rx) + Math.abs(a.ry - b.ry) + Math.abs(a.rz - b.rz)) * 8;
+  const px = Math.max(0, v - 6) * k * 0.1;
+  return Math.min(max, px);
+};

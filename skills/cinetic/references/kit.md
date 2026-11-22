@@ -100,6 +100,7 @@ travel into it (default `ease.inOut`), or `curves: { pan, zoom, rot }` separatel
 ease-in); `cut: true` jumps on that frame (punch-in, hard reframe). `cam={...}` sets a fixed camera;
 `origin="x% y%"` sets the point the zoom and orbit pivot on (default the centre).
 **`<At x y z rx ry rz scale anchor>`** places a child in the world (z toward the camera).
+**`camSmear(frame, keys)`** motion blur in px from the camera's own speed (apply to the world group on fast moves).
 **`fillZoom(w, h, frac = 0.8)`** the zoom that makes a w x h box fill the frame. **`diveZoom(w, h)`** the zoom at which a box
 exactly covers the frame (dive into an element, cut to its inside at that frame). **`toScreen(cam, x, y)`** where a world
 point lands on screen under a flat camera (start a flying card or a flood exactly where an object sits). **`drift(frame, dur, push, turn)`** a living
@@ -170,7 +171,8 @@ Each takes `from` and `to` (the two shots as nodes), `start`, `dur`, and renders
 - **`<TileFlip front back w h start cols rows wave>`** one element turning into another tile by tile (a sketch into the real
   card).
 - **`<Flood from={{ x, y, w, h, r }} start dur color under to>`** a ground cut grown from an object's own box (a button, a
-  card) until it fills the frame; `to` (the next shot) appears inside it; `source` keeps the object (a URL, a label)
+  card) until it fills the frame; `to` (the next shot) appears inside it (`reveal` shows it at full opacity, a window
+  opening); `source` keeps the object (a URL, a label)
   readable on top while it floods.
 - **`<Flash start dur color>`** a burst of light that hides a swap at its peak.
 The strongest turns are built by hand from the scene's own objects (the full stop that grows, the card that becomes the next
