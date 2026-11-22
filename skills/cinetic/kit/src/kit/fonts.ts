@@ -5,6 +5,7 @@ import '@fontsource-variable/geist';
 import '@fontsource-variable/geist-mono';
 import '@fontsource/instrument-serif/400.css';
 import '@fontsource/instrument-serif/400-italic.css';
+import '@fontsource-variable/caveat';
 
 export const fonts = {
   /** Clean and neutral at every size: UI and most statements. */
@@ -15,4 +16,6 @@ export const fonts = {
   mono: 'Geist Mono Variable, ui-monospace, monospace',
   /** An editorial serif with a beautiful italic: creative or human products, one accent word. */
   serif: 'Instrument Serif, Georgia, serif',
+  /** Handwriting: sketches, napkins, notes in the margin, annotations. Never for statements. */
+  hand: 'Caveat Variable, Caveat, cursive',
 } as const;

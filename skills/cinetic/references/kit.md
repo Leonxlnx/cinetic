@@ -195,7 +195,8 @@ screen): see [turns.md](motion/turns.md).
 
 ## 9. Fonts
 
-`fonts.inter`, `fonts.geist`, `fonts.mono` (Geist Mono), `fonts.serif` (Instrument Serif, with italic). All local. To add a face,
+`fonts.inter`, `fonts.geist`, `fonts.mono` (Geist Mono), `fonts.serif` (Instrument Serif, with italic), `fonts.hand`
+(Caveat, handwriting for sketches and annotations). All local. To add a face,
 `npm install @fontsource/<name>` and import it in `src/kit/fonts.ts`; for a brand font, put the woff2 in `public/fonts` and use
 `@font-face` with `staticFile`.
 
