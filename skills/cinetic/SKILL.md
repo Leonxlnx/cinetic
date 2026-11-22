@@ -79,7 +79,8 @@ component per section; see [kit.md](references/kit.md) for the API and the motio
 then the next. Overlap sections: the next one starts while the last one is still leaving. To find a move by what it
 does, search [INDEX.md](references/INDEX.md) (every recipe and section, one line each).
 
-**6. Look at it (after every section, and before you claim anything works).** Type-check first (`npx tsc --noEmit`).
+**6. Look at it (after every section, and before you claim anything works).** Type-check first (`npx tsc --noEmit`; in a project that shares another folder's
+`node_modules`, `node <that folder>/node_modules/typescript/bin/tsc --noEmit -p .`).
 - `node scripts/frames.mjs sheet` renders the whole film as 36 frozen frames in one still: read the image.
 - `node scripts/frames.mjs sheet --frames 120,126,132,...` zooms in on one moment (a turn, a morph).
   The sheet shows composition and rhythm, not small type: for any beat with UI text or a label, also render

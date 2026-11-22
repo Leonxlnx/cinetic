@@ -214,11 +214,17 @@ export const Flood: React.FC<{
   source?: React.ReactNode;
   /** reveal: `to` shows at full opacity inside the growing shape (a window opening), instead of fading in late. */
   reveal?: boolean;
-}> = ({ from, start, dur = 16, color, under, to, source, reveal = false }) => {
+  /**
+   * gather: the reverse, the ground drains INTO the box (the colour leaves the frame and becomes an object: a chip, a
+   * button, the mark). `to` is the ground inside the shape (the scene that is ending), `under` the scene it uncovers.
+   */
+  gather?: boolean;
+}> = ({ from, start, dur = 16, color, under, to, source, reveal = false, gather = false }) => {
   const frame = useCurrentFrame();
   const { width: FW, height: FH } = useVideoConfig();
-  const p = at(frame, start, dur, ease.in);
-  if (frame < start) return <AbsoluteFill>{under}</AbsoluteFill>;
+  // gather runs the same shape backwards, decelerating into the box
+  const p = gather ? 1 - at(frame, start, dur, ease.out) : at(frame, start, dur, ease.in);
+  if (frame < start) return gather ? <AbsoluteFill style={{ background: color }}>{to}</AbsoluteFill> : <AbsoluteFill>{under}</AbsoluteFill>;
   // grow each edge outward to (beyond) the frame edge, in log space so it accelerates evenly
   const k = logScale(1, 40, p) - 1;
   const left = Math.max(-40, from.x - from.w / 2 - k * Math.max(1, from.x - from.w / 2));
@@ -226,12 +232,13 @@ export const Flood: React.FC<{
   const top = Math.max(-40, from.y - from.h / 2 - k * Math.max(1, from.y - from.h / 2));
   const bottom = Math.min(FH + 40, from.y + from.h / 2 + k * Math.max(1, FH - from.y - from.h / 2));
   const r = mix(p, from.r ?? 24, 0);
-  const done = frame >= start + dur;
+  const done = !gather && frame >= start + dur;
+  if (gather && frame >= start + dur) return <AbsoluteFill>{under}</AbsoluteFill>;
   return (
     <AbsoluteFill>
       {!done && <AbsoluteFill>{under}</AbsoluteFill>}
       <AbsoluteFill style={{ clipPath: done ? undefined : `inset(${top}px ${FW - right}px ${FH - bottom}px ${left}px round ${r}px)`, background: color }}>
-        {to && <AbsoluteFill style={{ opacity: reveal ? 1 : clamp((p - 0.25) / 0.5) }}>{to}</AbsoluteFill>}
+        {to && <AbsoluteFill style={{ opacity: reveal || gather ? 1 : clamp((p - 0.25) / 0.5) }}>{to}</AbsoluteFill>}
       </AbsoluteFill>
       {source && !done && <AbsoluteFill style={{ opacity: 1 - clamp((p - 0.5) / 0.3) }}>{source}</AbsoluteFill>}
     </AbsoluteFill>

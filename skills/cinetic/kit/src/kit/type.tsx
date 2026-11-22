@@ -424,7 +424,9 @@ export const Odometer: React.FC<{
 }> = ({ value, from = 0, start = 0, dur = 40, prefix = '', suffix = '', sep = ',', decimals = 0, style, curve = ease.out }) => {
   const frame = useCurrentFrame();
   const k10 = Math.pow(10, decimals);
-  const cur = mix(at(frame, start, dur, curve), from, value) * k10;
+  // snap float noise (0.94 * 100 = 93.99999...) so a number at rest shows exactly its digits
+  const snap = (v: number) => (Math.abs(v - Math.round(v)) < 1e-6 ? Math.round(v) : v);
+  const cur = snap(mix(at(frame, start, dur, curve), from, value) * k10);
   const prev = mix(at(frame - 1, start, dur, curve), from, value) * k10;
   const nDigits = Math.max(decimals + 1, String(Math.round(Math.max(Math.abs(value), Math.abs(from)) * k10)).length);
   const H = 1.12;
@@ -434,10 +436,12 @@ export const Odometer: React.FC<{
     // A reel only shows once the number is big enough to need it (no leading zeros).
     const needed = Math.abs(cur) >= scale || k <= decimals;
     const pos = ((cur / scale) % 10 + 10) % 10;
-    // Settle: only the ones reel moves continuously; higher reels snap with a short roll near each carry.
+    // A real odometer: the lowest reel moves continuously; a higher reel rolls only while every reel below it shows 9
+    // and the lowest is rolling over (so a number at rest never shows a half-rolled digit).
     const whole = Math.floor(pos);
-    const frac = k === 0 ? pos - whole : clamp(((cur % scale) / scale - 0.9) / 0.1);
-    const y = (whole + (k === 0 ? frac : frac)) % 10;
+    const lower = ((cur % scale) + scale) % scale;
+    const frac = k === 0 ? pos - whole : lower > scale - 1 ? lower - (scale - 1) : 0;
+    const y = (whole + frac) % 10;
     const speed = Math.abs(cur - prev) / scale;
     const blur = Math.min(6, speed * 6);
     cols.push(

@@ -198,6 +198,8 @@ Each takes `from` and `to` (the two shots as nodes), `start`, `dur`, and renders
   card) until it fills the frame; `to` (the next shot) appears inside it (`reveal` shows it at full opacity, a window
   opening); `source` keeps the object (a URL, a label)
   readable on top while it floods.
+  `gather` runs it backwards: the ground drains into the box and becomes the object (a chip, a button, the mark; draw that
+  object in `under` at the same box), uncovering `under`.
 - **`<Flash start dur color>`** a burst of light that hides a swap at its peak.
 The strongest turns are built by hand from the scene's own objects (the full stop that grows, the card that becomes the next
 screen): see [turns.md](motion/turns.md).
