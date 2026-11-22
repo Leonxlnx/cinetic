@@ -645,9 +645,9 @@ export const StatePill: React.FC<{
  * Working -> done: an arc that steps round 45 degrees a frame (a stepped clock reads digital and alive), then closes into
  * a circle and becomes a check at `doneAt`. Pair the done frame with a tick sound and a weight step on the row's text.
  */
-export const Spinner: React.FC<{ start: number; doneAt: number; size?: number; color?: string; done?: string; stroke?: number }> = ({
+export const Spinner: React.FC<{ start: number; /** Omit to keep it working. */ doneAt?: number; size?: number; color?: string; done?: string; stroke?: number }> = ({
   start,
-  doneAt,
+  doneAt = Number.POSITIVE_INFINITY,
   size = 34,
   color = '#9CA3AF',
   done = '#111111',

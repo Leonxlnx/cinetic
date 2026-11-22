@@ -351,7 +351,8 @@ The worked films `forge` and `fieldnote` build their hosts this way (read their 
 
 **Into the relay (the artefact is born in the beat before):** the thing the product just made (the rewritten sentence, the
 generated chart) lifts off its page as a plate and flies to the anchor in 12-16 f (`ease.inOut`, a small arc, scaling from
-its size on the page to its relay size), while the next ground floods out of the plate's own box (`Flood source={box}`). The
+its size on the page to its relay size), while the next ground floods out of the plate's own box (`<Flood from={box} to={<FirstHost />} reveal>`: with `to` and
+`reveal` the first host shows inside the growing shape, otherwise the frame is plain colour for a few frames). The
 first host cuts in the frame it lands. `<Relay enter={{ f, from: { x, y, scale } }}>` does the flight; the worked film
 `inkwell` builds it by hand with the flood (`Flight`).
 

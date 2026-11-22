@@ -117,7 +117,8 @@ perspective, so give it its own layer with a longer one. To add an offset to a k
 and bottom). **`camSmear(frame, keys)`** motion blur in px from the camera's own speed (apply to the world group on fast moves).
 **`fillZoom(w, h, frac = 0.8)`** the zoom that makes a w x h box fill the frame. **`diveZoom(w, h)`** the zoom at which a box
 exactly covers the frame (dive into an element, cut to its inside at that frame). **`toScreen(cam, x, y, z?, { perspective, frameW, frameH })`** where a world
-point lands on screen under a flat camera (start a flying card or a flood exactly where an object sits). **`drift(frame, dur, push, turn)`** a living
+point lands on screen under a `<Camera>`, tilted or turned too (returns `{ x, y, scale }`: start a flying card, a flood, a
+`Relay enter` or a pointer exactly where an object sits). **`drift(frame, dur, push, turn)`** a living
 push and turn to add to a held camera. **`shake(frame, start, dur, amp)`** an impact shake.
 
 ```tsx
