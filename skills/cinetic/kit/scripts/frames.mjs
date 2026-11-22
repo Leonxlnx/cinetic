@@ -197,6 +197,9 @@ function checkFilm(file, lockupS) {
   if (!isPreview && Number.isFinite(snd.TP) && snd.TP > -1) fails.push(`sound: true peak ${snd.TP.toFixed(1)} dBTP clips; re-mux (frames.mjs mux) or lower the loudest cue`);
   if (!isPreview && Number.isFinite(snd.I) && (snd.I > -13 || snd.I < -20)) fails.push(`sound: ${snd.I.toFixed(1)} LUFS is off the -16 LUFS target`);
   fails.push(...musicRunsOut(dur));
+  // one near-empty sample hides in every average: name it, so the author looks at that frame (a seam that passes through nothing)
+  const thin = body.filter((x) => x.t > 0.6 && Math.max(x.width, x.height * 0.8) < 0.3);
+  if (thin.length) console.log(`  LOOK       the subject is under 30 % of the frame at ${fmt(thin)} s: render a still there; at a seam the next ground already holds its subject at full size`);
   console.log(fails.length ? `  FIX: ${fails.join('\n  FIX: ')}` : '  pass');
   if (!fails.length) console.log('  (passing is necessary, not sufficient: check cannot see a finished state that only creeps, a repeated layout, a second full demo or a weak idea; score the sheet with the rubric)');
 }

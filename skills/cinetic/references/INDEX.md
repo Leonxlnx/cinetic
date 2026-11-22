@@ -57,7 +57,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [Sound](taste.md#sound)
 - [2. The qualities (hit every one)](taste.md#2-the-qualities-hit-every-one)
 - [3. Fixes for the most common failures](taste.md#3-fixes-for-the-most-common-failures)
-- [4. The contact-sheet rubric (13 points)](taste.md#4-the-contact-sheet-rubric-13-points)
+- [4. The contact-sheet rubric (15 points)](taste.md#4-the-contact-sheet-rubric-15-points)
 
 ## [sound-design.md](sound-design.md): Sound design: placing sound on picture
 

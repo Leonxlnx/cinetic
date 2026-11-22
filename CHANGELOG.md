@@ -20,7 +20,7 @@ gives the agent a director's method, a kit that looks premium by default, and a 
   (frame 0 never empty, vary the frame, cut the ground at least twice, a lockup of at most 2 s, integrations as surfaces).
 - References are organised by what moves: `motion/text`, `entrances`, `exits`, `turns`, `camera`, `cards-ui`, `imagery`,
   `effects`, plus `film-grammar` (sections, chaining, rhythm, two clocks, four structures, an update-film structure and a
-  composition table), `worlds` (ten graphic languages), `taste` (the tells of generated video, a 13-point rubric),
+  composition table), `worlds` (ten graphic languages), `taste` (the tells of generated video, a 15-point rubric),
   `sound-design`, `kit`, `assets`, `rendering` and an `INDEX` of every recipe.
 - Requirements drop to Node 22 and ffmpeg: no Python, no earshot, no HyperFrames path.
 

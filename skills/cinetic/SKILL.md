@@ -86,7 +86,7 @@ does, search [INDEX.md](references/INDEX.md) (every recipe and section, one line
   shows a moment at 15 frames a second, so you can judge motion, not just layout.
 - `node scripts/frames.mjs check out/main-preview.mp4` measures the preview against the bar of top studios' films (subject
   coverage, change every half second, empty frames, ending length) and prints what to fix.
-Score the sheet with the rubric in [taste.md](references/taste.md) (13 points, render at 11+). Fix the three worst
+Score the sheet with the rubric in [taste.md](references/taste.md) (15 points, render at 13+). Fix the three worst
 things, render again.
 Typical misses: an empty first frame, dead frames, things too small (UI text under 30 px on screen), the same layout
 beat after beat, a cut with nothing carried, a hold with no creep, text over a busy picture, everything the same size.
@@ -138,8 +138,10 @@ into a wall of documents that drains into the mark). Never copy their content; l
 
 ## Hard rules
 
-- **Never linear motion**, never a cross-fade between scenes, never an empty frame between scenes, never a frame that
-  holds dead still for more than ~0.6 s. **Frame 0 is never empty**: the film opens on something already happening.
+- **Never linear motion**, never a cross-fade between scenes, never an empty frame between scenes (at a seam the next
+  ground already holds its subject at full size while the old one shrinks away), never a frame that
+  holds dead still for more than ~0.6 s. **Frame 0 is never empty**: the film opens on the product or the story's object
+  already in motion; a claim may open the film only when it is set on that object, not alone on a ground.
 - **Vary the frame.** Tag every row of `BEATS.md` with its composition from the table in
   [film-grammar.md](references/film-grammar.md#compositions); no two rows in a row share one (never "caption + centred card"
   for every feature). Every film has at least one macro moment and one scale jump (a giant word, a pull-back to all of it).
@@ -153,12 +155,19 @@ into a wall of documents that drains into the mark). Never copy their content; l
   bleeding off the frame (the message in a full-bleed chat, the same line as a cropped issue in a tracker, then as a row in
   an editor seen in macro), cut on the beat with the artefact carried ([cards-ui.md](references/motion/cards-ui.md#relay)).
 - **One spectacle beat.** Every film has one shot that could never be a slide: a field of sixty replicas rising, a wall of
-  real documents pulled back from, a city of blocks, light splitting into beams. Give it 1.5-2.5 s, not 1, and name it in
-  `BEATS.md` (a row tagged `spectacle`); a film without that row is not ready to build.
+  real documents pulled back from, a city of blocks, light splitting into beams. Give it 1.5-2.5 s, not 1 (count its frames in `T`), keep it readable (it starts on
+  the artefact the film has carried, large) and name it in `BEATS.md` (a row tagged `spectacle`); a film without that row is
+  not ready to build.
 - **One demo, end to end.** Show the product's core action once, completely. A second input or use case is a 1-2 s
   variation of the same shot, never a second full demo: that is how a 20 s film becomes 30.
 - **A finished state does not hold.** When a list is full, a number has landed or a card is complete, cut within half a
   second or keep it changing (the camera pushes, the next thing arrives on it). Never 1 s of a finished thing.
+- **The camera goes to the event.** Any beat longer than 1.2 s has at least two camera positions (a push, a ride along the
+  object, a cut to macro). Things changing inside a locked shot is a slide: when the next thing happens, the camera is
+  already travelling to it.
+- **The product's output is seen big once.** The answer, the rewrite, the result: show it once in macro or as giant type
+  (its key words 120 px or more on screen) before or instead of showing it at UI size. Explaining is one claim per shot, set
+  on or along the object, never a column of text beside it.
 - **A series rotates its compositions.** Three features, three metrics, three hosts: each in a different composition
   (macro, giant type, split, surface), never the same layout three times with the label swapped.
 - **The biggest word names the right thing.** The largest word on screen is the product, its object or its benefit, never
@@ -177,7 +186,8 @@ into a wall of documents that drains into the mark). Never copy their content; l
 - **Licensed sound only**, from the catalogue or a source whose licence you read; never synthesized music.
 - **Invented palettes:** no purple, no green, no purple-to-blue "AI" gradient. Derive from the product; one accent.
 - **Legibility:** every word on screen is readable when paused: on clean ground or a plate, big enough (statements
-  ~110-250 px at 1080p, UI text 30-44 px on screen after the camera's zoom), contrast at least 4.5:1.
+  ~110-250 px at 1080p, UI text 30-44 px on screen after the camera's zoom), contrast at least 4.5:1. Text never crops
+  inside its own box (a field, a bar, a chip): fit it (`useTextWidth`) or shorten it; only the frame edge may crop.
 - **Respect the brief's facts.** Never invent customer logos, testimonials or numbers presented as real; use the user's
   data or clearly fictional demo data.
 

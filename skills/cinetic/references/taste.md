@@ -1,7 +1,7 @@
 # Taste: what separates a premium launch film from a generated one
 
 A generated or template film is recognisable in two seconds, even muted, even as a contact sheet. The tells are not
-exotic; they are defaults. This file lists them, the qualities that replace them, and a 10-point rubric to score your own
+exotic; they are defaults. This file lists them, the qualities that replace them, and a 15-point rubric to score your own
 contact sheets before you render a final.
 
 ---
@@ -98,12 +98,12 @@ the same**. Otherwise unrelated parts get "improved".
 
 ---
 
-## 4. The contact-sheet rubric (13 points)
+## 4. The contact-sheet rubric (15 points)
 
 Make two sheets before any final render: an **overview** (`node scripts/frames.mjs sheet`: 36 frames spread over the
 film) and a **beat sheet** (`node scripts/frames.mjs sheet --frames ...`: one still per beat at its most important frame, plus
 the first and last frame of every seam). Judge motion from strips of a preview (`frames.mjs strip`). Score each point
-0 or 1. **11-13: render. 8-10: fix the failing points, re-sheet. 7 or less: restructure the beats before touching motion.**
+0 or 1. **13-15: render. 10-12: fix the failing points, re-sheet. 9 or less: restructure the beats before touching motion.**
 Run `node scripts/frames.mjs check` on the preview first: points 11-13 are measured there, and the absence of tells
 (points 1-10) is not enough on its own. A film can pass 1-10 and still be half as dense and half as fast as the bar.
 
@@ -122,11 +122,14 @@ Run `node scripts/frames.mjs check` on the preview first: points 11-13 are measu
 | 11 | **Filled frames** | overview + `frames.mjs check` coverage | the subject spans 65 % of the width or more on average (top studios' films: 70-93 %); UI is in close-up; no small card centred on empty ground |
 | 12 | **Pace** | `frames.mjs check` pace | at most 20 % of the half-seconds before the lockup are nearly still (top studios' films: 9-16 %); mean beat 0.8-1.6 s |
 | 13 | **Composition variety** | `BEATS.md` composition tags + overview | no two adjacent beats share a composition; at least 4 different compositions; at least 2 ground cuts |
+| 14 | **The camera goes to the event** | overview, runs of 5+ thumbnails (1.2 s) in one framing | no beat over 1.2 s is seen from one camera position; when something new happens the camera is on it or travelling to it; nothing only changes inside a locked shot |
+| 15 | **The output seen big** | beat sheet | the product's answer, rewrite or result appears once in macro or as giant type (key words 120 px or more), not only at UI size; the spectacle beat lasts 1.5 s or more and reads |
 
 `frames.mjs check` passing is necessary, not sufficient. It measures pixels, so it cannot see these, which a viewer sees at
-once: a finished state that only creeps (a full list, a landed number held for a second), the same layout three beats in a
-row with the label swapped, a second full demo that makes the film 10 s too long, a biggest word that names the wrong
-thing. Look for each on the sheet before you render the final.
+once: a finished state that only creeps (a full list, a landed number held for a second), a camera parked while small
+things change inside the shot, the same layout three beats in a row with the label swapped, a second full demo that makes
+the film 10 s too long, a biggest word that names the wrong thing, a near-empty frame at a seam. Look for each on the
+sheet before you render the final.
 
 Also log three numbers per film, they catch most problems: **mean beat length** (target 0.8-1.6 s for films under 30 s), **number of true hard cuts
 vs carried seams** (most seams carried), and **frames moving > 10 px/f at each cut** (every cut except the lockup).
