@@ -70,7 +70,21 @@ const videoStart = (file) => {
 const loudMux = (video, audioSrc, out) => {
   const off = videoStart(video);
   const a = off > 0.0005 ? ['-itsoffset', off.toFixed(4), '-i', audioSrc] : ['-i', audioSrc];
-  run('ffmpeg', ['-v', 'error', '-y', '-i', video, ...a, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11,alimiter=limit=0.79:level=false', '-ar', '48000', '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart', out]);
+  // Pass 1: measure the mix. Pass 2: ONE static gain to -16 LUFS (the quiet opener stays quiet, the dynamics stay), then
+  // an oversampled true-peak limiter with headroom for the AAC encode (which overshoots sharp transients).
+  const m = spawnSync('ffmpeg', ['-hide_banner', '-nostats', '-i', audioSrc, '-af', 'ebur128=peak=true', '-f', 'null', '-'], { encoding: 'utf8' });
+  const I = parseFloat(((m.stderr || '').match(/I:\s+(-?[\d.]+) LUFS/g) || []).pop()?.match(/-?[\d.]+/)?.[0] ?? '-16');
+  const gain = Number.isFinite(I) ? Math.max(-20, Math.min(20, -16 - I)) : 0;
+  const af = `volume=${gain.toFixed(2)}dB,aresample=192000,alimiter=limit=0.74:attack=1:release=60:level=false,aresample=48000`;
+  run('ffmpeg', ['-v', 'error', '-y', '-i', video, ...a, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-af', af, '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart', out]);
+};
+
+/** Loudness and true peak of a file's sound: { I, TP } (LUFS, dBTP). */
+const loudness = (file) => {
+  const r = spawnSync('ffmpeg', ['-hide_banner', '-nostats', '-i', file, '-af', 'ebur128=peak=true', '-f', 'null', '-'], { encoding: 'utf8' });
+  const txt = r.stderr || '';
+  const num = (re) => parseFloat(((txt.match(re) || []).pop() || '').match(/-?[\d.]+/)?.[0] ?? 'NaN');
+  return { I: num(/I:\s+-?[\d.]+ LUFS/g), TP: num(/Peak:\s+-?[\d.]+ dBFS/g) };
 };
 
 /** Measure a rendered film: coverage, pace, empty frames, the length of its ending (low-res analysis via ffmpeg). */
@@ -128,22 +142,23 @@ function checkFilm(file, lockupS) {
   console.log(`  pace       ${slow.length} of ${pace.length} half-seconds with almost nothing changing${slow.length ? `  [from ${fmt(slow)} s]` : ''}`);
   console.log(`  empty      ${empty.length} near-empty samples${empty.length ? `  [at ${fmt(empty)} s]` : ''}${frames[0] && frames[0].fill < 0.015 ? '  FRAME 0 IS EMPTY' : ''}`);
   console.log(`  ending     the last ${endStill.toFixed(1)} s are nearly still (${((endStill / dur) * 100).toFixed(0)} % of the film)`);
+  const snd = loudness(file);
+  if (Number.isFinite(snd.I)) console.log(`  sound      ${snd.I.toFixed(1)} LUFS, true peak ${snd.TP.toFixed(1)} dBTP`);
   const fails = [];
   if (avgW < 0.65) fails.push('frames are sparse: fill them (subject 65 %+ of the width, or bleed off an edge; UI in close-up)');
   if (sparse.length > body.length * 0.25) fails.push('too many sparse frames');
   if (slow.length > pace.length * 0.2) fails.push('pace: something visible must change every half second (a word, a block, a crop, a value)');
   if ((frames[0] && frames[0].fill < 0.015) || longest / FPS >= 1) fails.push(`empty frames: ${frames[0] && frames[0].fill < 0.015 ? 'frame 0 is empty' : `${(longest / FPS).toFixed(1)} s of nothing from ${runAt.toFixed(1)} s`}`);
   if (endStill > Math.max(2.5, dur * 0.12)) fails.push('the ending is too long: lockup at most 2 s, all end type at most 15 % of the film');
+  if (Number.isFinite(snd.TP) && snd.TP > -1) fails.push(`sound: true peak ${snd.TP.toFixed(1)} dBTP clips; re-mux (frames.mjs mux) or lower the loudest cue`);
+  if (Number.isFinite(snd.I) && (snd.I > -13 || snd.I < -20)) fails.push(`sound: ${snd.I.toFixed(1)} LUFS is off the -16 LUFS target`);
   console.log(fails.length ? `  FIX: ${fails.join('\n  FIX: ')}` : '  pass');
 }
 
 /** Print the master's length, size and loudness. */
 const report = (file) => {
-  const r = spawnSync('ffmpeg', ['-hide_banner', '-nostats', '-i', file, '-af', 'ebur128=peak=true', '-f', 'null', '-'], { encoding: 'utf8' });
-  const txt = r.stderr || '';
-  const I = (txt.match(/I:\s+(-?[\d.]+) LUFS/g) || []).pop();
-  const P = (txt.match(/Peak:\s+(-?[\d.]+) dBFS/g) || []).pop();
-  console.log(`master: ${file}  ${I ?? ''}  true ${P ?? ''}`);
+  const { I, TP } = loudness(file);
+  console.log(`master: ${file}  ${I.toFixed(1)} LUFS  true peak ${TP.toFixed(1)} dBTP${TP > -1 ? '  WARNING: true peak over -1 dBTP (it will clip on some players): lower the loudest cue or re-mux' : ''}`);
 };
 
 if (cmd === 'sheet') {

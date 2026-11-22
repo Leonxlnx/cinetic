@@ -272,17 +272,22 @@ export const typingTimes = (text: string, start: number, fps = 30, cps = 16, see
   let t = start;
   let words = 0;
   let burstAt = -1;
+  let burstIdx = 0;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     if (burstAt >= 0) {
-      // after the burst point the rest lands within 2 frames: the viewer has the idea, do not make them read along
-      out.push(Math.ceil(burstAt + 1 + (i % 2)));
+      // after the burst point the rest lands over 2 frames (first half, then second half), in order
+      const rest = text.length - burstIdx;
+      out.push(Math.ceil(burstAt) + (i - burstIdx < rest / 2 ? 1 : 2));
       continue;
     }
     t += per + (rand(i * 7.3 + seed) - 0.5) * per * 0.9 + (c === ' ' ? per * 0.6 : c === ',' || c === '.' ? per * 2.5 : 0);
     out.push(Math.ceil(t));
     if (c === ' ') words++;
-    if (burst !== undefined && words >= burst && burstAt < 0) burstAt = t;
+    if (burst !== undefined && words >= burst && burstAt < 0) {
+      burstAt = t;
+      burstIdx = i + 1;
+    }
   }
   return out;
 };
