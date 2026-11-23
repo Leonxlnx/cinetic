@@ -1,5 +1,5 @@
 // "Brief": an AI that reads your tools every morning and gives you one page. ~14 s at 30 fps, an invented product.
-// One world: warm paper, ink, one vermilion accent, Geist display, Inter UI, real marks for the tools it reads.
+// One world: warm paper, ink, one vermilion accent, one voice (Inter for statements and UI), real marks for the tools it reads.
 // Three grounds, cut on objects: paper/white (base), vermilion (the accent flood), night (the inverse).
 // Third pass (critic 2 + the round-3 rules): the camera is always going somewhere, Brief's reading is the spectacle, the
 // answer's title is seen giant before the page, the result is a relay of one pinned artefact through three hosts.
@@ -84,7 +84,10 @@ const t: Theme = {
   radius: 26,
   shadow: '0 1px 2px rgba(20,20,20,.05), 0 14px 30px -10px rgba(20,20,20,.16), 0 44px 90px -30px rgba(20,20,20,.22)',
 };
-const display: React.CSSProperties = { fontFamily: fonts.geist, fontWeight: 620, letterSpacing: '-0.045em', color: INK };
+// one voice: Inter (optical sizing gives the display cut at large sizes). Statements at 520; 620-640 only for the one
+// spectacle line, a figure and the wordmark. Sizes by word count: the spectacle 330, resting lines 144-150, tails 64+.
+const display: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 520, letterSpacing: '-0.02em', color: INK };
+const PROOF_FS = 150; // "4 hours back.": three words, a resting line with its figure in the accent
 
 // ---------------------------------------------------------------- one timeline: every scene and every sound reads it
 const TOAST_F = [-3, 5, 11, 16, 20, 23, 26, 29, 31, 33, 35, 37, 39, 41];
@@ -162,7 +165,7 @@ const Toast1: React.FC<{ i: number }> = ({ i }) => {
     <Card t={t} w={1360} pad={34} style={{ display: 'flex', gap: 30, alignItems: 'center', borderRadius: 38, transform: `rotate(${(rand(i * 3.1 + 1) - 0.5) * 2.4}deg)` }}>
       <BrandTile name={x.brand} size={104} bg="#F6F4F0" shadow="none" />
       <div style={{ flex: 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 46, fontWeight: 650, letterSpacing: '-0.02em' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 46, fontWeight: 600, letterSpacing: '-0.01em' }}>
           <span>{x.title}</span>
           <span style={{ fontSize: 30, color: t.muted, fontWeight: 500 }}>now</span>
         </div>
@@ -214,7 +217,7 @@ const Line: React.FC = () => {
   return (
     <AbsoluteFill style={{ perspective: 2000 }}>
       <AbsoluteFill style={{ transform: `translateY(${mix(rise, 70, -10)}px) rotateX(${mix(rise, 14, 0)}deg) scale(${push})`, justifyContent: 'center', alignItems: 'center' }}>
-        <div style={{ ...display, fontSize: 330, lineHeight: 0.94, textAlign: 'center' }}>
+        <div style={{ ...display, fontWeight: 620, letterSpacing: '-0.04em', fontSize: 330, lineHeight: 0.94, textAlign: 'center' }}>
           <div>
             <Words text="Too much" times={[T.words[0], T.words[1]]} arrive="rise" dur={12} style={{ color: INK }} />
           </div>
@@ -328,7 +331,7 @@ const TOOLS = ['github', 'linear', 'gmail', 'notion', 'figma', 'googlecalendar']
 const RowCard: React.FC<{ r: { brand: string; title: string; sub: string; trail: string }; bg?: string; ring?: number; fade?: number; lit?: number }> = ({ r, bg = WHITE, ring = 0, fade = 0, lit = 0 }) => (
   <div style={{ width: ROW_W, height: ROW_HT, borderRadius: 30, background: lit > 0 ? mixColor(bg, ACCENT, lit) : bg, boxShadow: ring > 0 ? `0 0 0 ${4 * ring}px rgba(255,79,31,${0.9 * ring}), 0 24px 50px -20px rgba(140,40,10,${0.45 * ring})` : 'inset 0 0 0 2px rgba(40,30,20,0.06)', overflow: 'hidden' }}>
     <div style={{ opacity: 1 - fade }}>
-      <Row t={lit > 0.5 ? { ...t, ink: WHITE, muted: '#FFD9CC' } : t} size={44} icon={<BrandTile name={r.brand} size={64} bg={WHITE} shadow="none" />} title={r.title} sub={r.sub} trail={<span style={{ fontFamily: t.mono, fontSize: 32 }}>{r.trail}</span>} style={{ padding: '26px 30px' }} />
+      <Row t={lit > 0.5 ? { ...t, ink: WHITE, muted: '#FFD9CC' } : t} size={44} icon={<BrandTile name={r.brand} size={64} bg={WHITE} shadow="none" />} title={r.title} sub={r.sub} trail={<span style={{ fontFamily: t.font, fontSize: 32, fontVariantNumeric: 'tabular-nums' }}>{r.trail}</span>} style={{ padding: '26px 30px' }} />
     </div>
   </div>
 );
@@ -455,7 +458,7 @@ const Gather: React.FC = () => {
         start={T.title}
         hold={T.land - T.title - 10}
         travel={10}
-        from={{ x: 960, y: 250, size: 162 }}
+        from={{ x: 960, y: 250, size: 144 }}
         to={{ x: to.x, y: to.y, size: TITLE_SIZE * z }}
         born={ACCENT}
         style={{ ...display, color: INK }}
@@ -478,13 +481,13 @@ const Page: React.FC = () => {
         {/* header: the product's own mark in its own header, the date */}
         <div style={{ position: 'absolute', left: L, top: 92, width: R - L, display: 'flex', alignItems: 'center', gap: 18, fontFamily: t.font, opacity: headIn, transform: `translateY(${mix(headIn, -16, 0)}px)` }}>
           <Mark size={56} />
-          <span style={{ fontSize: 34, fontWeight: 650, letterSpacing: '-0.02em', color: INK }}>Brief</span>
-          <span style={{ marginLeft: 'auto', fontFamily: t.mono, fontSize: 28, color: t.muted }}>Tue 14 Oct · 7:30 AM</span>
+          <span style={{ fontSize: 34, fontWeight: 620, letterSpacing: '-0.01em', color: INK }}>Brief</span>
+          <span style={{ marginLeft: 'auto', fontSize: 30, color: t.muted }}>Tue 14 Oct · 7:30 AM</span>
         </div>
         <div style={{ position: 'absolute', left: L, top: TITLE_TOP, ...display, fontSize: TITLE_SIZE, lineHeight: 1.1, whiteSpace: 'nowrap' }}>Four things need you.</div>
         <div style={{ position: 'absolute', left: L, top: 322, display: 'flex', alignItems: 'center', gap: 14, fontFamily: t.font, fontSize: 34, color: t.muted, opacity: headIn }}>
           <span>Read</span>
-          <span style={{ color: INK, fontWeight: 650, fontVariantNumeric: 'tabular-nums' }}>217</span>
+          <span style={{ color: INK, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>217</span>
           <span>updates from</span>
           {TOOLS.map((b, i) => {
             const s = T.land + 2 + i * 2;
@@ -504,10 +507,10 @@ const Page: React.FC = () => {
           return (
             <div key={i} style={{ position: 'absolute', left: L - 24, top, width: ROW_W, opacity: 1 - dim * 0.55, filter: dim > 0.02 ? `blur(${dim * 2.5}px)` : undefined }}>
               <div style={{ borderRadius: 30, background: first ? `rgba(255,79,31,${0.06 * ring})` : 'transparent', boxShadow: first && ring > 0 ? `0 0 0 ${2.5 * ring}px rgba(255,79,31,${0.45 * ring})` : undefined, overflow: 'hidden' }}>
-                <Row t={t} size={44} icon={<BrandTile name={row.brand} size={64} bg={WHITE} shadow="none" />} title={row.title} sub={row.sub} trail={<span style={{ fontFamily: t.mono, fontSize: 32 }}>{row.trail}</span>} style={{ padding: '26px 30px' }} />
+                <Row t={t} size={44} icon={<BrandTile name={row.brand} size={64} bg={WHITE} shadow="none" />} title={row.title} sub={row.sub} trail={<span style={{ fontFamily: t.font, fontSize: 32, fontVariantNumeric: 'tabular-nums' }}>{row.trail}</span>} style={{ padding: '26px 30px' }} />
                 {first && open > 0 && (
                   <div style={{ height: mix(open, 0, OPEN_H), position: 'relative' }}>
-                    <div style={{ position: 'absolute', left: 142, top: 0, display: 'flex', gap: 30, fontFamily: t.mono, fontSize: 32, opacity: clamp(open * 2) }}>
+                    <div style={{ position: 'absolute', left: 142, top: 0, display: 'flex', gap: 30, fontFamily: t.font, fontSize: 34, fontVariantNumeric: 'tabular-nums', opacity: clamp(open * 2) }}>
                       <span style={{ color: '#1A7F4B' }}>+214</span>
                       <span style={{ color: '#C2382A' }}>−87</span>
                       <span style={{ color: t.muted }}>6 files · 14 tests pass</span>
@@ -573,7 +576,7 @@ const Plate: React.FC = () => {
         <div style={{ fontSize: 32, color: t.muted, display: 'flex', alignItems: 'center', gap: 12 }}>
           You, via Brief <span style={{ opacity: 0.6 }}>·</span> just now
         </div>
-        <div style={{ fontSize: 58, fontWeight: 650, letterSpacing: '-0.025em', lineHeight: 1.2, display: 'flex', alignItems: 'center', gap: 18, transform: `translateY(${mix(swap, 30, 0)}px)`, opacity: clamp(swap * 2) }}>
+        <div style={{ fontSize: 58, fontWeight: 600, letterSpacing: '-0.015em', lineHeight: 1.2, display: 'flex', alignItems: 'center', gap: 18, transform: `translateY(${mix(swap, 30, 0)}px)`, opacity: clamp(swap * 2) }}>
           <Icon name="Check" size={54} stroke={3} color={ACCENT} />
           {ACTS[i]}
         </div>
@@ -584,7 +587,7 @@ const Plate: React.FC = () => {
 
 const pivot = (s: number, extra = ''): React.CSSProperties => ({ transformOrigin: `${AX}px ${AY}px`, transform: `${extra} scale(${s})` });
 const settle = (f: number, start: number, amt = 0.05) => 1 + amt * (1 - at(f, start, 10, ease.out));
-const mono: React.CSSProperties = { fontFamily: fonts.mono, whiteSpace: 'pre', letterSpacing: '-0.01em' };
+const mono: React.CSSProperties = { fontFamily: fonts.mono, whiteSpace: 'pre', letterSpacing: '0' };
 
 /** Host A, GitHub on night: the pull request as a full-bleed diff that rides up behind the plate; the figure giant. */
 const DIFF: Array<{ k: ' ' | '+' | '-'; s: string }> = [
@@ -605,7 +608,7 @@ const HostGitHub: React.FC = () => {
     <AbsoluteFill style={{ background: NIGHT, overflow: 'hidden' }}>
       <AbsoluteFill style={{ background: 'radial-gradient(ellipse 60% 55% at 70% 20%, rgba(255,79,31,0.12), rgba(255,79,31,0) 70%)' }} />
       <AbsoluteFill style={pivot(s)}>
-        <div style={{ position: 'absolute', left: 110, top: 70, display: 'flex', alignItems: 'center', gap: 30, fontFamily: t.font, fontSize: 76, fontWeight: 650, letterSpacing: '-0.025em', color: '#F2EEE8', whiteSpace: 'nowrap' }}>
+        <div style={{ position: 'absolute', left: 110, top: 70, display: 'flex', alignItems: 'center', gap: 30, fontFamily: t.font, fontSize: 76, fontWeight: 600, letterSpacing: '-0.015em', color: '#F2EEE8', whiteSpace: 'nowrap' }}>
           <Brand name="github" size={84} color="#F2EEE8" />
           auth: rotate refresh tokens <span style={{ color: '#8B857C', fontWeight: 500 }}>#482</span>
         </div>
@@ -626,10 +629,10 @@ const HostGitHub: React.FC = () => {
         </div>
       </AbsoluteFill>
       <AbsoluteFill style={pivot(settle(f, h, 0.03))}>
-        <div style={{ position: 'absolute', left: 110, top: 820, display: 'flex', alignItems: 'baseline', gap: 40, fontFamily: fonts.geist, fontWeight: 620, fontSize: 190, letterSpacing: '-0.045em', lineHeight: 1, whiteSpace: 'nowrap' }}>
+        <div style={{ position: 'absolute', left: 110, top: 820, display: 'flex', alignItems: 'baseline', gap: 40, fontFamily: fonts.inter, fontWeight: 620, fontSize: 190, letterSpacing: '-0.03em', lineHeight: 1, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
           <span style={{ color: '#7EE2A0' }}>+214</span>
           <span style={{ color: '#FF9A8A' }}>−87</span>
-          <span style={{ fontFamily: t.font, fontSize: 44, fontWeight: 500, letterSpacing: '-0.01em', color: '#A39C93' }}>6 files · 14 tests pass</span>
+          <span style={{ fontFamily: t.font, fontSize: 44, fontWeight: 500, letterSpacing: '0', color: '#A39C93' }}>6 files · 14 tests pass</span>
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
@@ -651,7 +654,7 @@ const HostLinear: React.FC = () => {
         <div style={{ ...txt, left: 170, top: 10, display: 'flex', alignItems: 'center', gap: 20, fontSize: 38, color: t.muted }}>
           <Brand name="linear" size={58} /> Platform <span style={{ opacity: 0.5 }}>/</span> ENG-219
         </div>
-        <div style={{ ...txt, left: 170, top: 100, fontSize: 116, fontWeight: 700, letterSpacing: '-0.035em' }}>Token rotation for mobile</div>
+        <div style={{ ...txt, left: 170, top: 100, fontSize: 116, fontWeight: 620, letterSpacing: '-0.025em' }}>Token rotation for mobile</div>
         <div style={{ ...txt, left: 170, top: 300, display: 'flex', alignItems: 'center', gap: 30, fontSize: 40, color: t.muted }}>
           <span
             style={{
@@ -659,8 +662,8 @@ const HostLinear: React.FC = () => {
               alignItems: 'center',
               gap: 18,
               fontSize: 84,
-              fontWeight: 650,
-              letterSpacing: '-0.02em',
+              fontWeight: 600,
+              letterSpacing: '-0.015em',
               borderRadius: 999,
               padding: '14px 40px 14px 30px',
               background: prog ? INK : '#EDE6DE',
@@ -695,7 +698,7 @@ const HostCalendar: React.FC = () => {
   const y0 = 110;
   const block = (top: number, hgt: number, color: string, bg: string, title: string, meta: string, extra?: React.CSSProperties) => (
     <div style={{ position: 'absolute', left: 380, right: -80, top, height: hgt, borderRadius: 22, background: bg, borderLeft: `14px solid ${color}`, padding: '20px 36px', boxSizing: 'border-box', fontFamily: t.font, whiteSpace: 'nowrap', ...extra }}>
-      <div style={{ fontSize: 50, fontWeight: 650, letterSpacing: '-0.02em', color: INK }}>{title}</div>
+      <div style={{ fontSize: 50, fontWeight: 600, letterSpacing: '-0.01em', color: INK }}>{title}</div>
       <div style={{ fontSize: 34, color: '#5E5850', marginTop: 6 }}>{meta}</div>
     </div>
   );
@@ -707,7 +710,7 @@ const HostCalendar: React.FC = () => {
         </div>
         {HOURS.map((hh, i) => (
           <React.Fragment key={hh}>
-            <div style={{ position: 'absolute', left: 110, top: y0 + i * HY - 34, ...mono, fontSize: 60, color: '#9A938A' }}>{hh}</div>
+            <div style={{ position: 'absolute', left: 110, top: y0 + i * HY - 34, fontFamily: t.font, fontWeight: 500, fontSize: 58, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums', color: '#9A938A' }}>{hh}</div>
             <div style={{ position: 'absolute', left: 380, right: -60, top: y0 + i * HY, height: 2, background: 'rgba(40,30,20,0.12)' }} />
           </React.Fragment>
         ))}
@@ -758,16 +761,16 @@ const Proof: React.FC = () => {
       )}
       <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center' }}>
         <div style={{ transform: `translateY(${carry(f, T.proofIn, 90, 14)}px) scale(${push})` }}>
-          <div style={{ ...display, fontSize: 250, lineHeight: 1, display: 'flex', alignItems: 'baseline', gap: '0.2em', whiteSpace: 'nowrap' }}>
-            <span style={{ color: ACCENT, display: 'inline-block', width: '0.6em', textAlign: 'center', transform: `scale(${pop})` }}>{step}</span>
+          <div style={{ ...display, fontSize: PROOF_FS, letterSpacing: '-0.025em', lineHeight: 1, display: 'flex', alignItems: 'baseline', gap: '0.24em', whiteSpace: 'nowrap' }}>
+            <span style={{ color: ACCENT, fontWeight: 640, display: 'inline-block', width: '0.6em', textAlign: 'center', transform: `scale(${pop})` }}>{step}</span>
             <Words text="hours" times={[T.hours]} arrive="cut" born={ACCENT} settle={10} style={{ color: INK }} />
             <span style={{ display: 'inline-flex', alignItems: 'baseline' }}>
               <Words text="back" times={[T.back]} arrive="cut" born={ACCENT} settle={10} style={{ color: INK }} />
-              <Stop at0={T.stop2} grow={T.lock} size={40} dur={14} />
+              <Stop at0={T.stop2} grow={T.lock} size={Math.round(PROOF_FS * 0.16)} dur={14} />
             </span>
           </div>
-          <div style={{ ...display, fontSize: 60, fontWeight: 500, letterSpacing: '-0.025em', color: t.muted, marginTop: 18, paddingLeft: '0.2em' }}>
-            <Words text="every week" times={[T.back + 3, T.back + 6]} arrive="cut" style={{ color: t.muted }} align="left" />
+          <div style={{ ...display, fontSize: 72, fontWeight: 480, letterSpacing: '-0.015em', color: t.muted, marginTop: 20, textAlign: 'center' }}>
+            <Words text="every week" times={[T.back + 3, T.back + 6]} arrive="cut" style={{ color: t.muted }} align="center" />
           </div>
         </div>
       </AbsoluteFill>
@@ -789,9 +792,9 @@ const Lockup: React.FC = () => {
         <div style={{ transform: `scale(${mix(m, 0.25, 1)}) rotate(${mix(m, -16, 0)}deg)`, opacity: clamp(m * 4) }}>
           <Mark size={196} color={WHITE} fold="#FFC3B0" />
         </div>
-        <div style={{ ...display, color: WHITE, fontSize: 220, lineHeight: 1.1, clipPath: `inset(-10% ${mix(w, 100, -2)}% -20% 0)`, transform: `translateX(${mix(w, -50, 0)}px)` }}>Brief</div>
+        <div style={{ ...display, fontWeight: 640, letterSpacing: '-0.03em', color: WHITE, fontSize: 180, lineHeight: 1.1, clipPath: `inset(-10% ${mix(w, 100, -2)}% -20% 0)`, transform: `translateX(${mix(w, -50, 0)}px)` }}>Brief</div>
       </div>
-      <div style={{ ...display, fontSize: 54, fontWeight: 500, letterSpacing: '-0.02em', color: '#FFE5DB', marginTop: 22 }}>
+      <div style={{ ...display, fontSize: 64, fontWeight: 480, letterSpacing: '-0.015em', color: '#FFE5DB', marginTop: 26 }}>
         <Words text="Your morning, in one page." start={born + 12} arrive="cut" gap={2} style={{ color: '#FFE5DB' }} />
       </div>
     </AbsoluteFill>

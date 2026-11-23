@@ -1,14 +1,15 @@
 // "Fieldnote": the v2 rework. ~15.8 s at 30 fps. An invented product (ask any question about any place on Earth,
-// answered from satellite imagery). World: editorial paper, bare photo tiles with mono coordinates, a serif voice, a
-// heavy grotesque only for the window device (EARTH, the wordmark), one cobalt accent that means "found / changed".
+// answered from satellite imagery). World: editorial paper, bare photo tiles with mono coordinates, one sans voice (Inter:
+// statements, labels and the UI; bold only for the window device, Earth and the wordmark), one cobalt accent that means
+// "found / changed". The editorial feel lives in the layout and the photography, not in a second face.
 // Grounds: paper (base), the photograph itself (after the dive), then the relay's hosts take the world's grounds in turn
 // (paper, cobalt, ink). Pictures: NASA / ISS crew Earth observations and Earth Observatory images (public domain).
 //
 // Beats (composition tag in brackets; no two neighbours share one):
 //   0  wall          SPECTACLE (1.8 s): a wall of a hundred and forty places, the camera travelling across it and
 //                    pulling back while big out-of-focus tiles race past in front; the wall collapses into the centre
-//   1  giant-type    EARTH as windows, a new place in the letters every 0.27 s, coordinates stepping under it
-//   2  macro         the dive into the stem of the H: the frame ends up inside the picture
+//   1  giant-type    Earth as windows, a new place in the letters every 0.27 s, coordinates stepping under it
+//   2  macro         the dive into the stem of the h: the frame ends up inside the picture
 //   3  type-on-surf  the question on a paper plate over the photo: three words typed, the rest lands at once
 //   4  full-ui       the plate shrinks into the input bar, send, a scan line reads 26 years of the picture
 //   5  macro         the camera punches in on each finding (selection + label), whip between them
@@ -49,6 +50,7 @@ import {
   TextWindow,
   Typing,
   typingTimes,
+  useTextWidth,
   Words,
   type CamKey,
   type Grade,
@@ -63,10 +65,14 @@ const INK_GROUND = '#151413';
 const COBALT = '#2347FF';
 const COBALT_LIGHT = '#93A5FF';
 const MUTED = '#5E5A52';
-const serif: React.CSSProperties = { fontFamily: fonts.serif, fontWeight: 400, letterSpacing: '-0.02em', color: INK };
-const mono: React.CSSProperties = { fontFamily: fonts.mono, letterSpacing: '0.04em', color: MUTED };
-const heavy: React.CSSProperties = { fontFamily: fonts.geist, fontWeight: 900, letterSpacing: '-0.06em' };
-const sans: React.CSSProperties = { fontFamily: fonts.inter, letterSpacing: '-0.02em' };
+// one voice: Inter for statements (480), labels and UI (sentence case, 0 tracking at UI sizes); mono only for coordinates
+// and code as written; bold (700, never heavier) only where letters are windows onto a picture
+const voice: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 480, letterSpacing: '-0.015em', color: INK };
+const mono: React.CSSProperties = { fontFamily: fonts.mono, letterSpacing: '0', color: MUTED };
+const heavy: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 700, letterSpacing: '-0.04em' };
+const sans: React.CSSProperties = { fontFamily: fonts.inter, letterSpacing: '0' };
+/** A small label in the UI face (a status chip, a selection's tag, a caption): sentence case, never mono capitals. */
+const tag: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 520, letterSpacing: '0', fontVariantNumeric: 'tabular-nums' };
 const GRADE: Grade = { dark: '#2B2118', light: '#F1E9DA', look: 'saturate(1.05) contrast(1.04)' };
 
 const IMG = {
@@ -200,15 +206,15 @@ const NearTiles: React.FC = () => {
 };
 
 // ---------------------------------------------------------------- 1-2. EARTH as windows, then the dive into the H
-const EARTH_FONT = 520;
-// a point inside the stem of the "H": the dive pivots on it, so the frame ends up entirely inside the picture
-const HX = 1507;
+const EARTH_FONT = 650;
+// a point inside the stem of the "h": the dive pivots on it, so the frame ends up entirely inside the picture
+const HX = 1433;
 const HY = 545;
 const SWAPS = [
-  { src: IMG.islands, pos: '30% 30%', cap: '34.62°N  126.91°E · SOUTH JEOLLA' },
-  { src: IMG.clouds, pos: '45% 95%', cap: '58.21°N  176.40°W · BERING SEA' },
-  { src: IMG.delta, pos: '60% 40%', cap: '21.43°N  39.12°E · RED SEA COAST' },
-  { src: IMG.channels, pos: '', cap: '25.04°N  77.62°W · GREAT BAHAMA BANK' },
+  { src: IMG.islands, pos: '30% 30%', cap: '34.62°N  126.91°E · South Jeolla' },
+  { src: IMG.clouds, pos: '45% 95%', cap: '58.21°N  176.40°W · Bering Sea' },
+  { src: IMG.delta, pos: '60% 40%', cap: '21.43°N  39.12°E · Red Sea coast' },
+  { src: IMG.channels, pos: '', cap: '25.04°N  77.62°W · Great Bahama Bank' },
 ];
 
 const Earth: React.FC = () => {
@@ -226,13 +232,13 @@ const Earth: React.FC = () => {
   return (
     <AbsoluteFill>
       <div style={{ position: 'absolute', inset: 0, transformOrigin: `${HX}px ${HY}px`, transform: `scale(${scale})`, filter: blur > 0.2 ? `blur(${blur}px)` : undefined, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <TextWindow text="EARTH" src={sw.src} position={pos} zoom={zoom} style={{ ...heavy, fontSize: EARTH_FONT }} />
+        <TextWindow text="Earth" src={sw.src} position={pos} zoom={zoom} style={{ ...heavy, fontSize: EARTH_FONT }} />
       </div>
-      <div style={{ position: 'absolute', top: 128, width: '100%', textAlign: 'center', ...serif, fontSize: 96, fontStyle: 'italic', opacity: 1 - dive * 4 }}>
+      <div style={{ position: 'absolute', top: 118, width: '100%', textAlign: 'center', ...voice, fontSize: 104, opacity: 1 - dive * 4 }}>
         <Words text="Ask anything about" start={T.kicker} arrive="rise" gap={3} style={{ color: INK }} leaveAt={T.dive - 4} leave="rise" leaveDur={8} />
       </div>
-      <div style={{ position: 'absolute', top: 852, width: '100%', textAlign: 'center', ...mono, fontSize: 30, color: INK, opacity: clamp(inn * 3) * (1 - dive * 4) }}>
-        <span style={{ background: k === 3 ? COBALT : 'transparent', color: k === 3 ? '#fff' : INK, padding: '6px 14px' }}>{sw.cap}</span>
+      <div style={{ position: 'absolute', top: 846, width: '100%', textAlign: 'center', ...tag, fontWeight: 500, fontSize: 36, color: INK, opacity: clamp(inn * 3) * (1 - dive * 4) }}>
+        <span style={{ background: k === 3 ? COBALT : 'transparent', color: k === 3 ? '#fff' : INK, padding: '6px 16px' }}>{sw.cap}</span>
       </div>
     </AbsoluteFill>
   );
@@ -295,7 +301,7 @@ const Graticule: React.FC = () => {
 };
 
 const label = (text: string): React.ReactNode => <span>{text}</span>;
-const labelStyle: React.CSSProperties = { ...mono, color: '#fff', fontSize: 25, background: COBALT, padding: '8px 12px', top: -50 };
+const labelStyle: React.CSSProperties = { ...tag, color: '#fff', fontSize: 30, background: COBALT, padding: '7px 14px', top: -56 };
 
 // the before/after picture at stage size (the stage during the compare, and the relay's artefact afterwards)
 const Picture: React.FC<{ split: number; handle?: boolean }> = ({ split: sp, handle = true }) => (
@@ -320,8 +326,8 @@ const Stage: React.FC = () => {
         <Graticule />
         {sel > 0 && (
           <div style={{ opacity: sel }}>
-            <Selection {...A} start={T.find1} color="#FFFFFF" label={label('SANDBANK  +3.4 km²')} labelStyle={labelStyle} />
-            <Selection {...B} start={T.find2} color="#FFFFFF" label={label('NEW CHANNEL  6.1 km')} labelStyle={labelStyle} />
+            <Selection {...A} start={T.find1} color="#FFFFFF" label={label('Sandbank +3.4 km²')} labelStyle={labelStyle} />
+            <Selection {...B} start={T.find2} color="#FFFFFF" label={label('New channel 6.1 km')} labelStyle={labelStyle} />
           </div>
         )}
       </AbsoluteFill>
@@ -336,6 +342,7 @@ const BAR: Box = { x: 340, y: 930, w: 1240, h: 100, r: 50 };
 const CARD: Box = { x: 70, y: 70, w: 1100, h: 860, r: 30 };
 const lerpBox = (a: Box, b: Box, p: number): Box => ({ x: mix(p, a.x, b.x), y: mix(p, a.y, b.y), w: mix(p, a.w, b.w), h: mix(p, a.h, b.h), r: mix(p, a.r, b.r) });
 const QUESTION = 'How has this coast changed since 2000?';
+const Q_FS = 84; // seven words on the plate: one line at the low end of the statement sizes, centred in the plate
 const BURST = 3; // type "How has this", then the rest lands at once
 const YEARS = [
   { y: '2000', v: 0 },
@@ -348,6 +355,7 @@ const YEARS = [
 
 const Panel: React.FC = () => {
   const f = useCurrentFrame();
+  const qW = useTextWidth(QUESTION, { ...voice, fontSize: Q_FS });
   if (f < T.plate || f > T.compare + 2) return null;
   const rise = at(f, T.plate, 14, ease.out);
   const p1 = at(f, T.shrink, 14, ease.inOut);
@@ -357,9 +365,9 @@ const Panel: React.FC = () => {
   const bg = mixColor(PAPER, '#FFFFFF', p1);
   const press = at(f, T.send, 4, ease.out) - at(f, T.send + 4, 10, ease.out);
   // the question: one text that shrinks from the plate into the bar, then becomes the card's header
-  const qSize = mix(p2, mix(p1, 124, 44), 32);
-  const qx = mix(p2, mix(p1, 64, 46), 56);
-  const qy = mix(p2, mix(p1, 136, (BAR.h - 44 * 1.25) / 2), 38);
+  const qSize = mix(p2, mix(p1, Q_FS, 44), 32);
+  const qx = mix(p2, mix(p1, Math.max(64, (PLATE.w - qW) / 2), 46), 56);
+  const qy = mix(p2, mix(p1, (PLATE.h - Q_FS * 1.25) / 2, (BAR.h - 44 * 1.25) / 2), 38);
   const sent = at(f, T.send + 2, 8);
   const qColor = mixColor(INK, MUTED, Math.max(sent * 0.6, p2));
   const showAns = at(f, T.answer + 8, 6);
@@ -367,8 +375,8 @@ const Panel: React.FC = () => {
   return (
     <>
       {f >= T.send && f < T.answer + 6 && (
-        <div style={{ position: 'absolute', left: BAR.x + 10, top: BAR.y - 62, ...mono, fontSize: 24, color: '#fff', background: f >= T.find2 + 6 ? COBALT : INK, padding: '8px 14px', opacity: 1 - p2 * 3, transform: `translateY(${mix(at(f, T.send, 8, ease.out), 20, 0)}px)` }}>
-          {f < T.find1 ? `READING ${year}` : f < T.find2 + 6 ? `READING 2000 → 2026 · 1 CHANGE` : '2 CHANGES FOUND'}
+        <div style={{ position: 'absolute', left: BAR.x + 10, top: BAR.y - 70, ...tag, fontSize: 34, lineHeight: 1.2, color: '#fff', background: f >= T.find2 + 6 ? COBALT : INK, padding: '6px 16px', opacity: 1 - p2 * 3, transform: `translateY(${mix(at(f, T.send, 8, ease.out), 20, 0)}px)` }}>
+          {f < T.find1 ? `Reading ${year}` : f < T.find2 + 6 ? `Reading 2000 → 2026 · 1 change` : '2 changes found'}
         </div>
       )}
       <div
@@ -387,8 +395,7 @@ const Panel: React.FC = () => {
           filter: out > 0.05 ? `blur(${out * 14}px)` : undefined,
         }}
       >
-        <div style={{ position: 'absolute', left: 64, top: 50, ...mono, fontSize: 24, color: COBALT, opacity: 1 - at(f, T.shrink, 5) }}>FIELDNOTE · 25.04°N 77.62°W</div>
-        <div style={{ position: 'absolute', left: qx, top: qy, ...serif, fontSize: qSize, lineHeight: 1.25, color: qColor, whiteSpace: 'nowrap' }}>
+        <div style={{ position: 'absolute', left: qx, top: qy, ...voice, fontSize: qSize, lineHeight: 1.25, color: qColor, whiteSpace: 'nowrap' }}>
           {f < T.shrink ? <Typing text={QUESTION} start={T.type} cps={24} burst={BURST} caretColor={COBALT} /> : QUESTION}
         </div>
         {/* the send button grows out of the bar's right end */}
@@ -400,19 +407,18 @@ const Panel: React.FC = () => {
           </div>
         )}
         {showAns > 0 && (
-          <div style={{ position: 'absolute', left: 56, top: 112, width: CARD.w - 112, opacity: showAns, transform: `translateY(${mix(showAns, 16, 0)}px)` }}>
-            <div style={{ ...mono, fontSize: 28, color: COBALT }}>GREAT BAHAMA BANK · 2000 → 2026</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 22, marginTop: 4 }}>
-              <div style={{ fontFamily: fonts.geist, fontWeight: 650, fontSize: 250, letterSpacing: '-0.05em', lineHeight: 1, color: INK }}>
+          <div style={{ position: 'absolute', left: 56, top: 132, width: CARD.w - 112, opacity: showAns, transform: `translateY(${mix(showAns, 16, 0)}px)` }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 26 }}>
+              <div style={{ fontFamily: fonts.inter, fontWeight: 640, fontSize: 250, letterSpacing: '-0.03em', lineHeight: 1, color: INK }}>
                 +<Odometer value={18} from={0} start={T.answer + 10} dur={30} sep="" />%
               </div>
-              <div style={{ fontFamily: fonts.geist, fontWeight: 600, fontSize: 72, letterSpacing: '-0.03em', color: INK, lineHeight: 1.05 }}>
+              <div style={{ fontFamily: fonts.inter, fontWeight: 540, fontSize: 72, letterSpacing: '-0.015em', color: COBALT, lineHeight: 1.05 }}>
                 new
                 <br />
                 land
               </div>
             </div>
-            <div style={{ fontFamily: fonts.inter, fontSize: 40, lineHeight: 1.3, color: '#3D3A35', marginTop: 14 }}>Tides built 3.4 km² of sandbank and cut one new channel.</div>
+            <div style={{ fontFamily: fonts.inter, fontWeight: 450, fontSize: 40, lineHeight: 1.3, color: '#3D3A35', marginTop: 18 }}>Tides built 3.4 km² of sandbank and cut one new channel.</div>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 30, height: 196, marginTop: 34 }}>
               {YEARS.map((yr, i) => {
                 const g = at(onTwos(f), T.answer + 14 + i * 4, 8, ease.out);
@@ -432,7 +438,7 @@ const Panel: React.FC = () => {
 };
 
 // giant years that ride with the compare divider (sx: the divider's x in the layer they sit in)
-const yearTab: React.CSSProperties = { position: 'absolute', top: 96, background: PAPER, padding: '4px 26px 10px', fontFamily: fonts.geist, fontWeight: 650, fontSize: 132, letterSpacing: '-0.05em', lineHeight: 1, color: INK };
+const yearTab: React.CSSProperties = { position: 'absolute', top: 96, background: PAPER, padding: '4px 26px 10px', fontFamily: fonts.inter, fontWeight: 620, fontSize: 132, letterSpacing: '-0.025em', lineHeight: 1, color: INK, fontVariantNumeric: 'tabular-nums' };
 const YearTabs: React.FC<{ sx: number; born?: number }> = ({ sx, born = 1 }) => (
   <>
     <div style={{ ...yearTab, right: 1920 - sx + 26 }}>2000</div>
@@ -464,7 +470,7 @@ const HostNotion: React.FC = () => {
       <div style={{ position: 'absolute', left: -60, top: -40, width: 520, height: 1160, background: PAPER_2, transform: `translateY(${-d * 30}px)` }}>
         <div style={{ position: 'absolute', left: 100, top: 92, display: 'flex', alignItems: 'center', gap: 18 }}>
           <Brand name="notion" size={52} color={INK} />
-          <div style={{ ...sans, fontSize: 34, fontWeight: 650, color: INK }}>Coastal lab</div>
+          <div style={{ ...sans, fontSize: 34, fontWeight: 600, color: INK }}>Coastal lab</div>
         </div>
         {NOTION_PAGES.map((p, i) => (
           <div key={p} style={{ position: 'absolute', left: 84, top: 210 + i * 72, width: 400, height: 58, borderRadius: 10, background: i === 0 ? '#D2CDC1' : 'transparent', display: 'flex', alignItems: 'center', gap: 16, paddingLeft: 16 }}>
@@ -476,9 +482,9 @@ const HostNotion: React.FC = () => {
       {/* the page, scrolling a little under the artefact */}
       <div style={{ position: 'absolute', inset: 0, transform: `translateY(${-d * 90}px)` }}>
         <div style={{ position: 'absolute', left: 562, top: 28, ...sans, fontSize: 26, color: MUTED, whiteSpace: 'nowrap' }}>Coastal survey &nbsp;/&nbsp; Andros, north shoals</div>
-        <div style={{ position: 'absolute', left: 554, top: 70, ...sans, fontSize: 116, fontWeight: 700, letterSpacing: '-0.035em', color: INK, lineHeight: 1, whiteSpace: 'nowrap' }}>North shoals, week 46</div>
+        <div style={{ position: 'absolute', left: 554, top: 70, ...sans, fontSize: 116, fontWeight: 640, letterSpacing: '-0.025em', color: INK, lineHeight: 1, whiteSpace: 'nowrap' }}>North shoals, week 46</div>
         <div style={{ position: 'absolute', left: 562, top: 204, ...sans, fontSize: 32, color: '#3D3A35', whiteSpace: 'nowrap' }}>Shoreline walked from Morgan’s Bluff to the north channel.</div>
-        <div style={{ position: 'absolute', left: 562, top: 936, ...mono, fontSize: 24, color: MUTED, whiteSpace: 'nowrap' }}>EMBED · FIELDNOTE · GREAT BAHAMA BANK · 2000 → 2026</div>
+        <div style={{ position: 'absolute', left: 562, top: 932, ...sans, fontSize: 28, color: MUTED, whiteSpace: 'nowrap' }}>Fieldnote embed · Great Bahama Bank, 2000 → 2026</div>
         <div style={{ position: 'absolute', left: 562, top: 992, ...sans, fontSize: 32, color: '#3D3A35', whiteSpace: 'nowrap' }}>Next: check the 2019 storm season against the same crop.</div>
       </div>
     </AbsoluteFill>
@@ -517,19 +523,19 @@ const HostMail: React.FC = () => {
           <BrandTile name="gmail" size={104} shadow="0 14px 30px -10px rgba(5,10,60,.6)" />
         </div>
         {['Inbox', 'Starred', 'Sent', 'Survey'].map((n, i) => (
-          <div key={n} style={{ position: 'absolute', left: 360, top: 480 + i * 74, ...sans, fontSize: 38, fontWeight: i === 0 ? 650 : 450, color: i === 0 ? '#fff' : 'rgba(255,255,255,.62)' }}>
-            {n} {i === 0 && <span style={{ ...mono, fontSize: 28, color: '#fff', marginLeft: 12, background: 'rgba(255,255,255,.2)', padding: '2px 10px', borderRadius: 14 }}>1</span>}
+          <div key={n} style={{ position: 'absolute', left: 360, top: 480 + i * 74, ...sans, fontSize: 38, fontWeight: i === 0 ? 600 : 450, color: i === 0 ? '#fff' : 'rgba(255,255,255,.62)' }}>
+            {n} {i === 0 && <span style={{ ...sans, fontWeight: 600, fontSize: 28, color: '#fff', marginLeft: 12, background: 'rgba(255,255,255,.2)', padding: '2px 10px', borderRadius: 14 }}>1</span>}
           </div>
         ))}
         {/* the thread */}
-        <div style={{ position: 'absolute', left: 790, top: 320, ...sans, fontSize: 88, fontWeight: 650, letterSpacing: '-0.03em', color: '#fff', whiteSpace: 'nowrap' }}>Re: north shoals, back to 2000?</div>
-        <div style={{ position: 'absolute', left: 794, top: 440, ...mono, fontSize: 30, color: 'rgba(255,255,255,.75)', whiteSpace: 'nowrap' }}>INES DUARTE → COASTAL-TEAM · 09:12 · 1 ATTACHMENT</div>
+        <div style={{ position: 'absolute', left: 790, top: 320, ...sans, fontSize: 88, fontWeight: 600, letterSpacing: '-0.015em', color: '#fff', whiteSpace: 'nowrap' }}>Re: north shoals, back to 2000?</div>
+        <div style={{ position: 'absolute', left: 794, top: 440, ...sans, fontSize: 34, color: 'rgba(255,255,255,.8)', whiteSpace: 'nowrap' }}>Ines Duarte to coastal team · 09:12 · 1 attachment</div>
         {MAIL_ROWS.map((r, i) => (
           <div key={r.who} style={{ position: 'absolute', left: 790, top: 1140 + i * 96, width: 2000, height: 84, display: 'flex', alignItems: 'center', gap: 28, paddingLeft: 24, background: r.me ? 'rgba(255,255,255,.16)' : 'transparent', borderTop: '1.5px solid rgba(255,255,255,.18)' }}>
             <div style={{ width: 16, height: 16, borderRadius: 8, background: r.me ? '#fff' : 'transparent' }} />
-            <div style={{ ...rowText, fontWeight: 650, width: 340 }}>{r.who}</div>
+            <div style={{ ...rowText, fontWeight: 600, width: 340 }}>{r.who}</div>
             <div style={{ ...rowText, color: r.me ? '#fff' : 'rgba(255,255,255,.78)' }}>{r.text}</div>
-            <div style={{ ...mono, fontSize: 28, color: 'rgba(255,255,255,.7)', marginLeft: 40 }}>{r.t}</div>
+            <div style={{ ...sans, fontSize: 30, color: 'rgba(255,255,255,.72)', marginLeft: 40 }}>{r.t}</div>
           </div>
         ))}
       </div>
@@ -546,7 +552,7 @@ const HostNotebook: React.FC = () => {
       <div style={{ position: 'absolute', left: 0, top: 0, width: 1920, height: 64, background: '#201F1D', display: 'flex', alignItems: 'center', gap: 16, paddingLeft: 40 }}>
         <Brand name="jupyter" size={36} />
         <div style={{ ...mono, fontSize: 25, color: '#CFCAC0' }}>andros_shoals.ipynb</div>
-        <div style={{ ...mono, fontSize: 22, color: '#8E887E', marginLeft: 40 }}>Python 3 · idle</div>
+        <div style={{ ...sans, fontSize: 26, color: '#8E887E', marginLeft: 40 }}>Python 3 · idle</div>
       </div>
       {/* the call, giant and cropped by the left edge, sliding left */}
       <div style={{ position: 'absolute', left: mix(d, -330, -540), top: 70, fontFamily: fonts.mono, fontSize: 184, lineHeight: 1.12, letterSpacing: '-0.02em', color: PAPER, whiteSpace: 'nowrap' }}>
@@ -618,8 +624,8 @@ const Relay: React.FC = () => {
             <div style={{ position: 'absolute', inset: 0, borderRadius: 16 * p, boxShadow: `inset 0 2px 0 rgba(255,255,255,${0.55 * p})`, background: `linear-gradient(180deg, rgba(255,255,255,${0.1 * p}), rgba(255,255,255,0) 30%)` }} />
           </div>
           {chipIn > 0 && (
-            <div style={{ position: 'absolute', left: -22, top: ART.h - 40, transform: `translateY(${mix(chipIn, 24, 0)}px)`, background: chipBg, ...mono, color: chipInk, fontSize: 36, padding: '12px 20px', whiteSpace: 'nowrap', boxShadow: `0 16px 30px -12px ${shadow}.6)` }}>
-              +18 % NEW LAND
+            <div style={{ position: 'absolute', left: -22, top: ART.h - 40, transform: `translateY(${mix(chipIn, 24, 0)}px)`, background: chipBg, ...tag, fontWeight: 600, letterSpacing: '-0.005em', color: chipInk, fontSize: 40, padding: '10px 22px', whiteSpace: 'nowrap', boxShadow: `0 16px 30px -12px ${shadow}.6)` }}>
+              +18 % new land
             </div>
           )}
         </div>
@@ -630,16 +636,18 @@ const Relay: React.FC = () => {
 
 // ---------------------------------------------------------------- 10. lockup: the picture was the inside of a letter
 const WORD_FONT = 300;
-// a point inside the stem of the "l" of "fieldnote"
-const LX = 731;
-const LY = 540;
+// a point where the crossbar of the "f" of "fieldnote" crosses its stem: the widest solid patch of the word at weight 700,
+// so at the opening scale (34x) the frame is entirely inside the letter
+const LX = 436;
+const LY = 511;
 const Lockup: React.FC = () => {
   const f = useCurrentFrame();
   const back = at(f, T.lock, 30, ease.out);
   const scale = logScale(34, 1, back) * (1 + 0.025 * creep(f, T.lock + 20, T.end - T.lock - 20));
   const drain = at(f, T.drain, 10, ease.inOut);
   const blur = mix(clamp(back * 4), 5, 0);
-  const word: React.CSSProperties = { ...heavy, fontSize: WORD_FONT, letterSpacing: '-0.04em', lineHeight: 0.95, fontVariantLigatures: 'none' };
+  // paddingRight: the negative tracking would leave the last letter's edge outside the picture's box
+  const word: React.CSSProperties = { ...heavy, fontSize: WORD_FONT, lineHeight: 0.95, fontVariantLigatures: 'none', paddingRight: '0.05em' };
   return (
     <AbsoluteFill style={{ background: PAPER }}>
       <div style={{ position: 'absolute', inset: 0, transformOrigin: `${LX}px ${LY}px`, transform: `scale(${scale})`, filter: blur > 0.2 ? `blur(${blur}px)` : undefined, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -650,7 +658,7 @@ const Lockup: React.FC = () => {
           </div>
         </div>
       </div>
-      <div style={{ position: 'absolute', top: 742, width: '100%', textAlign: 'center', ...mono, fontSize: 36, color: INK }}>
+      <div style={{ position: 'absolute', top: 742, width: '100%', textAlign: 'center', ...voice, fontSize: 44, color: INK }}>
         <Words text="ask the planet · fieldnote.earth" start={T.url} arrive="rise" gap={2} by="word" style={{ color: INK }} accent={['fieldnote.earth']} accentStyle={{ color: COBALT }} />
       </div>
     </AbsoluteFill>
