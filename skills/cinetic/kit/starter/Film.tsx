@@ -14,7 +14,7 @@ const Open: React.FC = () => {
   const push = 1 + 0.02 * creep(f, T.open, T.end);
   return (
     <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', transform: `scale(${push})` }}>
-      <div style={{ fontFamily: fonts.geist, fontWeight: 620, fontSize: 160, letterSpacing: '-0.045em', color: '#111' }}>
+      <div style={{ fontFamily: fonts.inter, fontWeight: 520, fontSize: 180, letterSpacing: '-0.025em', color: '#111' }}>
         <Words text="Replace me" start={4} arrive="rise" style={{ color: '#111' }} />
       </div>
     </AbsoluteFill>

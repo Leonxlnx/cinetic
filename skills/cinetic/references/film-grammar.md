@@ -331,7 +331,8 @@ Devices (Ferry, moves files between clouds; the claim: speed)
 ```
 
 Rules for the block:
-- **No device twice in a film, except the signature.** The signature is the film's one visual idea (step 3 of the skill),
+- **No device twice in a film, except the signature.** A move and its own return (a dive and the snap back out, a flood
+  and its gather) count as one. The signature is the film's one visual idea (step 3 of the skill),
   taken from its world's list in [worlds.md](worlds.md) or made from the product's object, and used 3-8 times: in the hook,
   on up to three seams, in the output or the lockup. Every other device (a seam, the opening, the spectacle, the lockup)
   appears once; the two text arrival styles are the exception, since they set every line.

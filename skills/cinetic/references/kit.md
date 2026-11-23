@@ -69,6 +69,8 @@ const style = { transform: `translateY(${mix(p, 80, 0) - q * 900}px) scale(${mix
 - `gap` (frames between units, compressing), `dur` (frames per unit), `times` (exact start frame per unit).
 - `born="#hex"` + `settle`: each unit is born in a colour and settles to the line colour (fresh words glow).
 - `accent={['word']}` + `accentStyle`: style chosen words (the accent colour; an italic serif word at most once a film).
+- `<Words>` lays out the whole line from the start (words not yet arrived keep their space), so a line that builds sits
+  off-centre until it is complete: for a centred line that grows word by word use `<Build>`, which re-centres.
 - `leaveAt`, `leave: 'rise' | 'fall' | 'blur' | 'scale'`, `leaveDur`: from `leaveAt` the words go and stay gone (rise and fall
   travel out behind a mask, blur and scale fade). Give `leaveAt` up front; without it the words stay.
 - `style` must carry the colour when you use `born`. `align`, `width`.
@@ -164,6 +166,9 @@ Fields: `surface ink muted line fill accent accentInk radius font mono shadow`.
   it leans into fast travel, idles with a 2 px drift at rest, presses dip it; `follow={{ from, to, at: (f) => ({ x, y }) }}` makes it ride a dragged
   object's own path. `cursorAt(frame, keys)` gives its position for
   things that follow it; `<CursorShadow keys size>` adds a landing shadow that converges as an oversized cursor lands.
+- **`<Phone w frame screen>`** and **`<Laptop w frame base screen>`**: flat, precise device frames whose screen is a slot for
+  any UI (`children` at the screen's size: phone `w x w * 2.167` inside a 2.8 % bezel, laptop `w x w * 0.625`). Pose them
+  with a transform or in a `<Camera>`; cut to one when a footage shot has no screen facing the lens.
 - **`<Relay anchor={{ x, y }} artefact={node} hosts={[{ f, node }]} lift>`**: integrations as a relay: the artefact pinned at
   one screen point, the hosts (each a full-frame composition you build: a full-bleed page, a tilted plane, a macro crop)
   changing behind it on their frames, a small settle at each cut (`pose` on a host tilts the artefact with a tilted host).
@@ -270,6 +275,6 @@ src/films/main/Film.tsx   the film (timeline T + sections)      src/films.ts    
 src/kit/                  the kit                                src/Sheet.tsx   the 36-frame storyboard composition
 src/sfx.ts                fetched sounds (generated)             public/         sfx/, music/, logos/, images (never commit audio)
 scripts/frames.mjs        sheet | still | render | final | audio | mux | strip | check
-scripts/sfx.mjs           roles | list | get | pick | shortlist | music | analyze | fit | credits
+scripts/sfx.mjs           roles | list | get | pick | shortlist | music | analyze | fit | credits   (music/analyze/fit decode audio: light, seconds)
 scripts/logos.mjs         search | get | list | check            scripts/new-film.mjs  start a project
 ```

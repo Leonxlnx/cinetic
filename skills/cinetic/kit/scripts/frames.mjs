@@ -116,7 +116,12 @@ function musicRunsOut(dur) {
 
 /** Measure a rendered film: coverage, pace, empty frames, the length of its ending (low-res analysis via ffmpeg). */
 function checkFilm(file, lockupS) {
-  const W = 192, H = 108, FPS = 4;
+  const FPS = 4;
+  // sample at the film's own aspect (a vertical film is measured vertical): the long side 192 px
+  const dims = spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', file], { encoding: 'utf8' }).stdout.trim().split(',').map(Number);
+  const [vw, vh] = dims.length === 2 && dims.every((v) => v > 0) ? dims : [1920, 1080];
+  const W = vw >= vh ? 192 : Math.round((192 * vw) / vh / 2) * 2;
+  const H = vw >= vh ? Math.round((192 * vh) / vw / 2) * 2 : 192;
   const probe = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file], { encoding: 'utf8' });
   const dur = parseFloat(probe.stdout);
   if (!Number.isFinite(dur)) throw new Error(`cannot read ${file}`);

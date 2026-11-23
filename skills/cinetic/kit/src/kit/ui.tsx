@@ -889,3 +889,60 @@ export const Relay: React.FC<{
     </AbsoluteFill>
   );
 };
+
+/**
+ * A phone, drawn flat and precise: a dark frame with a lit edge, the island, and the screen as a slot for any UI
+ * (`children` is laid out at the screen's size, w x w * 2.167). Pose it with a CSS transform or inside a `<Camera>`.
+ */
+export const Phone: React.FC<{ w?: number; frame?: string; screen?: string; children?: React.ReactNode; style?: React.CSSProperties }> = ({
+  w = 520,
+  frame = '#111214',
+  screen = '#000',
+  children,
+  style,
+}) => {
+  const b = Math.round(w * 0.028);
+  const sw = w - b * 2;
+  const sh = Math.round(sw * 2.167);
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: w,
+        height: sh + b * 2,
+        borderRadius: w * 0.15,
+        background: frame,
+        boxShadow: `inset 0 0 0 ${Math.max(1, w * 0.004)}px rgba(255,255,255,0.10), inset 0 ${w * 0.006}px 0 rgba(255,255,255,0.08), 0 ${w * 0.08}px ${w * 0.16}px -${w * 0.05}px rgba(0,0,0,0.45)`,
+        ...style,
+      }}
+    >
+      <div style={{ position: 'absolute', left: b, top: b, width: sw, height: sh, borderRadius: w * 0.125, overflow: 'hidden', background: screen }}>
+        {children}
+        <div style={{ position: 'absolute', left: '50%', top: sw * 0.03, width: sw * 0.3, height: sw * 0.085, transform: 'translateX(-50%)', borderRadius: 999, background: '#000' }} />
+      </div>
+    </div>
+  );
+};
+
+/** A laptop: the screen (w x w * 0.625, `children` at that size) in a thin dark bezel over a flat base. */
+export const Laptop: React.FC<{ w?: number; frame?: string; base?: string; screen?: string; children?: React.ReactNode; style?: React.CSSProperties }> = ({
+  w = 1280,
+  frame = '#141518',
+  base = '#C9CBD0',
+  screen = '#fff',
+  children,
+  style,
+}) => {
+  const b = Math.round(w * 0.018);
+  const sh = Math.round(w * 0.625);
+  return (
+    <div style={{ position: 'relative', width: w + b * 2, ...style }}>
+      <div style={{ position: 'relative', width: w + b * 2, height: sh + b * 2, borderRadius: `${w * 0.022}px ${w * 0.022}px 0 0`, background: frame, boxShadow: `inset 0 0 0 ${Math.max(1, w * 0.0015)}px rgba(255,255,255,0.12)` }}>
+        <div style={{ position: 'absolute', left: b, top: b, width: w, height: sh, overflow: 'hidden', background: screen, borderRadius: w * 0.004 }}>{children}</div>
+      </div>
+      <div style={{ position: 'relative', left: -w * 0.06, width: (w + b * 2) * 1.12, height: w * 0.022, borderRadius: `0 0 ${w * 0.02}px ${w * 0.02}px`, background: `linear-gradient(${base}, ${base} 55%, rgba(0,0,0,0.25))`, boxShadow: `0 ${w * 0.03}px ${w * 0.05}px -${w * 0.02}px rgba(0,0,0,0.35)` }}>
+        <div style={{ position: 'absolute', left: '50%', top: 0, width: w * 0.12, height: w * 0.008, transform: 'translateX(-50%)', borderRadius: `0 0 ${w * 0.008}px ${w * 0.008}px`, background: 'rgba(0,0,0,0.18)' }} />
+      </div>
+    </div>
+  );
+};
