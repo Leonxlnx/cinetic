@@ -119,7 +119,7 @@ skills/cinetic/
 
 - Sound effects: [Mixkit](https://mixkit.co/free-sound-effects/) (Mixkit Sound Effects Free License). Music shortlist: [Mixkit](https://mixkit.co/free-stock-music/) (Mixkit Stock Music Free License) and [Kevin MacLeod / incompetech.com](https://incompetech.com) (CC BY 4.0, credit required). No audio is stored in this repository; films fetch the files they use.
 - Marks: [Simple Icons](https://simpleicons.org) (CC0; the marks are trademarks of their owners). Interface icons: [Lucide](https://lucide.dev) (ISC).
-- Fonts: Inter, Geist, Geist Mono, Instrument Serif (SIL Open Font License), through Fontsource.
+- Fonts: Inter, Geist, Geist Mono, Newsreader, Caveat (SIL Open Font License), through Fontsource.
 
 ## Contributing
 
