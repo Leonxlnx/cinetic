@@ -1,11 +1,28 @@
-// "Forge": run any model, one command. 18.3 s at 30 fps. An invented product (deploy any AI model with one command).
-// World: an isometric city of bone blocks on an ink floor with a faint grid, mono labels printed on the faces, type set
-// on the floor plane, one yellow accent that means "live". Three grounds, each cut carried by an object: ink (the
-// world), paper (the hero block's top face is the terminal: the dive lands in it), sun (the live endpoint floods the
-// frame, and the pull-back reveals the sun was the block's lit face). Integrations are a relay: the endpoint chip lifts
-// off the log and stays put while the host changes around it on the beat (a notebook in macro on sun, the pull request's
-// checks on ink, the team chat as a tilted paper plane), every host full-bleed. The spectacle: 64 replicas rise and the
-// camera travels through the field. The lockup is the hero block splitting into the mark.
+// "Forge": run any model, one command. 16.1 s (484 f) at 30 fps. An invented product (deploy any AI model with one command).
+// World: an isometric city of bone blocks on a lit ink floor with a faint grid, labels printed on the faces, type set on
+// the floor plane, one sun-yellow accent that means "live". Geist is the one voice. Three grounds, each reached through
+// the block: ink (the world), paper (its top face is the terminal: the dive lands in it), sun (its lit front face, entered
+// by a second dive for the proof). The back half was rebuilt after critic 6 and the device audit: no flood, no relay
+// through hosts, one spectacle (a cascade) instead of a second wall.
+//
+// DEVICES (the claim: one command instead of thirty things, and the endpoint it gives carries any load and idles at zero)
+// - signature: the block (the model), 5 uses: it drops in (the hook), its top face is the terminal (the dive in and the
+//   snap back out), its lit face carries the load (the second dive: the proof), it splits into the mark (the lockup)
+// - opening: drop-in, the model's block falls into frame and lands with weight on the bed's first beat
+// - text arrivals: an append that re-centres (Build), each word born sun; glyph birth for the wordmark
+// - type treatment: type set on a surface: every statement printed on the floor plane, the load printed on the block's face
+// - seams: 3-4 the city sinks under the line | 4-5 dive into the top face (signature; ground cut 1, paper) | 6-7 the giant
+//   command drops into the log's first line | 7-8 snap back out of the face as the block rises and lights (the dive's
+//   return, ink) | 8-9 the load spills into the first replica | 9-10 dive into the lit face (signature, sun) | 10-11 tiles:
+//   the face's cells go dark one by one as the count rolls to zero (ground cut 2, sun to ink) | 11-12 the split
+// - spectacle: cascade, 31 replicas rising one after another in a spiral round the block, each set off by the one before
+//   (gaps 4, 3, 3, 3, 2, 2, 2, 2, then 1 f), the camera riding the front, "32 replicas." stepping on the floor, 2.5 s
+// - output-big: the load it carries, "12,480" requests a second at about 330 px on the block's lit face, then the roll to 0
+// - integrations: none (the film hinges on the command and the load, not on partners)
+// - lockup: glyph birth in light beside the mark: the block splits into the mark's three blocks top-down, one move, and
+//   "Forge" is born a letter every 3 f in sun, cooling to bone
+// - budget: no flood, no relay; one wall (the thirty chores: the problem is literally a quantity); one odometer (the load,
+//   up and back to zero); one spectacle
 // Beats, compositions and seams: BEATS.md in this folder.
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
@@ -24,11 +41,10 @@ import {
   creep,
   Cues,
   ease,
-  Flood,
   fonts,
   Grain,
   GridLines,
-  Icon,
+  Ground,
   landBlur,
   logScale,
   Marker,
@@ -42,7 +58,7 @@ import {
   springAt,
   springs,
   typingTimes,
-  Words,
+  type Cam,
   type CamKey,
 } from '../../kit';
 import { sfx } from '../../sfx';
@@ -55,19 +71,18 @@ const BONE = '#F2F0EA';
 const AMBER = '#D9A21E';
 const STONE = '#8F8B82'; // labels on ink
 const GRAPHITE = '#66625A'; // labels on paper and sun
+const OFF = '#19181B'; // a face switched off
 const BLOCK = { top: PAPER, front: '#D9D5CB', side: '#BDB8AC' };
 // code and data in mono, as written (never uppercase, never tracked out); labels in the UI face, sentence case
 const mono: React.CSSProperties = { fontFamily: fonts.mono, fontWeight: 500, letterSpacing: '0' };
 // one voice: Geist for statements, labels and the UI around them (a developer brand); statements at 520, never heavier
 const label: React.CSSProperties = { fontFamily: fonts.geist, fontWeight: 540, letterSpacing: '0' };
 const display: React.CSSProperties = { fontFamily: fonts.geist, fontWeight: 520, letterSpacing: '-0.025em' };
-/** UI headings and buttons inside the product (GitHub, Discord): semibold, near-zero tracking. */
-const uiHead: React.CSSProperties = { fontFamily: fonts.geist, fontWeight: 600, letterSpacing: '-0.01em' };
 
 // ---------------------------------------------------------------- the timeline, on the music's beat grid (122 BPM)
 const B = beats(122.2, 8);
 const T = {
-  land: B.at(0), // 8: the hero block lands, the bed enters
+  land: B.at(0), // 8: the hero block lands, the bed enters (the main hit)
   one: [14, B.at(1)],
   city: 30,
   thirty: [B.half(45), B.at(3), 56, B.half(60), B.at(4)],
@@ -79,19 +94,17 @@ const T = {
   enter: B.at(11), // 170
   outs: [177, 185, 193, 201],
   url: 211,
-  flood: 220, // the URL chip lifts off the log and the sun floods out of it; full sun on 229
-  // the relay: the chip stays put, the host changes around it on the beat, each on one of the world's grounds
-  hA: B.at(15), // 229: a notebook, macro, on sun
-  hB: B.at(16.5), // 251: the pull request's checks, full-ui, on ink
-  hC: B.at(18), // 273: the team chat, a tilted plane, on paper
-  up: B.at(19.5), // 295: the chat leaves, the world returns under it
-  face: 293,
-  block: B.at(22.5), // 339
-  push: 358,
-  wall: B.at(26.5), // 398: the replica field, 2.2 s with the camera travelling through it
-  zero: B.at(31), // 465
-  lock: B.at(33), // 494
-  end: 550,
+  // ---- the back half
+  out: B.at(14.5), // 222: snap back out of the face; the block rises
+  live: B.at(16), // 244: full height, its face lights: live; requests start to arrive
+  casc: B.at(18), // 273: the load spills into the first replica (the spectacle, 2.5 s)
+  dive2: B.at(23), // 347: from the widest frame, dive into the lit face
+  macro: B.at(24), // 362: "12,480" requests a second, giant
+  drain: B.at(24.5), // 369: the load drops: the count rolls to 0, the face's cells go dark
+  back: B.at(25.5) + 5, // 389: pull back; the replicas sink
+  zero: [B.at(26.5), B.at(27), B.at(27.5)], // 398: "Zero when idle."
+  lock: B.at(28.5), // 428: the block splits into the mark
+  end: 484,
 } as const;
 
 // ---------------------------------------------------------------- the floor type: one anchor, a lane kept clear of blocks
@@ -137,27 +150,36 @@ const CITY = (() => {
   }));
 })();
 
-// ---------------------------------------------------------------- the replicas: 63 more of the hero, a wall
-const REPLICAS = (() => {
-  const out: Array<{ x: number; y: number; dist: number; f: number; sinkAt: number; n: number }> = [];
-  for (let gx = -6; gx <= 6; gx++)
-    for (let gy = -6; gy <= 6; gy++) {
-      if (gx === 0 && gy === 0) continue;
-      const x = 960 + gx * 300;
-      const y = 540 + gy * 300;
-      if (inLane(x, y, 140, 300)) continue;
-      out.push({ x, y, dist: Math.hypot(gx, gy), f: 0, sinkAt: 0, n: 0 });
-    }
-  out.sort((a, b) => a.dist - b.dist);
-  const list = out.slice(0, 63);
-  const maxD = list[list.length - 1].dist;
-  return list.map((r, i) => ({
-    ...r,
-    n: i + 2,
-    f: T.wall - 6 + Math.round(Math.pow(r.dist / maxD, 0.8) * 18),
-    sinkAt: T.zero + Math.round((1 - r.dist / maxD) * 12 + rand(i + 3) * 3),
+// ---------------------------------------------------------------- the cascade: 31 replicas of the hero in a spiral round it
+// Each one rises when the one before it has landed: the gaps compress (4, 3, 3, 3, 2, 2, 2, 2, then 1 f), so the chain
+// outruns the eye. The spiral opens toward the camera (the floor lane, where the count is printed, stays clear).
+const REP = { w: 170, d: 170, h: 270 };
+const GAPS = [4, 3, 3, 3, 2, 2, 2, 2];
+const REPS = (() => {
+  const out: Array<{ x: number; y: number; th: number; r: number }> = [];
+  const r0 = 430;
+  const b = 300 / (2 * Math.PI); // the arms 300 px apart
+  const PHASE = -2.25; // start behind-left of the block (radians, 0 = +x, the floor's right)
+  let th = 0;
+  for (let guard = 0; out.length < 31 && guard < 600; guard++) {
+    const r = r0 + b * th;
+    const a = PHASE + th;
+    const x = 960 + r * Math.cos(a);
+    const y = 540 + r * Math.sin(a);
+    if (!inLane(x, y, REP.w * 0.62, REP.h)) out.push({ x, y, th, r });
+    th += 250 / r;
+  }
+  const last = out.length - 1;
+  return out.map((p, i) => ({
+    ...p,
+    f: T.casc + GAPS.slice(0, i).reduce((a, g) => a + g, 0) + Math.max(0, i - GAPS.length),
+    // they sink outside in as the load leaves
+    sinkAt: T.back - 2 + Math.round(((last - i) / last) * 12),
   }));
 })();
+const CHAIN_END = REPS[REPS.length - 1].f;
+/** How many replicas have landed at frame f (the hero counts as one). */
+const landed = (f: number) => 1 + REPS.filter((r) => f >= r.f + 7).length;
 
 // ---------------------------------------------------------------- the command: "forge deploy " typed, the model name lands in one burst
 const CMD = 'forge deploy llama-3.1-70b';
@@ -183,9 +205,9 @@ const typedAt = (f: number) => {
 const floorStyle: React.CSSProperties = { ...display, fontSize: 168, color: BONE, lineHeight: 1 };
 /** Size by word count: the five-word line sits smaller than the two- and three-word ones, so it lands whole in the frame. */
 const floorFive: React.CSSProperties = { ...floorStyle, fontSize: 142 };
-const FloorType: React.FC<{ children: React.ReactNode; out?: number }> = ({ children, out = 0 }) => (
+const FloorType: React.FC<{ children: React.ReactNode; out?: number; size?: number }> = ({ children, out = 0, size = 168 }) => (
   <At x={LANE.x} y={LANE.y} z={2} rz={LANE.rot}>
-    <div style={{ ...floorStyle, whiteSpace: 'nowrap', opacity: 1 - out, transform: `translateY(${-out * 120}px)` }}>{children}</div>
+    <div style={{ ...floorStyle, fontSize: size, whiteSpace: 'nowrap', opacity: 1 - out, transform: `translateY(${-out * 120}px)` }}>{children}</div>
   </At>
 );
 
@@ -291,10 +313,6 @@ const termCam = (f: number) => {
   const ty = mix(at(f, T.enter + 6, 50, ease.glide), 0, -40);
   return { s, tx, ty, blur: back > 0 && back < 0.6 ? 6 * (1 - back) : 0 };
 };
-const toScreen = (f: number, x: number, y: number) => {
-  const c = termCam(f);
-  return { x: 960 + c.s * (x - 960) + c.tx, y: 540 + c.s * (y - 540) + c.ty, s: c.s };
-};
 
 const Term: React.FC = () => {
   const f = useCurrentFrame();
@@ -308,16 +326,6 @@ const Term: React.FC = () => {
   );
 };
 
-// the URL chip's box on screen when the flood starts (the flood grows from it)
-const chipBox = (() => {
-  const x0 = CMD_X + 56 + 30 + (DETAIL_X - CMD_X - 86) + 64 + 22 - 0.2 * OUT_FS;
-  const x1 = x0 + OUTS[3].detail.length * OUT_FS * CW + 0.4 * OUT_FS;
-  const yc = OUT_Y + 3 * 122 + OUT_FS * 0.62;
-  const a = toScreen(T.flood, x0, yc - 40);
-  const b = toScreen(T.flood, x1, yc + 40);
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, w: b.x - a.x, h: b.y - a.y, r: 10 };
-})();
-
 // ---------------------------------------------------------------- the hero's faces
 const ModelFace: React.FC = () => (
   <>
@@ -326,26 +334,86 @@ const ModelFace: React.FC = () => (
     <div style={{ ...mono, fontSize: 18, color: '#7D796F', position: 'absolute', left: 12, bottom: 10 }}>140 GB</div>
   </>
 );
-/** The terminal, printed on the top face: exactly the first frame of the full-frame shot, scaled to the face. */
-const TermFace: React.FC = () => (
-  <div style={{ width: 1920, height: 1080, flexShrink: 0, position: 'relative', transform: `scale(${300 / 1920})` }}>
-    <TermLayout f={T.term} />
-  </div>
-);
-const ReqFace: React.FC<{ idle: number }> = ({ idle }) => {
-  const f = useCurrentFrame();
-  const v = f < T.zero ? 12480 : 0;
+/** The terminal, printed on the top face: the full-frame shot at frame `at` (with its camera), scaled to the face. */
+const TermFace: React.FC<{ at: number }> = ({ at: f }) => {
+  const c = f > T.term ? termCam(f) : { s: 1, tx: 0, ty: 0 };
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative', color: INK }}>
-      <div style={{ ...mono, fontSize: 20, position: 'absolute', left: 18, top: 16 }}>llama-3.1-70b</div>
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 120, textAlign: 'center' }}>
-        <div style={{ ...display, fontWeight: 620, letterSpacing: '-0.02em', fontSize: 76, lineHeight: 1 }}>
-          {f < T.zero ? <Odometer value={v} from={0} start={T.face + 6} dur={70} /> : <Odometer value={0} from={12480} start={T.zero} dur={26} curve={ease.inOut} />}
+    <div style={{ width: 1920, height: 1080, flexShrink: 0, position: 'relative', overflow: 'hidden', transform: `scale(${300 / 1920})` }}>
+      <AbsoluteFill style={{ transformOrigin: '960px 540px', transform: `translate(${c.tx}px, ${c.ty}px) scale(${c.s})` }}>
+        <TermLayout f={f} />
+      </AbsoluteFill>
+    </div>
+  );
+};
+
+// The front face carries the load: lit sun while it serves, its cells switching off one by one when the load leaves.
+const FACE = { w: 300, h: 420 };
+const TCOLS = 6;
+const TROWS = 8;
+const TILE = { w: FACE.w / TCOLS, h: FACE.h / TROWS };
+/** When each cell goes dark: a sweep from the top-left corner with a little scatter, over about 16 frames. */
+const tileAt = (c: number, r: number) => T.drain + 1 + Math.round(((c / (TCOLS - 1)) * 0.45 + (r / (TROWS - 1)) * 0.55) * 13 + rand(c * 7 + r * 13 + 2) * 4);
+/** The load on the face: climbs as requests arrive, climbs again as the replicas take it, rolls back to zero. */
+const LoadCount: React.FC<{ f: number }> = ({ f }) =>
+  f < T.casc ? (
+    <Odometer value={3120} from={0} start={T.live + 4} dur={28} />
+  ) : f < T.drain ? (
+    <Odometer value={12480} from={3120} start={T.casc + 2} dur={46} />
+  ) : (
+    <Odometer value={0} from={12480} start={T.drain} dur={16} curve={ease.inOut} />
+  );
+const FaceText: React.FC<{ f: number; dark: boolean }> = ({ f, dark }) => {
+  const ink = dark ? BONE : INK;
+  const sub = dark ? STONE : GRAPHITE;
+  // the small labels show only while the face is large on screen (never a label under 28 px in the wide frames)
+  const z = f >= T.out ? cam3(f).zoom : 2;
+  const small: React.CSSProperties = { opacity: clamp((z - 0.95) / 0.35) };
+  return (
+    <>
+      <div style={{ ...mono, ...small, fontSize: 19, color: sub, position: 'absolute', left: 16, top: 16, whiteSpace: 'nowrap' }}>api.forge.dev/v1/llama</div>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 148, textAlign: 'center', color: ink }}>
+        <div style={{ ...display, fontWeight: 620, letterSpacing: '-0.02em', fontSize: 80, lineHeight: 1 }}>
+          <LoadCount f={f} />
         </div>
-        <div style={{ ...label, fontSize: 24, marginTop: 10 }}>Requests per second</div>
+        <div style={{ ...label, ...small, fontWeight: 500, fontSize: 25, marginTop: 12, color: ink }}>requests a second</div>
       </div>
-      <div style={{ ...label, fontSize: 22, position: 'absolute', left: 18, bottom: 18, opacity: 1 - idle }}>p50 84 ms</div>
-      <div style={{ ...label, fontSize: 22, position: 'absolute', right: 18, bottom: 18 }}>{f < T.zero ? 'Live' : 'Idle'}</div>
+      <div style={{ ...label, ...small, fontSize: 21, position: 'absolute', left: 16, bottom: 16, color: sub }}>p50 84 ms</div>
+      <div style={{ ...label, ...small, fontSize: 21, position: 'absolute', right: 16, bottom: 16, color: sub }}>{dark ? 'idle' : 'live'}</div>
+    </>
+  );
+};
+const LoadFace: React.FC<{ lit: number }> = ({ lit }) => {
+  const f = useCurrentFrame();
+  // the dark cells: one clip path of every cell that has switched off (each grows from its centre over 3 frames)
+  let path = '';
+  if (f > T.drain) {
+    for (let r = 0; r < TROWS; r++)
+      for (let c = 0; c < TCOLS; c++) {
+        const p = at(f, tileAt(c, r), 3, ease.out);
+        if (p <= 0) continue;
+        const w = (TILE.w + 1) * p;
+        const h = (TILE.h + 1) * p;
+        const cx = (c + 0.5) * TILE.w;
+        const cy = (r + 0.5) * TILE.h;
+        path += `M${(cx - w / 2).toFixed(2)} ${(cy - h / 2).toFixed(2)}h${w.toFixed(2)}v${h.toFixed(2)}h${(-w).toFixed(2)}Z`;
+      }
+  }
+  // the cells read as a faint grid on the lit face, so the switch-off reads as cells going out
+  const cells = `linear-gradient(rgba(120,80,0,0.13) 1px, transparent 1px), linear-gradient(90deg, rgba(120,80,0,0.13) 1px, transparent 1px)`;
+  return (
+    <div style={{ position: 'absolute', inset: 0 }}>
+      {/* unlit before the block goes live: bone, then the sun switches on */}
+      <div style={{ position: 'absolute', inset: 0, background: BLOCK.front }} />
+      <div style={{ position: 'absolute', inset: 0, opacity: lit, background: `linear-gradient(180deg, #FFD862 0%, ${SUN} 34%, #F2B21F 100%)` }}>
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: cells, backgroundSize: `${TILE.w}px ${TILE.h}px` }} />
+      </div>
+      <FaceText f={f} dark={false} />
+      {path && (
+        <div style={{ position: 'absolute', inset: 0, clipPath: `path('${path}')` }}>
+          <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, #232226 0%, ${OFF} 100%)` }} />
+          <FaceText f={f} dark />
+        </div>
+      )}
     </div>
   );
 };
@@ -354,7 +422,7 @@ const ReqFace: React.FC<{ idle: number }> = ({ idle }) => {
 const STREAKS = Array.from({ length: 36 }, (_, i) => ({
   dir: i % 4,
   lane: (Math.round(rand(i + 2) * 4) - 2) * 60,
-  t0: T.face + 20 + Math.round(rand(i + 9) * 40) + (i % 6) * 5,
+  t0: T.live + 2 + Math.round(rand(i + 9) * 30) + (i % 6) * 4,
   speed: 52 + Math.round(rand(i + 4) * 3) * 12,
 }));
 const Streaks: React.FC = () => {
@@ -366,7 +434,7 @@ const Streaks: React.FC = () => {
         const k = Math.floor((f - s.t0) / period);
         if (f < s.t0) return null;
         const born = s.t0 + k * period;
-        if (born > T.zero) return null;
+        if (born > T.drain - 6) return null;
         const dist = 1700 - s.speed * onTwos(f - born);
         if (dist < 170) return null;
         const dx = s.dir === 0 ? -dist : s.dir === 1 ? dist : s.lane;
@@ -382,7 +450,7 @@ const Streaks: React.FC = () => {
   );
 };
 
-// ---------------------------------------------------------------- the iso world (acts 1 and 3)
+// ---------------------------------------------------------------- the camera
 const ISO = { rx: 56, rz: -42 };
 const ACT1: CamKey[] = [
   { f: 0, ...ISO, zoom: 2.4, x: 0, y: -40 },
@@ -395,55 +463,108 @@ const ACT1: CamKey[] = [
   { f: 130, rx: 0, rz: 0, zoom: 1.9, x: 0, y: 0, curve: ease.inOut },
   { f: T.term, rx: 0, rz: 0, zoom: 5.46, x: 0, y: 0, curve: (t: number) => t * t },
 ];
+const PERSP = 2600;
+/** The zoom at which the 300 px top face (at height 70) is as wide as the full-frame terminal at frame f: the snap-out's first frame. */
+const outZoom = (0.945 * 1920 * termCam(T.out).s) / (300 * (PERSP / (PERSP - 70))); // 0.945: measured on the sheet
+
+/** The cascade: the camera rides the chain's front, trailing it by 5-12 frames, pulling back as the spiral widens. */
+const frontIdx = (f: number) => {
+  if (f <= REPS[0].f) return 0;
+  for (let i = 0; i < REPS.length - 1; i++) if (f < REPS[i + 1].f) return i + (f - REPS[i].f) / (REPS[i + 1].f - REPS[i].f);
+  return REPS.length - 1;
+};
+const rideCam = (f: number): Required<Cam> => {
+  let s = 0;
+  for (let k = 0; k < 8; k++) s += frontIdx(f - 5 - k);
+  s /= 8;
+  const i = Math.min(REPS.length - 2, Math.floor(s));
+  const t = s - i;
+  const px = mix(t, REPS[i].x, REPS[i + 1].x);
+  const py = mix(t, REPS[i].y, REPS[i + 1].y);
+  const r = mix(t, REPS[i].r, REPS[i + 1].r);
+  const th = mix(t, REPS[i].th, REPS[i + 1].th);
+  const k = 0.5; // aim between the block and the front, so both stay in frame
+  return {
+    x: k * (px - 960),
+    y: k * (py - 540) + 60,
+    zoom: Math.min(1.75, 1.75 * Math.pow(470 / (r + 40), 0.8)),
+    rx: mix(clamp(s / (REPS.length - 1)), 60, 52),
+    ry: 0,
+    rz: -36 - 1.2 * th,
+  };
+};
+const RIDE_OUT = CHAIN_END + 10; // the front has stopped; the camera rises to the widest frame
+const WIDE = { rx: 38, rz: -36 - 1.2 * REPS[REPS.length - 1].th, zoom: 0.56, x: 30, y: 90 };
+const FACE_ZOOM = 4.35;
+const ACT3: CamKey[] = [
+  // the dive's return: out of the top face fast (front-loaded), swinging back to the iso view as the block rises
+  { f: T.out, rx: 0, rz: 0, zoom: outZoom, x: 0, y: 0 },
+  { f: T.out + 12, rx: 22, rz: -10, zoom: 2.5, x: 0, y: 30, curve: ease.out },
+  { f: T.live, rx: 60, rz: -36, zoom: 1.8, x: 0, y: 100, curve: ease.inOut },
+  // the load arrives: a slow orbit and push while the count climbs
+  { f: T.casc, ...rideCam(T.casc), curve: ease.inOut },
+  // (the ride: rideCam, between T.casc and RIDE_OUT)
+  { f: RIDE_OUT, ...rideCam(RIDE_OUT) },
+  { f: T.dive2, ...WIDE, curve: ease.out },
+  // the second dive: into the lit face, accelerating, landing square on the count
+  { f: T.macro, rx: 87, rz: -4, zoom: FACE_ZOOM, x: 0, y: 150, curves: { zoom: (t: number) => t * (0.35 + 0.65 * t), rot: ease.inOut, pan: ease.inOut } },
+  { f: T.back, rx: 87, rz: -3, zoom: FACE_ZOOM * 1.06, x: 0, y: 150, curve: ease.glide },
+  // pull back as the replicas sink; the floor line is read; then top-down for the split
+  { f: T.back + 22, rx: 63, rz: -28, zoom: 1.52, x: 95, y: 300, curve: ease.inOut },
+  { f: T.lock - 2, rx: 61, rz: -31, zoom: 1.44, x: 95, y: 285, curve: ease.glide },
+  { f: T.lock + 18, rx: 0, rz: 0, zoom: 1.1, x: 266, y: 0, curve: ease.out },
+  { f: T.end, rx: 0, rz: 0, zoom: 1.14, x: 259, y: 0, curve: ease.glide },
+];
+const cam3 = (f: number): Required<Cam> => {
+  if (f > T.casc && f < RIDE_OUT) return rideCam(f);
+  const c = camAt(f, ACT3);
+  return { ...c, ry: 0 };
+};
+const smearOf = (f: number, max = 7) => {
+  const a = cam3(f);
+  const b = cam3(f - 1);
+  const v = Math.hypot(a.x - b.x, a.y - b.y) + Math.abs(Math.log(a.zoom / b.zoom)) * 900 + (Math.abs(a.rx - b.rx) + Math.abs(a.rz - b.rz)) * 8;
+  return Math.min(max, Math.max(0, v - 6) * 0.05);
+};
+
 // the replicas are lit from above: a bright top edge, faces darkening toward the floor
 const REP_TOP = 'linear-gradient(160deg, #FFFFFF 0%, #F4F1E8 100%)';
 const REP_FRONT = `linear-gradient(180deg, #FFD862 0%, ${SUN} 38%, #DDA11C 100%)`;
 const REP_SIDE = 'linear-gradient(180deg, #E8AE27 0%, #A97810 100%)';
-const ACT3: CamKey[] = [
-  { f: T.face, rx: 86, rz: -6, zoom: 7.2, x: 0, y: 150 },
-  { f: T.block, rx: 62, rz: -32, zoom: 1.75, x: 0, y: 90, curve: ease.out },
-  { f: T.push - 6, rx: 64, rz: -21, zoom: 1.95, x: 0, y: 100, curve: ease.glide },
-  { f: T.wall - 4, rx: 76, rz: -14, zoom: 2.5, x: 0, y: 150, curve: ease.inOut },
-  // the spectacle: a fast pull-back that stays low, inside the field as it rises; then the camera travels through the
-  // towers on an orbit, and rises at the end to see all 64 at once
-  { f: T.wall + 12, rx: 72, rz: -24, zoom: 1.25, x: -60, y: 260, curve: ease.out },
-  { f: T.wall + 42, rx: 70, rz: -62, zoom: 1.35, x: -420, y: -60, curve: ease.inOut },
-  { f: T.zero - 2, rx: 56, rz: -47, zoom: 0.64, x: 40, y: 200, curve: ease.inOut },
-  { f: T.zero + 10, rx: 56, rz: -47, zoom: 0.66, x: 40, y: 200, curve: ease.glide },
-  { f: T.lock - 2, rx: 54, rz: -40, zoom: 1.0, x: 20, y: 120, curve: ease.inOut },
-  { f: T.lock + 18, rx: 0, rz: 0, zoom: 1.1, x: 295, y: 0, curve: ease.out },
-  { f: T.end, rx: 0, rz: 0, zoom: 1.14, x: 285, y: 0, curve: ease.glide },
-];
 
 const World: React.FC = () => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const act3 = f >= T.face;
+  const act3 = f >= T.out;
 
   // act 1: the hero falls (already in the air on frame 0) and lands on the beat
   const fall = clamp((f + 10) / (T.land + 10));
   const heroZ = act3 ? 0 : 190 * (1 - fall * fall);
+  // act 3: the block rises out of the floor as the camera snaps out of its face; on the beat its face lights
+  const rise = act3 ? at(f, T.out + 3, 17, ease.out) : 0;
+  const heroH = act3 ? mix(rise, 70, 420) : 70;
+  const stageZ = act3 ? -(mix(rise, 70, 420) - 70) * 0.6 : 0;
+  const lit = act3 ? at(f, T.live, 3, ease.out) : 0;
+  const idle = at(f, T.drain + 8, 12, ease.inOut);
 
   // the lockup: the hero splits into the three blocks of the mark
   const split = at(f, T.lock, 16, ease.out);
-  const idle = at(f, T.zero + 4, 14, ease.inOut) * (1 - at(f, T.lock, 8, ease.out));
-  const heroFront = idle > 0 ? (idle > 0.5 ? BLOCK.front : SUN) : SUN;
-  const heroH = act3 ? 420 : 70;
-
   const pieces = [
     { x: -112, y: 0, w: 105, d: 270, h: 150, front: SUN, side: AMBER },
     { x: 62, y: -90, w: 215, d: 90, h: 110, front: BLOCK.front, side: BLOCK.side },
     { x: 32, y: 26, w: 155, d: 76, h: 110, front: BLOCK.front, side: BLOCK.side },
   ];
 
-  const camShake = f < 30 ? shake(f, T.land, 10, 9) : 'translate(0px, 0px)';
-  const smear = act3 && f > T.wall - 6 && f < T.lock ? camSmear(f, ACT3, 0.5, 7) : 0;
+  const camShake = f < 30 ? shake(f, T.land, 10, 9) : act3 && f < T.live + 12 ? shake(f, T.live, 8, 5) : 'translate(0px, 0px)';
+  // motion blur from the camera's speed: full on the seams (the snap-out, the dive, the pull-back), light during the ride
+  const smear = !act3 ? (f > 116 ? camSmear(f, ACT1, 0.5, 7) : 0) : f < T.lock ? smearOf(f, f > T.casc && f < RIDE_OUT ? 3 : 7) : 0;
+  const count = landed(f);
 
   return (
     <AbsoluteFill style={{ transform: camShake, filter: smear > 0.3 ? `blur(${smear.toFixed(2)}px)` : undefined }}>
-      <Camera keys={act3 ? ACT3 : ACT1} perspective={2600}>
-        <AbsoluteFill style={{ transformStyle: 'preserve-3d', transform: act3 ? 'translateZ(-210px)' : undefined }}>
-          <GridLines size={80} color="rgba(242,240,234,0.075)" start={act3 ? T.face : -14} reveal={act3 ? 1 : 30} />
+      <Camera keys={act3 ? undefined : ACT1} cam={act3 ? cam3(f) : undefined} perspective={PERSP}>
+        <AbsoluteFill style={{ transformStyle: 'preserve-3d', transform: act3 ? `translateZ(${stageZ}px)` : undefined }}>
+          <GridLines size={80} color="rgba(242,240,234,0.075)" start={-14} reveal={30} />
 
           {/* act 1: floor type */}
           {!act3 && f < T.sink && f < T.thirty[0] && (
@@ -476,37 +597,46 @@ const World: React.FC = () => {
               );
             })}
 
-          {/* act 3: requests, replicas, floor type */}
-          {act3 && f < T.lock && <Streaks />}
+          {/* act 3: the lit face's glow on the floor, the requests, the replicas, the floor type */}
+          {act3 && f < T.lock && (
+            <At x={960} y={540 + 150 + 170} z={0.5}>
+              <div style={{ width: 760, height: 360, borderRadius: '50%', background: 'radial-gradient(ellipse at 50% 30%, rgba(255,197,49,0.30) 0%, rgba(255,197,49,0.08) 45%, transparent 70%)', opacity: lit * (1 - idle) }} />
+            </At>
+          )}
+          {act3 && f >= T.live && f < T.back && <Streaks />}
           {act3 &&
-            REPLICAS.map((r, i) => {
+            REPS.map((r, i) => {
               if (f < r.f || f > r.sinkAt + 12) return null;
-              const up = springAt(f, fps, r.f, springs.card);
+              // each rises on ease.in into its hit (7 f), lands with a 2-frame settle, and sinks outside in at the end
+              const p = at(f, r.f, 7, ease.in);
+              const settle = f >= r.f + 7 ? 0.05 * Math.exp(-(f - r.f - 7) / 1.6) * Math.cos((f - r.f - 7) * 1.4) : 0;
               const sink = accel(f, r.sinkAt, 12, 1.5);
-              const h = Math.max(1, 300 * mix(up, 0, 1) * (1 - sink));
+              if (sink > 0.94) return null;
+              const h = Math.max(1, REP.h * (p + settle) * (1 - sink));
+              // the one at the front is full strength; the landed ones behind it settle 15 % darker
+              const behind = clamp((f - r.f - 10) / 10) * 0.15;
+              const veil = behind > 0.01 ? <div style={{ position: 'absolute', inset: 0, background: `rgba(14,14,16,${behind.toFixed(3)})` }} /> : undefined;
               return (
                 <At key={i} x={r.x} y={r.y}>
-                  <Box w={200} d={200} h={h} color={BONE} top={REP_TOP} front={REP_FRONT} side={REP_SIDE} edge="rgba(255,248,225,0.32)" shadow={0.55} topContent={<Label text={`Replica ${String(r.n).padStart(2, '0')}`} size={20} />} />
+                  <Box w={REP.w} d={REP.d} h={h} color={BONE} top={REP_TOP} front={REP_FRONT} side={REP_SIDE} edge="rgba(255,248,225,0.32)" shadow={0.55} frontContent={veil} sideContent={veil} />
                 </At>
               );
             })}
-          {act3 && f >= T.wall && f < T.zero && (
-            <FloorType>
+          {act3 && f >= REPS[0].f + 4 && f < T.dive2 + 8 && (
+            <FloorType size={224}>
               <span style={{ display: 'inline-flex', alignItems: 'baseline' }}>
-                <Odometer value={64} from={1} start={T.wall} dur={24} style={{ color: SUN }} />
-                <span style={{ marginLeft: 36 }}>
-                  <Words text="replicas." times={[T.wall + 6]} arrive="cut" style={{ color: BONE }} />
-                </span>
+                <span style={{ color: SUN, display: 'inline-block', minWidth: '1.2em', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{count}</span>
+                <span style={{ marginLeft: 36 }}>replicas.</span>
               </span>
             </FloorType>
           )}
-          {act3 && f >= T.zero && (
-            <FloorType out={at(f, T.lock - 6, 8, ease.in)}>
-              <Build words={['Zero', 'when', 'idle.']} times={[T.zero, B.at(31.5), B.at(32)]} born={SUN} settle={14} style={floorStyle} />
+          {act3 && f >= T.zero[0] && (
+            <FloorType out={at(f, T.lock - 4, 8, ease.in)} size={140}>
+              <Build words={['Zero', 'when', 'idle.']} times={[...T.zero]} born={SUN} settle={14} style={{ ...floorStyle, fontSize: 140 }} />
             </FloorType>
           )}
 
-          {/* the hero block: the model; its top face becomes the terminal, its lit front face carries the load */}
+          {/* the hero block: the model; its top face is the terminal, its lit front face carries the load */}
           {(!act3 || f < T.lock) && (
             <At x={960} y={540} z={heroZ}>
               <Box
@@ -515,10 +645,18 @@ const World: React.FC = () => {
                 h={heroH}
                 color={BONE}
                 top={PAPER}
-                front={act3 ? heroFront : BLOCK.front}
-                side={act3 ? (idle > 0.5 ? BLOCK.side : AMBER) : BLOCK.side}
-                topContent={act3 ? <div style={{ ...mono, fontSize: 22, color: '#7D796F', position: 'absolute', left: 12, top: 10 }}>llama-3.1-70b</div> : f >= T.sink + 4 ? <TermFace /> : <ModelFace />}
-                frontContent={act3 ? <ReqFace idle={idle} /> : undefined}
+                front={act3 ? (idle > 0.5 ? OFF : SUN) : BLOCK.front}
+                side={act3 ? (idle > 0.5 || lit < 0.5 ? BLOCK.side : AMBER) : BLOCK.side}
+                topContent={
+                  act3 ? (
+                    f < T.live - 6 ? <TermFace at={T.out} /> : <div style={{ ...mono, fontSize: 22, color: '#7D796F', position: 'absolute', left: 12, top: 10 }}>llama-3.1-70b</div>
+                  ) : f >= T.sink + 4 ? (
+                    <TermFace at={T.term} />
+                  ) : (
+                    <ModelFace />
+                  )
+                }
+                frontContent={act3 ? <LoadFace lit={lit} /> : undefined}
               />
             </At>
           )}
@@ -535,273 +673,35 @@ const World: React.FC = () => {
   );
 };
 
-// ---------------------------------------------------------------- the relay: the endpoint stays, the host changes around it
-// The chip (the URL the log printed) lifts off the terminal as the sun floods out of it, flies up to its spot and stays
-// there for three hosts. Every host is laid out around that spot and moves by scale and tilt pivoted on it, so the chip
-// never jumps at a cut. Each host takes one of the world's grounds and bleeds off the frame.
-const CHIP = 'api.forge.dev/v1/llama';
-const CHIP_FS = 60;
-const CHIP_W = CHIP.length * CHIP_FS * CW + CHIP_FS * 0.7;
-const CHIP_H = CHIP_FS * 1.5;
-const AX = 1340; // the chip's centre, the same on every host
-const AY = 560;
-const L_EDGE = AX - CHIP_W / 2 - 22; // text left of the chip ends here
-const R_EDGE = AX + CHIP_W / 2 + 22; // text right of the chip starts here
-const A_MACRO = 1.35; // the notebook's opening zoom on the chip
-const pivot = (s: number, pre = ''): React.CSSProperties => ({ transformOrigin: `${AX}px ${AY}px`, transform: `${pre} scale(${s})` });
-
-/** The artefact: a sun slab with a lit top, an amber underside and a shadow that grows with `lift`. */
-const Chip: React.FC<{ lift?: number; rim?: number; glow?: number; x?: number; y?: number; s?: number }> = ({ lift = 0, rim = 1, glow = 0, x = AX, y = AY, s = 1 }) => (
-  <div
-    style={{
-      position: 'absolute',
-      left: x - CHIP_W / 2,
-      top: y - CHIP_H / 2,
-      width: CHIP_W,
-      height: CHIP_H,
-      borderRadius: 12,
-      background: `linear-gradient(180deg, #FFDA6E 0%, ${SUN} 42%, #F4B41E 100%)`,
-      boxShadow: [
-        'inset 0 2px 0 rgba(255,255,255,0.7)',
-        `inset 0 -4px 0 ${AMBER}`,
-        `0 0 0 ${(3 * rim).toFixed(2)}px ${INK}`,
-        `0 ${8 + lift * 34}px ${16 + lift * 46}px rgba(46,28,0,${(0.3 + 0.16 * lift).toFixed(3)})`,
-        `0 0 ${60 + 40 * glow}px rgba(255,197,49,${(0.5 * glow).toFixed(3)})`,
-      ].join(', '),
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: fonts.mono,
-      fontWeight: 500,
-      fontSize: CHIP_FS,
-      color: INK,
-      whiteSpace: 'pre',
-      transform: `translateY(${-lift * 14}px) scale(${s})`,
-    }}
-  >
-    {CHIP}
-  </div>
-);
-
-/** The chip lands in each host: lifted on the cut, settled 8 frames later. */
-const landLift = (f: number, start: number, from = 0.7) => from * (1 - at(f, start, 9, ease.out));
-/** Each host arrives with a small settle, so the cut lands like a push. */
-const settle = (f: number, start: number, amt = 0.05) => 1 + amt * (1 - at(f, start, 8, ease.out));
-
-const codeStyle: React.CSSProperties = { fontFamily: fonts.mono, fontWeight: 500, fontSize: CHIP_FS, color: INK, whiteSpace: 'pre', position: 'absolute', lineHeight: 1 };
-const gutter: React.CSSProperties = { fontFamily: fonts.mono, fontSize: 30, color: '#8A660C', position: 'absolute', left: 64, whiteSpace: 'pre' };
-
-/** Host A, macro on sun: the notebook's active cell, code at the chip's own size, cropped by the frame. */
-const HostNotebook: React.FC = () => {
-  const f = useCurrentFrame();
-  const t = f - T.hA;
-  // the chip lands in macro (1.35x) and the camera pulls back off it to show the notebook; the page behind
-  // travels further than the chip's cell, so the two planes separate
-  const q = ease.out(clamp(t / 20));
-  const front = mix(q, A_MACRO, 1) * (1 + 0.02 * clamp((t - 20) / 4));
-  const back = mix(q, A_MACRO * 1.2, 1) * (1 + 0.012 * clamp((t - 20) / 4));
-  const out1 = at(f, T.hA + 5, 6, ease.out);
-  const out2 = at(f, T.hA + 11, 6, ease.out);
-  const y = (base: number) => base - CHIP_FS / 2;
-  return (
-    <AbsoluteFill style={{ background: SUN, overflow: 'hidden' }}>
-      {/* back plane: the notebook around the cell */}
-      <AbsoluteFill style={pivot(back)}>
-        <div style={{ position: 'absolute', left: 64, top: 70, display: 'flex', alignItems: 'center', gap: 22 }}>
-          <Brand name="jupyter" size={58} />
-          <span style={{ ...mono, fontSize: 34, color: INK }}>serve.ipynb</span>
-          <span style={{ ...label, fontWeight: 500, fontSize: 30, color: '#8A660C', marginLeft: 28 }}>Python 3 · forge 1.4.2</span>
-        </div>
-        <div style={{ position: 'absolute', left: -40, right: -40, top: 150, height: 2, background: 'rgba(14,14,16,0.16)' }} />
-        <div style={{ ...gutter, top: y(330) + 14 }}>[1]:</div>
-        <div style={{ ...codeStyle, left: 190, top: y(330) }}>import forge</div>
-        <div style={{ ...gutter, top: y(790) + 14, opacity: out1 > 0 ? 1 : 0 }}>[3]:</div>
-        <div style={{ ...codeStyle, left: 190, top: y(790), opacity: out1 > 0 ? 1 : 0, transform: `translateY(${mix(out1, 30, 0)}px)` }}>
-          llm.chat(<span style={{ color: '#7A5A08' }}>"Summarise PR #482"</span>)
-        </div>
-        <div style={{ position: 'absolute', left: 190, right: 120, top: 900, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', opacity: out2 > 0 ? 1 : 0, transform: `translateY(${mix(out2, 30, 0)}px)` }}>
-          <span style={{ ...display, fontWeight: 500, letterSpacing: '-0.015em', fontSize: 58, color: INK }}>→ “Adds retries to the payment webhook.”</span>
-          <span style={{ fontFamily: fonts.mono, fontSize: 44, color: '#7A5A08' }}>84 ms</span>
-        </div>
-      </AbsoluteFill>
-      {/* front plane: the active cell, the chip's line */}
-      <AbsoluteFill style={pivot(front)}>
-        <div style={{ position: 'absolute', left: -60, right: -60, top: AY - 115, height: 230, background: 'rgba(255,248,222,0.42)', boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.6), 0 18px 40px -20px rgba(120,80,0,0.45)' }} />
-        <div style={{ position: 'absolute', left: 0, width: 12, top: AY - 115, height: 230, background: INK }} />
-        <div style={{ ...gutter, top: AY - 16 }}>[2]:</div>
-        <div style={{ ...codeStyle, right: 1920 - L_EDGE, top: AY - CHIP_FS / 2 }}>llm = forge.connect(</div>
-        <div style={{ ...codeStyle, left: R_EDGE, top: AY - CHIP_FS / 2 }}>)</div>
-        <Chip lift={landLift(f, T.hA, 1)} />
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
-/** Host B, full-ui on ink: the pull request's checks, the forge row lit, the finished rows sliding up behind it. */
-const CHECKS = [
-  { text: 'typecheck', meta: '31 s' },
-  { text: 'unit tests · 212 passed', meta: '1m 04s' },
-  { text: 'e2e · checkout flow', meta: '2m 31s' },
-];
-const ROW = 118;
-const HostChecks: React.FC = () => {
-  const f = useCurrentFrame();
-  const t = f - T.hB;
-  const s = settle(f, T.hB, 0.05) * (1 + 0.04 * ease.glide(clamp(t / 24)));
-  // the finished rows step up on twos as the forge row lands: the list is a moving surface
-  const scroll = mix(ease.out(clamp(onTwos(t) / 16)), 0, -64);
-  const rowText: React.CSSProperties = { fontFamily: fonts.geist, fontSize: 46, color: BONE, letterSpacing: '-0.01em' };
-  return (
-    <AbsoluteFill style={{ background: INK, overflow: 'hidden' }}>
-      <AbsoluteFill style={pivot(s)}>
-        <GridLines size={80} color="rgba(242,240,234,0.05)" start={-30} reveal={1} />
-        {/* back plane: header and the finished checks */}
-        <AbsoluteFill style={{ transform: `translateY(${scroll}px)` }}>
-          <div style={{ position: 'absolute', left: 110, top: 70, display: 'flex', alignItems: 'center', gap: 26 }}>
-            <Brand name="github" size={64} color={BONE} />
-            <span style={{ ...uiHead, fontSize: 60, color: BONE }}>All checks have passed</span>
-            <span style={{ ...mono, fontSize: 28, color: STONE, marginLeft: 20 }}>acme/support-bot · PR #482</span>
-          </div>
-          {CHECKS.map((c, i) => {
-            const yy = AY - (CHECKS.length - i) * ROW;
-            return (
-              <React.Fragment key={i}>
-                <div style={{ position: 'absolute', left: -40, right: -40, top: yy + ROW / 2, height: 1.5, background: 'rgba(242,240,234,0.12)' }} />
-                <div style={{ position: 'absolute', left: 110, top: yy - 30, display: 'flex', alignItems: 'center', gap: 30 }}>
-                  <Icon name="CircleCheck" size={58} color={STONE} stroke={2.2} />
-                  <span style={{ ...rowText, color: '#CFCBC1' }}>{c.text}</span>
-                </div>
-                <div style={{ ...mono, position: 'absolute', right: 120, top: yy - 18, fontSize: 32, color: STONE }}>{c.meta}</div>
-              </React.Fragment>
-            );
-          })}
-        </AbsoluteFill>
-        {/* front plane: the forge row, lit, full-bleed */}
-        <div style={{ position: 'absolute', left: -40, right: -40, top: AY - ROW / 2, height: ROW, background: 'linear-gradient(90deg, rgba(255,197,49,0.16), rgba(255,197,49,0.04))', boxShadow: `inset 0 1.5px 0 rgba(255,197,49,0.5), inset 0 -1.5px 0 rgba(255,197,49,0.5)` }} />
-        <div style={{ position: 'absolute', left: 0, width: 12, top: AY - ROW / 2, height: ROW, background: SUN }} />
-        <div style={{ position: 'absolute', left: 110, top: AY - 31, display: 'flex', alignItems: 'center', gap: 30 }}>
-          <Spinner start={T.hB - 4} doneAt={T.hB + 6} size={60} color={STONE} done={SUN} stroke={4} />
-          <span style={{ ...rowText, fontWeight: 600 }}>forge / preview</span>
-        </div>
-        <div style={{ ...label, fontWeight: 460, position: 'absolute', left: 110, top: AY + ROW / 2 + 34, fontSize: 34, color: STONE }}>llama-3.1-70b · 8 × H100 · deployed in 41 s</div>
-        <div style={{ position: 'absolute', left: 110, top: AY + ROW / 2 + 130, padding: '22px 40px', borderRadius: 14, background: SUN, color: INK, ...uiHead, fontSize: 44, boxShadow: `inset 0 2px 0 rgba(255,255,255,0.6), inset 0 -4px 0 ${AMBER}` }}>Merge pull request</div>
-        {/* the deployment record under the merge box, bleeding off the bottom */}
-        <div style={{ position: 'absolute', left: -40, right: -40, top: 905, height: 1.5, background: 'rgba(242,240,234,0.12)' }} />
-        <div style={{ position: 'absolute', left: 110, top: 950, display: 'flex', alignItems: 'center', gap: 26, whiteSpace: 'nowrap' }}>
-          <Brand name="github" size={44} color={STONE} />
-          <span style={{ ...rowText, fontSize: 40, color: '#CFCBC1' }}>forge-bot deployed to <b style={{ color: BONE }}>preview</b></span>
-          <span style={{ ...label, fontWeight: 600, fontSize: 28, color: INK, background: SUN, borderRadius: 8, padding: '5px 14px' }}>Active</span>
-          <span style={{ ...mono, fontSize: 28, color: STONE }}>10:42 · 8 × H100 · us-east-1</span>
-        </div>
-        <Chip lift={landLift(f, T.hB, 0.6)} rim={0} glow={1 - 0.6 * at(f, T.hB, 14, ease.out)} />
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
-/** Host C, a tilted paper plane: the team channel, the forge app's message holding the chip, "ship it" landing under it. */
-const HostChat: React.FC = () => {
-  const f = useCurrentFrame();
-  const t = f - T.hC;
-  const p = ease.glide(clamp(t / 30));
-  const rx = mix(p, 20, 9);
-  const rz = mix(p, -4, -2);
-  const s = settle(f, T.hC, 0.03) * mix(p, 1.08, 1.16);
-  const ship = at(f, T.hC + 12, 7, ease.out);
-  const lift = (n: number) => `translateY(${-ship * 22 * n}px)`;
-  const nameStyle: React.CSSProperties = { fontFamily: fonts.geist, fontWeight: 600, fontSize: 42, color: INK };
-  const meta: React.CSSProperties = { fontFamily: fonts.geist, fontSize: 30, color: GRAPHITE, marginLeft: 18 };
-  const body: React.CSSProperties = { fontFamily: fonts.geist, fontSize: 52, color: INK, letterSpacing: '-0.01em', whiteSpace: 'nowrap' };
-  const Av: React.FC<{ y: number; bg: string; ch: string; fg?: string }> = ({ y, bg, ch, fg = PAPER }) => (
-    <div style={{ position: 'absolute', left: 90, top: y, width: 96, height: 96, borderRadius: 48, background: bg, color: fg, display: 'flex', alignItems: 'center', justifyContent: 'center', ...uiHead, fontSize: 40 }}>{ch}</div>
-  );
-  return (
-    <AbsoluteFill style={{ background: SUN, overflow: 'hidden', perspective: 1900, perspectiveOrigin: `${AX}px ${AY}px` }}>
-      <AbsoluteFill style={{ transformStyle: 'preserve-3d', ...pivot(s, `rotateX(${rx}deg) rotateZ(${rz}deg)`) }}>
-        {/* the plane, much larger than the frame so its edges never show */}
-        <div style={{ position: 'absolute', left: -1400, top: -1800, width: 4800, height: 4400, background: PAPER, boxShadow: 'inset 0 0 0 2px rgba(14,14,16,0.06)' }} />
-        {/* channel bar */}
-        <div style={{ position: 'absolute', left: -900, width: 3800, top: 40, height: 130, background: '#F1EEE5', borderBottom: '2px solid rgba(14,14,16,0.08)' }} />
-        <div style={{ position: 'absolute', left: 90, top: 70, display: 'flex', alignItems: 'center', gap: 24 }}>
-          <Brand name="discord" size={66} />
-          <span style={{ ...uiHead, fontSize: 54, color: INK }}># ml-infra</span>
-          <span style={{ fontFamily: fonts.geist, fontSize: 32, color: GRAPHITE, marginLeft: 14 }}>model serving, deploys</span>
-        </div>
-        {/* the earlier message */}
-        <div style={{ transform: lift(1) }}>
-          <Av y={250} bg="#7A6A58" ch="M" />
-          <div style={{ position: 'absolute', left: 220, top: 250, display: 'flex', alignItems: 'baseline' }}>
-            <span style={nameStyle}>Maya Chen</span>
-            <span style={meta}>10:41</span>
-          </div>
-          <div style={{ ...body, position: 'absolute', left: 220, top: 304 }}>is the 70B up yet?</div>
-        </div>
-        {/* the forge app's message: the chip is its link */}
-        <div style={{ transform: lift(1), transformStyle: 'preserve-3d' }}>
-          <div style={{ position: 'absolute', left: -900, width: 3800, top: AY - 120, height: 200, background: 'rgba(255,197,49,0.13)', borderLeft: `0 solid ${SUN}` }} />
-          <Av y={AY - 98} bg={INK} ch="" />
-          <div style={{ position: 'absolute', left: 117, top: AY - 71, width: 42, height: 42, borderRadius: 6, background: SUN, boxShadow: `inset 0 -5px 0 ${AMBER}` }} />
-          <div style={{ position: 'absolute', left: 220, top: AY - 100, display: 'flex', alignItems: 'baseline' }}>
-            <span style={nameStyle}>forge</span>
-            <span style={{ ...label, fontWeight: 600, fontSize: 24, color: PAPER, background: INK, borderRadius: 6, padding: '2px 10px', marginLeft: 14, position: 'relative', top: -6 }}>App</span>
-            <span style={meta}>10:42</span>
-          </div>
-          <div style={{ ...body, position: 'absolute', right: 1920 - L_EDGE, top: AY - 30 }}>llama-3.1-70b is live at</div>
-          <div style={{ transform: `translateZ(${8 + 30 * landLift(f, T.hC, 0.7)}px)` }}>
-            <Chip lift={landLift(f, T.hC, 0.7)} />
-          </div>
-        </div>
-        {/* the reply lands under it */}
-        <div style={{ opacity: ship > 0 ? 1 : 0, transform: `translateY(${mix(ship, 60, 0) - ship * 22}px)` }}>
-          <Av y={720} bg="#4F5B66" ch="D" />
-          <div style={{ position: 'absolute', left: 220, top: 720, display: 'flex', alignItems: 'baseline' }}>
-            <span style={nameStyle}>Dev Okafor</span>
-            <span style={meta}>10:42</span>
-          </div>
-          <div style={{ ...body, position: 'absolute', left: 220, top: 774 }}>ship it</div>
-        </div>
-        {/* the composer, bleeding off the bottom */}
-        <div style={{ position: 'absolute', left: 90, right: -400, top: 960, height: 110, borderRadius: 20, background: '#EEEAE0', display: 'flex', alignItems: 'center', paddingLeft: 40, fontFamily: fonts.geist, fontSize: 40, color: '#A29D91' }}>Message #ml-infra</div>
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
-/** The flight: the chip lifts off the log while the sun floods out of it, and lands on its spot for the relay. */
-const ChipFlight: React.FC = () => {
-  const f = useCurrentFrame();
-  const p = at(f, T.flood, T.hA - T.flood, ease.inOut);
-  const s0 = (OUT_FS * termCam(T.flood).s) / CHIP_FS;
-  return <Chip x={mix(p, chipBox.x, AX)} y={mix(p, chipBox.y, AY)} s={mix(p, s0, A_MACRO)} lift={ease.out(clamp(p * 1.4))} rim={p} />;
-};
-
-const Relay: React.FC = () => {
-  const f = useCurrentFrame();
-  const out = accel(f, T.up, 14, 1.45);
-  return (
-    <AbsoluteFill style={{ background: f < T.face ? SUN : 'transparent' }}>
-      <AbsoluteFill style={{ transform: `translateY(${-out * 1500}px)`, filter: out > 0.02 ? `blur(${out * 16}px)` : undefined }}>
-        {f < T.hB ? <HostNotebook /> : f < T.hC ? <HostChecks /> : <HostChat />}
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
 // ---------------------------------------------------------------- the lockup type (the mark is the hero, split)
+// Glyph birth in light: one letter every 3 frames, each born sun with a glow sized to the letter, cooling to bone.
+const WORDMARK = 'Forge';
 const LockType: React.FC = () => {
   const f = useCurrentFrame();
-  const w = at(f, T.lock + 8, 16, ease.out);
   // the type rides the camera's last creep, so mark and name stay one lockup
-  const grow = camAt(f, ACT3).zoom / 1.1;
+  const grow = cam3(f).zoom / 1.1;
+  const t0 = T.lock + 10;
   return (
-    <AbsoluteFill style={{ transformOrigin: '635px 540px', transform: `scale(${Math.max(1, grow)})` }}>
-      <div style={{ position: 'absolute', left: 880, top: 540 - 0.56 * 250, overflow: 'hidden', paddingBottom: 24 }}>
-        <div style={{ ...display, fontWeight: 640, letterSpacing: '-0.03em', color: BONE, fontSize: 250, lineHeight: 1, transform: `translateX(${mix(w, -90, 0)}px)`, clipPath: `inset(-10% ${mix(w, 100, -2)}% -20% 0)` }}>Forge</div>
+    <AbsoluteFill style={{ transformOrigin: '960px 540px', transform: `scale(${Math.max(1, grow)})` }}>
+      <div style={{ position: 'absolute', left: 931, top: 540 - 0.6 * 184, whiteSpace: 'pre', ...display, fontWeight: 640, letterSpacing: '-0.03em', fontSize: 184, lineHeight: 1 }}>
+        {WORDMARK.split('').map((ch, i) => {
+          const born = t0 + i * 3;
+          if (f < born) return <span key={i} style={{ opacity: 0 }}>{ch}</span>;
+          const cool = at(f, born, 12, ease.out);
+          const r = Math.round(mix(cool, 255, 242));
+          const g = Math.round(mix(cool, 197, 240));
+          const b = Math.round(mix(cool, 49, 234));
+          return (
+            <span key={i} style={{ color: `rgb(${r},${g},${b})`, textShadow: `0 0 ${Math.round(mix(cool, 26, 0))}px rgba(255,197,49,${mix(cool, 0.55, 0).toFixed(3)})` }}>
+              {ch}
+            </span>
+          );
+        })}
       </div>
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 772, textAlign: 'center', ...display, fontWeight: 500, letterSpacing: '-0.015em', fontSize: 64, color: '#B4AFA4' }}>
-        <Words text="Run any model. One command." times={[T.lock + 18, T.lock + 21, T.lock + 24, T.lock + 29, T.lock + 32]} arrive="cut" born={SUN} settle={12} style={{ color: '#B4AFA4' }} />
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 744 }}>
+        <Build words={['Run', 'any', 'model.']} times={[T.lock + 24, T.lock + 27, T.lock + 30]} born={SUN} settle={12} style={{ ...display, fontWeight: 500, letterSpacing: '-0.015em', fontSize: 72, color: '#C9C5BB', lineHeight: 1.2 }} />
       </div>
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 884, textAlign: 'center', ...label, fontWeight: 500, color: SUN, fontSize: 38, opacity: f >= T.lock + 36 ? 1 : 0 }}>forge.dev</div>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 860, textAlign: 'center', ...label, fontWeight: 500, color: SUN, fontSize: 40, opacity: f >= T.lock + 36 ? 1 : 0 }}>forge.dev</div>
     </AbsoluteFill>
   );
 };
@@ -824,32 +724,30 @@ export const ForgeFilm: React.FC = () => {
     { at: T.enter, ...s['mixkit-3124'], volume: 0.45 },
     ...T.outs.map((o) => ({ at: o + 10, ...s['mixkit-1049'], volume: 0.32 })),
     { at: T.url, ...s['mixkit-2384'], volume: 0.3 },
-    // the relay: the flood and the chip's flight, then one hard cut per host with the chip landing
-    { at: T.flood, ...s['mixkit-168'], volume: 0.45 },
-    { at: T.hA, ...s['mixkit-2299'], volume: 0.55 },
-    { at: T.hA + 11, ...s['mixkit-3000'], volume: 0.3 },
-    { at: T.hB, ...s['mixkit-2299'], volume: 0.42 },
-    { at: T.hB + 6, ...s['mixkit-1049'], volume: 0.32 },
-    { at: T.hC, ...s['mixkit-2299'], volume: 0.42 },
-    { at: T.hC + 12, ...s['mixkit-2867'], volume: 0.35 },
-    { at: T.up + 8, ...s['mixkit-1492'], volume: 0.4 },
-    { at: T.block, ...s['mixkit-2299'], volume: 0.5 },
-    { at: T.wall, ...s['mixkit-2299'], volume: 0.5 },
-    ...REPLICAS.filter((_, i) => i % 4 === 0).map((r, i) => ({ at: r.f + 2, ...s['mixkit-2568'], volume: 0.14, rate: 0.9 + (i % 4) * 0.06 })),
-    { at: T.zero + 4, ...s['mixkit-784'], volume: 0.3, maxS: 1 },
+    // the back half: out of the face, the block lands lit, the chain of replicas, the dive, the drain, the zero
+    { at: T.out + 4, ...s['mixkit-175'], volume: 0.42 },
+    { at: T.live, ...s['mixkit-2299'], volume: 0.62 },
+    { at: T.live, ...s['mixkit-3124'], volume: 0.4 },
+    // a tick per replica (every other one at the fast end), rising in pitch; one low hit on the last
+    ...REPS.filter((_, i) => i < 8 || i % 2 === 0).map((r, i) => ({ at: r.f + 7, ...s['mixkit-2568'], volume: 0.12, rate: 0.9 + i * 0.035 })),
+    { at: CHAIN_END + 7, ...s['mixkit-2299'], volume: 0.5 },
+    { at: T.dive2 + 2, ...s['mixkit-168'], volume: 0.4 },
+    { at: T.macro, ...s['mixkit-2299'], volume: 0.55 },
+    { at: T.drain, ...s['mixkit-784'], volume: 0.32, maxS: 1 },
+    ...[0, 4, 8, 12].map((k) => ({ at: T.drain + 2 + k, ...s['mixkit-1049'], volume: 0.2, rate: 1.1 - k * 0.02 })),
+    { at: T.back + 2, ...s['mixkit-175'], volume: 0.32 },
+    ...T.zero.map((t) => ({ at: t, ...s['mixkit-2533'], volume: 0.3 })),
     { at: T.lock, ...s['mixkit-2299'], volume: 0.9 },
     { at: T.lock + 12, ...s['mixkit-3124'], volume: 0.35 },
   ];
   return (
     <AbsoluteFill style={{ background: INK }}>
-      {f < T.term && <World />}
-      {f >= T.term && f < T.hA && <Flood from={chipBox} start={T.flood} dur={T.hA - T.flood} color={SUN} under={<Term />} />}
-      {f >= T.flood && f < T.hA && <ChipFlight />}
-      {f >= T.face && <World />}
-      {f >= T.hA && f < T.up + 16 && <Relay />}
+      <Ground color={INK} light={{ x: 0.5, y: 0.48, size: 0.85, amount: 0.07 }} />
+      {(f < T.term || f >= T.out) && <World />}
+      {f >= T.term && f < T.out && <Term />}
       {f >= T.lock + 8 && <LockType />}
       <Grain amount={0.045} />
-      <Music src="music/tech-house-vibes.mp3" startFrom={28.1} volume={0.5} enterAt={T.land} breaths={[T.term, T.lock]} breathLen={7} duck={[T.enter, T.hA, T.lock]} fadeOut={50} />
+      <Music src="music/tech-house-vibes.mp3" startFrom={28.1} volume={0.5} enterAt={T.land} breaths={[T.term, T.lock]} breathLen={7} duck={[T.enter, T.live, T.macro, T.lock]} fadeOut={50} />
       <Cues cues={cues} />
     </AbsoluteFill>
   );
