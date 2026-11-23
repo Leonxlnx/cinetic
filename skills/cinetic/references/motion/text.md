@@ -7,15 +7,17 @@ useTyped, Scramble, Odometer, Marker, at, mix, ease, springAt, springs, stagger,
 ## House rules (read before any recipe)
 
 1. **Pick one or two arrival styles per film** and use them everywhere. Five styles is a template.
-2. **Emphasis is colour, size, position, focus and timing. Never bounce.** Text does not overshoot, wobble or spring.
+2. **Emphasis is colour (one accent per line) and timing. Never a second face, a heavier weight or a bounce.** Text does
+   not overshoot, wobble or spring.
    The only overshoot allowed is a 4-7 % scale overshoot on individually tossed letters (one title per film at most).
 3. **Never fade text alone.** A plain opacity ramp reads unsure. Cut on, or combine with blur, colour, a mask or a move.
    Fades of 2-4 f inside a word are fine; a 20 f fade-in of a whole line is not.
 4. **Front-load every move.** Re-centres and arrivals put 50-80 % of their travel in the first 1-2 frames. A symmetric
    ease-in-out on text always looks late.
-5. **Size is a decision**: either small (cap 40-75 px, the frame breathing around it) or giant (cap 300-700 px, cropped
-   by the frame). Medium-everything is the template look.
-6. **Copy**: 2-4 words per title, sentence case unless the world is a caps world, real nouns. A line should be readable
+5. **Size is a decision** ([type.md](../type.md)): resting lines sized by word count (84-100 px for 5-6 words, 110-150 px
+   for 3-4, 160-240 px for 1-2), and once a film one giant spectacle size (280-700 px, cropped by the frame).
+   Medium-everything is the template look.
+6. **Copy**: 2-6 words at once (most titles 2-4), built 1-3 at a time, sentence case, real nouns. A line should be readable
    in `words / 3 + 0.5` s; the film's pace decides the rest.
 7. **Decode, scramble and glitch only on short strings** (names, labels, URLs, under ~20 characters).
 
@@ -259,7 +261,8 @@ the film's display face), 1-2 f each, and lands on the display face. It says "an
 **Numbers:** 1-2 f per style, hard cuts, every style matched to the same cap height and baseline so the word does not jump;
 the last style holds and creeps; a tick on each step. The kit's `fonts` give the serif and the mono; a pixel face must be
 licensed and listed in `CREDITS.md`.
-**Avoid:** more than once a film; styles whose widths differ so much that the word lurches.
+**Avoid:** more than once a film; using it when the product's claim is not about style (an image, type or design tool);
+styles whose widths differ so much that the word lurches.
 
 ---
 

@@ -48,7 +48,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [5. Dark stage, shaped light and glass](worlds.md#5-dark-stage-shaped-light-and-glass)
 - [6. Footage + glass UI](worlds.md#6-footage-glass-ui)
 - [7. Swiss poster type](worlds.md#7-swiss-poster-type)
-- [8. Terminal and mono](worlds.md#8-terminal-and-mono)
+- [8. Terminal](worlds.md#8-terminal)
 - [9. Pixel and dither](worlds.md#9-pixel-and-dither)
 - [10. Ink on white](worlds.md#10-ink-on-white)
 - [Choosing a world](worlds.md#choosing-a-world)
@@ -65,6 +65,23 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [2. The qualities (hit every one)](taste.md#2-the-qualities-hit-every-one)
 - [3. Fixes for the most common failures](taste.md#3-fixes-for-the-most-common-failures)
 - [4. The contact-sheet rubric (15 points)](taste.md#4-the-contact-sheet-rubric-15-points)
+
+## [type.md](type.md): Type: how a film sets its words
+
+- [1. One sans voice](type.md#1-one-sans-voice)
+- [2. Size by word count](type.md#2-size-by-word-count)
+- [3. One spectacle size in a film](type.md#3-one-spectacle-size-in-a-film)
+- [4. Weight](type.md#4-weight)
+- [5. Tracking by size](type.md#5-tracking-by-size)
+- [6. Sentence case](type.md#6-sentence-case)
+- [7. Centred, alone](type.md#7-centred-alone)
+- [8. Few words, built](type.md#8-few-words-built)
+- [9. Emphasis by colour](type.md#9-emphasis-by-colour)
+- [10. Serif only with a reason](type.md#10-serif-only-with-a-reason)
+- [11. No eyebrows, no kickers](type.md#11-no-eyebrows-no-kickers)
+- [12. Labels and mono](type.md#12-labels-and-mono)
+- [13. In code](type.md#13-in-code)
+- [Tells: what makes type look generated](type.md#tells-what-makes-type-look-generated)
 
 ## [sound-design.md](sound-design.md): Sound design: placing sound on picture
 

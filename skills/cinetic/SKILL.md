@@ -22,7 +22,7 @@ These eight qualities separate great launch films from template videos. Hold eve
    something larger than a caret changes at least every 0.5 s (a word joins, a block lands, the crop changes, a value
    steps). Each feature is one action and one visible result. The most common flaw is a hold that waits.
 2. **One world.** The film lives in one graphic language from first to last frame: one palette with 2-3 grounds (base,
-   accent, inverse), one display face, one material, one signature device it repeats (see [worlds.md](references/worlds.md)). A supplied brand wins.
+   accent, inverse), one type voice, one material, one signature device it repeats (see [worlds.md](references/worlds.md)). A supplied brand wins.
 3. **Continuity: nothing is ever just cut away.** One element becomes the next beat: the full stop grows into the next
    world, the button becomes the progress bar, the card rewrites itself, the camera dives into a tile and its inside is
    the next scene. Every scene change is carried by speed, shape, an object or light. Never a cross-fade, never an empty
@@ -30,10 +30,12 @@ These eight qualities separate great launch films from template videos. Hold eve
 4. **Motion with weight.** Arrivals are front-loaded (most of the travel in the first frames, a long settle: `ease.out`,
    springs). Exits accelerate and end at full speed, cut or carried on their last frame (`accel`). Zooms are
    exponential (`logScale`). Nothing that moves is linear. Nothing is ever dead still: a held shot creeps (`creep`, `drift`).
-5. **Type is an event.** Few words (1-6 a line), big, in the film's one display face, built rather than faded in: cut-on
-   words, a last-word swap, a decode, an append that re-centres, a colour wake, type set on a surface, a masked rise (two
-   per film). Text sits on clean ground, never over busy
-   imagery without a plate. One line on screen at a time.
+5. **Type is an event, set clean.** One sans voice (`fonts.inter` unless the brand has its own), sentence case, weight
+   430-550, sized by word count: 84-100 px for 5-6 words, 110-150 px for 3-4, 160-240 px for 1-2, and one spectacle size
+   a film (280-700 px, may crop at the frame edge). 2-6 words at once, centred alone on clean ground, built 1-3 at a time,
+   never faded in: cut-on words, a last-word swap, a decode, an append that re-centres, a colour wake, type set on a
+   surface, a masked rise (two per film). Emphasis by colour, one accent per line. One line on screen at a time. Sizes,
+   weights, tracking, serif and labels: [type.md](references/type.md).
 6. **The real product, really used.** Its UI is built in code at film size with real strings and believable data, used by
    a real pointer or by visible state changes (typing, presses, a list filling, a toggle, a count). Other companies'
    products appear as their real, current logos (`<Brand>`, `scripts/logos.mjs`), interface glyphs as real icons
@@ -76,10 +78,12 @@ the length: the core demo gets about half the film, each further feature at most
 second and third event. A 20 s film that could be 15 should be 15.
 
 **4. World.** Choose one world from [worlds.md](references/worlds.md) (or derive it from the brand). Write its tokens at the
-top of the film: ground, ink, accent, display face, UI theme (`lightUI` / `darkUI` spread with the brand), radius.
+top of the film: ground, ink, accent, the statement face and its sizes ([type.md](references/type.md)), UI theme
+(`lightUI` / `darkUI` spread with the brand), radius.
 
 **5. Build.** Write the film as one timeline object `T` (every scene and sound cue reads its frames from it) plus one
-component per section; see [kit.md](references/kit.md) for the API and the motion references for recipes:
+component per section; see [kit.md](references/kit.md) for the API, [type.md](references/type.md) for every word on
+screen and the motion references for recipes:
 [text](references/motion/text.md), [entrances](references/motion/entrances.md), [exits](references/motion/exits.md),
 [turns](references/motion/turns.md), [camera](references/motion/camera.md), [cards and UI](references/motion/cards-ui.md),
 [imagery](references/motion/imagery.md), [effects](references/motion/effects.md). Build one section, render its sheet, look,
@@ -202,7 +206,9 @@ content or their order; take single moves.
 - **Commit to the ground.** Surfaces take the world's colours (a card tinted with the ground, a dark surface on a light
   flood); white cards on every ground is the template look.
 - **Clean type, no template tells.** No eyebrows or kickers (a small line above a heading), no uppercase mono labels, no
-  letter-spaced small caps. Labels are sentence case in the UI face; mono is for code and data only, as written.
+  letter-spaced small caps, no ALL CAPS or Title Case statements, no weights of 800-900. No serif by habit: only when it is
+  the brand's voice (then every statement) or its wordmark. Labels are sentence case in the UI face; mono is for code
+  and data only, as written ([type.md](references/type.md)).
 - **Type fast, not along.** In product UI, type the first two or three words and land the rest at once (`burst`); the
   viewer must never read along at typing speed.
 - **Real marks only.** A company or product logo is its official mark (`<Brand>` or `logos.mjs get`), never redrawn, never a
@@ -211,10 +217,12 @@ content or their order; take single moves.
   ([assets.md](references/assets.md)). Every external file keeps its licence and is listed in `CREDITS.md`.
 - **Licensed sound only**, from the catalogue or a source whose licence you read; never synthesized music.
 - **Invented palettes:** no purple, no green, no purple-to-blue "AI" gradient. Derive from the product; one accent.
-- **Legibility:** every word on screen is readable when paused: on clean ground or a plate, big enough (statements
-  ~110-250 px at 1080p, UI text 30-44 px on screen after the camera's zoom), contrast at least 4.5:1. A word needed to
-  understand the beat (a figure's label, the line under a giant word, the CTA) is 34 px or more, never a small kicker. Text never crops
-  inside its own box (a field, a bar, a chip): fit it (`useTextWidth`) or shorten it; only the frame edge may crop.
+- **Legibility:** every word on screen is readable when paused. Statements sit on clean ground or a plate at 7:1 contrast
+  or more, sized by word count ([type.md](references/type.md#2-size-by-word-count)): no statement word under 64 px, no
+  line wider than 1500 px at 1080p. UI text is 30-44 px on screen after the camera's zoom, at 4.5:1 or more. A word needed
+  to understand the beat (a figure's label, the line under a giant word, the CTA) is 34 px or more, never a small kicker;
+  only texture labels nobody must read may sit at 20-28 px. Text never crops inside its own box (a field, a bar, a chip):
+  fit it (`useTextWidth`) or shorten it; only the frame edge may crop.
 - **Respect the brief's facts.** Never invent customer logos, testimonials or numbers presented as real; use the user's
   data or clearly fictional demo data.
 

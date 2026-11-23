@@ -132,7 +132,7 @@ never covered.
 the tint), deepen to full colour over ~30 f, then wash out to become the backdrop for the next idea (a graph, a selection).
 
 ### 3.5 Orbit tiles
-Four square photo tiles (~330 px, no radius, no shadow) on a ring of radius ~520 px around a small caps line, viewed from ~18 deg
+Four square photo tiles (~330 px, no radius, no shadow) on a ring of radius ~520 px around a short centred line, viewed from ~18 deg
 above; they dive in from the camera side at the top glowing white (bloom 1, 0.7, 0.45, 0.25, 0.1, 0 over 6 f) and orbit ~250 deg
 over 68 f, front-loaded; one passes in front of the line. The reverse bloom over the last 7 f into a cut to white.
 
@@ -142,7 +142,7 @@ over 68 f, front-loaded; one passes in front of the line. The reverse bloom over
 
 ### 4.1 Paper build (stop-motion collage)
 On white or paper, 6-10 cut-out pieces (recoloured public-domain engravings, one 3D render, one tinted photo with a torn edge)
-and one label strip with a small bold serif line that is always on top. Clock: hold 5 f (6 fps). Every piece **cuts on** (never
+and one label strip with a short line in the film's voice that is always on top. Clock: hold 5 f (6 fps). Every piece **cuts on** (never
 slides or fades), several in 2-3 steps (a torn fragment first, the whole a step later), 1-2 steps apart; the label adds a word
 every 2-3 steps and re-centres by a cut; on 3-4 steps every piece jitters by a seeded 1-2 px (re-placement wobble); a drawn
 line or contour "boils" (redrawn with a 2-4 px drift each step). The camera runs smooth on every frame: 0.96 -> 1.0 linear,
@@ -251,7 +251,7 @@ cut every 2-8 f under a **static** title. Once per film, never as a house look.
 
 ```tsx
 <Camera perspective={20000} cam={{ rx: 54.7, rz: -45 }}>
-  <At x={760} y={540}><Box w={220} d={220} h={60} color="#F4F1EC" topContent={<Mono>INDEX #1</Mono>} /></At>
+  <At x={760} y={540}><Box w={220} d={220} h={60} color="#F4F1EC" topContent={<Label>Index 1</Label>} /></At>
   <At x={1040} y={540}><Box w={220} d={220} h={140} color={accent} /></At>
 </Camera>
 ```

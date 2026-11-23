@@ -28,9 +28,13 @@ contact sheets before you render a final.
     no visible state change.
 
 ### Type
-13. **Medium everything.** Every line the same mid size, centred, never cropped, never small, never giant.
-14. **Decorated type.** Gradient fills on every headline, glows, outlines, drop shadows, per-letter bouncing staggers.
-15. **Too many words.** Full sentences on screen, generic claims ("Revolutionize your workflow", "Seamless", "Unlock",
+13. **Medium everything.** Every line the same mid size whatever its word count, and no spectacle word: nothing giant,
+    nothing cropped. Or the opposite: a six-word line blown up to 200 px.
+14. **Template type.** Eyebrows and kickers over a heading, uppercase mono labels, letter-spaced small caps, ALL CAPS or
+    Title Case statements, weights of 800-900, a serif or script accent word by habit, two faces in one line, a mono
+    statement; gradient fills on every headline, glows, outlines, drop shadows, per-letter bouncing staggers
+    (`type.md` tells).
+15. **Too many words.** Full sentences on screen (more than six words at once), generic claims ("Revolutionize your workflow", "Seamless", "Unlock",
     "Supercharge", "AI-powered", "Next-gen"), exclamation marks.
 16. **Scramble on whole sentences**; matrix rain; random glyph noise without a rule.
 
@@ -64,8 +68,8 @@ contact sheets before you render a final.
 1. **One argument, chained.** The film can be told in one sentence. Every beat is caused by the previous one: an object becomes
    the next beat, a word carries across a cut, a hub is re-entered, one invented artefact runs through every feature. At least
    two chaining devices per film (`film-grammar.md` section 3).
-2. **One world, held strictly.** One ground system, one palette (one accent, used for meaning), one display face plus one UI face
-   plus one mono, one material family. Thirty images look like one shoot (`worlds.md`).
+2. **One world, held strictly.** One ground system, one palette (one accent, used for meaning), one sans voice for statements
+   and UI (or the brand's serif voice for statements), mono only for code and data, one material family. Thirty images look like one shoot (`worlds.md`).
 3. **The product is real.** Legible UI with specific copy, real data with irregular numbers, real integrations with their real
    logos, state changes that carry the story. Shown flat and large, or under one camera.
 4. **Seams are carried.** Cuts land on motion; exits accelerate into the cut; entrances arrive already moving; morphs, irises and
@@ -75,13 +79,14 @@ contact sheets before you render a final.
 6. **Two clocks.** Digital things step (on twos, threes, 6 fps), physical things ease. At least one stepped element in a smooth
    film, or a smooth camera over stepped content.
 7. **Nothing holds, except the end.** Every hold creeps, drifts, breathes or counts. The lockup is the only rest.
-8. **Type with a decision.** Small and quiet, or giant and cropped. One or two arrival styles. Emphasis by colour, size, position,
-   focus and timing; never by bounce.
+8. **Type with a decision.** Resting lines sized by their word count, centred alone on clean ground; one spectacle word giant
+   and cropped. One or two arrival styles. Emphasis by colour, one accent per line, and by timing; never by a second face,
+   a heavier weight or a bounce (`type.md`).
 9. **Effects with a job.** The world's effect budget respected (`motion/effects.md`); glows in their own hue and sized to their
    source; blur only on fast frames; flashes counted.
 10. **Designed sound.** A quiet opener, music entering on the first word, breath gaps before hits, transients on the frame, a low
     climax, a silent last half-second.
-11. **Copy a person would say.** 2-4 words per title, concrete nouns, the product's real vocabulary.
+11. **Copy a person would say.** 2-6 words on screen at once (most titles 2-4), concrete nouns, the product's real vocabulary.
 
 ---
 
@@ -96,6 +101,7 @@ contact sheets before you render a final.
 | text fades in | cut on + born tint, or masked rise; keep 2-4 f fades only inside words |
 | everything springs | replace springs on cards and camera with `ease.out` / `ease.inOut`; keep one pop family |
 | UI unreadable | flat and large, one component, 1.4x camera; or a punch-in |
+| type looks templated | one sans at 430-550, sentence case, sized by word count, centred alone; no kicker, no caps labels (`type.md`) |
 | palette looks "AI" | derive from the brand; one accent; flat grounds; remove gradients that carry no meaning |
 | glass looks fake | lit top rim + moving specular; on flat grounds use a lit gradient instead of backdrop blur |
 | sound feels pasted | measure `leadMs`; remove half the effects; add breath gaps; move the kick 2 f after the cut |
@@ -118,8 +124,8 @@ Run `node scripts/frames.mjs check` on the preview first: points 11-13 are measu
 |---|---|---|---|
 | 1 | **Product by 5 s** | overview, first 20 thumbnails | the product, its UI or its artefact is visible by thumbnail ~20 (5 s) unless it is a teaser |
 | 2 | **One world** | squint at the whole overview | every thumbnail could only belong to this film: same ground system, palette, type, materials; no off-world frame |
-| 3 | **Legible and real** | beat sheet at 320 px wide | every title reads at thumbnail size; UI copy is specific; numbers irregular; real logos where logos appear |
-| 4 | **One focal point** | each beat still | the brightest, most contrasted element is the subject; scale varies across the film (small, giant, cropped) |
+| 3 | **Legible and real** | beat sheet at 320 px wide | every statement reads at thumbnail size (sized by word count, no word under 64 px, clean ground at 7:1, sentence case, no kicker); needed labels 34 px or more; UI copy is specific; numbers irregular; real logos where logos appear |
+| 4 | **One focal point** | each beat still | the brightest, most contrasted element is the subject; scale varies across the film (resting lines, one spectacle size giant and cropped) |
 | 5 | **Carried seams** | seam pairs (last frame A / first frame B) | each pair shares an object, a direction, a shape or light; no blank frames, no grey mud midpoints, no two consecutive seams with the same device |
 | 6 | **Nothing holds** | overview, runs of identical thumbnails | no run of more than 4 identical thumbnails (1 s) before the lockup; frame-difference check: no two consecutive identical frames before the end |
 | 7 | **Restrained vocabulary** | count arrival styles and turn types against the `BEATS.md` Devices block | at most 2 text arrival styles; at most 1 overshoot family; flashes ≤ 4; signature device on ≤ 3 seams; no other seam device used twice; at most 1 colour flood, and at most two of flood, relay, wall and a mark gathered from a wall |

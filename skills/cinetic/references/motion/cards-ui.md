@@ -14,7 +14,7 @@ Kit (`ui.tsx`): `Theme` (`lightUI`, `darkUI`), `useArrive`, `Card`, `Window`, `B
    integrations shown with their real logos (`BrandTile`). Never lorem, never "Feature 1".
 2. **Native fonts for borrowed surfaces.** The product's UI in its own face; a third-party surface (a store, a calendar,
    a payment sheet) in its native face so it reads as real. Kit fonts: Inter for UI, Geist for technical products, a mono
-   for labels and code.
+   for code and data only (labels are sentence case in the UI face).
 3. **Flat and large, one component at a time**, or **one canvas under one camera** (see `camera.md` 6.1). Not a dozen
    panels flying separately, not a phone mock in the middle of a dark gradient.
 4. **No device chrome unless the device is the point.** A chat floats on the film's ground; a card sits on the grid. Use
@@ -327,8 +327,8 @@ at the end. A code card can **peek** 30 px at the bottom before rising (`entranc
   `effects.md`). Near-black stage, never pure black.
 - **Product-colour stage:** flat glass cards (diagonal gradient sheen + 1 px rim at ~16 % white, no backdrop blur) on a
   saturated brand ground; a dark stage with a horizon glow for input moments; white for statements.
-- **Grid world:** UI shown flat, big and one component at a time on the same grid as the abstract shapes; micro mono labels on
-  tiny chips with a coloured square bullet; corner handles as a recurring motif.
+- **Grid world:** UI shown flat, big and one component at a time on the same grid as the abstract shapes; sentence-case labels in the
+  UI face on chips with a coloured square bullet (20-28 px as texture, 34 px or more when read); corner handles as a recurring motif.
 
 ---
 

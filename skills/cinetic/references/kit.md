@@ -68,13 +68,13 @@ const style = { transform: `translateY(${mix(p, 80, 0) - q * 900}px) scale(${mix
   appears on its frame, no ramp: for rhythm on the music).
 - `gap` (frames between units, compressing), `dur` (frames per unit), `times` (exact start frame per unit).
 - `born="#hex"` + `settle`: each unit is born in a colour and settles to the line colour (fresh words glow).
-- `accent={['word']}` + `accentStyle`: style chosen words (colour, italic serif).
+- `accent={['word']}` + `accentStyle`: style chosen words (the accent colour; an italic serif word at most once a film).
 - `leaveAt`, `leave: 'rise' | 'fall' | 'blur' | 'scale'`, `leaveDur`: from `leaveAt` the words go and stay gone (rise and fall
   travel out behind a mask, blur and scale fade). Give `leaveAt` up front; without it the words stay.
 - `style` must carry the colour when you use `born`. `align`, `width`.
 
 ```tsx
-<div style={{ fontFamily: fonts.geist, fontWeight: 620, fontSize: 180, letterSpacing: '-0.045em' }}>
+<div style={{ fontFamily: fonts.inter, fontWeight: 500, fontSize: 140, letterSpacing: '-0.02em' }}>
   <Words text="Ship it tonight" start={T.title} arrive="rise" gap={4} style={{ color: INK }} accent={['tonight']} accentStyle={{ color: ACCENT }} />
 </div>
 ```
@@ -255,8 +255,11 @@ object carries the film.
 
 ## 9. Fonts
 
-`fonts.inter`, `fonts.geist`, `fonts.mono` (Geist Mono), `fonts.serif` (Instrument Serif, with italic), `fonts.hand`
-(Caveat, handwriting for sketches and annotations). All local. To add a face,
+`fonts.inter` (Inter with optical sizing, so large lines render in its display cut: the default voice for statements and
+UI), `fonts.geist` (a tighter technical sans for a developer brand, then the whole voice), `fonts.mono` (Geist Mono: code
+and data only), `fonts.serif` (Newsreader, with italic and optical sizing: only for a brand whose voice is a serif, or a
+wordmark), `fonts.hand` (Caveat: a sketch or note inside a product only). All local. When each is allowed, and the
+sizes, weights and tracking: [type.md](type.md). To add a face,
 `npm install @fontsource/<name>` and import it in `src/kit/fonts.ts`; for a brand font, put the woff2 in `public/fonts` and use
 `@font-face` with `staticFile`.
 

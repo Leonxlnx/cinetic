@@ -430,6 +430,6 @@ The wordmark's soft scan (`motion/text.md` 10) is a finish beside the mark, not 
    ([Devices](#devices)).
 4. Mark the held frames (at most one per act) and the breath gaps.
 5. Mark which elements run on the stepped clock.
-6. Copy: titles 2-4 words, sentence case unless the world says caps, real nouns (real file names, real numbers, real
+6. Copy: titles 2-4 words, sentence case, real nouns (real file names, real numbers, real
    integrations), never lorem.
 7. Render stills per beat and a contact sheet before a full render; review with `taste.md`.

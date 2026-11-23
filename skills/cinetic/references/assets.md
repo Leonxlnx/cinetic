@@ -45,9 +45,11 @@ own mark, the model's own mark. Never redraw one, never stand a generic envelope
 
 ## 3. Fonts
 
-Bundled (SIL OFL, local, no network): Inter, Geist, Geist Mono, Instrument Serif. More from Fontsource
-(`npm install @fontsource/<family>`; nearly all OFL). A brand font the user supplies goes in `public/fonts/` with an
-`@font-face` rule. One display face per film; Inter or the brand's UI face for product screens; a mono for labels.
+Bundled (SIL OFL, local, no network): Inter (with optical sizing), Geist, Geist Mono, Newsreader (the serif, with
+optical sizing), Caveat. More from Fontsource (`npm install @fontsource/<family>`; nearly all OFL). A brand font the user
+supplies goes in `public/fonts/` with an `@font-face` rule. One sans voice per film (Inter unless the brand has its own);
+Inter or the brand's UI face for product screens; a serif only when it is the brand's voice or wordmark; mono for code
+and data only, never for labels ([type.md](type.md)).
 
 ## 4. Photos and footage
 
@@ -111,7 +113,7 @@ node scripts/sfx.mjs fit public/music/bed.mp3 --hit 112 --len 530 --cuts 50,96,1
 ```
 `fit` lists the starts that put the film's main hit (the reveal, the flood, the name) on a beat, best first: the music lifts
 there, there is music under the whole film, the opening is not silence. With `--cuts` it shows which cuts sit off the beat
-grid (move a cut a frame or two, or let a sound carry it). Choose the track for the film's world: a paper-and-serif film and
+grid (move a cut a frame or two, or let a sound carry it). Choose the track for the film's world: an editorial paper film and
 a dark-stage film should not share a bed. `frames.mjs check` fails a film whose music runs out before it ends.
 Licences that work for a published launch film:
 - Mixkit Stock Music Free License (https://mixkit.co/license/#musicFree): web, social, ads; no credit needed; never
