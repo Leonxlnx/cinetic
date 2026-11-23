@@ -107,6 +107,16 @@ content rises inside: 2 f at ~120 px/f, then expo-out over 12 f.
 by the camera: 24, 12, 5, 3, 1 px/f.
 **When:** a caption or wordmark after a dive through a structure. Zero animation is the most premium entrance of all.
 
+### 1.9 Blueprint, then fill
+**What:** the UI or the object draws itself as 1 px construction lines (its boxes, baselines, a few dimension ticks), then
+fills into the real thing on the beat.
+**When:** products about building, designing or precision; an opening; a mark with clear geometry.
+**Numbers:** lines draw on with `stroke-dashoffset`, 6-10 f each on `ease.out`, longest first, 2 f apart; dimension ticks and
+their values (mono) cut on beside them; 16-20 f in, each box fills in 2 f (60 % on the first frame, full on the second) and its
+lines fade to 20 % over 6 f, staying as a hairline trace; the camera creeps in 3-5 % throughout.
+**Sells it:** lines that match the final layout to the pixel, and the fill landing on the beat.
+**Avoid:** drawing every element (draw the 5-12 main boxes; their contents fill with them); a slow fill wipe.
+
 ---
 
 ## 2. Cards and panels
@@ -222,6 +232,16 @@ Small objects that spawn from a parent (icons popping out of a device as it open
 const p = springAt(frame, fps, 870, springs.pop);
 <div style={{ transform: `scale(${p})` }}><Icon name="Mail" size={64} /></div>
 ```
+
+### 3.6 Burst, then heap
+**What:** small objects (pills, chips, tags) burst out of a line or a button into a ring, hang there, then fall with gravity
+into a heap below while the line above changes. Uses the film's one overshoot family (3.5).
+**Numbers:** 8-16 objects; the burst takes 8 f on `springs.pop` (~6 % overshoot) to a ring of radius 260-380 px, 1 f apart;
+the ring drifts 1 px/f and turns 0.3 deg/f for ~30 f; then each falls (dy 4, 9, 16, 26, 38 px/f, seeded starts 0-6 f apart),
+lands with one 8-14 px bounce and a 2 f squash, and comes to rest overlapping the others; the line above swaps its last word
+on the landing (`text.md` 3.5). A soft tick per landing.
+**Sells it:** gravity, and the heap's mess (seeded angles, overlaps) against the clean ring.
+**Avoid:** a second bounce; a heap that lands as a tidy grid.
 
 ---
 

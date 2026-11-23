@@ -68,6 +68,15 @@ last 3 f while the next title begins.
 Picture or content cards that grow in both directions (front cards out of the top card, back cards from under the deck),
 alternating every 7-8 f. Recipe in `entrances.md` 2.7.
 
+### 1.4 Dealt deck
+**What:** cards are dealt onto a pile, one every 4 f, each landing a little off the one below and revealed by a block
+dissolve, while the pile grows toward the lens.
+**Numbers:** each card offset (-0.3 %, -0.9 %) of the frame and +3 deg from the one below; it lands in one frame, and its face
+appears in a 2 f block dissolve (a 6 x 4 grid of blocks, half on the first frame, all on the second, seeded order); the
+stack scales 1.0 -> 1.3 over the deal on `ease.in`, accelerating into the cut; 6-12 cards; a soft paper tick per card.
+**Sells it:** the rhythm (every 4 f, locked to the beat) and the stack swelling.
+**Avoid:** cards flying in from the frame edges; easing each card into place.
+
 ---
 
 ## 2. One container, many identities
@@ -323,45 +332,103 @@ at the end. A code card can **peek** 30 px at the bottom before rising (`entranc
 
 ---
 
-## Relay
+## Integrations
 
-**What:** "it works with everything" shown as one artefact travelling through the host products, not as a row of logos
-or a stack of same-layout cards. The artefact (a line of text, a task, a chart, an endpoint) stays at one place on screen;
-around it, the host changes on the beat, each in a different composition.
+"It works with everything" is never a row of logo tiles or a stack of same-layout cards. Pick one form, by how much the
+brief hinges on it; skip the beat entirely when it does not. In every form the artefact (a line of text, a task, a chart,
+an endpoint) is the thing to read: 55 % of the frame's width or more, the largest text on screen (60 px or more), set on
+the accent or made tall rather than left as a thin strip on a white plate.
 
-**Recipe (30 fps, 3 hosts in 1.8-2.4 s):**
+| Form | When | What it is |
+|---|---|---|
+| relay | two partner products matter, and how the artefact looks in each | the artefact pinned, two hosts cut round it (below) |
+| object-lock swap | "works everywhere": the number of places is the point | the artefact fixed while 5-7 host worlds swap behind it, 4-6 f each (below) |
+| sentence slot | the integrations are a list, not a demo | "Posts to [slot].": the slot swaps partner marks on the beat (below) |
+| one host, deep | one integration carries the brief | that host used for real in macro, the others in a passing line (below) |
+
+### Relay
+
+**What:** one artefact travelling through the host products. It stays at one place on screen; around it, the host changes
+on the beat, each in a different composition.
+
+**Recipe (30 fps, 2 hosts in 1.1-1.4 s):**
 1. Host A, `full-ui`: the artefact lands in a full-bleed chat (`PartnerSurface kind="chat"` at w 2200, cropped by the frame,
    camera 1.3x on the landed item, `landAt` lights it). 18-24 f.
 2. Cut on the beat to host B, `macro`: the same artefact as a row in a tracker, the camera at 2.5-3x so only the row, its
    check and the tracker's mark read; the artefact's screen position is unchanged (a match cut on it). 14-18 f.
-3. Cut to host C, `type-on-surface` or `split`: the artefact inside an editor or a doc, the host's ground taking the
-   world's flood colour (not a white card). 18-24 f.
-4. Pull back or flood out of host C into the next beat.
+3. A third host only when the brief names three partners and the film has the time; give it a composition neither of the
+   first two used (a split, type on a surface), on another of the world's grounds. 18-24 f.
+4. Leave on the artefact: a velocity cut, a dive into it, or a morph into the next beat's object.
 
 ```tsx
-// the artefact sits at the same screen point in all three; only the host around it changes
+// the artefact sits at the same screen point in every host; only the host around it changes
 const AT = { x: 960, y: 560 };
 <Relay anchor={AT} artefact={<EndpointChip />} hosts={[
   { f: T.hostA, node: <HostChat anchor={AT} /> },                 // full-bleed, on the base ground
   { f: T.hostB, node: <HostTracker anchor={AT} zoom={2.8} /> },   // macro, on the inverse ground
-  { f: T.hostC, node: <HostDoc anchor={AT} ground={ACCENT} /> },  // tilted plane, on the accent flood
 ]} />
 ```
 The worked films `forge` and `fieldnote` build their hosts this way (read their relay sections).
 
 **Into the relay (the artefact is born in the beat before):** the thing the product just made (the rewritten sentence, the
-generated chart) lifts off its page as a plate and flies to the anchor in 12-16 f (`ease.inOut`, a small arc, scaling from
-its size on the page to its relay size), while the next ground floods out of the plate's own box (`<Flood from={box} to={<FirstHost />} reveal>`: with `to` and
-`reveal` the first host shows inside the growing shape, otherwise the frame is plain colour for a few frames). The
-first host cuts in the frame it lands. `<Relay enter={{ f, from: { x, y, scale } }}>` does the flight; the worked film
-`inkwell` builds it by hand with the flood (`Flight`).
-
-**Out of the relay (into a wall):** start the wall on its centre item at the artefact's exact screen size (wall zoom =
-1 / the item's scale, pivot on the item), so the cut matches on the artefact; then pull back in log space and tilt while the
-other items resolve in a wave from the centre (delay = distance from the centre x 1.5-2 f). `inkwell` builds this (`WallBeat`).
+generated chart) arrives at the anchor by one of: a flight from where it was made (it lifts off its page as a plate and
+flies in 12-16 f, `ease.inOut`, a small arc, scaling to its relay size; `<Relay enter={{ f, from: { x, y, scale } }}>`), a
+match cut on its box, a morph from the UI element that made it (`turns.md` 5.8), or a hard cut on the beat. The first host
+cuts in the frame it lands. A flood out of the plate's box (`<Flood from={box} to={<FirstHost />} reveal>`, as `inkwell`
+does) is allowed only if the film has not spent its one flood elsewhere.
 
 **Avoid:** three cards of one component on one ground (a carousel); logos as decoration; hosts that sit still while
-their text is read (each host holds under 0.8 s; the artefact is the thing to read).
+their text is read (each host holds under 0.8 s); the same three compositions (full-bleed, macro, tilted plane) every time.
+
+### Object-lock swap
+
+**What:** the artefact sits fixed at frame centre, large, while the world behind it hard-cuts through 5-7 hosts (a chat, a
+tracker, a phone's lock screen, a doc, a terminal), each its own full-frame composition and ground. The swap rate says
+"everywhere". It also serves as the spectacle for a "works everywhere" claim.
+**Numbers:** 4-6 f per host, hard cuts on the beat or on its eighths, accelerating slightly (6, 6, 5, 5, 4, 4 f); each host
+pushes 1.00 -> 1.02 over its own frames; the artefact (outside the camera, `camera.md` 6.5) re-tints its plate for each
+ground in the cut frame and creeps 0.5 % across the whole run; the last host holds 12-18 f so it reads. A tick per cut.
+**Sells it:** the artefact not moving by a pixel while everything behind it changes; each host recognisable at a glance by
+its real mark and its layout, not by reading.
+**Avoid:** hosts that share a layout; text in the hosts that must be read; moving the artefact between hosts.
+
+```tsx
+const hosts = [<HostChat />, <HostTracker />, <HostPhone />, <HostDoc />, <HostTerminal />], durs = [6, 6, 5, 5, 4];
+let t = frame - s, i = 0;
+while (i < durs.length - 1 && t >= durs[i]) t -= durs[i++];
+<AbsoluteFill style={{ transform: `scale(${1 + 0.02 * Math.min(1, t / durs[i])})` }}>{hosts[i]}</AbsoluteFill>
+<At x={960} y={540}><Artefact plate={PLATES[i]} /></At>   {/* locked: outside the camera */}
+```
+
+### Sentence slot
+
+**What:** one line, "Posts to [slot]." or "Works with [slot].", whose slot swaps partner marks (each mark plus its name) on the
+beat, 3-5 of them, the last held. The integrations become one claim instead of a beat.
+**Numbers:** `<Build>` with a node slot, or `<Swap items={[node, node, ...]} times>` (items may be a mark and a name); each
+mark holds 8-14 f; the slot's width snaps to each mark in 1 f; the line never re-centres between swaps (left-align it on its
+prefix, `text.md` 3.5).
+
+### One host, deep
+
+**What:** the one integration the brief hinges on, used for real: the artefact arrives in that product in macro, a real
+state change happens there (it is posted, assigned, merged), and the other partners pass as one line of real marks on a
+moving band under it, never as tiles.
+
+## Wall
+
+**What:** the same thing in quantity, pulled back from: the right spectacle only when the product's claim is literally a
+quantity ("every PR", "all your documents"). Otherwise pick another from the spectacle menu (`film-grammar.md` spectacle).
+**Numbers:** start on one real item, large (often the artefact the film has carried); pull back in log space and tilt while
+the other items resolve in a wave from the centre (delay = distance from the centre x 1.5-2 f, `Wall wave`); then one event
+crosses them all (`Wall event`: every item flips, lights up or takes the artefact), which is what makes the quantity mean
+something. Keep the widest frame graphic: about 40 items or fewer in view, every third or fourth on the inverse ground,
+the accent on about a quarter at the peak, a count set large on it if there is one. Every item is real content, never grey
+bars; never hundreds of tiny pale cells.
+**Out of a relay into a wall:** start the wall on its centre item at the artefact's exact screen size (wall zoom = 1 / the
+item's scale, pivot on the item) so the cut matches on the artefact, then pull back as above (`inkwell` builds this,
+`WallBeat`). Never in a film that also floods into the relay, and never followed by the wall draining into the mark: end
+some other way (`film-grammar.md` lockups).
+**Avoid:** a wall as the default spectacle; a wall and a relay and a flood in one film; a wall whose items are all alike.
 
 ## Not in the kit yet (build these by hand from the recipes above)
 

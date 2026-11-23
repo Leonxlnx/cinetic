@@ -2,8 +2,8 @@
 
 A cut is never bare. Between two beats, something carries the eye across: **speed, an object, a word, a shape, light,
 or a ground change on a beat**. Template films crossfade or slide; premium films make the seam out of the scene's own
-material, so the film reads as one camera moving through one world. The best references have dozens of seams and almost
-no dissolves; a film of 45 s may contain only four true hard cuts, everything else being camera moves, masks, morphs and
+material, so the film reads as one camera moving through one world. A good film has dozens of seams and almost no
+dissolves; a film of 45 s may contain only four true hard cuts, everything else being camera moves, masks, morphs and
 flashes. All numbers at 30 fps, 1920x1080.
 
 Kit (`turns.tsx`): `Iris`, `Tiles`, `Pixelate`, `Push`, `ZoomThrough`, `Flash`, plus `turn = { at, ease, logScale, mix }`
@@ -20,8 +20,9 @@ it in a `Sequence` that spans both shots. Most of the best turns are hand-built 
 
 ## 0. The rule for choosing
 
-Ask how the two beats relate, then pick from the matching row. Never use the same device on two consecutive seams; use a
-brand device (mosaic, tear, the mark's shape) at most 3 times per film; use flashes at most 3-4 times.
+Ask how the two beats relate, then pick from the matching row. Never use the same device on two consecutive seams, and
+across the film repeat only the signature device (`film-grammar.md` devices), on at most 3 seams; use flashes at most 3-4
+times. The two ground cuts use two different devices, and a colour flood from an object (`Flood`) is at most one of them.
 
 | Relation between beat A and beat B | First choice | Second choice | Never |
 |---|---|---|---|
@@ -34,6 +35,9 @@ brand device (mosaic, tear, the mark's shape) at most 3 times per film; use flas
 | new chapter of a feature map | hub and dive | ground cut on a beat | title card |
 | time skip in a demo (typing, loading) | hidden cut inside a whip | punch-in cut | showing the wait |
 | brand identity moment | brand device (mosaic, tear, mark iris) | tiles | stock "glitch" |
+| a new act, same cast | ground swap under a layer that stays (9.1) | colour-flip cut with a size step (9.2) | a flood every time |
+| one thing, many worlds | object-lock swap (`cards-ui.md`) | ground swap under the thing (9.1) | a row of cards |
+| B is A in another form, several times | morph chain (5.8) | object hand-off (5) | cut to a fresh layout |
 | a line is being read | **no transition**: hard cut on the beat after the read | | any move while reading |
 
 ---
@@ -69,6 +73,14 @@ const B = <AbsoluteFill style={{ transform: `translateX(${105 - g(frame - 60)}px
 - **Punch-in cut:** on a beat, hard-cut the camera group to x1.30-1.35 about the subject; blur 6, 4, 2, 0 px; a second punch
   of x1.10-1.13 gives a two-step lean-in.
 **Avoid:** easing both sides to zero (a dead stop then a dead start reads as two shots); a crossfade under the cut.
+
+### 1.1 A run of velocity cuts
+**What:** three to six shots in a row joined by velocity cuts alone, one per beat, no shared object: the film's tempo device,
+and the cheapest way to carry seams without turning each into a slow camera event.
+**Numbers:** shots of 9-20 f; every exit `accel` over its last 5-7 f, every entry at 50-60 % of that speed and decaying
+x0.62 a frame; change direction on each cut (right, up, in, left), or keep one direction for a rush; the cut on the beat,
+the kick 2 f after it.
+**Sells it:** matched speed on both sides and the beat under it. One creeping hold inside the run breaks it.
 
 ---
 
@@ -230,6 +242,25 @@ The flash licenses the change of shape.
 The hero stays; a new element shoots in from off-frame and docks into it (right end x -> the hero's edge over 6-9 f,
 `ease.out`), with a dock flash (6 px white ring + white halo 0.8, 0.4, 0 over 3 f). The world can change around a docked hero.
 
+### 5.8 Morph chain
+**What:** one element becomes the next several times running, with no cut: the send dot becomes a pill, the pill a progress
+bar, the bar the answer card, the card the window of the next screen. A carrier from beat to beat that needs no ground cut.
+**Numbers:** 4-8 links; each holds 6-12 f as itself while something happens in it (a label, a fill, a count). Each change
+takes 5-8 f: position, size and radius together with `lerpBox` on `ease.out` (60-70 % of it in the first 2 f), the fill
+with `mixColor` over the same frames; the old content cuts out on the change's first frame, the new content cuts on 2-3 f
+before it lands. The camera keeps the box at 40-60 % of the frame width.
+**Sells it:** the box never leaves the frame and never stops, and every link reads as itself for at least 6 f.
+**Avoid:** two links of the same shape in a row; a slow symmetric tween (the middle is mush).
+
+```tsx
+// boxes[i] = { x, y, w, h, r } (centre x, y) of each link; starts[i] = the frame link i is complete
+const k = Math.max(0, starts.filter((s) => frame >= s).length - 1), n = Math.min(k + 1, boxes.length - 1);
+const p = n === k ? 0 : at(frame, starts[n] - 6, 6, ease.out);
+const b = lerpBox(p, boxes[k], boxes[n]);
+<div style={{ position: 'absolute', left: b.x - b.w / 2, top: b.y - b.h / 2, width: b.w, height: b.h, borderRadius: b.r,
+  background: mixColor(fills[k], fills[n], p) }}>{p < 0.4 ? content[k] : content[n]}</div>
+```
+
 **Avoid (all morphs):** showing the full tween of a shape morph (bubbles visibly stretching into a bar look like a template;
 cut inside it or hide it in blur or light); morphing between unrelated objects.
 
@@ -344,6 +375,30 @@ It says "these are pictures in an editor".
   scalloped edge (bumps 40-90 px, jaggies 20-60 px) with a 4 px white fibre fringe on paper, or a band of edge dots between
   photos; alternate the side on each new layer; the text lives on each layer.
 - **Corner collapse** and **doors part:** see `exits.md`.
+
+### 9.1 Ground swap under a layer that stays
+**What:** the ground hard-cuts to another of the world's grounds on the downbeat while everything above it (the line of type,
+the product, the pointer) stays exactly where it is and keeps moving. The persisting layer carries the seam.
+**Numbers:** the swap is one frame, on the beat; on that frame the persisting layer re-inks for the new ground (dark ink to
+white over 2 f) and takes a +2-3 % scale step; the camera's creep runs on across the cut unchanged; the new ground's texture
+(grid, grain) is already drifting.
+**Sells it:** the overlay not flinching. Check its contrast on both grounds (4.5:1 for every word).
+**Avoid:** a fade between the grounds (mud); the overlay re-laying out on the cut.
+
+```tsx
+const g = frame < cut ? BASE : ACCENT;                                  // one frame, on the beat
+const k = 1 + 0.025 * (frame >= cut ? 1 : 0) + 0.0006 * (frame - s);   // a small step, the creep runs on
+<AbsoluteFill style={{ background: g }}>
+  <div style={{ transform: `scale(${k})`, color: mixColor(INK, PAPER, at(frame, cut, 2, ease.out)) }}><Line /></div>
+</AbsoluteFill>
+```
+
+### 9.2 Colour-flip cut with a size step
+**What:** on the downbeat, ground and ink swap (ink on paper becomes paper on ink, or the accent takes the ground) and the
+subject jumps one size step on the same frame. Two changes on one frame read as a decision.
+**Numbers:** the subject steps x1.25-1.4 (or x0.7) on the cut with a landing blur of 4, 2, 0 px, then creeps; the ground is
+flat, no gradient; nothing else changes; a kick on the frame.
+**Avoid:** easing the size (that is a zoom); a third change on the same frame.
 
 ---
 

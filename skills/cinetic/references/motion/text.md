@@ -162,6 +162,34 @@ const X = keys(frame, [[0, 520], [3, 740], [7, 990], [12, 1170], [16, 1330], [35
 8, 11, 15, 19, 23 f), each letter cross-fading over ~4 f, while the line pulls back 1.0 -> 0.83 (expo-out).
 **When:** the payoff word of a tagline.
 
+### 2.7 Colour wake
+**What:** a colour front crosses a still line: ahead of it the ink, inside it the accent, behind it the ink again, except on
+the key word, which keeps the accent. The line never moves; the colour does the arriving.
+**When:** the payoff line, or a long line whose one word must be found. Stronger than a tint band (2.5) on dark grounds.
+**Numbers:** an accent copy of the line on top, clipped by a mask whose soft head (60-80 px) crosses the line in 10 f on
+`ease.out` (fast over the first words); the tail follows ~240 px behind; the key word cuts to the accent as the head passes
+it and stays.
+
+```tsx
+const head = mix(at(frame, s, 10, ease.out), -80, lineW + 80), tail = head - 240;   // px in the line's box
+<div style={{ position: 'relative' }}>
+  <Line ink={INK} keyInk={head > keyRight ? ACCENT : INK} />
+  <div style={{ position: 'absolute', inset: 0, WebkitMaskImage:
+    `linear-gradient(90deg, transparent ${tail - 40}px, #000 ${tail + 40}px, #000 ${head - 40}px, transparent ${head + 40}px)` }}>
+    <Line ink={ACCENT} keyInk={ACCENT} /></div>
+</div>
+```
+**Avoid:** a rainbow or a gradient left on the type; two wakes back to back.
+
+### 2.8 Hopping marker
+**What:** a highlight block hops from word to word, one hop per beat, with no tween; the marked word takes the inverse ink.
+It becomes the film's reading system: the viewer always knows which word is now.
+**Numbers:** the block cuts to the next word's box (padding 0.12 em across, 0.04 em down) in 1 f, on the beat; if the new word
+is wider its width settles in 2 f (90 % on the first); the word under it inverts on the same frame; between hops it does not
+move; 3-6 hops a line; a click per hop.
+**Sells it:** stepped graphics under a smooth camera (`film-grammar.md` section 5).
+**Avoid:** sliding the block (that is the `Marker` wipe); hopping off the beat.
+
 ---
 
 ## 3. Swaps and slots
@@ -208,6 +236,30 @@ idea; or one line's glyph slots reroll into random glyphs (some taller, some bol
 next line, first in a light "generating" tint with 2-3 letters missing (2 f), complete (2 f), then ink.
 **When:** turning one idea into the next without moving the camera.
 **Avoid:** blur or opacity between glyphs; `Math.random()` (use the kit's `rand(seed)`).
+
+### 3.5 Last-word swap
+**What:** the line holds; only its last word is replaced, by a hard cut on the beat, two to four times. The prefix never
+moves, and the last word carries the meaning ("Your week, planned. / sorted. / shared.").
+**Numbers:** each word holds 14-24 f; the swap is one frame: the old word cuts out, the new one cuts on born in the accent and
+cooling to ink over 6 f; the line is left-aligned on its prefix so nothing re-centres; a light tick per swap; the whole line
+creeps 0.5 % a beat. Hold the last swap back 6-10 f longer: that is the punch.
+**Sells it:** the fixed prefix. Any move in it turns a swap into a new line.
+**Avoid:** rolling or fading the word (that is the slot roll, 3.1); more than four swaps.
+
+```tsx
+const words = ['planned.', 'sorted.', 'shared.'], times = [0, 20, 44];
+const i = Math.max(0, times.filter((t) => frame >= t).length - 1);
+<div style={{ position: 'absolute', left: 360, top: 470, whiteSpace: 'pre', color: INK }}>
+  Your week, <Words key={i} text={words[i]} start={times[i]} arrive="cut" born={ACCENT} settle={6} style={{ color: INK }} /></div>
+```
+
+### 3.6 Style cycle
+**What:** once per film, one word arrives through three or four type styles in a row (a pixel face, a serif, a mono, then
+the film's display face), 1-2 f each, and lands on the display face. It says "any style" or "it renders anything" in 6 f.
+**Numbers:** 1-2 f per style, hard cuts, every style matched to the same cap height and baseline so the word does not jump;
+the last style holds and creeps; a tick on each step. The kit's `fonts` give the serif and the mono; a pixel face must be
+licensed and listed in `CREDITS.md`.
+**Avoid:** more than once a film; styles whose widths differ so much that the word lurches.
 
 ---
 
@@ -382,6 +434,14 @@ expressed without motion.
 **What:** a word changes size by cutting (big for 6 f, then 0.66x for 4 f, then off), or a punch-in on the word only
 (x1.30, then x1.15) while the picture keeps its framing: type scale used as a camera move.
 
+### 8.6 Scale-jump cut
+**What:** the same words at two scales with nothing between: giant and cropped by the frame, then a hard cut to the same
+words small and whole, with the rest of the line. The size change is the event.
+**Numbers:** giant for 15-20 f, cap at 55-60 % of the frame height, cropped on the first letter, drifting 4-8 px/f; cut on
+the beat to the same words at a cap of 3-5 % of the frame height (never under 34 px), centred; the continuation cuts on
+beside them 4-6 f later. A kick on the cut, nothing on the small frame.
+**Avoid:** a zoom between the two scales (that is a camera move, and slow); changing the words across the cut.
+
 ---
 
 ## 9. Words, objects and seams
@@ -415,10 +475,44 @@ shot's container.
 See `turns.md`: outer words keep slot and direction across a cut; the middle word is replaced by a photo card at 1.8x
 that shrinks to rest in ~5 f.
 
+### 9.7 Picture inside the sentence
+**What:** two words part to open a slot in the line; a photo, a mark or a small UI card cuts into it and reads as a word;
+then the slot grows and the picture becomes the next shot.
+**Numbers:** the gap opens to ~110 x 60 px (about one cap height tall) as the words move apart on `ease.out` over 8 f (70 % in
+the first 2 f); the picture cuts on in the slot at full size in 1 f and holds 10-20 f while the line is read; then the slot
+grows 1.6x in 5 f on `ease.in` and hard-cuts to the same picture full frame, already pushing in; the words leave on the cut.
+`<Build>` holds a node in a slot (`{ slot, node }`), so the line re-centres around it.
+**Sells it:** the picture sits in the line at type height, between the words, not above them.
+**Avoid:** a picture floating over the line; a slot rounder than the world's radius.
+
+### 9.8 Flanking words
+**What:** two words sit at the left and right edges of a central picture or object, as if holding it, and tighten into place
+from the edge they touch.
+**Numbers:** each word starts at letter-spacing -0.35 em, its letters bunched against the object, and opens to 0 over
+10-12 f (`ease.out`, no overshoot), anchored on its inner edge so it grows outward; the second word 2-3 f after the first; the
+object pushes 1.00 -> 1.04 meanwhile.
+**Sells it:** the words take their shape from what stands between them.
+
 ---
 
 ## 10. Lockup type
 
+How the mark is born is chosen from the lockup menu (`film-grammar.md` lockups); these are the type recipes for it. The
+soft scan is last on purpose: it finishes a wordmark beside a mark, it does not give birth to one.
+
+- **Spaced cut-on:** letters cut on one per frame at +30 % letter-spacing; the gaps close expo-out over ~4 f; mark parts
+  slide together; the lockup settles 1 -> 0.9 and drifts.
+- **Glyph birth in light:** one glyph per 3 f, each born glowing in a light tint and cooling to white over 12 f, with a
+  large soft glow (1000 x 700 px) travelling with the newest glyph; the lockup re-centres in small cuts.
+- **Swell and stop:** a hard cut to a flat ground with the wordmark already at size; it swells 1.0 -> 1.22x on a long
+  `ease.out` (most of it in the first 6 f, settling over ~24 f, no overshoot) while one sheen crosses it (`effects.md`
+  section 8); the music drops out 0.7 s before the cut and a single kick lands on it.
+- **Scale-jump to tiny:** the claim giant and cropped for 15-20 f (8.6), then a hard cut to the same words at a cap of about
+  4 % of the frame height (34 px or more) under the mark, which is already settling.
+- **Letter toss** (one title per film): one glyph per frame, each from (-55..-75, -60..-82) px, +35..+40 deg, scale 0.5,
+  opacity 0.6, blur 3 px; position and rotation over 5 f `cubic-bezier(0.43,1.06,0.65,1.11)`; scale 0.5, 0.63, 0.79, 0.92,
+  1.04, 1.06, 1.05, 1.03, 1.0. Only scale overshoots. 3-4 glyphs mid-flight at once.
+- **Per-letter cut-on**, left to right ~2 f per character, leading characters light grey until they lock.
 - **Soft scan:** the wordmark slides left ~154 px over 12 f (`ease.out`) while a horizontal soft mask (band ~250 px)
   sweeps left to right *faster* than the slide (9 f, starting 1 f after), so letters inside the band read grey: ink
   developing. No per-letter motion, no blur, no scale.
@@ -429,14 +523,6 @@ const p = mix(at(frame, 1, 9, ease.out), 900, 1350) - 960 + 500; // mask centre 
 <div style={{ transform: `translateX(${tx}px)`, WebkitMaskImage:
   `linear-gradient(90deg,#000 0,#000 ${p - 125}px,transparent ${p + 125}px)` }}>{name}</div>
 ```
-- **Spaced cut-on:** letters cut on one per frame at +30 % letter-spacing; the gaps close expo-out over ~4 f; mark parts
-  slide together; the lockup settles 1 -> 0.9 and drifts.
-- **Glyph birth in light:** one glyph per 3 f, each born glowing in a light tint and cooling to white over 12 f, with a
-  large soft glow (1000 x 700 px) travelling with the newest glyph; the lockup re-centres in small cuts.
-- **Letter toss** (one title per film): one glyph per frame, each from (-55..-75, -60..-82) px, +35..+40 deg, scale 0.5,
-  opacity 0.6, blur 3 px; position and rotation over 5 f `cubic-bezier(0.43,1.06,0.65,1.11)`; scale 0.5, 0.63, 0.79, 0.92,
-  1.04, 1.06, 1.05, 1.03, 1.0. Only scale overshoots. 3-4 glyphs mid-flight at once.
-- **Per-letter cut-on**, left to right ~2 f per character, leading characters light grey until they lock.
 
 ---
 

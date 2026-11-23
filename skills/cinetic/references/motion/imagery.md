@@ -89,6 +89,20 @@ bright chime. Switching category: a hard text cut + a 3 f crossfade of the map t
 A cover or page is revealed top-down behind a soft 40 px edge, its colours starting washed and saturating as the edge passes.
 For "your product is being made".
 
+### 2.6 Seed, tile, colour
+**What:** each picture starts as a 4 px seed in the accent, springs to its tile size already showing the brand duotone, and
+cuts to true colour in 3 f. A grid of found or generated pictures arrives as a printed sheet, not a fade.
+**Numbers:** seed 4 px -> tile size over 6 f on `ease.out` (no overshoot); the duotone held 4-8 f; `develop` 0 -> 1 over 3 f;
+tiles 2 f apart in reading order; a click per tile at about -28 dB. The camera creeps over the grid.
+**Sells it:** the brand claiming every picture before it becomes real (2.3), at a pace no fade could keep.
+
+```tsx
+const s = start + i * 2, k = mix(at(frame, s, 6, ease.out), 4 / 420, 1);   // a 4 px seed to the full tile
+<div style={{ transform: `scale(${k})`, background: ACCENT }}>
+  <Photo src={staticFile(`img/${i}.jpg`)} w={420} h={525} grade={{ dark: INK, light: PAPER }} develop={at(frame, s + 12, 3, ease.out)} />
+</div>
+```
+
 ---
 
 ## 3. Picture cards and layouts
@@ -157,7 +171,8 @@ Cut-outs exist to change **layer order or ground**, never as stickers.
 - **Type behind the subject:** a word in front of a person until the "mask" moment, then between the backdrop and the cut-out.
 - **Product locked, world swaps:** the product cut-out stays at frame centre with a slow push (1.00 -> 1.12, every frame)
   while the ground cuts every 7-8 f (white with a soft drop shadow, then 2-3 saturated textures shot from above); a giant word
-  rises in front to hide a variant swap (`text.md` 7.4).
+  rises in front to hide a variant swap (`text.md` 7.4). With host products behind the artefact instead of textures, this
+  is the object-lock swap (`cards-ui.md`).
 - **Before / after on one picture:** pose fixed, one property changed by a cut (backdrop, garment colour, a label line). The
   most convincing way to show an edit is no transition at all.
 

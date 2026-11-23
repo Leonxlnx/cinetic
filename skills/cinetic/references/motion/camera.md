@@ -199,6 +199,8 @@ From an extreme close-up of the mark, pull back on a log-distance curve with a r
 ### 5.5 Macro to wide
 Any feature can open in macro (a single control at 1/5 of the frame height, real depth of field) and pull back to the
 whole context, or the reverse. Macro is where materials (glass rims, type texture) are seen; wide is where structure is.
+As the film's opening it is one choice among several (`film-grammar.md` openings), right only when that detail is the
+story; once per film is plenty.
 
 ---
 
@@ -251,6 +253,24 @@ blur for depth. Re-use the same world twice (night and day) so the climax feels 
 </AbsoluteFill>
 ```
 
+### 6.6 Four clocks
+**What:** a gutterless 2x2 grid (or 1x3) of panels, each a small film of the product at work (typing, a list filling, a chart
+drawing, a toggle flipping), each with its own camera and its own loop, cutting on its own schedule.
+**Numbers:** loop lengths that rarely coincide (37, 43, 53, 61 f), so no two panels cut on one frame; every panel changes
+something at least every 12 f and its camera creeps 1-2 %; hard panel edges, no gaps, no radius; one panel on the accent
+ground, one on the inverse. To leave, one panel grows to full frame as a window dive (`turns.md` 2.2) while the others keep
+running under it.
+**Sells it:** the asynchrony. Four panels cutting together read as one slide split in four.
+**Avoid:** four panels showing the same thing; gutters and rounded cards (that is a dashboard); text under 30 px inside a panel.
+
+```tsx
+const loops = [37, 43, 53, 61];
+{loops.map((len, i) => (
+  <div key={i} style={{ position: 'absolute', left: (i % 2) * 960, top: Math.floor(i / 2) * 540, width: 960, height: 540, overflow: 'hidden' }}>
+    <Panel kind={i} f={(frame - start) % len} />   {/* each panel plays its own loop from its local frame */}
+  </div>))}
+```
+
 ---
 
 ## 7. Projection and clocks
@@ -279,7 +299,57 @@ At most one or two per film, on a real impact (a heavy landing, the drop):
 
 ---
 
-## 8. Camera checklist
+## 8. Spectacle shots
+
+The film's one spectacle is picked by what the product claims (`film-grammar.md` spectacle). A wall pulled back from is in
+`cards-ui.md`; these are the camera-led ones.
+
+### 8.1 Cascade (speed, automation)
+**What:** one action ripples through 20-40 objects in a chain (rows tipping to done, folders sliding into a drive, cards
+flipping to approved), each set off by the one before, and the camera rides the front of the chain.
+**Numbers:** gaps between items compress: 4, 3, 3, 3, 2, 2, 2, 2, then 1 f; each item's own move is 6-8 f on `ease.in` into
+its hit with a 2 f settle, never a symmetric tween. The camera aims at the item that started 4-6 f ago, so it trails the front a little, pushing
+1.00 -> 1.15 as the chain speeds up; past the last item it overshoots ~120 px and brakes over 10 f. A tick per item at about
+-26 dB, rising in pitch; one low hit on the last.
+**Sells it:** the acceleration (the chain outruns the eye) and one item at the front always sharp, the done ones behind it
+dimmed 15 %.
+**Avoid:** every item moving at once (that is a wave, not a chain); a locked wide camera watching the chain.
+
+```tsx
+const gaps = [4, 3, 3, 3, 2, 2, 2, 2];                              // frames between items, compressing, then 1 f
+const startOf = (i: number) => s + gaps.slice(0, i).reduce((a, b) => a + b, 0) + Math.max(0, i - gaps.length);
+const tip = (i: number) => at(frame, startOf(i), 7, ease.in);       // each item's move into its hit
+```
+
+### 8.2 Accelerating montage (variety)
+**What:** 10-16 full-bleed examples of what the product can make or take, each in a different composition (a giant word, a
+UI crop, a photo, a chart, a split), hard-cut on the beat with shrinking intervals; one element stays fixed across every cut
+(the input field, the line "Ask for"), which is what the eye holds on to.
+**Numbers:** intervals 7, 7, 5, 5, 4, 3, 3, 3 f..., the last example held 12-20 f and carried into the next beat; each
+example enters already moving (a 1.00 -> 1.03 push over its own length, or a 20 px drift); the fixed element creeps; a tick
+per cut, the music lifting under the fastest run.
+**Sells it:** the compression and the change of composition on every cut. Same-layout examples read as a carousel.
+**Avoid:** crossfades or rolls between examples; the first two shorter than 7 f (the viewer must read what the run is).
+
+### 8.3 Fly-through of replicas (a model, an engine)
+**What:** 20-30 copies of the hero object in a tunnel or a field; the camera flies through them along one axis while a pulse
+of light or colour travels the other way, and brakes on the one hero.
+**Numbers:** camera speed ramps 20 -> 80 px/f in z over 30 f (`ease.in`), then brakes into the hero geometrically (x0.62 a
+frame); replicas 300-500 px apart in z, blurred by distance (nearest 8-12 px, hero 0-1 px, far 3-4 px); the pulse crosses 2-3
+replicas a frame; a roll of up to 8 deg unwinds during the brake.
+**Sells it:** near replicas whipping past the lens, and the brake landing exactly on the hero.
+
+### 8.4 Dive to the detail (precision)
+**What:** three hard-cut punch-ins down the scale of one point (x4, x16, x64), each a new depth, to the one digit, pixel or line
+the product got right; a hairline marker snaps to it at the last step.
+**Numbers:** each level 10-14 f, landing blur 6, 3, 0 px, then a +1 % creep; at x64 the detail fills ~40 % of the frame; the
+marker's two 1 px ticks cut on 2 f apart and its value (mono) steps by cuts. A tick per level, rising; a click on the marker.
+**Sells it:** every level still sharp and still real: draw the detail at the scale you show it, never a blown-up bitmap.
+**Avoid:** an animated zoom through the levels (slow, and soft in the middle).
+
+---
+
+## 9. Camera checklist
 
 - Every shot has a written camera: establish (pull-back), hold (creep), leave (push / whip / pull) or locked hero.
 - The fastest camera frame of each shot is where its cut, flash or dive happens.

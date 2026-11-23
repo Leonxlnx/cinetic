@@ -50,6 +50,13 @@ contact sheets before you render a final.
 24. **A whoosh on every cut**, a chime on every click, sounds that land a few frames late because the file's lead-in was ignored.
 25. **Ending on a reverb whoosh** over a logo fade.
 
+### Habit
+26. **The default chain.** A colour flood out of a button, a relay of three hosts (full-bleed, macro, tilted plane), a
+    pull-back into a wall with a wave, the claim over the wall, the wall draining into the mark: the same back half for
+    every product. Pick each device from its menu by what this product claims (`film-grammar.md` devices).
+27. **The same opening every time.** A macro on a detail and a log pull-back, because it ticks frame 0, the macro and the
+    scale jump at once.
+
 ---
 
 ## 2. The qualities (hit every one)
@@ -115,13 +122,13 @@ Run `node scripts/frames.mjs check` on the preview first: points 11-13 are measu
 | 4 | **One focal point** | each beat still | the brightest, most contrasted element is the subject; scale varies across the film (small, giant, cropped) |
 | 5 | **Carried seams** | seam pairs (last frame A / first frame B) | each pair shares an object, a direction, a shape or light; no blank frames, no grey mud midpoints, no two consecutive seams with the same device |
 | 6 | **Nothing holds** | overview, runs of identical thumbnails | no run of more than 4 identical thumbnails (1 s) before the lockup; frame-difference check: no two consecutive identical frames before the end |
-| 7 | **Restrained vocabulary** | count arrival styles and turn types | at most 2 text arrival styles; at most 1 overshoot family; flashes ≤ 4; brand device ≤ 3 uses |
+| 7 | **Restrained vocabulary** | count arrival styles and turn types against the `BEATS.md` Devices block | at most 2 text arrival styles; at most 1 overshoot family; flashes ≤ 4; signature device on ≤ 3 seams; no other seam device used twice; at most 1 colour flood, and at most two of flood, relay, wall and a mark gathered from a wall |
 | 8 | **Colour discipline** | overview | the accent appears only where it means something; no purple/green/default-gradient palette for an invented brand; dark grounds not pure black and not banding |
 | 9 | **Effects budget** | beat sheet at 100 % | glows sized to their source and in their own hue; grain only where the world allows; motion blur only on seam frames (blurred thumbnails appear in pairs at seams, not throughout) |
 | 10 | **An ending that rests** | last sheet row | the lockup is born from an object already on screen, lasts at most 2 s, has one CTA line; all end type is at most 15 % of the film |
 | 11 | **Filled frames** | overview + `frames.mjs check` coverage | the subject spans 65 % of the width or more on average (top studios' films: 70-93 %); UI is in close-up; no small card centred on empty ground |
 | 12 | **Pace** | `frames.mjs check` pace | at most 20 % of the half-seconds before the lockup are nearly still (top studios' films: 9-16 %); mean beat 0.8-1.6 s |
-| 13 | **Composition variety** | `BEATS.md` composition tags + overview | no two adjacent beats share a composition; at least 4 different compositions; at least 2 ground cuts |
+| 13 | **Composition variety** | `BEATS.md` composition tags + overview | no two adjacent beats share a composition; at least 4 different compositions; at least 2 ground cuts, by two different devices |
 | 14 | **The camera goes to the event** | overview, runs of 3+ thumbnails (0.7 s) in one framing | no framing holds longer than 0.7 s; when something new happens the camera is on it or travelling to it; nothing only changes inside a locked shot |
 | 15 | **The output seen big** | beat sheet | the product's answer, rewrite or result appears once in macro or as giant type (key words 120 px or more), not only at UI size; the spectacle beat lasts 1.5 s or more and reads |
 

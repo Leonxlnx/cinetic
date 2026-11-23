@@ -22,7 +22,7 @@ These eight qualities separate great launch films from template videos. Hold eve
    something larger than a caret changes at least every 0.5 s (a word joins, a block lands, the crop changes, a value
    steps). Each feature is one action and one visible result. The most common flaw is a hold that waits.
 2. **One world.** The film lives in one graphic language from first to last frame: one palette with 2-3 grounds (base,
-   accent flood, inverse), one display face, one material, two or three signature devices (see [worlds.md](references/worlds.md)). A supplied brand wins.
+   accent, inverse), one display face, one material, one signature device it repeats (see [worlds.md](references/worlds.md)). A supplied brand wins.
 3. **Continuity: nothing is ever just cut away.** One element becomes the next beat: the full stop grows into the next
    world, the button becomes the progress bar, the card rewrites itself, the camera dives into a tile and its inside is
    the next scene. Every scene change is carried by speed, shape, an object or light. Never a cross-fade, never an empty
@@ -30,8 +30,9 @@ These eight qualities separate great launch films from template videos. Hold eve
 4. **Motion with weight.** Arrivals are front-loaded (most of the travel in the first frames, a long settle: `ease.out`,
    springs). Exits accelerate and end at full speed, cut or carried on their last frame (`accel`). Zooms are
    exponential (`logScale`). Nothing that moves is linear. Nothing is ever dead still: a held shot creeps (`creep`, `drift`).
-5. **Type is an event.** Few words (1-6 a line), big, in the film's one display face, built rather than faded in: masked
-   rise, cut-on words, born-tint, a swap, a decode, type set on a surface. Text sits on clean ground, never over busy
+5. **Type is an event.** Few words (1-6 a line), big, in the film's one display face, built rather than faded in: cut-on
+   words, a last-word swap, a decode, an append that re-centres, a colour wake, type set on a surface, a masked rise (two
+   per film). Text sits on clean ground, never over busy
    imagery without a plate. One line on screen at a time.
 6. **The real product, really used.** Its UI is built in code at film size with real strings and believable data, used by
    a real pointer or by visible state changes (typing, presses, a list filling, a toggle, a count). Other companies'
@@ -40,7 +41,7 @@ These eight qualities separate great launch films from template videos. Hold eve
 7. **Fill the frame. Depth and density.** The subject spans 65 % of the width or more, or bleeds off an edge; UI is shown
    in close-up (its body text 30 px or more on screen), type is giant or cropped. A small card centred on an empty ground
    is the commonest tell. A frame has foreground, subject and background: blur by distance, depth ladders for stacks,
-   a 3D camera that tilts and pushes, scale jumps (macro on a caret, then wide on the whole system). Real detail in
+   a 3D camera that tilts and pushes, scale jumps (a giant word cut to a small one, a dive from the system to a caret). Real detail in
    quantity (twelve notifications, not three) makes a frame feel expensive. Restraint in effects: grain, one glow
    sized to its source, light that is timed.
 8. **Sound designed with the picture.** A licensed music bed that enters with the first idea; real recorded effects
@@ -63,10 +64,14 @@ green, no default AI gradient). Pull real names, numbers and integrations from w
 
 **3. Idea, then beats (write `BEATS.md`).** First find the film's one visual idea: a device taken from the product's
 name, its input -> output or its brand (a mosaic tool's tile, a writing app's ink, a model's light, a planner's page). It
-opens the film, carries the turns between beats, and becomes the end card. Then pick a structure from
-[film-grammar.md](references/film-grammar.md) and write one row per beat: frames, its composition tag, what the viewer sees, what moves and how, how it leaves into the
+opens the film, carries the turns between beats, and becomes the end card: it is the film's signature. Then write a
+**Devices** block at the top of `BEATS.md`, each slot picked from its menu in
+[film-grammar.md](references/film-grammar.md#devices) by what the product claims: the opening, each seam's device (the two
+ground cuts by two different devices), the spectacle, the integration form, the lockup. No device is used twice except the
+signature; the opening is not a macro pull-back by habit; the worked films' flood, relay and wall are options, not a
+template. Then pick a structure from [film-grammar.md](references/film-grammar.md) and write one row per beat: frames, its composition tag, what the viewer sees, what moves and how, how it leaves into the
 next beat, the sound. Check the rows against quality 1 (a beat every 0.8-1.6 s), quality 3 (every row says how it hands
-off) and the hard rules (no two adjacent compositions alike, two ground cuts, a 2 s lockup) before writing code. Budget
+off), the Devices block and the hard rules (no two adjacent compositions alike, two ground cuts, a 2 s lockup) before writing code. Budget
 the length: the core demo gets about half the film, each further feature at most 1.2 s, and a row over 1.6 s names its
 second and third event. A 20 s film that could be 15 should be 15.
 
@@ -125,7 +130,7 @@ Import everything from `src/kit` (`import { Words, Camera, ease, at } from '../.
 | product UI | `<Card>`, `<Window>`, `<InputBar>` (typing + send), `<Bubble>`, `<ChatStack>`, `<Thinking>`, `<Row>`, `<Chip>`, `<Toast>`, `<Terminal>`, `<Relay>` + `<PartnerSurface>` (the artefact carried through other products), `<Progress>`, `<Spinner>` (working -> check), `<StatePill>`, `<Wall>` (many of a thing), `<Button pressAt>`, `<Avatar>`, `<Cursor keys clicks exitAt>` (a real arrow pointer, arcing paths, presses), `focusStyles()`, `useArrive()` |
 | 3D object | `<GLView build draw state>` (three.js on one shared renderer: a ring, a device, a glass solid), `studioEnvironment()` |
 | imagery | `<Photo grade develop>` (one look for every picture, duotone develop), `<TextWindow>` (letters as windows onto a picture), `<Compare>` (before/after), `<Selection>` (a box with handles marking what was found) |
-| turns | `<Flood>` (a ground cut grown from an object), `<Iris>`, `<Tiles>`, `<Pixelate>`, `<Push>`, `<ZoomThrough>`, `<Flash>`; the best turns are hand-built from the scene's own objects |
+| turns | `<Iris>`, `<Push>`, `<Pixelate>`, `<Tiles>`, `<ZoomThrough>`, `<Flash>`, `<Flood>` (a ground cut grown from an object, once a film at most); the best turns are hand-built from the scene's own objects |
 | marks | `<Brand name="github">` (official mark, its own colour), `<BrandTile>`, `<Icon name="Calendar">` (Lucide) |
 | sound | `<Cues cues={[{ at, ...sfx['mixkit-2568'], volume }]}>`, `<Music src startFrom enterAt duck breaths>`, `db()`, `beats(bpm)` |
 
@@ -135,11 +140,11 @@ thinking dots that become the answer card, a pointer that opens a row), `kit/src
 world: thirty labelled blocks, floor type facing the camera, a dive into a block's face that is a terminal in macro,
 three ground cuts carried by objects, integrations as surfaces, a counter tower; read its `BEATS.md`),
 `kit/src/films/fieldnote/Film.tsx` (editorial paper and photographs: a stepped mosaic, letters as changing windows, a
-dive into a letter stroke, a scan with punch-ins, a before/after, a flood from the divider, a lockup inside a letter), `kit/src/films/lumen/Film.tsx` (a dark stage and a 3D glass
+dive into a letter stroke, a scan with punch-ins, a before/after, a lockup inside a letter), `kit/src/films/lumen/Film.tsx` (a dark stage and a 3D glass
 prism: the typed question becomes a beam, the beam fans into rays that light the numbers, a live 3D simulation as the
-answer, the name on an amber flood), `kit/src/films/inkwell/Film.tsx` (cream paper and a serif voice: a partner's real mark
-joining a line, a rewrite in macro, the rewritten sentence flying into a relay of three hosts on three grounds, a match cut
-into a wall of documents that drains into the mark). Never copy their content; learn their moves.
+answer, an iris from the ring onto amber for the name), `kit/src/films/inkwell/Film.tsx` (cream paper and a serif voice: a partner's real mark
+joining a line, the weak sentence struck out and falling, a rewrite in macro lifting off as a plate). Never copy their
+content or their order; take single moves.
 
 ## Hard rules
 
@@ -149,25 +154,31 @@ into a wall of documents that drains into the mark). Never copy their content; l
   already in motion; a claim may open the film only when it is set on that object, not alone on a ground.
 - **Vary the frame.** Tag every row of `BEATS.md` with its composition from the table in
   [film-grammar.md](references/film-grammar.md#compositions); no two rows in a row share one (never "caption + centred card"
-  for every feature). Every film has at least one macro moment and one scale jump (a giant word, a pull-back to all of it).
-- **Cut the ground.** The world has 2-3 grounds (base, accent flood, inverse); the film cuts between them at least twice,
-  on downbeats, carried by an object (a flood from a button, a block that fills the frame).
+  for every feature). Every film has at least one macro moment and one scale jump (a giant word cut small, a dive, a
+  pull-back); neither has to open the film.
+- **Cut the ground.** The world has 2-3 grounds (base, accent, inverse); the film cuts between them at least twice, on
+  downbeats, each cut by a different device: an iris from one of the film's shapes, a ground swap under a layer that stays,
+  a colour-flip cut with a size step, a flash-hidden swap, a dive whose inside is the new ground, or a flood from an object
+  (one flood per film at most) ([menu](references/film-grammar.md#seams-and-ground-cuts)).
 - **Short endings.** The lockup lasts at most 2 s (60 f) and grows out of an object already on screen; all end type
   (claim + lockup) is at most 15 % of the film, and the claim sits over a moving image, not alone on a ground. No mid-film
   brand card in films under 30 s, and a line of the claim is said once (never spent mid-film and repeated at the end). The
-  frame before the lockup is never a blank ground: the wall's tiles gather into a tile mark, lines slide into a line mark,
-  the last ink becomes the drop.
-- **Integrations are a relay, not a row.** Never a row of logo tiles, and never two or three same-layout cards in a row.
-  Keep the product's artefact fixed on screen and change the host around it, each host in a different composition and
-  bleeding off the frame (the message in a full-bleed chat, the same line as a cropped issue in a tracker, then as a row in
-  an editor seen in macro), cut on the beat with the artefact carried ([cards-ui.md](references/motion/cards-ui.md#relay)).
-  The artefact spans 55 % of the frame's width or more in every host (`Relay` scales it up to that) and is the largest
-  text in each host (60 px or more), not a thin strip on a white plate: set it on the accent or make it tall.
-- **One spectacle beat.** Every film has one shot that could never be a slide: a field of sixty replicas rising, a wall of
-  real documents pulled back from, a city of blocks, light splitting into beams. Give it 1.5-2.5 s, not 1 (count its frames in `T`), keep it readable (it starts on
-  the artefact the film has carried, large), make the quantity mean something (the accent does one thing across it: every
-  item flips, lights up, takes the artefact; `Wall event`) and keep its widest frame graphic: about 40 items or fewer in view,
-  every third or fourth inverse, the accent on a quarter of them at the peak, a count set large on it if there is one;
+  frame before the lockup is never a blank ground: the mark is born from what is on screen, in a way picked from the
+  [lockup menu](references/film-grammar.md#lockups) to suit the signature (spaced cut-on, trim-path draw, quarter-spin,
+  swell and stop, scale-jump to tiny, a bookend, out of a dive, gathered from the signature's own pieces), not by default
+  out of a draining wall.
+- **Integrations are not a row.** Never a row of logo tiles, and never two or three same-layout cards in a row. Pick one
+  form ([cards-ui.md](references/motion/cards-ui.md#integrations)): a relay (the artefact pinned, two hosts cut round it on
+  the beat, each in a different composition, bleeding off the frame), an object-lock swap (the artefact fixed while 5-7
+  hosts swap behind it at 4-6 f each), a sentence whose slot swaps partner marks, or one host used for real in macro; skip
+  the beat when the brief does not hinge on it. In every form the artefact spans 55 % of the frame's width or more
+  (`Relay` scales it up to that) and is the largest text in each host (60 px or more), not a thin strip on a white plate:
+  set it on the accent or make it tall.
+- **One spectacle beat.** Every film has one shot that could never be a slide, picked by what the product claims
+  ([menu](references/film-grammar.md#spectacle)): quantity, a wall pulled back from; speed, a cascade; variety, an
+  accelerating montage; reach, the product on real surfaces; transformation, a morph chain; a model, a hero object in
+  light; places, pictures inside type; precision, a dive to the one detail it got right. Give it 1.5-2.5 s, not 1 (count its
+  frames in `T`), keep it readable (it starts on the artefact the film has carried, large) and its widest frame graphic,
   never hundreds of tiny pale cells. Name it in `BEATS.md` (a row tagged `spectacle`); a film without that row is not
   ready to build. One spectacle, not two.
 - **One demo, end to end.** Show the product's core action once, completely. A second input or use case is a 1-2 s
@@ -179,9 +190,9 @@ into a wall of documents that drains into the mark). Never copy their content; l
   locked shot is a slide: when the next thing happens, the camera is already travelling to it.
 - **The product's output is seen big once.** The answer, the rewrite, the result: show it once in macro or as giant type
   (its key words 120 px or more on screen) before or instead of showing it at UI size (`<Output>` lands the words giant,
-  then carries them into the UI). Explaining is one claim per shot, set on or along the object, never a column of text
+  then carries them into the UI); a number is one option, not the default. Explaining is one claim per shot, set on or along the object, never a column of text
   beside it. Name the beat in `BEATS.md` (a row tagged `output-big`), like the spectacle.
-- **A series rotates its compositions.** Three features, three metrics, three hosts: each in a different composition
+- **A series rotates its compositions.** Three features, three metrics, two hosts: each in a different composition
   (macro, giant type, split, surface), never the same layout three times with the label swapped.
 - **The biggest word names the right thing.** The largest word on screen is the product, its object or its benefit, never
   an incidental noun from the story (a viewer reads the biggest word as the brand).

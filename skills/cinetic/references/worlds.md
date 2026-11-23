@@ -5,7 +5,8 @@ character and a small set of signature devices. Switching worlds mid-film is the
 may have two or three grounds that alternate as act markers (a colour script), but they share everything else.
 
 Each world below lists: when it fits, ground, palette rules, type, materials, motion character, signature devices (with
-links to recipes), the effect budget, the kit pieces that build it, and what to avoid.
+links to recipes), the effect budget, the kit pieces that build it, and what to avoid. A film takes one of its world's
+signature devices as its own and repeats it; the others may appear once each (`film-grammar.md` devices).
 
 ## Palette rules (all worlds)
 

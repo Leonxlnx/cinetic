@@ -42,7 +42,8 @@ Rules that hold across all good films:
 - **Open on a device, not a company introduction.** The first 2-3 s are motion with an idea in it: a mark that assembles
   from pieces, a word built in hot colour, a seed glyph that opens an iris onto a world, a hairline that becomes a
   shape. A brand sting under 2 s is fine if it *moves into* the film (it grows, dives, or becomes the first object).
-  A static logo card is never fine.
+  A static logo card is never fine. Pick the opening from the menu in [Devices](#openings); a macro pull-back is one entry
+  among nine, not the default, and the film's scale jump does not have to happen in its first second.
 - **Show the product or its artefact by 3-5 s** (an input field, a result, a card) unless the film is a teaser.
 - **The problem act escalates.** Words literally pile up, sizes grow (each new word ~1.4x the last), cadence quickens
   (~0.8 s per beat), and it ends on **one** held frame of 45-75 f: a single unresolved line, an empty field, a number that will not settle.
@@ -283,8 +284,9 @@ it); no intro longer than 1.2 s; the version number is the only number that anim
 ## Compositions
 
 Tag every row of `BEATS.md` with one of these. No two adjacent rows share a composition; a film uses at least four, and
-exactly one row also carries the tag `spectacle` (the shot that could never be a slide, 1.5-2.5 s), and one row carries
-`output-big` (the product's result in macro or as giant type, key words 120 px or more).
+exactly one row also carries the tag `spectacle` (the shot that could never be a slide, 1.5-2.5 s, chosen from the
+[spectacle menu](#spectacle)), and one row carries `output-big` (the product's result in macro or as giant type, key words
+120 px or more; a number is one option, a word, a picture or a state can be the giant output too).
 
 Length by format (shorter is nearly always better): update film 8-18 s, teaser 10-15 s, feature film 15-22 s, launch film
 20-30 s. A film runs long when it shows a second full demo: show the core action once, end to end, and any other input
@@ -296,9 +298,10 @@ as a 1-2 s variation of the same shot.
 | `macro` | one detail at 3-6x: a caret, a button, a number, a row | the moment of the action |
 | `giant-type` | 1-3 words at 20-40 % of the frame height, often cropped or bleeding off | promise, claim, a turn |
 | `type-on-surface` | words laid on an object or plane in perspective (a block's face, a floor, a card) | hooks, chapter titles |
-| `flood` | one colour or one object fills the frame (the ground cut itself) | turns between acts |
+| `ground` | one colour or one object fills the frame, by any carrier (`forge`'s beat sheet calls it `flood`) | turns between acts |
 | `split` | two grounds or two states side by side (before / after, input / output) | proof, comparison |
-| `wall` | many of a thing (twenty documents, a hundred runs), camera pulled back | "all of it", scale |
+| `quantity` | many of a thing (twenty documents, a hundred runs), by any spectacle in the menu (`forge`'s `wall`) | "all of it", scale |
+| `panels` | a gutterless grid of 2-4 panels, each on its own clock (`motion/camera.md` 6.6) | the product doing several things at once |
 | `object` | one hero object large, lit, turning (a device, a mark, a glass solid, a block) | reveal, climax |
 | `surface` | the product's artefact landing inside another product (a message in a chat, a row in a tracker) | integrations |
 | `stack` | a depth ladder or pile, tilted, filling the frame | the problem (too much), history |
@@ -308,13 +311,123 @@ as a 1-2 s variation of the same shot.
 
 ---
 
+## Devices
+
+Films that look alike share their devices, not their content. Before the rows of `BEATS.md`, write a **Devices** block:
+one line per slot, each picked from the menus below by what this product claims, not by habit and not by what the worked
+films did.
+
+```
+Devices (Ferry, moves files between clouds; the claim: speed)
+- signature: the file's folded corner, 5 uses: the hook, two seams, the integration swap, the lockup
+- opening: cut-on stack of the category line, the fold turning on its full stop
+- text arrivals: cut-on words; last-word swap
+- seams: 1-2 velocity cut (right) | 2-3 morph, fold -> progress chip | 3-4 colour-flip cut with a size step (ground cut 1)
+  | 4-5 dive into the chip | 5-6 fold (signature) | 6-7 ground swap under the moving file (ground cut 2) | 7-8 flash-hidden swap
+- spectacle: cascade, 32 folders tipping into the drive, 1.8 s
+- output-big: "4.2 GB in 9 s." giant, the digits stepping by cuts
+- integrations: object-lock swap, the file fixed while six clouds swap behind it
+- lockup: bookend, the fold closes over the last file and the corner is the mark
+```
+
+Rules for the block:
+- **No device twice in a film, except the signature.** The signature is the film's one visual idea (step 3 of the skill),
+  taken from its world's list in [worlds.md](worlds.md) or made from the product's object, and used 3-8 times: in the hook,
+  on up to three seams, in the output or the lockup. Every other device (a seam, the opening, the spectacle, the lockup)
+  appears once; the two text arrival styles are the exception, since they set every line.
+- **Budget:** one colour flood at most; a wall only when the claim is literally a quantity; one relay at most, with two
+  hosts; two odometers at most; masked rise and born tint count among the film's two text arrivals.
+- **At least two seams from the less obvious families:** a velocity cut, a morph, an iris from one of the film's shapes, a
+  push, tiles, a pixel bridge, a last-word swap, a scale-jump cut, a flash-hidden swap, a ground swap under a layer that stays.
+- **Not the default chain.** The worked films lean on a flood, a three-host relay, a wall pulled back from and a mark
+  gathered out of it. Use one of those only when the brief calls for it, never most of them in one film, never in that order.
+- **Ties:** when several options fit equally, count the letters of the product's name and count that far through those
+  options, wrapping round, so two different products land on different choices.
+
+### Openings
+
+Frame 0 is never empty and already moving. Pick one:
+- **Macro pull-back:** one detail at 3-6x pulls back in log space to the whole product (`motion/camera.md` 5.5). Only when
+  that detail is the story.
+- **Cut-on stack:** the category line in cut-on words, re-laid out to two lines (`motion/text.md` 1.1).
+- **Hot question:** a short question builds word by word in born tint and re-centres (`motion/text.md` 1.2, 2.1).
+- **Fast list hook:** one word per full-bleed still, 12-18 f each, hard cuts on hits (`motion/imagery.md` 8.1).
+- **Drop-in:** the product's object falls into frame and lands with weight (`motion/turns.md` 5.1, `motion/camera.md` 7.3).
+- **Four clocks:** panels of the product working, each on its own loop (`motion/camera.md` 6.6).
+- **Giant cropped word:** one word at 40-60 % of the frame height pans through (`motion/text.md` 8.2).
+- **Point to object:** a dot is born and becomes the first object (`motion/entrances.md` 1.3, `motion/turns.md` 5.8).
+- **Blueprint:** the product's UI draws on as construction lines and fills (`motion/entrances.md` 1.9).
+
+### Seams and ground cuts
+
+Every seam names its device; `motion/turns.md` section 0 picks it by how the two beats relate. Neighbouring seams never
+share one. The film's two ground cuts use two different devices:
+- **Iris** from one of the film's shapes (`motion/turns.md` 3).
+- **Ground swap under a layer that stays:** the line, the product or the pointer holds while the ground cuts on the beat
+  (`motion/turns.md` 9.1).
+- **Colour-flip cut with a size step** on the downbeat (`motion/turns.md` 9.2).
+- **Flash-hidden swap** (`motion/turns.md` 6).
+- **Push** between same-tone grounds (`motion/turns.md` 7.1), **pixel bridge** (4.3), **tiles** or a tile flood (4.1-4.2).
+- **Dive** whose inside is the new ground (`motion/turns.md` 2.3).
+- **Flood from an object** (`Flood` in [kit.md](kit.md)): once per film at most.
+
+### Spectacle
+
+The one shot that could never be a slide (1.5-2.5 s, the row tagged `spectacle`). Pick it from what the product claims; a
+wall is right only when the claim is literally a quantity.
+
+| The product claims | Spectacle | What the shot is |
+|---|---|---|
+| quantity ("all of it", "every PR") | a wall, pulled back from | many real items, about 40 in view at the widest, one event crossing them (`motion/cards-ui.md` wall) |
+| speed, automation | cascade | one action ripples through 20-40 objects in a chain, 4 f apart at first and accelerating, the camera riding the front (`motion/camera.md` 8.1) |
+| variety ("anything you ask") | accelerating montage | 10-16 full-bleed examples on hard cuts at 7, 7, 5, 5, 4, 3, 3 f, each in a different composition (`motion/camera.md` 8.2) |
+| works everywhere | object-lock swap | the artefact fixed at frame centre while 5-7 host worlds swap behind it at 4-6 f each (`motion/cards-ui.md` object-lock swap) |
+| reach, in the world | scale-out finale | the product on 4-6 real surfaces, each shot a pull-back to 0.42-0.83 (`motion/camera.md` 3.3) |
+| transformation | morph chain | one element becomes 5-8 things in a row with no cut (`motion/turns.md` 5.8) |
+| a model, an engine | hero object in light | a lit 3D object, a beam splitting, or a tunnel of replicas the camera flies through (`motion/camera.md` 8.3) |
+| places, pictures | imagery in type | letters as windows, the picture inside changing every 4-8 f (`motion/text.md` 7.1) |
+| precision | the dive to the detail | three hard-cut steps (x4, x16, x64) down to the one digit, pixel or line it got right (`motion/camera.md` 8.4) |
+| a platform with pillars | hub and dive | three objects visited by dives, snapping back to the hub between them (`motion/turns.md` 10) |
+| a bold claim | type spectacle | a marquee pair or a giant type pan crossing the frame, the product held between the lines (`motion/text.md` 8.1-8.2) |
+
+Whichever it is, it starts on the artefact the film has carried, large, so it reads, and its widest frame stays graphic.
+
+### Integrations
+
+Never a row of logo tiles. One form, or none when the brief does not hinge on integrations (`motion/cards-ui.md`
+integrations): a relay with two hosts, an object-lock swap, a sentence whose slot swaps partner marks on the beat, or one
+host used for real in macro.
+
+### Lockups
+
+The mark is born from what is on screen and settles within 2 s. Pick the way that suits the signature:
+1. **Spaced cut-on:** letters cut on one per frame at +30 % letter-spacing, the gaps close in 4 f, the mark's parts slide
+   together (`motion/text.md` 10).
+2. **Glyph birth in light:** one glyph every 3 f, each born glowing and cooling to the ink (`motion/text.md` 10).
+3. **Trim-path draw:** the mark draws itself while flying in large and blurred, then keeps shrinking (`motion/entrances.md` 5.4).
+4. **Quarter-spin:** a hard cut mid-spin; the mark un-rotates from 60-84 deg, settles, creeps 5 % (`motion/entrances.md` 5.1).
+5. **Swell and stop:** a hard cut to the ground; the wordmark swells to 1.22x on a long settle under one sheen; the music
+   drops out for 0.7 s before the last kick (`motion/text.md` 10).
+6. **Scale-jump to tiny:** the claim giant and cropped, then a hard cut to the same words small under the mark
+   (`motion/text.md` 10).
+7. **Bookend:** the opening device plays again, reversed or completed, and leaves the mark (section 3.6).
+8. **Out of a dive or a letter:** the camera snaps out of the object it went into, and that object is the mark
+   (`motion/turns.md` 2.5).
+9. **Gathered from the film's pieces:** only when the pieces are the signature device (its tiles, its handles, its strokes),
+   never a wall that just had a wave (`motion/entrances.md` 5.3, 5.6).
+
+The wordmark's soft scan (`motion/text.md` 10) is a finish beside the mark, not a way for the mark to be born.
+
+---
+
 ## 7. Planning discipline
 
 1. Write the argument in one sentence, then the beat list, before any motion.
 2. Put every beat in one `timeline.ts` (seconds -> frames once) that drives picture **and** sound cues, so one edit moves
    both. Total duration = sum of sequences minus overlaps.
 3. For every seam, write how it is carried: velocity, object, word, light, or ground on a beat. "Cut" alone is not an
-   answer. If two neighbouring seams use the same device, change one.
+   answer. If two neighbouring seams use the same device, change one; across the film, only the signature repeats
+   ([Devices](#devices)).
 4. Mark the held frames (at most one per act) and the breath gaps.
 5. Mark which elements run on the stepped clock.
 6. Copy: titles 2-4 words, sentence case unless the world says caps, real nouns (real file names, real numbers, real

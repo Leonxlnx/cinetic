@@ -174,7 +174,8 @@ Fields: `surface ink muted line fill accent accentInk radius font mono shadow`.
   with that product's real mark in the header; the item at `landAt` arrives lit. Integrations as use, not logo rows.
 - **`<Spinner start doneAt size color done>`**: working -> done: an arc stepping 45 degrees a frame that closes into a check.
 - **`<Wall cols rows w h gap start wave from event={{ at }} render={(i, e) => ...}>`**: the same thing in quantity, filling in a compressing
-  wave from the centre; pair it with a camera pull-back for the "all of it" scale jump. Every item must be real content
+  wave from the centre; for a quantity claim, pair it with a camera pull-back (one spectacle among several, see
+  [cards-ui.md](motion/cards-ui.md#wall); not the default). Every item must be real content
   (a real title, real lines), never grey placeholder bars. `event={{ at, wave }}` starts a second wave from the same origin and
   `render(i, e)` receives the item's progress in it (0-1): every item does one thing (flips from sketch to real, takes the
   accent, lights its line), which is what makes the quantity mean something. `start` far in the past shows the wall whole.
@@ -197,8 +198,9 @@ Each takes `from` and `to` (the two shots as nodes), `start`, `dur`, and renders
 - **`<Flood from={{ x, y, w, h, r }} start dur color under to>`** a ground cut grown from an object's own box (a button, a
   card) until it fills the frame; `to` (the next shot) appears inside it (`reveal` shows it at full opacity, a window
   opening); `source` keeps the object (a URL, a label)
-  readable on top while it floods.
-  `gather` runs it backwards: the ground drains into the box and becomes the object (a chip, a button, the mark; draw that
+  readable on top while it floods. One flood per film at most; the other ground cut uses another device
+  ([film-grammar.md](film-grammar.md#seams-and-ground-cuts)).
+  `gather` runs it backwards: the ground drains into the box and becomes the object (a chip, a button, a tile; draw that
   object in `under` at the same box), uncovering `under`.
 - **`<Flash start dur color>`** a burst of light that hides a swap at its peak.
 The strongest turns are built by hand from the scene's own objects (the full stop that grows, the card that becomes the next
