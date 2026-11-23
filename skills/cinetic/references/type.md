@@ -75,7 +75,9 @@ A resting line (the size a normal statement settles at) is sized by how many wor
 
 - By default a line sits at the frame's centre: x 960, its optical centre at y 520-540 (a hair above the middle).
 - It is alone: the only words on screen, on a clean patch of ground. Nothing behind it is busier than a lit field, a soft
-  gradient or a dimmed, blurred picture, and its contrast against what is behind it is 7:1 or more.
+  gradient or a dimmed, blurred picture, and its contrast against what is behind it is 7:1 or more. A brand accent that
+  cannot reach that against the neutrals (a mid blue, an orange) never carries a statement as its ground or its colour:
+  use it for shapes, the accent word's underline or glow, and a lighter tint of it for text on dark.
 - Clean ground over the film's picture (a claim, a veil) is the last image dimmed and blurred: it keeps its colour, and at
   least a third of the frame stays in a mid or dark tone. Never wash it to near-white or cut to bare canvas to make the
   line read; that empties the frame instead of quieting it.

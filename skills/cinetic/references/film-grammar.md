@@ -370,8 +370,9 @@ Rules for the block:
   push, tiles, a pixel bridge, a last-word swap, a scale-jump cut, a flash-hidden swap, a ground swap under a layer that stays.
 - **Not the default chain.** The worked films lean on a flood, a three-host relay, a wall pulled back from and a mark
   gathered out of it. Use one of those only when the brief calls for it, never most of them in one film, never in that order.
-- **Not the examples either.** A film uses at most two devices that appear in any one example block above or in any one
-  worked film. Compare the finished block with each of them; past two shared, re-pick.
+- **Not the examples either.** Never copy an example's sequence. Compare the finished block with each example block and
+  worked film; when more than two slots match one of them, re-pick the slots the brief cares least about (the brief's own
+  needs win over this count).
 - **Count through every slot.** For each slot, list the options on its menu that fit what the product claims, count the
   letters of the product's name through that list (wrapping round) and take the one you land on; if it breaks a rule
   above, take the next. Two products with the same claim then land on different picks.

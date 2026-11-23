@@ -70,7 +70,7 @@ opens the film, carries the turns between beats, and becomes the end card: it is
 **Devices** block at the top of `BEATS.md`, each slot picked from its menu in
 [film-grammar.md](references/film-grammar.md#devices) by what the product claims: the opening, the type treatment, each seam's
 device (the two ground cuts by two different devices), the spectacle, the integration form, the lockup. No device is used
-twice except the signature, and the block shares at most two devices with any one example block or worked film.
+twice except the signature, and the block never copies an example's sequence.
 Then pick a structure from [film-grammar.md](references/film-grammar.md) and write one row per beat: frames, its composition tag, what the viewer sees, what moves and how, how it leaves into the
 next beat, the sound. Check the rows against quality 1 (a beat every 0.8-1.6 s), quality 3 (every row says how it hands
 off), the Devices block and the hard rules (no two adjacent compositions alike, two ground cuts, a 2 s lockup) before writing code. Budget

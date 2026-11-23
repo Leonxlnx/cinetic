@@ -114,6 +114,7 @@ function musicRunsOut(dur) {
   return out;
 }
 
+const GROUND_LIT = process.env.CINETIC_CHECK_OLDGROUND ? false : true; // private calibration switch
 /** Measure a rendered film: coverage, pace, empty frames, the length of its ending (low-res analysis via ffmpeg). */
 function checkFilm(file, lockupS) {
   const FPS = 4;
@@ -140,7 +141,12 @@ function checkFilm(file, lockupS) {
     let minX = W, maxX = -1, minY = H, maxY = -1, fg = 0;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const p = px(f, x, y);
-      if (Math.abs(p[0] - g[0]) + Math.abs(p[1] - g[1]) + Math.abs(p[2] - g[2]) > 42) { fg++; if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+      // ground: the border's colour, or the same colour lit or shaded a little (a lit ground's glow is not a subject)
+      const d = Math.abs(p[0] - g[0]) + Math.abs(p[1] - g[1]) + Math.abs(p[2] - g[2]);
+      const lp = (p[0] + p[1] + p[2]) / 3, lg = (g[0] + g[1] + g[2]) / 3;
+      const chroma = Math.abs(p[0] - lp - (g[0] - lg)) + Math.abs(p[1] - lp - (g[1] - lg)) + Math.abs(p[2] - lp - (g[2] - lg));
+      const litGround = Math.abs(lp - lg) <= 34 && chroma <= 22;
+      if (d > 42 && !(GROUND_LIT && litGround)) { fg++; if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
     }
     const width = maxX >= 0 ? (maxX - minX + 1) / W : 0;
     const height = maxY >= 0 ? (maxY - minY + 1) / H : 0;

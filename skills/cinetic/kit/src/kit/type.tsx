@@ -394,7 +394,9 @@ export const Scramble: React.FC<{ text: string; start?: number; per?: number; fl
         const visible = frame >= start + i * per;
         if (!visible) return <span key={i} style={{ opacity: 0 }}>{c}</span>;
         if (frame >= lock || c === ' ') return <span key={i}>{c}</span>;
-        const g = glyphs[Math.floor(rand(i * 31 + Math.floor(frame / 2) * 7) * glyphs.length)];
+        const g0 = glyphs[Math.floor(rand(i * 31 + Math.floor(frame / 2) * 7) * glyphs.length)];
+        // the flicker takes the case of the letter it settles to (a sentence-case line never flickers in capitals)
+        const g = c !== c.toUpperCase() ? g0.toLowerCase() : g0;
         return (
           <span key={i} style={{ opacity: 0.75 }}>
             {g}
