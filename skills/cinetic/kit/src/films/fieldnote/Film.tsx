@@ -1,32 +1,52 @@
-// "Fieldnote": the v2 rework. ~15.8 s at 30 fps. An invented product (ask any question about any place on Earth,
+// "Fieldnote": the v2 rework. ~15.3 s at 30 fps. An invented product (ask any question about any place on Earth,
 // answered from satellite imagery). World: editorial paper, bare photo tiles with mono coordinates, one sans voice (Inter:
 // statements, labels and the UI; bold only for the window device, Earth and the wordmark), one cobalt accent that means
 // "found / changed". The editorial feel lives in the layout and the photography, not in a second face.
-// Grounds: paper (base), the photograph itself (after the dive), then the relay's hosts take the world's grounds in turn
-// (paper, cobalt, ink). Pictures: NASA / ISS crew Earth observations and Earth Observatory images (public domain).
+// Grounds: paper (base), the photograph (after the dive), cobalt (the picture in a cobalt duotone, the found sand left in
+// its own colour), paper again around the wordmark. Pictures: NASA / ISS crew Earth observations (public domain).
+//
+// DEVICES (the claim: any place, answered from the picture itself)
+// - signature: letters as windows onto the earth, 4 uses: "Earth" with a new place inside every 8 f (the hook and the
+//   spectacle), the dive into the stem of its h (seam), the found sand kept as a window of true colour in the cobalt
+//   world (the proof), the paper closing round the picture until it is the wordmark (the lockup)
+// - opening: a stepped mosaic of 140 places, already moving on frame 0, collapsing into the centre
+// - type treatment: a picture inside the line (letters as windows), on the giant word and the wordmark
+// - text arrivals: masked rise (the lead-in, the line under the figure, the CTA); typing with a burst (the UI)
+// - seams: 0-1 converge, the mosaic collapses into the word | 1-2 dive into the h (the picture becomes the ground) |
+//   2-3 a paper plate rises over the picture | 3-4 / 5-6 the one panel morphs (plate -> bar -> card) | 4-5 punch-ins with
+//   a whip | 6-7 the card leaves left as the divider sweeps | 7-8 the divider whips off and the camera travels to the
+//   sandbank (one shot) | 8-9 colour-flip cut with a size step: cobalt leaves the sand and takes the world (ground cut,
+//   the picture -> cobalt), the camera a size up | 9-10 out of a letter: the paper closes round the picture until it
+//   is the wordmark (ground cut, cobalt -> paper)
+// - spectacle: imagery in type, "Earth" at 650 px with a new place inside every 8 f, 1.5 s
+// - output-big: "+18 %" at 250 px on the answer; the proof's "+3.4 km²" at 230 px on the found sand
+// - proof: the sandbank traced from the photograph itself, lit cobalt in five steps from its 2000 cores to 2026
+// - integrations: none (the brief hinges on places, not partners)
+// - lockup: out of a letter, the cobalt picture the camera has been in is the inside of "fieldnote"; it drains to ink
+//   on the music's last lift
 //
 // Beats (composition tag in brackets; no two neighbours share one):
-//   0  wall          SPECTACLE (1.8 s): a wall of a hundred and forty places, the camera travelling across it and
-//                    pulling back while big out-of-focus tiles race past in front; the wall collapses into the centre
-//   1  giant-type    Earth as windows, a new place in the letters every 0.27 s, coordinates stepping under it
+//   0  quantity      a wall of a hundred and forty places, the camera travelling across it and pulling back while big
+//                    out-of-focus tiles race past in front; the wall collapses into the centre
+//   1  giant-type    SPECTACLE (1.5 s): Earth as windows, a new place in the letters every 0.27 s, coordinates under it
 //   2  macro         the dive into the stem of the h: the frame ends up inside the picture
 //   3  type-on-surf  the question on a paper plate over the photo: three words typed, the rest lands at once
 //   4  full-ui       the plate shrinks into the input bar, send, a scan line reads 26 years of the picture
 //   5  macro         the camera punches in on each finding (selection + label), whip between them
-//   6  full-ui       the bar grows into the answer card: +18 % new land, the years stepping up as bars
+//   6  full-ui       OUTPUT-BIG: the bar grows into the answer card: +18 % new land, the years stepping up as bars
 //   7  split         before / after: the divider sweeps twice, giant years ride with it, the camera pulls out
-//   8  relay         the pull-back continues: the before/after becomes the artefact, fixed on screen, while its host
-//                    changes around it on the beat: a full-bleed Notion page on paper, a Gmail thread on a tilted
-//                    cobalt plane, a Jupyter notebook in ink with a giant cropped `fn.ask(` line
-//   9  macro         the camera dives into the artefact's picture
-//  10  object        the picture is the inside of a letter: pull back to the wordmark, the photo drains to ink (2 s)
+//   8  macro         PROOF (1.6 s): the divider whips off, the camera travels into the sandbank; the year tab turns
+//                    back to 2000 and steps to 2026 while the sand traced from the picture lights cobalt, a step every
+//                    4-5 f, the camera pushing in
+//   9  giant-type    colour-flip with a size step: the world goes cobalt, the found sand stays in its own colour,
+//                    "+3.4 km²" at 230 px, "Great Bahama Bank" rises under it (0.7 s)
+//  10  object        LOCKUP (2 s): the paper closes round the cobalt picture until it is the wordmark (the found sand
+//                    in its own colour inside the "note"); it drains to ink on the music's lift; the CTA rises
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import {
   accel,
   at,
-  Brand,
-  BrandTile,
   camAt,
   Camera,
   clamp,
@@ -56,21 +76,19 @@ import {
   type Grade,
 } from '../../kit';
 import { sfx } from '../../sfx';
+import { SAND_LEVELS } from './sandbank';
+import { WORDMARK_PATH, WORDMARK_UNION } from './wordmark';
 
 // ---------------------------------------------------------------- world
 const PAPER = '#EDEAE3';
-const PAPER_2 = '#E1DDD3';
 const INK = '#121212';
-const INK_GROUND = '#151413';
 const COBALT = '#2347FF';
-const COBALT_LIGHT = '#93A5FF';
 const MUTED = '#5E5A52';
 // one voice: Inter for statements (480), labels and UI (sentence case, 0 tracking at UI sizes); mono only for coordinates
 // and code as written; bold (700, never heavier) only where letters are windows onto a picture
 const voice: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 480, letterSpacing: '-0.015em', color: INK };
 const mono: React.CSSProperties = { fontFamily: fonts.mono, letterSpacing: '0', color: MUTED };
 const heavy: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 700, letterSpacing: '-0.04em' };
-const sans: React.CSSProperties = { fontFamily: fonts.inter, letterSpacing: '0' };
 /** A small label in the UI face (a status chip, a selection's tag, a caption): sentence case, never mono capitals. */
 const tag: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 520, letterSpacing: '0', fontVariantNumeric: 'tabular-nums' };
 const GRADE: Grade = { dark: '#2B2118', light: '#F1E9DA', look: 'saturate(1.05) contrast(1.04)' };
@@ -102,16 +120,21 @@ const T = {
   answer: S + 74,
   cardOut: S + 114,
   compare: S + 126,
-  relay: S + 172, // the picture becomes the artefact (pull-back), host A around it
-  land: S + 188,
-  hostB: S + 198,
-  hostC: S + 218,
-  into: S + 240,
-  lock: S + 258,
-  drain: S + 286,
-  url: S + 290,
-  end: S + 316,
+  // the proof: the divider whips off (the 2026 picture fills the frame on the beat), the camera travels to the sandbank
+  proof: S + 172,
+  wipeEnd: S + 176,
+  // the camera lands, then the sand lights in steps on the stepped clock: the 2000 cores outlined, then four cobalt
+  // steps (5, 5, 4, 5 f); the last lands 10 f before the flip
+  land: S + 186,
+  grow: [S + 190, S + 195, S + 200, S + 204, S + 209],
+  flip: S + 219, // colour-flip cut with a size step, on the beat (ground cut: the picture -> cobalt)
+  flipLine: S + 222,
+  lock: S + 240, // on the beat: the paper closes round the picture (ground cut: cobalt -> paper)
+  url: S + 270,
+  drain: S + 283, // the music's last lift
+  end: S + 300,
 } as const;
+const GROW_YEARS = ['2000', '2006', '2013', '2020', '2026'];
 
 // ---------------------------------------------------------------- 0. the wall of places (the spectacle)
 const PLACES = [
@@ -246,7 +269,7 @@ const Earth: React.FC = () => {
 
 // ---------------------------------------------------------------- 3-7. the photo: ask, read, find, answer, compare
 // findings on the 1920x1080 photo (world px of the stage)
-const A = { x: 1236, y: 432, w: 452, h: 262 }; // the sandbank
+const A = { x: 1250, y: 122, w: 650, h: 336 }; // the sandbank (the outlines in sandbank.ts sit inside it)
 const B = { x: 1004, y: 470, w: 196, h: 318 }; // the new channel
 const aim = (x: number, y: number, z: number) => {
   // keep the frame inside the picture at zoom z
@@ -264,24 +287,37 @@ const CAM: CamKey[] = [
   { f: T.answer, ...aim(B.x + B.w / 2, B.y + B.h / 2, 2.12), curve: ease.out },
   { f: T.answer + 18, zoom: 1.08, curve: ease.out },
   { f: T.compare, zoom: 1.12, curve: ease.out },
-  // the camera starts pulling out during the compare; the relay's pull-back continues the same move
-  { f: T.relay, zoom: 1, curve: ease.in },
+  // the camera pulls out while the divider sweeps, then travels to the sandbank as the divider whips off
+  { f: T.compare + 34, zoom: 1, curve: ease.inOut },
+  { f: T.proof - 4, zoom: 1.006, curve: ease.out },
+  { f: T.land, ...aim(1600, 280, 1.8), curve: ease.inOut },
+  { f: T.flip - 1, ...aim(1600, 280, 1.93), curve: ease.out },
+  // the colour flip is a cut with a size step; then the paper closes in while the picture pulls back behind it
+  { f: T.flip, cut: true, ...aim(1580, 400, 2.4) },
+  { f: T.lock, ...aim(1580, 400, 2.5), curve: ease.out },
+  // at rest the found sand sits behind "ldnote", so the mark holds the finding in its own colour
+  { f: T.lock + 32, ...aim(1320, 330, 1.6), curve: ease.out },
+  { f: T.end, ...aim(1320, 330, 1.57), curve: ease.inOut },
 ];
 const split = (f: number) =>
-  keys(
-    f,
-    [
-      [T.compare, 0],
-      [T.compare + 16, 0.64],
-      [T.compare + 32, 0.36],
-      [T.relay - 2, 0.5],
-    ],
-    ease.out,
-  );
-const toScreenX = (f: number, wx: number) => {
+  f < T.proof - 4
+    ? keys(
+        f,
+        [
+          [T.compare, 0],
+          [T.compare + 16, 0.64],
+          [T.compare + 32, 0.36],
+          [T.proof - 4, 0.42],
+        ],
+        ease.out,
+      )
+    : // the whip: accelerating off the left edge, at full speed on its last frame
+      mix(accel(f, T.proof - 4, T.wipeEnd - T.proof + 4, 1.4), 0.42, -0.02);
+const toScreen = (f: number, wx: number, wy: number) => {
   const c = camAt(f, CAM);
-  return 960 + c.zoom * (wx - 960 - c.x);
+  return { x: 960 + c.zoom * (wx - 960 - c.x), y: 540 + c.zoom * (wy - 540 - c.y) };
 };
+const toScreenX = (f: number, wx: number) => toScreen(f, wx, 540).x;
 
 const Graticule: React.FC = () => {
   const f = useCurrentFrame();
@@ -303,21 +339,66 @@ const Graticule: React.FC = () => {
 const label = (text: string): React.ReactNode => <span>{text}</span>;
 const labelStyle: React.CSSProperties = { ...tag, color: '#fff', fontSize: 30, background: COBALT, padding: '7px 14px', top: -56 };
 
-// the before/after picture at stage size (the stage during the compare, and the relay's artefact afterwards)
-const Picture: React.FC<{ split: number; handle?: boolean }> = ({ split: sp, handle = true }) => (
+// the before/after picture at stage size (the stage during the compare)
+const Picture: React.FC<{ split: number }> = ({ split: sp }) => (
   <Compare
     w={1920}
     h={1080}
     split={sp}
-    handle={handle}
     before={<Photo src={IMG.channels} w={1920} h={1080} grade={GRADE} develop={0} position={POS} zoom={0} />}
     after={<Photo src={IMG.channels} w={1920} h={1080} grade={GRADE} position={POS} zoom={0} />}
   />
 );
 
+// ---------------------------------------------------------------- 8. the proof: the sand traced from the picture
+// Five nested outlines of the bright sand (sandbank.ts): the 2000 cores outlined in white, then the new land lights
+// cobalt outwards in four steps on the stepped clock, the newest ring flaring as it lands. Drawn in stage px, under the
+// camera, so it rides the picture.
+const Growth: React.FC = () => {
+  const f = useCurrentFrame();
+  const fs = onTwos(f);
+  const k = T.grow.filter((g) => fs >= g).length - 1;
+  if (k < 0) return null;
+  const pop = 1 - at(f, T.grow[k], 6, ease.out);
+  return (
+    <svg width={1920} height={1080} style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible' }}>
+      {k >= 1 && (
+        <>
+          {/* the earlier extent stays a deeper cobalt, the step that just landed is lighter and flares */}
+          {k >= 2 && <path d={SAND_LEVELS[k - 1]} fill={COBALT} fillOpacity={0.62} fillRule="evenodd" />}
+          <path d={SAND_LEVELS[k]} fill={COBALT} fillOpacity={0.42 + 0.3 * pop} fillRule="evenodd" stroke="#E4E9FF" strokeWidth={2 + 2.5 * pop} strokeLinejoin="round" />
+        </>
+      )}
+      <path d={SAND_LEVELS[0]} fill="rgba(255,255,255,.4)" fillRule="evenodd" stroke="#FFFFFF" strokeWidth={2.4} strokeLinejoin="round" />
+    </svg>
+  );
+};
+
+// the colour flip: the whole picture in a cobalt duotone except the found sand, which keeps its own colour (a hole in the
+// duotone layer, traced from the picture); the lockup's letters are windows onto this same picture
+const DUO: Grade = { dark: '#030A40', light: '#2943D5' };
+const HOLE = `path(evenodd, 'M-3000 -3000 H5000 V5000 H-3000 Z ${SAND_LEVELS[4]}')`;
+const SandShade: React.FC = () => {
+  const f = useCurrentFrame();
+  const o = at(f, T.lock + 4, 10, ease.inOut) * 0.3;
+  return o > 0 ? <path d={SAND_LEVELS[4]} fill="#2B2118" fillOpacity={o} fillRule="evenodd" /> : null;
+};
+const Flipped: React.FC = () => (
+  <>
+    <AbsoluteFill style={{ clipPath: HOLE }}>
+      <Photo src={IMG.channels} w={1920} h={1080} grade={DUO} develop={0} position={POS} zoom={0} />
+    </AbsoluteFill>
+    {/* the found sand's lit rim; on the paper of the lockup the sand takes a warm shade so the letters it fills still read */}
+    <svg width={1920} height={1080} style={{ position: 'absolute', left: 0, top: 0 }}>
+      <SandShade />
+      <path d={SAND_LEVELS[4]} fill="none" stroke="#FFFFFF" strokeOpacity={0.85} strokeWidth={1.6} strokeLinejoin="round" />
+    </svg>
+  </>
+);
+
 const Stage: React.FC = () => {
   const f = useCurrentFrame();
-  const comparing = f >= T.compare;
+  const comparing = f >= T.compare && f < T.wipeEnd;
   const sel = 1 - at(f, T.cardOut, 10, ease.in);
   return (
     <Camera keys={CAM}>
@@ -330,6 +411,8 @@ const Stage: React.FC = () => {
             <Selection {...B} start={T.find2} color="#FFFFFF" label={label('New channel 6.1 km')} labelStyle={labelStyle} />
           </div>
         )}
+        {f >= T.grow[0] && f < T.flip && <Growth />}
+        {f >= T.flip && <Flipped />}
       </AbsoluteFill>
     </Camera>
   );
@@ -439,225 +522,108 @@ const Panel: React.FC = () => {
 
 // giant years that ride with the compare divider (sx: the divider's x in the layer they sit in)
 const yearTab: React.CSSProperties = { position: 'absolute', top: 96, background: PAPER, padding: '4px 26px 10px', fontFamily: fonts.inter, fontWeight: 620, fontSize: 132, letterSpacing: '-0.025em', lineHeight: 1, color: INK, fontVariantNumeric: 'tabular-nums' };
-const YearTabs: React.FC<{ sx: number; born?: number }> = ({ sx, born = 1 }) => (
-  <>
-    <div style={{ ...yearTab, right: 1920 - sx + 26 }}>2000</div>
-    <div style={{ ...yearTab, left: sx + 26, color: COBALT, transform: `translateY(${mix(born, -160, 0)}px)` }}>2026</div>
-  </>
-);
+// The 2026 tab rides the divider; when the divider whips off the left edge it parks there and becomes the proof's
+// year counter: back to 2000 as the camera lands on the sandbank, then one year per growth step, on the same frames.
 const Years: React.FC = () => {
   const f = useCurrentFrame();
-  if (f < T.compare) return null;
-  return <YearTabs sx={toScreenX(f, split(f) * 1920)} born={at(f, T.compare + 2, 8, ease.out)} />;
+  if (f < T.compare || f >= T.flip) return null;
+  const sx = toScreenX(f, split(f) * 1920);
+  const k = T.grow.filter((g) => onTwos(f) >= g).length - 1;
+  const year = k < 0 ? '2026' : GROW_YEARS[k];
+  const born = at(f, T.compare + 2, 8, ease.out);
+  return (
+    <>
+      {sx > -400 && <div style={{ ...yearTab, right: 1920 - sx + 26 }}>2000</div>}
+      <div style={{ ...yearTab, left: Math.max(26, sx + 26), color: year === '2026' ? COBALT : INK, transform: `translateY(${mix(born, -160, 0)}px)` }}>{year}</div>
+    </>
+  );
 };
 
-// ---------------------------------------------------------------- 8-9. the relay: one artefact, three hosts
-// The before/after (with its years) is the artefact. It stays at ART on screen; the host changes around it on the beat,
-// each in a different composition and on one of the world's grounds, bleeding off every edge.
-const ART = { x: 560, y: 300, w: 1080, h: 607.5 };
-const AS = ART.w / 1920;
-const Z0 = 1 / AS;
-// the dive into the artefact pivots on a point inside its "after" half
-const DIVE = { x: ART.x + 1460 * AS, y: ART.y + 600 * AS };
-
-const NOTION_PAGES = ['Andros, north shoals', 'Exuma cays', 'Field notes', 'Survey boat', '2019 storm season', 'Sandbank archive'];
-const HostNotion: React.FC = () => {
+// ---------------------------------------------------------------- 9. the finding, giant, on the cobalt world
+const Finding: React.FC = () => {
   const f = useCurrentFrame();
-  const d = creep(f, T.relay, T.hostB - T.relay + 12);
+  const push = 1 + 0.035 * creep(f, T.flip, T.lock - T.flip);
+  // leaves accelerating as the paper closes in, at full speed on its last frame
+  const out = accel(f, T.lock - 5, 6, 1.6);
   return (
-    <AbsoluteFill style={{ background: PAPER }}>
-      {/* the sidebar, cropped by the left edge */}
-      <div style={{ position: 'absolute', left: -60, top: -40, width: 520, height: 1160, background: PAPER_2, transform: `translateY(${-d * 30}px)` }}>
-        <div style={{ position: 'absolute', left: 100, top: 92, display: 'flex', alignItems: 'center', gap: 18 }}>
-          <Brand name="notion" size={52} color={INK} />
-          <div style={{ ...sans, fontSize: 34, fontWeight: 600, color: INK }}>Coastal lab</div>
-        </div>
-        {NOTION_PAGES.map((p, i) => (
-          <div key={p} style={{ position: 'absolute', left: 84, top: 210 + i * 72, width: 400, height: 58, borderRadius: 10, background: i === 0 ? '#D2CDC1' : 'transparent', display: 'flex', alignItems: 'center', gap: 16, paddingLeft: 16 }}>
-            <div style={{ width: 22, height: 26, borderRadius: 4, border: `2.5px solid ${i === 0 ? INK : '#8C877D'}` }} />
-            <div style={{ ...sans, fontSize: 30, fontWeight: i === 0 ? 600 : 450, color: i === 0 ? INK : MUTED, whiteSpace: 'nowrap' }}>{p}</div>
-          </div>
-        ))}
+    <AbsoluteFill style={{ transform: `translateY(${out * 760}px) scale(${push})`, transformOrigin: '50% 70%', filter: out > 0.05 ? `blur(${out * 14}px)` : undefined }}>
+      <div style={{ position: 'absolute', top: 650, width: '100%', textAlign: 'center', fontFamily: fonts.inter, fontWeight: 640, fontSize: 230, letterSpacing: '-0.035em', lineHeight: 1, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+        +3.4 km²
       </div>
-      {/* the page, scrolling a little under the artefact */}
-      <div style={{ position: 'absolute', inset: 0, transform: `translateY(${-d * 90}px)` }}>
-        <div style={{ position: 'absolute', left: 562, top: 28, ...sans, fontSize: 26, color: MUTED, whiteSpace: 'nowrap' }}>Coastal survey &nbsp;/&nbsp; Andros, north shoals</div>
-        <div style={{ position: 'absolute', left: 554, top: 70, ...sans, fontSize: 116, fontWeight: 640, letterSpacing: '-0.025em', color: INK, lineHeight: 1, whiteSpace: 'nowrap' }}>North shoals, week 46</div>
-        <div style={{ position: 'absolute', left: 562, top: 204, ...sans, fontSize: 32, color: '#3D3A35', whiteSpace: 'nowrap' }}>Shoreline walked from Morgan’s Bluff to the north channel.</div>
-        <div style={{ position: 'absolute', left: 562, top: 932, ...sans, fontSize: 28, color: MUTED, whiteSpace: 'nowrap' }}>Fieldnote embed · Great Bahama Bank, 2000 → 2026</div>
-        <div style={{ position: 'absolute', left: 562, top: 992, ...sans, fontSize: 32, color: '#3D3A35', whiteSpace: 'nowrap' }}>Next: check the 2019 storm season against the same crop.</div>
+      <div style={{ position: 'absolute', top: 900, width: '100%', textAlign: 'center', ...voice, fontSize: 76, color: '#FFFFFF' }}>
+        <Words text="Great Bahama Bank" start={T.flipLine} arrive="rise" gap={2} style={{ color: '#FFFFFF' }} />
       </div>
     </AbsoluteFill>
   );
 };
 
-const MAIL_ROWS = [
-  { who: 'Fieldnote', text: '+18 % new land since 2000 · Great Bahama Bank', t: 'now', me: true },
-  { who: 'Ines Duarte', text: 'Re: north shoals, can we see it back to 2000?', t: '09:12' },
-  { who: 'Tom Achebe', text: 'Survey boat is booked for Thursday', t: '08:41' },
-  { who: 'Harbour office', text: 'Tide tables for December', t: 'Tue' },
-];
-const HostMail: React.FC = () => {
+// the cobalt world is lit: a soft light in its own hue over the sand, the figure's half kept deep (screen space, clipped
+// with the picture, so in the lockup it is seen only inside the letters)
+const FlipLight: React.FC = () => {
   const f = useCurrentFrame();
-  const d = at(f, T.hostB, T.hostC - T.hostB + 8, ease.out);
-  const rowText: React.CSSProperties = { ...sans, fontSize: 40, color: '#fff', whiteSpace: 'nowrap' };
+  const o = at(f, T.flip, 8, ease.out);
+  if (o <= 0) return null;
   return (
-    <AbsoluteFill style={{ background: '#1631C8', perspective: 1900, overflow: 'hidden' }}>
-      {/* the mailbox as a lit plane, tilted away and tracking left */}
-      <div
-        style={{
-          position: 'absolute',
-          left: -420,
-          top: -300,
-          width: 2800,
-          height: 1700,
-          background: `linear-gradient(165deg, #3A5BFF 0%, ${COBALT} 38%, #1D3CE6 100%)`,
-          boxShadow: 'inset 0 3px 0 rgba(255,255,255,.35)',
-          transformOrigin: '50% 50%',
-          transform: `translateX(${mix(d, 220, -60)}px) rotateX(${mix(d, 22, 16)}deg) rotateY(${mix(d, -22, -14)}deg) rotateZ(-5deg)`,
-        }}
-      >
-        {/* left rail */}
-        <div style={{ position: 'absolute', left: 300, top: 0, width: 420, height: 1700, background: 'rgba(8,20,110,.28)' }} />
-        <div style={{ position: 'absolute', left: 360, top: 330 }}>
-          <BrandTile name="gmail" size={104} shadow="0 14px 30px -10px rgba(5,10,60,.6)" />
-        </div>
-        {['Inbox', 'Starred', 'Sent', 'Survey'].map((n, i) => (
-          <div key={n} style={{ position: 'absolute', left: 360, top: 480 + i * 74, ...sans, fontSize: 38, fontWeight: i === 0 ? 600 : 450, color: i === 0 ? '#fff' : 'rgba(255,255,255,.62)' }}>
-            {n} {i === 0 && <span style={{ ...sans, fontWeight: 600, fontSize: 28, color: '#fff', marginLeft: 12, background: 'rgba(255,255,255,.2)', padding: '2px 10px', borderRadius: 14 }}>1</span>}
-          </div>
-        ))}
-        {/* the thread */}
-        <div style={{ position: 'absolute', left: 790, top: 320, ...sans, fontSize: 88, fontWeight: 600, letterSpacing: '-0.015em', color: '#fff', whiteSpace: 'nowrap' }}>Re: north shoals, back to 2000?</div>
-        <div style={{ position: 'absolute', left: 794, top: 440, ...sans, fontSize: 34, color: 'rgba(255,255,255,.8)', whiteSpace: 'nowrap' }}>Ines Duarte to coastal team · 09:12 · 1 attachment</div>
-        {MAIL_ROWS.map((r, i) => (
-          <div key={r.who} style={{ position: 'absolute', left: 790, top: 1140 + i * 96, width: 2000, height: 84, display: 'flex', alignItems: 'center', gap: 28, paddingLeft: 24, background: r.me ? 'rgba(255,255,255,.16)' : 'transparent', borderTop: '1.5px solid rgba(255,255,255,.18)' }}>
-            <div style={{ width: 16, height: 16, borderRadius: 8, background: r.me ? '#fff' : 'transparent' }} />
-            <div style={{ ...rowText, fontWeight: 600, width: 340 }}>{r.who}</div>
-            <div style={{ ...rowText, color: r.me ? '#fff' : 'rgba(255,255,255,.78)' }}>{r.text}</div>
-            <div style={{ ...sans, fontSize: 30, color: 'rgba(255,255,255,.72)', marginLeft: 40 }}>{r.t}</div>
-          </div>
-        ))}
-      </div>
-    </AbsoluteFill>
+    <AbsoluteFill
+      style={{
+        opacity: o,
+        background:
+          'radial-gradient(ellipse 70% 60% at 62% 22%, rgba(120,145,255,.24), rgba(120,145,255,0) 70%), linear-gradient(180deg, rgba(3,10,64,0) 45%, rgba(3,10,64,.4) 100%)',
+      }}
+    />
   );
 };
 
-const HostNotebook: React.FC = () => {
+// ---------------------------------------------------------------- 10. lockup: out of a letter
+// The cobalt picture the camera is in turns out to be the inside of "fieldnote": from the lockup on, the picture is
+// clipped to the wordmark's outline (wordmark.ts), which shrinks from 44x round a point where the f's crossbar meets its
+// stem, so on the first frame the whole frame is inside the letter; the lit paper is behind it. The picture keeps its
+// own camera (2.5x -> 1.6x), so the two planes pull back at different rates; the found sand shows in its own colour
+// inside "ldnote"; the letters drain to ink on the music's lift.
+const WORD = { lx: 452, ly: 511 }; // the f's crossbar meets its stem (wordmark.ts: 300 px, baseline 649)
+const lockScale = (f: number) => logScale(44, 1, at(f, T.lock, 30, ease.out)) * (1 + 0.025 * creep(f, T.lock + 26, T.end - T.lock - 26));
+const pathTokens = (d: string) => d.match(/[MLHVCQZ]|-?\d*\.?\d+/g) ?? [];
+const WM_TOKENS = pathTokens(WORDMARK_PATH);
+const WU_TOKENS = pathTokens(WORDMARK_UNION);
+/** The wordmark's outline scaled by s round the pivot, as path data in screen px (for a CSS clip-path or an SVG path). */
+const wordPathAt = (s: number, tokens: string[] = WM_TOKENS) => {
+  let out = '';
+  let cmd = '';
+  let n = 0;
+  for (const t of tokens) {
+    if (/[A-Z]/.test(t)) {
+      cmd = t;
+      n = 0;
+      out += t;
+      continue;
+    }
+    const v = parseFloat(t);
+    const isX = cmd === 'H' || (cmd !== 'V' && n % 2 === 0);
+    out += `${(isX ? WORD.lx + (v - WORD.lx) * s : WORD.ly + (v - WORD.ly) * s).toFixed(1)} `;
+    n++;
+  }
+  return out;
+};
+const PAPER_LIT = 'radial-gradient(ellipse 75% 70% at 50% 48%, #F5F2EC, #E0DCD2)';
+/** Inside the letters: the paper's edge casts a soft shadow onto the picture (windows cut in a lit sheet). */
+const LetterShade: React.FC = () => {
   const f = useCurrentFrame();
-  const d = at(f, T.hostC, T.lock - T.hostC, ease.out);
   return (
-    <AbsoluteFill style={{ background: INK_GROUND }}>
-      {/* the notebook's header strip */}
-      <div style={{ position: 'absolute', left: 0, top: 0, width: 1920, height: 64, background: '#201F1D', display: 'flex', alignItems: 'center', gap: 16, paddingLeft: 40 }}>
-        <Brand name="jupyter" size={36} />
-        <div style={{ ...mono, fontSize: 25, color: '#CFCAC0' }}>andros_shoals.ipynb</div>
-        <div style={{ ...sans, fontSize: 26, color: '#8E887E', marginLeft: 40 }}>Python 3 · idle</div>
-      </div>
-      {/* the call, giant and cropped by the left edge, sliding left */}
-      <div style={{ position: 'absolute', left: mix(d, -330, -540), top: 70, fontFamily: fonts.mono, fontSize: 184, lineHeight: 1.12, letterSpacing: '-0.02em', color: PAPER, whiteSpace: 'nowrap' }}>
-        <span style={{ color: '#6B665E' }}>[3] </span>fn.ask(<span style={{ color: COBALT_LIGHT }}>“How has this coast changed since 2000?”</span>)
-      </div>
-      <div style={{ position: 'absolute', left: 410, top: ART.y + 6, ...mono, fontSize: 30, color: '#8E887E', transform: `translateX(${-d * 30}px)` }}>Out[3]</div>
-      {/* the result prints in three steps, on twos */}
-      <div style={{ position: 'absolute', left: 562, top: 968, ...mono, fontSize: 32, color: '#D8D3C8', whiteSpace: 'nowrap', display: 'flex', gap: 44, transform: `translateX(${-d * 30}px)` }}>
-        {f >= T.hostC + 4 && (
-          <span>
-            land_change = <span style={{ color: COBALT_LIGHT }}>+18.0 %</span>
-          </span>
-        )}
-        {f >= T.hostC + 8 && <span>sandbank_km2 = 3.4</span>}
-        {f >= T.hostC + 12 && <span>new_channels = 1</span>}
-      </div>
-    </AbsoluteFill>
+    <svg width={1920} height={1080} style={{ position: 'absolute', left: 0, top: 0, filter: 'blur(5px)' }}>
+      <path d={wordPathAt(lockScale(f), WU_TOKENS)} transform="translate(0 5)" fill="none" stroke="rgba(10,8,30,.55)" strokeWidth={12} strokeLinejoin="round" />
+    </svg>
   );
 };
-
-const Relay: React.FC = () => {
-  const f = useCurrentFrame();
-  // the pull-back: the layer maps ART onto the whole frame at p = 0, and is itself at p = 1
-  const p = at(f, T.relay, T.land - T.relay, ease.out);
-  const z = logScale(Z0, 1, p);
-  const q = (Z0 - z) / (Z0 - 1);
-  const tx = mix(q, 0, ART.x) - ART.x * z;
-  const ty = mix(q, 0, ART.y) - ART.y * z;
-  const host = f < T.hostB ? 0 : f < T.hostC ? 1 : 2;
-  const dive = at(f, T.into, T.lock - T.into, ease.in);
-  const ds = logScale(1, 18, dive);
-  const sp = mix(at(f, T.land, T.into - T.land, ease.inOut), 0.5, 0.6);
-  // the artefact: fixed on screen, a slow push of its own (a second plane against the host's drift), a landing light
-  const push = 1 + 0.03 * creep(f, T.land, T.lock - T.land);
-  const lit = 1 - at(f, T.land, 22, ease.inOut);
-  const settle = host === 0 ? 0 : 1 - at(f, host === 1 ? T.hostB : T.hostC, 6, ease.out); // a small kick on each cut
-  const shadow = ['rgba(43,33,24,', 'rgba(4,10,70,', 'rgba(0,0,0,'][host];
-  const chipBg = host === 1 ? '#FFFFFF' : COBALT;
-  const chipInk = host === 1 ? COBALT : '#FFFFFF';
-  const chipIn = at(onTwos(f), T.land - 4, 6, ease.out);
-  const pose = [
-    { s: 1, rx: 0, ry: 0, rz: 0 },
-    { s: 1.12, rx: 14, ry: -16, rz: -4 },
-    { s: 1, rx: 0, ry: 0, rz: 0 },
-  ][host];
-  return (
-    <AbsoluteFill style={{ transformOrigin: `${DIVE.x}px ${DIVE.y}px`, transform: `scale(${ds})`, filter: dive > 0.5 ? `blur(${(dive - 0.5) * 8}px)` : undefined }}>
-      <AbsoluteFill style={{ transformOrigin: '0 0', transform: `translate(${tx}px, ${ty}px) scale(${z})` }}>
-        {host === 0 && <HostNotion />}
-        {host === 1 && <HostMail />}
-        {host === 2 && <HostNotebook />}
-        {/* the artefact: one group (picture + chip) at ART, posed per host: flat on the page, tilted with the mail plane,
-            flat again as the notebook's output. The cut is matched on its centre. */}
-        <div style={{ position: 'absolute', left: ART.x, top: ART.y, width: ART.w, height: ART.h, transform: `perspective(1900px) rotateX(${pose.rx}deg) rotateY(${pose.ry}deg) rotateZ(${pose.rz}deg) scale(${pose.s * push * (1 + 0.04 * settle)})` }}>
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              borderRadius: 16 * p,
-              overflow: 'hidden',
-              boxShadow: `0 2px 4px ${shadow}${0.35 * p}), 0 44px 90px -26px ${shadow}${0.7 * p}), 0 0 0 ${2 + 7 * lit}px rgba(35,71,255,${p * lit})`,
-            }}
-          >
-            <div style={{ position: 'absolute', left: 0, top: 0, width: 1920, height: 1080, transformOrigin: '0 0', transform: `scale(${AS})` }}>
-              <Picture split={sp} />
-              <YearTabs sx={sp * 1920} />
-            </div>
-            {/* the lit top edge */}
-            <div style={{ position: 'absolute', inset: 0, borderRadius: 16 * p, boxShadow: `inset 0 2px 0 rgba(255,255,255,${0.55 * p})`, background: `linear-gradient(180deg, rgba(255,255,255,${0.1 * p}), rgba(255,255,255,0) 30%)` }} />
-          </div>
-          {chipIn > 0 && (
-            <div style={{ position: 'absolute', left: -22, top: ART.h - 40, transform: `translateY(${mix(chipIn, 24, 0)}px)`, background: chipBg, ...tag, fontWeight: 600, letterSpacing: '-0.005em', color: chipInk, fontSize: 40, padding: '10px 22px', whiteSpace: 'nowrap', boxShadow: `0 16px 30px -12px ${shadow}.6)` }}>
-              +18 % new land
-            </div>
-          )}
-        </div>
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
-// ---------------------------------------------------------------- 10. lockup: the picture was the inside of a letter
-const WORD_FONT = 300;
-// a point where the crossbar of the "f" of "fieldnote" crosses its stem: the widest solid patch of the word at weight 700,
-// so at the opening scale (34x) the frame is entirely inside the letter
-const LX = 436;
-const LY = 511;
 const Lockup: React.FC = () => {
   const f = useCurrentFrame();
-  const back = at(f, T.lock, 30, ease.out);
-  const scale = logScale(34, 1, back) * (1 + 0.025 * creep(f, T.lock + 20, T.end - T.lock - 20));
-  const drain = at(f, T.drain, 10, ease.inOut);
-  const blur = mix(clamp(back * 4), 5, 0);
-  // paddingRight: the negative tracking would leave the last letter's edge outside the picture's box
-  const word: React.CSSProperties = { ...heavy, fontSize: WORD_FONT, lineHeight: 0.95, fontVariantLigatures: 'none', paddingRight: '0.05em' };
+  const drain = at(f, T.drain, 8, ease.inOut);
   return (
-    <AbsoluteFill style={{ background: PAPER }}>
-      <div style={{ position: 'absolute', inset: 0, transformOrigin: `${LX}px ${LY}px`, transform: `scale(${scale})`, filter: blur > 0.2 ? `blur(${blur}px)` : undefined, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ position: 'relative' }}>
-          <div style={{ ...word, color: INK }}>fieldnote</div>
-          <div style={{ position: 'absolute', inset: 0, opacity: 1 - drain }}>
-            <TextWindow text="fieldnote" src={IMG.channels} position="46% 40%" zoom={1.1} style={word} />
-          </div>
-        </div>
-      </div>
+    <AbsoluteFill>
+      {drain > 0 && (
+        <svg width={1920} height={1080} style={{ position: 'absolute', left: 0, top: 0 }}>
+          <path d={wordPathAt(lockScale(f))} fill={INK} opacity={drain} />
+        </svg>
+      )}
       <div style={{ position: 'absolute', top: 742, width: '100%', textAlign: 'center', ...voice, fontSize: 44, color: INK }}>
         <Words text="ask the planet · fieldnote.earth" start={T.url} arrive="rise" gap={2} by="word" style={{ color: INK }} accent={['fieldnote.earth']} accentStyle={{ color: COBALT }} />
       </div>
@@ -694,17 +660,21 @@ export const FieldnoteFilm: React.FC = () => {
     { at: T.answer + 30, ...s['mixkit-2867'], volume: 0.25 },
     { at: T.compare + 4, ...s['mixkit-175'], volume: 0.35 },
     { at: T.compare + 20, ...s['mixkit-168'], volume: 0.22 },
-    { at: T.relay, ...s['mixkit-1492'], volume: 0.35, rate: 1.05 },
-    { at: T.land, ...s['mixkit-2299'], volume: 0.65 },
-    { at: T.land, ...s['mixkit-2867'], volume: 0.28 },
-    { at: T.hostB, ...s['mixkit-2384'], volume: 0.35, rate: 1.0 },
-    { at: T.hostB, ...s['mixkit-2299'], volume: 0.35, rate: 1.1 },
-    { at: T.hostC, ...s['mixkit-2384'], volume: 0.35, rate: 1.08 },
-    { at: T.hostC, ...s['mixkit-2299'], volume: 0.35, rate: 1.2 },
-    { at: T.hostC + 4, ...s['mixkit-3124'], volume: 0.3 },
-    { at: T.lock, ...s['mixkit-1492'], volume: 0.45 },
-    { at: T.lock + 2, ...s['mixkit-2299'], volume: 0.65 },
-    { at: T.url, ...s['mixkit-3000'], volume: 0.25, rate: 0.9 },
+    // the proof: the whip, the landing, a tick per growth step, a tone as the sand completes
+    { at: T.proof - 4, ...s['mixkit-175'], volume: 0.3, rate: 1.1 },
+    { at: T.proof, ...s['mixkit-168'], volume: 0.32 },
+    { at: T.land, ...s['mixkit-3124'], volume: 0.32, rate: 0.85 },
+    { at: T.grow[0], ...s['mixkit-1049'], volume: 0.26, rate: 0.92 },
+    ...T.grow.slice(1).map((g, i) => ({ at: g, ...s['mixkit-1049'], volume: 0.32, rate: 1 + i * 0.09 })),
+    { at: T.grow[4], ...s['mixkit-2867'], volume: 0.2 },
+    // the colour flip on the beat
+    { at: T.flip, ...s['mixkit-2299'], volume: 0.7 },
+    { at: T.flip, ...s['mixkit-2384'], volume: 0.35, rate: 0.92 },
+    // the lockup
+    { at: T.lock, ...s['mixkit-1492'], volume: 0.4 },
+    { at: T.lock + 1, ...s['mixkit-2299'], volume: 0.55, rate: 0.94 },
+    { at: T.url, ...s['mixkit-3000'], volume: 0.22, rate: 0.9 },
+    { at: T.drain, ...s['mixkit-2299'], volume: 0.35, rate: 1.06 },
   ];
   return (
     <AbsoluteFill style={{ background: PAPER }}>
@@ -715,17 +685,20 @@ export const FieldnoteFilm: React.FC = () => {
         </>
       )}
       {f >= T.earth && f < T.ask + 2 && <Earth />}
-      {f >= T.ask && f < T.relay && (
-        <AbsoluteFill>
+      {f >= T.lock && <AbsoluteFill style={{ background: PAPER_LIT }} />}
+      {f >= T.ask && (
+        <AbsoluteFill style={{ clipPath: f >= T.lock ? `path('${wordPathAt(lockScale(f))}')` : undefined }}>
           <Stage />
           <Panel />
           <Years />
+          {f >= T.flip && <FlipLight />}
+          {f >= T.lock + 2 && <LetterShade />}
         </AbsoluteFill>
       )}
-      {f >= T.relay && f < T.lock && <Relay />}
       {f >= T.lock && <Lockup />}
+      {f >= T.flip && f < T.lock + 8 && <Finding />}
       <Grain amount={0.03} />
-      <Music src="music/sonor-01.mp3" startFrom={20.54} volume={0.4} enterAt={0} breaths={[T.land, T.lock]} breathLen={6} fadeOut={50} />
+      <Music src="music/sonor-01.mp3" startFrom={20.54} volume={0.4} enterAt={0} breaths={[T.flip, T.lock]} breathLen={6} fadeOut={50} />
       <Cues cues={cues} />
     </AbsoluteFill>
   );
