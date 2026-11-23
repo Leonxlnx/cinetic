@@ -258,7 +258,8 @@ object carries the film.
 - **`<Cues cues={[{ at, src, leadMs, volume, rate, maxS }]}>`**: each effect starts `leadMs` early so its transient (or, for
   whooshes and swells, its peak) lands exactly on frame `at`. Spread the entries of `src/sfx.ts`: `{ at: T.press, ...sfx['mixkit-2568'], volume: 0.5 }`.
 - **`db(-6)`** dB to gain; **`beats(bpm, offsetFrame)`** a beat grid (`.at(n)`, `.bar(n)`, `.snap(f)`, `.half(f)`).
-- **`<Music src startFrom volume fadeIn fadeOut duck breaths breathLen enterAt>`**: the bed. `startFrom` (s) skips the intro,
+- **`<Music src startFrom volume fadeIn fadeOut duck breaths breathLen enterAt endAt>`**: the bed (`endAt`: the frame it has
+  faded out by, for a silent last beat under the mark). `startFrom` (s) skips the intro,
   `enterAt` (frame) starts it later (the track plays from `startFrom` at that frame: to keep the track's beats on the film's
   grid, the beat grid starts at `enterAt`), `duck` dips it under hits, `breaths` cuts it out for `breathLen` frames before a hit.
 

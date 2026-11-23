@@ -421,6 +421,10 @@ const dive = at(frame, s, 20, ease.in);
 
 ---
 
+**A clip inside a scaled layer.** A `clip-path` (an iris, a window, a tile mask) is measured in its own element's box: inside a
+camera or any scaled layer it opens off target by the scale. Put the turn outside the camera, in frame pixels, and place
+it with `toScreen` (which follows the camera's pan, zoom and tilt).
+
 ## Not in the kit yet (build these by hand from the recipes above)
 
 - **`CarriedCut`** (or `carry()` helpers): outgoing `accel` + speed blur and incoming geometric decay with matched velocity,

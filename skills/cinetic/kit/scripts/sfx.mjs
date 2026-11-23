@@ -370,7 +370,19 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
   };
   walk(path.join(film, 'src'));
   const s = Object.fromEntries(Object.entries(all).filter(([id]) => used.size === 0 || used.has(id)));
-  const m = readJson(path.join(film, 'public', 'music', 'music.json'), {});
+  const mAll = readJson(path.join(film, 'public', 'music', 'music.json'), {});
+  // only the tracks the film's code plays (music/<file> in src/), not every track auditioned
+  const srcText = [];
+  const collect = (d) => {
+    for (const e of fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }) : []) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) { if (e.name !== 'kit') collect(p); }
+      else if (/\.(tsx?|jsx?)$/.test(e.name)) srcText.push(fs.readFileSync(p, 'utf8'));
+    }
+  };
+  collect(path.join(film, 'src'));
+  const allSrc = srcText.join('\n');
+  const m = Object.fromEntries(Object.entries(mAll).filter(([, t]) => !t.src || allSrc.includes(t.src)));
   console.log('## Sound\n');
   for (const [name, t] of Object.entries(m))
     console.log(`- Music: "${t.title ?? name}"${t.artist ? ` by ${t.artist}` : ''} (${t.page}). Licence: ${t.licence} ${t.licenceUrl ?? LICENCE_URLS[t.licence] ?? ''}${t.credit ? `\n  Credit (required, keep it in the video description): ${t.credit}` : ''}`);

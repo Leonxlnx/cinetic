@@ -115,6 +115,8 @@ function musicRunsOut(dur) {
 }
 
 const GROUND_LIT = process.env.CINETIC_CHECK_OLDGROUND ? false : true; // private calibration switch
+// a frame is empty when almost nothing differs from the ground (a single clean line of type is NOT empty)
+const EMPTY_FILL = Number(process.env.CINETIC_CHECK_EMPTY || 0.006);
 /** Measure a rendered film: coverage, pace, empty frames, the length of its ending (low-res analysis via ffmpeg). */
 function checkFilm(file, lockupS) {
   const FPS = 4;
@@ -163,7 +165,7 @@ function checkFilm(file, lockupS) {
   }
   const body = frames.filter((x) => x.t > 0.1 && x.t < dur - lockupS);
   const sparse = body.filter((x) => Math.max(x.width, x.height * 0.8) < 0.45);
-  const empty = frames.filter((x) => x.t < dur - 0.6 && x.fill < 0.015);
+  const empty = frames.filter((x) => x.t < dur - 0.6 && x.fill < EMPTY_FILL);
   const slow = pace.filter((x) => x.t > 0.2 && x.t < dur - lockupS - 0.5 && x.d < 0.012);
   const avgW = body.reduce((a, x) => a + x.width, 0) / Math.max(1, body.length);
   // the ending: from the last big change, how long the film stays nearly still
@@ -172,7 +174,7 @@ function checkFilm(file, lockupS) {
   // empty runs: references have brief designed blanks (a flash, a breath); a blank that lasts is a hole
   let run = 0, longest = 0, runAt = 0;
   for (const x of frames) {
-    if (x.t < dur - 0.6 && x.fill < 0.015) { run++; if (run > longest) { longest = run; runAt = x.t - (run - 1) / FPS; } } else run = 0;
+    if (x.t < dur - 0.6 && x.fill < EMPTY_FILL) { run++; if (run > longest) { longest = run; runAt = x.t - (run - 1) / FPS; } } else run = 0;
   }
   // the longest stretches: an average hides 2-3 s of small centred cards or a finished state that just sits there
   const longestRun = (list, isBad, step) => {
@@ -189,7 +191,7 @@ function checkFilm(file, lockupS) {
   console.log(`  coverage   mean subject width ${(avgW * 100).toFixed(0)} % of the frame; ${sparse.length} of ${body.length} samples under 45 %${sparse.length ? `  [at ${fmt(sparse)} s]` : ''}`);
   console.log(`  pace       ${slow.length} of ${pace.length} half-seconds with almost nothing changing${slow.length ? `  [from ${fmt(slow)} s]` : ''}`);
   console.log(`  stretches  longest sparse run ${sparseRun.s.toFixed(1)} s${sparseRun.s ? ` (from ${sparseRun.at.toFixed(1)} s)` : ''}; longest still stretch ${stillRun.s.toFixed(1)} s${stillRun.s ? ` (from ${stillRun.at.toFixed(1)} s)` : ''}`);
-  console.log(`  empty      ${empty.length} near-empty samples${empty.length ? `  [at ${fmt(empty)} s]` : ''}${frames[0] && frames[0].fill < 0.015 ? '  FRAME 0 IS EMPTY' : ''}`);
+  console.log(`  empty      ${empty.length} near-empty samples${empty.length ? `  [at ${fmt(empty)} s]` : ''}${frames[0] && frames[0].fill < EMPTY_FILL ? '  FRAME 0 IS EMPTY' : ''}`);
   console.log(`  ending     the last ${endStill.toFixed(1)} s are nearly still (${((endStill / dur) * 100).toFixed(0)} % of the film)`);
   const snd = loudness(file);
   if (Number.isFinite(snd.I)) console.log(`  sound      ${snd.I.toFixed(1)} LUFS, true peak ${snd.TP.toFixed(1)} dBTP`);
@@ -201,7 +203,7 @@ function checkFilm(file, lockupS) {
   // creep over a finished state (pixels still change there): judge that by eye with the rubric
   if (stillRun.s > 2.5) fails.push(`a ${stillRun.s.toFixed(1)} s stretch from ${stillRun.at.toFixed(1)} s where almost nothing changes`);
   if (sparseRun.s > 3.5) fails.push(`${sparseRun.s.toFixed(1)} s of small, sparse frames from ${sparseRun.at.toFixed(1)} s: fill the frame`);
-  if ((frames[0] && frames[0].fill < 0.015) || longest / FPS >= 1) fails.push(`empty frames: ${frames[0] && frames[0].fill < 0.015 ? 'frame 0 is empty' : `${(longest / FPS).toFixed(1)} s of nothing from ${runAt.toFixed(1)} s`}`);
+  if ((frames[0] && frames[0].fill < EMPTY_FILL) || longest / FPS >= 1) fails.push(`empty frames: ${frames[0] && frames[0].fill < EMPTY_FILL ? 'frame 0 is empty' : `${(longest / FPS).toFixed(1)} s of nothing from ${runAt.toFixed(1)} s`}`);
   if (endStill > Math.max(2.5, dur * 0.12)) fails.push('the ending is too long: lockup at most 2 s, all end type at most 15 % of the film');
   const isPreview = /preview/i.test(path.basename(file));
   if (isPreview && Number.isFinite(snd.TP) && snd.TP > -1) console.log('  (a preview is not limited: judge loudness and true peak on the muxed master)');

@@ -57,10 +57,13 @@ export const Music: React.FC<{
   breathLen?: number;
   /** Frame the music enters (silence before it: a quiet opener). */
   enterAt?: number;
-}> = ({ src, startFrom = 0, volume = 0.55, fadeIn = 1, fadeOut = 45, duck = [], duckBy = 0.45, breaths = [], breathLen = 6, enterAt = 0 }) => {
-  const { fps, durationInFrames } = useVideoConfig();
+  /** Frame the music has faded out by (a silent last beat under the mark); default the film's end. */
+  endAt?: number;
+}> = ({ src, startFrom = 0, volume = 0.55, fadeIn = 1, fadeOut = 45, duck = [], duckBy = 0.45, breaths = [], breathLen = 6, enterAt = 0, endAt }) => {
+  const { fps, durationInFrames: filmLen } = useVideoConfig();
+  const durationInFrames = Math.min(filmLen, endAt ?? filmLen);
   return (
-    <Sequence from={enterAt} layout="none" name="music">
+    <Sequence from={enterAt} durationInFrames={Math.max(1, durationInFrames - enterAt)} layout="none" name="music">
     <Audio
       src={staticFile(src)}
       startFrom={Math.round(startFrom * fps)}
