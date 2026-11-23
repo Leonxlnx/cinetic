@@ -24,8 +24,11 @@ export const Ground: React.FC<{
   style?: React.CSSProperties;
 }> = ({ color, light = true, children, style }) => {
   const l = light === false ? null : light === true ? {} : light;
+  // visible on a thumbnail: a dark ground takes a stronger light than a light one (which mostly darkens at its edges)
+  const lum = (() => { const n = parseInt(color.replace('#', '').slice(0, 6), 16); return (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255; })();
+  const amt = l?.amount ?? (lum < 0.5 ? 0.18 : 0.08);
   const background = l
-    ? `radial-gradient(ellipse ${(l.size ?? 0.75) * 100}% ${(l.size ?? 0.75) * 95}% at ${(l.x ?? 0.5) * 100}% ${(l.y ?? 0.46) * 100}%, ${shadeHex(color, '#ffffff', l.amount ?? 0.1)} 0%, ${color} 62%, ${shadeHex(color, '#000000', (l.amount ?? 0.1) * 0.9)} 100%)`
+    ? `radial-gradient(ellipse ${(l.size ?? 0.75) * 100}% ${(l.size ?? 0.75) * 95}% at ${(l.x ?? 0.5) * 100}% ${(l.y ?? 0.46) * 100}%, ${shadeHex(color, '#ffffff', amt)} 0%, ${color} 62%, ${shadeHex(color, '#000000', amt * 0.9)} 100%)`
     : color;
   return <AbsoluteFill style={{ background, ...style }}>{children}</AbsoluteFill>;
 };

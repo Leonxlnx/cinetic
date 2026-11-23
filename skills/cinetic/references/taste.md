@@ -65,7 +65,9 @@ contact sheets before you render a final.
 29. **A product tour in every film.** The artefact carried through other companies' products by any name (a relay, a
     swap, a morph chain), longer than the proof it should make room for. One tour at most, at most 15 % of the film.
 30. **The new habits.** The closing line turning into the mark every time; every new line born in a tint; faint ghost
-    text behind a statement as filler. Each is fine once; as a default it is a template.
+    text behind a statement as filler; the ending chain "dive to a giant figure, the accent fills the frame, the object
+    becomes the mark"; a recipe's timings copied number for number. Each is fine once; as a default it is a template.
+31. **A claim you cannot read.** The claim or the benefit fully on screen for less than its reading time (words / 3 + 0.5 s).
 
 ---
 
@@ -109,7 +111,7 @@ contact sheets before you render a final.
 | everything springs | replace springs on cards and camera with `ease.out` / `ease.inOut`; keep one pop family |
 | UI unreadable | flat and large, one component, 1.4x camera; or a punch-in |
 | type looks templated | one sans at 430-550, sentence case, sized by word count, centred alone; no kicker, no caps labels (`type.md`) |
-| palette looks "AI" | derive from the brand (an invented one takes its accent from the product's own object); one accent; lit grounds: one soft light per ground in its own hue (a horizon glow, a radial behind the subject, a vignette), a small luminance range (6-15 %); remove gradients that carry no meaning |
+| palette looks "AI" | derive from the brand (an invented one takes its accent from the product's own object); one accent; lit grounds: one soft light per ground in its own hue (a horizon glow, a radial behind the subject, a vignette), strong enough to see on a thumbnail (12-25 % on a dark ground); remove gradients that carry no meaning |
 | a thin subject on a flat fill | give it mass (a route 8-20 px wide with a lit core, a filled object riding it, the card at 65 % of the width) and light the ground behind it (`Ground light`) |
 | glass looks fake | lit top rim + moving specular; on a plain ground use a lit gradient instead of backdrop blur |
 | sound feels pasted | measure `leadMs`; remove half the effects; add breath gaps; move the kick 2 f after the cut |
@@ -139,7 +141,7 @@ Run `node scripts/frames.mjs check` on the preview first: points 11-13 are measu
 | 7 | **Restrained vocabulary** | count arrival styles and turn types against the `BEATS.md` Devices block | at most 2 text arrival styles; at most 1 overshoot family; flashes ≤ 4; signature device on ≤ 3 seams; no other seam device used twice; at most 1 colour flood, and at most two of flood, relay, wall and a mark gathered from a wall |
 | 8 | **Colour discipline** | overview | the accent appears only where it means something; no purple/green/default-gradient palette for an invented brand; dark grounds not pure black and not banding |
 | 9 | **Effects budget** | beat sheet at 100 % | glows sized to their source and in their own hue; grain only where the world allows; motion blur only on seam frames (blurred thumbnails appear in pairs at seams, not throughout) |
-| 10 | **An ending that rests** | last sheet row | the lockup is born from an object already on screen, lasts at most 2 s, has one CTA line (a short line with the URL on it counts as one); all end type is at most 15 % of the film |
+| 10 | **An ending that rests** | last sheet row | the lockup is born from an object already on screen, lasts at most 2 s, has one CTA line (a short line with the URL on it counts as one); the claim is fully readable for its reading time; all end type is at most 15 % of the film |
 | 11 | **Filled frames** | overview + `frames.mjs check` coverage | the subject spans 65 % of the width or more on average (top studios' films: 70-93 %); UI is in close-up; no small card centred on empty ground; no line, dot or card alone on an unlit flat fill |
 | 12 | **Pace** | `frames.mjs check` pace | at most 20 % of the half-seconds before the lockup are nearly still (top studios' films: 9-16 %); mean beat 0.8-1.6 s |
 | 13 | **Composition variety** | `BEATS.md` composition tags + overview | no two adjacent beats share a composition; at least 4 different compositions; at least 2 ground cuts, by two different devices |

@@ -24,7 +24,8 @@ signature devices as its own and repeats it; the others may appear once each (`f
 5. **Dark grounds are never pure black** while content is visible (#08090C-#141414 with a lift, a glow or grain).
 6. Real third-party logos keep their own colours (or their sanctioned mono version) inside the world's UI.
 7. **Every ground is lit, unless a mass fills it.** One soft light per ground, in the ground's own hue: a horizon glow, a
-   radial behind the subject or a vignette, with a small luminance range (about 6-15 % from the lit centre to the edges).
+   radial behind the subject or a vignette, strong enough to see on a contact-sheet thumbnail (about 12-25 % from the lit
+   centre to the edges on a dark ground, less on a light one).
    A flat fill holds only a mass that fills the frame (blocks, a floor plane, giant type); anything smaller sits in the
    light. `<Ground light>` does it, placed behind the subject; turn it off only under a mass. Each world's **Ground** line
    below says how its grounds are lit, not only their colour.
