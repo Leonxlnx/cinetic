@@ -62,6 +62,10 @@ contact sheets before you render a final.
     every product. Pick each device from its menu by what this product claims (`film-grammar.md` devices).
 28. **The same opening every time.** A macro on a detail and a log pull-back, because it ticks frame 0, the macro and the
     scale jump at once.
+29. **A product tour in every film.** The artefact carried through other companies' products by any name (a relay, a
+    swap, a morph chain), longer than the proof it should make room for. One tour at most, at most 15 % of the film.
+30. **The new habits.** The closing line turning into the mark every time; every new line born in a tint; faint ghost
+    text behind a statement as filler. Each is fine once; as a default it is a template.
 
 ---
 

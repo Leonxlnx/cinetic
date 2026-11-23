@@ -176,7 +176,8 @@ content or their order; take single moves.
   form ([cards-ui.md](references/motion/cards-ui.md#integrations)): a relay (the artefact pinned, two hosts cut round it on
   the beat, each in a different composition, bleeding off the frame), an object-lock swap (the artefact fixed while 5-7
   hosts swap behind it at 4-6 f each), a sentence whose slot swaps partner marks, or one host used for real in macro; skip
-  the beat when the brief does not hinge on it. In every form the artefact spans 55 % of the frame's width or more
+  the beat when the brief does not hinge on it. One tour of other products a film, whatever it is called (relay, swap,
+  morph chain), at most 15 % of its length; spend the time saved on a sharp proof beat before the claim. In every form the artefact spans 55 % of the frame's width or more
   (`Relay` scales it up to that) and is the largest text in each host (60 px or more), not a thin strip on a white plate:
   set it on the accent or make it tall.
 - **One spectacle beat.** Every film has one shot that could never be a slide, picked by what the product claims
