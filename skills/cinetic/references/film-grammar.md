@@ -299,6 +299,7 @@ as a 1-2 s variation of the same shot.
 | `giant-type` | 1-3 words at 20-40 % of the frame height, often cropped or bleeding off | promise, claim, a turn |
 | `type-on-surface` | words laid on an object or plane in perspective (a block's face, a floor, a card) | hooks, chapter titles |
 | `ground` | one colour or one object fills the frame, by any carrier (`forge`'s beat sheet calls it `flood`) | turns between acts |
+| `veil` | a statement centred over the product, the product dimmed or blurred behind it | a claim that answers what was just shown |
 | `split` | two grounds or two states side by side (before / after, input / output) | proof, comparison |
 | `quantity` | many of a thing (twenty documents, a hundred runs), by any spectacle in the menu (`forge`'s `wall`) | "all of it", scale |
 | `panels` | a gutterless grid of 2-4 panels, each on its own clock (`motion/camera.md` 6.6) | the product doing several things at once |
@@ -318,7 +319,7 @@ one line per slot, each picked from the menus below by what this product claims,
 films did.
 
 ```
-Devices (Ferry, moves files between clouds; the claim: speed)
+Devices (Parcel, an invented app that moves files between clouds; the claim: speed)
 - signature: the file's folded corner, 5 uses: the hook, two seams, the integration swap, the lockup
 - opening: cut-on stack of the category line, the fold turning on its full stop
 - text arrivals: cut-on words; last-word swap

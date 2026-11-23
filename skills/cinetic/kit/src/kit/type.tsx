@@ -566,13 +566,15 @@ export const Build: React.FC<{
           if (i >= shown) return null;
           // every visible word sits on its slot in the current layout, minus the part of the shift not yet travelled
           const x = cur[i] - shift * (1 - p);
-          const c = born && frame < times[i] + settle + 1 ? mixColor(born, (style?.color as string) ?? '#000000', at(frame, times[i], settle, ease.inOut)) : undefined;
+          const ws = typeof w === 'string' ? wordStyle?.(i) : undefined;
+          // a new word is born in `born` and settles to its own colour (wordStyle's, else the line's)
+          const c = born && frame < times[i] + settle + 1 ? mixColor(born, ((ws?.color ?? style?.color) as string) ?? '#000000', at(frame, times[i], settle, ease.inOut)) : undefined;
           return (
             <span
               key={i}
               style={
                 typeof w === 'string'
-                  ? { position: 'absolute', left: '50%', top: 0, transform: `translateX(${x}px)`, whiteSpace: 'pre', color: c, ...wordStyle?.(i) }
+                  ? { position: 'absolute', left: '50%', top: 0, transform: `translateX(${x}px)`, whiteSpace: 'pre', ...ws, ...(c ? { color: c } : {}) }
                   : { position: 'absolute', left: '50%', top: 0, transform: `translateX(${x}px)`, width: w.slot, height: '1.2em', display: 'flex', alignItems: 'center', justifyContent: 'center' }
               }
             >

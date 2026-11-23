@@ -165,7 +165,8 @@ content or their order; take single moves.
   a colour-flip cut with a size step, a flash-hidden swap, a dive whose inside is the new ground, or a flood from an object
   (one flood per film at most) ([menu](references/film-grammar.md#seams-and-ground-cuts)).
 - **Short endings.** The lockup lasts at most 2 s (60 f) and grows out of an object already on screen; all end type
-  (claim + lockup) is at most 15 % of the film, and the claim sits over a moving image, not alone on a ground. No mid-film
+  (claim + lockup) is at most 15 % of the film, and the claim sits over a moving image, not alone on a ground (when it
+  needs longer to read, it stays on as the lockup's line). No mid-film
   brand card in films under 30 s, and a line of the claim is said once (never spent mid-film and repeated at the end). The
   frame before the lockup is never a blank ground: the mark is born from what is on screen, in a way picked from the
   [lockup menu](references/film-grammar.md#lockups) to suit the signature (spaced cut-on, trim-path draw, quarter-spin,

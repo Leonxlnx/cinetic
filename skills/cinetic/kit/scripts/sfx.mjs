@@ -340,6 +340,7 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
     }
     process.exit(0);
   }
+  if (Math.abs(bpm - Math.round(bpm)) > 0.07) console.log('(no steady beat grid in this file: the tempo below is the closest fit; place cuts on its sections and lifts, not on beats)');
   console.log(`${path.basename(file)}: ${(x.length / SR).toFixed(1)} s, ${bpm.toFixed(2)} BPM (a beat every ${(60 / bpm).toFixed(3)} s = ${((60 / bpm) * 30).toFixed(2)} frames at 30 fps), first beat at ${(bestPh / 100).toFixed(2)} s`);
   console.log('level by second (dB below the loudest; # = loud):');
   for (let s = 0; s < secs; s += 10) console.log(`  ${String(s).padStart(4)} s  ${lvl.slice(s, s + 10).map((v) => (v > peak - 3 ? '#' : v > peak - 8 ? '=' : v > peak - 16 ? '-' : '.')).join('')}`);
