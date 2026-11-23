@@ -392,6 +392,8 @@ ground in the cut frame and creeps 0.5 % across the whole run; the last host hol
 its real mark and its layout, not by reading.
 **Avoid:** hosts that share a layout; text in the hosts that must be read; moving the artefact between hosts.
 
+The kit's `<LockSwap anchor artefact={(i) => <Plate tint={PLATES[i]} />} hosts={[{ f, node }]} end>` does this; by hand:
+
 ```tsx
 const hosts = [<HostChat />, <HostTracker />, <HostPhone />, <HostDoc />, <HostTerminal />], durs = [6, 6, 5, 5, 4];
 let t = frame - s, i = 0;

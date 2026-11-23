@@ -946,3 +946,35 @@ export const Laptop: React.FC<{ w?: number; frame?: string; base?: string; scree
     </div>
   );
 };
+
+/**
+ * An object-lock swap: the product's artefact stays fixed at one screen point, still, while host scenes hard-cut behind
+ * it on the beat (4-6 f each, accelerating; the last held 12-18 f so it reads). Each host pushes in a touch over its own
+ * frames (`push`, 0.02 = 2 %); the artefact only creeps 0.5 % across the whole run. `artefact` may be a function of the
+ * host index (a plate that re-tints for each ground). One tour of other products a film, at most 15 % of it.
+ */
+export const LockSwap: React.FC<{
+  anchor: { x: number; y: number };
+  artefact: React.ReactNode | ((host: number) => React.ReactNode);
+  /** Each host's first frame; `end` closes the last one (for its push). */
+  hosts: Array<{ f: number; node: React.ReactNode }>;
+  end?: number;
+  push?: number;
+}> = ({ anchor, artefact, hosts, end, push = 0.02 }) => {
+  const frame = useCurrentFrame();
+  let i = -1;
+  for (let k = 0; k < hosts.length; k++) if (frame >= hosts[k].f) i = k;
+  if (i < 0 || !hosts.length) return null;
+  const last = end ?? hosts[hosts.length - 1].f + 16;
+  const next = hosts[i + 1]?.f ?? last;
+  const p = clamp((frame - hosts[i].f) / Math.max(1, next - hosts[i].f));
+  const creep = 1 + 0.005 * clamp((frame - hosts[0].f) / Math.max(1, last - hosts[0].f));
+  return (
+    <AbsoluteFill>
+      <AbsoluteFill style={{ transformOrigin: `${anchor.x}px ${anchor.y}px`, transform: `scale(${1 + push * p})` }}>{hosts[i].node}</AbsoluteFill>
+      <div style={{ position: 'absolute', left: anchor.x, top: anchor.y, transform: `translate(-50%, -50%) scale(${creep})`, zIndex: 50 }}>
+        {typeof artefact === 'function' ? artefact(i) : artefact}
+      </div>
+    </AbsoluteFill>
+  );
+};

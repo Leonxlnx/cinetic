@@ -171,6 +171,8 @@ Fields: `surface ink muted line fill accent accentInk radius font mono shadow`.
 - **`<Phone w frame screen>`** and **`<Laptop w frame base screen>`**: flat, precise device frames whose screen is a slot for
   any UI (`children` at the screen's size: phone `w x w * 2.167` inside a 2.8 % bezel, laptop `w x w * 0.625`). Pose them
   with a transform or in a `<Camera>`; cut to one when a footage shot has no screen facing the lens.
+- **`<LockSwap anchor artefact hosts={[{ f, node }]} end push>`**: an object-lock swap: the artefact fixed and still while
+  hosts hard-cut behind it on the beat, each pushing in a touch; `artefact` may be `(i) => node` to re-tint per host.
 - **`<Relay anchor={{ x, y }} artefact={node} hosts={[{ f, node }]} lift>`**: integrations as a relay: the artefact pinned at
   one screen point, the hosts (each a full-frame composition you build: a full-bleed page, a tilted plane, a macro crop)
   changing behind it on their frames, a small settle at each cut (`pose` on a host tilts the artefact with a tilted host).

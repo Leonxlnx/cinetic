@@ -23,6 +23,15 @@ gives the agent a director's method, a kit that looks premium by default, and a 
   composition table), `worlds` (ten graphic languages), `taste` (the tells of generated video, a 15-point rubric),
   `sound-design`, `kit`, `assets`, `rendering` and an `INDEX` of every recipe.
 - Requirements drop to Node 22 and ffmpeg: no Python, no earshot, no HyperFrames path.
+- Type follows `references/type.md`: one sans voice (Inter with its display optical size), statements at weight
+  430-550 in sentence case, sized by word count and centred alone on clean ground, emphasis by colour, serif only as a
+  brand's own voice (Newsreader replaces Instrument Serif), no eyebrows and no uppercase mono labels.
+- Variety by default: every film writes a Devices block (opening, seams, spectacle, integrations, lockup, type
+  treatment) picked from menus by what the product claims, with no device used twice except the film's signature, one
+  colour flood at most, one tour of other products at most 15 % of the film, and three example blocks instead of one.
+- Grounds are lit in their own hue (`<Ground>` does it by default); a flat fill only holds a mass that fills the frame.
+- A held framing is fine while something large changes in it; the product's output is seen big once; the claim is said
+  once and may stay on as the lockup's line.
 
 ### Added
 
@@ -42,7 +51,13 @@ gives the agent a director's method, a kit that looks premium by default, and a 
   reversed swells made from real hits; `shortlist` and `music` for 38 licensed tracks measured for tempo, start point and
   energy; credits with licence links.
 - Five worked films in `kit/src/films/` (light product UI, an isometric block world, editorial photographs, a dark stage
-  of shaped light, soft air with a partner's real mark).
+  with a 3D glass prism, cream paper with a partner's real mark), each with its own licensed music track.
+- Kit pieces: `Output` (the result giant, then into the UI), `LockSwap` (the artefact fixed while hosts swap behind it),
+  `Relay` with an entry flight and a minimum size, `Wall` with an event wave, `Flood` gather, `Phone` and `Laptop`,
+  `GLView` helpers (`glRay`, `orbitCamera`, `glPoint`), `toScreen` through a tilted camera, `useTextWidth`, `Build` words
+  that hold an object, typing bursts after a prefix.
+- `sfx.mjs fit` places a track so the film's main hit lands on a beat where the music lifts; tempos are measured from
+  the file; `frames.mjs check` fails a bed that runs out before the film ends and measures vertical films vertically.
 
 ### Removed
 
