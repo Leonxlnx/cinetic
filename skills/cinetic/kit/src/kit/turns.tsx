@@ -78,11 +78,15 @@ export const Tiles: React.FC<TurnProps & { cols?: number; rows?: number; order?:
   color,
 }) => {
   const frame = useCurrentFrame();
+  const { width: FW, height: FH } = useVideoConfig();
   if (frame < start) return <AbsoluteFill>{from}</AbsoluteFill>;
   if (frame >= start + dur + 8) return <AbsoluteFill>{to}</AbsoluteFill>;
-  const tw = 1920 / cols;
-  const th = 1080 / rows;
-  const tiles: React.ReactNode[] = [];
+  const tw = FW / cols;
+  const th = FH / rows;
+  // one clip path holds every tile of the new scene (the scene is mounted once, so measured text and 3D stay intact);
+  // the optional colour tiles are plain boxes
+  let path = '';
+  const swatches: React.ReactNode[] = [];
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < cols; c++) {
       const k =
@@ -94,21 +98,22 @@ export const Tiles: React.FC<TurnProps & { cols?: number; rows?: number; order?:
               ? c / cols
               : rand(r * 31 + c * 7);
       const p = at(frame, start + k * dur * 0.7, dur * 0.35, ease.inOut);
-      // first half: old tile shrinks away (or turns to colour); second half: new tile grows in
-      const showNew = p >= 0.5;
-      const s = showNew ? mix((p - 0.5) * 2, 0, 1) : mix(p * 2, 1, 0);
-      tiles.push(
-        <div key={`${r}-${c}`} style={{ position: 'absolute', left: c * tw, top: r * th, width: tw + 0.5, height: th + 0.5, overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', inset: 0, transform: `scale(${color ? 1 : s})`, background: color && !showNew ? color : undefined, opacity: color && !showNew ? clamp(p * 4) : 1 }}>
-            <div style={{ position: 'absolute', left: -c * tw, top: -r * th, width: 1920, height: 1080 }}>{showNew ? to : color ? null : from}</div>
-          </div>
-        </div>,
-      );
+      const cx = (c + 0.5) * tw;
+      const cy = (r + 0.5) * th;
+      if (p >= 0.5) {
+        const s2 = mix((p - 0.5) * 2, 0, 1);
+        const w = (tw + 2) * s2;
+        const h = (th + 2) * s2;
+        if (w > 0.2) path += `M${(cx - w / 2).toFixed(2)} ${(cy - h / 2).toFixed(2)}h${w.toFixed(2)}v${h.toFixed(2)}h${(-w).toFixed(2)}Z`;
+      } else if (color && p > 0) {
+        swatches.push(<div key={`${r}-${c}`} style={{ position: 'absolute', left: c * tw, top: r * th, width: tw + 0.5, height: th + 0.5, background: color, opacity: clamp(p * 4) }} />);
+      }
     }
   return (
     <AbsoluteFill>
-      <AbsoluteFill style={{ opacity: 1 }}>{from}</AbsoluteFill>
-      <AbsoluteFill style={{ background: 'transparent' }}>{tiles}</AbsoluteFill>
+      <AbsoluteFill>{from}</AbsoluteFill>
+      {swatches.length > 0 && <AbsoluteFill>{swatches}</AbsoluteFill>}
+      {path && <AbsoluteFill style={{ clipPath: `path('${path}')` }}>{to}</AbsoluteFill>}
     </AbsoluteFill>
   );
 };

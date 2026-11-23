@@ -197,8 +197,8 @@ export const InputBar: React.FC<{
   /** Frame the send button is pressed (it dips and flashes). */
   sendAt?: number;
   style?: React.CSSProperties;
-  /** Type the first `burst` words, then land the rest at once. */
-  burst?: number;
+  /** Type the first `burst` words (or this prefix string), then land the rest at once. */
+  burst?: number | string;
 }> = ({ t, text, start, w = 1100, size = 34, placeholder = 'Ask anything', cps = 26, leading, sendIcon, sendAt, style, burst }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();

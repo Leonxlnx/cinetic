@@ -90,7 +90,7 @@ sentence like a word).
 be nodes: a mark plus a name; `times` sets the frame each item takes over; `enter` brings the first item in).
 **`<Typing text start cps={26} caret placeholder />`** and **`useTyped(text, start, cps)`** (returns `{ shown, done, doneAt }`):
 human cadence with seeded hesitations and pauses after punctuation; `burst={3}` types three words and lands the rest at
-once (use it: reading along at typing speed is dead time); `keyFrames` is the frame of every key (put a key
+once (`burst="maya@"` types that prefix, for an email or a path) (use it: reading along at typing speed is dead time); `keyFrames` is the frame of every key (put a key
 sound on some of them, drive a caret-following camera from them).
 **`typingTimes(text, start, fps, cps)`** the same cadence as a pure function (key sounds, cameras outside the component).
 **`<Scramble text start per={1.5} flicker={8} />`** letters decode from glyphs, left to right: short labels only.

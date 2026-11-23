@@ -140,7 +140,8 @@ export const useFrameInfo = () => {
 
 /**
  * Diving into an element whose inside is the next scene: the zoom at which a w x h box exactly covers the frame. Grow
- * the camera to it with logScale (ease.in), cut to the inner scene at that frame, and the inside arrives at full size.
+ * the camera to it with logScale and a curve that moves from its first frame (`(t) => t * (0.35 + 0.65 * t)`; plain ease.in
+ * parks the camera for its first third), cut to the inner scene at that frame, and the inside arrives at full size.
  */
 export const diveZoom = (w: number, h: number, frameW = 1920, frameH = 1080) => Math.max(frameW / w, frameH / h);
 

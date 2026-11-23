@@ -271,7 +271,9 @@ export const Swap: React.FC<{
  * inside words. `cps` sets the average speed.
  */
 /** The frame each character of `text` appears on, typed from `start` at about `cps` characters a second (useTyped's cadence). */
-export const typingTimes = (text: string, start: number, fps = 30, cps = 26, seed = 3, burst?: number) => {
+export const typingTimes = (text: string, start: number, fps = 30, cps = 26, seed = 3, burst?: number | string) => {
+  // burst: a number of words, or the text typed before the rest lands at once (an email, a path: 'maya@')
+  const burstChars = typeof burst === 'string' && text.startsWith(burst) && burst.length > 0 ? burst.length : -1;
   const per = fps / cps;
   const out: number[] = [];
   let t = start;
@@ -289,7 +291,7 @@ export const typingTimes = (text: string, start: number, fps = 30, cps = 26, see
     t += per + (rand(i * 7.3 + seed) - 0.5) * per * 0.9 + (c === ' ' ? per * 0.6 : c === ',' || c === '.' ? per * 2.5 : 0);
     out.push(Math.ceil(t));
     if (c === ' ') words++;
-    if (burst !== undefined && words >= burst && burstAt < 0) {
+    if (burstAt < 0 && ((typeof burst === 'number' && words >= burst) || (burstChars > 0 && i + 1 >= burstChars))) {
       burstAt = t;
       burstIdx = i + 1;
     }
@@ -297,7 +299,7 @@ export const typingTimes = (text: string, start: number, fps = 30, cps = 26, see
   return out;
 };
 
-export const useTyped = (text: string, start: number, cps = 26, seed = 3, burst?: number) => {
+export const useTyped = (text: string, start: number, cps = 26, seed = 3, burst?: number | string) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   if (burst !== undefined) {
@@ -346,8 +348,8 @@ export const Typing: React.FC<{
   style?: React.CSSProperties;
   placeholder?: string;
   placeholderColor?: string;
-  /** Type the first `burst` words, then land the rest at once. */
-  burst?: number;
+  /** Type the first `burst` words (or this prefix string), then land the rest at once. */
+  burst?: number | string;
 }> = ({ text, start = 0, cps = 26, caret = true, caretColor = 'currentColor', style, placeholder, placeholderColor = 'rgba(128,128,128,.6)', burst }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();

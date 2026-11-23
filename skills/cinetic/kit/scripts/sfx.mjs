@@ -15,7 +15,7 @@
 //                                                   public/music/music.json)
 //   node scripts/sfx.mjs analyze public/music/bed.mp3   the track's tempo (from its kicks) and sections: where it is quiet,
 //                                                   where it lifts or drops; put the film's turns on them
-//   node scripts/sfx.mjs fit public/music/bed.mp3 --hit 104 --len 284 [--cuts 12,44,182]
+//   node scripts/sfx.mjs fit public/music/bed.mp3 --hit 104 --len 284 [--enter 8] [--cuts 12,44,182]
 //                                                   where to start the track so the film's main hit lands on a beat
 //                                                   where the music lifts, and which cuts sit off the beat
 //   node scripts/sfx.mjs credits                   print the CREDITS.md block for every sound, track, picture and mark used
@@ -305,8 +305,10 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
   if (cmd === 'fit') {
     // where to start the track so the film's main hit lands on a beat where the music lifts, with music under the whole film
     const fps = Number(flag('fps', 30));
-    const hit = Number(flag('hit'));
-    const len = Number(flag('len'));
+    // --enter: the frame the bed enters (<Music enterAt>); the track plays from startFrom at that frame
+    const enter = Number(flag('enter', 0));
+    const hit = Number(flag('hit')) - enter;
+    const len = Number(flag('len')) - enter;
     if (!Number.isFinite(hit) || !Number.isFinite(len)) throw new Error('usage: sfx.mjs fit <audio file> --hit <frame of the main hit> --len <film length in frames> [--cuts 12,44,104] [--fps 30]');
     const dB = (a, b) => { let m = 0, c = 0; for (let i = Math.max(0, Math.round(a * 100)); i < Math.min(n, Math.round(b * 100)); i++) { m += e[i] * e[i]; c++; } return c ? 10 * Math.log10(m / c + 1e-10) : -100; };
     const onMax = Math.max(...on) || 1;
@@ -325,12 +327,12 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
     }
     cands.sort((a, b) => b.rank - a.rank);
     const beatF = (60 / bpm) * fps;
-    console.log(`${path.basename(file)}: ${bpm.toFixed(2)} BPM, a beat every ${beatF.toFixed(2)} frames. Starts that put frame ${hit} on a beat (best first):`);
+    console.log(`${path.basename(file)}: ${bpm.toFixed(2)} BPM, a beat every ${beatF.toFixed(2)} frames. Starts that put frame ${hit + enter} on a beat (best first):`);
     if (Math.abs(bpm - Math.round(bpm)) > 0.07) console.log('  (the measured tempo is not a clean number: this track may have no steady grid. Trust the lift, not the beat positions.)');
     for (const c of cands.slice(0, 6)) console.log(`  startFrom={${c.S.toFixed(2)}}  the music ${c.lift >= 0 ? 'lifts +' : 'falls '}${c.lift.toFixed(0)} dB at the hit; under the film it sits ${c.body.toFixed(0)} dB below the track's loudest, the first second ${c.open.toFixed(0)} dB`);
     if (!cands.length) console.log('  none: the track is shorter than the film from any beat');
-    const off = hit % beatF;
-    console.log(`Beat grid in the film: beats(${bpm.toFixed(2)}, ${off.toFixed(1)}) (frame ${hit} is a beat). Listen that it is the bar's first beat; if not, move startFrom by one beat (${(60 / bpm).toFixed(3)} s).`);
+    const off = (hit + enter) % beatF;
+    console.log(`Beat grid in the film: beats(${bpm.toFixed(2)}, ${off.toFixed(1)}) (frame ${hit + enter} is a beat). Listen that it is the bar's first beat; if not, move startFrom by one beat (${(60 / bpm).toFixed(3)} s).`);
     const cuts = (flag('cuts', '') || '').split(',').map(Number).filter((v) => Number.isFinite(v) && String(v) !== '');
     if (cuts.length) {
       const rows = cuts.map((c) => { const k = Math.round((c - off) / (beatF / 2)); const g = off + k * (beatF / 2); return { c, d: Math.round(g) - c, half: k % 2 !== 0 }; });
