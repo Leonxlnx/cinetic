@@ -190,6 +190,8 @@ into a wall of documents that drains into the mark). Never copy their content; l
   element on an empty ground reads code-made.
 - **Commit to the ground.** Surfaces take the world's colours (a card tinted with the ground, a dark surface on a light
   flood); white cards on every ground is the template look.
+- **Clean type, no template tells.** No eyebrows or kickers (a small line above a heading), no uppercase mono labels, no
+  letter-spaced small caps. Labels are sentence case in the UI face; mono is for code and data only, as written.
 - **Type fast, not along.** In product UI, type the first two or three words and land the rest at once (`burst`); the
   viewer must never read along at typing speed.
 - **Real marks only.** A company or product logo is its official mark (`<Brand>` or `logos.mjs get`), never redrawn, never a

@@ -21,7 +21,7 @@ links to recipes), the effect budget, the kit pieces that build it, and what to 
 5. **Dark grounds are never pure black** while content is visible (#08090C-#141414 with a lift, a glow or grain).
 6. Real third-party logos keep their own colours (or their sanctioned mono version) inside the world's UI.
 
-Kit fonts (`fonts`): `inter` (UI, neutral statements), `geist` (technical display), `mono` (labels, code, data), `serif`
+Kit fonts (`fonts`): `inter` (UI, neutral statements), `geist` (technical display), `mono` (code and data only, never uppercase labels), `serif`
 (Instrument Serif, editorial accents and display). A brand's own face replaces the display face when provided.
 
 ---

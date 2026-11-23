@@ -12,7 +12,7 @@ export const fonts = {
   inter: 'Inter Variable, Inter, sans-serif',
   /** A tighter, more technical grotesk: dev tools, AI products. */
   geist: 'Geist Variable, Geist, sans-serif',
-  /** Labels, captions, code, data. */
+  /** Code and data only (commands, file names, numbers in a terminal), as written: never uppercase labels. */
   mono: 'Geist Mono Variable, ui-monospace, monospace',
   /** An editorial serif with a beautiful italic: creative or human products, one accent word. */
   serif: 'Instrument Serif, Georgia, serif',

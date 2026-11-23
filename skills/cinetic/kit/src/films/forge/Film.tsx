@@ -56,7 +56,9 @@ const AMBER = '#D9A21E';
 const STONE = '#8F8B82'; // labels on ink
 const GRAPHITE = '#66625A'; // labels on paper and sun
 const BLOCK = { top: PAPER, front: '#D9D5CB', side: '#BDB8AC' };
-const mono: React.CSSProperties = { fontFamily: fonts.mono, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase' };
+// code and data in mono, as written (never uppercase, never tracked out); labels in the UI face, sentence case
+const mono: React.CSSProperties = { fontFamily: fonts.mono, fontWeight: 500, letterSpacing: '0' };
+const label: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 560, letterSpacing: '-0.01em' };
 const display: React.CSSProperties = { fontFamily: fonts.geist, fontWeight: 640, letterSpacing: '-0.045em' };
 
 // ---------------------------------------------------------------- the timeline, on the music's beat grid (122 BPM)
@@ -103,9 +105,9 @@ const inLane = (x: number, y: number, r: number, h: number) => {
 
 // ---------------------------------------------------------------- the city: thirty labelled things it takes to run a model
 const LABELS = [
-  'CUDA 12.4', 'NCCL', 'DRIVERS 550', 'VLLM', 'TRITON', 'KUBERNETES', 'HELM CHART', 'AUTOSCALER', 'LOAD BALANCER', 'TLS CERTS',
-  'GPU QUOTA', 'WEIGHTS 140 GB', 'TOKENIZER', 'REQUEST QUEUE', 'KV CACHE', 'LOGS', 'METRICS', 'SECRETS', 'BATCHING', 'RETRIES',
-  'RATE LIMITS', 'HEALTH CHECKS', 'DOCKERFILE', 'CDN', 'ALERTS', 'SPOT FALLBACK', 'QUANTIZATION', 'SHARDING', 'WARM POOL', 'BILLING',
+  'CUDA 12.4', 'NCCL', 'Drivers 550', 'vLLM', 'Triton', 'Kubernetes', 'Helm chart', 'Autoscaler', 'Load balancer', 'TLS certs',
+  'GPU quota', 'Weights 140 GB', 'Tokenizer', 'Request queue', 'KV cache', 'Logs', 'Metrics', 'Secrets', 'Batching', 'Retries',
+  'Rate limits', 'Health checks', 'Dockerfile', 'CDN', 'Alerts', 'Spot fallback', 'Quantization', 'Sharding', 'Warm pool', 'Billing',
 ];
 const CITY = (() => {
   const cand: Array<{ x: number; y: number; w: number; d: number; h: number; dist: number; s: number }> = [];
@@ -183,7 +185,7 @@ const FloorType: React.FC<{ children: React.ReactNode; out?: number }> = ({ chil
 );
 
 const Label: React.FC<{ text: string; size?: number; color?: string; w?: number }> = ({ text, size = 20, color = '#7D796F', w }) => (
-  <div style={{ ...mono, fontSize: size, color, position: 'absolute', left: 12, top: 10, width: w, lineHeight: 1.15 }}>{text}</div>
+  <div style={{ ...label, fontSize: size, color, position: 'absolute', left: 12, top: 10, width: w, lineHeight: 1.15 }}>{text}</div>
 );
 
 // ---------------------------------------------------------------- the terminal layout (shared by the hero's face and the full-frame shot)
@@ -315,7 +317,7 @@ const chipBox = (() => {
 const ModelFace: React.FC = () => (
   <>
     <Label text="MODEL" size={22} />
-    <div style={{ ...mono, fontSize: 30, color: INK, letterSpacing: '0.02em' }}>LLAMA-3.1-70B</div>
+    <div style={{ ...mono, fontSize: 30, color: INK }}>llama-3.1-70b</div>
     <div style={{ ...mono, fontSize: 18, color: '#7D796F', position: 'absolute', left: 12, bottom: 10 }}>140 GB</div>
   </>
 );
@@ -330,15 +332,15 @@ const ReqFace: React.FC<{ idle: number }> = ({ idle }) => {
   const v = f < T.zero ? 12480 : 0;
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', color: INK }}>
-      <div style={{ ...mono, fontSize: 20, position: 'absolute', left: 18, top: 16 }}>LLAMA-3.1-70B</div>
+      <div style={{ ...mono, fontSize: 20, position: 'absolute', left: 18, top: 16 }}>llama-3.1-70b</div>
       <div style={{ position: 'absolute', left: 0, right: 0, top: 120, textAlign: 'center' }}>
         <div style={{ ...display, fontSize: 76, lineHeight: 1 }}>
           {f < T.zero ? <Odometer value={v} from={0} start={T.face + 6} dur={70} /> : <Odometer value={0} from={12480} start={T.zero} dur={26} curve={ease.inOut} />}
         </div>
-        <div style={{ ...mono, fontSize: 19, marginTop: 10 }}>REQUESTS / S</div>
+        <div style={{ ...label, fontSize: 21, marginTop: 10 }}>Requests per second</div>
       </div>
-      <div style={{ ...mono, fontSize: 19, position: 'absolute', left: 18, bottom: 18, opacity: 1 - idle }}>P50 84 MS</div>
-      <div style={{ ...mono, fontSize: 19, position: 'absolute', right: 18, bottom: 18 }}>{f < T.zero ? 'LIVE' : 'IDLE'}</div>
+      <div style={{ ...label, fontSize: 21, position: 'absolute', left: 18, bottom: 18, opacity: 1 - idle }}>p50 84 ms</div>
+      <div style={{ ...label, fontSize: 21, position: 'absolute', right: 18, bottom: 18 }}>{f < T.zero ? 'Live' : 'Idle'}</div>
     </div>
   );
 };
@@ -602,7 +604,7 @@ const HostNotebook: React.FC = () => {
       <AbsoluteFill style={pivot(back)}>
         <div style={{ position: 'absolute', left: 64, top: 70, display: 'flex', alignItems: 'center', gap: 22 }}>
           <Brand name="jupyter" size={58} />
-          <span style={{ ...mono, fontSize: 34, color: INK, textTransform: 'none', letterSpacing: '0.01em' }}>serve.ipynb</span>
+          <span style={{ ...mono, fontSize: 34, color: INK }}>serve.ipynb</span>
           <span style={{ ...mono, fontSize: 26, color: '#8A660C', marginLeft: 28 }}>Python 3 · forge 1.4.2</span>
         </div>
         <div style={{ position: 'absolute', left: -40, right: -40, top: 150, height: 2, background: 'rgba(14,14,16,0.16)' }} />
@@ -736,7 +738,7 @@ const HostChat: React.FC = () => {
           <div style={{ position: 'absolute', left: 117, top: AY - 71, width: 42, height: 42, borderRadius: 6, background: SUN, boxShadow: `inset 0 -5px 0 ${AMBER}` }} />
           <div style={{ position: 'absolute', left: 220, top: AY - 100, display: 'flex', alignItems: 'baseline' }}>
             <span style={nameStyle}>forge</span>
-            <span style={{ ...mono, fontSize: 22, color: PAPER, background: INK, borderRadius: 6, padding: '3px 9px', marginLeft: 14, position: 'relative', top: -6 }}>APP</span>
+            <span style={{ ...mono, fontSize: 22, color: PAPER, background: INK, borderRadius: 6, padding: '3px 9px', marginLeft: 14, position: 'relative', top: -6 }}>app</span>
             <span style={meta}>10:42</span>
           </div>
           <div style={{ ...body, position: 'absolute', right: 1920 - L_EDGE, top: AY - 30 }}>llama-3.1-70b is live at</div>
@@ -794,7 +796,7 @@ const LockType: React.FC = () => {
       <div style={{ position: 'absolute', left: 0, right: 0, top: 780, textAlign: 'center', ...display, fontWeight: 520, letterSpacing: '-0.02em', fontSize: 56, color: '#B4AFA4' }}>
         <Words text="Run any model. One command." times={[T.lock + 18, T.lock + 21, T.lock + 24, T.lock + 29, T.lock + 32]} arrive="cut" born={SUN} settle={12} style={{ color: '#B4AFA4' }} />
       </div>
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 880, textAlign: 'center', ...mono, color: SUN, fontSize: 32, opacity: f >= T.lock + 36 ? 1 : 0 }}>forge.dev</div>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 880, textAlign: 'center', ...label, color: SUN, fontSize: 36, opacity: f >= T.lock + 36 ? 1 : 0 }}>forge.dev</div>
     </AbsoluteFill>
   );
 };
