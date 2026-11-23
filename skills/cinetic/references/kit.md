@@ -132,7 +132,9 @@ push and turn to add to a held camera. **`shake(frame, start, dur, amp)`** an im
 
 ## 4. World
 
-- **`<Ground color>`** flat ground. **`<Aura base blobs={[{ color, x, y, r }]} speed>`** a slow living gradient of soft fields.
+- **`<Ground color light>`** a ground lit in its own hue (a soft light behind the subject, a gentle fall-off to the edges;
+  `light={{ x, y, size, amount }}` places it, `light={false}` only under a mass that fills the frame or where the fill must
+  match a flood exactly). **`<Aura base blobs={[{ color, x, y, r }]} speed>`** a slow living gradient of soft fields.
 - **`<GridLines size color thickness start reveal>`** a line grid; inside a `Camera` with `rx` it becomes a floor.
 - **`<Box w d h color top front side topContent frontContent sideContent radius edge shadow>`** a solid CSS 3D block with a
   contact shadow on the floor (`shadow={0}` for none); content sits *on*

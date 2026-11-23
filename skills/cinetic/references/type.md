@@ -44,7 +44,9 @@ A resting line (the size a normal statement settles at) is sized by how many wor
 ## 3. One spectacle size in a film
 
 - Once a film, one word or a 2-3 word phrase goes giant: 280-700 px (cap height 15-50 % of the frame's height). It is the
-  largest type in the film and names the right thing: the product, its object or its benefit.
+  largest type in the film and names the benefit or the product (or its object), never the problem or the input: the
+  hours saved, not the pile of mail; the amount that arrives, not the amount sent. A viewer reads the biggest word as the
+  brand.
 - It may crop at the frame edge (never inside a box) as long as the word still reads.
 - Weight 500-700, tracking -0.03 to -0.05 em, line height 0.85-0.95.
 - The resting lines keep their sizes around it; the jump between the two is the point. No third size in between: a film
@@ -72,8 +74,11 @@ A resting line (the size a normal statement settles at) is sized by how many wor
 ## 7. Centred, alone
 
 - By default a line sits at the frame's centre: x 960, its optical centre at y 520-540 (a hair above the middle).
-- It is alone: the only words on screen, on a clean patch of ground. Nothing behind it is busier than a flat field, a soft
+- It is alone: the only words on screen, on a clean patch of ground. Nothing behind it is busier than a lit field, a soft
   gradient or a dimmed, blurred picture, and its contrast against what is behind it is 7:1 or more.
+- Clean ground over the film's picture (a claim, a veil) is the last image dimmed and blurred: it keeps its colour, and at
+  least a third of the frame stays in a mid or dark tone. Never wash it to near-white or cut to bare canvas to make the
+  line read; that empties the frame instead of quieting it.
 - As words append, the line re-centres (`<Build>`; [lead-heavy re-centre](motion/text.md#12-lead-heavy-re-centre-append-mode)).
 - Off-centre only when the line answers an object beside it: a left-aligned block next to a UI card or a 3D object, 60 px
   of air or more between them, text and object centred together as one group. A poster world sets lines flush-left on its
@@ -87,6 +92,21 @@ A resting line (the size a normal statement settles at) is sized by how many wor
   (`<Build>`), a last-word swap (`<Swap>`), a masked rise. Two arrival styles a film. Never fade a whole line in.
 - One line on screen at a time.
 
+**One type treatment a film.** Beside its arrivals, a film picks one treatment for its statements (a slot in the
+`BEATS.md` Devices block) and repeats it through the film, so its type has a look of its own and not the same flat word
+as every other film. Pick by what the product is:
+- a light sweep through the line, parking on the key word ([tint band and shimmer](motion/text.md#25-tint-band-and-shimmer-pass));
+- a heat glow that cools: the key word arrives with a soft glow in the accent's hue that cools to its resting colour
+  ([born tint](motion/text.md#21-born-tint-hot-arrival) with the glow of section 9);
+- a decode ([cipher settle](motion/text.md#51-cipher-settle));
+- a word swap in place, the line holding while one word turns over ([last-word swap](motion/text.md#35-last-word-swap));
+- type set on a surface: a floor, a block's face, the product's own paper ([type on surfaces](motion/text.md#6-type-on-surfaces));
+- a picture inside the line ([letters as windows](motion/text.md#71-letters-as-windows),
+  [picture inside the sentence](motion/text.md#97-picture-inside-the-sentence));
+- the born tint, each new word born in the accent and cooling to the ink ([born tint](motion/text.md#21-born-tint-hot-arrival)).
+
+The born tint is one option, not the default.
+
 ## 9. Emphasis by colour
 
 One accent per line, by one of:
@@ -97,15 +117,21 @@ One accent per line, by one of:
 - an object inline at cap height in a word gap: an icon, a photo chip or a partner's mark (a `<Build>` slot;
   [picture inside the sentence](motion/text.md#97-picture-inside-the-sentence)).
 
-Never emphasis by a second face, a heavier weight, a glow or a bounce, and never two accents in one line.
+The accent word may also carry light: a soft glow or a gradient in the accent's own hue, sized to the letters (the glow
+reaches a fraction of the cap height past them, never a halo round the line), once a line. It lights the accent; it is
+not a second accent.
+
+Never emphasis by a second face, a heavier weight or a bounce, never a glow as decoration (on a whole line, on every
+line, in a hue not the accent's), and never two accents in one line.
 
 ## 10. Serif only with a reason
 
 The default is no serif. A serif appears only:
-- **as the brand's voice**, when the brand's own type is a serif (a publisher, a magazine, a writing tool whose identity
-  is set in one). Then it sets every statement: `fonts.serif` (Newsreader; its optical sizing gives a display cut at large
-  sizes) or the brand's licensed serif, weight 400-600, tracking 0 to -0.01 em, sentence case. The UI stays in
-  `fonts.inter`.
+- **as the brand's voice**, when the brand's own type is a serif, or when the product is a writing, publishing or
+  editorial brand (a writing tool, a publisher, a magazine, a newsletter), which may set every statement in its serif
+  even when the brand is invented. Then it sets every statement: `fonts.serif` (Newsreader; its optical sizing gives a
+  display cut at large sizes) or the brand's licensed serif, weight 400-600, tracking 0 to -0.01 em, sentence case. The
+  UI stays in `fonts.inter`.
 - **as the wordmark**, when the brand's mark is a serif.
 - **as one italic accent word** inside a sans line, at most once a film: at the sans's cap height, the line's only accent.
 
@@ -139,7 +165,7 @@ const voice = { fontFamily: fonts.inter, color: INK };
 // 3 words: 130 px, 500, -0.015 em. One word joins at a time and the line re-centres; the key word stays in the accent.
 // Build's box is 1.2 em tall, so top 452 puts its middle at y 530.
 <div style={{ position: 'absolute', left: 0, right: 0, top: 452 }}>
-  <Build words={['Drafts', 'write', 'themselves.']} times={[T.a, T.b, T.c]} born={ACCENT}
+  <Build words={['Drafts', 'write', 'themselves.']} times={[T.a, T.b, T.c]}
     style={{ ...voice, fontSize: 130, fontWeight: 500, letterSpacing: '-0.015em' }}
     wordStyle={(i) => (i === 2 ? { color: ACCENT } : undefined)} />
 </div>
@@ -170,7 +196,10 @@ const voice = { fontFamily: fonts.inter, color: INK };
   "developer" feel; an extended techno face.
 - Large type at UI spacing (tracking 0, optical sizing off): it reads as interface text blown up.
 - A heading alone in a top-left corner, or a left-aligned line on an empty ground with nothing beside it to answer.
-- Words over a busy picture without a plate; contrast under 7:1.
-- Gradient fills on every headline, glows, outlines, drop shadows, letters bouncing one by one.
+- Words over a busy picture without a plate; contrast under 7:1. Or the opposite: a claim on a picture washed to
+  near-white, so the frame is empty.
+- The same treatment in every film: one flat accent word, the born tint on every statement.
+- Gradient fills on every headline, decorative glows (anything beyond the accent word's own soft light), outlines, drop
+  shadows, letters bouncing one by one.
 - Two accents in one line (a colour word plus a bold word plus an underline).
 - A label the viewer needs at 20 px; text cropped inside its own chip or field.

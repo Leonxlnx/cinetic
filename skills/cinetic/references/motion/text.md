@@ -101,7 +101,8 @@ settle to 1.0 with blur 3.0, 2.2, 1.6, 1.0, 0.5, 0.2, 0. The new word enters lig
 ### 2.1 Born tint ("hot arrival")
 **What:** each new word is born in the accent colour (and the first one also oversized and blurred) and cools to the
 line's ink. The eye always knows where to read, with no movement at all.
-**When:** hooks, questions, any build where restraint is the look. The single most useful text move in the kit.
+**When:** hooks, questions, any build where restraint is the look. One of the type treatments (`type.md` section 8),
+not the default for every film.
 **Numbers:** first word: scale `1 + 1.77 * exp(-f / 4.5)`, blur `10.7 * exp(-f / 4.3)` px (clamp < 0.5 to 0), accent held
 8 f then to ink by f22 with `ease.inOut`. Following words: no scale; cut on with 1 px blur for 2 f; accent for 2 f, then
 to ink over 6 f. The line re-centres (1.2) after each word. Keep the type small (cap 50-75 px).

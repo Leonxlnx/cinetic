@@ -31,6 +31,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [Update film](film-grammar.md#update-film)
 - [Compositions](film-grammar.md#compositions)
 - [Devices](film-grammar.md#devices)
+  - [Type treatment](film-grammar.md#type-treatment)
   - [Openings](film-grammar.md#openings)
   - [Seams and ground cuts](film-grammar.md#seams-and-ground-cuts)
   - [Spectacle](film-grammar.md#spectacle)

@@ -299,7 +299,7 @@ as a 1-2 s variation of the same shot.
 | `giant-type` | 1-3 words at 20-40 % of the frame height, often cropped or bleeding off | promise, claim, a turn |
 | `type-on-surface` | words laid on an object or plane in perspective (a block's face, a floor, a card) | hooks, chapter titles |
 | `ground` | one colour or one object fills the frame, by any carrier (`forge`'s beat sheet calls it `flood`) | turns between acts |
-| `veil` | a statement centred over the product, the product dimmed or blurred behind it | a claim that answers what was just shown |
+| `veil` | a statement centred over the product, the product dimmed and blurred behind it but keeping its colour (a third of the frame mid or dark, never washed to near-white) | a claim that answers what was just shown |
 | `split` | two grounds or two states side by side (before / after, input / output) | proof, comparison |
 | `quantity` | many of a thing (twenty documents, a hundred runs), by any spectacle in the menu (`forge`'s `wall`) | "all of it", scale |
 | `panels` | a gutterless grid of 2-4 panels, each on its own clock (`motion/camera.md` 6.6) | the product doing several things at once |
@@ -315,20 +315,47 @@ as a 1-2 s variation of the same shot.
 ## Devices
 
 Films that look alike share their devices, not their content. Before the rows of `BEATS.md`, write a **Devices** block:
-one line per slot, each picked from the menus below by what this product claims, not by habit and not by what the worked
-films did.
+one line per slot, each picked from the menus below by what this product claims, not by habit and not by what the
+examples or the worked films did. Three short examples, for three invented products; they share no device with each
+other, to show the range, not a pick:
 
 ```
-Devices (Parcel, an invented app that moves files between clouds; the claim: speed)
-- signature: the file's folded corner, 5 uses: the hook, two seams, the integration swap, the lockup
-- opening: cut-on stack of the category line, the fold turning on its full stop
+Devices (Tillroll, a bookkeeping app that matches receipts to bank lines; the claim: precision)
+- signature: the receipt's torn edge: the hook, a seam, the lockup
+- opening: drop-in, a crumpled receipt lands and flattens under the camera
+- text arrivals: an append that re-centres; masked rise
+- type treatment: type set on a surface, every statement printed on receipt paper
+- seams: scale-jump cut | flash-hidden swap (ground cut 1) | the torn edge | colour-flip cut with a size step (ground cut 2)
+- spectacle: the dive to the detail, down to the one cent it matched, 2 s
+- output-big: the matched pair in macro, the two amounts locking together
+- integrations: one host used for real, the bank's statement in macro
+- lockup: trim-path draw along the torn edge
+```
+
+```
+Devices (Kilnsmith, an app that runs a pottery studio's kiln firings; the claim: transformation)
+- signature: the kiln's round spy-hole: the hook, the first ground cut, the lockup
+- opening: blueprint, the firing curve draws on as construction lines and fills
 - text arrivals: cut-on words; last-word swap
-- seams: 1-2 velocity cut (right) | 2-3 morph, fold -> progress chip | 3-4 colour-flip cut with a size step (ground cut 1)
-  | 4-5 dive into the chip | 5-6 fold (signature) | 6-7 ground swap under the moving file (ground cut 2) | 7-8 flash-hidden swap
-- spectacle: cascade, 32 folders tipping into the drive, 1.8 s
-- output-big: "4.2 GB in 9 s." giant, the digits stepping by cuts
-- integrations: object-lock swap, the file fixed while six clouds swap behind it
-- lockup: bookend, the fold closes over the last file and the corner is the mark
+- type treatment: a heat glow that cools, each key word arriving kiln-orange and cooling to the ink
+- seams: carried word | iris from the spy-hole (ground cut 1) | ground swap under the firing curve, which stays (ground cut 2)
+- spectacle: morph chain, one pot through clay, bisque, glaze and fire with no cut, 2.2 s
+- output-big: "Ready by 7." giant over the opened kiln
+- integrations: none, the brief does not hinge on them
+- lockup: quarter-spin, the mark turning up inside the spy-hole
+```
+
+```
+Devices (Keepsake, an app that restores old family photos; the claim: any photo, any damage)
+- signature: a damaged corner healing: the hook, a seam, the output
+- opening: fast list hook, one word per scanned photo
+- text arrivals: decode from coarse blocks; colour wake
+- type treatment: a picture inside the line, the restored photo showing through the key word
+- seams: pixel bridge (ground cut 1) | push | the healing corner | tiles from the album grid (ground cut 2)
+- spectacle: accelerating montage, twelve restored photos on hard cuts, each framed differently, 1.6 s
+- output-big: one restored face filling the frame, the damage gone in one cut
+- integrations: a sentence whose slot swaps print services' marks
+- lockup: spaced cut-on over the last restored photo
 ```
 
 Rules for the block:
@@ -336,15 +363,25 @@ Rules for the block:
   and its gather) count as one. The signature is the film's one visual idea (step 3 of the skill),
   taken from its world's list in [worlds.md](worlds.md) or made from the product's object, and used 3-8 times: in the hook,
   on up to three seams, in the output or the lockup. Every other device (a seam, the opening, the spectacle, the lockup)
-  appears once; the two text arrival styles are the exception, since they set every line.
+  appears once; the two text arrival styles and the type treatment are the exception, since they set every line.
 - **Budget:** one colour flood at most; a wall only when the claim is literally a quantity; one relay at most, with two
   hosts; two odometers at most; masked rise and born tint count among the film's two text arrivals.
 - **At least two seams from the less obvious families:** a velocity cut, a morph, an iris from one of the film's shapes, a
   push, tiles, a pixel bridge, a last-word swap, a scale-jump cut, a flash-hidden swap, a ground swap under a layer that stays.
 - **Not the default chain.** The worked films lean on a flood, a three-host relay, a wall pulled back from and a mark
   gathered out of it. Use one of those only when the brief calls for it, never most of them in one film, never in that order.
-- **Ties:** when several options fit equally, count the letters of the product's name and count that far through those
-  options, wrapping round, so two different products land on different choices.
+- **Not the examples either.** A film uses at most two devices that appear in any one example block above or in any one
+  worked film. Compare the finished block with each of them; past two shared, re-pick.
+- **Count through every slot.** For each slot, list the options on its menu that fit what the product claims, count the
+  letters of the product's name through that list (wrapping round) and take the one you land on; if it breaks a rule
+  above, take the next. Two products with the same claim then land on different picks.
+
+### Type treatment
+
+One per film, repeated on its statements from the hook to the claim ([type.md](type.md#8-few-words-built)): a light
+sweep through the line, a heat glow that cools, a decode, a word swap in place, type set on a surface, a picture inside
+the line, or the born tint. Take it from the product's object or world (a kiln's heat, a scanner's light, a receipt's
+paper). The born tint is one option, not the default.
 
 ### Openings
 
@@ -392,7 +429,12 @@ wall is right only when the claim is literally a quantity.
 | a platform with pillars | hub and dive | three objects visited by dives, snapping back to the hub between them (`motion/turns.md` 10) |
 | a bold claim | type spectacle | a marquee pair or a giant type pan crossing the frame, the product held between the lines (`motion/text.md` 8.1-8.2) |
 
-Whichever it is, it starts on the artefact the film has carried, large, so it reads, and its widest frame stays graphic.
+Whichever it is, it starts on the artefact the film has carried, large, so it reads, and its widest frame stays graphic:
+- the accent covers a real share of the frame (about 8 % of it or more), not a few specks;
+- the smallest label is 28 px or more, and every item is real content;
+- a spectacle made of lines (routes, arcs, a network) shows at most about 16 endpoints, each a filled object (a chip, a
+  disc, a mark) with its label, and its lines are 8-20 px wide with a lit core;
+- never hundreds of tiny pale cells, never a hairline web on a flat fill.
 
 ### Integrations
 

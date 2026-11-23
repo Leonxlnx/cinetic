@@ -422,8 +422,9 @@ quantity ("every PR", "all your documents"). Otherwise pick another from the spe
 the other items resolve in a wave from the centre (delay = distance from the centre x 1.5-2 f, `Wall wave`); then one event
 crosses them all (`Wall event`: every item flips, lights up or takes the artefact), which is what makes the quantity mean
 something. Keep the widest frame graphic: about 40 items or fewer in view, every third or fourth on the inverse ground,
-the accent on about a quarter at the peak, a count set large on it if there is one. Every item is real content, never grey
-bars; never hundreds of tiny pale cells.
+the accent on about a quarter at the peak, the smallest label 28 px or more, a count set large on it if there is one.
+Every item is real content, never grey bars; never hundreds of tiny pale cells. The same holds for any spectacle at its
+widest frame (`film-grammar.md` spectacle).
 **Out of a relay into a wall:** start the wall on its centre item at the artefact's exact screen size (wall zoom = 1 / the
 item's scale, pivot on the item) so the cut matches on the artefact, then pull back as above (`inkwell` builds this,
 `WallBeat`). Never in a film that also floods into the relay, and never followed by the wall draining into the mark: end

@@ -32,7 +32,7 @@ contact sheets before you render a final.
     nothing cropped. Or the opposite: a six-word line blown up to 200 px.
 14. **Template type.** Eyebrows and kickers over a heading, uppercase mono labels, letter-spaced small caps, ALL CAPS or
     Title Case statements, weights of 800-900, a serif or script accent word by habit, two faces in one line, a mono
-    statement; gradient fills on every headline, glows, outlines, drop shadows, per-letter bouncing staggers
+    statement; gradient fills on every headline, decorative glows, outlines, drop shadows, per-letter bouncing staggers
     (`type.md` tells).
 15. **Too many words.** Full sentences on screen (more than six words at once), generic claims ("Revolutionize your workflow", "Seamless", "Unlock",
     "Supercharge", "AI-powered", "Next-gen"), exclamation marks.
@@ -47,18 +47,20 @@ contact sheets before you render a final.
 20. **Random stock.** Pictures from five different shoots and grades; stock used as wallpaper behind text.
 21. **Effects stacked.** Grain on white, bokeh, particles, lens flares, light leaks, vignette on everything, motion blur on every
     move (or none on a 250 px/f whip).
-22. **Pure black with banding** gradients.
+22. **Flat grounds under thin subjects.** A hairline route, a dot or a small white card on an unlit flat fill; a claim on
+    a picture washed to near-white.
+23. **Pure black with banding** gradients.
 
 ### Sound
-23. **Wall of music** from frame 0 to the end, a riser-and-drop trailer bed under a product film.
-24. **A whoosh on every cut**, a chime on every click, sounds that land a few frames late because the file's lead-in was ignored.
-25. **Ending on a reverb whoosh** over a logo fade.
+24. **Wall of music** from frame 0 to the end, a riser-and-drop trailer bed under a product film.
+25. **A whoosh on every cut**, a chime on every click, sounds that land a few frames late because the file's lead-in was ignored.
+26. **Ending on a reverb whoosh** over a logo fade.
 
 ### Habit
-26. **The default chain.** A colour flood out of a button, a relay of three hosts (full-bleed, macro, tilted plane), a
+27. **The default chain.** A colour flood out of a button, a relay of three hosts (full-bleed, macro, tilted plane), a
     pull-back into a wall with a wave, the claim over the wall, the wall draining into the mark: the same back half for
     every product. Pick each device from its menu by what this product claims (`film-grammar.md` devices).
-27. **The same opening every time.** A macro on a detail and a log pull-back, because it ticks frame 0, the macro and the
+28. **The same opening every time.** A macro on a detail and a log pull-back, because it ticks frame 0, the macro and the
     scale jump at once.
 
 ---
@@ -68,7 +70,8 @@ contact sheets before you render a final.
 1. **One argument, chained.** The film can be told in one sentence. Every beat is caused by the previous one: an object becomes
    the next beat, a word carries across a cut, a hub is re-entered, one invented artefact runs through every feature. At least
    two chaining devices per film (`film-grammar.md` section 3).
-2. **One world, held strictly.** One ground system, one palette (one accent, used for meaning), one sans voice for statements
+2. **One world, held strictly.** One ground system (each ground lit by one soft light in its own hue unless a mass fills
+   it), one palette (one accent, used for meaning), one sans voice for statements
    and UI (or the brand's serif voice for statements), mono only for code and data, one material family. Thirty images look like one shoot (`worlds.md`).
 3. **The product is real.** Legible UI with specific copy, real data with irregular numbers, real integrations with their real
    logos, state changes that carry the story. Shown flat and large, or under one camera.
@@ -98,12 +101,13 @@ contact sheets before you render a final.
 | a crossfade between two scenes | carried cut, flash-hidden swap or a ground cut on the beat (`motion/turns.md` table) |
 | identical feature cards | turn them into chapters: hub and dive, or one artefact through every verb |
 | a frozen second | add a creep (0.8 % over 20 f) or a drift; or cut earlier |
-| text fades in | cut on + born tint, or masked rise; keep 2-4 f fades only inside words |
+| text fades in | cut on, a swap or a decode, or a masked rise; keep 2-4 f fades only inside words |
 | everything springs | replace springs on cards and camera with `ease.out` / `ease.inOut`; keep one pop family |
 | UI unreadable | flat and large, one component, 1.4x camera; or a punch-in |
 | type looks templated | one sans at 430-550, sentence case, sized by word count, centred alone; no kicker, no caps labels (`type.md`) |
-| palette looks "AI" | derive from the brand; one accent; flat grounds; remove gradients that carry no meaning |
-| glass looks fake | lit top rim + moving specular; on flat grounds use a lit gradient instead of backdrop blur |
+| palette looks "AI" | derive from the brand (an invented one takes its accent from the product's own object); one accent; lit grounds: one soft light per ground in its own hue (a horizon glow, a radial behind the subject, a vignette), a small luminance range (6-15 %); remove gradients that carry no meaning |
+| a thin subject on a flat fill | give it mass (a route 8-20 px wide with a lit core, a filled object riding it, the card at 65 % of the width) and light the ground behind it (`Ground light`) |
+| glass looks fake | lit top rim + moving specular; on a plain ground use a lit gradient instead of backdrop blur |
 | sound feels pasted | measure `leadMs`; remove half the effects; add breath gaps; move the kick 2 f after the cut |
 
 When you ask for a fix (from yourself or another agent), name **the frame, the problem, the allowed change and what must stay
@@ -132,16 +136,16 @@ Run `node scripts/frames.mjs check` on the preview first: points 11-13 are measu
 | 8 | **Colour discipline** | overview | the accent appears only where it means something; no purple/green/default-gradient palette for an invented brand; dark grounds not pure black and not banding |
 | 9 | **Effects budget** | beat sheet at 100 % | glows sized to their source and in their own hue; grain only where the world allows; motion blur only on seam frames (blurred thumbnails appear in pairs at seams, not throughout) |
 | 10 | **An ending that rests** | last sheet row | the lockup is born from an object already on screen, lasts at most 2 s, has one CTA line; all end type is at most 15 % of the film |
-| 11 | **Filled frames** | overview + `frames.mjs check` coverage | the subject spans 65 % of the width or more on average (top studios' films: 70-93 %); UI is in close-up; no small card centred on empty ground |
+| 11 | **Filled frames** | overview + `frames.mjs check` coverage | the subject spans 65 % of the width or more on average (top studios' films: 70-93 %); UI is in close-up; no small card centred on empty ground; no line, dot or card alone on an unlit flat fill |
 | 12 | **Pace** | `frames.mjs check` pace | at most 20 % of the half-seconds before the lockup are nearly still (top studios' films: 9-16 %); mean beat 0.8-1.6 s |
 | 13 | **Composition variety** | `BEATS.md` composition tags + overview | no two adjacent beats share a composition; at least 4 different compositions; at least 2 ground cuts, by two different devices |
-| 14 | **The camera goes to the event** | overview, runs of 3+ thumbnails (0.7 s) in one framing | no framing holds longer than 0.7 s; when something new happens the camera is on it or travelling to it; nothing only changes inside a locked shot |
-| 15 | **The output seen big** | beat sheet | the product's answer, rewrite or result appears once in macro or as giant type (key words 120 px or more), not only at UI size; the spectacle beat lasts 1.5 s or more and reads |
+| 14 | **The camera goes to the event** | overview, runs of 3+ thumbnails (0.7 s) in one framing | a held framing carries a large change about every 0.7 s (a line lands, a panel turns, the UI acts), never only a label or a detail; when something new happens elsewhere the camera is on it or travelling to it |
+| 15 | **The output seen big** | beat sheet | the product's answer, rewrite or result appears once in macro or as giant type (key words 120 px or more), not only at UI size; the spectacle beat lasts 1.5 s or more and reads, its widest frame graphic (the accent a real share of it, labels 28 px or more) |
 
 `frames.mjs check` passing is necessary, not sufficient. It measures pixels, so it cannot see these, which a viewer sees at
 once: a finished state that only creeps (a full list, a landed number held for a second), a camera parked while small
 things change inside the shot, the same layout three beats in a row with the label swapped, a second full demo that makes
-the film 10 s too long, a biggest word that names the wrong thing, a near-empty frame at a seam. Look for each on the
+the film 10 s too long, a biggest word that names the problem or the input, a near-empty frame at a seam, a claim on a picture washed to near-white. Look for each on the
 sheet before you render the final.
 
 Also log three numbers per film, they catch most problems: **mean beat length** (target 0.8-1.6 s for films under 30 s), **number of true hard cuts

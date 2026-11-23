@@ -4,10 +4,31 @@ import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { noise2D } from '@remotion/noise';
 import { at, ease, mix } from './motion';
 
-/** A flat ground in one colour. The strongest grounds are flat and decided; add light, never murk. */
-export const Ground: React.FC<{ color: string; children?: React.ReactNode; style?: React.CSSProperties }> = ({ color, children, style }) => (
-  <AbsoluteFill style={{ background: color, ...style }}>{children}</AbsoluteFill>
-);
+const shadeHex = (hex: string, toward: string, p: number) => {
+  const n = (h: string) => parseInt(h.replace('#', '').slice(0, 6), 16);
+  const a = n(hex);
+  const b = n(toward);
+  const c = (sh: number) => Math.round(((a >> sh) & 255) + ((((b >> sh) & 255) - ((a >> sh) & 255)) * p));
+  return `rgb(${c(16)}, ${c(8)}, ${c(0)})`;
+};
+
+/**
+ * A ground in one colour, lit: a soft light in its own hue behind the subject and a gentle fall-off to the edges, so the
+ * subject sits in light, not on a flat fill. `light` places it ({ x, y } as shares of the frame, `size`, `amount` 0-1);
+ * `light={false}` keeps the ground flat (only when a mass fills the frame, or when the fill must match a flood exactly).
+ */
+export const Ground: React.FC<{
+  color: string;
+  light?: boolean | { x?: number; y?: number; size?: number; amount?: number };
+  children?: React.ReactNode;
+  style?: React.CSSProperties;
+}> = ({ color, light = true, children, style }) => {
+  const l = light === false ? null : light === true ? {} : light;
+  const background = l
+    ? `radial-gradient(ellipse ${(l.size ?? 0.75) * 100}% ${(l.size ?? 0.75) * 95}% at ${(l.x ?? 0.5) * 100}% ${(l.y ?? 0.46) * 100}%, ${shadeHex(color, '#ffffff', l.amount ?? 0.1)} 0%, ${color} 62%, ${shadeHex(color, '#000000', (l.amount ?? 0.1) * 0.9)} 100%)`
+    : color;
+  return <AbsoluteFill style={{ background, ...style }}>{children}</AbsoluteFill>;
+};
 
 /**
  * A soft living gradient: 2-4 blurred colour fields that drift slowly. For "air" worlds (soft UI on a pale sky,

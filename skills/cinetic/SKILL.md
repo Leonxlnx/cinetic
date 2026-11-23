@@ -34,8 +34,8 @@ These eight qualities separate great launch films from template videos. Hold eve
    430-550, sized by word count: 84-100 px for 5-6 words, 110-150 px for 3-4, 160-240 px for 1-2, and one spectacle size
    a film (280-700 px, may crop at the frame edge). 2-6 words at once, centred alone on clean ground, built 1-3 at a time,
    never faded in: cut-on words, a last-word swap, a decode, an append that re-centres, a colour wake, type set on a
-   surface, a masked rise (two per film). Emphasis by colour, one accent per line. One line on screen at a time. Sizes,
-   weights, tracking, serif and labels: [type.md](references/type.md).
+   surface, a masked rise (two per film), and one type treatment repeated through it. Emphasis by colour, one accent
+   per line. One line on screen at a time. Sizes, weights, tracking, serif and labels: [type.md](references/type.md).
 6. **The real product, really used.** Its UI is built in code at film size with real strings and believable data, used by
    a real pointer or by visible state changes (typing, presses, a list filling, a toggle, a count). Other companies'
    products appear as their real, current logos (`<Brand>`, `scripts/logos.mjs`), interface glyphs as real icons
@@ -68,10 +68,10 @@ green, no default AI gradient). Pull real names, numbers and integrations from w
 name, its input -> output or its brand (a mosaic tool's tile, a writing app's ink, a model's light, a planner's page). It
 opens the film, carries the turns between beats, and becomes the end card: it is the film's signature. Then write a
 **Devices** block at the top of `BEATS.md`, each slot picked from its menu in
-[film-grammar.md](references/film-grammar.md#devices) by what the product claims: the opening, each seam's device (the two
-ground cuts by two different devices), the spectacle, the integration form, the lockup. No device is used twice except the
-signature; the opening is not a macro pull-back by habit; the worked films' flood, relay and wall are options, not a
-template. Then pick a structure from [film-grammar.md](references/film-grammar.md) and write one row per beat: frames, its composition tag, what the viewer sees, what moves and how, how it leaves into the
+[film-grammar.md](references/film-grammar.md#devices) by what the product claims: the opening, the type treatment, each seam's
+device (the two ground cuts by two different devices), the spectacle, the integration form, the lockup. No device is used
+twice except the signature, and the block shares at most two devices with any one example block or worked film.
+Then pick a structure from [film-grammar.md](references/film-grammar.md) and write one row per beat: frames, its composition tag, what the viewer sees, what moves and how, how it leaves into the
 next beat, the sound. Check the rows against quality 1 (a beat every 0.8-1.6 s), quality 3 (every row says how it hands
 off), the Devices block and the hard rules (no two adjacent compositions alike, two ground cuts, a 2 s lockup) before writing code. Budget
 the length: the core demo gets about half the film, each further feature at most 1.2 s, and a row over 1.6 s names its
@@ -139,10 +139,10 @@ Import everything from `src/kit` (`import { Words, Camera, ease, at } from '../.
 | sound | `<Cues cues={[{ at, ...sfx['mixkit-2568'], volume }]}>`, `<Music src startFrom enterAt duck breaths>`, `db()`, `beats(bpm)` |
 
 **Worked examples** (read one before your first film; they show the kit used idiomatically, one timeline `T` per film):
-`kit/src/films/brief/Film.tsx` (light product UI: a depth-ladder pile, a full stop that grows into the reveal, typing,
-thinking dots that become the answer card, a pointer that opens a row), `kit/src/films/forge/Film.tsx` (an isometric block
-world: thirty labelled blocks, floor type facing the camera, a dive into a block's face that is a terminal in macro,
-three ground cuts carried by objects, integrations as surfaces, a counter tower; read its `BEATS.md`),
+`kit/src/films/brief/Film.tsx` (light product UI: a depth-ladder pile, typing, thinking dots that become the answer card,
+a pointer that opens a row), `kit/src/films/forge/Film.tsx` (an isometric block world: floor type facing the camera, a
+dive into a block's face that is a terminal in macro, three ground cuts carried by objects, a counter tower; read its
+`BEATS.md`),
 `kit/src/films/fieldnote/Film.tsx` (editorial paper and photographs: a stepped mosaic, letters as changing windows, a
 dive into a letter stroke, a scan with punch-ins, a before/after, a lockup inside a letter), `kit/src/films/lumen/Film.tsx` (a dark stage and a 3D glass
 prism: the typed question becomes a beam, the beam fans into rays that light the numbers, a live 3D simulation as the
@@ -165,8 +165,8 @@ content or their order; take single moves.
   a colour-flip cut with a size step, a flash-hidden swap, a dive whose inside is the new ground, or a flood from an object
   (one flood per film at most) ([menu](references/film-grammar.md#seams-and-ground-cuts)).
 - **Short endings.** The lockup lasts at most 2 s (60 f) and grows out of an object already on screen; all end type
-  (claim + lockup) is at most 15 % of the film, and the claim sits over a moving image, not alone on a ground (when it
-  needs longer to read, it stays on as the lockup's line). No mid-film
+  (claim + lockup) is at most 15 % of the film, and the claim sits over a moving image, dimmed and blurred but keeping its
+  colour, never washed to near-white (when it needs longer to read, it stays on as the lockup's line). No mid-film
   brand card in films under 30 s, and a line of the claim is said once (never spent mid-film and repeated at the end). The
   frame before the lockup is never a blank ground: the mark is born from what is on screen, in a way picked from the
   [lockup menu](references/film-grammar.md#lockups) to suit the signature (spaced cut-on, trim-path draw, quarter-spin,
@@ -183,33 +183,37 @@ content or their order; take single moves.
   ([menu](references/film-grammar.md#spectacle)): quantity, a wall pulled back from; speed, a cascade; variety, an
   accelerating montage; reach, the product on real surfaces; transformation, a morph chain; a model, a hero object in
   light; places, pictures inside type; precision, a dive to the one detail it got right. Give it 1.5-2.5 s, not 1 (count its
-  frames in `T`), keep it readable (it starts on the artefact the film has carried, large) and its widest frame graphic,
-  never hundreds of tiny pale cells. Name it in `BEATS.md` (a row tagged `spectacle`); a film without that row is not
-  ready to build. One spectacle, not two.
+  frames in `T`), keep it readable (it starts on the artefact the film has carried, large) and its widest frame graphic:
+  the accent covers a real share of it, no label under 28 px, and lines show at most about 16 endpoints, each a filled
+  object (never hundreds of tiny pale cells or a hairline web). Name it in `BEATS.md` (a row tagged `spectacle`); a film
+  without that row is not ready to build. One spectacle, not two.
 - **One demo, end to end.** Show the product's core action once, completely. A second input or use case is a 1-2 s
   variation of the same shot, never a second full demo: that is how a 20 s film becomes 30.
 - **A finished state does not hold.** When a list is full, a number has landed or a card is complete, cut within half a
   second or keep it changing (the camera pushes, the next thing arrives on it). Never 1 s of a finished thing.
-- **The camera goes to the event.** No framing holds longer than 0.7 s: a push, a ride along the object, a cut to macro or
-  a new image, and the next event inside a beat changes a large part of the frame, not a label. Things changing inside a
-  locked shot is a slide: when the next thing happens, the camera is already travelling to it.
+- **The camera goes to the event.** A framing may hold while something large changes in it about every 0.7 s (a line
+  lands, a panel turns, the UI acts); when only a label or a detail changes, move on: a push, a ride along the object, a
+  cut to macro. When the next thing happens somewhere else, the camera is already travelling to it.
 - **The product's output is seen big once.** The answer, the rewrite, the result: show it once in macro or as giant type
   (its key words 120 px or more on screen) before or instead of showing it at UI size (`<Output>` lands the words giant,
   then carries them into the UI); a number is one option, not the default. Explaining is one claim per shot, set on or along the object, never a column of text
   beside it. Name the beat in `BEATS.md` (a row tagged `output-big`), like the spectacle.
 - **A series rotates its compositions.** Three features, three metrics, two hosts: each in a different composition
   (macro, giant type, split, surface), never the same layout three times with the label swapped.
-- **The biggest word names the right thing.** The largest word on screen is the product, its object or its benefit, never
-  an incidental noun from the story (a viewer reads the biggest word as the brand).
+- **The biggest word names the right thing.** The largest type in a film names the benefit or the product, never the
+  problem, the input or a noun from the story (a viewer reads it as the brand): the hours saved, not the pile; the amount
+  that arrives, not the amount sent.
 - **Two moving planes, lit.** Every beat has at least two depth planes moving at different rates (the subject and
-  something behind or in front of it), and objects sit in light: a contact shadow, a lit edge, a cast glow. One flat
-  element on an empty ground reads code-made.
-- **Commit to the ground.** Surfaces take the world's colours (a card tinted with the ground, a dark surface on a light
-  flood); white cards on every ground is the template look.
+  something behind or in front of it), and objects sit in light: a contact shadow, a lit edge, a cast glow.
+- **Commit to the ground, and light it.** Surfaces take the world's colours (a card tinted with the ground, a dark surface
+  on a light flood); white cards on every ground is the template look. A flat fill only holds a mass that fills the frame
+  (blocks, a plane, giant type); anything smaller sits on a lit ground: one soft light in the ground's own hue (a horizon
+  glow, a radial behind the subject, a vignette; `Ground light`). Lines and dots are never the subject alone: a route, arc
+  or network is drawn 8-20 px wide with a lit core, or carries a filled object.
 - **Clean type, no template tells.** No eyebrows or kickers (a small line above a heading), no uppercase mono labels, no
-  letter-spaced small caps, no ALL CAPS or Title Case statements, no weights of 800-900. No serif by habit: only when it is
-  the brand's voice (then every statement) or its wordmark. Labels are sentence case in the UI face; mono is for code
-  and data only, as written ([type.md](references/type.md)).
+  letter-spaced small caps, no ALL CAPS or Title Case statements, no weights of 800-900. No serif by habit: only as the
+  brand's voice (a writing, publishing or editorial brand may take one; then every statement) or its wordmark. Labels
+  are sentence case in the UI face; mono is for code and data only, as written ([type.md](references/type.md)).
 - **Type fast, not along.** In product UI, type the first two or three words and land the rest at once (`burst`); the
   viewer must never read along at typing speed.
 - **Real marks only.** A company or product logo is its official mark (`<Brand>` or `logos.mjs get`), never redrawn, never a
@@ -217,7 +221,8 @@ content or their order; take single moves.
 - **No generated images.** Pictures are code, the product's real screens, or licensed photos/footage
   ([assets.md](references/assets.md)). Every external file keeps its licence and is listed in `CREDITS.md`.
 - **Licensed sound only**, from the catalogue or a source whose licence you read; never synthesized music.
-- **Invented palettes:** no purple, no green, no purple-to-blue "AI" gradient. Derive from the product; one accent.
+- **Invented palettes:** no purple, no green, no purple-to-blue "AI" gradient. One accent, taken from the product's own
+  object, not a list (cobalt on warm white is overused).
 - **Legibility:** every word on screen is readable when paused. Statements sit on clean ground or a plate at 7:1 contrast
   or more, sized by word count ([type.md](references/type.md#2-size-by-word-count)): no statement word under 64 px, no
   line wider than 1500 px at 1080p. UI text is 30-44 px on screen after the camera's zoom, at 4.5:1 or more. A word needed
