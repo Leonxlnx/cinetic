@@ -1,6 +1,6 @@
 // "Inkwell": iteration 7 of the v2 kit, rebuilt after critic 4. ~9.2 s at 30 fps. An invented writing app with Claude
-// inside every document. World: flat cream paper (no mesh), a serif voice, Inter for the product, one accent from the
-// partner's own mark (Claude's coral). Grounds: cream, a coral flood, ink.
+// inside every document. World: flat cream paper (no mesh), one Inter voice for the claims and the product, a serif only in
+// the wordmark, one accent from the partner's own mark (Claude's coral). Grounds: cream, a coral flood, ink.
 // Frame 0 is the document: the claim "Write with Claude." is its title, being written; the camera pushes down past it into
 // the body while Claude's mark flies out of the title into the prompt pill. The rewrite is seen in macro (the weak sentence
 // struck and falling, "Revenue grew 34 %." landing at ~145 px), then the camera pulls back and the line lifts off the page
@@ -41,7 +41,10 @@ const CLAUDE = '#D97757';
 const CORAL_DEEP = '#B9603F';
 const CREAM = '#F6F1EA';
 const MUTED = '#7A746B';
-const serif: React.CSSProperties = { fontFamily: fonts.serif, fontWeight: 400, letterSpacing: '-0.02em', color: INK };
+// one sans voice (Inter, optical sizing on): titles and claims at 500-540, sentence case, emphasis by colour
+const voice: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 520, letterSpacing: '-0.022em', color: INK };
+// the wordmark is the one serif: the drop and the name set as one logotype (Newsreader, regular, tracking -0.01 em)
+const mark: React.CSSProperties = { fontFamily: fonts.serif, fontWeight: 400, letterSpacing: '-0.01em', color: INK };
 const ui: Theme = { ...lightUI, accent: CLAUDE, ink: INK, muted: MUTED, fill: '#F3EEE7', line: 'rgba(28,26,23,0.08)', radius: 26, font: fonts.inter };
 
 const T = {
@@ -86,7 +89,7 @@ const Line: React.FC<{ text?: string; lit?: number; size?: number; coral?: numbe
       boxShadow: lit > 0 ? `inset 0 ${size * 0.03}px 0 rgba(255,255,255,${lit}), inset 0 0 0 ${size * 0.03}px rgba(217,119,87,${0.45 * lit}), 0 ${size * 0.3}px ${size * 0.7}px -${size * 0.28}px rgba(70,35,15,${0.5 * lit})` : undefined,
       whiteSpace: 'nowrap',
       fontFamily: fonts.inter,
-      fontWeight: 600,
+      fontWeight: 540,
       fontSize: size,
       letterSpacing: '-0.015em',
       color: coral > 0.5 ? '#FFFFFF' : lit > 0.5 ? INK : '#A49C91',
@@ -107,8 +110,8 @@ const settle = (f: number, start: number, amt = 0.05) => 1 + amt * (1 - at(f, st
 // A 2D camera over the page's world: the world point (x, y) sits at the frame's centre at zoom z (log-space between keys).
 type Key = { f: number; x: number; y: number; z: number; curve?: (t: number) => number };
 const PADL = 340; // the text's left edge on the page
-const TITLE_Y = 150;
-const TITLE_SIZE = 130;
+const TITLE_Y = 190;
+const TITLE_SIZE = 100; // 160-168 px on screen at the opening zoom: the whole line fits the frame
 const PARA_Y = 500; // the sentence's first line (32 px, line height 48)
 const LINE_CY = PARA_Y + 24;
 const PILL_Y = 630;
@@ -154,16 +157,16 @@ const Doc: React.FC = () => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
   const cam = camAt(f);
-  const titleStyle: React.CSSProperties = { ...serif, fontSize: TITLE_SIZE, lineHeight: 1 };
+  const titleStyle: React.CSSProperties = { ...voice, fontSize: TITLE_SIZE, lineHeight: 1 };
   const wWrite = useTextWidth('Write', titleStyle);
   const wWith = useTextWidth('with', titleStyle);
   const gap = 0.26 * TITLE_SIZE;
-  const SLOT = 150;
+  const SLOT = Math.round(TITLE_SIZE * 1.16); // the mark's slot in the title, sized to the line
   const promptW = useTextWidth(PROMPT, { fontFamily: fonts.inter, fontSize: 30 });
   // the mark: pops into the title's slot, then flies down into the prompt pill as the camera pushes
   const pop = springAt(f, fps, T.words[2] - 2, springs.pop);
   const fly = at(f, T.push + 2, T.land - T.push - 2, ease.inOut);
-  const markFrom = { x: PADL + wWrite + gap + wWith + gap + SLOT / 2, y: TITLE_Y + 72, s: 112 };
+  const markFrom = { x: PADL + wWrite + gap + wWith + gap + SLOT / 2, y: TITLE_Y + TITLE_SIZE * 0.5, s: Math.round(TITLE_SIZE * 0.92) }; // centred on the cap height
   const markTo = { x: PADL + 26 + 20, y: PILL_Y + 14 + 20, s: 40 };
   const markS = logScale(markFrom.s, markTo.s, fly) * mix(pop, 0.2, 1);
   const pill = springAt(f, fps, T.ask, springs.card);
@@ -192,9 +195,9 @@ const Doc: React.FC = () => {
                 key={i}
                 style={{
                   ...titleStyle,
-                  fontStyle: i === 3 ? 'italic' : undefined,
                   opacity: wordIn(T.words[i]),
-                  color: mixColor(CLAUDE, INK, at(f, T.words[i], 12, ease.inOut)),
+                  // emphasis by colour: "Claude." parks in the deep coral, the rest settles to ink
+                  color: mixColor(CLAUDE, i === 3 ? CORAL_DEEP : INK, at(f, T.words[i], 12, ease.inOut)),
                   transform: `translateY(${mix(at(f, T.words[i], 6, ease.out), 18, 0)}px)`,
                   display: 'inline-block',
                 }}
@@ -213,13 +216,13 @@ const Doc: React.FC = () => {
             return (
               <span key={i} style={{ position: 'relative', display: 'inline-block', marginRight: '0.27em', background: `rgba(217,119,87,${0.22 * hl * (1 - strike)})`, opacity: 1 - fall, transform: `translateY(${fall * 46}px) rotate(${fall * (i % 2 ? 7 : -6)}deg)`, filter: `blur(${fall * 3}px)`, color: strike > 0 ? '#9C948A' : undefined }}>
                 {w}
-                <span style={{ position: 'absolute', left: -2, top: 25, height: 3, width: `calc(${strike * 100}% + 4px)`, background: CLAUDE, borderRadius: 2 }} />
+                <span style={{ position: 'absolute', left: -2, top: 25, height: 3, width: `calc(${strike * 100}% + 4px)`, background: CLAUDE, borderRadius: 2, opacity: strike > 0 ? 1 : 0 }} />
               </span>
             );
           })}
         </div>
         {/* the rewrite, cut on word by word in its place */}
-        <div style={{ position: 'absolute', left: PADL, top: PARA_Y, display: 'flex', gap: '0.27em', whiteSpace: 'nowrap', fontFamily: fonts.inter, fontWeight: 600, fontSize: 32, lineHeight: '48px', letterSpacing: '-0.015em', opacity: f >= T.flood ? 0 : 1 }}>
+        <div style={{ position: 'absolute', left: PADL, top: PARA_Y, display: 'flex', gap: '0.27em', whiteSpace: 'nowrap', fontFamily: fonts.inter, fontWeight: 540, fontSize: 32, lineHeight: '48px', letterSpacing: '-0.015em', opacity: f >= T.flood ? 0 : 1 }}>
           {NEW_W.map((w, i) => (
             <span key={i} style={{ display: 'inline-block', opacity: wordIn(NEW_T[i]), color: mixColor(CLAUDE, INK, at(f, NEW_T[i] + 4, 12, ease.inOut)), transform: `translateY(${mix(at(f, NEW_T[i], 5, ease.out), 8, 0)}px)` }}>
               {w}
@@ -229,7 +232,7 @@ const Doc: React.FC = () => {
         {/* the rest of the page, closing up under the new line */}
         <div style={{ position: 'absolute', left: PADL, top: mix(reflow, 750, 580), width: 900, fontFamily: fonts.inter, fontSize: 32, lineHeight: '48px', color: '#8B857C' }}>
           Customer count is up in all four regions, led by APAC.
-          <div style={{ marginTop: 26, ...serif, fontSize: 52, color: INK }}>What changed</div>
+          <div style={{ marginTop: 26, ...voice, fontWeight: 540, fontSize: 50, lineHeight: 1.1, letterSpacing: '-0.015em' }}>What changed</div>
           <div style={{ marginTop: 14 }}>SMB churn fell to 3.1 % after the pricing change.</div>
         </div>
         {/* the prompt pill, under the sentence */}
@@ -262,7 +265,7 @@ const Doc: React.FC = () => {
 
 /** The sentence lifts off the page as the plate and flies to its pinned point while the coral floods out of it. */
 const PLATE_TEXT_X = FS * 0.52 + FS * 0.86 + FS * 0.38; // text offset inside the plate (padding + mark + gap)
-const PLATE_W = 1410; // measured plate width at FS (sheet r3-a)
+const PLATE_W = 1240; // measured plate width at FS (Inter with optical sizing, weight 540: still type-plate-f128)
 const CF = camAt(T.flood);
 const S0 = (32 * CF.z) / FS;
 const SENT = { left: 960 + (PADL - CF.x) * CF.z, y: 540 + (LINE_CY - CF.y) * CF.z };
@@ -506,7 +509,7 @@ const WallBeat: React.FC = () => {
             <>
               <div style={{ position: 'absolute', left: 26, top: 24, display: 'flex', alignItems: 'center', gap: 12, whiteSpace: 'nowrap' }}>
                 <Brand name={m.name} file={m.file} size={26} />
-                <span style={{ fontFamily: fonts.serif, fontSize: 34, color: INK }}>{TITLES[(i * 7 + 3) % TITLES.length]}</span>
+                <span style={{ fontFamily: fonts.inter, fontWeight: 520, fontSize: 32, letterSpacing: '-0.01em', color: INK }}>{TITLES[(i * 7 + 3) % TITLES.length]}</span>
               </div>
               <div style={{ position: 'absolute', left: 26, right: 26, top: 80, fontSize: 17, lineHeight: 1.45, color: '#9A9288' }}>{BODY[(i * 3) % BODY.length]}</div>
               {/* the weak line, struck as the wave arrives */}
@@ -534,6 +537,7 @@ const WallBeat: React.FC = () => {
 
 // ---------------------------------------------------------------- 5. lockup (1.2 s): the wall drains into a big ink drop that settles into the mark
 const BIG = 2.8;
+const WORDMARK = 200; // cap about 12 % of the frame's height
 const Lockup: React.FC = () => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -542,7 +546,7 @@ const Lockup: React.FC = () => {
   const s = f < T.drain + 8 ? mix(grow, 0.1, BIG) : logScale(BIG, 1, shrink);
   const word = at(f, T.lock, 12, ease.out);
   const dot = springAt(f, fps, T.lock + 16, springs.pop);
-  const wordW = useTextWidth('Inkwell', { ...serif, fontSize: 240, lineHeight: 1 });
+  const wordW = useTextWidth('Inkwell', { ...mark, fontSize: WORDMARK, lineHeight: 1 });
   const centreOff = (wordW + 40) / 2; // keeps the drop at the frame's centre until the word arrives
   return (
     <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', transform: `scale(${1 + 0.05 * at(f, T.lock - 8, T.end - T.lock + 8, ease.out)})` }}>
@@ -551,7 +555,7 @@ const Lockup: React.FC = () => {
           <path d="M50 4 C 64 34, 92 56, 92 82 A 42 42 0 0 1 8 82 C 8 56, 36 34, 50 4 Z" fill={INK} />
           <circle cx="36" cy="80" r={9 * dot} fill={CLAUDE} />
         </svg>
-        <div style={{ ...serif, fontSize: 240, lineHeight: 1, clipPath: `inset(-10% ${mix(word, 100, -2)}% -20% 0)`, transform: `translateX(${mix(word, -60, 0)}px)` }}>Inkwell</div>
+        <div style={{ ...mark, fontSize: WORDMARK, lineHeight: 1, clipPath: `inset(-10% ${mix(word, 100, -2)}% -20% 0)`, transform: `translateX(${mix(word, -60, 0)}px)` }}>Inkwell</div>
       </div>
       <div style={{ fontFamily: fonts.inter, fontSize: 40, color: MUTED, marginTop: 34, display: 'flex', alignItems: 'center', gap: 14, opacity: f >= T.lock + 12 ? 1 : 0, transform: `translateY(${mix(at(f, T.lock + 12, 8, ease.out), 24, 0)}px)` }}>
         Claude, in every doc <Brand name="claude" size={40} /> inkwell.app

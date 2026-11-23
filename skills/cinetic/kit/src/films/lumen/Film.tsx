@@ -41,9 +41,12 @@ const AMBER = '#FFB547';
 const DEEP = '#D9820B'; // amber that reads on bone (the trace, the ring, "precession.")
 const BONE = '#F3EEE4';
 const PAGE_INK = '#16130F';
-const display: React.CSSProperties = { fontFamily: fonts.geist, fontWeight: 600, letterSpacing: '-0.05em' };
-// small labels: quiet sentence case in the UI face (no uppercase mono kickers)
-const mono: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 560, letterSpacing: '-0.005em' };
+// one sans voice (Inter, optical sizing on): statements at 500-520, a headline word, a stat or the wordmark at 600-650;
+// tracking by size (-0.015 em at 80-130 px, -0.025 em at 130-250 px, -0.04 em above)
+const display: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 520, letterSpacing: '-0.025em' };
+const stat: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 620, letterSpacing: '-0.04em', fontVariantNumeric: 'tabular-nums' };
+// labels: sentence case in the same face, 36 px or more when the viewer needs them
+const label: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 500, letterSpacing: '0em' };
 
 const T = {
   send: 24, // enter: the letters squash into a line of light
@@ -448,7 +451,7 @@ const prismState = (f: number): PrismState => {
 // ---------------------------------------------------------------- 1. the question, then light
 const PROMPT = 'Why does a spinning top stay upright?';
 const TYPE_AT = -12;
-const P_STYLE: React.CSSProperties = { ...display, fontWeight: 520, fontSize: 132 };
+const P_STYLE: React.CSSProperties = { ...display, fontWeight: 500, letterSpacing: '-0.015em', fontSize: 132 };
 const BAR = { x: 64, y: 340, w: 1792, h: 400 };
 const TEXT_X = BAR.x + 84;
 
@@ -500,7 +503,7 @@ const Prompt: React.FC = () => {
             opacity: 1 - barOut,
           }}
         />
-        <div style={{ ...mono, position: 'absolute', left: TEXT_X + 4, top: textTop - 58, fontSize: 32, color: AMBER, opacity: 1 - at(f, T.send, 5) }}>Ask Lumen 2</div>
+        <div style={{ ...label, position: 'absolute', left: TEXT_X + 4, top: textTop - 64, fontSize: 36, color: AMBER, opacity: 1 - at(f, T.send, 5) }}>Ask Lumen 2</div>
         {f < T.line + 1 && (
           <div style={{ position: 'absolute', left: TEXT_X, top: textTop, whiteSpace: 'pre', ...P_STYLE, fontSize: size, lineHeight: 1.12 }}>
             {typed.shown.split('').map((ch, i) => {
@@ -558,10 +561,10 @@ const NumberText: React.FC<{ i: number; x: number; y: number; size: number; colo
   const n = NUMS[i];
   return (
     <div style={{ position: 'absolute', left: x, top: y - size * 0.5, transformOrigin: '0% 50%', transform: `scale(${scale})`, whiteSpace: 'nowrap' }}>
-      <div style={{ ...mono, position: 'absolute', top: -size * 0.13, left: size * 0.04, fontSize: Math.max(30, size * 0.125), color: AMBER }}>{n.label}</div>
-      <div style={{ ...display, fontSize: size, lineHeight: 0.95, color, textShadow: glow }}>
+      <div style={{ ...label, position: 'absolute', top: -size * 0.15, left: size * 0.04, fontSize: Math.max(36, size * 0.13), color: AMBER }}>{n.label}</div>
+      <div style={{ ...stat, fontSize: size, lineHeight: 0.95, color, textShadow: glow }}>
         <Odometer value={n.v} decimals={n.d} start={T.nums[i]} dur={11} sep="" />
-        <span style={{ fontSize: size * 0.36, letterSpacing: '-0.02em', marginLeft: size * 0.04 }}>{n.suffix}</span>
+        <span style={{ fontSize: size * 0.36, fontWeight: 540, letterSpacing: '-0.02em', marginLeft: size * 0.04 }}>{n.suffix}</span>
       </div>
     </div>
   );
@@ -806,22 +809,22 @@ const Answer: React.FC = () => {
       <AbsoluteFill style={{ transform: shake(f, T.impact, 8, 9) }}>
         {/* behind the object: the claims of the orbit and the macro (the top and the L vector pass in front of them) */}
         {inA && (
-          <div style={{ position: 'absolute', left: 0, width: W, top: 58, textAlign: 'center', ...claimLeave(f, T.shotB - 2) }}>
-            <div style={{ ...display, fontSize: 204, lineHeight: 1, transform: `translateX(${mix(at(f, T.flood, T.shotB - T.flood, ease.out), 50, -40)}px)` }}>
+          <div style={{ position: 'absolute', left: 0, width: W, top: 76, textAlign: 'center', ...claimLeave(f, T.shotB - 2) }}>
+            <div style={{ ...display, fontSize: 168, lineHeight: 1, transform: `translateX(${mix(at(f, T.flood, T.shotB - T.flood, ease.out), 50, -40)}px)` }}>
               <Words text="Angular momentum." start={T.claims[0]} arrive="rise" gap={4} style={{ color: PAGE_INK }} />
             </div>
           </div>
         )}
         {inB && (
           <AbsoluteFill style={claimLeave(f, T.widen + 4)}>
-            <div style={{ position: 'absolute', left: 0, width: W, top: 34, textAlign: 'center', ...display, fontSize: 184, lineHeight: 1 }}>
+            <div style={{ position: 'absolute', left: 0, width: W, top: 88, textAlign: 'center', ...display, fontSize: 150, lineHeight: 1 }}>
               <Words text="Gravity becomes" start={T.claims[1]} arrive="rise" gap={4} style={{ color: PAGE_INK }} />
             </div>
             <svg width={W} height={H} style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
               <defs>
                 <path id={arcId} d={arcPath(cam, 1.2, 1.32, PHI_FAR, 1.35)} />
               </defs>
-              <text fill={DEEP} style={{ ...display, fontSize: 236, letterSpacing: '-0.045em' }} opacity={clamp(slide * 4)}>
+              <text fill={DEEP} style={{ ...display, fontSize: 150, fontWeight: 600 }} opacity={clamp(slide * 4)}>
                 <textPath href={`#${arcId}`} startOffset={`${mix(slide, 82, 50)}%`} textAnchor="middle">
                   precession.
                 </textPath>
@@ -832,11 +835,11 @@ const Answer: React.FC = () => {
         <GLView id="lumen-top" build={buildTop} draw={drawTop} state={{ g: f, cam: c }} width={W} height={H} ss={1} />
         {/* on the object: the vector's name at its tip */}
         {pose.arrow > 0.3 && tip.y > 30 && (
-          <div style={{ position: 'absolute', left: tip.x + 22, top: tip.y - 30, fontFamily: fonts.serif, fontStyle: 'italic', fontSize: 92, color: PAGE_INK, opacity: clamp((pose.arrow - 0.3) * 3) }}>L</div>
+          <div style={{ position: 'absolute', left: tip.x + 22, top: tip.y - 30, fontFamily: fonts.inter, fontStyle: 'italic', fontWeight: 500, fontSize: 92, lineHeight: 1, color: PAGE_INK, opacity: clamp((pose.arrow - 0.3) * 3) }}>L</div>
         )}
         {/* the fall: "Friction" as it tips, "wins." on the impact, in front of the floor */}
         {inC && (
-          <div style={{ position: 'absolute', left: 0, width: W, top: 764, textAlign: 'center', ...display, fontSize: 260, lineHeight: 1 }}>
+          <div style={{ position: 'absolute', left: 0, width: W, top: 784, textAlign: 'center', ...display, fontSize: 220, lineHeight: 1 }}>
             <Words text="Friction wins." times={[T.claims[2], T.impact]} arrive="rise" style={{ color: PAGE_INK }} />
           </div>
         )}
@@ -851,6 +854,8 @@ const Answer: React.FC = () => {
 };
 
 // ---------------------------------------------------------------- lockup: the amber ground the ring opened (1.6 s)
+// the wordmark at end-card size: cap about 13 % of the frame's height, one short line under it
+const MARK: React.CSSProperties = { fontSize: 196, fontWeight: 640, letterSpacing: '-0.025em', lineHeight: 0.9 };
 const Lockup: React.FC = () => {
   const f = useCurrentFrame();
   const sweep = at(f, T.word + 8, 28, ease.inOut);
@@ -872,12 +877,12 @@ const Lockup: React.FC = () => {
       />
       <div style={{ transform: `scale(${logScale(1.12, 1, at(f, T.word, 18, ease.out)) * (1 + 0.025 * creep(f, T.word + 10, 40))})`, textAlign: 'center' }}>
         <div style={{ position: 'relative' }}>
-          <div style={{ ...display, fontSize: 430, lineHeight: 0.9 }}>
+          <div style={{ ...display, ...MARK }}>
             <Words text="Lumen 2" start={T.word} by="char" arrive="cut" gap={1.4} style={{ color: INK }} />
           </div>
-          <div style={{ ...display, fontSize: 430, lineHeight: 0.9, position: 'absolute', inset: 0, color: '#FFF6E6', WebkitMaskImage: mask, maskImage: mask, opacity: f >= T.word + 6 ? 1 : 0 }}>Lumen 2</div>
+          <div style={{ ...display, ...MARK, position: 'absolute', inset: 0, color: '#FFF6E6', WebkitMaskImage: mask, maskImage: mask, opacity: f >= T.word + 6 ? 1 : 0 }}>Lumen 2</div>
         </div>
-        <div style={{ ...mono, fontSize: 36, color: '#3A2600', marginTop: 34, opacity: f >= T.word + 12 ? 1 : 0 }}>Available today · lumen.ai/2</div>
+        <div style={{ ...label, fontSize: 40, color: '#3A2600', marginTop: 30, opacity: f >= T.word + 12 ? 1 : 0 }}>Available today · lumen.ai/2</div>
       </div>
     </AbsoluteFill>
   );
