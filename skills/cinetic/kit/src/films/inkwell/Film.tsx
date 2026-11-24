@@ -179,8 +179,8 @@ const useDocCam = () => {
     { f: 0, x: titleL + wWrite * 0.5 + 230, y: TITLE_Y + 6, z: 1.6 }, // the camera follows the writing to the centre
     { f: T.words[3] + 4, x: 960, y: TITLE_Y, z: 1.62, curve: ease.out },
     { f: T.push, x: 960, y: TITLE_Y + 2, z: 1.64 },
-    { f: T.land, x: 960, y: BODY_Y + 86, z: 2.0, curve: ease.inOut }, // down past the title into the body
-    { f: T.rewrite + 5, x: 958, y: BODY_Y + 80, z: 2.1, curve: ease.out }, // holds while the weak sentence falls
+    { f: T.land, x: 960, y: BODY_Y + 92, z: 2.4, curve: ease.inOut }, // down past the title into the body: the draft at 72 px, the pill's text at 48
+    { f: T.rewrite + 5, x: 958, y: BODY_Y + 86, z: 2.5, curve: ease.out }, // holds while the weak sentence falls
     { f: T.n[2] - 1, x: COL_L + w1 / 2, y: BODY_Y + BODY_LH / 2, z: 4.3, curve: ease.inOut }, // macro on the rewrite
     { f: T.pull, x: COL_L + w1 / 2 + 16, y: BODY_Y + BODY_LH / 2, z: 4.75, curve: ease.out }, // a ride along "34 %"
     { f: T.rest[0] + 2, x: lock.x, y: lock.y, z: 3.0, curve: ease.inOut }, // pull back: the whole sentence
@@ -305,33 +305,34 @@ const ui: React.CSSProperties = { position: 'absolute', fontFamily: fonts.inter,
 /** Host 1, Gmail: one compose card on Gmail's cool canvas; the sentence is the message body. */
 const HostMail: React.FC<{ t: number }> = () => {
   const box = useLockBox();
-  const L = box.l - 72;
-  const R = box.r + 72;
-  const top = box.t - 210;
-  const bottom = box.b + 140;
+  // the card at 70 % of the width, its chrome at 40 px: a compose window you can read
+  const L = 960 - 672;
+  const R = 960 + 672;
+  const top = box.t - 250;
+  const bottom = box.b + 170;
   const canvas = '#F3F6FB';
   return (
     <AbsoluteFill>
       <Ground color={canvas} light={{ x: 0.42, y: 0.4, size: 0.9 }} />
-      <div style={{ position: 'absolute', left: L, top, width: R - L, height: bottom - top, borderRadius: 24, background: '#FFFFFF', boxShadow: softShadow(5, canvas), overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 86, background: '#F2F6FC' }} />
-        <div style={{ ...ui, left: 34, top: 22, display: 'flex', alignItems: 'center', gap: 18, fontSize: 32, fontWeight: 500 }}>
-          <Brand name="gmail" size={42} /> New message
+      <div style={{ position: 'absolute', left: L, top, width: R - L, height: bottom - top, borderRadius: 28, background: '#FFFFFF', boxShadow: softShadow(5, canvas), overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 104, background: '#F2F6FC' }} />
+        <div style={{ ...ui, left: 44, top: 26, display: 'flex', alignItems: 'center', gap: 20, fontSize: 40, fontWeight: 500 }}>
+          <Brand name="gmail" size={52} /> New message
         </div>
-        <div style={{ position: 'absolute', right: 34, top: 26, display: 'flex', gap: 30 }}>
+        <div style={{ position: 'absolute', right: 44, top: 32, display: 'flex', gap: 34 }}>
           {['Minus', 'Maximize2', 'X'].map((n) => (
-            <Icon key={n} name={n} size={34} color="#444746" stroke={2.2} />
+            <Icon key={n} name={n} size={40} color="#444746" stroke={2.2} />
           ))}
         </div>
-        <div style={{ ...ui, left: 72, top: 112, fontSize: 32, display: 'flex', alignItems: 'center', gap: 20 }}>
+        <div style={{ ...ui, left: 80, top: 132, fontSize: 40, display: 'flex', alignItems: 'center', gap: 22 }}>
           <span style={{ color: '#5E5E5E' }}>To</span>
-          <span style={{ background: '#E9EEF6', borderRadius: 999, padding: '4px 20px' }}>board@northwind.co</span>
+          <span style={{ background: '#E9EEF6', borderRadius: 999, padding: '4px 24px' }}>board@northwind.co</span>
         </div>
-        <div style={{ position: 'absolute', left: 72, right: 0, top: 176, height: 1.5, background: '#E3E3E3' }} />
-        <div style={{ ...ui, left: 72, bottom: 34, display: 'flex', alignItems: 'center', gap: 34 }}>
-          <span style={{ background: '#0B57D0', color: '#FFFFFF', fontSize: 30, fontWeight: 500, borderRadius: 999, padding: '12px 38px' }}>Send</span>
+        <div style={{ position: 'absolute', left: 80, right: 0, top: 206, height: 1.5, background: '#E3E3E3' }} />
+        <div style={{ ...ui, left: 80, bottom: 40, display: 'flex', alignItems: 'center', gap: 38 }}>
+          <span style={{ background: '#0B57D0', color: '#FFFFFF', fontSize: 38, fontWeight: 500, borderRadius: 999, padding: '12px 44px' }}>Send</span>
           {['Paperclip', 'Link', 'Image'].map((n) => (
-            <Icon key={n} name={n} size={34} color="#444746" stroke={2.2} />
+            <Icon key={n} name={n} size={40} color="#444746" stroke={2.2} />
           ))}
         </div>
       </div>
@@ -345,12 +346,14 @@ const HostNotion: React.FC<{ t: number }> = () => {
   return (
     <AbsoluteFill>
       <Ground color="#FFFFFF" light={false} />
-      <div style={{ ...ui, left: 160, top: 112, display: 'flex', alignItems: 'center', gap: 18, fontSize: 34, color: '#787774' }}>
-        <Brand name="notion" size={46} color="#191919" /> Board <span style={{ color: '#C7C6C3' }}>/</span> Q3 summary
+      <div style={{ ...ui, left: 160, top: 120, display: 'flex', alignItems: 'center', gap: 20, fontSize: 42, color: '#787774' }}>
+        <Brand name="notion" size={56} color="#191919" /> Board <span style={{ color: '#C7C6C3' }}>/</span> Q3 summary
       </div>
-      <div style={{ ...ui, right: 160, top: 116, fontSize: 32, color: '#37352F', display: 'flex', alignItems: 'center', gap: 28 }}>
-        Share <Icon name="Star" size={34} color="#91918E" stroke={2} />
+      <div style={{ ...ui, right: 160, top: 124, fontSize: 42, color: '#37352F', display: 'flex', alignItems: 'center', gap: 30 }}>
+        Share <Icon name="Star" size={42} color="#91918E" stroke={2} />
       </div>
+      {/* the page's own title above the block: the page reads as a Notion page, not a white void */}
+      <div style={{ ...ui, left: box.l, top: box.t - 150, fontSize: 62, fontWeight: 700, color: '#37352F', letterSpacing: '-0.02em' }}>Q3 summary</div>
       <div style={{ position: 'absolute', left: box.l - 110, top: box.t + 22, display: 'flex', alignItems: 'center', gap: 6 }}>
         <Icon name="Plus" size={40} color="#A5A4A0" stroke={2} />
         <Icon name="GripVertical" size={40} color="#A5A4A0" stroke={2} />
@@ -364,20 +367,15 @@ const HostSlides: React.FC<{ t: number }> = () => {
   const canvas = '#EEF0F3';
   const sw = 1120;
   const sh = 630;
-  const sl = 960 - sw / 2 + 40;
-  const st = 540 - sh / 2 + 20;
+  const sl = 960 - sw / 2;
+  const st = 540 - sh / 2 + 40;
   return (
     <AbsoluteFill>
       <Ground color={canvas} light={{ x: 0.55, y: 0.5, size: 0.9 }} />
-      <div style={{ ...ui, left: 170, top: 100, display: 'flex', alignItems: 'center', gap: 18, fontSize: 34 }}>
-        <Brand name="googleslides" size={46} /> Q3 board deck
+      {/* the filmstrip's wireframe thumbnails are gone: the slide alone under the deck's name at 44 px */}
+      <div style={{ ...ui, left: sl, top: st - 96, display: 'flex', alignItems: 'center', gap: 20, fontSize: 44 }}>
+        <Brand name="googleslides" size={56} /> Q3 board deck
       </div>
-      {[0, 1, 2].map((k) => (
-        <div key={k} style={{ position: 'absolute', left: 170, top: 270 + k * 150, width: 176, height: 99, borderRadius: 8, background: '#FFFFFF', boxShadow: k === 1 ? `0 0 0 4px #F4B400, ${softShadow(1, canvas)}` : softShadow(1, canvas) }}>
-          <div style={{ position: 'absolute', left: 16, top: 26, width: [96, 120, 80][k], height: 10, borderRadius: 5, background: k === 1 ? '#3A3D45' : '#D5D8DE' }} />
-          <div style={{ position: 'absolute', left: 16, top: 46, width: [70, 140, 110][k], height: 10, borderRadius: 5, background: '#E3E5EA' }} />
-        </div>
-      ))}
       <div style={{ position: 'absolute', left: sl, top: st, width: sw, height: sh, borderRadius: 10, background: '#FFFFFF', boxShadow: softShadow(4, canvas) }} />
     </AbsoluteFill>
   );
@@ -489,8 +487,8 @@ const Spectacle: React.FC = () => {
             </div>
             {/* the document it came from, under the line */}
             <div style={{ position: 'absolute', left: 0, right: 0, top: 690, display: 'flex', justifyContent: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontFamily: fonts.inter, fontSize: 36, color: '#A9B2CF', whiteSpace: 'nowrap' }}>
-                <Brand name={it.mark.name} file={it.mark.file} size={40} color={it.mark.name === 'notion' ? '#FFFFFF' : 'brand'} /> {it.doc}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20, fontFamily: fonts.inter, fontSize: 48, color: '#A9B2CF', whiteSpace: 'nowrap' }}>
+                <Brand name={it.mark.name} file={it.mark.file} size={54} color={it.mark.name === 'notion' ? '#FFFFFF' : 'brand'} /> {it.doc}
               </div>
             </div>
           </>

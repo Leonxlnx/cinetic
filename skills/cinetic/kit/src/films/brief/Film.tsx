@@ -389,9 +389,9 @@ const RowCard: React.FC<{ r: Upd; bg?: string; dot?: number; lit?: number; read?
       size={44}
       icon={<BrandTile name={r.brand} size={64} bg={WHITE} shadow="none" />}
       title={<span style={{ fontWeight: read > 0.5 ? 500 : 600 }}>{r.title}</span>}
-      sub={r.sub}
-      trail={<span style={{ fontFamily: t.font, fontSize: 32, fontVariantNumeric: 'tabular-nums' }}>{r.trail}</span>}
-      style={{ padding: '26px 30px 26px 66px' }}
+      sub={<span style={{ fontSize: 38 }}>{r.sub}</span>}
+      trail={<span style={{ fontFamily: t.font, fontSize: 38, fontVariantNumeric: 'tabular-nums' }}>{r.trail}</span>}
+      style={{ padding: '22px 30px 22px 66px' }}
     />
   </div>
 );
@@ -470,14 +470,16 @@ const Gather: React.FC = () => {
   const big = tw100 ? Math.min(126, (100 * (CARD_W - 150)) / tw100) : 120;
   const twT = (tw100 * TITLE_FS) / 100;
   const top0 = cardTop(H0);
-  const hold = 16;
+  // the line holds alone for 10 f only, and the four rows rise under it while it travels to its title place: the card
+  // is never an empty white field under a heading
+  const hold = 10;
   const travel = 9;
   const landed = T.title + hold + travel;
   return (
     <AbsoluteFill style={{ background: GROUND }}>
       <div style={{ position: 'absolute', left: CARD_X0, top: top0, width: CARD_W, height: H0, borderRadius: 40, background: WHITE, boxShadow: softShadow(3, GROUND), overflow: 'hidden' }}>
         {ROWS.map((r, k) => {
-          const s = T.land - 14 + k * 2;
+          const s = landed - 5 + k * 2;
           const p = at(f, s, 8, ease.out);
           if (f < s) return null;
           return (
@@ -597,7 +599,7 @@ const aim = (wx: number, wy: number, px: number, py: number, zoom: number) => ({
 // the three chips, at world size (the first is the card's Button at size 34, measured the way it lays out)
 const CHIP = [
   { fs: 34, icon: 34, gap: 15.3, px: 37.4, py: 21.1, label: 'Approved' },
-  { fs: 64, icon: 58, gap: 22, px: 48, py: 30, label: 'Merged' },
+  { fs: 80, icon: 72, gap: 26, px: 60, py: 36, label: 'Merged' }, // 98 px on screen: the pill carries the navy
   { fs: 50, icon: 30, gap: 20, px: 38, py: 24, label: 'In progress' },
 ];
 const chipStyle = (k: number): React.CSSProperties => ({ fontFamily: t.font, fontWeight: 600, fontSize: CHIP[k].fs, letterSpacing: k ? '-0.015em' : undefined });
@@ -733,13 +735,13 @@ const CritFace: React.FC<{ f: number }> = ({ f }) => {
   const ok = at(f, T.dock, 6, ease.out);
   return (
     <div style={{ padding: '0 28px', height: CAL_BH, display: 'flex', alignItems: 'center', gap: 16, fontFamily: t.font, whiteSpace: 'nowrap' }}>
-      <span style={{ fontSize: 34, fontWeight: 600, letterSpacing: '-0.01em', color: INK }}>Design crit</span>
+      <span style={{ fontSize: 42, fontWeight: 600, letterSpacing: '-0.01em', color: INK }}>Design crit</span>
       {f >= T.dock && (
         <span style={{ display: 'inline-flex', transform: `scale(${mix(ok, 1.5, 1)})` }}>
-          <Icon name="CircleCheck" size={32} color={ACCENT_INK} stroke={2.6} />
+          <Icon name="CircleCheck" size={38} color={ACCENT_INK} stroke={2.6} />
         </span>
       )}
-      <span style={{ fontSize: 28, color: MUTED }}>
+      <span style={{ fontSize: 34, color: MUTED }}>
         15:00 – 16:00{f >= T.dock && <span style={{ color: ACCENT_INK }}> · accepted</span>}
       </span>
     </div>
@@ -856,12 +858,12 @@ const Calendar: React.FC = () => {
     <AbsoluteFill style={{ background: GROUND }}>
       <Camera cam={c} style={{ filter: landBlur(f, T.cuts[2], 6, 4) > 0.3 ? `blur(${landBlur(f, T.cuts[2], 6, 4)}px)` : undefined }}>
         <div style={{ position: 'absolute', left: CAL_X0, top: CAL_Y0, width: CAL_W, height: CAL_H, borderRadius: 40, background: WHITE, boxShadow: softShadow(3, GROUND), overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', left: 44, top: 30, display: 'flex', alignItems: 'center', gap: 18, fontFamily: t.font, fontSize: 38, fontWeight: 600, color: INK, whiteSpace: 'nowrap' }}>
-            <Brand name="googlecalendar" size={46} /> Tuesday 14 October
+          <div style={{ position: 'absolute', left: 44, top: 30, display: 'flex', alignItems: 'center', gap: 18, fontFamily: t.font, fontSize: 46, fontWeight: 600, color: INK, whiteSpace: 'nowrap' }}>
+            <Brand name="googlecalendar" size={54} /> Tuesday 14 October
           </div>
           {Array.from({ length: 10 }, (_, i) => (
             <React.Fragment key={i}>
-              <div style={{ position: 'absolute', left: 44, top: CY0 + i * HY - CAL_Y0 - 17, fontFamily: t.font, fontWeight: 500, fontSize: 30, fontVariantNumeric: 'tabular-nums', color: MUTED }}>{`${8 + i}:00`}</div>
+              <div style={{ position: 'absolute', left: 44, top: CY0 + i * HY - CAL_Y0 - 20, fontFamily: t.font, fontWeight: 500, fontSize: 34, fontVariantNumeric: 'tabular-nums', color: MUTED }}>{`${8 + i}:00`}</div>
               <div style={{ position: 'absolute', left: CAL_BL - CAL_X0 - 16, top: CY0 + i * HY - CAL_Y0, width: CAL_BW + 32, height: 2, background: 'rgba(14,23,38,0.08)', opacity: i > 0 && i < 4 ? lines : 1 }} />
             </React.Fragment>
           ))}
@@ -871,15 +873,15 @@ const Calendar: React.FC = () => {
             if (out >= 1) return null;
             return (
               <CalBlock key={i} top={CY0 + i * HY + 4} h={CAL_BH} bg="#EEF1F5" style={{ transform: `translateX(${1300 * out}px)` }}>
-                <Brand name={m.brand} size={38} />
-                <span style={{ fontSize: 34, fontWeight: 600, letterSpacing: '-0.01em', color: INK }}>{m.title}</span>
-                <span style={{ fontSize: 28, color: MUTED }}>{m.meta}</span>
+                <Brand name={m.brand} size={44} />
+                <span style={{ fontSize: 42, fontWeight: 600, letterSpacing: '-0.01em', color: INK }}>{m.title}</span>
+                <span style={{ fontSize: 34, color: MUTED }}>{m.meta}</span>
               </CalBlock>
             );
           })}
           <CalBlock top={CY0 + 4.5 * HY + 4} h={CAL_BH} bg="#EEF1F5">
-            <span style={{ fontSize: 34, fontWeight: 600, color: INK }}>Lunch with Priya</span>
-            <span style={{ fontSize: 28, color: MUTED }}>12:30 – 13:30</span>
+            <span style={{ fontSize: 42, fontWeight: 600, color: INK }}>Lunch with Priya</span>
+            <span style={{ fontSize: 34, color: MUTED }}>12:30 – 13:30</span>
           </CalBlock>
           {f >= T.cuts[2] + 8 && (
             <div style={{ position: 'absolute', left: CAL_BL - CAL_X0, top: CRIT_TOP - CAL_Y0, width: CAL_BW, height: CAL_BH, borderRadius: 14, background: CRIT_BG, overflow: 'hidden' }}>

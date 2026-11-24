@@ -182,10 +182,10 @@ const shownAt = (f: number) => KEYS.filter((k) => f >= k).length;
 const CW = 0.6; // Geist Mono advance in em
 const FS = 84; // the command while it is typed: the whole line fits with 13 % to spare each side
 const CMD_LEFT = (1920 - (CMD.length + 2) * CW * FS) / 2;
-const OUT_FS = 52;
-const OUT_LH = 98;
+const OUT_FS = 68; // the log carries the frame: about 1450 px wide
+const OUT_LH = 124;
 const LABEL_W = 9 * CW * OUT_FS;
-const LOG_W = OUT_FS + 26 + LABEL_W + 60 + 20 + 22 * CW * OUT_FS;
+const LOG_W = OUT_FS + 26 + LABEL_W + 76 + 20 + 22 * CW * OUT_FS;
 const LOG_X = (1920 - LOG_W) / 2;
 const LOG_TOP = 540 - (5 * OUT_LH) / 2;
 const OUTS = [
@@ -238,7 +238,7 @@ const TermLayout: React.FC<{ f: number }> = ({ f }) => {
           >
             <Spinner start={s0} doneAt={s0 + 10} size={OUT_FS} color={GRAPHITE} done={INK} stroke={4} />
             <span style={{ marginLeft: 26, width: LABEL_W, fontWeight: done ? 600 : 400, color: done ? INK : GRAPHITE }}>{o.label}</span>
-            <span style={{ width: 60, display: 'flex', alignItems: 'center' }}>{o.brand && <Brand name={o.brand} size={48} color={o.brand === 'nvidia' ? '#76B900' : 'brand'} />}</span>
+            <span style={{ width: 76, display: 'flex', alignItems: 'center' }}>{o.brand && <Brand name={o.brand} size={62} color={o.brand === 'nvidia' ? '#76B900' : 'brand'} />}</span>
             <span style={{ marginLeft: 20, color: done ? INK : GRAPHITE }}>
               {i === 3 ? (
                 <Marker start={T.url} dur={8} color={SUN} radius={10} inset="-0.02em -0.2em">
@@ -316,12 +316,16 @@ const LoadFace: React.FC<{ lit: number; zoom: number; on: number }> = ({ lit, zo
   const numA = clamp((zoom - 0.75) / 0.3);
   const unitA = clamp((zoom - 3.3) / 0.6);
   const v = Math.round(loadAt(f));
+  // the figure is a third of the face while the face is small on screen; back to 58 in the macro, where it fills the frame
+  const vs = v.toLocaleString('en-US');
+  const em = vs.replace(/,/g, '').length * 0.62 + (vs.length - vs.replace(/,/g, '').length) * 0.3; // the figure's width in em
+  const fs = Math.min(mix(clamp((zoom - 2) / 2), 92, 58), Math.max(58, (HERO * 0.9) / em));
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, #FFE7A3 0%, ${SUN} 30%, #F6B820 100%)`, opacity: lit }} />
       {path && <div style={{ position: 'absolute', inset: 0, clipPath: `path('${path}')`, background: 'linear-gradient(180deg, #FFFFFF 0%, #ECEAE5 100%)' }} />}
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 98, textAlign: 'center', color: INK, opacity: numA * on }}>
-        <div style={{ ...display, fontWeight: 560, fontSize: 58, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{v.toLocaleString('en-US')}</div>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 98 - (fs - 58) / 2, textAlign: 'center', color: INK, opacity: numA * on }}>
+        <div style={{ ...display, fontWeight: 560, fontSize: fs, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{v.toLocaleString('en-US')}</div>
         <div style={{ ...display, fontWeight: 480, letterSpacing: '-0.01em', fontSize: 11, marginTop: 8, opacity: unitA }}>requests a second</div>
       </div>
     </div>
@@ -512,7 +516,7 @@ const Statements: React.FC = () => {
       {f < 40 && <Line words={['One', 'model.']} times={T.one} y={808} size={176} out={accel(f, 32, 7)} />}
       {f >= T.thirty[0] && f < T.swing + 8 && <Line words={['Thirty', 'things', 'to', 'run', 'it.']} times={T.thirty} y={176} size={96} out={accel(f, T.swing, 7)} />}
       {/* on the model's white top face, then it rides the dive out */}
-      {f >= T.or[0] && f < T.dive + 10 && <Line words={['Or', 'one', 'command.']} times={T.or} y={540} size={112} out={swingOut} scale={1 + 0.6 * swingOut} />}
+      {f >= T.or[0] && f < T.dive + 10 && <Line words={['Or', 'one', 'command.']} times={T.or} y={540} size={90} out={swingOut} scale={1 + 0.6 * swingOut} />}
       {f >= T.casc + 30 && f < T.dive2 + 6 && <ReplicaCount />}
       {f >= T.zero[0] && f < T.lock + 7 && <Line words={['Zero', 'when', 'idle.']} times={T.zero} y={812} size={140} out={accel(f, T.lock, 6)} />}
     </AbsoluteFill>

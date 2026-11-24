@@ -587,7 +587,7 @@ const Stage: React.FC = () => {
                 {countAt(f, on, n.v, n.d)}
                 <span style={{ fontSize: size * 0.4, fontWeight: 540, letterSpacing: '-0.02em', marginLeft: size * 0.05 }}>{n.unit}</span>
               </div>
-              <div style={{ ...label, fontSize: Math.max(44, size * 0.18), color: MUTED, marginTop: size * 0.06, marginLeft: size * 0.04 }}>{n.label}</div>
+              <div style={{ ...label, fontSize: Math.max(48, size * 0.34), color: MUTED, marginTop: size * 0.04, marginLeft: size * 0.04 }}>{n.label}</div>
             </div>
           </div>
         );
@@ -882,7 +882,7 @@ const Lockup: React.FC = () => {
             <span style={{ transform: 'translateY(-4px)' }}>2</span>
           </div>
         )}
-        <div style={{ position: 'absolute', left: 0, width: W, top: cy + 168, textAlign: 'center', ...label, fontSize: 42, color: MUTED, opacity: f >= T.word + 14 ? 1 : 0 }}>Available today</div>
+        <div style={{ position: 'absolute', left: 0, width: W, top: cy + 150, textAlign: 'center', ...label, fontSize: 64, color: MUTED, opacity: f >= T.word + 14 ? 1 : 0 }}>Available today</div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
