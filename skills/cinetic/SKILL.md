@@ -183,9 +183,12 @@ rewrite lifting off as a plate). Never copy their content or their order; take s
   least twice, on downbeats, each time by a different device: an iris from one of the film's shapes, a ground swap under
   a layer that stays, a colour-flip cut with a size step, a flash-hidden swap, a dive whose inside is the new ground, or a
   flood from an object (one flood a film at most) ([menu](references/film-grammar.md#seams-and-ground-cuts)). A
-  one-camera, one-object or loop film may change the light on one ground instead.
+  film whose concept is continuous (one camera, one object, a shape chain, built from a point) or a loop may change
+  the light on one ground instead.
 - **Endings follow the format** ([formats.md](references/formats.md)). Launch and feature films: the lockup lasts at most
-  2 s (60 f) and grows out of an object already on screen, and all end type (claim + lockup) is at most 15 % of the film.
+  2.5 s and grows out of an object already on screen; the claim and the lockup together take at most a fifth of the
+  film (3.5 s in a film under 18 s). The claim always gets its reading time (words / 3 + 0.5 s): shorten the middle,
+  never the claim, and never pad the middle to earn a longer ending.
   Explainers, brand films and event promos: an end card of up to 4 s, still creeping. A loop has no lockup; in a sting the
   mark is the film; a teaser or an update may end on the product or a date. The claim sits on clean ground and is fully
   readable for its reading time (when it needs longer, it stays on as the lockup's line); a line of the claim is said
@@ -253,7 +256,8 @@ rewrite lifting off as a plate). Never copy their content or their order; take s
   ([assets.md](references/assets.md)). Every external file keeps its licence and is listed in `CREDITS.md`.
 - **Licensed sound only**, from the catalogue or a source whose licence you read; never synthesized music.
 - **Invented palettes:** no purple, no green, no purple-to-blue "AI" gradient. The accent's hue comes from the product's
-  own object and does not default to the yellow-orange-red arc (blue, cyan, teal-blue, red, pink and ink are all open).
+  own object (name that object in `BRIEF.md`) and is never a default: not the yellow-orange-red arc, and not cobalt blue
+  on cool white, the commonest look of all. Blue, cyan, teal-blue, red, pink, wine, ochre and ink are all open.
   The light ground is neutral or cool white (#FFFFFF to #F4F5F7), cream only for paper and print products; the dark
   ground is a deep tone of the accent's own hue, not warm black or brown. The accent covers at most about a tenth of the
   frame, except on one ground cut; punctuation is never coloured. A supplied brand's own colours always win.

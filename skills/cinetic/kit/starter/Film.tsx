@@ -2,7 +2,7 @@
 // component per section, and the film that places them. Split into files once it grows.
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
-import { creep, fonts, Grain, Words } from '../../kit';
+import { creep, fonts, Ground, Words } from '../../kit';
 
 const T = {
   open: 0,
@@ -22,9 +22,9 @@ const Open: React.FC = () => {
 };
 
 export const Film: React.FC = () => (
-  <AbsoluteFill style={{ background: '#F2F0EC' }}>
+  <AbsoluteFill>
+    <Ground color="#F4F5F7" />
     <Open />
-    <Grain amount={0.03} />
   </AbsoluteFill>
 );
 
