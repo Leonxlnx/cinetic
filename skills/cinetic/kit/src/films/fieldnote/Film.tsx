@@ -35,7 +35,7 @@
 //   1  giant-type    SPECTACLE (1.5 s): "Earth" alone, letters as windows, a new place every 0.27 s
 //   2  macro         the dive into the stem of the h: the frame ends up inside the picture
 //   3  surface       the photograph full-bleed, one solid input bar rises centred low: three words typed, the rest lands
-//   4  macro         send: the camera pushes onto the new channel; one selection, one label (34 px+), the bar under it
+//   4  macro         send: the camera pushes onto the new channel; one selection, one label beside it (44 px+ on screen), the bar under it
 //   5  centred-card  OUTPUT-BIG: the bar grows into one answer card: "+18 %" counting, "new land since 2000"
 //   6  split         before / after: the divider sweeps twice carrying one paper plate with both years, large
 //   7  macro         PROOF (1.6 s): the divider whips off, the camera travels into the sandbank; the plate counts 2000 ->
@@ -322,7 +322,7 @@ const Stage: React.FC = () => {
         {!comparing ? <Photo src={IMG.channels} w={1920} h={1080} grade={GRADE} position={POS} zoom={0} /> : <Picture split={split(f)} />}
         {sel > 0 && f >= T.find && (
           <div style={{ opacity: sel }}>
-            <Selection {...B} start={T.find} dur={12} color="#FFFFFF" label={<span>New channel · 6.1 km</span>} labelStyle={{ ...tag, color: '#fff', fontSize: 28, background: SEA, padding: '6px 14px', top: -58, boxShadow: softShadow(1, '#7FA9B8') }} />
+            <Selection {...B} start={T.find} dur={12} color="#FFFFFF" label={<span>New channel · 6.1 km</span>} labelStyle={{ ...tag, color: '#fff', fontSize: 34, background: SEA, padding: '8px 16px', left: 'calc(100% + 24px)', top: 0, boxShadow: softShadow(1, '#7FA9B8') }} />
           </div>
         )}
         {f >= T.grow[0] && f < T.flip && <Growth />}
@@ -334,11 +334,11 @@ const Stage: React.FC = () => {
 
 // the one panel: a solid input bar -> the answer card
 type Box = { x: number; y: number; w: number; h: number; r: number };
-const BAR: Box = { x: 370, y: 870, w: 1180, h: 116, r: 58 };
-const CARD: Box = { x: 500, y: 250, w: 920, h: 560, r: 36 };
+const BAR: Box = { x: 280, y: 850, w: 1360, h: 136, r: 68 };
+const CARD: Box = { x: 440, y: 250, w: 1040, h: 580, r: 36 };
 const lerpBox = (a: Box, b: Box, p: number): Box => ({ x: mix(p, a.x, b.x), y: mix(p, a.y, b.y), w: mix(p, a.w, b.w), h: mix(p, a.h, b.h), r: mix(p, a.r, b.r) });
 const QUESTION = 'How has this coast changed since 2000?';
-const Q_FS = 44;
+const Q_FS = 56;
 const BURST = 3; // type "How has this", then the rest lands at once
 const panelShadow = softShadow(5, '#86AEBB');
 
@@ -374,22 +374,22 @@ const Panel: React.FC = () => {
       )}
       {/* send: pressed, then it works while the camera goes to the finding, and closes into a check as it lands */}
       {p < 0.25 && (
-        <div style={{ position: 'absolute', right: 18, top: 18, width: 80, height: 80, borderRadius: 40, background: f >= T.send ? SEA : '#E3E8EA', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `scale(${1 - press * 0.12})` }}>
+        <div style={{ position: 'absolute', right: 20, top: (BAR.h - 96) / 2, width: 96, height: 96, borderRadius: 48, background: f >= T.send ? SEA : '#E3E8EA', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `scale(${1 - press * 0.12})` }}>
           {f < T.send + 2 ? (
-            <svg width={38} height={38} viewBox="0 0 24 24" fill="none" stroke={f >= T.send ? '#fff' : MUTED} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+            <svg width={44} height={44} viewBox="0 0 24 24" fill="none" stroke={f >= T.send ? '#fff' : MUTED} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 19V5M5 12l7-7 7 7" />
             </svg>
           ) : (
-            <Spinner start={T.send + 2} doneAt={T.find + 6} size={42} color="#FFFFFF" done={SEA} />
+            <Spinner start={T.send + 2} doneAt={T.find + 6} size={48} color="#FFFFFF" done={SEA} />
           )}
         </div>
       )}
       {showAns > 0 && (
-        <div style={{ position: 'absolute', left: (b.w - CARD.w) / 2, top: (b.h - 384) / 2, width: CARD.w, textAlign: 'center', opacity: showAns, transformOrigin: '50% 50%', transform: `translateY(${mix(showAns, 14, 0)}px) scale(${Math.min(1, b.h / CARD.h)})` }}>
+        <div style={{ position: 'absolute', left: (b.w - CARD.w) / 2, top: (b.h - 382) / 2, width: CARD.w, textAlign: 'center', opacity: showAns, transformOrigin: '50% 50%', transform: `translateY(${mix(showAns, 14, 0)}px) scale(${Math.min(1, b.h / CARD.h)})` }}>
           <div style={{ fontFamily: fonts.inter, fontWeight: 600, fontSize: 250, letterSpacing: '-0.03em', lineHeight: 1, color: INK, fontVariantNumeric: 'tabular-nums' }}>
             +<Odometer value={18} from={0} start={T.answer + 6} dur={26} sep="" /> %
           </div>
-          <div style={{ ...voice, fontSize: 56, color: MUTED, marginTop: 34 }}>
+          <div style={{ ...voice, fontSize: 84, color: MUTED, marginTop: 30 }}>
             new land since 2000
           </div>
         </div>
@@ -441,8 +441,8 @@ const Finding: React.FC = () => {
       <div style={{ position: 'absolute', top: 620, width: '100%', textAlign: 'center', fontFamily: fonts.inter, fontWeight: 600, fontSize: 230, letterSpacing: '-0.035em', lineHeight: 1, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
         +3.4 km²
       </div>
-      <div style={{ position: 'absolute', top: 878, width: '100%', textAlign: 'center', ...voice, fontSize: 72, color: '#FFFFFF' }}>
-        <Words text="Great Bahama Bank" start={T.flipLine} arrive="rise" gap={2} style={{ color: '#FFFFFF' }} />
+      <div style={{ position: 'absolute', top: 878, width: '100%', textAlign: 'center', ...voice, fontSize: 80, color: '#FFFFFF' }}>
+        <Words text="Great Bahama Bank" start={T.flipLine} arrive="rise" gap={2} dur={8} style={{ color: '#FFFFFF' }} />
       </div>
     </AbsoluteFill>
   );
@@ -515,7 +515,7 @@ const Lockup: React.FC = () => {
           )}
         </svg>
       )}
-      <div style={{ position: 'absolute', top: 740, width: '100%', textAlign: 'center', ...voice, fontSize: 46, color: MUTED }}>
+      <div style={{ position: 'absolute', top: 700, width: '100%', textAlign: 'center', ...voice, fontSize: 100, color: MUTED }}>
         <Words text="fieldnote.earth" start={T.url} arrive="rise" style={{ color: MUTED }} />
       </div>
     </AbsoluteFill>
