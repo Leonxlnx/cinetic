@@ -69,6 +69,8 @@ const style = { transform: `translateY(${mix(p, 80, 0) - q * 900}px) scale(${mix
 - `gap` (frames between units, compressing), `dur` (frames per unit), `times` (exact start frame per unit).
 - `born="#hex"` + `settle`: each unit is born in a colour and settles to the line colour (fresh words glow).
 - `accent={['word']}` + `accentStyle`: style chosen words (the accent colour; an italic serif word at most once a film).
+  Punctuation is never coloured: an accented or born-tinted word's trailing `. , ! ? : ;` keeps the line's colour
+  (`tintPunctuation` turns that off).
 - `<Words>` lays out the whole line from the start (words not yet arrived keep their space), so a line that builds sits
   off-centre until it is complete: for a centred line that grows word by word use `<Build>`, which re-centres.
 - `leaveAt`, `leave: 'rise' | 'fall' | 'blur' | 'scale'`, `leaveDur`: from `leaveAt` the words go and stay gone (rise and fall
@@ -85,7 +87,13 @@ const style = { transform: `translateY(${mix(p, 80, 0) - q * 900}px) scale(${mix
 build: each word joins the centred line on its frame (put them on the music's plucks) and the line re-centres with most of
 the travel in the first frames, the new word riding in with it. Widths are measured from the real face. A word may be a slot
 that holds an object in the line: `{ slot: 190, node: <Brand name="claude" size={170} /> }` (width in px; the mark joins the
-sentence like a word).
+sentence like a word). `swaps={[{ at: T.draw, index: 0, word: 'Draw' }]}` replaces a word in place on its frame ("Snap it"
+becomes "Draw it"): the old word rolls out as in `<Swap>`, the new one rolls in (`swapDur`, default 10 f) and the line
+re-centres to the new width; a slot can swap too. As in `<Words>`, a tinted word's punctuation keeps the line's colour.
+**`<SlotLine before="Lands in" items={[{ mark, name }]} times after="." nameStyle slot enter style />`** a sentence whose slot
+swaps marks, the integration form: the words before the slot stay, and on each of `times` the mark and the name roll to
+the next item while the line re-centres (`times[0]` is the frame the line is there; `enter` builds the words before the
+slot first). Size the marks to about 0.85 of the font size (`slot` defaults to 1.15 of it).
 **`<Swap items={['design', 'code', 'ship']} start every={24} dur={12} times />`** one slot whose word rolls to the next (items may
 be nodes: a mark plus a name; `times` sets the frame each item takes over; `enter` brings the first item in).
 **`<Typing text start cps={26} caret placeholder />`** and **`useTyped(text, start, cps)`** (returns `{ shown, done, doneAt }`):
@@ -102,6 +110,14 @@ its key words cut on giant (`from`), hold while they creep, then travel into the
 UI's own copy from `outputLanded(start, hold, travel)`.
 **`useTextWidth(text, style)`** the laid-out width of a piece of text in the real face (place a tile, a mark or an underline
 exactly after a word).
+**`useGlyphBox(text, style, index)`**, **`useWordBox(text, style, index)`** where a character or a word sits in a set line,
+measured in the browser like `useTextWidth` (the render waits for it): `{ x, y, width, height, cx, cy, ink, baseline,
+xMid }` in px from the line box's top-left corner; `ink` is the drawn shape (the dot of a full stop), `xMid` the y of
+the x-height's centre (centre a dot or an object on a lowercase letter at `cx, xMid`). A negative index counts from the
+end (`-1`: the full stop). Pass the `lineHeight` the line is drawn with (`<Words>` sets 1.04). **`useTextLayout(text,
+style)`** gives the whole line at once (`width, height, baseline, xHeight, xMid, chars, words`). For "the full stop
+becomes the mark" or "the camera dives into the o": for a line centred at (X, Y) the glyph is at
+`X - L.width / 2 + g.cx, Y - L.height / 2 + g.cy`.
 **`mixColor(a, b, p)`** blend two colours.
 
 ## 3. Camera
@@ -156,10 +172,13 @@ push and turn to add to a held camera. **`shake(frame, start, dur, amp)`** an im
   solid CSS 3D block lit from above: top-lit face gradients, a 1 px light edge where faces meet, and a two-part contact
   shadow (tight at the base, wider and softer with height; `ground` tints it). `material`: `matte` (default), `gloss` (a
   specular band, brighter edges), `glass` (tinted see-through faces). `bevel` (px) rounds the edges by light only;
-  a truly rounded solid is `glRoundedBox` in a `GLView`. A face given as a CSS gradient is used as it is.
+  a truly rounded solid is `glRoundedBox` in a `GLView`. A face given as a CSS gradient is used as it is; `flat` paints
+  every face one solid colour (no top-lit gradient; the light edges stay).
   `shade(hex, amt)`, `mixLab(a, b, p)`, `liftColor(c, amt, tint)` mix colours (the last two in OKLab).
-- **`<DepthStack items={[{ f, node }]} x y scale lift blur dim push rise>`** a depth ladder: each arrival pushes the older items back
-  a slot (smaller, lifted, blurred, dimmer).
+- **`<DepthStack items={[{ f, node }]} x y scale lift blur dim push rise sharp>`** a depth ladder: each arrival pushes the older
+  items back a slot (smaller, lifted, and by default blurred and dimmer). Caution: the default blur and dim break "text
+  is readable or absent" as soon as the items carry words; pass `sharp` (older items stay sharp and full strength, depth
+  from scale and lift only): `<DepthStack sharp items={msgs} y={600} />`. Keep the blurred default for shapes only.
 - **`<Beam open color x w0 w1 floor>`** a hard-edged beam from above; **`<Pool open color x y>`** its pool on the floor;
   **`<GlassPanel w h tint lit sheenAt>`** glass on a dark or flat ground made of a lit gradient, a top rim and an inner edge.
 - **`lerpBox(p, a, b)`** (motion) one box becoming another: position, size and radius together, so a plate visibly becomes a
@@ -222,7 +241,9 @@ Sizes that read on a phone screen: UI text 26-40 px, rows 30+ px, cards 900-1300
 ## 6. Turns
 
 Each takes `from` and `to` (the two shots as nodes), `start`, `dur`, and renders the right one outside the turn.
-- **`<Iris x y shape="circle" | "rounded" | svgPath ring>`** the next shot opens in a growing shape (log-space).
+- **`<Iris x y shape="circle" | "rounded" | svgPath ring>`** the next shot opens in a growing shape (log-space). Any SVG path
+  drawn in a 100 x 100 box can be the shape, centred on (x, y): `shape={squirclePath(100)}` opens an app-icon squircle,
+  a mark's own path opens the mark (`ring` draws only round the circle).
 - **`<Tiles cols rows order="diagonal" | "center" | "random" | "left" color>`** tiles sweep from the old shot to the new.
 - **`<Pixelate max>`** mosaic up, swap at the peak, resolve (a full-frame turn: its filter does not work on a small clipped
   element). **`<Push dir smear>`** both shots travel as one strip.
@@ -246,8 +267,12 @@ screen): see [turns.md](motion/turns.md).
   box, graded into the film's one look (`look` is a CSS filter for every picture); `develop` (0..1) cross-fades it from the
   grade's duotone to true colour, the way a found or generated picture arrives; it drifts slowly (`zoom`, `panX/Y`).
 - **`<TextWindow text src reveal zoom position panX panY style>`**: letters as windows onto a picture (heavy faces, big sizes).
-- **`<Compare before after split w h line handle labels>`**: a before/after with a divider at `split` (0..1).
-- **`<Selection x y w h start dur color label>`**: a box with corner handles that draws itself around what the product found.
+- **`<Compare before after split w h line handle labels dividerLabel dividerLabelY dividerLabelStyle>`**: a before/after with a
+  divider at `split` (0..1); `dividerLabel` rides the divider (one node on the line, or `['1998', '2024']` either side of
+  it) at `dividerLabelY` of the height (default 0.86).
+- **`<Selection x y w h start dur color label labelStyle labelAt handles>`**: a box with corner handles that draws itself around
+  what the product found; `labelAt` `top-left` (default), `top`, `bottom-left`, `bottom` or `inside`; `handles="soft"` round
+  handles with a light fill and a thinner line (`"none"`: the box alone).
 - Pictures live in `public/` (`img/...`): the user's, or licensed and recorded (`assets.mjs`, see [assets.md](assets.md)).
 
 ## 6c. A hero object in 3D (`gl.tsx`)
@@ -256,8 +281,11 @@ screen): see [turns.md](motion/turns.md).
 shared WebGL renderer into each view's own canvas, so the 36-frame sheet never runs out of WebGL contexts (a
 `<ThreeCanvas>` per view does). `build(renderer)` makes the scene once; `draw(world, state, renderer)` poses it for a
 frame; keep `state` a small plain object.
-**`softStudio(renderer, scene, { intensity, exposure, floorY, shadowSize, shadowOpacity, tint, background })`** the default
-light for new 3D: a large soft room (RoomEnvironment through PMREM), ACES tone mapping, and a baked soft contact shadow on
+**`softStudio(renderer, scene, { intensity, exposure, floorY, shadowSize, shadowOpacity, tint, background, toneMapping })`** the default
+light for new 3D: a large soft room (RoomEnvironment through PMREM), ACES tone mapping (`toneMapping: 'aces'`, the
+default; it greys a saturated colour, so when the object carries the brand's accent use `'neutral'`, which keeps the
+accent's hue and strength; `'none'` is linear; the renderer is shared, so two worlds that differ set
+`r.toneMapping` in their own `draw`), and a baked soft contact shadow on
 a floor plane at `floorY` (returns `{ env, plane, shadow(x, z, size, opacity) }`: move it under the object, fade it as
 the object lifts). Matte, clay and satin read best (`MeshPhysicalMaterial` roughness 0.35-0.7, a little clearcoat).
 **`glRoundedBox(w, h, d, radius, segments)`** a rounded box geometry: the real bevelled solid CSS `Box` only suggests.
@@ -315,7 +343,8 @@ sizes, weights and tracking: [type.md](type.md). To add a face,
 src/films/main/Film.tsx   the film (timeline T + sections)      src/films.ts    registers films (id, component, duration, fps, size)
 src/kit/                  the kit                                src/Sheet.tsx   the 36-frame storyboard composition
 src/sfx.ts                fetched sounds (generated)             public/         sfx/, music/, logos/, images (never commit audio)
-scripts/frames.mjs        sheet | still | render | final | audio | mux | strip | check
+scripts/frames.mjs        sheet | still | render | final | audio | mux | strip | check   (mux without audio joins muted parts
+                          silent; check --format launch | loop | sting)
 scripts/sfx.mjs           roles | list | get | pick | shortlist | music | analyze | fit | credits   (music/analyze/fit decode audio: light, seconds)
 scripts/logos.mjs         search | get | list | check            scripts/new-film.mjs  start a project
 ```

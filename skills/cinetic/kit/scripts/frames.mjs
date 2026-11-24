@@ -15,11 +15,14 @@
 //   node scripts/frames.mjs render --final --muted --range 0-399 --out out/part-a.mp4      (one per part)
 //   node scripts/frames.mjs audio [--film main]                                           (out/audio.wav)
 //   node scripts/frames.mjs mux out/part-a.mp4 out/part-b.mp4 ... [--audio out/audio.wav] [--out out/main.mp4]
-//        joins the parts without re-encoding, lays the sound on the picture's own start time, sets the loudness
-//   node scripts/frames.mjs check [out/main-preview.mp4] [--lockup 2]
+//        joins the parts without re-encoding, lays the sound on the picture's own start time, sets the loudness.
+//        Without --audio and without out/audio.wav it joins muted parts into a silent file (a loop, a preview in parts)
+//   node scripts/frames.mjs check [out/main-preview.mp4] [--lockup 2] [--format launch|loop|sting]
 //        measures a rendered film against the bar: air (how much of the frame is sharp detail, how many separate things,
 //        how often the frame edge cuts them), pace (how much changes in every half second), empty frames, how long the
 //        ending is, the sound. Flags what fails; LOOK lines name frames to look at. Thresholds: CINETIC_CHECK_* env.
+//        --format loop: no sound, ending or music lines; fails when the last frame does not match the first.
+//        --format sting: no pace gate on a film under 8 s; the ending may hold. Default launch.
 //   node scripts/frames.mjs strip out/film.mp4 --at 4.5 [--dur 2] [--fps 15] [--out out/strip.jpg]
 //        a dense contact strip of a moment of a rendered video (motion check: an entrance, a turn, a morph)
 //
@@ -177,8 +180,41 @@ function airSamples(file, vw, vh) {
   }
   return out;
 }
+/**
+ * A loop's seam: the last frame against the first (at the check's size, RGB). Returns the mean difference and the
+ * largest difference of any 8x8-px cell (0..1), for the seam and for the film's own last step (the next-to-last frame
+ * against the last), so a fast loop is judged against its own motion.
+ */
+function loopSeam(file, W, H) {
+  const FS = W * H * 3;
+  const grab = (pre, post) => spawnSync('ffmpeg', ['-v', 'error', ...pre, '-i', file, '-an', '-vf', `scale=${W}:${H}:flags=area`, ...post, '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], { maxBuffer: 1 << 30 }).stdout;
+  const head = grab([], ['-frames:v', '1']);
+  const tail = grab(['-sseof', '-1'], []);
+  const n = Math.floor(tail.length / FS);
+  if (!head || head.length < FS || n < 2) return null;
+  const last = tail.subarray((n - 1) * FS, n * FS);
+  const prev = tail.subarray((n - 2) * FS, (n - 1) * FS);
+  const diff = (a, b) => {
+    const C = 8, cw = Math.floor(W / C), ch = Math.floor(H / C);
+    let sum = 0, cell = 0;
+    for (let cy = 0; cy < ch; cy++) for (let cx = 0; cx < cw; cx++) {
+      let d = 0;
+      for (let y = cy * C; y < cy * C + C; y++) for (let x = cx * C; x < cx * C + C; x++) {
+        const i = (y * W + x) * 3;
+        d += Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
+      }
+      sum += d;
+      cell = Math.max(cell, d / (C * C * 3 * 255));
+    }
+    return { mean: sum / (cw * ch * C * C * 3 * 255), cell };
+  };
+  return { seam: diff(last, head), step: diff(prev, last) };
+}
+
 /** Measure a rendered film: coverage, pace, empty frames, the length of its ending (low-res analysis via ffmpeg). */
-function checkFilm(file, lockupS) {
+function checkFilm(file, lockupS, format = 'launch') {
+  const loop = format === 'loop';
+  const sting = format === 'sting';
   const FPS = 4;
   // sample at the film's own aspect (a vertical film is measured vertical): the long side 192 px
   const dims = spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', file], { encoding: 'utf8' }).stdout.trim().split(',').map(Number);
@@ -261,25 +297,33 @@ function checkFilm(file, lockupS) {
   console.log(`  pace       ${slow.length} of ${pace.length} half-seconds with almost nothing changing${slow.length ? `  [from ${fmt(slow)} s]` : ''}`);
   console.log(`  stretches  longest sparse run ${sparseRun.s.toFixed(1)} s${sparseRun.s ? ` (from ${sparseRun.at.toFixed(1)} s)` : ''}; longest still stretch ${stillRun.s.toFixed(1)} s${stillRun.s ? ` (from ${stillRun.at.toFixed(1)} s)` : ''}`);
   console.log(`  empty      ${empty.length} near-empty samples${empty.length ? `  [at ${fmt(empty)} s]` : ''}${frames[0] && frames[0].fill < EMPTY_FILL ? '  FRAME 0 IS EMPTY' : ''}`);
-  console.log(`  ending     the last ${endStill.toFixed(1)} s are nearly still (${((endStill / dur) * 100).toFixed(0)} % of the film)`);
-  const snd = loudness(file);
+  if (!loop) console.log(`  ending     the last ${endStill.toFixed(1)} s are nearly still (${((endStill / dur) * 100).toFixed(0)} % of the film)${sting ? '  (a sting may hold its mark)' : ''}`);
+  const snd = loop ? { I: NaN, TP: NaN } : loudness(file);
   if (Number.isFinite(snd.I)) console.log(`  sound      ${snd.I.toFixed(1)} LUFS, true peak ${snd.TP.toFixed(1)} dBTP`);
+  // a loop: the last frame must lead back into the first (frame N would equal frame 0)
+  const seam = loop ? loopSeam(file, W, H) : null;
+  const seamOpen = !!seam && (seam.seam.mean > Math.max(0.012, 2 * seam.step.mean + 0.004) || seam.seam.cell > Math.max(0.1, 2 * seam.step.cell + 0.03));
+  if (seam) console.log(`  loop seam  last frame against the first: ${(seam.seam.mean * 100).toFixed(1)} % mean, ${(seam.seam.cell * 100).toFixed(0)} % in the most changed cell (the film's last step: ${(seam.step.mean * 100).toFixed(1)} %, ${(seam.step.cell * 100).toFixed(0)} %)`);
+  // a sting under 8 s builds and then holds the mark: no pace gate
+  const noPace = sting && dur < 8;
   const fails = [];
   // coverage is no gate: it rises with clutter, and it did not tell a calm film from a crowded one
   if (share(crowded) > CROWD) fails.push(`crowded: sharp detail covers 35 %+ of the frame in ${pc(share(crowded))} of the samples (36 of 40 references stay under ${pc(CROWD)}) [at ${fmt(crowded)} s]: give most frames one subject on calm ground, keep density for one beat`);
-  if (slow.length > pace.length * 0.2) fails.push('pace: something visible must change every half second (a word, a block, a crop, a value)');
+  if (!noPace && slow.length > pace.length * Number(process.env.CINETIC_CHECK_STILL || 0.25)) fails.push('pace: more than a quarter of the half-seconds hold still. A reading hold with a slow creep is fine; a film that waits is not: between holds something visible changes every half second (a word, a block, a crop, a value)');
   // limits set generously (2.5 s still, 3.5 s sparse): this catches a true freeze or a long stretch of small things, not a slow
   // creep over a finished state (pixels still change there): judge that by eye with the rubric
-  if (stillRun.s > 2.5) fails.push(`a ${stillRun.s.toFixed(1)} s stretch from ${stillRun.at.toFixed(1)} s where almost nothing changes`);
+  if (!noPace && stillRun.s > 2.5) fails.push(`a ${stillRun.s.toFixed(1)} s stretch from ${stillRun.at.toFixed(1)} s where almost nothing changes`);
   // 37 of 40 references never hold small, sparse frames longer than 3.5 s (a calm frame holds 2-3 s)
   if (sparseRun.s > 3.5) fails.push(`${sparseRun.s.toFixed(1)} s of small, sparse frames from ${sparseRun.at.toFixed(1)} s: a calm frame holds 2-3 s, this long reads as a gap`);
   if ((frames[0] && frames[0].fill < EMPTY_FILL) || longest / FPS >= 1) fails.push(`empty frames: ${frames[0] && frames[0].fill < EMPTY_FILL ? 'frame 0 is empty' : `${(longest / FPS).toFixed(1)} s of nothing from ${runAt.toFixed(1)} s`}`);
-  if (endStill > Math.max(2.5, dur * 0.12)) fails.push('the ending is too long: lockup at most 2 s, all end type at most 15 % of the film');
+  if (!loop && !sting && endStill > Math.max(2.5, dur * 0.12)) fails.push('the ending is too long: lockup at most 2.5 s, claim and lockup together at most a fifth of the film (3.5 s under 18 s)');
+  if (loop && !seam) fails.push('the loop seam could not be read (is the file shorter than two frames?)');
+  if (seamOpen) fails.push('the loop does not close: the last frame differs visibly from the first (render frames 0 to N-1, where frame N equals frame 0, and give every cycle a period that divides N)');
   const isPreview = /preview/i.test(path.basename(file));
   if (isPreview && Number.isFinite(snd.TP) && snd.TP > -1) console.log('  (a preview is not limited: judge loudness and true peak on the muxed master)');
   if (!isPreview && Number.isFinite(snd.TP) && snd.TP > -1) fails.push(`sound: true peak ${snd.TP.toFixed(1)} dBTP clips; re-mux (frames.mjs mux) or lower the loudest cue`);
   if (!isPreview && Number.isFinite(snd.I) && (snd.I > -13 || snd.I < -20)) fails.push(`sound: ${snd.I.toFixed(1)} LUFS is off the -16 LUFS target`);
-  fails.push(...musicRunsOut(dur));
+  if (!loop) fails.push(...musicRunsOut(dur));
   // LOOK lines name the frames; the share at which they speak is where 3 in 4 references stay (a small subject alone on calm
   // ground is NOT flagged: 28 of 40 references hold one)
   if (busy.length && share(busy) > BUSY) console.log(`  LOOK       3+ separate things with 20 %+ of the frame in detail at ${fmt(busy)} s (${pc(share(busy))} of samples; 3 in 4 references stay under ${pc(BUSY)}): one subject, at most one supporting element`);
@@ -365,8 +409,18 @@ if (cmd === 'sheet') {
   const out = opt('out', `out/${film}.mp4`);
   const audio = opt('audio', 'out/audio.wav');
   if (!parts.length) throw new Error('mux needs the video parts');
-  if (!fs.existsSync(audio)) throw new Error(`no ${audio}: run node scripts/frames.mjs audio first`);
+  // no sound given and none rendered: join the muted parts into a silent file (a loop, a preview in parts)
+  const silent = !opt('audio') && !fs.existsSync(audio);
+  if (!silent && !fs.existsSync(audio)) throw new Error(`no ${audio}: run node scripts/frames.mjs audio first`);
   ensureDir(out);
+  if (silent) {
+    const list = path.resolve(path.dirname(path.resolve(out)), '.join.txt');
+    fs.writeFileSync(list, parts.map((p) => `file '${path.resolve(p).replace(/\\/g, '/')}'`).join('\n'));
+    run('ffmpeg', ['-v', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', list, '-map', '0:v:0', '-c', 'copy', '-an', '-movflags', '+faststart', out]);
+    fs.rmSync(list);
+    console.log(`silent: ${out} (no --audio and no ${audio}: the parts joined without sound)`);
+    process.exit(0);
+  }
   let video = parts[0];
   if (parts.length > 1) {
     fs.mkdirSync('out', { recursive: true });
@@ -391,7 +445,10 @@ if (cmd === 'sheet') {
   fs.rmSync(list);
   console.log(`joined: ${out}`);
 } else if (cmd === 'check') {
-  checkFilm(args[1] && !args[1].startsWith('--') ? args[1] : `out/${film}-preview.mp4`, Number(opt('lockup', '2')));
+  const format = opt('format', 'launch');
+  if (!['launch', 'loop', 'sting'].includes(format)) throw new Error('--format is launch, loop or sting');
+  // a loop has no lockup: its body runs to the last frame
+  checkFilm(args[1] && !args[1].startsWith('--') ? args[1] : `out/${film}-preview.mp4`, Number(opt('lockup', format === 'loop' ? '0' : '2')), format);
 } else if (cmd === 'strip') {
   const src = args[1];
   const at = opt('at', '0');

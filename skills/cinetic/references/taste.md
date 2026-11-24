@@ -80,8 +80,10 @@ with grey text, a glowing orb, a sparkle for "AI", glass on everything), and a s
 29. **Monotone pace.** Every beat the same length; no held frame before the reveal; no rest at the end.
 30. **The same film every time.** The same concept (one task, start to finish), the same opening (a macro pull-back, a
     prompt box being typed into), the same back half (a flood out of a button, a relay of three hosts, a wall pulled
-    back from, the wall draining into the mark), the closing line turning into the mark, every line born in a tint, a
-    recipe's timings copied number for number. Each is fine once; as a default it is a template.
+    back from, the wall draining into the mark), the same ending chain in film after film (a dive to a giant figure, then
+    the accent filling the frame, then the object becoming the mark), every line born in a tint, a recipe's timings
+    copied number for number. Each is fine once (a closing line that becomes the mark is a lockup form); as a default it
+    is a template.
 31. **A product tour in every film.** The artefact carried through other companies' products by any name, longer than
     the proof it should make room for. One tour at most, at most 15 % of the film.
 32. **A claim you cannot read.** The claim or the benefit fully on screen for less than its reading time
@@ -189,7 +191,7 @@ film point and still look generated.
 | 17 | **Composition variety** | no two adjacent beats share a composition; at least 4 compositions; the ground changes as the format asks |
 | 18 | **The camera goes to the event** | a held framing carries a large change about every 0.7 s; when something happens elsewhere the camera is on it or travelling; it moves on the machine's turn and holds while the person acts |
 | 19 | **The output and the spectacle** | where the concept requires it, the product's result is seen once in macro or as giant type (key words 120 px or more); the spectacle (15 s or more) lasts 1.5 s or more and reads |
-| 20 | **An ending that suits the format** | the ending its format allows (formats.md); the claim fully readable for its reading time; in a launch or feature film the lockup is born from an object on screen, at most 2 s, end type at most 15 % |
+| 20 | **An ending that suits the format** | the ending its format allows (formats.md); the claim fully readable for its reading time; in a launch or feature film the lockup is born from an object on screen, at most 2.5 s, claim and lockup at most a fifth of the film (3.5 s under 18 s) |
 
 `frames.mjs check` passing is necessary, not sufficient. It measures pixels, so it cannot see what a viewer sees at
 once: a finished state that only creeps (a full list, a landed number held for a second), a camera parked while small

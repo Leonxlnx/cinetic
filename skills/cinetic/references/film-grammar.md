@@ -118,7 +118,7 @@ The concept decides the order of a film's sections. There are eleven orders:
 | **Features** | 3-5 chapters, each one action and one result | 40-55 % | 75-240 f each | dive, carry, or hub | state change, then carry |
 | **Proof** | numbers, real logos, the result in the world | 8-15 % | 60-180 f | from the last feature's result | gathers into the climax |
 | **Climax** | everything connects; the fastest or biggest beat | 5-8 % | 45-90 f | assembly, scatter, scale-out | snaps into the lockup |
-| **Lockup / CTA** | mark, name, one line, URL; the only true rest | 5-8 % | 45-60 f | grows out of an object already on screen | music decays under it |
+| **Lockup / CTA** | mark, name, one line, URL; the only true rest | 5-10 % | 45-75 f (2.5 s at most); with the claim at most a fifth of the film (105 f under 18 s) | grows out of an object already on screen | music decays under it |
 
 Rules for this structure:
 
@@ -136,7 +136,7 @@ Rules for this structure:
 - **The centrepiece feature gets the most time** (the one the product exists for: 1.5-2x the others).
 - **The climax re-uses the film's own objects**: bring every hub object together, wire them to the product, scatter them
   to the frame edges where they become the lockup's frame.
-- **The lockup is the only real rest.** Everything before it moves. The lockup may still creep 3-5 % over its 2 s, then the film ends;
+- **The lockup is the only real rest.** Everything before it moves. The lockup may still creep 3-5 % over its 1.5-2.5 s, then the film ends;
   the music decays, and the last 0.5-1 s is silence or near silence.
 - **CTA is one line**: a URL or "Available today", cut on (no fade) 20-40 f after the mark settles.
 
@@ -210,12 +210,15 @@ sometimes a held frame) right before the climax and right before the reveal.
 ### 4.2 Shot and beat lengths (30 fps)
 - Statement or title card: 30-45 f. Titles are 2-4 words; nothing on screen should need more than 1.5 s to read.
 - Reading hold for a line: `words / 3 + 0.5` s minimum (a 9-word line: 105 f). Read it aloud at speed to check.
-  At the end the budget wins: a claim of four words or fewer, read while its image still moves, then a lockup of 1.2-2 s
-  with the claim staying as its subline. If the claim needs longer, shorten the claim, never lengthen the ending.
+  At the end the budget wins: the claim with its full reading time, read while its image still moves, then a lockup of
+  at most 2.5 s (the claim may stay on as its subline); the claim and the lockup together take at most a fifth of the
+  film (3.5 s in a film under 18 s). When they do not fit, shorten the middle or the claim, never the claim's reading
+  time, and never pad the middle to earn a longer ending.
 - Feature chapter: 75-150 f, centrepiece up to 240 f.
 - Genre/flash montages: 9-18 f per shot; holographic texture cuts 2-8 f.
 - Transition beats: 6-12 f (they exist, but you should not notice them as beats).
-- Lockup: 45-60 f in all, from the last move to the last frame.
+- Lockup: 75 f (2.5 s) at most, from the last move to the last frame; claim and lockup together at most a fifth of the
+  film (105 f in a film under 18 s).
 
 ### 4.3 Accelerating cadence
 Lists, swaps and builds must **compress**, never march. Measured cadences that work:
@@ -407,7 +410,7 @@ product claims, not by habit and not by what the examples or the worked films di
 | Concept family | Slots |
 |---|---|
 | launch-shaped (one task, the number, before and after, map and dive, one artefact, a conversation, a day) | signature, opening, text arrivals, type treatment, seams, spectacle (15 s or more), output-big where required, integrations, ending |
-| continuous (the shape that becomes everything, built from a point, one unbroken camera, one object through many worlds) | signature (the primitive or object), stages or stops, text arrivals, type treatment, the light changes, ending |
+| continuous (the shape that becomes everything, built from a point, one unbroken camera, one object through many worlds) | signature (the primitive or object), stages or stops, text arrivals, type treatment, the light changes on one ground (exempt from the two ground cuts, as in SKILL.md), ending |
 | type-led (one sentence, the case, manifesto) | the sentence, text arrivals, type treatment, seams, the picture inside the line, ending |
 | loops and montage (four clocks, montage on the beat) | signature, cells or scenes, relays between them, text arrivals, ending (none for a loop) |
 
@@ -471,9 +474,9 @@ Rules for the block:
 - **Not the examples either.** Never copy an example's sequence. Compare the finished block with each example block and
   worked film; when more than two slots match one of them, re-pick the slots the brief cares least about (the brief's own
   needs win over this count).
-- **Count through every slot.** For each slot, list the options on its menu that fit what the product claims, count the
-  letters of the product's name through that list (wrapping round) and take the one you land on; if it breaks a rule
-  above, take the next. Two products with the same claim then land on different picks.
+- **Pick by the claim, with a reason.** Pick each slot's device by what the product claims and write one reason next to
+  each pick (`- seams: ... (the claim is precision, so the cut steps down in scale)`). No device twice except the
+  signature, and never the sequence of a worked example.
 
 ### Type treatment
 
@@ -500,8 +503,9 @@ primitive, the first words, the mark in a sting). Pick one:
 ### Seams and ground cuts
 
 Every seam names its device; `motion/turns.md` section 0 picks it by how the two beats relate. Neighbouring seams never
-share one. A film over 12 s changes ground at least twice, by two different devices (a one-camera, one-object or loop
-film may change the light on one ground instead):
+share one. A film over 12 s changes ground at least twice, by two different devices. A film whose concept is continuous
+(one unbroken camera, one object through many worlds, the shape that becomes everything, built from a point) or a loop
+may change the light on one ground instead (its Devices block then has "the light changes", not ground cuts):
 - **Iris** from one of the film's shapes (`motion/turns.md` 3).
 - **Ground swap under a layer that stays:** the line, the product or the pointer holds while the ground cuts on the beat
   (`motion/turns.md` 9.1).
@@ -547,7 +551,7 @@ host used for real in macro.
 
 ### Lockups
 
-The mark is born from what is on screen and, in a launch or feature film, settles within 2 s (other formats:
+The mark is born from what is on screen and, in a launch or feature film, settles within 2.5 s (other formats:
 [formats.md](formats.md)). An invented product's mark has an idea (a glyph drawn from the product's object, an
 `AppIcon` tile with depth, a custom wordmark), and the lockup varies from film to film: the mark alone, the mark built in
 3D then flattened, the wordmark alone, the mark over the last image; never the same glyph, wordmark and small line,
@@ -566,6 +570,10 @@ centred, by habit. Pick the way that suits the signature:
    (`motion/turns.md` 2.5).
 9. **Gathered from the film's pieces:** only when the pieces are the signature device (its tiles, its handles, its strokes),
    never a wall that just had a wave (`motion/entrances.md` 5.3, 5.6).
+10. **The closing line becomes the mark:** a glyph of the claim (its full stop, a letter) grows or travels into the mark
+    while the rest of the line leaves (`useGlyphBox` in [kit.md](kit.md) finds where the glyph sits). Fine on its own;
+    not after a dive to a giant figure and the accent filling the frame, since that whole chain in every film is a tell
+    ([taste.md](taste.md) 30).
 
 The wordmark's soft scan (`motion/text.md` 10) is a finish beside the mark, not a way for the mark to be born.
 

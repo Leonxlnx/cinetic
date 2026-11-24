@@ -164,7 +164,10 @@ const beat = (n: number, bpm: number, offsetF: number) => Math.round(offsetF + (
 ```
 
 - **Music-only films:** cut on the beat or half-beat grid; land settles on the track's pops; put the kick 2-3 f after carried
-  cuts. Choose `startFrom` so a downbeat falls on the first word.
+  cuts. Choose `startFrom` so a downbeat falls on the first word: `node scripts/sfx.mjs fit <track> --hit <frame> --len
+  <frames>` lists the starts that land the main hit on a beat. When the bed enters late (`<Music enterAt>`), add
+  `--enter <that frame>`: fit then counts the track from the frame it enters and prints the beat grid in the film's
+  frames (`beats(bpm, offset)`).
 - **Voice-over films:** the picture follows the voice (each caption word cuts on the frame it is spoken; picture leads voice by
   1-4 f), the effects follow the picture; cuts land on the grid only by chance, and that is fine.
 - **Beat-locked devices:** shimmers, swaps and stepped builds can run on the beat period even when cuts do not.

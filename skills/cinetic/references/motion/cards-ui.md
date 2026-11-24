@@ -416,9 +416,10 @@ while (i < durs.length - 1 && t >= durs[i]) t -= durs[i++];
 
 **What:** one line, "Posts to [slot]." or "Works with [slot].", whose slot swaps partner marks (each mark plus its name) on the
 beat, 3-5 of them, the last held. The integrations become one claim instead of a beat.
-**Numbers:** `<Build>` with a node slot, or `<Swap items={[node, node, ...]} times>` (items may be a mark and a name); each
-mark holds 8-14 f; the slot's width snaps to each mark in 1 f; the line never re-centres between swaps (left-align it on its
-prefix, `text.md` 3.5).
+**Numbers:** `<SlotLine before="Posts to" items={[{ mark, name }, ...]} times after="." />` (kit.md): the mark and the name
+roll to the next item on each frame and the centred line re-centres with a jump, so give each item 12 f or more. For a
+faster run (8-14 f a mark) the line does not re-centre: left-align it on its prefix and roll the slot with
+`<Swap items={[node, node, ...]} times>` (items may be a mark and a name; `text.md` 3.5).
 
 ### One host, deep
 

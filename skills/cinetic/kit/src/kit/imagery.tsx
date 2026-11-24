@@ -112,8 +112,26 @@ export const TextWindow: React.FC<{ text: string; src: string; style?: React.CSS
   </div>
 );
 
-/** Before/after: `before` and `after` stacked, a divider at `split` (0..1 of the width) with a handle. */
-export const Compare: React.FC<{ before: React.ReactNode; after: React.ReactNode; split: number; w: number; h: number; line?: string; handle?: boolean; labels?: [string, string]; labelStyle?: React.CSSProperties }> = ({
+/**
+ * Before/after: `before` and `after` stacked, a divider at `split` (0..1 of the width) with a handle. `dividerLabel`
+ * rides the divider as it moves: one node centred on the line (a year), or a pair set either side of it ("1998", "2024").
+ */
+export const Compare: React.FC<{
+  before: React.ReactNode;
+  after: React.ReactNode;
+  split: number;
+  w: number;
+  h: number;
+  line?: string;
+  handle?: boolean;
+  labels?: [string, string];
+  labelStyle?: React.CSSProperties;
+  /** A label riding the divider: one node on the line, or [left, right] either side of it. */
+  dividerLabel?: React.ReactNode | [React.ReactNode, React.ReactNode];
+  /** Where it rides, 0..1 of the height (default 0.86, below the handle). */
+  dividerLabelY?: number;
+  dividerLabelStyle?: React.CSSProperties;
+}> = ({
   before,
   after,
   split,
@@ -123,8 +141,13 @@ export const Compare: React.FC<{ before: React.ReactNode; after: React.ReactNode
   handle = true,
   labels,
   labelStyle,
+  dividerLabel,
+  dividerLabelY = 0.86,
+  dividerLabelStyle,
 }) => {
   const x = clamp(split) * w;
+  const pair = Array.isArray(dividerLabel) && dividerLabel.length === 2;
+  const ly = clamp(dividerLabelY) * h;
   return (
     <div style={{ position: 'relative', width: w, height: h, overflow: 'hidden' }}>
       <AbsoluteFill>{before}</AbsoluteFill>
@@ -142,12 +165,38 @@ export const Compare: React.FC<{ before: React.ReactNode; after: React.ReactNode
           <div style={{ position: 'absolute', right: 24, top: 20, ...labelStyle }}>{labels[1]}</div>
         </>
       )}
+      {dividerLabel !== undefined && dividerLabel !== null && (
+        pair ? (
+          <>
+            <div style={{ position: 'absolute', right: w - x + 18, top: ly, transform: 'translateY(-50%)', whiteSpace: 'nowrap', ...dividerLabelStyle }}>{(dividerLabel as React.ReactNode[])[0]}</div>
+            <div style={{ position: 'absolute', left: x + 18, top: ly, transform: 'translateY(-50%)', whiteSpace: 'nowrap', ...dividerLabelStyle }}>{(dividerLabel as React.ReactNode[])[1]}</div>
+          </>
+        ) : (
+          <div style={{ position: 'absolute', left: x, top: ly, transform: 'translate(-50%, -50%)', whiteSpace: 'nowrap', ...dividerLabelStyle }}>{dividerLabel as React.ReactNode}</div>
+        )
+      )}
     </div>
   );
 };
 
-/** A selection box with corner handles that draws itself around a region (marking what the product found). */
-export const Selection: React.FC<{ x: number; y: number; w: number; h: number; start: number; dur?: number; color?: string; label?: React.ReactNode; labelStyle?: React.CSSProperties }> = ({
+/**
+ * A selection box with corner handles that draws itself around a region (marking what the product found). `labelAt`
+ * places the label (default above, at the left corner); `handles="soft"` draws round handles with a light fill and a
+ * thinner line, `"none"` the box alone.
+ */
+export const Selection: React.FC<{
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  start: number;
+  dur?: number;
+  color?: string;
+  label?: React.ReactNode;
+  labelStyle?: React.CSSProperties;
+  labelAt?: 'top-left' | 'top' | 'bottom-left' | 'bottom' | 'inside';
+  handles?: 'square' | 'soft' | 'none';
+}> = ({
   x,
   y,
   w,
@@ -157,25 +206,52 @@ export const Selection: React.FC<{ x: number; y: number; w: number; h: number; s
   color = '#FFFFFF',
   label,
   labelStyle,
+  labelAt = 'top-left',
+  handles = 'square',
 }) => {
   const frame = useCurrentFrame();
   const p = at(frame, start, dur, ease.out);
   if (frame < start) return null;
   const cw = mix(p, 0, w);
   const ch = mix(p, 0, h);
-  const hs = 12;
+  const soft = handles === 'soft';
+  const hs = soft ? 14 : 12;
+  const labelPos: React.CSSProperties =
+    labelAt === 'top'
+      ? { left: '50%', top: -44, transform: 'translateX(-50%)' }
+      : labelAt === 'bottom-left'
+        ? { left: -2, top: 'calc(100% + 10px)' }
+        : labelAt === 'bottom'
+          ? { left: '50%', top: 'calc(100% + 10px)', transform: 'translateX(-50%)' }
+          : labelAt === 'inside'
+            ? { left: 16, top: 12 }
+            : { left: -2, top: -44 };
   return (
-    <div style={{ position: 'absolute', left: x + (w - cw) / 2, top: y + (h - ch) / 2, width: cw, height: ch, border: `2px solid ${color}`, boxSizing: 'border-box' }}>
-      {[
+    <div style={{ position: 'absolute', left: x + (w - cw) / 2, top: y + (h - ch) / 2, width: cw, height: ch, border: `${soft ? 1.5 : 2}px solid ${color}`, borderRadius: soft ? 6 : 0, boxSizing: 'border-box' }}>
+      {handles !== 'none' && [
         [0, 0],
         [1, 0],
         [0, 1],
         [1, 1],
       ].map(([a, b], i) => (
-        <div key={i} style={{ position: 'absolute', left: a ? undefined : -hs / 2, right: a ? -hs / 2 : undefined, top: b ? undefined : -hs / 2, bottom: b ? -hs / 2 : undefined, width: hs, height: hs, background: color, opacity: clamp(p * 2) }} />
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            left: a ? undefined : -hs / 2,
+            right: a ? -hs / 2 : undefined,
+            top: b ? undefined : -hs / 2,
+            bottom: b ? -hs / 2 : undefined,
+            width: hs,
+            height: hs,
+            boxSizing: 'border-box',
+            ...(soft ? { background: '#FFFFFF', border: `2px solid ${color}`, borderRadius: hs / 2, boxShadow: '0 1px 4px rgba(0,0,0,.18)' } : { background: color }),
+            opacity: clamp(p * 2),
+          }}
+        />
       ))}
       {label && (
-        <div style={{ position: 'absolute', left: -2, top: -44, whiteSpace: 'nowrap', opacity: at(frame, start + dur * 0.6, 8), ...labelStyle }}>{label}</div>
+        <div style={{ position: 'absolute', ...labelPos, whiteSpace: 'nowrap', opacity: at(frame, start + dur * 0.6, 8), ...labelStyle }}>{label}</div>
       )}
     </div>
   );

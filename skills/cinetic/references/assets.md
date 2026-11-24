@@ -113,7 +113,8 @@ node scripts/sfx.mjs fit public/music/bed.mp3 --hit 112 --len 530 --cuts 50,96,1
 ```
 `fit` lists the starts that put the film's main hit (the reveal, the flood, the name) on a beat, best first: the music lifts
 there, there is music under the whole film, the opening is not silence. With `--cuts` it shows which cuts sit off the beat
-grid (move a cut a frame or two, or let a sound carry it). Choose the track for the film's world: an editorial paper film and
+grid (move a cut a frame or two, or let a sound carry it). For a bed that enters late (`<Music enterAt={f}>`), pass
+`--enter f`: the track plays from `startFrom` at that frame, and the printed grid is in the film's frames. Choose the track for the film's world: an editorial paper film and
 a dark-stage film should not share a bed. `frames.mjs check` fails a film whose music runs out before it ends.
 Licences that work for a published launch film:
 - Mixkit Stock Music Free License (https://mixkit.co/license/#musicFree): web, social, ads; no credit needed; never

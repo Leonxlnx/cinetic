@@ -345,7 +345,9 @@ export const Box: React.FC<{
   bevel?: number;
   material?: 'matte' | 'gloss' | 'glass';
   ground?: string;
-}> = ({ w, d, h, color, top, front, side, topContent, frontContent, sideContent, radius = 0, edge, style, shadow = 0.35, bevel = 0, material = 'matte', ground }) => {
+  /** Flat faces: each face one solid colour, without the top-lit gradient (the light edges stay). */
+  flat?: boolean;
+}> = ({ w, d, h, color, top, front, side, topContent, frontContent, sideContent, radius = 0, edge, style, shadow = 0.35, bevel = 0, material = 'matte', ground, flat = false }) => {
   const gloss = material === 'gloss';
   const glass = material === 'glass';
   const topC = top ?? color;
@@ -358,10 +360,10 @@ export const Box: React.FC<{
   // a face given as a CSS gradient or image is used as it is (only the edges are added)
   const isCol = (c: string) => parseColor(c) !== null;
   const sideBg = (c: string, up: 'top' | 'bottom') =>
-    isCol(c) ? `linear-gradient(to ${up === 'top' ? 'bottom' : 'top'}, ${paint(liftColor(c, gloss ? 0.07 : 0.035))} 0%, ${paint(c)} 38%, ${paint(dimColor(c, gloss ? 0.16 : 0.1))} 100%)` : c;
+    flat && isCol(c) ? paint(c) : isCol(c) ? `linear-gradient(to ${up === 'top' ? 'bottom' : 'top'}, ${paint(liftColor(c, gloss ? 0.07 : 0.035))} 0%, ${paint(c)} 38%, ${paint(dimColor(c, gloss ? 0.16 : 0.1))} 100%)` : c;
   const topBg =
     (gloss ? `linear-gradient(118deg, transparent 30%, rgba(255,255,255,0.2) 44%, rgba(255,255,255,0.06) 52%, transparent 64%), ` : '') +
-    (isCol(topC) ? `linear-gradient(160deg, ${paint(liftColor(topC, gloss ? 0.07 : 0.045))} 0%, ${paint(topC)} 62%, ${paint(dimColor(topC, 0.03))} 100%)` : topC);
+    (flat && isCol(topC) ? paint(topC) : isCol(topC) ? `linear-gradient(160deg, ${paint(liftColor(topC, gloss ? 0.07 : 0.045))} 0%, ${paint(topC)} 62%, ${paint(dimColor(topC, 0.03))} 100%)` : topC);
   const lightEdge = (side: 'top' | 'bottom' | 'all') => {
     const line = edge ? `inset 0 0 0 1.5px ${edge}` : side === 'all' ? `inset 0 0 0 1px rgba(255,255,255,${edgeA * 0.7})` : `inset 0 ${side === 'top' ? 1 : -1}px 0 rgba(255,255,255,${edgeA})`;
     if (!bevel) return line;
@@ -649,6 +651,8 @@ export const DepthStack: React.FC<{
   push?: number;
   /** Rise distance of a new arrival (px from below its slot). */
   rise?: number;
+  /** Older items stay sharp and full strength (no blur, no dim): use it whenever the items carry text. */
+  sharp?: boolean;
 }> = ({
   items,
   x = 960,
@@ -659,6 +663,7 @@ export const DepthStack: React.FC<{
   dim = [1, 0.92, 0.85, 0.78, 0.7, 0.6],
   push = 6,
   rise = 130,
+  sharp = false,
 }) => {
   const frame = useCurrentFrame();
   const lerp = (a: number[], v: number) => {
@@ -683,7 +688,8 @@ export const DepthStack: React.FC<{
               top: y - lerp(lift, slot) + mix(a, rise, 0),
               zIndex: 1000 - Math.round(slot * 10),
               transform: `translate(-50%, -50%) scale(${lerp(scale, slot) * mix(a, 0.95, 1)})`,
-              filter: `blur(${lerp(blur, slot) + mix(a, 6, 0)}px) brightness(${lerp(dim, slot)})`,
+              // sharp: only the arrival's own short blur, never a blurred or dimmed older item
+              filter: sharp ? (a < 1 ? `blur(${mix(a, 6, 0)}px)` : undefined) : `blur(${lerp(blur, slot) + mix(a, 6, 0)}px) brightness(${lerp(dim, slot)})`,
               opacity: mix(a, 0.6, 1) * Math.min(1, n - 0.5 - slot),
             }}
           >

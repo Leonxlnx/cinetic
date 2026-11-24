@@ -21,7 +21,9 @@ These eight qualities separate great launch films from template videos. Hold eve
 
 1. **Pace: a new beat every 0.8-1.6 s, a visible change every half second.** A 30 s film has 20-35 beats. Inside a beat,
    something larger than a caret changes at least every 0.5 s (a word joins, a block lands, the crop changes, a value
-   steps). Each feature is one action and one visible result. The most common flaw is a hold that waits.
+   steps). Each feature is one action and one visible result. A statement may rest for its reading time with
+   only a slow creep (a reading hold); up to a quarter of a film's half-seconds may rest like that, and nothing else
+   moves while a line is read. The flaw is a hold that waits for nothing.
 2. **One world.** The film lives in one graphic language from first to last frame: one palette with 2-3 grounds (base,
    accent, inverse), one type voice, one material, one signature device it repeats (see [worlds.md](references/worlds.md)). A supplied brand wins.
 3. **Continuity: nothing is ever just cut away.** One element becomes the next beat: the full stop grows into the next
@@ -120,7 +122,9 @@ does, search [INDEX.md](references/INDEX.md) (every recipe and section, one line
 - `node scripts/frames.mjs check out/main-preview.mp4` measures the preview (how crowded the frames are, change every
   half second, empty frames, ending length) and prints what to fix. Its `air` line says how much of the frame is sharp
   detail, how often three or more things share a frame and how often the frame cuts on two sides; a crowded film fails.
-  The coverage figure is information, never a target: do not add things to raise it.
+  The coverage figure is information, never a target: do not add things to raise it. For a loop or a sting add
+  `--format loop` (no sound, ending or music lines; it fails when the last frame does not match the first) or
+  `--format sting` (no pace gate under 8 s; the ending may hold).
 Score the sheet with the rubric in [taste.md](references/taste.md) (20 points, look first; render at 17+). Fix the three
 worst things, render again.
 Typical misses: a crowded frame, text used as texture, a line cut by the frame edge, dead frames, UI text under 30 px,
@@ -131,7 +135,8 @@ judged, licensed recordings into `public/sfx` and writes `src/sfx.ts`; place the
 the picture. Music: pick a licensed track whose character is this film's world, not the default
 ([assets.md](references/assets.md#music); `sfx.mjs shortlist`), fetch it with `sfx.mjs music`, then
 `sfx.mjs fit <track> --hit <frame> --len <frames>` gives the start that lands the film's main hit on a beat where the music
-lifts. Duck it under the big hits, let it ring out under the end card.
+lifts (for a bed that enters late, `--enter <frame>` with the `<Music enterAt>` frame). Duck it under the big hits, let
+it ring out under the end card.
 
 **9. Final.** `node scripts/frames.mjs final` renders picture and sound and sets the loudness. For long films (or a
 time limit on each job) render silent parts and mux them ([rendering.md](references/rendering.md)). Write `CREDITS.md` with
@@ -149,7 +154,7 @@ Import everything from `src/kit` (`import { Words, Camera, ease, at } from '../.
 |---|---|
 | timing | `at(frame, start, dur, ease.out)` -> 0..1, `mix(p, a, b)`, `springAt(frame, fps, start, springs.card)`, `stagger(i)`, `accel()` for exits, `creep()` for holds, `keys()` for keyframes, `logScale()` for zooms |
 | curves | `ease.out` (arrive), `ease.soft` (heavy arrive), `ease.snap` (UI pop), `ease.inOut` / `ease.glide` (travel), `ease.in` (leave), `ease.back` (land with weight) |
-| type | `<Words text arrive="rise\|blur\|scale\|drop\|slide\|flip\|cut" by="word\|char\|line" born accent leaveAt times>`, `<Build words times>` (append with a re-centre jump), `<Swap items>`, `<Typing>`, `<Scramble>`, `<Odometer>`, `<Marker>`, `<Output>` (the result giant, then into the UI) |
+| type | `<Words text arrive="rise\|blur\|scale\|drop\|slide\|flip\|cut" by="word\|char\|line" born accent leaveAt times>`, `<Build words times>` (append with a re-centre jump), `<Swap items>`, `<SlotLine>` (a sentence whose slot swaps marks), `useGlyphBox()` (where a letter sits), `<Typing>`, `<Scramble>`, `<Odometer>`, `<Marker>`, `<Output>` (the result giant, then into the UI) |
 | camera | `<Camera keys={[{f, x, y, zoom, rx, ry, rz}]}>` (a 3D stage), `<At x y z rx ry>` places things in it, `fillZoom()`, `drift()`, `shake()` |
 | world | `<Ground>`, `<Field>` (a soft ground of 2-3 neighbouring hues), `<Aura>`, `<GridLines>`, `<CornerMarks>` (four marks framing a line or component), `<Box bevel material>` (a CSS 3D block), `<DepthStack>`, `<Defocus>` (depth of field for shapes), `softShadow()` (layered shadows from one light), `<Beam>` / `<Pool>`, `<GlassPanel>`, `<Glow>`, `<Sheen>`, `<Grain>` (photographs only) |
 | product UI | `<Card>`, `<Window>`, `<InputBar>` (typing + send), `<Bubble>`, `<ChatStack>`, `<Thinking>`, `<Row>`, `<Chip>`, `<Toast>`, `<Terminal>`, `<Relay>` + `<PartnerSurface>` (the artefact carried through other products), `<Progress>`, `<Spinner>` (working -> check), `<StatePill>`, `<Wall>` (many of a thing), `<Button pressAt>`, `<Avatar>`, `<Cursor keys clicks exitAt>` (a real arrow pointer, arcing paths, presses), `focusStyles()`, `useArrive()` |
@@ -172,7 +177,7 @@ rewrite lifting off as a plate). Never copy their content or their order; take s
 
 - **Never linear motion** (a loop's constant cycle aside), never a cross-fade between scenes, never an empty frame
   between scenes (at a seam the next ground already holds its subject at full size while the old one shrinks away),
-  never a frame that holds dead still for more than ~0.6 s. **Frame 0 is never empty and already moving:** the product, the story's
+  never a frame that holds dead still for more than ~0.6 s (a reading hold creeps). **Frame 0 is never empty and already moving:** the product, the story's
   object, the concept's primitive (a point, a shape), the first words of the film's sentence on a lit ground, or the
   mark in a sting. Never a static title card.
 - **Vary the frame.** Tag every row of `BEATS.md` with its composition from the table in
@@ -228,7 +233,8 @@ rewrite lifting off as a plate). Never copy their content or their order; take s
   appears as one real, whole panel for at most 2 s.
 - **The frame cuts only on purpose.** The frame edge may cut a single giant word (280 px or more) alone in the frame, or
   one component in close-up that leaves on one side while the camera follows it. Never a resting line of normal size,
-  never two or more sides at once, never the words the beat is about.
+  never two or more sides at once, never the words the beat is about. The film's key figure or claim is never cut by
+  the frame, also while it counts or scales: size a rolling number so its widest state fits.
 - **UI as one calm component.** Show product UI one component at a time, flat or at one gentle tilt (12° or less): the
   region that matters pixel-real, the rest reduced to quiet shapes, plausible named data, its context shown before a
   zoom. The camera moves on the machine's turn and holds still while the person acts. Never two windows overlapping at

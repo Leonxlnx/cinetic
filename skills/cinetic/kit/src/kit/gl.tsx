@@ -134,14 +134,17 @@ const contactBlob = () => {
  * `intensity` scales the room (default 0.6), `key` the key light (default 1.6, 0 for none), `exposure` the tone mapping,
  * `tint` washes the floor shadows in the ground's hue (a shadow is the ground in less light), `background` sets
  * scene.background (default none: the DOM ground shows through). Matte, clay and satin read best (MeshPhysicalMaterial
- * roughness 0.35-0.7, a little clearcoat for gloss). It sets the shared renderer's tone mapping (ACES) and exposure.
+ * roughness 0.35-0.7, a little clearcoat for gloss). It sets the shared renderer's tone mapping and exposure.
+ * `toneMapping`: 'aces' (default) rolls highlights off softly but greys and shifts saturated colours; 'neutral' (Khronos
+ * PBR Neutral) keeps a saturated accent its own hue and strength, so use it when the object carries the brand's accent;
+ * 'none' leaves colours linear (flat, clips in the highlights).
  */
 export const softStudio = (
   r: THREE.WebGLRenderer,
   scene: THREE.Scene,
-  o: { intensity?: number; key?: number; exposure?: number; floorY?: number; shadowOpacity?: number; tint?: string; background?: string } = {},
+  o: { intensity?: number; key?: number; exposure?: number; floorY?: number; shadowOpacity?: number; tint?: string; background?: string; toneMapping?: 'aces' | 'neutral' | 'none' } = {},
 ) => {
-  r.toneMapping = THREE.ACESFilmicToneMapping;
+  r.toneMapping = o.toneMapping === 'neutral' ? THREE.NeutralToneMapping : o.toneMapping === 'none' ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
   r.toneMappingExposure = o.exposure ?? 1;
   const pm = new THREE.PMREMGenerator(r);
   const env = pm.fromScene(new RoomEnvironment(), 0.04).texture;

@@ -33,7 +33,8 @@ A landing-page hero that plays forever beside the page's own headline.
   that divides N (`Math.sin((2 * Math.PI * f) / N)` or a multiple of it); noise is sampled on a circle
   (`noise(x, y, cos(2πf/N) r, sin(2πf/N) r)`) so it returns to its start. A constant cycle (a rotation, a scroll, a
   conveyor) runs at constant speed across the seam, with no ease-in-out to hesitate on; every move inside the cycle
-  still eases. Check by rendering frames N-1, 0 and 1 side by side.
+  still eases. Check by rendering frames N-1, 0 and 1 side by side, and run `frames.mjs check <video> --format loop`:
+  it skips the sound, ending and music lines and fails when the last frame differs visibly from the first.
 - **Different from a launch:** no hook, no problem, no claim, no lockup, no music; type small and few; legible at half
   size; no flashes and no hard ground cuts (on repeat they read as a glitch).
 - **Deliver:** muted H.264 mp4 and a WebM, at most 1080p and about 5 MB, plus a poster frame.
@@ -46,6 +47,7 @@ A landing-page hero that plays forever beside the page's own headline.
 - **Different:** the mark is the subject from frame 0; no UI beyond that one glimpse; construction lines may be the
   signature; one sound hit and its tail, or silence; motion blur on the fast frames; no second logo in the frame. It may
   end mid-move when it opens a longer video. The invented mark must have an idea (SKILL.md, real marks).
+- **Check:** `frames.mjs check <video> --format sting`: no pace gate under 8 s, and the ending may hold.
 
 ## Vertical teaser
 

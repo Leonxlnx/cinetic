@@ -49,6 +49,8 @@ type WordsProps = {
   settle?: number;
   /** Exact start frame per unit (word, char or line), overriding start + gap: put words on the music's plucks. */
   times?: number[];
+  /** Let trailing punctuation take the accent or born colour too (default false: punctuation keeps the line's colour). */
+  tintPunctuation?: boolean;
 };
 
 /** Parse #rgb, #rrggbb or rgb(r, g, b) to [r, g, b]. */
@@ -70,6 +72,8 @@ export const mixColor = (a: string, b: string, p: number) => {
 };
 
 const norm = (w: string) => w.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+/** The trailing punctuation of a word ("now." -> "."), which never takes an accent or born colour. */
+const punctTail = (w: string) => w.match(/[.,!?:;…]+$/)?.[0] ?? '';
 
 export const Words: React.FC<WordsProps> = ({
   text,
@@ -89,6 +93,7 @@ export const Words: React.FC<WordsProps> = ({
   born,
   settle = 14,
   times,
+  tintPunctuation = false,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -158,6 +163,10 @@ export const Words: React.FC<WordsProps> = ({
       }
     }
     const hidden = (arrive !== 'cut' && frame < s) || (leaveAt !== undefined && (leave === 'rise' || leave === 'fall') && frame >= leaveAt + stagger(i, g * 0.5) + leaveDur);
+    const bornColor = born && frame < s + (arrive === 'cut' ? 0 : d) + settle + 1 ? mixColor(born, (style?.color as string) ?? '#000000', at(frame, s + (arrive === 'cut' ? 0 : d * 0.4), settle, ease.inOut)) : undefined;
+    // punctuation is never coloured: a tinted unit's trailing marks keep the line's own colour
+    const tail = !tintPunctuation && ((isAccent && accentStyle?.color) || bornColor) ? punctTail(content) : '';
+    const { color: accentColor, ...accentRest } = (isAccent ? accentStyle : undefined) ?? {};
     const inner = (
       <span
         style={{
@@ -168,11 +177,17 @@ export const Words: React.FC<WordsProps> = ({
           opacity,
           transformOrigin: arrive === 'flip' ? '50% 100%' : '50% 60%',
           whiteSpace: 'pre',
-          color: born && frame < s + (arrive === 'cut' ? 0 : d) + settle + 1 ? mixColor(born, (style?.color as string) ?? '#000000', at(frame, s + (arrive === 'cut' ? 0 : d * 0.4), settle, ease.inOut)) : undefined,
-          ...(isAccent ? accentStyle : null),
+          ...(tail ? accentRest : { color: bornColor, ...(isAccent ? accentStyle : null) }),
         }}
       >
-        {content}
+        {tail ? (
+          <>
+            {content.length > tail.length && <span style={{ color: accentColor ?? bornColor }}>{content.slice(0, -tail.length)}</span>}
+            <span style={style?.color ? { color: style.color } : undefined}>{tail}</span>
+          </>
+        ) : (
+          content
+        )}
       </span>
     );
     return clip ? (
@@ -495,9 +510,13 @@ export const Marker: React.FC<{
  * An append build: words join a centred line one at a time (at `times[i]`), and the line re-centres to make room with
  * most of the travel in the first frames (a jump, not a slide). The new word rides in with the line. Widths are
  * measured from a hidden copy, so any face and size works. One line; split long copy into two Builds.
+ * `swaps` replaces one word in place on a frame ("Snap it" -> "Draw it"): the old word rolls out, the new one rolls in
+ * (the roll of `<Swap>`), and the line re-centres to the new width the same way.
  */
 /** A word of a Build: text, or a slot of a fixed width (px) that holds an object in the line (a mark, a tile, a chip). */
 export type BuildWord = string | { slot: number; node?: React.ReactNode };
+/** One word of a Build replaced in place: from frame `at`, word `index` is `word`. */
+export type BuildSwap = { at: number; index: number; word: BuildWord };
 
 export const Build: React.FC<{
   words: BuildWord[];
@@ -512,7 +531,13 @@ export const Build: React.FC<{
   settle?: number;
   /** Gap between words in em. */
   space?: number;
-}> = ({ words, times, dur = 9, style, wordStyle, born, settle = 12, space = 0.26 }) => {
+  /** Words replaced in place on their frames; the line re-centres to the new width. */
+  swaps?: BuildSwap[];
+  /** Frames the roll of a swapped word takes (default 10). */
+  swapDur?: number;
+  /** Let trailing punctuation take the accent or born colour too (default false: punctuation keeps the line's colour). */
+  tintPunctuation?: boolean;
+}> = ({ words, times, dur = 9, style, wordStyle, born, settle = 12, space = 0.26, swaps = [], swapDur = 10, tintPunctuation = false }) => {
   const frame = useCurrentFrame();
   const ref = React.useRef<HTMLDivElement>(null);
   const [widths, setWidths] = React.useState<number[] | null>(null);
@@ -531,12 +556,24 @@ export const Build: React.FC<{
       alive = false;
     };
   }, [handle]);
+  const n = words.length;
   const fontSize = typeof style?.fontSize === 'number' ? style.fontSize : 100;
   const gap = space * fontSize;
-  const layout = (n: number) => {
+  // which swap (index into `swaps`, -1: the word itself) each word shows at frame f; `strict` leaves out swaps on f
+  const variants = (f: number, strict = false) =>
+    words.map((_, i) => {
+      let v = -1;
+      swaps.forEach((sw, j) => {
+        if (sw.index === i && (strict ? f > sw.at : f >= sw.at) && (v < 0 || sw.at >= swaps[v].at)) v = j;
+      });
+      return v;
+    });
+  const widthOf = (i: number, v: number) => (widths ? (v < 0 ? widths[i] : widths[n + v]) : 0);
+  const wordOf = (i: number, v: number) => (v < 0 ? words[i] : swaps[v].word);
+  const layout = (count: number, vars: number[]) => {
     if (!widths) return [] as number[];
-    const ws = widths.slice(0, n);
-    const total = ws.reduce((a, b) => a + b, 0) + gap * Math.max(0, n - 1);
+    const ws = Array.from({ length: count }, (_, i) => widthOf(i, vars[i]));
+    const total = ws.reduce((a, b) => a + b, 0) + gap * Math.max(0, count - 1);
     let x = -total / 2;
     return ws.map((w) => {
       const left = x;
@@ -551,43 +588,122 @@ export const Build: React.FC<{
     const kk = 7;
     return (1 - Math.exp(-kk * q)) / (1 - Math.exp(-kk));
   };
-  const p = k >= 1 ? lead((frame - times[k]) / dur) : 1;
-  const cur = layout(Math.max(0, shown));
-  const prev = layout(Math.max(0, shown - 1));
-  const shift = k >= 1 && cur.length && prev.length ? cur[0] - prev[0] : 0;
+  const varsNow = variants(frame);
+  // the latest swap of a word already on screen, when it is later than the latest arrival
+  let swapAt = -Infinity;
+  swaps.forEach((sw) => {
+    if (sw.index < shown && frame >= sw.at && sw.at > swapAt) swapAt = sw.at;
+  });
+  const swapping = shown > 0 && swapAt > times[k];
+  // words that arrive on the same frame as the last one arrive together (the line does not slide in from fewer words)
+  const before = k >= 0 ? times.slice(0, shown).filter((t) => t < times[k]).length : 0;
+  const p = swapping ? lead((frame - swapAt) / dur) : before >= 1 ? lead((frame - times[k]) / dur) : 1;
+  const cur = layout(Math.max(0, shown), varsNow);
+  const prev = swapping ? layout(shown, variants(swapAt, true)) : layout(before, varsNow);
+  const shift = !swapping && before >= 1 && cur.length && prev.length ? cur[0] - prev[0] : 0;
+  const xOf = (i: number) => (swapping || i < before ? mix(p, prev[i], cur[i]) : cur[i] - shift * (1 - p));
+  // a word drawn: text (the accent or born colour on its letters, never on its trailing punctuation) or a slot
+  const draw = (w: BuildWord, i: number, x: number, bornAt: number, extra?: React.CSSProperties, key?: string) => {
+    const pos: React.CSSProperties = { position: 'absolute', left: '50%', top: 0, transform: `translateX(${x}px)` };
+    if (typeof w !== 'string')
+      return (
+        <span key={key} style={{ ...pos, width: w.slot, height: '1.2em', display: 'flex', alignItems: 'center', justifyContent: 'center', ...extra }}>
+          {w.node}
+        </span>
+      );
+    const ws = wordStyle?.(i);
+    // a new word is born in `born` and settles to its own colour (wordStyle's, else the line's)
+    const c = born && frame < bornAt + settle + 1 ? mixColor(born, ((ws?.color ?? style?.color) as string) ?? '#000000', at(frame, bornAt, settle, ease.inOut)) : undefined;
+    const tail = !tintPunctuation && (c || ws?.color) ? punctTail(w) : '';
+    if (!tail)
+      return (
+        <span key={key} style={{ ...pos, whiteSpace: 'pre', ...ws, ...(c ? { color: c } : {}), ...extra }}>
+          {w}
+        </span>
+      );
+    const { color: wc, ...rest } = ws ?? {};
+    return (
+      <span key={key} style={{ ...pos, whiteSpace: 'pre', ...rest, ...extra }}>
+        {w.length > tail.length && <span style={{ color: c ?? wc }}>{w.slice(0, -tail.length)}</span>}
+        <span style={style?.color ? { color: style.color } : undefined}>{tail}</span>
+      </span>
+    );
+  };
   return (
     <div style={{ position: 'relative', width: '100%', height: '1.2em', ...style }}>
-      {/* hidden copy for measuring */}
+      {/* hidden copy for measuring: the words, then every swap's word */}
       <div ref={ref} style={{ position: 'absolute', visibility: 'hidden', whiteSpace: 'nowrap', left: 0, top: 0 }}>
-        {words.map((w, i) => (
-          <span key={i} data-w="1" style={{ display: 'inline-block', whiteSpace: 'pre', ...(typeof w === 'string' ? wordStyle?.(i) : { width: w.slot }) }}>
+        {[...words, ...swaps.map((sw) => sw.word)].map((w, j) => (
+          <span key={j} data-w="1" style={{ display: 'inline-block', whiteSpace: 'pre', ...(typeof w === 'string' ? wordStyle?.(j < n ? j : swaps[j - n].index) : { width: w.slot }) }}>
             {typeof w === 'string' ? w : null}
           </span>
         ))}
       </div>
       {widths &&
-        words.map((w, i) => {
+        words.map((_, i) => {
           if (i >= shown) return null;
-          // every visible word sits on its slot in the current layout, minus the part of the shift not yet travelled
-          const x = cur[i] - shift * (1 - p);
-          const ws = typeof w === 'string' ? wordStyle?.(i) : undefined;
-          // a new word is born in `born` and settles to its own colour (wordStyle's, else the line's)
-          const c = born && frame < times[i] + settle + 1 ? mixColor(born, ((ws?.color ?? style?.color) as string) ?? '#000000', at(frame, times[i], settle, ease.inOut)) : undefined;
-          return (
-            <span
-              key={i}
-              style={
-                typeof w === 'string'
-                  ? { position: 'absolute', left: '50%', top: 0, transform: `translateX(${x}px)`, whiteSpace: 'pre', ...ws, ...(c ? { color: c } : {}) }
-                  : { position: 'absolute', left: '50%', top: 0, transform: `translateX(${x}px)`, width: w.slot, height: '1.2em', display: 'flex', alignItems: 'center', justifyContent: 'center' }
-              }
-            >
-              {typeof w === 'string' ? w : w.node}
-            </span>
-          );
+          // every visible word sits on its slot in the current layout, minus the part of the move not yet travelled
+          const x = xOf(i);
+          const v = varsNow[i];
+          // a swapped word rolls like <Swap>: the old one leaves upward, the new one rises in from below, inside a mask
+          if (v >= 0 && frame < swaps[v].at + swapDur) {
+            const q = ease.inOut(clamp((frame - swaps[v].at) / swapDur));
+            const old = variants(swaps[v].at, true)[i];
+            const roll = (w: BuildWord, y: number, o: number, b: number, bornAt: number, key: string) => (
+              <span key={key} style={{ position: 'absolute', inset: '-0.1em 0', overflow: 'hidden', pointerEvents: 'none' }}>
+                {draw(w, i, x, bornAt, { top: '0.1em', transform: `translateX(${x}px) translateY(${y}em)`, opacity: o, filter: b > 0.3 ? `blur(${b}px)` : undefined })}
+              </span>
+            );
+            return (
+              <React.Fragment key={i}>
+                {roll(wordOf(i, old), -q * 1.1, 1 - q, q * 10, old < 0 ? times[i] : swaps[old].at, 'o')}
+                {roll(wordOf(i, v), (1 - q) * 1.1, q, (1 - q) * 10, swaps[v].at, 'n')}
+              </React.Fragment>
+            );
+          }
+          return draw(wordOf(i, v), i, x, v < 0 ? times[i] : swaps[v].at, undefined, String(i));
         })}
     </div>
   );
+};
+
+/**
+ * A sentence whose slot swaps marks: "Lands in [mark] Slack." The words before the slot stay; on each of `times` the
+ * mark and the name roll to the next item and the line re-centres to the new name's width. `times[0]` is the frame the
+ * line is there (or the frame the first item joins it, when `enter` builds the words before it).
+ */
+export const SlotLine: React.FC<{
+  /** The words before the slot ("Lands in"). */
+  before: string;
+  /** Each item: its mark (a <Brand>, an <AppIcon>) and its name. */
+  items: Array<{ mark: React.ReactNode; name: string }>;
+  /** The frame each item takes the slot. */
+  times: number[];
+  /** Text after the name ("." ends the sentence). */
+  after?: string;
+  /** Frames the words before the slot arrive, one per word (default: all at times[0]). */
+  enter?: number[];
+  /** The slot's width in px (default 1.15 x the font size); size the marks to about 0.85 of the font size. */
+  slot?: number;
+  style?: React.CSSProperties;
+  /** The name's style (the accent colour); its trailing punctuation keeps the line's colour. */
+  nameStyle?: React.CSSProperties;
+  born?: string;
+  dur?: number;
+  swapDur?: number;
+}> = ({ before, items, times, after = '', enter, slot, style, nameStyle, born, dur, swapDur }) => {
+  const lead = before.split(' ').filter(Boolean);
+  const fontSize = typeof style?.fontSize === 'number' ? style.fontSize : 100;
+  const sw = slot ?? fontSize * 1.15;
+  const mi = lead.length;
+  const words: BuildWord[] = [...lead, { slot: sw, node: items[0]?.mark }, `${items[0]?.name ?? ''}${after}`];
+  const t0 = times[0] ?? 0;
+  const wordTimes = [...lead.map((_, i) => enter?.[i] ?? t0), t0, t0];
+  const swaps: BuildSwap[] = items.slice(1).flatMap((it, j) => [
+    { at: times[j + 1], index: mi, word: { slot: sw, node: it.mark } },
+    { at: times[j + 1], index: mi + 1, word: `${it.name}${after}` },
+  ]);
+  return <Build words={words} times={wordTimes} swaps={swaps} style={style} wordStyle={(i) => (i === mi + 1 ? nameStyle : undefined)} born={born} dur={dur} swapDur={swapDur} />;
 };
 
 /**
@@ -619,6 +735,113 @@ export const useTextWidth = (text: string, style: React.CSSProperties) => {
   }, [key, handle]);
   return w;
 };
+
+/** A box inside a set line, in px from the line box's top-left corner. */
+export type TextRect = { x: number; y: number; width: number; height: number; cx: number; cy: number };
+/**
+ * Where a character or a word sits in a set line. The box is the glyph's advance and the face's line (as the browser
+ * lays it out), `ink` the drawn shape (the dot of a full stop, the bowl of an o), `baseline` the baseline's y and `xMid`
+ * the y of the x-height's centre: centre a dot or an object on a lowercase letter at (cx, xMid).
+ */
+export type GlyphBox = TextRect & { ink: TextRect; baseline: number; xMid: number };
+/** A set line measured: its box, the baseline, the x-height and every character's and word's box. */
+export type TextLayout = { ready: boolean; width: number; height: number; baseline: number; xHeight: number; xMid: number; chars: GlyphBox[]; words: GlyphBox[] };
+
+const rect = (x: number, y: number, width: number, height: number): TextRect => ({ x, y, width, height, cx: x + width / 2, cy: y + height / 2 });
+const union = (a: TextRect[]): TextRect => {
+  const x0 = Math.min(...a.map((r) => r.x));
+  const y0 = Math.min(...a.map((r) => r.y));
+  const x1 = Math.max(...a.map((r) => r.x + r.width));
+  const y1 = Math.max(...a.map((r) => r.y + r.height));
+  return rect(x0, y0, x1 - x0, y1 - y0);
+};
+const EMPTY_BOX: GlyphBox = { ...rect(0, 0, 0, 0), ink: rect(0, 0, 0, 0), baseline: 0, xMid: 0 };
+
+/**
+ * Measure a line of text as the browser sets it, once the fonts have loaded (the render waits; zeros until then): the
+ * box of every character and word relative to the line's own box (its left edge and the top of its line, with the
+ * style's `lineHeight`: pass the one the line is drawn with, `<Words>` sets 1.04). For moves that start from a glyph:
+ * the full stop that becomes the mark, the camera diving into the o, a dot landing on an i.
+ *
+ *   const L = useTextLayout('Ship it.', type);       // L.width, L.chars, L.words, L.baseline, L.xMid
+ *   const dot = L.chars[L.chars.length - 1].ink;      // the full stop's drawn dot: dot.cx, dot.cy, dot.width
+ *   // on screen, for a line centred at (960, 540): x = 960 - L.width / 2 + dot.cx, y = 540 - L.height / 2 + dot.cy
+ */
+export const useTextLayout = (text: string, style: React.CSSProperties): TextLayout => {
+  const [layout, setLayout] = React.useState<TextLayout>({ ready: false, width: 0, height: 0, baseline: 0, xHeight: 0, xMid: 0, chars: [], words: [] });
+  const [handle] = React.useState(() => delayRender('measure text layout'));
+  const done = React.useRef(false);
+  const key = JSON.stringify([text, style.fontFamily, style.fontSize, style.fontWeight, style.letterSpacing, style.fontStyle, style.lineHeight, style.fontVariationSettings, style.fontFeatureSettings]);
+  React.useLayoutEffect(() => {
+    let alive = true;
+    document.fonts.ready.then(() => {
+      if (!alive) return;
+      const el = document.createElement('div');
+      Object.assign(el.style, { position: 'absolute', visibility: 'hidden', whiteSpace: 'pre', left: '-9999px', top: '0', display: 'inline-block' });
+      for (const [k, v] of Object.entries(style)) (el.style as unknown as Record<string, string>)[k] = typeof v === 'number' && k !== 'fontWeight' && k !== 'lineHeight' ? `${v}px` : String(v);
+      Object.assign(el.style, { position: 'absolute', left: '-9999px', top: '0', transform: 'none', whiteSpace: 'pre', display: 'inline-block' });
+      const node = document.createTextNode(text);
+      const base = document.createElement('span');
+      Object.assign(base.style, { display: 'inline-block', width: '0', height: '0', verticalAlign: 'baseline' });
+      const ex = document.createElement('span');
+      Object.assign(ex.style, { position: 'absolute', left: '0', top: '0', width: '1px', height: '1ex' });
+      el.append(node, base, ex);
+      document.body.appendChild(el);
+      const box = el.getBoundingClientRect();
+      const baseline = base.getBoundingClientRect().bottom - box.top;
+      const xHeight = ex.getBoundingClientRect().height;
+      const xMid = baseline - xHeight / 2;
+      // the drawn shape of each character from the canvas's metrics of the same face
+      const ctx = document.createElement('canvas').getContext('2d');
+      const cs = getComputedStyle(el);
+      if (ctx) ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      const range = document.createRange();
+      const chars: GlyphBox[] = [];
+      let off = 0;
+      for (const ch of Array.from(text)) {
+        range.setStart(node, off);
+        range.setEnd(node, off + ch.length);
+        off += ch.length;
+        const r = range.getBoundingClientRect();
+        const g = rect(r.left - box.left, r.top - box.top, r.width, r.height);
+        const m = ctx && ch.trim() ? ctx.measureText(ch) : null;
+        const ink = m ? rect(g.x - m.actualBoundingBoxLeft, baseline - m.actualBoundingBoxAscent, m.actualBoundingBoxLeft + m.actualBoundingBoxRight, m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) : rect(g.cx, baseline, 0, 0);
+        chars.push({ ...g, ink, baseline, xMid });
+      }
+      const words: GlyphBox[] = [];
+      const cps = Array.from(text);
+      let i = 0;
+      while (i < cps.length) {
+        if (!cps[i].trim()) {
+          i++;
+          continue;
+        }
+        let j = i;
+        while (j < cps.length && cps[j].trim()) j++;
+        const part = chars.slice(i, j);
+        words.push({ ...union(part), ink: union(part.map((c) => c.ink)), baseline, xMid });
+        i = j;
+      }
+      el.remove();
+      setLayout({ ready: true, width: box.width, height: box.height, baseline, xHeight, xMid, chars, words });
+      if (!done.current) {
+        done.current = true;
+        continueRender(handle);
+      }
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, handle]);
+  return layout;
+};
+
+const pick = <T,>(list: T[], index: number) => list[index < 0 ? list.length + index : index];
+/** The box of character `index` of a set line (negative counts from the end: -1 is the full stop). See useTextLayout. */
+export const useGlyphBox = (text: string, style: React.CSSProperties, index: number): GlyphBox => pick(useTextLayout(text, style).chars, index) ?? EMPTY_BOX;
+/** The box of word `index` of a set line (words split on spaces; negative counts from the end). See useTextLayout. */
+export const useWordBox = (text: string, style: React.CSSProperties, index: number): GlyphBox => pick(useTextLayout(text, style).words, index) ?? EMPTY_BOX;
 
 /**
  * The product's output seen big once: the key words of the answer (a number, a sentence, a result) cut on giant, hold
