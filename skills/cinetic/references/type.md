@@ -29,7 +29,7 @@ A resting line (the size a normal statement settles at) is sized by how many wor
 | 1-2 words | 160-240 px | 450-550; 600-700 for one headline word | -0.02 to -0.03 em |
 | the spectacle, once a film | 280-700 px, may crop at the frame edge | 500-700 | -0.03 to -0.05 em, line height 0.85-0.95 |
 | the wordmark on the end card | cap height 90-140 px | 600-700 for a sans mark, regular for a serif mark | by size |
-| a label the viewer needs | 34 px or more | the UI's weight | 0 |
+| a label the viewer needs | a third of the line it serves, 40 px or more | the UI's weight | 0 |
 | a texture label inside a UI component (chips, status lines, tags) | 20-28 px | the UI's weight | 0 |
 | UI text, on screen after the camera's zoom | 30-44 px | the UI's weight | 0 |
 
@@ -148,14 +148,14 @@ Never a third face, and never a serif because the film should "feel human" or "f
 - "Introducing" is its own beat or the first word of the line, at the line's size.
 - A lead-in before a giant word ("under" before "a second") is part of the same sentence: same face, same case, at 64 px
   or more, read straight into the giant word.
-- A figure never carries a label above it. Its unit or name follows it on the same line, or sits under it at 34 px or
-  more, in the same face. A product name in small type above a UI element or a figure is a kicker.
+- A figure never carries a label above it. Its unit or name follows it on the same line, or sits under it at a third
+  of the figure's size (40 px or more), in the same face. A product name in small type above a UI element or a figure is a kicker.
 
 ## 12. Labels and mono
 
 - Labels are sentence case in the UI face, tracking 0.
 - Texture labels (UI chips, status lines, data tags nobody must read) may sit at 20-28 px. A label the viewer needs (a
-  stat's unit, a name under an avatar, the line under a giant word, the CTA) is 34 px or more.
+  stat's unit, a name under an avatar, the line under a giant word, the CTA) is a third of the line it serves and 40 px or more.
 - `fonts.mono` is for code and data as written, inside UI or a terminal: commands, file names, numbers in a log. Never a
   statement, never an uppercase label, never letter-spaced.
 - `fonts.hand` is for a sketch or a note inside a product (a napkin, a margin). Never a statement.

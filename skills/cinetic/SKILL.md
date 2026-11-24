@@ -40,7 +40,7 @@ These eight qualities separate great launch films from template videos. Hold eve
    a film (280-700 px, may crop at the frame edge). 2-6 words at once, centred alone on clean ground, built 1-3 at a time,
    never faded in: cut-on words, a last-word swap, a decode, an append that re-centres, a colour wake, type set on a
    surface, a masked rise (two per film), and one type treatment repeated through it. At most one emphasised word or
-   phrase a statement, in the accent. One line on screen at a time. Sizes, weights, tracking, serif and labels: [type.md](references/type.md).
+   phrase a statement, in the accent, and in at most two statements a film. One line on screen at a time. Sizes, weights, tracking, serif and labels: [type.md](references/type.md).
 6. **The real product, shown the way the concept shows it:** its UI really used (task, artefact, update and explainer
    films), its output or its object (shape, point, object and number films), or its words (sentence, case and manifesto
    films). Whatever appears is real: UI built in code with real strings and plausible named data, used by a real pointer
@@ -172,7 +172,8 @@ for the concept or the look.
 `forge` (isometric blocks: floor type, a dive into a block's face that is a terminal; read its `BEATS.md`), `fieldnote`
 (paper and photographs: letters as windows, a dive into a letter stroke, a before/after), `lumen` (a dark stage and a 3D
 glass prism: the typed question becomes a beam), `inkwell` (a serif voice: the weak sentence struck out and falling, a
-rewrite lifting off as a plate). Never copy their content or their order; take single moves.
+rewrite lifting off as a plate). Never copy their content or their order; take single moves. Their palettes, marks and
+lockups are taken: yours differ from all five.
 
 ## Hard rules
 
@@ -200,13 +201,19 @@ rewrite lifting off as a plate). Never copy their content or their order; take s
   readable for its reading time (when it needs longer, it stays on as the lockup's line); a line of the claim is said
   once. A name revealed mid-film is fine when it is the film's turn; then the end is the mark small with the CTA, not a
   second reveal. Never a static logo card, never a fade to blank: the mark is born from what is on screen, in a way
-  picked from the [lockup menu](references/film-grammar.md#lockups) to suit the signature, and lockups vary.
+  picked from the [lockup menu](references/film-grammar.md#lockups) to suit the signature, and lockups vary. A centred
+  wordmark on a plain ground is the commonest ending of all: prefer the mark over the last image, the name as the last
+  word of the sentence, the mark beside the product at rest, or the product itself where the format allows.
 - **Integrations are not a row.** Never a row of logo tiles, and never two or three same-layout cards in a row. Pick one
   form ([cards-ui.md](references/motion/cards-ui.md#integrations)): a relay (the artefact pinned, two hosts cut round it on
   the beat, each in a different composition), an object-lock swap (the artefact fixed while 5-7 hosts swap behind it at
   4-6 f each), a sentence whose slot swaps partner marks, or one host used for real in macro; skip the beat when the
   brief does not hinge on it. One tour of other products a film (relay, swap, morph chain), at most 15 % of its length;
   the artefact is the largest text in each host (60 px or more).
+- **One image worth keeping.** Name the film's poster frame in `BEATS.md` before building: the one frame you would use
+  as its thumbnail. It is a crafted image (an object with material and light, a photograph, a figure with a real
+  contrast of scale, the product's result at full size), never a centred line on a ground. Build it first, render it as
+  a still and judge it alone; the film holds it for 1.5 s or more.
 - **One spectacle beat** in films of 15 s or more: one shot that could never be a slide, picked by what the product
   claims ([menu](references/film-grammar.md#spectacle)). When the concept is itself continuous (one unbroken camera, the
   shape that becomes everything, built from a point), the concept is the spectacle. Give it 1.5-2.5 s (count its frames
@@ -272,7 +279,8 @@ rewrite lifting off as a plate). Never copy their content or their order; take s
 - **Legibility:** every word on screen is readable when paused. Statements sit on clean ground or a plate at 7:1 contrast
   or more, sized by word count ([type.md](references/type.md#2-size-by-word-count)): no statement word under 64 px, no
   line wider than 1500 px at 1080p. UI text is 30-44 px on screen after the camera's zoom, at 4.5:1 or more. A word needed
-  to understand the beat (a figure's unit, the CTA) is 34 px or more; only texture labels inside a UI component may sit
+  to understand the beat (a figure's unit, a caption, a date, the CTA) is at least a third the size of the line it serves and never
+  under 40 px; only texture labels inside a UI component may sit
   at 20-28 px. Text never crops inside its own box: fit it (`useTextWidth`) or shorten it.
 - **Respect the brief's facts.** Never invent customer logos, testimonials or numbers presented as real; use the user's
   data or clearly fictional demo data.

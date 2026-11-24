@@ -170,6 +170,10 @@ motion.** Run `node scripts/frames.mjs check` on the preview first: it measures 
 frames; its coverage figure is information, not a target. Look points come first because a film can pass every
 film point and still look generated.
 
+A film can pass every point and still be forgettable. Before the final, answer three questions in one line each: which
+frame is the poster (a crafted image, not a centred line); what is the film's one material or picture; where is its
+contrast of scale. If an answer is missing, the film is not ready, whatever it scores.
+
 | # | Point | Pass when |
 |---|---|---|
 | 1 | **One subject** | in 80 % or more of the frames one element is clearly the subject (the brightest, most contrasted thing) and at most one supporting element shares the frame |
