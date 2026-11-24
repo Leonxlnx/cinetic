@@ -1,52 +1,64 @@
 // "Brief": an AI that reads your tools every morning and gives you one page. 14 s at 30 fps, an invented product.
-// One world: warm paper, ink, one vermilion accent, one voice (Inter for statements and UI), real marks for the tools it reads.
-// Three grounds, each lit by a soft light in its own hue: paper/white (base), vermilion (accent), night (inverse).
-// Fourth pass: the back half is rebuilt. The approval no longer floods night and relays a plate through three hosts: it
-// becomes each tool's own state on a run of velocity cuts, the benefit is the biggest line after the hook, set on the
-// dimmed day it freed, and the mark is born from that line's full stop.
+// One world: a cool white desk (#F4F5F7) with white cards, ink, one morning-sky blue accent (the product is the
+// morning's briefing: its accent is the clear sky of 7 am), one voice (Inter for statements and UI), real marks for the
+// tools it reads. Three grounds: cool white (base), a soft field of morning-sky blues (accent), deep navy of the same
+// blue (inverse). One light from above: every card sits on a layered soft shadow tinted to its ground. No grain, no
+// vignette, nothing dimmed or blurred under a line: each statement sits alone on clean ground or on a product surface.
 //
-// DEVICES (the claim: one page instead of everything, and the hours it gives back)
-// - signature: the vermilion full stop, 3 uses: the hook's stop grows into the vermilion ground (ground cut 1), the dot
-//   of Linear's status in the chain, the benefit's stop that turns into the mark (the lockup)
-// - opening: stack, 14 real notifications piling up in a tilted depth ladder, already moving on frame 0
-// - text arrivals: masked rise (the hook); cut-on words with a born tint (every line after it)
-// - seams: 1-2 recede, the pile sinks behind the rising line | 2-3 the stop grows into vermilion (signature; the film's
-//   one flood, ground cut 1) | 3-4 window, the bar's body opens into the wall | 4-5 lift-off, the four lit rows rise out
-//   of the draining wall | 5-6 output travels into the UI | 6-7-8-9 a run of velocity cuts (up, left, in) carrying a
-//   morph chain; its first cut is ground cut 2, a ground swap under the pill, which stays | 9-10 pull-back and dim under
-//   the line | 10-11 quarter-spin out of the stop (signature)
-// - spectacle: a wall pulled back from (the claim is literally a quantity: 217 updates read), a reading wave, 2.1 s
-// - output-big: "Four things need you." lands at 144 px, then travels into the page
-// - integrations: a morph chain, no pinned plate: Approve -> GitHub's Merged state -> Linear's In progress -> the 3:00 PM
-//   slot, each host in its own composition and on its own ground (night, vermilion, paper)
-// - lockup: quarter-spin, the benefit's full stop swells and is cut to the mark mid-spin; the wordmark wipes out of it
-// - budget: one flood (the hook's stop), one wall, no relay, no mark gathered from the wall
+// Concept: one task, start to finish, because the brief is literally one flow (the morning's updates read, the four that
+// need you handled in place, the morning given back); rejected: the number (the 4 hours is the result, not a story the
+// brief can show), before and after (needs a second world of the same day the brief does not have)
+//
+// Devices (Brief, a morning briefing that reads your tools; the claim: one page instead of everything)
+// - signature: the dot. The hook's full stop grows into the morning sky (ground cut 1); every unread update carries the
+//   dot and reading puts it out, the four that need you keep it; Linear's in-progress status is the dot; the claim's
+//   full stop swells into the mark, a sun rising over a page (the lockup)
+// - opening: stack, real notifications piling up, already moving on frame 0
+// - text arrivals: masked rise (the hook); cut-on words (every line after it)
+// - type treatment: type set on a surface: after the hook every statement lands on a product surface (the emptied
+//   inbox card, the calendar's freed morning)
+// - seams: 1-2 the pile drops out of frame as the line rises | 2-3 the stop grows into the sky (ground cut 1, HIT 92) |
+//   3-4 window, the bar's white body opens into the inbox card | 4-5 the list runs out under the camera, the card
+//   stays | 5-6 the output becomes the card's title, the card opens one row | 6-7 velocity cut up, ground swap under
+//   the pill, which stays (ground cut 2, navy) | 7-8 velocity cut left to the sky | 8-9 push-in on the chip carried
+//   into the calendar (scale carry, back to white) | 9-10 dive into the freed morning, its white is the claim's ground |
+//   10-11 quarter-spin out of the stop (signature)
+// - spectacle: cascade, a reading front runs down the inbox, 4 f a row at first and accelerating to two rows a frame,
+//   the camera riding it; each dot goes out, four stay lit (the claim is a quantity read, shown as speed, not a wall), 1.5 s
+// - output-big: "Four things need you." lands at 120+ px alone on the emptied card, then shrinks into its title
+// - integrations: a morph chain, no pinned plate: Approve -> GitHub's Merged -> Linear's In progress -> the 3:00 PM slot,
+//   each host one calm component on its own ground (navy, sky, white)
+// - lockup: quarter-spin, the claim's stop swells into the app-icon mark at the end of the line; the words give way to
+//   the wordmark beside it (no tagline, no URL)
+// - budget: one flood-like grow (the hook's stop), no wall, no relay, no mark gathered from a wall
 //
 // BEATS (frames, composition tag, what the viewer sees; how it hands off)
-//  1   0-40  stack        14 real notifications pile up in a tilted depth ladder; the camera climbs with the pile
-//  2  40-92  giant-type   the pile sinks back, pale and blurred, while "Too much / to read." rises in front of it; the
-//                         camera lifts and pushes; the full stop pops and grows into the vermilion ground   (cut 1, HIT 92)
-//  3  92-124 macro        the ask bar at 140 px, cropped both sides: two words typed, the rest lands at once; the camera
-//                         rides the caret, pulls back on send
-//  4 124-186 spectacle    the bar's white body grows into a wall of 217 updates (every row real); the camera pulls back
-//                         from one row in macro to all of them, tilting, while Brief reads: a vermilion wave crosses the
-//                         wall, each row flashes and greys as it is read, four stay lit (the accent: "needs you")
-//  5 174-206 output-big   the wall drains; "Four things need you." lands at 160 px while the four lit rows fly in under
-//                         it; the title and the rows travel into the page together
-//  6 206-258 full-ui>macro the page; the pointer opens the first row while the camera pushes to 2.7x on Approve; the
-//                         press; the camera whips up and the pressed pill stays                    (velocity cut, up)
-//  7 258-286 surface      GitHub on night: the ground swaps under the pill, which turns vermilion and becomes "Merged"
-//                         while the pull request rises into place round it; the camera rides left and whips left
-//  8 286-314 macro        Linear on vermilion, the issue page rolled and cropped: the pill flattens into the ink status
-//                         chip "In progress" (its dot is the stop); "Unblocked by #482" cuts on; the camera pushes in fast
-//  9 314-358 full-ui      the calendar on paper arrives huge and shrinking: the chip lands as the 3:00 PM design crit,
-//                         accepted; the camera pulls back to the whole day while the morning's four catch-up hours clear
-// 10 358-385 veil         the day dims, keeping its colours, and "4 hours back." lands at 250 px, the figure in vermilion
-// 11 385-420 object       the words fall away, the stop swells and is cut to the mark mid-spin; "Brief" wipes out of it
+//  1   0-40  stack        real notifications pile up in a depth ladder, every card sharp; the camera climbs with them
+//  2  40-92  statement    the pile drops out of frame at full speed while "Too much to read." rises alone on the
+//                         white; its ink full stop pops, then grows into the morning sky          (ground cut 1, HIT 92)
+//  3  92-124 macro        the ask bar at 140 px on the sky, one edge leaving the frame: two words typed, the rest lands
+//                         at once; the camera rides the caret, pulls back to the whole bar on send
+//  4 124-166 spectacle    the bar's body opens into the inbox card, row 0 in macro; the camera pulls back and rides a
+//                         reading front down 41 updates, accelerating; each dot goes out, four rows stay lit
+//  5 166-206 output-big   the list runs out; "Four things need you." lands alone on the empty card and shrinks into
+//                         its title while the four rows rise into place
+//  6 206-258 full-ui      the card: the pointer opens the first row, the other rows leave by the card's foot, the
+//                         camera pushes to 1.15x; Approve; the camera whips up and the pressed pill stays
+//  7 258-286 surface      GitHub on navy: the ground swaps under the pill, which becomes "Merged" under the pull
+//                         request's title; the camera whips left
+//  8 286-314 macro        Linear on the sky, one issue card: the pill flattens into the ink status chip "In progress"
+//                         (its dot is the signature); "Unblocked by #482" cuts on; the camera pushes into the chip
+//  9 314-357 full-ui      the calendar card arrives huge and shrinking: the chip lands as the 3:00 PM crit, accepted;
+//                         the morning's four catch-up hours clear, 11:00 up to 8:00; the camera dives into the freed
+//                         morning
+// 10 357-380 statement    "4 hours back." lands on that white at 240 px, the film's largest line, ink, one colour
+// 11 380-420 object       its full stop swells into the mark mid-spin at the end of the line; the words fall away and
+//                         "Brief" wipes out of the mark
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import {
   accel,
+  AppIcon,
   at,
   Brand,
   BrandTile,
@@ -61,8 +73,8 @@ import {
   Cursor,
   DepthStack,
   ease,
+  Field,
   fonts,
-  Grain,
   Ground,
   Icon,
   landBlur,
@@ -72,15 +84,14 @@ import {
   mix,
   mixColor,
   Music,
-  onTwos,
   Output,
   rand,
   Row,
+  softShadow,
   springAt,
   springs,
   useTextWidth,
   useTyped,
-  Vignette,
   Words,
   toScreen,
   typingTimes,
@@ -90,71 +101,82 @@ import {
 import { sfx } from '../../sfx';
 
 // ---------------------------------------------------------------- world tokens
-const PAPER = '#F2EFE9';
-const INK = '#141414';
-const NIGHT = '#161412';
-const ACCENT = '#FF4F1F';
+const GROUND = '#F4F5F7'; // the desk: a cool white
 const WHITE = '#FFFFFF';
+const INK = '#0E1726'; // a blue-black ink
+const MUTED = '#5A6475'; // 5.9:1 on white
+const NIGHT = '#0A1730'; // the inverse ground: a deep tone of the accent's own blue
+const ACCENT = '#1A6AF0'; // the morning sky at 7 am; shapes and controls only (white on it 4.8:1), never a statement
+const ACCENT_INK = '#0A4FC4'; // the accent where it is a word in the UI (7.2:1 on white)
+const SKY = ['#A6CEFF', '#86BAFF', '#C8E1FF']; // the accent ground: a soft field of neighbouring sky blues
+const SKY_MEAN = '#9AC5FF';
+const LIT = '#E6F0FF'; // a row that needs you
+const TILE: [string, string] = ['#58A6FF', '#1A6AF0']; // the mark's tile: one hue, a lighter and a deeper step
 const t: Theme = {
   ...lightUI,
   accent: ACCENT,
   ink: INK,
-  muted: '#77716A',
-  line: 'rgba(40,30,20,0.09)',
+  muted: MUTED,
+  line: 'rgba(14,23,38,0.08)',
   surface: WHITE,
-  fill: '#F4F1EC',
-  radius: 26,
-  shadow: '0 1px 2px rgba(20,20,20,.05), 0 14px 30px -10px rgba(20,20,20,.16), 0 44px 90px -30px rgba(20,20,20,.22)',
+  fill: '#F1F3F7',
+  radius: 30,
+  shadow: softShadow(3, GROUND),
 };
-// one voice: Inter (optical sizing gives the display cut at large sizes). Statements at 520-540; 620-640 only for the
-// hook, a figure and the wordmark. Sizes by word count: the hook 330, the benefit 250 (the largest after the hook),
-// resting lines 144-160, tails 58+.
-const display: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 520, letterSpacing: '-0.02em', color: INK };
-const PROOF_FS = 250; // "4 hours back.": the benefit, the film's largest statement after the hook
+// one voice: Inter. Statements at 540; the wordmark at 600. Sizes by word count: the hook (4 words) 150, the output 120+,
+// the claim 240 (the film's largest line: it names the benefit).
+const display: React.CSSProperties = { fontFamily: fonts.inter, fontWeight: 540, letterSpacing: '-0.025em', color: INK };
 
 // ---------------------------------------------------------------- one timeline: every scene and every sound reads it
-const TOAST_F = [-3, 5, 11, 16, 20, 23, 26, 29, 31, 33, 35, 37, 39, 41];
+const TOAST_F = [-3, 4, 9, 13, 17, 20, 23, 25, 27, 29, 31, 32, 33];
 const T = {
-  recede: 40, // the pile sinks back behind the line
+  recede: 34, // the pile drops out of frame
   words: [42, 47, 53, 58],
   stop: 64,
-  grow: 76, // the stop grows for 16 f: the vermilion ground is full at 92 (MAIN HIT)
+  grow: 76, // the stop grows for 16 f: the sky is full at 92 (MAIN HIT)
   bar: 92,
   typeAt: 96,
   pull: 112,
   send: 120,
-  wall: 124, // the bar's body grows into the wall for 14 f
-  ev: 136, // the reading wave
-  gather: 168, // the wall drains, the four lit rows lift off
-  title: 174, // "Four things need you." giant (Output), lands at T.land
-  land: 206, // the page: title and rows in place
+  wall: 124, // the bar's body opens into the inbox card
+  ev: 130, // the reading front starts
+  gather: 164, // the front's last planned row; the list runs out by 168
+  title: 166, // "Four things need you." alone on the empty card, as the list runs out
+  land: 206, // the card: title and rows in place
   click: 218,
   approve: 246,
   // the chain: each link leaves on an accelerating 6 f move and the next is cut on its fastest frame, already moving
   whip: [252, 280, 308], // up, left, in
-  cuts: [258, 286, 314], // GitHub on night (ground cut 2, under the pill), Linear on vermilion, the calendar on paper
+  cuts: [258, 286, 314], // GitHub on navy (ground cut 2, under the pill), Linear on the sky, the calendar on white
   dock: 320, // the slot lands, accepted
-  calPull: 326, // the camera rides up and back to the morning
-  clears: [340, 343, 346, 348], // the morning's four catch-up hours clear, 11:00 up to 8:00, as the camera arrives
-  dim: 346, // the day dims under the line, keeping its colours
-  proofIn: 358, // "4"
-  hours: 361,
-  back: 364,
-  stop2: 367,
-  lock: 379, // the words fall away, the stop swells for 6 f
-  mark: 385, // cut to the mark mid-spin
+  clears: [325, 328, 331, 334], // the morning's four catch-up hours clear, 11:00 up to 8:00
+  dive: 339, // the camera dives into the freed morning
+  proofIn: 357, // "4"
+  hours: 359,
+  back: 361,
+  stop2: 363,
+  mark: 380, // the stop swells; cut to the mark mid-spin at the end of the line
+  swap: 401, // the words fall away; the wordmark wipes out of the mark
   end: 420,
 } as const;
 const HIT = T.grow + 16;
 
-/** The film's own mark: a page with a folded corner and one line (invented for this fictional product). */
-const Mark: React.FC<{ size: number; color?: string; fold?: string }> = ({ size, color = ACCENT, fold = '#FFB59E' }) => (
-  <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block', flexShrink: 0 }}>
-    <path d="M18 8 H64 L84 28 V86 a6 6 0 0 1 -6 6 H18 a6 6 0 0 1 -6 -6 V14 a6 6 0 0 1 6 -6 Z" fill={color} />
-    <path d="M64 8 V22 a6 6 0 0 0 6 6 H84 Z" fill={fold} />
-    <rect x="26" y="50" width="40" height="8" rx="4" fill={color === ACCENT ? WHITE : ACCENT} />
-    <rect x="26" y="66" width="26" height="8" rx="4" fill={color === ACCENT ? WHITE : ACCENT} opacity={0.7} />
+/** The film's mark: the full stop as a sun rising over a page (two lines), white on a sky tile. Invented for this
+ *  fictional product. */
+const Glyph: React.FC<{ size: number }> = ({ size }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block' }}>
+    <defs>
+      <clipPath id="brief-horizon">
+        <rect x="0" y="0" width="100" height="55" />
+      </clipPath>
+    </defs>
+    <circle cx="50" cy="52" r="19" fill={WHITE} clipPath="url(#brief-horizon)" />
+    <rect x="18" y="61" width="64" height="9" rx="4.5" fill={WHITE} />
+    <rect x="18" y="76" width="40" height="9" rx="4.5" fill={WHITE} opacity={0.72} />
   </svg>
+);
+const Mark: React.FC<{ size: number; depth?: number }> = ({ size, depth = 1 }) => (
+  <AppIcon size={size} colors={TILE} gloss={0.55} depth={depth} glyph={<Glyph size={size * 0.74} />} />
 );
 
 /** A flood box: an object's screen box grown in log space past the frame, as a clip-path, so the next shot is revealed
@@ -184,14 +206,13 @@ const TOASTS: Array<{ brand: string; title: string; body: string }> = [
   { brand: 'figma', title: 'Onboarding flow', body: '2 new versions' },
   { brand: 'googlecalendar', title: '1:1 with Sam', body: 'Moved to 4:30 PM' },
   { brand: 'github', title: 'maya-r mentioned you', body: 'in #479: token expiry' },
-  { brand: 'gmail', title: 'Northwind Ltd', body: 'Re: contract renewal' },
 ];
 
 const Toast1: React.FC<{ i: number }> = ({ i }) => {
   const x = TOASTS[i];
   return (
-    <Card t={t} w={1360} pad={34} style={{ display: 'flex', gap: 30, alignItems: 'center', borderRadius: 38, transform: `rotate(${(rand(i * 3.1 + 1) - 0.5) * 2.4}deg)` }}>
-      <BrandTile name={x.brand} size={104} bg="#F6F4F0" shadow="none" />
+    <Card t={t} w={1360} pad={34} style={{ display: 'flex', gap: 30, alignItems: 'center', borderRadius: 38, transform: `rotate(${(rand(i * 3.1 + 1) - 0.5) * 2}deg)` }}>
+      <BrandTile name={x.brand} size={104} bg="#F3F5F8" shadow="none" />
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 46, fontWeight: 600, letterSpacing: '-0.01em' }}>
           <span>{x.title}</span>
@@ -205,69 +226,76 @@ const Toast1: React.FC<{ i: number }> = ({ i }) => {
 
 const Pile: React.FC = () => {
   const f = useCurrentFrame();
-  // the stack climbs and flattens as it fills, then sinks back, pale and soft, behind the line (it keeps moving)
-  const fill = at(f, 0, 50, ease.soft);
+  // the stack climbs and flattens as it fills, then drops out of frame at full speed (nothing stays behind the line)
+  const fill = at(f, 0, 40, ease.soft);
   const climb = mix(fill, 20, -60);
-  const sink = at(f, T.recede, 40, ease.out);
+  const drop = accel(f, T.recede, 9, 1.6);
+  if (drop >= 1) return null;
   return (
-    <AbsoluteFill style={{ perspective: 1800, opacity: 1 - 0.62 * sink }}>
+    <AbsoluteFill style={{ perspective: 1800 }}>
       <AbsoluteFill
         style={{
           transformStyle: 'preserve-3d',
-          transform: `translateY(${climb - sink * 160 - 30 * creep(f, T.recede + 20, 50)}px) rotateX(${mix(fill, 24, 9) + sink * 14}deg) scale(${mix(fill, 1.18, 1.05) * mix(sink, 1, 0.78)})`,
-          filter: sink > 0.02 ? `blur(${sink * 14}px)` : undefined,
+          transform: `translateY(${climb + drop * 1400}px) rotateX(${mix(fill, 18, 7)}deg) scale(${mix(fill, 1.14, 1.02)})`,
         }}
       >
-        <DepthStack x={960} y={720} lift={[0, 128, 240, 338, 424, 496]} rise={170} items={TOAST_F.map((ff, i) => ({ f: ff, node: <Toast1 i={i} /> }))} />
+        <DepthStack
+          x={960}
+          y={720}
+          lift={[0, 128, 240, 338, 424, 496]}
+          blur={[0, 0, 0, 0, 0, 0]}
+          dim={[1, 1, 1, 1, 1, 1]}
+          rise={170}
+          items={TOAST_F.map((ff, i) => ({ f: ff, node: <Toast1 i={i} /> }))}
+        />
       </AbsoluteFill>
     </AbsoluteFill>
   );
 };
 
-// ---------------------------------------------------------------- 2. the line, whose full stop floods the ground
+// ---------------------------------------------------------------- 2. the line, whose ink full stop grows into the sky
+const HOOK_FS = 150;
 const Stop: React.FC<{ at0: number; grow: number; size: number; dur: number }> = ({ at0, grow, size, dur }) => {
   const f = useCurrentFrame();
   const pop = springAt(f, 30, at0, springs.pop);
-  const r = logScale(size / 2, 2700, at(f, grow, dur, ease.in));
-  if (f < at0) return <span style={{ display: 'inline-block', width: size, height: size, marginLeft: size * 0.16 }} />;
+  const g = at(f, grow, dur, ease.in);
+  const r = logScale(size / 2, 2700, g);
+  // ink while it is punctuation; it takes the sky's colour only as it stops being a full stop and becomes the ground
+  const col = mixColor(INK, SKY_MEAN, at(f, grow, 5, ease.out));
+  if (f < at0) return <span style={{ display: 'inline-block', width: size, height: size, marginLeft: size * 0.3 }} />;
   return (
-    <span style={{ position: 'relative', display: 'inline-block', width: size, height: size, marginLeft: size * 0.16 }}>
-      <span style={{ position: 'absolute', left: size / 2 - r * pop, top: size / 2 - r * pop, width: r * 2 * pop, height: r * 2 * pop, borderRadius: '50%', background: ACCENT }} />
+    <span style={{ position: 'relative', display: 'inline-block', width: size, height: size, marginLeft: size * 0.3 }}>
+      <span style={{ position: 'absolute', left: size / 2 - r * pop, top: size / 2 - r * pop, width: r * 2 * pop, height: r * 2 * pop, borderRadius: '50%', background: col }} />
     </span>
   );
 };
 
 const Line: React.FC = () => {
   const f = useCurrentFrame();
-  // the camera rises with the words (a tilt that settles) and pushes; the grow adds a last push into the stop
-  const rise = at(f, T.words[0] - 2, 34, ease.out);
-  const push = 1 + 0.07 * creep(f, T.words[0], 50) + 0.06 * at(f, T.grow, 16, ease.in);
+  // the camera rises with the words (a small tilt that settles) and pushes; the grow adds a last push into the stop
+  const rise = at(f, T.words[0] - 2, 30, ease.out);
+  const push = 1 + 0.06 * creep(f, T.words[0], 50) + 0.06 * at(f, T.grow, 16, ease.in);
   return (
     <AbsoluteFill style={{ perspective: 2000 }}>
-      <AbsoluteFill style={{ transform: `translateY(${mix(rise, 70, -10)}px) rotateX(${mix(rise, 14, 0)}deg) scale(${push})`, justifyContent: 'center', alignItems: 'center' }}>
-        <div style={{ ...display, fontWeight: 620, letterSpacing: '-0.04em', fontSize: 330, lineHeight: 0.94, textAlign: 'center' }}>
-          <div>
-            <Words text="Too much" times={[T.words[0], T.words[1]]} arrive="rise" dur={12} style={{ color: INK }} />
-          </div>
-          <div style={{ display: 'inline-flex', alignItems: 'baseline' }}>
-            <Words text="to read" times={[T.words[2], T.words[3]]} arrive="rise" dur={12} style={{ color: INK }} />
-            <Stop at0={T.stop} grow={T.grow} size={52} dur={16} />
-          </div>
+      <AbsoluteFill style={{ transform: `translateY(${mix(rise, 60, 0)}px) rotateX(${mix(rise, 8, 0)}deg) scale(${push})`, justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ ...display, fontSize: HOOK_FS, lineHeight: 1, display: 'inline-flex', alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+          <Words text="Too much to read" times={T.words.slice()} arrive="rise" dur={12} style={{ color: INK }} />
+          <Stop at0={T.stop} grow={T.grow} size={26} dur={16} />
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
 };
 
-// ---------------------------------------------------------------- 3. the ask, in macro on vermilion
+// ---------------------------------------------------------------- 3. the ask, in macro on the sky
 const Q = 'What needs me today?';
 const CPS = 24;
 const BURST = 2; // two words typed, the rest lands at once
 const FS = 140; // the bar's type at camera zoom 1
 const BW = 2400;
 const BH = 320;
-const PADL = FS * 0.8;
-const MARKW = FS * 1.2;
+const PADL = FS * 0.6;
+const MARKW = FS * 1.4;
 const GAP = FS * 0.45;
 const BTN = FS * 1.6;
 const TEXT0 = 960 - BW / 2 + PADL + MARKW + GAP; // world x where the typed text starts
@@ -292,11 +320,11 @@ const AskBar: React.FC = () => {
   const lift = at(f, T.send + 1, 6, ease.in);
   const blink = f < T.typeAt || shown.length < Q.length ? true : Math.floor((f - T.typeAt) / 15) % 2 === 0;
   return (
-    <div style={{ position: 'absolute', left: 960 - BW / 2, top: 540 - BH / 2, width: BW, height: BH, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: GAP, padding: `0 ${FS * 0.55}px 0 ${PADL}px`, borderRadius: BH / 2, background: WHITE, boxShadow: '0 30px 80px -24px rgba(110,25,0,.55), 0 6px 18px -6px rgba(110,25,0,.3)', fontFamily: t.font, fontSize: FS, fontWeight: 500, letterSpacing: '-0.025em', color: INK }}>
-      <Mark size={MARKW} />
+    <div style={{ position: 'absolute', left: 960 - BW / 2, top: 540 - BH / 2, width: BW, height: BH, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: GAP, padding: `0 ${FS * 0.55}px 0 ${PADL}px`, borderRadius: BH / 2, background: WHITE, boxShadow: softShadow(5, SKY_MEAN), fontFamily: t.font, fontSize: FS, fontWeight: 500, letterSpacing: '-0.025em', color: INK }}>
+      <Mark size={MARKW} depth={0.5} />
       <div style={{ position: 'relative', flex: 1, height: FS * 1.3, overflow: 'hidden', whiteSpace: 'nowrap' }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, lineHeight: `${FS * 1.3}px`, transform: `translateY(${-lift * FS * 1.3}px)`, filter: lift > 0.05 ? `blur(${lift * 10}px)` : undefined }}>
-          {hasText ? shown : <span style={{ color: '#A9A39B' }}>Ask Brief</span>}
+        <div style={{ position: 'absolute', left: 0, top: 0, lineHeight: `${FS * 1.3}px`, transform: `translateY(${-lift * FS * 1.3}px)` }}>
+          {hasText ? shown : <span style={{ color: '#8E97A6' }}>Ask Brief</span>}
           <span style={{ display: 'inline-block', width: 8, height: FS * 1.02, marginLeft: 6, transform: `translateY(${FS * 0.17}px)`, background: ACCENT, borderRadius: 4, opacity: blink && f < T.send ? 1 : 0 }} />
         </div>
       </div>
@@ -314,38 +342,34 @@ const Ask: React.FC = () => {
   const zoom = logScale(1.45, 1, arrive) * logScale(1, ZB, pull);
   const x = mix(pull, followX(f), 0);
   return (
-    <AbsoluteFill style={{ background: ACCENT, filter: landBlur(f, T.bar, 10, 5) ? `blur(${landBlur(f, T.bar, 10, 5)}px)` : undefined }}>
-      <Camera cam={{ x, zoom, rx: mix(arrive, 12, 0) + 3 * Math.sin(pull * Math.PI), ry: mix(arrive, -8, 0) + 0.6 * Math.sin(f / 30) }}>
-        <AskBar />
-      </Camera>
+    <AbsoluteFill>
+      <Field colors={SKY} points={[{ x: 0.2, y: 0.2 }, { x: 0.85, y: 0.75 }, { x: 0.55, y: 0.05 }]} />
+      <AbsoluteFill style={{ filter: landBlur(f, T.bar, 8, 4) ? `blur(${landBlur(f, T.bar, 8, 4)}px)` : undefined }}>
+        <Camera cam={{ x, zoom, rx: mix(arrive, 10, 0) + 3 * Math.sin(pull * Math.PI), ry: mix(arrive, -6, 0) + 0.6 * Math.sin(f / 30) }}>
+          <AskBar />
+        </Camera>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
 const barBox: Box = { x: 960, y: 540, w: BW * ZB, h: BH * ZB, r: (BH / 2) * ZB };
 
-// ---------------------------------------------------------------- page geometry (the wall's rows are the page's rows)
-const L = 170; // page margins in the world
-const R = 1750;
-const ROW_W = R - L + 48;
-const ROW_HT = 153; // a row's laid-out height (Row size 44, padding 26)
-const TITLE_TOP = 176;
-const TITLE_SIZE = 104;
-const TITLE_CY = TITLE_TOP + (TITLE_SIZE * 1.1) / 2;
-const ROW0 = 410;
-const ROW_H = 152;
-const OPEN_H = 240;
-const BTN_L = L + 118; // Approve sits under the row's text
-const BTN_TOP = ROW0 + ROW_H + 132;
-const BTN_W = 210;
-const BTN_H = 84;
-const BX = BTN_L + BTN_W / 2;
-const BY = BTN_TOP + BTN_H / 2;
-const PAGE_CAM: CamKey[] = [
-  { f: T.land, x: 0, y: 46, zoom: 1.1 },
-  { f: T.click - 2, x: -70, y: 10, zoom: 1.34, ry: -1.5, rx: 1, curve: ease.out },
-  { f: T.approve - 6, x: BX - 960 + 40, y: BY - 540 - 20, zoom: 2.7, ry: 0, rx: 0, curve: ease.inOut },
-  { f: T.cuts[0] + 12, x: BX - 960 + 46, y: BY - 540 - 22, zoom: 2.78, curve: ease.out },
-];
+// ---------------------------------------------------------------- the card (inbox, then the page): one component
+const ROW_W = 1628; // a row at world size (Row size 44, padding 26)
+const ROW_HT = 153;
+const CARD_W = 1400;
+const CARD_X0 = 960 - CARD_W / 2;
+const INSET = 24;
+const PS = (CARD_W - 2 * INSET) / ROW_W; // rows in the card are page rows at this scale
+const RP = ROW_HT * PS; // a row's pitch in the card
+const H0 = 808; // the card's height with four rows
+const TITLE_FS = 84;
+const TITLE_L = CARD_X0 + 48;
+const TITLE_DY = 56; // the title's top below the card's top
+const ROWS_DY = 180; // the first row's top below the card's top
+const DET_H = 236; // the opened row's detail
+const H1 = ROWS_DY + RP + DET_H + 56; // the card with one row open
+const cardTop = (h: number) => 540 - h / 2;
 
 const ROWS = [
   { brand: 'github', title: 'Review PR #482: rotate refresh tokens', sub: 'Maya asked you · 2 h ago', trail: '5 min' },
@@ -353,19 +377,27 @@ const ROWS = [
   { brand: 'googlecalendar', title: 'Design crit moved to 3:00 PM', sub: 'With Sam and Priya · accept?', trail: '1 min' },
   { brand: 'gmail', title: 'Invoice #2291 needs your approval', sub: 'Northwind Ltd · $4,180.00', trail: '1 min' },
 ];
-const TOOLS = ['github', 'linear', 'gmail', 'notion', 'figma', 'googlecalendar'];
+type Upd = { brand: string; title: string; sub: string; trail: string };
 
-/** One update as a row, at page size (1628 px wide): the wall's cells, the flying rows and the page all draw this. */
-const RowCard: React.FC<{ r: { brand: string; title: string; sub: string; trail: string }; bg?: string; ring?: number; fade?: number; lit?: number }> = ({ r, bg = WHITE, ring = 0, fade = 0, lit = 0 }) => (
-  <div style={{ width: ROW_W, height: ROW_HT, borderRadius: 30, background: lit > 0 ? mixColor(bg, ACCENT, lit) : bg, boxShadow: ring > 0 ? `0 0 0 ${4 * ring}px rgba(255,79,31,${0.9 * ring}), 0 24px 50px -20px rgba(140,40,10,${0.45 * ring})` : 'inset 0 0 0 2px rgba(40,30,20,0.06)', overflow: 'hidden' }}>
-    <div style={{ opacity: 1 - fade }}>
-      <Row t={lit > 0.5 ? { ...t, ink: WHITE, muted: '#FFD9CC' } : t} size={44} icon={<BrandTile name={r.brand} size={64} bg={WHITE} shadow="none" />} title={r.title} sub={r.sub} trail={<span style={{ fontFamily: t.font, fontSize: 32, fontVariantNumeric: 'tabular-nums' }}>{r.trail}</span>} style={{ padding: '26px 30px' }} />
-    </div>
+/** One update as a row at world size (1628 px wide): the inbox, the rising rows and the page all draw this. The dot is
+ *  the film's signature: unread. */
+const RowCard: React.FC<{ r: Upd; bg?: string; dot?: number; lit?: number; read?: number; rule?: boolean }> = ({ r, bg = WHITE, dot = 1, lit = 0, read = 0, rule = true }) => (
+  <div style={{ position: 'relative', width: ROW_W, height: ROW_HT, borderRadius: 30, background: lit > 0 ? mixColor(bg, LIT, lit) : bg, boxShadow: rule ? 'inset 0 -2px 0 rgba(14,23,38,0.06)' : undefined, overflow: 'hidden' }}>
+    <div style={{ position: 'absolute', left: 24, top: ROW_HT / 2 - 11, width: 22, height: 22, borderRadius: 11, background: ACCENT, transform: `scale(${dot})` }} />
+    <Row
+      t={{ ...t, ink: mixColor(INK, MUTED, read * 0.85) }}
+      size={44}
+      icon={<BrandTile name={r.brand} size={64} bg={WHITE} shadow="none" />}
+      title={<span style={{ fontWeight: read > 0.5 ? 500 : 600 }}>{r.title}</span>}
+      sub={r.sub}
+      trail={<span style={{ fontFamily: t.font, fontSize: 32, fontVariantNumeric: 'tabular-nums' }}>{r.trail}</span>}
+      style={{ padding: '26px 30px 26px 66px' }}
+    />
   </div>
 );
 
-// ---------------------------------------------------------------- 4. the wall: everything Brief reads (spectacle)
-const UPDATES: Array<{ brand: string; title: string; sub: string; trail: string }> = [
+// ---------------------------------------------------------------- 4. the inbox: a reading front runs down it (spectacle)
+const UPDATES: Upd[] = [
   { brand: 'gmail', title: 'Re: Q3 planning (14 replies)', sub: 'Dana Kim · thread', trail: '7:02' },
   { brand: 'github', title: 'CI failed on main: build / e2e', sub: 'github-actions · 3 jobs', trail: '6:48' },
   { brand: 'notion', title: 'Roadmap H1 was edited', sub: '6 comments mention you', trail: '6:40' },
@@ -385,198 +417,163 @@ const UPDATES: Array<{ brand: string; title: string; sub: string; trail: string 
   { brand: 'linear', title: 'ENG-207 was closed as done', sub: 'Maya Reyes', trail: '5:06' },
   { brand: 'github', title: 'Release v4.2.0 drafted', sub: 'release-bot · notes', trail: '4:58' },
 ];
-const COLS = 7;
-const WROWS = 31; // 217 updates
-const CS = 0.32; // a cell is a page row at this scale
-const CW = ROW_W * CS;
-const CH = ROW_HT * CS;
-const GX = 18;
-const GY = 14;
-const WW = COLS * CW + (COLS - 1) * GX;
-const WH = WROWS * CH + (WROWS - 1) * GY;
-const cellC = (c: number, r: number) => ({ x: c * (CW + GX) + CW / 2, y: r * (CH + GY) + CH / 2 });
-// the four that need you, in the order of the page's rows
-const CHOSEN: Array<[number, number]> = [
-  [3, 15],
-  [1, 12],
-  [5, 17],
-  [2, 19],
-];
-const chosenIdx = (c: number, r: number) => CHOSEN.findIndex(([cc, rr]) => cc === c && rr === r);
-const WC = cellC(3, 15);
-const DMAX = Math.hypot(3 * (CW + GX), 16 * (CH + GY));
-const readAt = (c: number, r: number) => T.ev + Math.pow(Math.hypot((c - 3) * (CW + GX), (r - 15) * (CH + GY)) / DMAX, 0.85) * 28;
-// the wall's camera: from one row in macro to all of them, a tilt that swings in and settles flat for the gather
-const wallCam = (f: number) => {
-  const p = at(f, T.wall + 6, T.gather - T.wall - 10, ease.glide);
-  const swing = Math.sin(Math.PI * at(f, T.wall + 4, T.gather - T.wall - 2, ease.inOut));
-  return {
-    zoom: logScale(2.3, 0.47, p) * (1 - 0.06 * at(f, T.wall, 20, ease.out)) * (1 + 0.04 * at(f, T.gather - 4, 30, ease.out)),
-    fx: mix(p, WC.x - 120, WW / 2),
-    fy: mix(p, WC.y, WH / 2 + 40),
-    rx: 20 * swing,
-    rz: -4 * swing,
-  };
+const LIST_N = 41;
+const CH_IDX = [6, 14, 23, 32]; // the four that need you, in the order of the page's rows
+const D_EV = T.gather - T.ev;
+const V0 = 0.25; // rows a frame at first (4 f a row)
+const VB = (40 - V0 * D_EV) / (D_EV * D_EV); // accelerating to about two rows a frame
+const frontN = (f: number) => {
+  const tt = Math.max(0, f - T.ev);
+  return V0 * tt + VB * tt * tt;
 };
-const wallToScreen = (f: number, x: number, y: number) => {
-  const c = wallCam(f);
-  return { x: 960 + (x - c.fx) * c.zoom, y: 540 + (y - c.fy) * c.zoom, s: c.zoom };
+const readF = (i: number) => T.ev + (-V0 + Math.sqrt(V0 * V0 + 4 * VB * i)) / (2 * VB);
+const itemOf = (i: number): Upd => {
+  const k = CH_IDX.indexOf(i);
+  return k >= 0 ? ROWS[k] : UPDATES[(i * 7 + 3) % UPDATES.length];
 };
 
-const WallBeat: React.FC = () => {
+const Inbox: React.FC = () => {
   const f = useCurrentFrame();
-  const c = wallCam(f);
-  const cells: React.ReactNode[] = [];
-  for (let r = 0; r < WROWS; r++)
-    for (let col = 0; col < COLS; col++) {
-      const k = chosenIdx(col, r);
-      if (k >= 0 && f >= T.gather) continue; // the lit rows fly on their own from here
-      const p = cellC(col, r);
-      const t0 = readAt(col, r);
-      const flash = at(f, t0, 3, ease.out) * (1 - at(f, t0 + 3, 9, ease.out));
-      const read = at(f, t0 + 2, 8, ease.out);
-      const d = Math.hypot((col - 3) * (CW + GX), (r - 15) * (CH + GY)) / DMAX;
-      const drain = at(f, T.gather + (1 - d) * 8, 9, ease.in);
-      const u = UPDATES[(r * 5 + col * 7 + (r % 3)) % UPDATES.length];
-      cells.push(
-        <div key={r * COLS + col} style={{ position: 'absolute', left: p.x - CW / 2, top: p.y - CH / 2, width: CW, height: CH, opacity: 1 - drain, transform: `translateY(${drain * 120}px) scale(${1 - drain * 0.2})` }}>
-          <div style={{ width: ROW_W, height: ROW_HT, transformOrigin: '0 0', transform: `scale(${CS}) translateY(${k >= 0 ? -24 * read : 0}px) translate(${k >= 0 ? -ROW_W * 0.04 * read : 0}px, 0px) scale(${k >= 0 ? 1 + 0.08 * read : 1})` }}>
-            {k >= 0 ? (
-              <RowCard r={ROWS[k]} bg={WHITE} ring={Math.max(read, flash)} lit={read} />
-            ) : (
-              <RowCard r={u} bg={flash > 0.05 ? `rgba(255,${Math.round(mix(flash, 247, 214))},${Math.round(mix(flash, 241, 196))},1)` : '#F7F4EF'} ring={flash * 0.7} fade={0.62 * read} />
-            )}
-          </div>
-        </div>,
-      );
-    }
+  // the camera starts on row 0 in macro (the bar's body) and pulls back to the card, then rides the reading front
+  const z = logScale(1.5, 1, at(f, T.wall, 18, ease.out));
+  const camY = frontN(f) * RP;
+  const rows: React.ReactNode[] = [];
+  for (let i = 0; i < LIST_N; i++) {
+    const y = H0 / 2 + i * RP - camY - RP / 2;
+    if (y < -RP || y > H0) continue;
+    const rf = readF(i);
+    const k = CH_IDX.indexOf(i);
+    const read = at(f, rf, 4, ease.out);
+    const flash = at(f, rf - 1, 2, ease.out) * (1 - at(f, rf + 1, 6, ease.out));
+    rows.push(
+      <div key={i} style={{ position: 'absolute', left: INSET, top: y, width: ROW_W, height: ROW_HT, transformOrigin: '0 0', transform: `scale(${PS})` }}>
+        {k >= 0 ? (
+          <RowCard r={itemOf(i)} lit={read} dot={1 + 0.35 * flash} />
+        ) : (
+          <RowCard r={itemOf(i)} bg={flash > 0.02 ? mixColor(WHITE, '#EEF4FF', flash) : WHITE} dot={1 - read} read={read} />
+        )}
+      </div>,
+    );
+  }
   return (
-    <AbsoluteFill style={{ background: WHITE, overflow: 'hidden', perspective: 2200 }}>
-      <div style={{ position: 'absolute', left: 960 - c.fx, top: 540 - c.fy, width: WW, height: WH, transformOrigin: `${c.fx}px ${c.fy}px`, transform: `rotateX(${c.rx}deg) rotateZ(${c.rz}deg) scale(${c.zoom})` }}>{cells}</div>
+    <AbsoluteFill style={{ background: GROUND }}>
+      <div style={{ position: 'absolute', left: CARD_X0, top: cardTop(H0), width: CARD_W, height: H0, transformOrigin: '50% 50%', transform: `scale(${z})`, borderRadius: 40, background: WHITE, boxShadow: softShadow(3, GROUND), overflow: 'hidden' }}>{rows}</div>
     </AbsoluteFill>
   );
 };
 
-// ---------------------------------------------------------------- 5. the output, giant, then the page
-const pageAt = (k: number) => toScreen(camAt(T.land, PAGE_CAM), L - 24 + ROW_W / 2, ROW0 + k * ROW_H + ROW_HT / 2);
+// ---------------------------------------------------------------- 5. the output, alone on the emptied card, then its title
+const titleStyle: React.CSSProperties = { ...display, fontWeight: 560, letterSpacing: '-0.02em' };
 const Gather: React.FC = () => {
   const f = useCurrentFrame();
-  const titleStyle: React.CSSProperties = { ...display, fontSize: TITLE_SIZE };
-  const tw = useTextWidth('Four things need you.', titleStyle);
-  const to = toScreen(camAt(T.land, PAGE_CAM), L + tw / 2, TITLE_CY);
-  const z = camAt(T.land, PAGE_CAM).zoom;
+  const tw100 = useTextWidth('Four things need you.', { ...titleStyle, fontSize: 100 });
+  const big = tw100 ? Math.min(126, (100 * (CARD_W - 150)) / tw100) : 120;
+  const twT = (tw100 * TITLE_FS) / 100;
+  const top0 = cardTop(H0);
+  const hold = 16;
+  const travel = 9;
+  const landed = T.title + hold + travel;
   return (
-    <AbsoluteFill style={{ transform: `scale(${1 + 0.02 * creep(f, T.gather, 40) * (1 - at(f, T.land - 10, 10, ease.inOut))})` }}>
-      {CHOSEN.map(([col, r], k) => {
-        const a = wallToScreen(T.gather, cellC(col, r).x, cellC(col, r).y - 24 * CS);
-        const b = pageAt(k);
-        const p = ease.inOut(clamp((f - T.gather - k * 2) / (T.land - T.gather - 6)));
-        const s = logScale(a.s * CS, b.scale, p);
-        const ring = 1 - at(f, T.land - 8, 8, ease.out);
-        return (
-          <div key={k} style={{ position: 'absolute', left: mix(p, a.x, b.x), top: mix(p, a.y, b.y) - 90 * Math.sin(Math.PI * p), width: 0, height: 0, zIndex: 4 - k }}>
-            <div style={{ position: 'absolute', left: -ROW_W / 2, top: -ROW_HT / 2, transform: `scale(${s}) rotate(${(1 - p) * (k % 2 ? 3 : -3)}deg)`, filter: p > 0.1 && p < 0.85 ? 'blur(1.5px)' : undefined }}>
-              <RowCard r={ROWS[k]} ring={ring} bg={WHITE} lit={1 - at(f, T.land - 12, 10, ease.inOut)} />
+    <AbsoluteFill style={{ background: GROUND }}>
+      <div style={{ position: 'absolute', left: CARD_X0, top: top0, width: CARD_W, height: H0, borderRadius: 40, background: WHITE, boxShadow: softShadow(3, GROUND), overflow: 'hidden' }}>
+        {ROWS.map((r, k) => {
+          const s = T.land - 14 + k * 2;
+          const p = at(f, s, 8, ease.out);
+          if (f < s) return null;
+          return (
+            <div key={k} style={{ position: 'absolute', left: INSET, top: ROWS_DY + k * RP + mix(p, 620, 0), width: ROW_W, height: ROW_HT, transformOrigin: '0 0', transform: `scale(${PS})` }}>
+              <RowCard r={r} lit={1 - at(f, T.land - 6, 10, ease.inOut)} rule={k < 3} />
             </div>
-          </div>
-        );
-      })}
-      <Output
-        text="Four things need you."
-        start={T.title}
-        hold={T.land - T.title - 10}
-        travel={10}
-        from={{ x: 960, y: 250, size: 144 }}
-        to={{ x: to.x, y: to.y, size: TITLE_SIZE * z }}
-        born={ACCENT}
-        style={{ ...display, color: INK }}
-      />
+          );
+        })}
+      </div>
+      {f >= T.title && f <= landed && (
+        <Output
+          text="Four things need you."
+          start={T.title}
+          hold={hold}
+          travel={travel}
+          from={{ x: 960, y: 540, size: big }}
+          to={{ x: TITLE_L + twT / 2, y: top0 + TITLE_DY + (TITLE_FS * 1.1) / 2, size: TITLE_FS }}
+          style={{ ...titleStyle, color: INK }}
+        />
+      )}
+      {f > landed && <div style={{ position: 'absolute', left: TITLE_L, top: top0 + TITLE_DY, ...titleStyle, fontSize: TITLE_FS, lineHeight: 1.1, whiteSpace: 'nowrap' }}>Four things need you.</div>}
     </AbsoluteFill>
   );
 };
 
-// ---------------------------------------------------------------- 6. the page, then the press (and the whip up out of it)
+// ---------------------------------------------------------------- 6. the card, then the press (and the whip up out of it)
 const WHIP_UP = 1250; // screen px the page travels up in its last 6 f
 const WHIP_LEFT = 1700; // screen px GitHub travels left in its last 6 f
 const BOX_TAKE = 0.12; // the carried pill takes this share of each whip: it slows while the world rushes past
 const exitQ = (f: number, k: number) => accel(f, T.whip[k], T.cuts[k] - T.whip[k], 1.5);
+const openP = (f: number) => at(f, T.click + 2, 18, ease.out);
+const TEXT_L = CARD_X0 + INSET + 183 * PS; // the row's text column (dot, icon and gap before it)
+const BTN_L = TEXT_L;
+const BTN_DY = ROWS_DY + RP + 136; // the buttons' top below the card's top (open)
+const PAGE_CAM: CamKey[] = [
+  { f: T.land, x: 0, y: 0, zoom: 1 },
+  { f: T.click + 6, x: 0, y: 0, zoom: 1.005 },
+  { f: T.click + 26, x: 0, y: 0, zoom: 1.15, curve: ease.inOut },
+  { f: T.cuts[0] + 12, x: 0, y: 0, zoom: 1.18, curve: ease.out },
+];
+const pageCam = (f: number) => camAt(f, PAGE_CAM);
 
 const Page: React.FC = () => {
   const f = useCurrentFrame();
-  const fe = onTwos(f); // the marks step on twos: digital things step, the camera glides
-  const open = at(f, T.click + 2, 20, ease.out);
-  const ring = at(f, T.click, 8, ease.out);
+  const open = openP(f);
+  const h = mix(open, H0, H1);
+  const top = cardTop(h);
   const approved = f >= T.approve + 2;
-  const headIn = at(f, T.land, 10, ease.out);
-  const pc = camAt(f, PAGE_CAM);
+  const pc = pageCam(f);
   const q = exitQ(f, 0);
+  const lit = 0;
   return (
-    <AbsoluteFill style={{ background: WHITE }}>
-      <Camera cam={{ ...pc, y: pc.y + (WHIP_UP * q) / pc.zoom }} style={{ filter: q > 0.02 ? `blur(${16 * q}px)` : undefined }}>
-        {/* header: the product's own mark in its own header, the date */}
-        <div style={{ position: 'absolute', left: L, top: 92, width: R - L, display: 'flex', alignItems: 'center', gap: 18, fontFamily: t.font, opacity: headIn, transform: `translateY(${mix(headIn, -16, 0)}px)` }}>
-          <Mark size={56} />
-          <span style={{ fontSize: 34, fontWeight: 620, letterSpacing: '-0.01em', color: INK }}>Brief</span>
-          <span style={{ marginLeft: 'auto', fontSize: 30, color: t.muted }}>Tue 14 Oct · 7:30 AM</span>
-        </div>
-        <div style={{ position: 'absolute', left: L, top: TITLE_TOP, ...display, fontSize: TITLE_SIZE, lineHeight: 1.1, whiteSpace: 'nowrap' }}>Four things need you.</div>
-        <div style={{ position: 'absolute', left: L, top: 322, display: 'flex', alignItems: 'center', gap: 14, fontFamily: t.font, fontSize: 34, color: t.muted, opacity: headIn }}>
-          <span>Read</span>
-          <span style={{ color: INK, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>217</span>
-          <span>updates from</span>
-          {TOOLS.map((b, i) => {
-            const s = T.land + 2 + i * 2;
-            if (fe < s) return null;
+    <AbsoluteFill style={{ background: GROUND }}>
+      <Camera cam={{ ...pc, y: pc.y + (WHIP_UP * q) / pc.zoom }} style={{ filter: q > 0.02 ? `blur(${14 * q}px)` : undefined }}>
+        <div style={{ position: 'absolute', left: CARD_X0, top, width: CARD_W, height: h, borderRadius: 40, background: WHITE, boxShadow: softShadow(3, GROUND), overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', left: TITLE_L - CARD_X0, top: TITLE_DY, ...titleStyle, fontSize: TITLE_FS, lineHeight: 1.1, whiteSpace: 'nowrap' }}>Four things need you.</div>
+          {ROWS.map((row, i) => {
+            const first = i === 0;
+            const y = ROWS_DY + i * RP + (i > 0 ? mix(open, 0, DET_H + 260) : 0);
             return (
-              <span key={b} style={{ display: 'inline-flex', transform: `scale(${fe < s + 2 ? 1.25 : 1})` }}>
-                <Brand name={b} size={40} />
-              </span>
+              <div key={i} style={{ position: 'absolute', left: INSET, top: y, width: ROW_W, height: ROW_HT, transformOrigin: '0 0', transform: `scale(${PS})` }}>
+                <RowCard r={row} lit={first ? 0.6 * at(f, T.click, 6, ease.out) + lit : 0} dot={first ? 1 - at(f, T.approve + 2, 4, ease.out) : 1} rule={!first && i < 3} />
+              </div>
             );
           })}
-        </div>
-        <div style={{ position: 'absolute', left: L, top: ROW0 - 14, width: R - L, height: 1, background: t.line, opacity: headIn }} />
-        {ROWS.map((row, i) => {
-          const first = i === 0;
-          const top = ROW0 + i * ROW_H + (i > 0 ? mix(open, 0, OPEN_H) : 0);
-          const dim = first ? 0 : open;
-          return (
-            <div key={i} style={{ position: 'absolute', left: L - 24, top, width: ROW_W, opacity: 1 - dim * 0.55, filter: dim > 0.02 ? `blur(${dim * 2.5}px)` : undefined }}>
-              <div style={{ borderRadius: 30, background: first ? `rgba(255,79,31,${0.06 * ring})` : 'transparent', boxShadow: first && ring > 0 ? `0 0 0 ${2.5 * ring}px rgba(255,79,31,${0.45 * ring})` : undefined, overflow: 'hidden' }}>
-                <Row t={t} size={44} icon={<BrandTile name={row.brand} size={64} bg={WHITE} shadow="none" />} title={row.title} sub={row.sub} trail={<span style={{ fontFamily: t.font, fontSize: 32, fontVariantNumeric: 'tabular-nums' }}>{row.trail}</span>} style={{ padding: '26px 30px' }} />
-                {first && open > 0 && (
-                  <div style={{ height: mix(open, 0, OPEN_H), position: 'relative' }}>
-                    <div style={{ position: 'absolute', left: 142, top: 0, display: 'flex', gap: 30, fontFamily: t.font, fontSize: 34, fontVariantNumeric: 'tabular-nums', opacity: clamp(open * 2) }}>
-                      <span style={{ color: '#1A7F4B' }}>+214</span>
-                      <span style={{ color: '#C2382A' }}>−87</span>
-                      <span style={{ color: t.muted }}>6 files · 14 tests pass</span>
-                    </div>
-                    <div style={{ position: 'absolute', left: 142, top: 50, fontFamily: t.font, fontSize: 38, color: INK, whiteSpace: 'nowrap' }}>
-                      <Words text="Moves token rotation server-side. Safe to merge." start={T.click + 8} arrive="cut" gap={1.6} born={ACCENT} settle={12} style={{ color: INK }} align="left" />
-                    </div>
-                    <div style={{ position: 'absolute', left: BTN_L - (L - 24), top: BTN_TOP - (ROW0 + ROW_H), display: 'flex', gap: 18, opacity: at(f, T.click + 14, 6) }}>
-                      {/* from the whip on, the pressed button is the chain's carried pill (ChainBox) */}
-                      <Button t={{ ...t, accent: INK }} size={34} pressAt={T.approve} label={approved ? 'Approved' : 'Approve'} icon={approved ? <Icon name="Check" size={34} stroke={3} /> : undefined} style={{ boxShadow: '0 10px 26px -10px rgba(20,20,20,.6)', opacity: f >= T.whip[0] ? 0 : 1 }} />
-                      <Button t={t} size={34} primary={false} label="Open in GitHub" />
-                    </div>
-                  </div>
-                )}
+          {open > 0 && (
+            <div style={{ position: 'absolute', left: TEXT_L - CARD_X0, top: ROWS_DY + RP, height: mix(open, 0, DET_H), width: CARD_W - (TEXT_L - CARD_X0) - 48, overflow: 'hidden', fontFamily: t.font }}>
+              <div style={{ position: 'absolute', left: 0, top: 10, fontSize: 38, color: INK, whiteSpace: 'nowrap' }}>
+                <Words text="Moves token rotation server-side. Safe to merge." start={T.click + 8} arrive="cut" gap={1.4} settle={10} style={{ color: INK }} align="left" />
+              </div>
+              <div style={{ position: 'absolute', left: 0, top: 72, display: 'flex', gap: 28, fontSize: 34, fontVariantNumeric: 'tabular-nums', opacity: clamp(open * 2) }}>
+                <span style={{ color: '#1A7F4B' }}>+214</span>
+                <span style={{ color: '#C2382A' }}>−87</span>
+                <span style={{ color: t.muted }}>6 files · 14 tests pass</span>
+              </div>
+              <div style={{ position: 'absolute', left: 0, top: 136, display: 'flex', gap: 18, opacity: at(f, T.click + 14, 4) }}>
+                {/* from the whip on, the pressed button is the chain's carried pill (ChainBox) */}
+                <Button t={{ ...t, accent: INK }} size={34} pressAt={T.approve} label={approved ? 'Approved' : 'Approve'} icon={approved ? <Icon name="Check" size={34} stroke={3} /> : undefined} style={{ boxShadow: softShadow(2, GROUND), opacity: f >= T.whip[0] ? 0 : 1 }} />
+                <Button t={t} size={34} primary={false} label="Open in GitHub" />
               </div>
             </div>
-          );
-        })}
-        {/* everything else, named and set aside */}
-        <div style={{ position: 'absolute', left: L + 6, top: ROW0 + 4 * ROW_H + 18 + mix(open, 0, OPEN_H), display: 'flex', alignItems: 'center', gap: 14, fontFamily: t.font, fontSize: 32, color: t.muted, opacity: at(f, T.land + 4, 8) * (1 - open * 0.55) }}>
-          <Brand name="notion" size={36} />
-          <Brand name="figma" size={36} />
-          <span>213 others can wait</span>
+          )}
+          {/* everything else, named and set aside */}
+          <div style={{ position: 'absolute', left: TITLE_L - CARD_X0, top: ROWS_DY + 4 * RP + 24 + mix(open, 0, DET_H + 260), display: 'flex', alignItems: 'center', gap: 14, fontFamily: t.font, fontSize: 34, color: t.muted, opacity: at(f, T.land + 2, 6) }}>
+            <Brand name="notion" size={38} />
+            <Brand name="figma" size={38} />
+            <span>213 others can wait</span>
+          </div>
         </div>
         <Cursor
           start={T.land}
           keys={[
-            { f: T.land, x: 1560, y: 1180 },
-            { f: T.click - 3, x: 840, y: 468 },
-            { f: T.click + 14, x: 860, y: 490 },
-            { f: T.approve - 6, x: BX + 30, y: BY + 4 },
+            { f: T.land, x: 1640, y: 1160 },
+            { f: T.click - 3, x: 1040, y: cardTop(H0) + ROWS_DY + RP * 0.5 + 8 },
+            { f: T.click + 14, x: 1080, y: cardTop(H1) + ROWS_DY + RP * 0.5 + 30 },
+            { f: T.approve - 6, x: BTN_L + 120, y: cardTop(H1) + BTN_DY + 50 },
           ]}
           clicks={[T.click, T.approve]}
           size={44}
@@ -587,26 +584,21 @@ const Page: React.FC = () => {
 };
 
 // ---------------------------------------------------------------- 7-9. the chain: the approval becomes each tool's state
-// One box is carried from the press to the calendar (turns.md 5.8): Approve (ink) -> Merged (vermilion pill on GitHub)
-// -> In progress (ink chip on Linear, rolled) -> the 3:00 PM slot (a wide block on the calendar). Each host leaves on an
-// accelerating move and the next is cut on its fastest frame, already moving the same way (turns.md 1.1). The box takes
-// only a share of each whip, so the world rushes past it and the box changes shape in 6 f as the new world docks round it.
+// One box is carried from the press to the calendar (turns.md 5.8): Approve (ink) -> Merged (accent pill on GitHub)
+// -> In progress (ink chip on Linear) -> the 3:00 PM slot (a block on the calendar). Each host leaves on an accelerating
+// move and the next is cut on its fastest frame, already moving the same way (turns.md 1.1). The box takes only a share
+// of each whip, so the world rushes past it and the box changes shape in 6 f as the new world docks round it.
 type SBox = { x: number; y: number; w: number; h: number; r: number; rot: number };
 type Geo = { w: number[]; h: number[] };
 
-/** The camera that puts world point (wx, wy) at screen point (px, py) at this zoom and roll (no tilt): the inverse of toScreen. */
-const aim = (wx: number, wy: number, px: number, py: number, zoom: number, rz = 0) => {
-  const dx = (px - 960) / zoom;
-  const dy = (py - 540) / zoom;
-  const a = (-rz * Math.PI) / 180;
-  return { x: wx - 960 - (dx * Math.cos(a) - dy * Math.sin(a)), y: wy - 540 - (dx * Math.sin(a) + dy * Math.cos(a)), zoom, rz, rx: 0, ry: 0 };
-};
+/** The camera that puts world point (wx, wy) at screen point (px, py) at this zoom (no tilt): the inverse of toScreen. */
+const aim = (wx: number, wy: number, px: number, py: number, zoom: number) => ({ x: wx - 960 - (px - 960) / zoom, y: wy - 540 - (py - 540) / zoom, zoom, rz: 0, rx: 0, ry: 0 });
 
-// the three chips, at world size (the first is the page's Button at size 34, measured the way it lays out)
+// the three chips, at world size (the first is the card's Button at size 34, measured the way it lays out)
 const CHIP = [
   { fs: 34, icon: 34, gap: 15.3, px: 37.4, py: 21.1, label: 'Approved' },
-  { fs: 84, icon: 80, gap: 26, px: 60, py: 38, label: 'Merged' },
-  { fs: 64, icon: 40, gap: 26, px: 48, py: 30, label: 'In progress' },
+  { fs: 64, icon: 58, gap: 22, px: 48, py: 30, label: 'Merged' },
+  { fs: 50, icon: 30, gap: 20, px: 38, py: 24, label: 'In progress' },
 ];
 const chipStyle = (k: number): React.CSSProperties => ({ fontFamily: t.font, fontWeight: 600, fontSize: CHIP[k].fs, letterSpacing: k ? '-0.015em' : undefined });
 const useGeo = (): Geo => {
@@ -617,10 +609,8 @@ const useGeo = (): Geo => {
   return { w, h: CHIP.map((c) => c.fs * 1.21 + 2 * c.py) };
 };
 
-/** The signature as a status: Linear's in-progress dot is the film's full stop. */
-const StatusDot: React.FC<{ size: number }> = ({ size }) => (
-  <span style={{ display: 'inline-block', flexShrink: 0, width: size, height: size, borderRadius: '50%', background: ACCENT, boxShadow: `0 0 0 ${size * 0.14}px rgba(255,79,31,0.32)` }} />
-);
+/** The signature as a status: Linear's in-progress dot is the film's dot. */
+const StatusDot: React.FC<{ size: number }> = ({ size }) => <span style={{ display: 'inline-block', flexShrink: 0, width: size, height: size, borderRadius: '50%', background: '#5C9DFF' }} />;
 const ChipFace: React.FC<{ k: number }> = ({ k }) => {
   const c = CHIP[k];
   return (
@@ -631,92 +621,98 @@ const ChipFace: React.FC<{ k: number }> = ({ k }) => {
   );
 };
 
-// the calendar's world: one day, 8:00 to 17:00, an hour is HY tall; blocks bleed off the right edge
-const CY0 = 150;
-const HY = 170;
-const CAL_BL = 345;
-const CAL_BW = 2300;
-const CAL_BH = HY - 12;
-const CRIT_TOP = CY0 + 7 * HY + 6; // 15:00
-const CRIT_CY = CRIT_TOP + CAL_BH / 2;
-const CAL_AIM = { x: CAL_BL + 300, y: CRIT_CY, px: 760, py: 584 }; // the camera holds the slot's title here as it lands
-const CAL_REST = aim(CAL_AIM.x, CAL_AIM.y, CAL_AIM.px, CAL_AIM.py, 1.15);
-const CAL_MORNING = { x: 990 - 960, y: CY0 + 2 * HY - 540, zoom: 1.0 }; // the four morning hours fill the frame
-const calCam = (f: number) => {
-  if (f < T.calPull) {
-    // arrives huge and shrinking: the push-in out of Linear carried into the calendar (a scale carry)
-    const t3 = Math.max(0, f - T.cuts[2]);
-    const dec = t3 >= 14 ? 0 : (Math.exp(-t3 / 3.5) - Math.exp(-4)) / (1 - Math.exp(-4));
-    return aim(CAL_AIM.x, CAL_AIM.y, CAL_AIM.px, CAL_AIM.py, 1.15 * Math.exp(0.95 * dec));
-  }
-  return camAt(f, [
-    { f: T.calPull, ...CAL_REST },
-    { f: T.calPull + 20, ...CAL_MORNING, rz: 0, curve: ease.inOut },
-    { f: T.end, x: CAL_MORNING.x + 16, y: CAL_MORNING.y - 24, zoom: 1.07, rz: 0, curve: ease.out },
-  ]);
+// GitHub's world: the pull request's title over the pill, centred as one group
+const GH_TITLE = 'auth: rotate refresh tokens';
+const GH_TFS = 54;
+const GH_TTOP = 398;
+const GH_T = 492; // the pill's top
+const useGhLeft = () => {
+  const tw = useTextWidth(GH_TITLE, { fontFamily: t.font, fontSize: GH_TFS, fontWeight: 600, letterSpacing: '-0.015em' });
+  const tn = useTextWidth('#482', { fontFamily: t.font, fontSize: GH_TFS, fontWeight: 500 });
+  const gw = 58 + 22 + tw + 18 + tn;
+  return 960 - gw / 2;
 };
-
-// where each host holds its chip on screen (the box rides there while the world docks round it)
-const restGH = (f: number) => {
-  const r = at(f, T.cuts[0], 28, ease.out);
-  return { x: 880 - 130 * r, y: 470 - 34 * r };
-};
-const restLI = (f: number) => {
-  const r = at(f, T.cuts[1], 28, ease.out);
-  return { x: 630 - 30 * r, y: 466 + 34 * r };
-};
-const zGH = (f: number) => 1.56 * (1 + 0.08 * at(f, T.cuts[0], 28, ease.out));
-const zLI = (f: number) => 1.65 * (1 + 0.1 * at(f, T.cuts[1], 28, ease.out));
-const rzLI = (f: number) => mix(at(f, T.cuts[1], 28, ease.out), -4.5, -1.6);
-const GH_L = 230; // GitHub's world: the pill's top-left
-const GH_T = 360;
-const LI_L = 250; // Linear's world: the chip's top-left
-const LI_T = 356;
-
-const ghCam = (f: number, g: Geo) => {
+const zGH = (f: number) => 1.22 * (1 + 0.05 * at(f, T.cuts[0], 28, ease.out));
+const ghBase = (f: number) => ({ x: 0, y: 0, zoom: zGH(f), rx: 0, ry: 0, rz: 0 });
+const ghCam = (f: number) => {
   const z = zGH(f);
-  const P = restGH(f);
-  const c = aim(GH_L + g.w[1] / 2, GH_T + g.h[1] / 2, P.x, P.y, z);
   // arrives rising (the page left upward), leaves to the left
-  return { ...c, y: c.y + carry(f, T.cuts[0], 150 / z, 16), x: c.x + (WHIP_LEFT * exitQ(f, 1)) / z };
+  return { ...ghBase(f), y: carry(f, T.cuts[0], 150 / z, 16), x: (WHIP_LEFT * exitQ(f, 1)) / z };
 };
+
+// Linear's world: one issue card, centred; the chip sits at its left under the title
+const LC_W = 1240;
+const LC_H = 420;
+const LC_X0 = 960 - LC_W / 2;
+const LC_Y0 = 540 - LC_H / 2;
+const LI_L = LC_X0 + 64;
+const LI_T = LC_Y0 + 150;
+const zLI = (f: number) => 1.14 * (1 + 0.05 * at(f, T.cuts[1], 28, ease.out));
 const liCam = (f: number, g: Geo) => {
   const q = exitQ(f, 2);
-  const z = zLI(f) * Math.exp(1.15 * q); // leaves by pushing in on the chip
-  const P = restLI(f);
-  const c = aim(LI_L + g.w[2] / 2, LI_T + g.h[2] / 2, P.x, P.y, z, rzLI(f));
-  return { ...c, x: c.x + carry(f, T.cuts[1], 210 / z, 16) }; // arrives travelling left
+  const cx = LI_L + g.w[2] / 2;
+  const cy = LI_T + g.h[2] / 2;
+  const P = toScreen({ x: 0, y: 0, zoom: zLI(f) }, cx, cy);
+  const c = aim(cx, cy, P.x, P.y, zLI(f) * Math.exp(1.15 * q)); // leaves by pushing in on the chip
+  return { ...c, x: c.x + carry(f, T.cuts[1], 210 / c.zoom, 16) }; // arrives travelling left
+};
+
+// the calendar: one day card, 8:00 to 17:00, an hour is HY tall
+const CAL_X0 = 380;
+const CAL_W = 1160;
+const CAL_Y0 = 100;
+const CAL_H = 880;
+const CY0 = 216; // 8:00
+const HY = 80;
+const CAL_BL = 540; // blocks' left
+const CAL_BW = 960;
+const CAL_BH = HY - 8;
+const CRIT_TOP = CY0 + 7 * HY + 4; // 15:00
+const CRIT_CY = CRIT_TOP + CAL_BH / 2;
+const MORN = { x: CAL_BL + CAL_BW / 2, y: CY0 + 2 * HY }; // the centre of the four morning hours
+const calCam = (f: number) => {
+  // arrives huge and shrinking: the push-in out of Linear carried into the calendar (a scale carry), then dives into
+  // the freed morning, whose white is the claim's ground
+  const t3 = Math.max(0, f - T.cuts[2]);
+  const dec = t3 >= 14 ? 0 : (Math.exp(-t3 / 3.5) - Math.exp(-4)) / (1 - Math.exp(-4));
+  const cx = CAL_BL + 300;
+  const rest = (ff: number) => aim(cx, CRIT_CY, cx, CRIT_CY, Math.exp(1.05 * dec) * (1 + 0.025 * creep(ff, T.cuts[2] + 10, 30)));
+  if (f < T.dive) return rest(f);
+  const pre = rest(T.dive);
+  const P = toScreen(pre, MORN.x, MORN.y);
+  const p = at(f, T.dive, T.proofIn - T.dive, ease.in);
+  return aim(MORN.x, MORN.y, mix(p, P.x, 960), mix(p, P.y, 540), logScale(pre.zoom, 4.8, p));
 };
 
 const linkOf = (f: number) => (f < T.cuts[0] ? 0 : f < T.cuts[1] ? 1 : f < T.cuts[2] ? 2 : 3);
 const pressOf = (f: number) => at(f, T.approve - 2, 3, ease.out) - at(f, T.approve + 1, 10, ease.out);
-const boxRest = (k: number, f: number, g: Geo): SBox => {
+const boxRest = (k: number, f: number, g: Geo, ghL: number): SBox => {
   if (k === 0) {
-    const c = camAt(f, PAGE_CAM);
-    const p = toScreen(c, BTN_L + g.w[0] / 2, BTN_TOP + 1 + g.h[0] / 2);
+    const c = pageCam(f);
+    const p = toScreen(c, BTN_L + g.w[0] / 2, cardTop(H1) + BTN_DY + g.h[0] / 2);
     const s = c.zoom * (1 - 0.06 * pressOf(f));
     return { x: p.x, y: p.y, w: g.w[0] * s, h: g.h[0] * s, r: 23.8 * s, rot: 0 };
   }
   if (k === 1) {
-    const P = restGH(f);
     const z = zGH(f);
-    return { x: P.x, y: P.y, w: g.w[1] * z, h: g.h[1] * z, r: (g.h[1] * z) / 2, rot: 0 };
+    const p = toScreen(ghBase(f), ghL + g.w[1] / 2, GH_T + g.h[1] / 2);
+    return { x: p.x, y: p.y, w: g.w[1] * z, h: g.h[1] * z, r: (g.h[1] * z) / 2, rot: 0 };
   }
   if (k === 2) {
-    const P = restLI(f);
     const z = zLI(f);
-    return { x: P.x, y: P.y, w: g.w[2] * z, h: g.h[2] * z, r: 26 * z, rot: rzLI(f) };
+    const p = toScreen({ x: 0, y: 0, zoom: z }, LI_L + g.w[2] / 2, LI_T + g.h[2] / 2);
+    return { x: p.x, y: p.y, w: g.w[2] * z, h: g.h[2] * z, r: 24 * z, rot: 0 };
   }
   const c = calCam(f);
   const p = toScreen(c, CAL_BL + CAL_BW / 2, CRIT_CY);
-  return { x: p.x, y: p.y, w: CAL_BW * c.zoom, h: CAL_BH * c.zoom, r: 18 * c.zoom, rot: 0 };
+  return { x: p.x, y: p.y, w: CAL_BW * c.zoom, h: CAL_BH * c.zoom, r: 14 * c.zoom, rot: 0 };
 };
-const boxAt = (f: number, g: Geo): SBox => {
+const boxAt = (f: number, g: Geo, ghL: number): SBox => {
   const k = linkOf(f);
-  let b = boxRest(k, f, g);
+  let b = boxRest(k, f, g, ghL);
   if (k > 0) {
     const p = at(f, T.cuts[k - 1] - 1, 7, ease.out);
-    const prev = boxAt(T.cuts[k - 1] - 1, g);
+    const prev = boxAt(T.cuts[k - 1] - 1, g, ghL);
     b = { ...lerpBox(p, prev, b), r: mix(p, prev.r, b.r), rot: mix(p, prev.rot, b.rot) } as SBox;
   }
   if (k < 3) {
@@ -728,31 +724,24 @@ const boxAt = (f: number, g: Geo): SBox => {
   return b;
 };
 
-const FILLS = [INK, ACCENT, INK, '#FFE3D9'];
-const SHADOWS = [
-  '0 22px 60px -20px rgba(20,20,20,.6)',
-  '0 0 80px rgba(255,79,31,.45), 0 30px 70px -24px rgba(0,0,0,.7)',
-  '0 26px 50px -18px rgba(70,20,5,.5)',
-  '0 0 0 4px rgba(255,79,31,.55), 0 26px 50px -24px rgba(140,40,10,.45)',
-];
+const CRIT_BG = '#E4EEFF';
+const FILLS = [INK, ACCENT, INK, CRIT_BG];
+const SHADOWS = [softShadow(2, GROUND), softShadow(4, NIGHT), softShadow(4, SKY_MEAN), softShadow(2, WHITE)];
 
 /** The 3:00 PM slot, at world size: the chain's last link and a block of the calendar. */
 const CritFace: React.FC<{ f: number }> = ({ f }) => {
   const ok = at(f, T.dock, 6, ease.out);
   return (
-    <div style={{ padding: '20px 44px', fontFamily: t.font, whiteSpace: 'nowrap' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 18, fontSize: 54, fontWeight: 600, letterSpacing: '-0.012em', color: INK, lineHeight: 1.2 }}>
-        Design crit
-        {f >= T.dock && (
-          <span style={{ display: 'inline-flex', transform: `scale(${mix(ok, 1.5, 1)})` }}>
-            <Icon name="CircleCheck" size={48} color={ACCENT} stroke={2.6} />
-          </span>
-        )}
-      </div>
-      <div style={{ fontSize: 36, color: '#6B5B52', marginTop: 4 }}>
-        15:00 – 16:00 · with Sam and Priya
-        {f >= T.dock && <span style={{ color: '#C23A12' }}> · accepted</span>}
-      </div>
+    <div style={{ padding: '0 28px', height: CAL_BH, display: 'flex', alignItems: 'center', gap: 16, fontFamily: t.font, whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: 34, fontWeight: 600, letterSpacing: '-0.01em', color: INK }}>Design crit</span>
+      {f >= T.dock && (
+        <span style={{ display: 'inline-flex', transform: `scale(${mix(ok, 1.5, 1)})` }}>
+          <Icon name="CircleCheck" size={32} color={ACCENT_INK} stroke={2.6} />
+        </span>
+      )}
+      <span style={{ fontSize: 28, color: MUTED }}>
+        15:00 – 16:00{f >= T.dock && <span style={{ color: ACCENT_INK }}> · accepted</span>}
+      </span>
     </div>
   );
 };
@@ -760,8 +749,9 @@ const CritFace: React.FC<{ f: number }> = ({ f }) => {
 const ChainBox: React.FC = () => {
   const f = useCurrentFrame();
   const g = useGeo();
+  const ghL = useGhLeft();
   const k = linkOf(f);
-  const b = boxAt(f, g);
+  const b = boxAt(f, g, ghL);
   const p = k === 0 ? 1 : at(f, T.cuts[k - 1] - 1, 7, ease.out);
   const show = p >= 0.5 ? k : k - 1; // the old content cuts out at the change, the new one cuts on before it lands
   const fill = k === 0 ? FILLS[0] : mixColor(FILLS[k - 1], FILLS[k], p);
@@ -785,7 +775,6 @@ const ChainBox: React.FC = () => {
         filter: blur > 0.3 ? `blur(${blur}px)` : undefined,
       }}
     >
-      {k === 3 && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 14 * s * p, background: ACCENT }} />}
       <div style={{ position: 'absolute', left: show === 3 ? 0 : (b.w - cw * s) / 2, top: 0, width: cw, height: ch, transformOrigin: '0 0', transform: `scale(${s})`, display: 'flex', alignItems: 'center', justifyContent: show === 3 ? 'flex-start' : 'center' }}>
         {show === 3 ? <CritFace f={f} /> : <ChipFace k={show} />}
       </div>
@@ -793,63 +782,30 @@ const ChainBox: React.FC = () => {
   );
 };
 
-/** GitHub on night: the pull request rises into place round the pill, which is now its merged state. */
-const DIFF: Array<{ k: ' ' | '+' | '-'; s: string }> = [
-  { k: ' ', s: '@@ -41,9 +41,14 @@ export async function refresh(session) {' },
-  { k: '-', s: '  const token = await client.refresh(session.token)' },
-  { k: '+', s: '  const token = await rotateRefreshToken(session)' },
-  { k: '+', s: '  await store.revoke(session.previous)' },
-  { k: ' ', s: "  return issue(token, { ttl: '15m' })" },
-  { k: '+', s: '  audit.log("rotated", session.user)' },
-  { k: ' ', s: '}' },
-];
+/** GitHub on navy: the pull request's title rises into place over the pill, which is now its merged state. */
 const HostGitHub: React.FC = () => {
   const f = useCurrentFrame();
-  const g = useGeo();
-  const c = ghCam(f, g);
+  const ghL = useGhLeft();
+  const c = ghCam(f);
   const q = exitQ(f, 1);
   const h = T.cuts[0];
-  const txt: React.CSSProperties = { position: 'absolute', fontFamily: t.font, whiteSpace: 'nowrap' };
-  const pillCY = GH_T + g.h[1] / 2;
-  const below = GH_T + g.h[1];
+  const tIn = at(f, h + 6, 8, ease.out);
   return (
     <AbsoluteFill>
-      <Ground color={NIGHT} light={{ x: 0.42, y: 0.38, size: 0.95, amount: 0.14 }} />
-      <Camera cam={c} style={{ filter: q > 0.02 ? `blur(${18 * q}px)` : landBlur(f, h, 6, 4) ? `blur(${landBlur(f, h, 6, 4)}px)` : undefined }}>
-        {/* the diff, a plane behind the page: it moves slower than the subject */}
-        <div style={{ position: 'absolute', left: -600, top: below + 200, width: 5200, transform: 'translateZ(-220px)', opacity: 0.8 }}>
-          {[...DIFF, ...DIFF].map((l, i) => (
-            <div key={i} style={{ fontFamily: fonts.mono, whiteSpace: 'pre', fontSize: 38, lineHeight: '60px', paddingLeft: 830, color: l.k === '+' ? '#7EE2A0' : l.k === '-' ? '#FF9A8A' : '#8B857C', background: l.k === '+' ? 'rgba(46,160,67,0.16)' : l.k === '-' ? 'rgba(248,81,73,0.14)' : 'transparent' }}>
-              {l.k} {l.s}
-            </div>
-          ))}
+      <Ground color={NIGHT} tint="#1E4FA8" light={{ x: 0.5, y: 0.46, size: 1.0, amount: 0.2 }} />
+      <Camera cam={c} style={{ filter: q > 0.02 ? `blur(${16 * q}px)` : landBlur(f, h, 6, 4) ? `blur(${landBlur(f, h, 6, 4)}px)` : undefined }}>
+        <div style={{ position: 'absolute', left: ghL, top: GH_TTOP + mix(tIn, 30, 0), display: 'flex', alignItems: 'center', gap: 22, fontFamily: t.font, fontSize: GH_TFS, fontWeight: 600, letterSpacing: '-0.015em', color: '#EEF3FB', whiteSpace: 'nowrap', opacity: f >= h + 6 ? 1 : 0 }}>
+          <Brand name="github" size={58} color="#EEF3FB" />
+          <span>
+            {GH_TITLE} <span style={{ color: '#9FB0CC', fontWeight: 500, marginLeft: 4 }}>#482</span>
+          </span>
         </div>
-        {/* the merge's own light, sized to the pill */}
-        <div style={{ position: 'absolute', left: GH_L - 260, top: pillCY - 260, width: g.w[1] + 520, height: 520, background: 'radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255,79,31,0.26), rgba(255,79,31,0) 70%)' }} />
-        <div style={{ ...txt, left: GH_L, top: 232, display: 'flex', alignItems: 'center', gap: 20, fontSize: 50, fontWeight: 600, letterSpacing: '-0.015em', color: '#F2EEE8' }}>
-          <Brand name="github" size={52} color="#F2EEE8" />
-          auth: rotate refresh tokens <span style={{ color: '#8B857C', fontWeight: 500 }}>#482</span>
-        </div>
-        <div style={{ ...txt, left: GH_L + g.w[1] + 40, top: pillCY - 26, fontSize: 42, color: '#B3ACA2' }}>6 commits into main</div>
-        {f >= h + 8 && (
-          <div style={{ ...txt, left: GH_L, top: below + 40, display: 'flex', alignItems: 'center', gap: 18, fontSize: 40, color: '#E4DDD3' }}>
-            <Mark size={50} />
-            <Words text="You approved it in Brief, just now" start={h + 8} arrive="cut" gap={1.2} born={ACCENT} settle={10} style={{ color: '#E4DDD3' }} align="left" />
-          </div>
-        )}
-        {f >= h + 12 && (
-          <div style={{ ...txt, left: GH_L, top: below + 108, display: 'flex', alignItems: 'baseline', gap: 26, fontSize: 40, fontVariantNumeric: 'tabular-nums', color: '#A39C93' }}>
-            <span style={{ color: '#7EE2A0' }}>+214</span>
-            <span style={{ color: '#FF9A8A' }}>−87</span>
-            <span>6 files · 14 tests pass</span>
-          </div>
-        )}
       </Camera>
     </AbsoluteFill>
   );
 };
 
-/** Linear on vermilion: the issue page, rolled and cropped; the chip is its status, its dot the film's full stop. */
+/** Linear on the sky: one issue card; the chip is its status, its dot the film's dot. */
 const HostLinear: React.FC = () => {
   const f = useCurrentFrame();
   const g = useGeo();
@@ -857,179 +813,152 @@ const HostLinear: React.FC = () => {
   const q = exitQ(f, 2);
   const h = T.cuts[1];
   const txt: React.CSSProperties = { position: 'absolute', fontFamily: t.font, whiteSpace: 'nowrap' };
-  const below = LI_T + g.h[2];
   return (
     <AbsoluteFill>
-      <Ground color={ACCENT} light={{ x: 0.28, y: 0.3, size: 0.9, amount: 0.13 }} />
-      <Camera cam={c} style={{ filter: q > 0.02 ? `blur(${14 * q}px)` : landBlur(f, h, 6, 4) ? `blur(${landBlur(f, h, 6, 4)}px)` : undefined }}>
-        {/* the board behind the page, a plane further back */}
-        <div style={{ position: 'absolute', left: -40, top: -260, width: 3400, height: 2600, borderRadius: 44, background: '#F9C9B6', transform: 'translateZ(-380px) rotate(3deg)', boxShadow: '-20px 40px 90px rgba(110,25,0,0.35)' }} />
-        <div style={{ position: 'absolute', left: 120, top: 40, width: 3600, height: 2600, borderRadius: 44, background: '#FBF7F2', boxShadow: 'inset 0 3px 0 #FFFFFF, -30px 50px 110px rgba(110,25,0,0.5)' }} />
-        <div style={{ ...txt, left: LI_L, top: 222, display: 'flex', alignItems: 'center', gap: 22, fontSize: 60, fontWeight: 600, letterSpacing: '-0.015em', color: INK }}>
-          <Brand name="linear" size={56} /> Token rotation for mobile <span style={{ color: '#9A938A', fontWeight: 500 }}>ENG-219</span>
+      <Field colors={SKY} points={[{ x: 0.75, y: 0.2 }, { x: 0.15, y: 0.8 }, { x: 0.45, y: 0.1 }]} seed={3} />
+      <Camera cam={c} style={{ filter: q > 0.02 ? `blur(${12 * q}px)` : landBlur(f, h, 6, 4) ? `blur(${landBlur(f, h, 6, 4)}px)` : undefined }}>
+        <div style={{ position: 'absolute', left: LC_X0, top: LC_Y0, width: LC_W, height: LC_H, borderRadius: 40, background: WHITE, boxShadow: softShadow(4, SKY_MEAN) }} />
+        <div style={{ ...txt, left: LI_L, top: LC_Y0 + 58, display: 'flex', alignItems: 'center', gap: 22, fontSize: 54, fontWeight: 600, letterSpacing: '-0.015em', color: INK }}>
+          <Brand name="linear" size={54} /> Token rotation for mobile <span style={{ color: '#7B8597', fontWeight: 500 }}>ENG-219</span>
         </div>
-        <div style={{ ...txt, left: LI_L + g.w[2] + 36, top: LI_T + g.h[2] / 2 - 30, display: 'flex', alignItems: 'center', gap: 18, fontSize: 40, color: '#77716A' }}>
-          <span style={{ width: 58, height: 58, borderRadius: 58, background: '#2F7D6D', color: WHITE, fontSize: 26, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>SO</span>
+        <div style={{ ...txt, left: LI_L + g.w[2] + 34, top: LI_T + g.h[2] / 2 - 29, display: 'flex', alignItems: 'center', gap: 16, fontSize: 38, color: MUTED }}>
+          <span style={{ width: 58, height: 58, borderRadius: 58, background: '#55657F', color: WHITE, fontSize: 24, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>SO</span>
           Sam Ortiz
         </div>
         {f >= h + 8 && (
-          <div style={{ ...txt, left: LI_L, top: below + 54, display: 'flex', alignItems: 'center', gap: 18, fontSize: 42, color: '#4E4840' }}>
-            <Mark size={48} />
-            <Words text="Unblocked by #482, merged just now" start={h + 8} arrive="cut" gap={1.2} born={ACCENT} settle={10} style={{ color: '#4E4840' }} align="left" />
+          <div style={{ ...txt, left: LI_L, top: LI_T + g.h[2] + 44, display: 'flex', alignItems: 'center', gap: 18, fontSize: 40, color: '#3C4656' }}>
+            <Mark size={48} depth={0.4} />
+            <Words text="Unblocked by #482, merged just now" start={h + 8} arrive="cut" gap={1.2} settle={10} style={{ color: '#3C4656' }} align="left" />
           </div>
         )}
-        <div style={{ ...txt, left: LI_L, top: below + 140, fontSize: 38, color: '#8A837A' }}>Move refresh-token rotation server-side so the app stops signing people out.</div>
-        <div style={{ ...txt, left: LI_L, top: below + 200, fontSize: 38, color: '#8A837A' }}>Blocked until #482 lands on main.</div>
       </Camera>
     </AbsoluteFill>
   );
 };
 
-/** The calendar on paper: the slot lands, the camera pulls back to the day, the morning's catch-up hours clear, it dims. */
+/** The calendar card on white: the slot lands, the morning's catch-up hours clear, the camera dives into the space. */
 const MORNING = [
   { brand: 'gmail', title: 'Read email', meta: '46 unread' },
   { brand: 'github', title: 'Go through GitHub', meta: '31 notifications' },
   { brand: 'linear', title: 'Triage Linear', meta: '12 issues' },
   { brand: 'notion', title: 'Catch up on Notion', meta: '6 comments' },
 ];
-const CalBlock: React.FC<{ top: number; h: number; bg: string; edge: string; style?: React.CSSProperties; children: React.ReactNode }> = ({ top, h, bg, edge, style, children }) => (
-  <div style={{ position: 'absolute', left: CAL_BL, top, width: CAL_BW, height: h, borderRadius: 18, background: bg, borderLeft: `14px solid ${edge}`, boxSizing: 'border-box', padding: '0 40px', display: 'flex', alignItems: 'center', gap: 22, fontFamily: t.font, whiteSpace: 'nowrap', overflow: 'hidden', ...style }}>
+const CalBlock: React.FC<{ top: number; h: number; bg: string; style?: React.CSSProperties; children: React.ReactNode }> = ({ top, h, bg, style, children }) => (
+  <div style={{ position: 'absolute', left: CAL_BL - CAL_X0, top: top - CAL_Y0, width: CAL_BW, height: h, borderRadius: 14, background: bg, boxSizing: 'border-box', padding: '0 28px', display: 'flex', alignItems: 'center', gap: 16, fontFamily: t.font, whiteSpace: 'nowrap', overflow: 'hidden', ...style }}>
     {children}
   </div>
 );
 const Calendar: React.FC = () => {
   const f = useCurrentFrame();
   const c = calCam(f);
-  const c0 = calCam(f - 1);
-  // motion blur from the camera's own speed (the ride up to the morning is a fast pan)
-  const v = Math.hypot(c.x - c0.x, c.y - c0.y) * c.zoom + Math.abs(Math.log(c.zoom / c0.zoom)) * 900;
-  const smear = f >= T.calPull ? clamp((v - 14) * 0.08, 0, 14) : 0;
-  const d = at(f, T.dim, 12, ease.inOut);
-  const d2 = at(f, T.lock, 24, ease.out);
+  const lines = 1 - at(f, T.dive, 6, ease.out);
   return (
-    <AbsoluteFill style={{ filter: d > 0.01 ? `brightness(${1 - 0.7 * d - 0.06 * d2}) saturate(${1 + 0.6 * d}) sepia(${0.12 * d}) blur(${3 * d + 2 * d2}px)` : undefined }}>
-      <Ground color={PAPER} light={{ x: 0.42, y: 0.45, size: 0.9, amount: 0.1 }} />
-      <Camera cam={c} style={{ filter: landBlur(f, T.cuts[2], 6, 4) + smear > 0.3 ? `blur(${landBlur(f, T.cuts[2], 6, 4) + smear}px)` : undefined }}>
-        <div style={{ position: 'absolute', left: 150, top: 30, display: 'flex', alignItems: 'center', gap: 22, fontFamily: t.font, fontSize: 44, color: '#77716A', whiteSpace: 'nowrap' }}>
-          <Brand name="googlecalendar" size={56} /> Tuesday 14 October
-        </div>
-        {Array.from({ length: 10 }, (_, i) => (
-          <React.Fragment key={i}>
-            <div style={{ position: 'absolute', left: 150, top: CY0 + i * HY - 30, fontFamily: t.font, fontWeight: 500, fontSize: 46, fontVariantNumeric: 'tabular-nums', color: '#9A938A' }}>{`${8 + i}:00`}</div>
-            <div style={{ position: 'absolute', left: 330, top: CY0 + i * HY, width: 3000, height: 2, background: 'rgba(40,30,20,0.12)' }} />
-          </React.Fragment>
-        ))}
-        {/* the morning Brief gives back: four hours of reading, cleared one after another from 11:00 up */}
-        {MORNING.map((m, i) => {
-          const cAt = T.clears[3 - i];
-          const out = accel(f, cAt, 7, 1.5);
-          const glow = at(f, cAt + 3, 10, ease.out);
-          return (
+    <AbsoluteFill style={{ background: GROUND }}>
+      <Camera cam={c} style={{ filter: landBlur(f, T.cuts[2], 6, 4) > 0.3 ? `blur(${landBlur(f, T.cuts[2], 6, 4)}px)` : undefined }}>
+        <div style={{ position: 'absolute', left: CAL_X0, top: CAL_Y0, width: CAL_W, height: CAL_H, borderRadius: 40, background: WHITE, boxShadow: softShadow(3, GROUND), overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', left: 44, top: 30, display: 'flex', alignItems: 'center', gap: 18, fontFamily: t.font, fontSize: 38, fontWeight: 600, color: INK, whiteSpace: 'nowrap' }}>
+            <Brand name="googlecalendar" size={46} /> Tuesday 14 October
+          </div>
+          {Array.from({ length: 10 }, (_, i) => (
             <React.Fragment key={i}>
-              <div style={{ position: 'absolute', left: CAL_BL, top: CY0 + i * HY + 6, width: CAL_BW, height: CAL_BH, borderRadius: 18, background: `radial-gradient(ellipse 46% 120% at 24% 50%, rgba(255,79,31,${0.3 * glow}), rgba(255,79,31,${0.05 * glow}) 80%)`, boxShadow: glow > 0 ? `inset 0 0 0 2px rgba(255,79,31,${0.3 * glow})` : undefined }} />
-              {out < 1 && (
-                <CalBlock top={CY0 + i * HY + 6} h={CAL_BH} bg="#E2DACE" edge="#A3988A" style={{ transform: `translateX(${2300 * out}px)`, filter: out > 0.02 ? `blur(${16 * out}px)` : undefined, boxShadow: '0 10px 24px -14px rgba(60,40,20,.35)' }}>
-                  <Brand name={m.brand} size={58} />
-                  <span style={{ fontSize: 58, fontWeight: 600, letterSpacing: '-0.012em', color: INK }}>{m.title}</span>
-                  <span style={{ fontSize: 42, color: '#7A7268' }}>{m.meta}</span>
-                </CalBlock>
-              )}
+              <div style={{ position: 'absolute', left: 44, top: CY0 + i * HY - CAL_Y0 - 17, fontFamily: t.font, fontWeight: 500, fontSize: 30, fontVariantNumeric: 'tabular-nums', color: MUTED }}>{`${8 + i}:00`}</div>
+              <div style={{ position: 'absolute', left: CAL_BL - CAL_X0 - 16, top: CY0 + i * HY - CAL_Y0, width: CAL_BW + 32, height: 2, background: 'rgba(14,23,38,0.08)', opacity: i > 0 && i < 4 ? lines : 1 }} />
             </React.Fragment>
-          );
-        })}
-        <CalBlock top={CY0 + 4.5 * HY + 6} h={CAL_BH} bg="#E3EBFA" edge="#4285F4">
-          <span style={{ fontSize: 50, fontWeight: 600, color: INK }}>Lunch with Priya</span>
-          <span style={{ fontSize: 38, color: '#5E6B80' }}>12:30 – 13:30</span>
-        </CalBlock>
-        {f >= T.cuts[2] + 8 && (
-          <div style={{ position: 'absolute', left: CAL_BL, top: CRIT_TOP, width: CAL_BW, height: CAL_BH, borderRadius: 18, background: FILLS[3], boxShadow: SHADOWS[3], overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 14, background: ACCENT }} />
-            <div style={{ height: CAL_BH, display: 'flex', alignItems: 'center' }}>
+          ))}
+          {/* the morning Brief gives back: four hours of reading, cleared one after another from 11:00 up */}
+          {MORNING.map((m, i) => {
+            const out = accel(f, T.clears[3 - i], 7, 1.5);
+            if (out >= 1) return null;
+            return (
+              <CalBlock key={i} top={CY0 + i * HY + 4} h={CAL_BH} bg="#EEF1F5" style={{ transform: `translateX(${1300 * out}px)` }}>
+                <Brand name={m.brand} size={38} />
+                <span style={{ fontSize: 34, fontWeight: 600, letterSpacing: '-0.01em', color: INK }}>{m.title}</span>
+                <span style={{ fontSize: 28, color: MUTED }}>{m.meta}</span>
+              </CalBlock>
+            );
+          })}
+          <CalBlock top={CY0 + 4.5 * HY + 4} h={CAL_BH} bg="#EEF1F5">
+            <span style={{ fontSize: 34, fontWeight: 600, color: INK }}>Lunch with Priya</span>
+            <span style={{ fontSize: 28, color: MUTED }}>12:30 – 13:30</span>
+          </CalBlock>
+          {f >= T.cuts[2] + 8 && (
+            <div style={{ position: 'absolute', left: CAL_BL - CAL_X0, top: CRIT_TOP - CAL_Y0, width: CAL_BW, height: CAL_BH, borderRadius: 14, background: CRIT_BG, overflow: 'hidden' }}>
               <CritFace f={f} />
             </div>
-          </div>
-        )}
-        <CalBlock top={CY0 + 8.5 * HY + 6} h={HY / 2 - 12} bg="#E3EBFA" edge="#4285F4">
-          <span style={{ fontSize: 40, fontWeight: 600, color: INK }}>1:1 with Sam</span>
-          <span style={{ fontSize: 34, color: '#5E6B80' }}>16:30</span>
-        </CalBlock>
+          )}
+        </div>
       </Camera>
     </AbsoluteFill>
   );
 };
-/** One soft warm light over the dimmed day, behind the end type: the ground stays lit and keeps its colour. */
-const EndLight: React.FC = () => {
-  const f = useCurrentFrame();
-  const d = at(f, T.dim, 14, ease.inOut);
-  return <AbsoluteFill style={{ mixBlendMode: 'screen', opacity: d, background: 'radial-gradient(ellipse 62% 58% at 50% 50%, rgba(255,120,70,0.2), rgba(255,120,70,0.05) 55%, rgba(255,120,70,0) 80%)' }} />;
-};
 
 // ---------------------------------------------------------------- 10-11. the benefit, and the mark out of its full stop
-const STOP_D = Math.round(PROOF_FS * 0.19);
-const MARK_S = 196;
-const BRAND_FS = 188;
+const CLAIM_FS = 240;
+const STOP_D = Math.round(CLAIM_FS * 0.17);
+const TILE_S = 210;
+const BRAND_FS = 190;
 const End: React.FC = () => {
   const f = useCurrentFrame();
-  const sNum: React.CSSProperties = { ...display, fontSize: PROOF_FS, fontWeight: 620, letterSpacing: '-0.035em' };
-  const sWord: React.CSSProperties = { ...display, fontSize: PROOF_FS, fontWeight: 540, letterSpacing: '-0.035em' };
-  const sBrand: React.CSSProperties = { ...display, fontSize: BRAND_FS, fontWeight: 620, letterSpacing: '-0.03em' };
-  const w4 = useTextWidth('4', sNum);
-  const wH = useTextWidth('hours', sWord);
-  const wB = useTextWidth('back', sWord);
+  const sW: React.CSSProperties = { ...display, fontSize: CLAIM_FS, fontWeight: 540, letterSpacing: '-0.035em' };
+  const sBrand: React.CSSProperties = { ...display, fontSize: BRAND_FS, fontWeight: 600, letterSpacing: '-0.03em' };
+  const w4 = useTextWidth('4', sW);
+  const wH = useTextWidth('hours', sW);
+  const wB = useTextWidth('back', sW);
   const wBrand = useTextWidth('Brief', sBrand);
-  const sp = PROOF_FS * 0.24;
-  const SG = PROOF_FS * 0.05; // the stop's gap
-  const W = w4 + sp + wH + sp + wB + SG + STOP_D;
+  const sp = CLAIM_FS * 0.24;
+  // the stop's slot widens into the tile's when the mark is cut on: the line re-centres with a jump
+  const jump = at(f, T.mark, 5, ease.out);
+  const SG = mix(jump, CLAIM_FS * 0.06, CLAIM_FS * 0.16);
+  const endW = mix(jump, STOP_D, TILE_S);
+  const W = w4 + sp + wH + sp + wB + SG + endW;
   const x0 = 960 - W / 2;
-  const top = 540 - PROOF_FS / 2 + 14;
-  const base = top + 0.863 * PROOF_FS; // Inter's baseline in a line box of height 1em
+  const top = 540 - CLAIM_FS / 2 + 10;
+  const base = top + 0.863 * CLAIM_FS; // Inter's baseline in a line box of height 1em
+  const capC = base - 0.36 * CLAIM_FS; // the middle of the cap height
   const xs = [x0, x0 + w4 + sp, x0 + w4 + sp + wH + sp];
-  // the line arrives still rising with the pull-back, creeps in, then its words fall away at full speed
-  const push = 1 + 0.05 * creep(f, T.proofIn, 30);
+  // the line arrives still rising out of the dive, creeps; at the swap its words fall away at full speed
+  const push = 1 + 0.04 * creep(f, T.proofIn, 40);
   const rise = carry(f, T.proofIn, -14, 12);
-  const fall = accel(f, T.lock, T.mark - T.lock, 1.5);
+  const fall = accel(f, T.swap, 6, 1.5);
   const sx = (x: number) => 960 + (x - 960) * push;
   const sy = (y: number) => 540 + (y + rise - 540) * push;
-  // the lockup: the mark beside the wordmark, centred together
-  const G = MARK_S + 52 + wBrand;
-  const M = { x: 960 - G / 2 + MARK_S / 2, y: 496 };
-  // the stop: pops on its beat, then swells where it stands while the words fall; on the cut it is the mark, mid-spin,
-  // and the mark travels to its place beside the wordmark as it un-rotates
+  // the stop: pops on its beat, swells for 4 f in its place, and is cut to the mark mid-spin
   const pop = springAt(f, 30, T.stop2, springs.pop);
-  const S = { x: sx(x0 + W - STOP_D / 2), y: sy(base - STOP_D / 2) };
-  const sq = accel(f, T.lock, T.mark - T.lock, 1.5);
-  const stopD = mix(sq, STOP_D * push, MARK_S * 0.8) * pop;
-  const stopC = { x: S.x - 30 * sq, y: S.y - 60 * sq };
+  const swell = at(f, T.mark - 4, 4, ease.in);
+  const S = { x: sx(x0 + W - endW / 2), y: sy(mix(swell, base - STOP_D / 2, capC)) };
+  const stopD = mix(swell, STOP_D, TILE_S * 0.7) * push * pop;
   const spin = at(f, T.mark, 16, ease.out);
-  const wipe = at(f, T.mark + 6, 12, ease.out);
-  const lockCreep = 1 + 0.035 * creep(f, T.mark + 10, T.end - T.mark - 10);
-  const word = (i: number, text: string, from: number, st: React.CSSProperties, color: string) =>
+  // the lockup: the mark travels left as the wordmark wipes out of it
+  const G = TILE_S + 56 + wBrand;
+  const L = { x: 960 - G / 2 + TILE_S / 2, y: 540 };
+  const go = at(f, T.swap, 12, ease.inOut);
+  const wipe = at(f, T.swap + 8, 11, ease.out);
+  const mk = { x: mix(go, S.x, L.x), y: mix(go, S.y, L.y) };
+  const lockCreep = 1 + 0.03 * creep(f, T.mark, T.end - T.mark);
+  const word = (i: number, text: string, from: number) =>
     f >= from && (
-      <div key={i} style={{ position: 'absolute', left: xs[i], top, ...st, lineHeight: 1, whiteSpace: 'nowrap', color: f < from + 8 && i > 0 ? mixColor(ACCENT, color, at(f, from, 8, ease.out)) : color, transform: `translateY(${mix(at(f, from, 5, ease.out), 26, 0) + fall * 900}px)`, filter: fall > 0.02 ? `blur(${fall * 16}px)` : undefined }}>
+      <div key={i} style={{ position: 'absolute', left: xs[i], top, ...sW, lineHeight: 1, whiteSpace: 'nowrap', color: INK, transform: `translateY(${mix(at(f, from, 5, ease.out), 24, 0) + fall * 1000}px)` }}>
         {text}
       </div>
     );
   return (
-    <AbsoluteFill>
-      {f < T.mark && (
-        <>
-          <AbsoluteFill style={{ transformOrigin: '960px 540px', transform: `translateY(${rise}px) scale(${push})` }}>
-            {word(0, '4', T.proofIn, sNum, ACCENT)}
-            {word(1, 'hours', T.hours, sWord, PAPER)}
-            {word(2, 'back', T.back, sWord, PAPER)}
-          </AbsoluteFill>
-          {f >= T.stop2 && <div style={{ position: 'absolute', left: stopC.x - stopD / 2, top: stopC.y - stopD / 2, width: stopD, height: stopD, borderRadius: '50%', background: ACCENT, boxShadow: `0 0 ${50 * sq}px rgba(255,79,31,${0.5 * sq})` }} />}
-        </>
+    <AbsoluteFill style={{ background: WHITE }}>
+      {fall < 1 && (
+        <AbsoluteFill style={{ transformOrigin: '960px 540px', transform: `translateY(${rise}px) scale(${push})` }}>
+          {word(0, '4', T.proofIn)}
+          {word(1, 'hours', T.hours)}
+          {word(2, 'back', T.back)}
+        </AbsoluteFill>
       )}
+      {f >= T.stop2 && f < T.mark && <div style={{ position: 'absolute', left: S.x - stopD / 2, top: S.y - stopD / 2, width: stopD, height: stopD, borderRadius: '50%', background: mixColor(INK, TILE[1], swell) }} />}
       {f >= T.mark && (
-        <AbsoluteFill style={{ transformOrigin: `960px 540px`, transform: `scale(${lockCreep})` }}>
-          <div style={{ position: 'absolute', left: mix(spin, S.x - 30, M.x) - MARK_S / 2, top: mix(spin, S.y - 60, M.y) - MARK_S / 2, transform: `rotate(${mix(spin, 74, 0)}deg) scale(${mix(spin, 0.8, 1)})`, filter: landBlur(f, T.mark, 6, 4) ? `blur(${landBlur(f, T.mark, 6, 4)}px)` : undefined }}>
-            <Mark size={MARK_S} />
+        <AbsoluteFill style={{ transformOrigin: '960px 540px', transform: `scale(${lockCreep})` }}>
+          <div style={{ position: 'absolute', left: mk.x - TILE_S / 2, top: mk.y - TILE_S / 2, transform: `rotate(${mix(spin, 74, 0)}deg) scale(${mix(spin, 0.8, 1)})`, filter: landBlur(f, T.mark, 5, 4) ? `blur(${landBlur(f, T.mark, 5, 4)}px)` : undefined }}>
+            <Mark size={TILE_S} />
           </div>
-          <div style={{ position: 'absolute', left: M.x + MARK_S / 2 + 52, top: M.y - BRAND_FS * 0.56, ...sBrand, color: PAPER, lineHeight: 1.12, whiteSpace: 'nowrap', clipPath: `inset(-20% ${mix(wipe, 100, -2)}% -30% 0)`, transform: `translateX(${mix(wipe, -60, 0)}px)` }}>Brief</div>
-          <div style={{ position: 'absolute', left: 0, right: 0, top: 666, textAlign: 'center', ...display, fontSize: 62, fontWeight: 480, letterSpacing: '-0.012em' }}>
-            <Words text="Your morning, in one page." start={T.mark + 6} arrive="cut" gap={1.5} style={{ color: '#ECE5DB' }} align="center" />
-          </div>
+          {f >= T.swap + 8 && (
+            <div style={{ position: 'absolute', left: L.x + TILE_S / 2 + 56, top: L.y - BRAND_FS * 0.56, ...sBrand, color: INK, lineHeight: 1.12, whiteSpace: 'nowrap', clipPath: `inset(-20% ${mix(wipe, 100, -2)}% -30% 0)`, transform: `translateX(${mix(wipe, -60, 0)}px)` }}>Brief</div>
+          )}
         </AbsoluteFill>
       )}
     </AbsoluteFill>
@@ -1043,7 +972,7 @@ export const BriefFilm: React.FC = () => {
   const s = sfx;
   const cues = [
     ...TOAST_F.map((x, i) => ({ at: Math.max(0, x), ...s['mixkit-3000'], volume: i < 5 ? 0.5 : 0.26, rate: 0.94 + (i % 4) * 0.05 })),
-    { at: T.recede + 4, ...s['mixkit-168'], volume: 0.35 },
+    { at: T.recede + 2, ...s['mixkit-168'], volume: 0.35 },
     ...T.words.map((w) => ({ at: w, ...s['mixkit-2384'], volume: 0.28 })),
     { at: T.stop, ...s['mixkit-2568'], volume: 0.5 },
     { at: HIT, ...s['mixkit-784'], volume: 0.5, maxS: 1.2 },
@@ -1051,12 +980,12 @@ export const BriefFilm: React.FC = () => {
     // one key sound per typed key, one for the rest landing at once
     ...keyTimes.filter((k, i) => i === 0 || k !== keyTimes[i - 1]).map((k, i) => ({ at: k, ...s['mixkit-2533'], volume: k === burstKey ? 0.34 : 0.22, rate: 0.92 + rand(i * 1.7) * 0.18 })),
     { at: T.send, ...s['mixkit-2568'], volume: 0.6 },
-    { at: T.wall + 12, ...s['mixkit-175'], volume: 0.4 },
-    // the reading wave: soft ticks across it, a brighter one as each of the four lights
-    ...[0, 1, 2, 3, 4, 5, 6].map((k) => ({ at: T.ev + k * 4, ...s['mixkit-2384'], volume: 0.14 + 0.015 * k, rate: 0.9 + k * 0.04 })),
-    ...CHOSEN.map(([c, r]) => ({ at: Math.round(readAt(c, r)), ...s['mixkit-3124'], volume: 0.34 })),
-    { at: T.gather + 2, ...s['mixkit-168'], volume: 0.38 },
-    { at: T.title, ...s['mixkit-2568'], volume: 0.42 },
+    { at: T.wall + 4, ...s['mixkit-175'], volume: 0.4 },
+    // the reading front: a soft tick every few rows, closer as it speeds up, a brighter click as each of the four lights
+    ...[0, 2, 4, 7, 10, 14, 19, 25, 31, 38].map((r, k) => ({ at: Math.round(readF(r)), ...s['mixkit-2384'], volume: 0.14 + 0.012 * k, rate: 0.9 + k * 0.03 })),
+    ...CH_IDX.map((i) => ({ at: Math.round(readF(i)), ...s['mixkit-3124'], volume: 0.34 })),
+    { at: T.title, ...s['mixkit-2299'], volume: 0.5 },
+    { at: T.title, ...s['mixkit-2568'], volume: 0.4 },
     { at: T.land, ...s['mixkit-3124'], volume: 0.4 },
     { at: T.click, ...s['mixkit-2568'], volume: 0.45 },
     { at: T.approve, ...s['mixkit-2568'], volume: 0.55 },
@@ -1071,32 +1000,30 @@ export const BriefFilm: React.FC = () => {
     { at: T.dock, ...s['mixkit-3124'], volume: 0.42 },
     // the four hours clearing: paper slices, rising
     ...T.clears.map((c, i) => ({ at: c, ...s['mixkit-2384'], volume: 0.24, rate: 0.95 + i * 0.06 })),
+    { at: T.dive + 4, ...s['mixkit-168'], volume: 0.32 },
     { at: T.proofIn, ...s['mixkit-2299'], volume: 0.7 },
     { at: T.stop2, ...s['mixkit-3000'], volume: 0.36 },
     { at: T.mark, ...s['mixkit-784'], volume: 0.45, maxS: 1.2 },
     { at: T.mark, ...s['mixkit-2299'], volume: 0.8 },
+    { at: T.swap, ...s['mixkit-175'], volume: 0.28 },
   ];
   return (
-    <AbsoluteFill style={{ background: PAPER }}>
+    <AbsoluteFill style={{ background: GROUND }}>
       {f < HIT && <Pile />}
       {f >= T.words[0] - 1 && f < T.bar + 1 && <Line />}
       {f >= T.bar && f < T.wall + 15 && <Ask />}
-      {f >= T.wall && f < T.gather + 18 && (
+      {f >= T.wall && f < T.title && (
         <AbsoluteFill style={{ clipPath: f < T.wall + 14 ? growClip(barBox, at(f, T.wall, 14, ease.in)) : undefined }}>
-          <WallBeat />
+          <Inbox />
         </AbsoluteFill>
       )}
-      {f >= T.gather + 18 && f < T.land && <AbsoluteFill style={{ background: WHITE }} />}
-      {f >= T.gather && f <= T.land && <Gather />}
+      {f >= T.title && f < T.land && <Gather />}
       {f >= T.land && f < T.cuts[0] && <Page />}
       {f >= T.cuts[0] && f < T.cuts[1] && <HostGitHub />}
       {f >= T.cuts[1] && f < T.cuts[2] && <HostLinear />}
-      {f >= T.cuts[2] && <Calendar />}
-      {f >= T.dim && <EndLight />}
+      {f >= T.cuts[2] && f < T.proofIn && <Calendar />}
       {f >= T.whip[0] && f < T.cuts[2] + 8 && <ChainBox />}
       {f >= T.proofIn && <End />}
-      <Vignette amount={0.1} color="60,40,20" />
-      <Grain amount={0.035} />
       {/* main hit HIT unchanged at 92 (startFrom 11.77 + 20 / 30 from the earlier move 112 -> 92) */}
       <Music src="music/your-breath.mp3" startFrom={12.44} volume={0.7} duck={[HIT, T.cuts[0], T.mark]} breaths={[HIT, T.proofIn]} fadeOut={40} />
       <Cues cues={cues} />
