@@ -61,7 +61,8 @@ Read [taste.md](references/taste.md) once in a film: the tells that make a video
 
 ## The default path
 
-A film in one session (a launch film runs 20-30 s; other formats in [formats.md](references/formats.md)). Do the steps
+A film in one session (most launch films run 15-25 s, a type or number film 10-15 s; other formats in
+[formats.md](references/formats.md)). Do the steps
 in order; do not skip the storyboard.
 
 **1. Project.** `node <skill>/kit/scripts/new-film.mjs <folder> --name "<Product>"` creates a Remotion project with the
@@ -262,8 +263,9 @@ rewrite lifting off as a plate). Never copy their content or their order; take s
   ([assets.md](references/assets.md)). Every external file keeps its licence and is listed in `CREDITS.md`.
 - **Licensed sound only**, from the catalogue or a source whose licence you read; never synthesized music.
 - **Invented palettes:** no purple, no green, no purple-to-blue "AI" gradient. The accent's hue comes from the product's
-  own object (name that object in `BRIEF.md`) and is never a default: not the yellow-orange-red arc, and not cobalt blue
-  on cool white, the commonest look of all. Blue, cyan, teal-blue, red, pink, wine, ochre and ink are all open.
+  own object and is never a default: name three candidate objects and their hues in `BRIEF.md` and pick the one this
+  product alone could own. Orange on cream, cobalt on cool white and wine red on white are the three commonest looks
+  and need the strongest reason; a film may also carry no accent at all (ink, white and one grey).
   The light ground is neutral or cool white (#FFFFFF to #F4F5F7), cream only for paper and print products; the dark
   ground is a deep tone of the accent's own hue, not warm black or brown. The accent covers at most about a tenth of the
   frame, except on one ground cut; punctuation is never coloured. A supplied brand's own colours always win.

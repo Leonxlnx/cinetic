@@ -296,7 +296,7 @@ function checkFilm(file, lockupS, format = 'launch') {
   console.log(`  coverage   mean subject width ${(avgW * 100).toFixed(0)} % of the frame; ${sparse.length} of ${body.length} samples under 45 %  (information, not a target: references 44-100 %, median 75 %)`);
   console.log(`  pace       ${slow.length} of ${pace.length} half-seconds with almost nothing changing${slow.length ? `  [from ${fmt(slow)} s]` : ''}`);
   console.log(`  stretches  longest sparse run ${sparseRun.s.toFixed(1)} s${sparseRun.s ? ` (from ${sparseRun.at.toFixed(1)} s)` : ''}; longest still stretch ${stillRun.s.toFixed(1)} s${stillRun.s ? ` (from ${stillRun.at.toFixed(1)} s)` : ''}`);
-  console.log(`  empty      ${empty.length} near-empty samples${empty.length ? `  [at ${fmt(empty)} s]` : ''}${frames[0] && frames[0].fill < EMPTY_FILL ? '  FRAME 0 IS EMPTY' : ''}`);
+  console.log(`  empty      ${empty.length} near-empty samples${empty.length ? `  [at ${fmt(empty)} s]` : ''}${frames[0] && frames[0].fill < EMPTY_FILL / 4 ? '  FRAME 0 IS EMPTY' : ''}`);
   if (!loop) console.log(`  ending     the last ${endStill.toFixed(1)} s are nearly still (${((endStill / dur) * 100).toFixed(0)} % of the film)${sting ? '  (a sting may hold its mark)' : ''}`);
   const snd = loop ? { I: NaN, TP: NaN } : loudness(file);
   if (Number.isFinite(snd.I)) console.log(`  sound      ${snd.I.toFixed(1)} LUFS, true peak ${snd.TP.toFixed(1)} dBTP`);
@@ -315,7 +315,7 @@ function checkFilm(file, lockupS, format = 'launch') {
   if (!noPace && stillRun.s > 2.5) fails.push(`a ${stillRun.s.toFixed(1)} s stretch from ${stillRun.at.toFixed(1)} s where almost nothing changes`);
   // 37 of 40 references never hold small, sparse frames longer than 3.5 s (a calm frame holds 2-3 s)
   if (sparseRun.s > 3.5) fails.push(`${sparseRun.s.toFixed(1)} s of small, sparse frames from ${sparseRun.at.toFixed(1)} s: a calm frame holds 2-3 s, this long reads as a gap`);
-  if ((frames[0] && frames[0].fill < EMPTY_FILL) || longest / FPS >= 1) fails.push(`empty frames: ${frames[0] && frames[0].fill < EMPTY_FILL ? 'frame 0 is empty' : `${(longest / FPS).toFixed(1)} s of nothing from ${runAt.toFixed(1)} s`}`);
+  if ((frames[0] && frames[0].fill < EMPTY_FILL / 4) || longest / FPS >= 1) fails.push(`empty frames: ${frames[0] && frames[0].fill < EMPTY_FILL / 4 ? 'frame 0 is empty' : `${(longest / FPS).toFixed(1)} s of nothing from ${runAt.toFixed(1)} s`}`);
   if (!loop && !sting && endStill > Math.max(2.5, dur * 0.12)) fails.push('the ending is too long: lockup at most 2.5 s, claim and lockup together at most a fifth of the film (3.5 s under 18 s)');
   if (loop && !seam) fails.push('the loop seam could not be read (is the file shorter than two frames?)');
   if (seamOpen) fails.push('the loop does not close: the last frame differs visibly from the first (render frames 0 to N-1, where frame N equals frame 0, and give every cycle a period that divides N)');

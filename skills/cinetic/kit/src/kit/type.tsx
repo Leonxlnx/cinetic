@@ -711,28 +711,46 @@ export const SlotLine: React.FC<{
  * (0 until then; the render waits). Place an object right after a word: the full stop that becomes a tile, a mark
  * beside a name, an underline of the exact length.
  */
+/** Resolves once the exact face of a style (its weight, slant and size) has loaded, not only the faces already in use. */
+const whenFace = (style: React.CSSProperties, text: string): Promise<unknown> => {
+  const size = typeof style.fontSize === 'number' ? `${style.fontSize}px` : style.fontSize ?? '16px';
+  const spec = `${style.fontStyle ?? 'normal'} ${style.fontWeight ?? 400} ${size} ${style.fontFamily ?? 'sans-serif'}`;
+  let load: Promise<unknown>;
+  try {
+    load = document.fonts.load(spec, text || 'x');
+  } catch {
+    load = Promise.resolve();
+  }
+  return load.catch(() => null).then(() => document.fonts.ready);
+};
+
 export const useTextWidth = (text: string, style: React.CSSProperties) => {
   const [w, setW] = React.useState(0);
-  const [handle] = React.useState(() => delayRender('measure text'));
+  const [first] = React.useState(() => delayRender('measure text'));
+  const started = React.useRef(false);
   const key = JSON.stringify([text, style.fontFamily, style.fontSize, style.fontWeight, style.letterSpacing, style.fontStyle]);
   React.useLayoutEffect(() => {
     let alive = true;
-    document.fonts.ready.then(() => {
-      if (!alive) return;
-      const el = document.createElement('span');
-      Object.assign(el.style, { position: 'absolute', visibility: 'hidden', whiteSpace: 'pre', left: '-9999px', top: '0' });
-      for (const [k, v] of Object.entries(style)) (el.style as unknown as Record<string, string>)[k] = typeof v === 'number' && k !== 'fontWeight' && k !== 'lineHeight' ? `${v}px` : String(v);
-      el.textContent = text;
-      document.body.appendChild(el);
-      setW(el.offsetWidth);
-      el.remove();
+    // every new text or style holds the frame until it is measured, so a line that is re-used never shows a stale width
+    const handle = started.current ? delayRender('measure text') : first;
+    started.current = true;
+    whenFace(style, text).then(() => {
+      if (alive) {
+        const el = document.createElement('span');
+        Object.assign(el.style, { position: 'absolute', visibility: 'hidden', whiteSpace: 'pre', left: '-9999px', top: '0' });
+        for (const [k, v] of Object.entries(style)) (el.style as unknown as Record<string, string>)[k] = typeof v === 'number' && k !== 'fontWeight' && k !== 'lineHeight' ? `${v}px` : String(v);
+        el.textContent = text;
+        document.body.appendChild(el);
+        setW(el.offsetWidth);
+        el.remove();
+      }
       continueRender(handle);
     });
     return () => {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, handle]);
+  }, [key, first]);
   return w;
 };
 
@@ -774,7 +792,7 @@ export const useTextLayout = (text: string, style: React.CSSProperties): TextLay
   const key = JSON.stringify([text, style.fontFamily, style.fontSize, style.fontWeight, style.letterSpacing, style.fontStyle, style.lineHeight, style.fontVariationSettings, style.fontFeatureSettings]);
   React.useLayoutEffect(() => {
     let alive = true;
-    document.fonts.ready.then(() => {
+    whenFace(style, text).then(() => {
       if (!alive) return;
       const el = document.createElement('div');
       Object.assign(el.style, { position: 'absolute', visibility: 'hidden', whiteSpace: 'pre', left: '-9999px', top: '0', display: 'inline-block' });

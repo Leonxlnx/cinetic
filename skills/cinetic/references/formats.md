@@ -10,7 +10,7 @@ licensed pictures and sound, no generated images.
 
 | Format | Length | Concepts that fit | Ending |
 |---|---|---|---|
-| Launch or feature film | 15-30 s | any whose needs the brief meets; one task only when it is literally one flow | lockup at most 2.5 s, claim and lockup at most a fifth of the film (3.5 s under 18 s) |
+| Launch or feature film | 10-30 s (a type or number film 10-15 s) | any whose needs the brief meets; one task only when it is literally one flow | lockup at most 2.5 s, claim and lockup at most a fifth of the film (3.5 s under 18 s) |
 | Feature update | 8-20 s | 12, 2, 1, 9 | the name small with the CTA, or the product left working |
 | Loop | 4-12 s | 15, 2, 6 | none: the last frame is the first |
 | Logo sting | 3-5 s (7 at most) | 3, 2, 5 | the mark is the film |

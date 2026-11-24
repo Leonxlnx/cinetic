@@ -15,10 +15,12 @@ signature devices as its own and repeats it; the others may appear once each (`f
 1. **If the product has a brand, derive everything from it**: its accent, its neutrals, its face. Read the real values from
    the live site or the press kit; a slightly wrong shade is noticeable.
 2. **For an invented brand: no purple, no violet, no green, and no default "AI" gradient** (purple-to-blue, rainbow, neon on
-   near-black). Take the one accent's hue from the product's own object or domain, and do not default to the
-   yellow-orange-red arc: blue, cyan, teal-blue, red, pink and ink are all open (a blueprint's blue, a pool's cyan, a
-   darkroom's safelight red, a ledger's red ink, a kiln's heat when the product is a kiln). No hue is the safe pick; say
-   in `BRIEF.md` where it comes from. Then two neutrals and at most one secondary.
+   near-black). Take the one accent's hue from the product's own object or domain: name three candidate
+   objects with their hues in `BRIEF.md`, then pick the one this product alone could own (a blueprint's blue, a pool's
+   cyan, a buoy's orange, a highlighter's yellow, a darkroom's red, a peony's pink, sealing wax, honey, terracotta,
+   sand, graphite). No hue family is the safe pick: orange on cream, cobalt on cool white and wine red on white are the
+   three commonest looks and need the strongest reason. A film may also carry no accent at all: ink, white and one
+   grey. Then two neutrals and at most one secondary.
 3. **Neutral grounds by default.** The light ground is neutral or cool white (#FFFFFF to #F4F5F7); cream and warm paper
    only for paper and print products. The dark ground is a deep tone of the accent's own hue (navy for a blue, a deep
    teal for a cyan, an oxblood for a red), not warm black or brown.
