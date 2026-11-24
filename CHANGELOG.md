@@ -29,7 +29,20 @@ gives the agent a director's method, a kit that looks premium by default, and a 
 - Variety by default: every film writes a Devices block (opening, seams, spectacle, integrations, lockup, type
   treatment) picked from menus by what the product claims, with no device used twice except the film's signature, one
   colour flood at most, one tour of other products at most 15 % of the film, and three example blocks instead of one.
-- Grounds are lit in their own hue (`<Ground>` does it by default); a flat fill only holds a mass that fills the frame.
+- One subject and air replaces density: one thing to look at, at most one supporting element, type and UI on about an
+  eighth of the frame, a resting line 8 % from every edge. Text is readable or absent (no blurred or ghosted words as
+  texture), the frame cuts only on purpose, product UI appears one calm component at a time.
+- A concept comes before the devices: a menu of sixteen (one task, the shape that becomes everything, built from a
+  point, one sentence, the number, before and after, ...) and a short procedure for choosing one; hard rules depend on
+  the concept and the format. `references/formats.md` covers loops, logo stings, teasers, updates, explainers, brand
+  films and openers.
+- Clean grounds: clean white, a soft field of neighbouring hues, a photograph, or a deep tone with one broad bloom. No
+  grain, vignette or dark corners on flat grounds (`<Ground>` lifts its centre and never darkens its edges).
+- Palette: the accent's hue is picked from three candidate objects of the product and is never a default; a film may
+  carry no accent. Marks need an idea, lockups vary, a label above a figure counts as a kicker.
+- Reading holds are allowed: a statement rests for its reading time while nothing else moves; the claim always gets its
+  reading time (lockup at most 2.5 s, claim and lockup a fifth of the film).
+- The rubric has 20 points and scores look first.
 - A held framing is fine while something large changes in it; the product's output is seen big once; the claim is said
   once and may stay on as the lockup's line.
 
@@ -50,8 +63,16 @@ gives the agent a director's method, a kit that looks premium by default, and a 
 - `sfx.mjs`: the judged effects catalogue by role, with Kenney CC0 ticks, drops and cloth fetched from their zips and
   reversed swells made from real hits; `shortlist` and `music` for 38 licensed tracks measured for tempo, start point and
   energy; credits with licence links.
-- Five worked films in `kit/src/films/` (light product UI, an isometric block world, editorial photographs, a dark stage
-  with a 3D glass prism, cream paper with a partner's real mark), each with its own licensed music track.
+- Five worked films in `kit/src/films/` (light product UI on cool white, a bright isometric block world, editorial
+  photographs, an oxblood stage with a 3D glass top, paper and a serif voice with a partner's real mark), each with its
+  own licensed music track.
+- Look pieces: soft layered shadows from one light as the default (`softShadow`), `Field`, `AppIcon`, `CornerMarks`,
+  `Defocus`, `Box` with `bevel`, `material` and `flat`, `softStudio` and `glRoundedBox` for 3D, `SlotLine` (a sentence
+  whose slot swaps marks), `Build` word swaps, `useTextLayout` / `useGlyphBox` / `useWordBox`; punctuation keeps the
+  line's colour.
+- `frames.mjs check` prints an `air` line (sharp detail, things sharing a frame, cuts on two sides) and fails a crowded
+  film; coverage is information only; `--format loop|sting`; `sheet --safe` outlines the 8 % margin; `mux` joins silent
+  parts.
 - Kit pieces: `Output` (the result giant, then into the UI), `LockSwap` (the artefact fixed while hosts swap behind it),
   `Relay` with an entry flight and a minimum size, `Wall` with an event wave, `Flood` gather, `Phone` and `Laptop`,
   `GLView` helpers (`glRay`, `orbitCamera`, `glPoint`), `toScreen` through a tilted camera, `useTextWidth`, `Build` words
