@@ -19,51 +19,42 @@ what the viewer sees each second, how one moment turns into the next.
 
 These eight qualities separate great launch films from template videos. Hold every film to all of them.
 
-1. **Pace: a new beat every 0.8-1.6 s, a visible change every half second.** A 30 s film has 20-35 beats. Inside a beat,
-   something larger than a caret changes at least every 0.5 s (a word joins, a block lands, the crop changes, a value
-   steps). Each feature is one action and one visible result. A statement may rest for its reading time with
-   only a slow creep (a reading hold); up to a quarter of a film's half-seconds may rest like that, and nothing else
-   moves while a line is read. The flaw is a hold that waits for nothing.
-2. **One world.** The film lives in one graphic language from first to last frame: one palette with 2-3 grounds (base,
-   accent, inverse), one type voice, one material, one signature device it repeats (see [worlds.md](references/worlds.md)). A supplied brand wins.
-3. **Continuity: nothing is ever just cut away.** One element becomes the next beat: the full stop grows into the next
+1. **Pace: a new beat every 0.8-1.6 s, a visible change every half second.** A 30 s film has 20-35 beats; each feature
+   is one action and one visible result. A reading hold (a statement resting with a slow creep) may fill up to a
+   quarter of a film's half-seconds; a hold that waits for nothing is the flaw ([rhythm](references/film-grammar.md#4-rhythm)).
+2. **One world.** One palette with 2-3 grounds (base, accent, inverse), one type voice, one material, one signature
+   device it repeats ([worlds.md](references/worlds.md)). A supplied brand wins.
+3. **Continuity: nothing is ever just cut away.** One element becomes the next beat (the full stop grows into the next
    world, the button becomes the progress bar, the card rewrites itself, the camera dives into a tile and its inside is
-   the next scene. Every scene change is carried by speed, shape, an object or light. Never a cross-fade, never an empty
-   frame between scenes ([turns.md](references/motion/turns.md)).
-4. **Motion with weight.** Arrivals are front-loaded (most of the travel in the first frames, a long settle: `ease.out`,
-   springs set by duration and bounce, bounce 0 by default, never above 0.4). Exits accelerate and end at full speed, cut
-   or carried on their last frame (`accel`). Zooms are exponential (`logScale`). Nothing that moves is linear, nothing
-   that carries data (a value, a price, a progress bar, the pointer) overshoots. Nothing is ever dead still: a held shot
-   creeps (`creep`, `drift`).
+   the next scene). Every scene change is carried by speed,
+   shape, an object or light; never a cross-fade, never an empty frame between scenes ([turns.md](references/motion/turns.md)).
+4. **Motion with weight.** Arrivals are front-loaded (`ease.out`, springs set by duration and bounce, bounce 0 by
+   default, never above 0.4). Exits accelerate and end at full speed (`accel`). Zooms are exponential (`logScale`).
+   Nothing that moves is linear, nothing that carries data (a value, a price, a progress bar, the pointer) overshoots,
+   and a held shot creeps (`creep`, `drift`) ([entrances.md](references/motion/entrances.md#house-rules)).
 5. **Type is an event, set clean.** One sans voice (`fonts.inter` unless the brand has its own), sentence case, weight
-   430-550, sized by word count: 84-100 px for 5-6 words, 110-150 px for 3-4, 160-240 px for 1-2, and one spectacle size
-   a film (280-700 px, may crop at the frame edge). 2-6 words at once, centred alone on clean ground, built 1-3 at a time,
-   never faded in: cut-on words, a last-word swap, a decode, an append that re-centres, a colour wake, type set on a
-   surface, a masked rise (two per film), and one type treatment repeated through it. At most one emphasised word or
-   phrase a statement, in the accent, and in at most two statements a film. One line on screen at a time. Sizes, weights, tracking, serif and labels: [type.md](references/type.md).
-6. **The real product, shown the way the concept shows it:** its UI really used (task, artefact, update and explainer
-   films), its output or its object (shape, point, object and number films), or its words (sentence, case and manifesto
-   films). Whatever appears is real: UI built in code with real strings and plausible named data, used by a real pointer
-   or by visible state changes; other companies as their current logos (`<Brand>`, `scripts/logos.mjs`), glyphs as real
-   icons (`<Icon>`). Never a drawn look-alike, never an emoji for a logo, never lorem ipsum.
-7. **One subject and air.** One thing is clearly what the viewer looks at; at most one supporting element shares the
-   frame. Type, UI and hard edges together take about an eighth of the frame in most beats and never more than a third
-   outside the spectacle; the rest is calm ground. A resting statement and the focal component keep 8 % or more from
-   every edge. A short line or one component alone on a clean, lit ground is a calm frame, not an empty one. Density
-   belongs to one spectacle beat, not to every beat. Depth comes from light and focus, not from stuff: one light
-   direction, soft layered shadows (`softShadow`), depth of field on shapes (`Defocus`), scale jumps (a giant word cut to
-   a small one, a dive). Restraint in effects: glow and glass at most once a shot, only on the accent, light that is timed.
+   430-550, sized by word count (84-100 px for 5-6 words, 110-150 px for 3-4, 160-240 px for 1-2, one spectacle size of
+   280-700 px a film). 2-6 words at once, centred alone on clean ground, built 1-3 at a time, never faded in, one type
+   treatment repeated. At most one emphasised word or phrase a statement, in the accent, in at most two statements a film. One line
+   on screen at a time. Everything else: [type.md](references/type.md).
+6. **The real product, shown the way the concept shows it:** its UI really used, its output or object, or its words
+   ([concepts](references/film-grammar.md#concepts)). Whatever appears is real: UI in code with real strings and
+   plausible named data, other companies as their current logos (`<Brand>`), glyphs as real icons (`<Icon>`). Never a
+   drawn look-alike, never an emoji for a logo, never lorem ipsum.
+7. **One subject and air.** One thing to look at, at most one supporting element. Type, UI and hard edges take about an
+   eighth of the frame in most beats, never more than a third outside the spectacle; a resting statement and the focal
+   component keep 8 % or more from every edge. Depth comes from light and focus, not stuff; glow and glass at most once
+   a shot, only on the accent ([compositions](references/film-grammar.md#compositions), [light and material](references/worlds.md#palette-rules-all-worlds)).
 8. **Sound designed with the picture.** A licensed music bed that enters with the first idea; real recorded effects
-   whose transient lands on the visual event (a press, a landing, a cut); a short breath of silence before the big hit;
-   the music rings out under the end card ([sound-design.md](references/sound-design.md)).
+   whose transient lands on the visual event; a short breath of silence before the big hit; the music rings out under
+   the end card ([sound-design.md](references/sound-design.md)).
 
 Read [taste.md](references/taste.md) once in a film: the tells that make a video look AI-made, and the review rubric.
 
 ## The default path
 
 A film in one session (most launch films run 15-25 s, a type or number film 10-15 s; other formats in
-[formats.md](references/formats.md)). Do the steps
-in order; do not skip the storyboard.
+[formats.md](references/formats.md)). Do the steps in order; do not skip the storyboard.
 
 **1. Project.** `node <skill>/kit/scripts/new-film.mjs <folder> --name "<Product>"` creates a Remotion project with the
 kit, a blank film in `src/films/main/Film.tsx`, and the scripts. Work inside that folder from then on.
@@ -94,9 +85,9 @@ claims (the opening, the type treatment, each seam's device, the spectacle, the 
 device is used twice except the signature, and the block never copies an example's sequence. Then write one row per
 beat in the concept's section order ([structures](references/film-grammar.md#structures)): frames, its
 composition tag, what the viewer sees, what moves and how, how it leaves into the next beat, the sound. Check the rows
-against quality 1 (a beat every 0.8-1.6 s), quality 3 (every row says how it hands off), quality 7 (one subject a
-row), the Devices block and the hard rules before writing code. Budget the length: each feature beyond the core at most
-1.2 s, and a row over 1.6 s names its second and third event. A 20 s film that could be 15 should be 15.
+against qualities 1, 3 and 7, the Devices block and the hard rules before writing code. Budget the length: each feature
+beyond the core at most 1.2 s, and a row over 1.6 s names its second and third event. A 20 s film that could be 15
+should be 15.
 
 **5. World.** Choose one world from [worlds.md](references/worlds.md) (or derive it from the brand). Write its tokens at the
 top of the film: ground, ink, accent, the statement face and its sizes ([type.md](references/type.md)), UI theme
@@ -111,30 +102,23 @@ screen and the motion references for recipes:
 then the next. Overlap sections: the next one starts while the last one is still leaving. To find a move by what it
 does, search [INDEX.md](references/INDEX.md) (every recipe and section, one line each).
 
-**7. Look at it (after every section, and before you claim anything works).** Type-check first (`npx tsc --noEmit`; in a project that shares another folder's
-`node_modules`, `node <that folder>/node_modules/typescript/bin/tsc --noEmit -p .`).
-- `node scripts/frames.mjs sheet` renders the whole film as 36 frozen frames in one still: read the image (`--safe`
-  outlines the 8 % margin in every cell).
-- `node scripts/frames.mjs sheet --frames 120,126,132,...` zooms in on one moment (a turn, a morph).
-  The sheet shows composition and rhythm, not small type: for any beat with UI text or a label, also render
-  `node scripts/frames.mjs still --frame N` at full size and read the words.
-- `node scripts/frames.mjs render` makes a half-size preview video; `node scripts/frames.mjs strip out/main-preview.mp4 --at 4.2`
-  shows a moment at 15 frames a second, so you can judge motion, not just layout.
-- `node scripts/frames.mjs check out/main-preview.mp4` measures the preview (how crowded the frames are, change every
-  half second, empty frames, ending length) and prints what to fix. Its `air` line says how much of the frame is sharp
-  detail, how often three or more things share a frame and how often the frame cuts on two sides; a crowded film fails.
-  The coverage figure is information, never a target: do not add things to raise it. For a loop or a sting add
-  `--format loop` (no sound, ending or music lines; it fails when the last frame does not match the first) or
-  `--format sting` (no pace gate under 8 s; the ending may hold).
+**7. Look at it (after every section, and before you claim anything works).** Type-check first (`npx tsc --noEmit`; in
+a project that shares another folder's `node_modules`, `node <that folder>/node_modules/typescript/bin/tsc --noEmit -p .`).
+What each command shows and how to read it: [rendering.md](references/rendering.md#the-loop).
+- `node scripts/frames.mjs sheet` (36 frames in one still; `--safe` outlines the 8 % margin), and
+  `node scripts/frames.mjs sheet --frames 120,126,132,...` for one moment.
+- `node scripts/frames.mjs still --frame N` at full size for any beat with UI text or a label: read the words.
+- `node scripts/frames.mjs render` (half-size preview), then `node scripts/frames.mjs strip out/main-preview.mp4 --at 4.2`
+  to judge motion.
+- `node scripts/frames.mjs check out/main-preview.mp4` measures crowding (`air`), pace, empty frames and the ending and
+  prints what to fix; a crowded film fails. Add `--format loop` or `--format sting` for those formats.
 Score the sheet with the rubric in [taste.md](references/taste.md) (20 points, look first; render at 17+). Fix the three
 worst things, render again.
-Typical misses: a crowded frame, text used as texture, a line cut by the frame edge, dead frames, UI text under 30 px,
-the same layout beat after beat, a cut with nothing carried, a warm ground with a hot accent by habit.
 
 **8. Sound.** `node scripts/sfx.mjs roles`, `node scripts/sfx.mjs list <role>`, `node scripts/sfx.mjs get <id> ...` fetches
 judged, licensed recordings into `public/sfx` and writes `src/sfx.ts`; place them with `<Cues>` on the same `T` frames as
 the picture. Music: pick a licensed track whose character is this film's world, not the default
-([assets.md](references/assets.md#music); `sfx.mjs shortlist`), fetch it with `sfx.mjs music`, then
+([assets.md](references/assets.md#6-music); `sfx.mjs shortlist`), fetch it with `sfx.mjs music`, then
 `sfx.mjs fit <track> --hit <frame> --len <frames>` gives the start that lands the film's main hit on a beat where the music
 lifts (for a bed that enters late, `--enter <frame>` with the `<Music enterAt>` frame). Duck it under the big hits, let
 it ring out under the end card.
@@ -177,111 +161,51 @@ lockups are taken: yours differ from all five.
 
 ## Hard rules
 
-- **Never linear motion** (a loop's constant cycle aside), never a cross-fade between scenes, never an empty frame
-  between scenes (at a seam the next ground already holds its subject at full size while the old one shrinks away),
-  never a frame that holds dead still for more than ~0.6 s (a reading hold creeps). **Frame 0 is never empty and already moving:** the product, the story's
-  object, the concept's primitive (a point, a shape), the first words of the film's sentence on a lit ground, or the
-  mark in a sting. Never a static title card.
-- **Vary the frame.** Tag every row of `BEATS.md` with its composition from the table in
-  [film-grammar.md](references/film-grammar.md#compositions); no two rows in a row share one (never "caption + centred card"
-  for every feature). Every film has one scale jump (a giant word cut small, a dive, a pull-back), and every film that
-  shows UI has a macro moment; neither has to open the film.
-- **Change the ground.** The world has 2-3 grounds (base, accent, inverse); a film over 12 s changes between them at
-  least twice, on downbeats, each time by a different device: an iris from one of the film's shapes, a ground swap under
-  a layer that stays, a colour-flip cut with a size step, a flash-hidden swap, a dive whose inside is the new ground, or a
-  flood from an object (one flood a film at most) ([menu](references/film-grammar.md#seams-and-ground-cuts)). A
-  film whose concept is continuous (one camera, one object, a shape chain, built from a point) or a loop may change
-  the light on one ground instead.
-- **Endings follow the format** ([formats.md](references/formats.md)). Launch and feature films: the lockup lasts at most
-  2.5 s and grows out of an object already on screen; the claim and the lockup together take at most a fifth of the
-  film (3.5 s in a film under 18 s). The claim always gets its reading time (words / 3 + 0.5 s): shorten the middle,
-  never the claim, and never pad the middle to earn a longer ending.
-  Explainers, brand films and event promos: an end card of up to 4 s, still creeping. A loop has no lockup; in a sting the
-  mark is the film; a teaser or an update may end on the product or a date. The claim sits on clean ground and is fully
-  readable for its reading time (when it needs longer, it stays on as the lockup's line); a line of the claim is said
-  once. A name revealed mid-film is fine when it is the film's turn; then the end is the mark small with the CTA, not a
-  second reveal. Never a static logo card, never a fade to blank: the mark is born from what is on screen, in a way
-  picked from the [lockup menu](references/film-grammar.md#lockups) to suit the signature, and lockups vary. A centred
-  wordmark on a plain ground is the commonest ending of all: prefer the mark over the last image, the name as the last
-  word of the sentence, the mark beside the product at rest, or the product itself where the format allows.
-- **Integrations are not a row.** Never a row of logo tiles, and never two or three same-layout cards in a row. Pick one
-  form ([cards-ui.md](references/motion/cards-ui.md#integrations)): a relay (the artefact pinned, two hosts cut round it on
-  the beat, each in a different composition), an object-lock swap (the artefact fixed while 5-7 hosts swap behind it at
-  4-6 f each), a sentence whose slot swaps partner marks, or one host used for real in macro; skip the beat when the
-  brief does not hinge on it. One tour of other products a film (relay, swap, morph chain), at most 15 % of its length;
-  the artefact is the largest text in each host (60 px or more).
-- **One image worth keeping.** Name the film's poster frame in `BEATS.md` before building: the one frame you would use
-  as its thumbnail. It is a crafted image (an object with material and light, a photograph, a figure with a real
-  contrast of scale, the product's result at full size), never a centred line on a ground. Build it first, render it as
-  a still and judge it alone; the film holds it for 1.5 s or more.
-- **One spectacle beat** in films of 15 s or more: one shot that could never be a slide, picked by what the product
-  claims ([menu](references/film-grammar.md#spectacle)). When the concept is itself continuous (one unbroken camera, the
-  shape that becomes everything, built from a point), the concept is the spectacle. Give it 1.5-2.5 s (count its frames
-  in `T`), keep it readable (it starts on the artefact the film has carried, large): no label under 28 px, at most about
-  16 endpoints, each a filled object, never hundreds of tiny pale cells. A wall only when the claim is literally a
-  quantity. Name it in `BEATS.md` (a row tagged `spectacle`). One spectacle, not two.
-- **At most one demo.** When the concept shows the product's core action, show it once, completely; a second input or
-  use case is a 1-2 s variation of the same shot, never a second full demo: that is how a 20 s film becomes 30.
-- **A finished state does not hold.** When a list is full, a number has landed or a card is complete, cut within half a
-  second or keep it changing (the camera pushes, the next thing arrives on it). Never 1 s of a finished thing.
-- **The camera goes to the event.** A framing may hold while something large changes in it about every 0.7 s (a line
-  lands, a panel turns, the UI acts); when only a label or a detail changes, move on: a push, a ride along the object, a
-  cut to macro. When the next thing happens somewhere else, the camera is already travelling to it.
-- **When the film shows the product's result, it is seen big once:** in macro or as giant type (its key words 120 px or
-  more on screen) before or instead of at UI size (`<Output>` lands the words giant, then carries them into the UI); a
-  number is one option, not the default. Explaining is one claim a shot, set on or along the object, never a column of
-  text beside it. Required (a row tagged `output-big`) in the one-task, number and one-artefact concepts and in updates.
-- **A series rotates its compositions.** Three features, three metrics, two hosts: each in a different composition
-  (macro, giant type, split, surface), never the same layout three times with the label swapped.
-- **The biggest word names the right thing.** The largest type in a film names the benefit or the product, never the
-  problem, the input or a noun from the story (a viewer reads it as the brand): the hours saved, not the pile; the amount
-  that arrives, not the amount sent.
-- **Text is readable or absent.** Never blurred, ghosted or faded copies of words, rows or code behind or around a
-  statement; depth of field blurs shapes (cards, icons, photographs, objects), never a block of text. Code or a dense UI
-  appears as one real, whole panel for at most 2 s.
-- **The frame cuts only on purpose.** The frame edge may cut a single giant word (280 px or more) alone in the frame, or
-  one component in close-up that leaves on one side while the camera follows it. Never a resting line of normal size,
-  never two or more sides at once, never the words the beat is about. The film's key figure or claim is never cut by
-  the frame, also while it counts or scales: size a rolling number so its widest state fits.
-- **UI as one calm component.** Show product UI one component at a time, flat or at one gentle tilt (12° or less): the
-  region that matters pixel-real, the rest reduced to quiet shapes, plausible named data, its context shown before a
-  zoom. The camera moves on the machine's turn and holds still while the person acts. Never two windows overlapping at
-  an angle, never a chip pasted on a mock at another scale or light.
-- **Light and material.** Every beat has two planes moving at different rates; the second may be a soft light or a
-  drifting ground. One light direction for the whole film: shadows are soft and layered (`softShadow`) and fall the same
-  way. 3D is soft-lit, rounded and matte or frosted (`softStudio`, `<Box bevel material>`), never flat boxes or
-  hard-strip chrome. Glow and glass at most once a shot, and only on the accent.
-- **Clean grounds.** A ground is clean white, a soft field of two or three neighbouring hues drifting slowly (`Field`),
-  a photograph, or a deep tone with one broad bloom of its own hue. A light ground may be flat; a ground light lifts the
-  centre in the ground's own hue and never darkens the edges below the ground's colour. No vignette, no dark corners, no
-  visible grain on a flat ground, never dimmed or blurred UI used as a ground. White or frosted cards on a coloured
-  ground are fine. A line may be a hairline when it is structure (construction lines, circles, a curve to a label); a
-  line that is the subject carries a filled object riding it, not a glow.
-- **Clean type, no template tells.** No eyebrows or kickers (a small line above a heading, or a label above a figure:
-  its unit or name follows it or sits under it), no uppercase mono labels, no letter-spaced small caps, no ALL CAPS or
-  Title Case statements, no weights of 800-900. No serif by habit: only as the brand's voice (a writing, publishing or
-  editorial brand may take one; then every statement) or its wordmark. Mono is for code and data only, as written
-  ([type.md](references/type.md)). In product UI, type the first two or three words and land the rest at once (`burst`).
-- **Real marks only.** A company or product logo is its official mark (`<Brand>` or `logos.mjs get`), never redrawn, never a
-  generic glyph. The product's own logo: the user's file, or for an invented product a mark with an idea: a glyph drawn
-  from the product's object (built once in the film), an app-icon tile with depth (`<AppIcon>`), or a custom wordmark.
-  Two or three primitive rectangles are a placeholder, not a mark.
-- **No generated images.** Pictures are code, the product's real screens, or licensed photos/footage
-  ([assets.md](references/assets.md)). Every external file keeps its licence and is listed in `CREDITS.md`.
-- **Licensed sound only**, from the catalogue or a source whose licence you read; never synthesized music.
-- **Invented palettes:** no purple, no green, no purple-to-blue "AI" gradient. The accent's hue comes from the product's
-  own object and is never a default: name three candidate objects and their hues in `BRIEF.md` and pick the one this
-  product alone could own. Orange on cream, cobalt on cool white and wine red on white are the three commonest looks
-  and need the strongest reason; a film may also carry no accent at all (ink, white and one grey).
-  The light ground is neutral or cool white (#FFFFFF to #F4F5F7), cream only for paper and print products; the dark
-  ground is a deep tone of the accent's own hue, not warm black or brown. The accent covers at most about a tenth of the
-  frame, except on one ground cut; punctuation is never coloured. A supplied brand's own colours always win.
-- **Legibility:** every word on screen is readable when paused. Statements sit on clean ground or a plate at 7:1 contrast
-  or more, sized by word count ([type.md](references/type.md#2-size-by-word-count)): no statement word under 64 px, no
-  line wider than 1500 px at 1080p. UI text is 30-44 px on screen after the camera's zoom, at 4.5:1 or more. A word needed
-  to understand the beat (a figure's unit, a caption, a date, the CTA) is at least a third the size of the line it serves and never
-  under 40 px; only texture labels inside a UI component may sit
-  at 20-28 px. Text never crops inside its own box: fit it (`useTextWidth`) or shorten it.
+Each rule's detail and numbers live in the linked section; read it when the rule applies.
+
+- **Never linear motion** (a loop's constant cycle aside), never a cross-fade or an empty frame between scenes, never
+  dead still for more than ~0.6 s; a reading hold creeps ([turns.md](references/motion/turns.md#0-the-rule-for-choosing)).
+- **Frame 0 is never empty and already moving**; never a static title card ([openings](references/film-grammar.md#openings)).
+- **Vary the frame.** Tag every `BEATS.md` row with a composition; no two rows in a row share one. One scale jump a
+  film, and a macro moment in every film that shows UI ([compositions](references/film-grammar.md#compositions)).
+- **Change the ground.** A film over 12 s changes ground at least twice, on downbeats, each by a different device; a
+  continuous concept or a loop may change the light instead ([seams](references/film-grammar.md#seams-and-ground-cuts)).
+- **Endings follow the format** ([formats.md](references/formats.md), [lockups](references/film-grammar.md#lockups)). In
+  launch and feature films the lockup lasts at most 2.5 s and grows out of an object on screen; claim and lockup take
+  at most a fifth of the film (3.5 s under 18 s); the claim gets its reading time (words / 3 + 0.5 s). Explainers,
+  brand films and event promos: an end card of up to 4 s. Never a static logo card, never a fade to blank.
+- **Integrations are not a row.** One form or none; one tour of other products a film, at most 15 % of its length; the
+  artefact is the largest text in each host (60 px or more) ([integrations](references/film-grammar.md#integrations)).
+- **One image worth keeping.** Name the poster frame in `BEATS.md`, build it first and judge it alone; a crafted image,
+  never a centred line on a ground, held 1.5 s or more ([planning](references/film-grammar.md#7-planning-discipline)).
+- **One spectacle beat** in films of 15 s or more, 1.5-2.5 s, readable: no label under 28 px, at most about 16
+  endpoints. One spectacle, not two ([spectacle](references/film-grammar.md#spectacle)).
+- **At most one demo.** A second input is a 1-2 s variation of the same shot ([compositions](references/film-grammar.md#compositions)).
+- **A finished state does not hold:** cut within half a second or keep it changing ([nothing holds](references/film-grammar.md#46-nothing-holds)).
+- **The camera goes to the event.** A framing holds only while something large changes in it about every 0.7 s
+  ([camera.md](references/motion/camera.md#house-rules)).
+- **The product's result is seen big once** (key words 120 px or more), tagged `output-big` where the concept requires
+  it; a series of features rotates its compositions ([compositions](references/film-grammar.md#compositions)).
+- **The biggest word names the benefit or the product**, never the problem or the input ([type.md](references/type.md#3-one-spectacle-size-in-a-film)).
+- **Text is readable or absent;** code or a dense UI is one real, whole panel for at most 2 s ([type.md](references/type.md#7-centred-alone),
+  [cards-ui.md](references/motion/cards-ui.md#house-rules)).
+- **The frame cuts only on purpose:** a lone giant word (280 px or more) or one component in close-up; never a resting
+  line, never two sides, never the key figure ([type.md](references/type.md#7-centred-alone)).
+- **UI as one calm component,** flat or tilted 12° or less, the region that matters pixel-real ([cards-ui.md](references/motion/cards-ui.md#house-rules)).
+- **Light and material:** two planes moving at different rates in every beat, one light direction, soft rounded 3D
+  ([light and material](references/worlds.md#palette-rules-all-worlds)).
+- **Clean grounds:** no vignette, no dark corners, no visible grain on a flat ground, never dimmed UI as a ground
+  ([palette rules](references/worlds.md#palette-rules-all-worlds) 8).
+- **Clean type:** no eyebrows or kickers, no uppercase mono labels, no ALL CAPS or Title Case, no 800-900 weights, no
+  serif by habit; in product UI type two or three words and land the rest (`burst`) ([type.md](references/type.md#11-no-eyebrows-no-kickers)).
+- **Real marks only;** the product's own mark has an idea, never two or three primitive rectangles
+  ([lockups](references/film-grammar.md#lockups), [logos](references/motion/entrances.md#57-real-third-party-logos)).
+- **No generated images, licensed sound only;** every external file is listed in `CREDITS.md` ([assets.md](references/assets.md)).
+- **Invented palettes:** no purple, no green, no purple-to-blue gradient; the accent's hue from the product's own object
+  (three candidates in `BRIEF.md`) on a tenth of the frame or less; light ground #FFFFFF to #F4F5F7, dark ground a deep
+  tone of the accent's hue ([palette rules](references/worlds.md#palette-rules-all-worlds)).
+- **Legibility:** statements at 7:1 or more, no word under 64 px, no line over 1500 px; UI text 30-44 px at 4.5:1; a
+  needed label a third of its line and 40 px or more; text never crops in its own box ([type.md](references/type.md#2-size-by-word-count)).
 - **Respect the brief's facts.** Never invent customer logos, testimonials or numbers presented as real; use the user's
   data or clearly fictional demo data.
 

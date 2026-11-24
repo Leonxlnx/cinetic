@@ -38,13 +38,18 @@ signature devices as its own and repeats it; the others may appear once each (`f
    broad bloom of its own hue. A light ground may be flat. A ground light (`<Ground light>`) lifts the centre in the
    ground's own hue, strong enough to see on a thumbnail, and never darkens the edges below the ground's colour: no
    vignette, no dark corners, no visible grain on a flat ground (grain belongs on photographs). Each world's **Ground**
-   line below says what its grounds are.
+   line below says what its grounds are. Never dimmed or blurred UI used as a ground. A line may be a hairline when it
+   is structure (construction lines, circles, a curve to a label); a line that is the subject carries a filled object
+   riding it, not a glow.
 
 **Light and material (all worlds).** One light direction for the whole film: every shadow falls the same way, soft and
 layered (`softShadow`: several shadows with offsets and blurs doubling, each faint, tinted to the ground). Cards and
 objects sit in that light with a contact shadow, or on a clean flat rule in flat worlds. 3D is soft-lit, rounded and matte
 or frosted (`softStudio` for `GLView`, `Box` with `bevel` and `material`), never flat unlit boxes or chrome lit by hard
-strips. Glow and glass at most once a shot, and only on the accent. Depth of field blurs shapes (`Defocus`), never text.
+strips. Glow and glass at most once a shot, and only on the accent, and light that is timed. Depth of field blurs shapes
+(`Defocus`: cards, icons, photographs, objects), never text. Depth comes from light and focus, not from stuff: one light
+direction, soft layered shadows, depth of field on shapes, scale jumps (a giant word cut to a small one, a dive). Every
+beat has two planes moving at different rates; the second may be a soft light or a drifting ground.
 White or frosted cards on a coloured ground are fine.
 
 Kit fonts (`fonts`): `inter` (the default voice for statements and UI, with optical sizing), `geist` (a tighter
@@ -69,7 +74,7 @@ objects (e.g. pale grey #DADDE3, sky #CFE0FF); spot red for alerts only. No grad
 ground's own soft light.
 **Type:** one neo-grotesk (`inter`, or `geist` for a developer brand, 450-550, tracking by size), sentence case, printed
 on floors and block faces or centred; object names on white chips with a small coloured square bullet, sentence case in
-the same face at tracking 0 (34 px or more when the viewer must read them, 20-28 px as texture); `mono` only for code and
+the same face at tracking 0 (40 px or more when the viewer must read them, 20-28 px as texture); `mono` only for code and
 data inside a terminal or on a block's face.
 **Materials:** isometric blocks with a small bevel, a top-lit face gradient (top lightest, left mid, right darkest) and a
 soft contact shadow (`Box bevel material="matte"`), in an orderly grid with air round the cluster; slabs, cubes, voxels;
@@ -93,7 +98,7 @@ changes and no cursor; selection boxes with corner handles; a mosaic bookend.
   </Camera>
 </Ground>
 ```
-**Avoid:** flat unlit boxes, a random scatter of blocks cropping every edge, glows, glass, labels on faces under 34 px.
+**Avoid:** flat unlit boxes, a random scatter of blocks cropping every edge, glows, glass, labels on faces under 40 px.
 
 ---
 
@@ -255,7 +260,7 @@ lighter.
 **Palette:** black, white, and **one loud colour** (red-orange #FF3B1F, cobalt #1F3BFF or yellow #FFD400) used as full grounds
 and for one word per scene.
 **Type:** a neo-grotesk at extremes: the spectacle word giant and cropped by the frame (`inter` or `geist` 600-700,
-tracking -0.03 to -0.05 em, line height 0.85-0.95), statements at 500-550; captions 34 px or more when they carry
+tracking -0.03 to -0.05 em, line height 0.85-0.95), statements at 500-550; captions 40 px or more when they carry
 meaning, 20-28 px only as texture; sentence case; flush-left on the column grid (the one world where lines leave the
 centre); numbers in tabular figures.
 **Materials:** none beyond type, rules (2-4 px), solid blocks and real logos.
@@ -415,7 +420,7 @@ the grid folding into a chart.
 **Fits:** design, whiteboard, no-code and editing tools; products whose world is a canvas.
 **Ground:** a light-grey canvas (#F4F5F7) or a deep tone of the accent, flat, with guides appearing only while used.
 **Palette:** canvas, ink, one selection accent; the user's content carries other colour.
-**Type:** one sans for statements; labels on handles in the UI face at 34 px or more when they must be read.
+**Type:** one sans for statements; labels on handles in the UI face at 40 px or more when they must be read.
 **Materials:** frames, selection boxes with corner handles, measurement guides, multiplayer pointers with names, all
 pixel-real at film size.
 **Signature devices:** a selection that resizes into the next scene; guides snapping as an object lands; handles that

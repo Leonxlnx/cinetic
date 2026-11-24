@@ -322,7 +322,8 @@ block) while the world's light goes out. See `exits.md` (lights out).
 In "works with" rows, integrations and model pickers, use **real marks** of real products in their official form:
 `<BrandTile name="figma" />`, `<Brand name="stripe" color="#ffffff" />`, or an official file fetched into
 `public/logos` (`<Brand name="acme" file="logos/acme.svg" />`). Arrive them as cut-on placement (3.3) or reading-order
-pops (3.1); never draw a look-alike, never animate a third-party mark itself (no spins, no morphs).
+pops (3.1); never draw a look-alike, never a generic glyph or an emoji for a logo, never animate a third-party mark
+itself (no spins, no morphs).
 
 ---
 

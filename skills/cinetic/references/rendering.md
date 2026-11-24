@@ -16,6 +16,15 @@ Treat the user's machine with care.
 
 Read every sheet and strip you make (they are images): that is how you see the film. Judge motion from strips of a rendered
 preview, not from single frames.
+- `sheet` renders the whole film as 36 frozen frames in one still; `--safe` outlines the 8 % margin in every cell.
+  `--frames` zooms in on one moment (a turn, a morph). The sheet shows composition and rhythm, not small type: for any
+  beat with UI text or a label, also render `still --frame N` at full size and read the words.
+- `strip` shows a moment of the preview at 15 frames a second, so you can judge motion, not just layout.
+- `check` measures the preview (how crowded the frames are, change every half second, empty frames, ending length) and
+  prints what to fix. Its `air` line says how much of the frame is sharp detail, how often three or more things share a
+  frame and how often the frame cuts on two sides; a crowded film fails. The coverage figure is information, never a
+  target: do not add things to raise it. `--format loop` drops the sound, ending and music lines and fails when the last
+  frame does not match the first; `--format sting` has no pace gate under 8 s and lets the ending hold.
 
 ## Safety
 

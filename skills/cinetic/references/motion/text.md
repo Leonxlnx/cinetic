@@ -510,7 +510,7 @@ soft scan is last on purpose: it finishes a wordmark beside a mark, it does not 
   `ease.out` (most of it in the first 6 f, settling over ~24 f, no overshoot) while one sheen crosses it (`effects.md`
   section 8); the music drops out 0.7 s before the cut and a single kick lands on it.
 - **Scale-jump to tiny:** the claim giant and cropped for 15-20 f (8.5), then a hard cut to the same words at a cap of about
-  4 % of the frame height (34 px or more) under the mark, which is already settling.
+  4 % of the frame height (40 px or more) under the mark, which is already settling.
 - **Letter toss** (one title per film): one glyph per frame, each from (-55..-75, -60..-82) px, +35..+40 deg, scale 0.5,
   opacity 0.6, blur 3 px; position and rotation over 5 f `cubic-bezier(0.43,1.06,0.65,1.11)`; scale 0.5, 0.63, 0.79, 0.92,
   1.04, 1.06, 1.05, 1.03, 1.0. Only scale overshoots. 3-4 glyphs mid-flight at once.

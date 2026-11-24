@@ -136,6 +136,9 @@ Use one only when the brief truly asks for it.
 
 ## 3. Fixes for the most common failures
 
+Typical misses: a crowded frame, text used as texture, a line cut by the frame edge, dead frames, UI text under 30 px,
+the same layout beat after beat, a cut with nothing carried, a warm ground with a hot accent by habit.
+
 | Symptom on the sheet | Fix |
 |---|---|
 | a crowded frame | keep the subject, cut or move out everything else but one supporting element; give the line its own beat |
@@ -185,13 +188,13 @@ contrast of scale. If an answer is missing, the film is not ready, whatever it s
 | 7 | **Colour** | one accent on a tenth of the frame or less outside one ground cut; no two-colour statements, no coloured punctuation; for an invented brand no purple, no green, no default gradient, and not the warm-cream + hot-accent or neon-on-black default |
 | 8 | **UI craft** | one component at a time, flat or 12° or less, one radius family, real icons, specific copy and irregular numbers, UI text 30 px or more on screen; no overlapping tilted windows, no pasted chips |
 | 9 | **Marks** | the product mark has an idea and finish (a drawn glyph, a crafted tile, a custom wordmark); partner logos real; the lockup is not the glyph + wordmark + small line template |
-| 10 | **Type** | statements sized by word count, no word under 64 px, clean ground at 7:1, sentence case, centred or deliberately placed; no kicker over a heading, a figure or UI; needed labels 34 px or more |
+| 10 | **Type** | statements sized by word count, no word under 64 px, clean ground at 7:1, sentence case, centred or deliberately placed; no kicker over a heading, a figure or UI; needed labels a third of their line and 40 px or more |
 | 11 | **One concept, one world** | `BEATS.md` opens with the concept line; every thumbnail could only belong to this film (same ground system, palette, type, materials) |
 | 12 | **A first frame with an idea** | frame 0 is the concept's subject already moving (the product, the primitive, the first words, the mark); when the concept shows the product, it or its artefact is on screen by 5 s |
 | 13 | **Carried seams** | each seam pair shares an object, a direction, a shape or light; no blank frames, no grey mud midpoints, no two consecutive seams with the same device |
 | 14 | **Nothing holds** | no run of more than 4 identical thumbnails (1 s) before the ending; every hold creeps |
 | 15 | **Restrained vocabulary** | against the Devices block: at most 2 text arrival styles, 1 overshoot family, 4 flashes; the signature on 3 seams or fewer; no other device twice; at most 1 flood, and at most two of flood, relay, wall and a mark gathered from a wall |
-| 16 | **Pace** | at most 20 % of the half-seconds before the ending are nearly still (`check` pace); mean beat 0.8-1.6 s in films under 30 s (formats.md for slower formats) |
+| 16 | **Pace** | at most a quarter of the half-seconds before the ending are nearly still (`check` pace); mean beat 0.8-1.6 s in films under 30 s (formats.md for slower formats) |
 | 17 | **Composition variety** | no two adjacent beats share a composition; at least 4 compositions; the ground changes as the format asks |
 | 18 | **The camera goes to the event** | a held framing carries a large change about every 0.7 s; when something happens elsewhere the camera is on it or travelling; it moves on the machine's turn and holds while the person acts |
 | 19 | **The output and the spectacle** | where the concept requires it, the product's result is seen once in macro or as giant type (key words 120 px or more); the spectacle (15 s or more) lasts 1.5 s or more and reads |

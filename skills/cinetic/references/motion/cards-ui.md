@@ -338,7 +338,7 @@ at the end. A code card can **peek** 30 px at the bottom before rising (`entranc
 - **Product-colour stage:** flat glass cards (diagonal gradient sheen + 1 px rim at ~16 % white, no backdrop blur) on a
   saturated brand ground; a dark stage with a horizon glow for input moments; white for statements.
 - **Grid world:** UI shown flat, big and one component at a time on the same grid as the abstract shapes; sentence-case labels in the
-  UI face on chips with a coloured square bullet (20-28 px as texture, 34 px or more when read); corner handles as a recurring motif.
+  UI face on chips with a coloured square bullet (20-28 px as texture, 40 px or more when read); corner handles as a recurring motif.
 
 ---
 

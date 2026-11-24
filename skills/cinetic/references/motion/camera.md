@@ -20,7 +20,7 @@ push, turn)`, `shake(frame, start, dur, amp)`, `camAt`. From motion: `creep`, `l
 
 ## House rules
 
-1. **Never dead still for more than ~1 s.** Every hold creeps (0.5-1 % scale over 20-30 f, or 0.5-2 px/f drift). Only the
+1. **Never dead still for more than ~0.6 s.** Every hold creeps (0.5-1 % scale over 20-30 f, or 0.5-2 px/f drift). Only the
    lockup may freeze, after its own creep.
 2. **Pull back to establish; push in to leave.** Slow pull-backs (to 0.74-0.90 over 1-2 s) on establishing holds;
    accelerating push-ins (x1.46-1.74, quad-in) *into* transitions.
@@ -36,6 +36,9 @@ push, turn)`, `shake(frame, start, dur, amp)`, `camAt`. From motion: `creep`, `l
    both frames share; centre on the evidence, not the click; never zoom out before the result has been read.
 10. **The machine's turn moves, the person's turn holds.** While the person types, picks or presses, the camera is still
     (under ~10 px in 2.5 s); while the product works, the camera travels.
+11. **The camera goes to the event.** A framing may hold while something large changes in it about every 0.7 s (a line
+    lands, a panel turns, the UI acts); when only a label or a detail changes, move on: a push, a ride along the object, a
+    cut to macro. When the next thing happens somewhere else, the camera is already travelling to it.
 
 ---
 

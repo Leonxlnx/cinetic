@@ -31,7 +31,7 @@ A resting line (the size a normal statement settles at) is sized by how many wor
 | the wordmark on the end card | cap height 90-140 px | 600-700 for a sans mark, regular for a serif mark | by size |
 | a label the viewer needs | a third of the line it serves, 40 px or more | the UI's weight | 0 |
 | a texture label inside a UI component (chips, status lines, tags) | 20-28 px | the UI's weight | 0 |
-| UI text, on screen after the camera's zoom | 30-44 px | the UI's weight | 0 |
+| UI text, on screen after the camera's zoom | 30-44 px, 4.5:1 contrast or more | the UI's weight | 0 |
 
 - No statement word is under 64 px: not a lead-in word, not a second line, not the small word beside a giant one.
 - A line is at most 1500 px wide. A line that would be wider holds too many words: cut words or split it into two
@@ -82,7 +82,10 @@ A resting line (the size a normal statement settles at) is sized by how many wor
 - Text is readable or absent: never blurred, ghosted or faded copies of words, rows or code behind or around a line.
   When a claim answers what was just shown, cut the picture away (or out of frame) and set the line on clean ground; a
   short line alone on a clean, lit ground is a calm frame, not an empty one. `CornerMarks` can frame it without a box.
-- It keeps 8 % or more from every edge. Only the one spectacle word may be cut by the frame edge.
+- It keeps 8 % or more from every edge. The frame edge may cut only a single giant word (280 px or more) alone in the
+  frame, or one component in close-up that leaves on one side while the camera follows it: never a resting line of
+  normal size, never two or more sides at once, never the words the beat is about. The film's key figure or claim is
+  never cut by the frame, also while it counts or scales: size a rolling number so its widest state fits.
 - As words append, the line re-centres (`<Build>`; [lead-heavy re-centre](motion/text.md#12-lead-heavy-re-centre-append-mode)).
 - Off-centre only when the line answers an object beside it: a left-aligned block next to a UI card or a 3D object, 60 px
   of air or more between them, text and object centred together as one group. A poster world sets lines flush-left on its
@@ -93,7 +96,8 @@ A resting line (the size a normal statement settles at) is sized by how many wor
 
 - 2-6 words on screen at once. A longer thought becomes two beats.
 - Build them 1-3 words at a time, on the music: cut-on words (`<Words arrive="cut" times>`), an append that re-centres
-  (`<Build>`), a last-word swap (`<Swap>`), a masked rise. Two arrival styles a film. Never fade a whole line in.
+  (`<Build>`), a last-word swap (`<Swap>`), a decode, a colour wake, type set on a surface, a masked rise (two a film).
+  Two arrival styles a film. Never fade a whole line in.
 - One line on screen at a time.
 
 **One type treatment a film.** Beside its arrivals, a film picks one treatment for its statements (a slot in the
@@ -113,7 +117,8 @@ The born tint is one option, not the default.
 
 ## 9. Emphasis by colour
 
-At most one emphasised word or phrase a statement, in the accent; everything else in the ink. Punctuation is never
+At most one emphasised word or phrase a statement, in the accent, and in at most two statements a film; everything
+else in the ink. Punctuation is never
 coloured, and a line is never split into two colours with no word singled out. Emphasis by one of:
 - an accent word or short closing phrase in the brand accent (`accent` + `accentStyle` on `<Words>`, `wordStyle` on
   `<Build>`);
@@ -155,7 +160,10 @@ Never a third face, and never a serif because the film should "feel human" or "f
 
 - Labels are sentence case in the UI face, tracking 0.
 - Texture labels (UI chips, status lines, data tags nobody must read) may sit at 20-28 px. A label the viewer needs (a
-  stat's unit, a name under an avatar, the line under a giant word, the CTA) is a third of the line it serves and 40 px or more.
+  stat's unit, a caption, a date, a name under an avatar, the line under a giant word, the CTA) is a third of the line it
+  serves and 40 px or more.
+- Text never crops inside its own box (a chip, a field, a card): fit it (`useTextWidth`) or shorten it.
+- In product UI, type the first two or three words and land the rest at once (`<Typing burst>`).
 - `fonts.mono` is for code and data as written, inside UI or a terminal: commands, file names, numbers in a log. Never a
   statement, never an uppercase label, never letter-spaced.
 - `fonts.hand` is for a sketch or a note inside a product (a napkin, a margin). Never a statement.

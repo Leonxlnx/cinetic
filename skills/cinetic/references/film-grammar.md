@@ -63,6 +63,10 @@ thing 5, 11; content or people 6, 16; the opposite of what people assume 7; orde
 measurable 9; a dialogue 10; a habit 11; making things 12; three pillars 13; a belief or an identity 14; many uses 15,
 16. **By format:** [formats.md](formats.md) lists the concepts each format allows.
 
+**How the product is shown follows the concept:** its UI really used (task, artefact, update and explainer films), its
+output or its object (shape, point, object and number films), or its words (sentence, case and manifesto films). UI is
+used by a real pointer or by visible state changes.
+
 ---
 
 ## 1. Lengths and what they can hold
@@ -208,6 +212,10 @@ Alternate tension and release: FAST, SLOW, FAST, SLOW, FAST, HOLD. Put a deliber
 sometimes a held frame) right before the climax and right before the reveal.
 
 ### 4.2 Shot and beat lengths (30 fps)
+- Pace: a new beat every 0.8-1.6 s (a 30 s film has 20-35 beats). Inside a beat something larger than a caret changes
+  at least every 0.5 s (a word joins, a block lands, the crop changes, a value steps). A statement may rest for its
+  reading time with only a slow creep (a reading hold); up to a quarter of a film's half-seconds may rest like that,
+  and nothing else moves while a line is read. The flaw is a hold that waits for nothing.
 - Statement or title card: 30-45 f. Titles are 2-4 words; nothing on screen should need more than 1.5 s to read.
 - Reading hold for a line: `words / 3 + 0.5` s minimum (a 9-word line: 105 f). Read it aloud at speed to check.
   At the end the budget wins: the claim with its full reading time, read while its image still moves, then a lockup of
@@ -244,9 +252,13 @@ a dead stop reads as "next slide". The only cut that may land on stillness is th
 mark is usually mid-settle.
 
 ### 4.6 Nothing holds
-Every element keeps a residual motion after it settles: a creep of 0.5-1 % scale over 20 f, a drift of 0.5-2 px/f, a
+No frame holds dead still for more than ~0.6 s (a reading hold creeps). Every element keeps a residual motion after it
+settles: a creep of 0.5-1 % scale over 20 f, a drift of 0.5-2 px/f, a
 breathing glow, a scrolling stripe, a counter, a caret. Only the lockup is allowed to freeze, and only after it has crept.
 Test: no two consecutive frames identical anywhere except the last second.
+
+**A finished state does not hold.** When a list is full, a number has landed or a card is complete, cut within half a
+second or keep it changing (the camera pushes, the next thing arrives on it). Never 1 s of a finished thing.
 
 ---
 
@@ -376,10 +388,17 @@ one-artefact concepts and in updates, one row carries `output-big` (the product'
 words 120 px or more; a number is one option, a word, a picture or a state can be the giant output too).
 
 A film runs long when it shows a second full demo: show the core action once, end to end, and any other input as a 1-2 s
-variation of the same shot. Lengths by format are in section 1.
+variation of the same shot (that is how a 20 s film becomes 30). Lengths by format are in section 1.
+
+Every film has one scale jump (a giant word cut small, a dive, a pull-back), and every film that shows UI has a macro
+moment; neither has to open the film. A series rotates its compositions: three features, three metrics, two hosts,
+each in a different composition (macro, giant type, split, surface), never the same layout three times with the label
+swapped. The `output-big` row lands the result before or instead of at UI size (`<Output>` lands the words giant, then
+carries them into the UI). Explaining is one claim a shot, set on or along the object, never a column of text beside it.
 
 Every composition keeps one subject and air (SKILL.md quality 7): one thing to look at, at most one supporting element,
-type, UI and hard edges on about an eighth of the frame, the rest calm ground.
+type, UI and hard edges on about an eighth of the frame and never more than a third outside the spectacle, the rest
+calm ground. A short line or one component alone on a clean, lit ground is a calm frame, not an empty one.
 
 | Tag | What is in the frame | Typical use |
 |---|---|---|
@@ -503,7 +522,7 @@ primitive, the first words, the mark in a sting). Pick one:
 ### Seams and ground cuts
 
 Every seam names its device; `motion/turns.md` section 0 picks it by how the two beats relate. Neighbouring seams never
-share one. A film over 12 s changes ground at least twice, by two different devices. A film whose concept is continuous
+share one. A film over 12 s changes ground at least twice, on downbeats, by two different devices. A film whose concept is continuous
 (one unbroken camera, one object through many worlds, the shape that becomes everything, built from a point) or a loop
 may change the light on one ground instead (its Devices block then has "the light changes", not ground cuts):
 - **Iris** from one of the film's shapes (`motion/turns.md` 3).
@@ -519,7 +538,7 @@ may change the light on one ground instead (its Devices block then has "the ligh
 
 The one shot that could never be a slide (1.5-2.5 s, the row tagged `spectacle`, in films of 15 s or more). Pick it from
 what the product claims; a wall is right only when the claim is literally a quantity. It is the one beat where the frame
-may be dense.
+may be dense. Count its frames in `T`. One spectacle, not two.
 
 | The product claims | Spectacle | What the shot is |
 |---|---|---|
@@ -547,7 +566,8 @@ Whichever it is, it starts on the artefact the film has carried, large, so it re
 
 Never a row of logo tiles. One form, or none when the brief does not hinge on integrations (`motion/cards-ui.md`
 integrations): a relay with two hosts, an object-lock swap, a sentence whose slot swaps partner marks on the beat, or one
-host used for real in macro.
+host used for real in macro. One tour of other products a film (relay, swap, morph chain), at most 15 % of its length;
+the artefact is the largest text in each host (60 px or more).
 
 ### Lockups
 
@@ -577,6 +597,17 @@ centred, by habit. Pick the way that suits the signature:
 
 The wordmark's soft scan (`motion/text.md` 10) is a finish beside the mark, not a way for the mark to be born.
 
+- **Never a static logo card, never a fade to blank.** A centred wordmark on a plain ground is the commonest ending of
+  all: prefer the mark over the last image, the name as the last word of the sentence, the mark beside the product at
+  rest, or the product itself where the format allows.
+- **The claim** sits on clean ground and is fully readable for its reading time (when it needs longer, it stays on as
+  the lockup's line); a line of the claim is said once.
+- **A name revealed mid-film** is fine when it is the film's turn; then the end is the mark small with the CTA, not a
+  second reveal.
+- **Explainers, brand films and event promos** end on an end card of up to 4 s, still creeping.
+- **The product's own mark** is the user's file or, for an invented product, a mark with an idea (the glyph drawn from
+  the product's object is built once in the film). Two or three primitive rectangles are a placeholder, not a mark.
+
 ---
 
 ## 7. Planning discipline
@@ -588,5 +619,9 @@ The wordmark's soft scan (`motion/text.md` 10) is a finish beside the mark, not 
    answer. If two neighbouring seams use the same device, change one; across the film, only the signature repeats
    ([Devices](#devices)).
 4. Mark the held frames (at most one per act), the breath gaps and which elements run on the stepped clock.
-5. Copy: titles 2-4 words, sentence case, real nouns, never lorem. Render stills per beat and a sheet before a full
+5. Name the poster frame in `BEATS.md` before building: the one frame you would use as the film's thumbnail. It is a
+   crafted image (an object with material and light, a photograph, a figure with a real contrast of scale, the product's
+   result at full size), never a centred line on a ground. Build it first, render it as a still and judge it alone; the
+   film holds it for 1.5 s or more.
+6. Copy: titles 2-4 words, sentence case, real nouns, never lorem. Render stills per beat and a sheet before a full
    render; review with `taste.md`.
