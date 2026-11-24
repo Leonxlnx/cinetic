@@ -45,7 +45,8 @@ These eight qualities separate great launch films from template videos. Hold eve
    or by visible state changes; other companies as their current logos (`<Brand>`, `scripts/logos.mjs`), glyphs as real
    icons (`<Icon>`). Never a drawn look-alike, never an emoji for a logo, never lorem ipsum.
 7. **One subject and air.** One thing is clearly what the viewer looks at; at most one supporting element shares the
-   frame. About a third of the frame or more stays calm ground, and readable type and the focal UI keep 8 % or more from
+   frame. Type, UI and hard edges together take about an eighth of the frame in most beats and never more than a third
+   outside the spectacle; the rest is calm ground. A resting statement and the focal component keep 8 % or more from
    every edge. A short line or one component alone on a clean, lit ground is a calm frame, not an empty one. Density
    belongs to one spectacle beat, not to every beat. Depth comes from light and focus, not from stuff: one light
    direction, soft layered shadows (`softShadow`), depth of field on shapes (`Defocus`), scale jumps (a giant word cut to
@@ -109,15 +110,17 @@ does, search [INDEX.md](references/INDEX.md) (every recipe and section, one line
 
 **7. Look at it (after every section, and before you claim anything works).** Type-check first (`npx tsc --noEmit`; in a project that shares another folder's
 `node_modules`, `node <that folder>/node_modules/typescript/bin/tsc --noEmit -p .`).
-- `node scripts/frames.mjs sheet` renders the whole film as 36 frozen frames in one still: read the image.
+- `node scripts/frames.mjs sheet` renders the whole film as 36 frozen frames in one still: read the image (`--safe`
+  outlines the 8 % margin in every cell).
 - `node scripts/frames.mjs sheet --frames 120,126,132,...` zooms in on one moment (a turn, a morph).
   The sheet shows composition and rhythm, not small type: for any beat with UI text or a label, also render
   `node scripts/frames.mjs still --frame N` at full size and read the words.
 - `node scripts/frames.mjs render` makes a half-size preview video; `node scripts/frames.mjs strip out/main-preview.mp4 --at 4.2`
   shows a moment at 15 frames a second, so you can judge motion, not just layout.
-- `node scripts/frames.mjs check out/main-preview.mp4` measures the preview (the subject's reach, change every half
-  second, empty frames, ending length) and prints what to fix. Its coverage figure says how far the subject reaches,
-  not a target to chase: never add stuff to raise it.
+- `node scripts/frames.mjs check out/main-preview.mp4` measures the preview (how crowded the frames are, change every
+  half second, empty frames, ending length) and prints what to fix. Its `air` line says how much of the frame is sharp
+  detail, how often three or more things share a frame and how often the frame cuts on two sides; a crowded film fails.
+  The coverage figure is information, never a target: do not add things to raise it.
 Score the sheet with the rubric in [taste.md](references/taste.md) (20 points, look first; render at 17+). Fix the three
 worst things, render again.
 Typical misses: a crowded frame, text used as texture, a line cut by the frame edge, dead frames, UI text under 30 px,

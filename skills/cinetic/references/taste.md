@@ -104,8 +104,9 @@ Use one only when the brief truly asks for it.
 1. **One concept, chained.** The film can be told in one sentence, and its concept was chosen against two rejected ones.
    Every beat is caused by the previous one: an object becomes the next beat, a word carries across a cut, a hub is
    re-entered, one artefact runs through every feature. At least two chaining devices a film (`film-grammar.md` section 3).
-2. **One subject and air.** Each frame has one thing to look at, at most one supporting element, a third or more of calm
-   ground, and readable type 8 % or more from the edges. Density only in the spectacle.
+2. **One subject and air.** Each frame has one thing to look at, at most one supporting element, sharp detail (type,
+   UI, hard edges) on about an eighth of the frame, and a resting line 8 % or more from the edges. Density only in the
+   spectacle.
 3. **One world, held strictly.** One ground system (clean white, a soft field of neighbouring hues, a photograph, or a
    deep tone with one bloom), one palette (one accent, used for meaning, on a tenth of the frame or less), one sans voice
    for statements and UI (or the brand's serif voice for statements), mono only for code and data, one material family
@@ -163,14 +164,14 @@ Make two sheets before any final render: an **overview** (`node scripts/frames.m
 film) and a **beat sheet** (`node scripts/frames.mjs sheet --frames ...`: one still per beat at its most important frame,
 plus the first and last frame of every seam). Judge motion from strips of a preview (`frames.mjs strip`). Score each
 point 0 or 1. **17-20: render. 13-16: fix the failing points, re-sheet. 12 or less: restructure before touching
-motion.** Run `node scripts/frames.mjs check` on the preview first: it measures pace, holds and empty frames; its
-coverage figure is how far the subject reaches, not a target. Look points come first because a film can pass every
+motion.** Run `node scripts/frames.mjs check` on the preview first: it measures crowding (the `air` line), pace, holds and empty
+frames; its coverage figure is information, not a target. Look points come first because a film can pass every
 film point and still look generated.
 
 | # | Point | Pass when |
 |---|---|---|
 | 1 | **One subject** | in 80 % or more of the frames one element is clearly the subject (the brightest, most contrasted thing) and at most one supporting element shares the frame |
-| 2 | **Air** | in most frames a third or more is calm ground, and readable type and the focal UI sit 8 % or more from every edge |
+| 2 | **Air** | in most frames sharp detail (type, UI, hard edges) takes about an eighth of the frame and never more than a third, and a resting statement and the focal component sit 8 % or more from every edge |
 | 3 | **Clean crops** | the frame cuts only a lone giant word, or one component on one side in close-up; no resting line or key word is cut; never two sides at once |
 | 4 | **Readable or absent** | no blurred, ghosted or faded text behind or around statements; no walls of unreadable rows or code; a dense real panel at most once, for 2 s or less |
 | 5 | **Clean grounds** | clean white, soft fields of neighbouring hues, photographs or deep tones with one broad bloom; no grain on flat grounds, no vignette corners, no dimmed UI as a ground, no banding |

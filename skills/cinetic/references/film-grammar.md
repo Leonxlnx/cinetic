@@ -376,7 +376,7 @@ A film runs long when it shows a second full demo: show the core action once, en
 variation of the same shot. Lengths by format are in section 1.
 
 Every composition keeps one subject and air (SKILL.md quality 7): one thing to look at, at most one supporting element,
-a third of the frame or more calm ground.
+type, UI and hard edges on about an eighth of the frame, the rest calm ground.
 
 | Tag | What is in the frame | Typical use |
 |---|---|---|
