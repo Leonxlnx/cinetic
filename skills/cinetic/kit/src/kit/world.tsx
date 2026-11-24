@@ -1,36 +1,236 @@
 // Grounds, worlds and finish. A film lives in ONE world (see references/worlds.md); these are its pieces.
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { noise2D } from '@remotion/noise';
-import { at, ease, mix } from './motion';
+import { at, ease, mix, rand } from './motion';
 
+// ---- colour, in OKLab (perceptual: blends and lifts keep their hue instead of greying) ----
+type RGB = [number, number, number];
+type Lab = [number, number, number];
+/** Parse #rgb, #rrggbb(aa) or rgb()/rgba() to 0-255 channels; null if it cannot. */
+export const parseColor = (c: string): RGB | null => {
+  const s = c.trim();
+  if (s.startsWith('#')) {
+    let h = s.slice(1);
+    if (h.length === 3 || h.length === 4) h = h.slice(0, 3).split('').map((x) => x + x).join('');
+    const n = parseInt(h.slice(0, 6), 16);
+    return Number.isNaN(n) ? null : [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  const m = s.match(/rgba?\(\s*([\d.]+)[ ,]+([\d.]+)[ ,]+([\d.]+)/i);
+  return m ? [+m[1], +m[2], +m[3]] : null;
+};
+const toLin = (v: number) => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+const toSrgb = (v: number) => { const c = v <= 0.0031308 ? v * 12.92 : 1.055 * Math.max(0, v) ** (1 / 2.4) - 0.055; return Math.round(Math.min(1, Math.max(0, c)) * 255); };
+export const toLab = (rgb: RGB): Lab => {
+  const [r, g, b] = rgb.map(toLin);
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s];
+};
+export const fromLab = ([L, A, B]: Lab): RGB => {
+  const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3;
+  const m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3;
+  const s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
+  return [toSrgb(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s), toSrgb(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s), toSrgb(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s)];
+};
+const hexOf = ([r, g, b]: RGB) => `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+const labOf = (c: string): Lab => toLab(parseColor(c) ?? [128, 128, 128]);
+/** Luma 0-1 (Rec. 709 weights on the sRGB values): the light/dark measure Ground and Grain use (0.5 splits them). */
+export const luminance = (c: string) => {
+  const rgb = parseColor(c);
+  if (!rgb) return 0.5;
+  return (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255;
+};
+/** Mix two colours in OKLab (p = 0 gives a, 1 gives b). */
+export const mixLab = (a: string, b: string, p: number) => {
+  const x = labOf(a);
+  const y = labOf(b);
+  return hexOf(fromLab([x[0] + (y[0] - x[0]) * p, x[1] + (y[1] - x[1]) * p, x[2] + (y[2] - x[2]) * p]));
+};
+/** Lift a colour toward light in its own hue (amt 0-1 of the way to white in lightness; the chroma stays). */
+export const liftColor = (c: string, amt: number, tint?: string) => {
+  const [L, A, B] = labOf(c);
+  const t = tint ? labOf(tint) : null;
+  const L2 = L + (1 - L) * amt;
+  // the hue of the light: the ground's own, or a neighbouring tint mixed in by how strong the lift is
+  const k = t ? Math.min(1, amt * 3) : 0;
+  return hexOf(fromLab([L2, A + ((t ? t[1] : A) - A) * k, B + ((t ? t[2] : B) - B) * k]));
+};
+// the old shadeHex: kept for anything that still mixes in sRGB
 const shadeHex = (hex: string, toward: string, p: number) => {
-  const n = (h: string) => parseInt(h.replace('#', '').slice(0, 6), 16);
-  const a = n(hex);
-  const b = n(toward);
-  const c = (sh: number) => Math.round(((a >> sh) & 255) + ((((b >> sh) & 255) - ((a >> sh) & 255)) * p));
-  return `rgb(${c(16)}, ${c(8)}, ${c(0)})`;
+  const a = parseColor(hex) ?? [0, 0, 0];
+  const b = parseColor(toward) ?? [0, 0, 0];
+  return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * p)).join(', ')})`;
 };
 
 /**
- * A ground in one colour, lit: a soft light in its own hue behind the subject and a gentle fall-off to the edges, so the
- * subject sits in light, not on a flat fill. `light` places it ({ x, y } as shares of the frame, `size`, `amount` 0-1);
- * `light={false}` keeps the ground flat (only when a mass fills the frame, or when the fill must match a flood exactly).
+ * Dither: noise one or two levels of an 8-bit channel deep, new every frame, laid over a gradient so it never steps into
+ * bands (worst on dark grounds after H.264). Invisible by design: it is not grain. Ground and Field already carry it.
+ */
+export const Dither: React.FC<{ amount?: number }> = ({ amount = 1 }) => {
+  const frame = useCurrentFrame();
+  const seed = frame % 48;
+  return (
+    <AbsoluteFill style={{ pointerEvents: 'none', mixBlendMode: 'overlay', opacity: 0.07 * amount }}>
+      <svg width="100%" height="100%">
+        <filter id={`dither${seed}`} x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="1" seed={seed} stitchTiles="stitch" />
+          <feColorMatrix type="saturate" values="0" />
+        </filter>
+        <rect width="100%" height="100%" filter={`url(#dither${seed})`} />
+      </svg>
+    </AbsoluteFill>
+  );
+};
+
+/**
+ * A ground in one colour, and its light. Never dark corners: the light only LIFTS a broad area in the ground's own hue
+ * and falls to exactly the ground's colour at its edge. A dark ground (luminance < 0.5) gets one broad soft bloom (14 %
+ * by default); a light ground lifts 2.5 % at most 4 % (a light ground is clean, not lit). `tint` gives the bloom a
+ * neighbouring hue (a navy ground with a brighter blue bloom). `light={{ x, y, size, amount }}` places it (shares of the
+ * frame); `light={false}` keeps it flat. A dither keeps the gradient from banding.
  */
 export const Ground: React.FC<{
   color: string;
   light?: boolean | { x?: number; y?: number; size?: number; amount?: number };
+  tint?: string;
   children?: React.ReactNode;
   style?: React.CSSProperties;
-}> = ({ color, light = true, children, style }) => {
+}> = ({ color, light = true, tint, children, style }) => {
   const l = light === false ? null : light === true ? {} : light;
-  // visible on a thumbnail: a dark ground takes a stronger light than a light one (which mostly darkens at its edges)
-  const lum = (() => { const n = parseInt(color.replace('#', '').slice(0, 6), 16); return (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255; })();
-  const amt = l?.amount ?? (lum < 0.5 ? 0.18 : 0.08);
-  const background = l
-    ? `radial-gradient(ellipse ${(l.size ?? 0.75) * 100}% ${(l.size ?? 0.75) * 95}% at ${(l.x ?? 0.5) * 100}% ${(l.y ?? 0.46) * 100}%, ${shadeHex(color, '#ffffff', amt)} 0%, ${color} 62%, ${shadeHex(color, '#000000', amt * 0.9)} 100%)`
-    : color;
-  return <AbsoluteFill style={{ background, ...style }}>{children}</AbsoluteFill>;
+  const lum = luminance(color);
+  const dark = lum < 0.5;
+  const amt = Math.min(dark ? 0.3 : 0.04, l?.amount ?? (dark ? 0.14 : 0.025));
+  const lit = l && amt > 0.002 && parseColor(color);
+  let background = color;
+  if (lit) {
+    const centre = liftColor(color, amt, tint);
+    const size = l.size ?? 0.9;
+    // a broad plateau that falls smoothly (a bisquare kernel) to exactly the ground's colour: no ring, no dark edge
+    const stops = Array.from({ length: 9 }, (_, i) => {
+      const t = i / 8;
+      return `${mixLab(color, centre, (1 - t * t) ** 2)} ${(t * 100).toFixed(1)}%`;
+    }).join(', ');
+    background = `radial-gradient(ellipse ${size * 100}% ${size * 100}% at ${(l.x ?? 0.5) * 100}% ${(l.y ?? 0.44) * 100}%, ${stops}), ${color}`;
+  }
+  return (
+    <AbsoluteFill data-ground-lum={lum.toFixed(3)} style={{ background, ...style }}>
+      {lit && <Dither />}
+      {children}
+    </AbsoluteFill>
+  );
+};
+
+/**
+ * A soft field of 2-4 neighbouring hues that drift slowly: light on a ground, never a blob wallpaper. Every pixel is a
+ * blend of the colours in OKLab (so two hues meet through their true midpoint, never a grey seam), drawn on a small
+ * canvas and scaled up (the field is smooth, so nothing is lost), then dithered. Deterministic from the frame.
+ * `points` ({ x, y, r } shares of the frame, one per colour) place the hues; `drift` is how far they wander (share of
+ * the frame, 0.04 by default), `speed` how fast (1 = a wander of about 20 s).
+ */
+export const Field: React.FC<{
+  colors: string[];
+  points?: Array<{ x: number; y: number; r?: number }>;
+  drift?: number;
+  speed?: number;
+  seed?: number;
+  children?: React.ReactNode;
+  style?: React.CSSProperties;
+}> = ({ colors, points, drift = 0.04, speed = 1, seed = 1, children, style }) => {
+  const frame = useCurrentFrame();
+  const { width: FW, height: FH } = useVideoConfig();
+  const ref = useRef<HTMLCanvasElement>(null);
+  const n = colors.length;
+  const layout: Record<number, Array<[number, number]>> = {
+    1: [[0.5, 0.5]],
+    2: [[0.22, 0.28], [0.8, 0.78]],
+    3: [[0.18, 0.24], [0.84, 0.3], [0.5, 0.92]],
+    4: [[0.16, 0.2], [0.86, 0.22], [0.2, 0.9], [0.84, 0.86]],
+  };
+  const base = layout[Math.min(4, Math.max(1, n))] ?? layout[4];
+  const pts = colors.map((c, i) => {
+    const p = points?.[i];
+    const b = base[i % base.length];
+    const x0 = p?.x ?? b[0] + (rand(seed * 31 + i) - 0.5) * 0.12;
+    const y0 = p?.y ?? b[1] + (rand(seed * 17 + i * 5) - 0.5) * 0.12;
+    const t = frame * 0.0016 * speed;
+    return {
+      lab: labOf(c),
+      x: (x0 + noise2D(`fx${seed}-${i}`, t, i * 3.1) * drift) * FW,
+      y: (y0 + noise2D(`fy${seed}-${i}`, i * 2.7, t) * drift) * FH,
+      r: (p?.r ?? 0.42) * FW,
+    };
+  });
+  const lumAvg = colors.reduce((s, c) => s + luminance(c), 0) / Math.max(1, n);
+  const key = pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(';') + colors.join();
+  useLayoutEffect(() => {
+    const c = ref.current;
+    if (!c) return;
+    const W = 320;
+    const H = Math.round((W * FH) / FW);
+    c.width = W;
+    c.height = H;
+    const g = c.getContext('2d');
+    if (!g) return;
+    const img = g.createImageData(W, H);
+    const sx = FW / W;
+    const sy = FH / H;
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        let ws = 0;
+        let L = 0;
+        let A = 0;
+        let B = 0;
+        for (const p of pts) {
+          const dx = (x + 0.5) * sx - p.x;
+          const dy = (y + 0.5) * sy - p.y;
+          // gaussian weights, normalised: a smooth partition of the frame between the hues
+          const w = Math.exp(-(dx * dx + dy * dy) / (2 * p.r * p.r)) + 1e-6;
+          ws += w;
+          L += w * p.lab[0];
+          A += w * p.lab[1];
+          B += w * p.lab[2];
+        }
+        const [r, gg, b] = fromLab([L / ws, A / ws, B / ws]);
+        const o = (y * W + x) * 4;
+        img.data[o] = r;
+        img.data[o + 1] = gg;
+        img.data[o + 2] = b;
+        img.data[o + 3] = 255;
+      }
+    g.putImageData(img, 0, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, FW, FH]);
+  return (
+    <AbsoluteFill data-ground-lum={lumAvg.toFixed(3)} style={{ background: colors[0], ...style }}>
+      <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+      <Dither />
+      {children}
+    </AbsoluteFill>
+  );
+};
+
+/**
+ * A soft shadow: 5 layers whose offset and blur double (one light, from above), each at a few % alpha, tinted to the
+ * ground's hue (a shadow is the ground in less light, never grey). `level` is the height: 1 a chip, 2 a resting card,
+ * 3 a raised card (UI themes), 4-5 a hero object or a floating device, 6-8 a large device or a modal. Pass the ground
+ * the object sits on; a dark ground gets denser layers (its shadow has less room to darken).
+ */
+export const softShadow = (level = 3, ground = '#F2F2F0') => {
+  const [L, A, B] = labOf(ground);
+  const dark = L < 0.6;
+  // the shadow colour: the ground's hue, much darker, a little less chroma
+  const col = fromLab([dark ? 0.08 : Math.min(0.32, L * 0.35), A * 0.6, B * 0.6]);
+  const base = 0.5 + level * 0.5;
+  const alpha = (dark ? 0.2 : 0.085) * (1 - Math.min(0.5, level * 0.04));
+  const layers = [0, 1, 2, 3, 4].map((i) => {
+    const o = base * 2 ** i * 0.6;
+    const a = alpha * (1 - i * 0.1);
+    return `0 ${o.toFixed(1)}px ${(o * 2).toFixed(1)}px rgba(${col.join(',')},${a.toFixed(3)})`;
+  });
+  // a tight contact layer under everything: the edge sits ON the ground
+  return [`0 0.5px 1px rgba(${col.join(',')},${(dark ? 0.3 : 0.06).toFixed(3)})`, ...layers].join(', ');
 };
 
 /**
@@ -106,9 +306,23 @@ export const GridLines: React.FC<{
   );
 };
 
+/** Darken a colour in OKLab lightness, keeping its hue (amt 0-1). */
+const dimColor = (c: string, amt: number) => {
+  const [L, A, B] = labOf(c);
+  return hexOf(fromLab([L * (1 - amt), A * (1 - amt * 0.3), B * (1 - amt * 0.3)]));
+};
+const withAlpha = (c: string, a: number) => {
+  const rgb = parseColor(c) ?? [0, 0, 0];
+  return `rgba(${rgb.join(',')},${a.toFixed(3)})`;
+};
+
 /**
- * A solid box in CSS 3D with six faces. Put content on `top` / `front` / `side` faces (text set ON the object,
- * like a label printed on a block). Lives inside a <Camera>. Light comes from the top-left: top face brightest.
+ * A solid box in CSS 3D, lit from above: every face carries a top-lit gradient (bright where it meets the light, darker
+ * toward the floor), a 1 px light edge where the faces meet, and a contact shadow on the floor that spreads and softens
+ * with the box's height. Put content on `top` / `front` / `side` faces (text set ON the object). Lives inside a <Camera>.
+ * `material`: 'matte' (default, clay or card stock), 'gloss' (a specular band and brighter edges), 'glass' (tinted,
+ * see-through faces with bright rims). `bevel` (px) rounds the edges by light (a band where a round edge turns to the
+ * light); real rounded solids need GL (`glRoundedBox` in gl.tsx). `ground` tints the shadow to the floor's hue.
  */
 export const Box: React.FC<{
   w: number;
@@ -123,12 +337,41 @@ export const Box: React.FC<{
   frontContent?: React.ReactNode;
   sideContent?: React.ReactNode;
   radius?: number;
+  /** An explicit edge line colour (replaces the default 1 px light edge). */
   edge?: string;
   style?: React.CSSProperties;
-  /** A soft contact shadow on the floor under the block (0 = none). Objects without one float and read code-made. */
+  /** Strength of the contact shadow on the floor (0 = none). Objects without one float and read code-made. */
   shadow?: number;
-}> = ({ w, d, h, color, top, front, side, topContent, frontContent, sideContent, radius = 0, edge, style, shadow = 0.35 }) => {
-  const face = (bg: string, ww: number, hh: number, transform: string, content?: React.ReactNode, key?: string) => (
+  bevel?: number;
+  material?: 'matte' | 'gloss' | 'glass';
+  ground?: string;
+}> = ({ w, d, h, color, top, front, side, topContent, frontContent, sideContent, radius = 0, edge, style, shadow = 0.35, bevel = 0, material = 'matte', ground }) => {
+  const gloss = material === 'gloss';
+  const glass = material === 'glass';
+  const topC = top ?? color;
+  const frontC = front ?? shade(color, -0.12);
+  const sideC = side ?? shade(color, -0.24);
+  const edgeA = glass ? 0.55 : gloss ? 0.5 : 0.28;
+  const fa = glass ? 0.3 : 1; // face opacity (glass sees through)
+  const paint = (c: string) => (glass ? withAlpha(c, fa) : c);
+  // a side face: lit at its top edge, falling toward the floor (`up`: which CSS direction of the face points up the box)
+  // a face given as a CSS gradient or image is used as it is (only the edges are added)
+  const isCol = (c: string) => parseColor(c) !== null;
+  const sideBg = (c: string, up: 'top' | 'bottom') =>
+    isCol(c) ? `linear-gradient(to ${up === 'top' ? 'bottom' : 'top'}, ${paint(liftColor(c, gloss ? 0.07 : 0.035))} 0%, ${paint(c)} 38%, ${paint(dimColor(c, gloss ? 0.16 : 0.1))} 100%)` : c;
+  const topBg =
+    (gloss ? `linear-gradient(118deg, transparent 30%, rgba(255,255,255,0.2) 44%, rgba(255,255,255,0.06) 52%, transparent 64%), ` : '') +
+    (isCol(topC) ? `linear-gradient(160deg, ${paint(liftColor(topC, gloss ? 0.07 : 0.045))} 0%, ${paint(topC)} 62%, ${paint(dimColor(topC, 0.03))} 100%)` : topC);
+  const lightEdge = (side: 'top' | 'bottom' | 'all') => {
+    const line = edge ? `inset 0 0 0 1.5px ${edge}` : side === 'all' ? `inset 0 0 0 1px rgba(255,255,255,${edgeA * 0.7})` : `inset 0 ${side === 'top' ? 1 : -1}px 0 rgba(255,255,255,${edgeA})`;
+    if (!bevel) return line;
+    // a rounded edge by light: the top face darkens slightly toward its rim (the surface turns away from the light), a
+    // side face brightens in a band under its top edge (it turns toward it)
+    if (side === 'all') return `${line}, inset 0 0 ${bevel * 1.4}px ${bevel * 0.2}px ${withAlpha(isCol(topC) ? dimColor(topC, 0.35) : '#000', 0.22)}, inset 0 0 0 ${Math.max(1, bevel * 0.12)}px rgba(255,255,255,${edgeA * 0.5})`;
+    const s = side === 'top' ? 1 : -1;
+    return `${line}, inset 0 ${s * bevel * 0.9}px ${bevel}px -${bevel * 0.4}px rgba(255,255,255,${gloss ? 0.3 : 0.18})`;
+  };
+  const face = (bg: string, ww: number, hh: number, transform: string, shadowCss: string, content?: React.ReactNode, key?: string) => (
     <div
       key={key}
       style={{
@@ -140,8 +383,8 @@ export const Box: React.FC<{
         background: bg,
         transform,
         borderRadius: radius,
-        boxShadow: edge ? `inset 0 0 0 1.5px ${edge}` : undefined,
-        backfaceVisibility: 'hidden',
+        boxShadow: shadowCss,
+        backfaceVisibility: glass ? 'visible' : 'hidden',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -151,32 +394,44 @@ export const Box: React.FC<{
       {content}
     </div>
   );
+  // the shadow: the floor's hue in less light (black when no ground is given)
+  const sc = ground ? fromLab((([L, A, B]) => [Math.min(0.25, L * 0.3), A * 0.6, B * 0.6] as Lab)(labOf(ground))) : ([0, 0, 0] as RGB);
+  const sA = shadow * (glass ? 0.5 : 1);
+  const m = Math.min(w, d);
+  const spread = Math.min(0.5, (h / m) * 0.18);
+  const floor = (k: number, grow: number, dx: number, dy: number, blur: number, a: number) => (
+    <div
+      key={k}
+      style={{
+        position: 'absolute',
+        left: -(w * (1 + grow)) / 2 + dx,
+        top: -(d * (1 + grow)) / 2 + dy,
+        width: w * (1 + grow),
+        height: d * (1 + grow),
+        borderRadius: Math.max(radius, m * 0.06),
+        background: `rgba(${sc.join(',')},${Math.min(1, a).toFixed(3)})`,
+        filter: `blur(${blur.toFixed(1)}px)`,
+        transform: `translateZ(${0.3 + k * 0.1}px)`,
+      }}
+    />
+  );
   return (
     <div style={{ position: 'absolute', transformStyle: 'preserve-3d', ...style }}>
-      {shadow > 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            left: -w * 0.62 + w * 0.08,
-            top: -d * 0.62 + d * 0.1,
-            width: w * 1.24,
-            height: d * 1.24,
-            borderRadius: Math.max(radius, Math.min(w, d) * 0.12),
-            background: `rgba(0,0,0,${shadow})`,
-            filter: `blur(${Math.max(6, Math.min(w, d) * 0.08 + h * 0.06)}px)`,
-            transform: 'translateZ(0.5px)',
-          }}
-        />
-      )}
+      {sA > 0 && [
+        // the wide soft shadow: spreads, softens and slides away from the light (top-left) as the box gets taller
+        floor(0, 0.1 + spread, h * 0.12, h * 0.16, Math.max(10, m * 0.05 + h * 0.3), sA * 0.55),
+        // the contact: dark and tight where the box meets the floor
+        floor(1, 0.02, 0, 0, Math.max(3, m * 0.018), sA * 0.9),
+      ]}
       {/* top face, lying in the XY plane at z = h (the camera looks down on it when rx > 0) */}
-      {face(top ?? color, w, d, `translateZ(${h}px)`, topContent, 't')}
-      {/* front face (toward +y) */}
-      {face(front ?? shade(color, -0.12), w, h, `translateY(${d / 2}px) translateZ(${h / 2}px) rotateX(-90deg)`, frontContent, 'f')}
-      {/* right side (toward +x) */}
-      {face(side ?? shade(color, -0.24), d, h, `translateX(${w / 2}px) translateZ(${h / 2}px) rotateY(90deg) rotateZ(90deg)`, sideContent, 's')}
+      {face(topBg, w, d, `translateZ(${h}px)`, lightEdge('all'), topContent, 't')}
+      {/* front face (toward +y); its CSS top edge is the box's top edge */}
+      {face(sideBg(frontC, 'top'), w, h, `translateY(${d / 2}px) translateZ(${h / 2}px) rotateX(-90deg)`, lightEdge('top'), frontContent, 'f')}
+      {/* right side (toward +x); its CSS bottom edge is the box's top edge */}
+      {face(sideBg(sideC, 'bottom'), d, h, `translateX(${w / 2}px) translateZ(${h / 2}px) rotateY(90deg) rotateZ(90deg)`, lightEdge('bottom'), sideContent, 's')}
       {/* left and back faces so the box reads solid from any orbit */}
-      {face(side ?? shade(color, -0.24), d, h, `translateX(${-w / 2}px) translateZ(${h / 2}px) rotateY(-90deg) rotateZ(-90deg)`, sideContent ? <div style={{ transform: 'rotate(180deg)' }}>{sideContent}</div> : undefined, 'l')}
-      {face(front ?? shade(color, -0.12), w, h, `translateY(${-d / 2}px) translateZ(${h / 2}px) rotateX(90deg)`, undefined, 'b')}
+      {face(sideBg(sideC, 'bottom'), d, h, `translateX(${-w / 2}px) translateZ(${h / 2}px) rotateY(-90deg) rotateZ(-90deg)`, lightEdge('bottom'), sideContent ? <div style={{ transform: 'rotate(180deg)' }}>{sideContent}</div> : undefined, 'l')}
+      {face(sideBg(frontC, 'bottom'), w, h, `translateY(${-d / 2}px) translateZ(${h / 2}px) rotateX(90deg)`, lightEdge('bottom'), undefined, 'b')}
     </div>
   );
 };
@@ -192,25 +447,136 @@ export const shade = (hex: string, amt: number) => {
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 };
 
-/** Film grain: animated, fine, subtle. 0.04-0.08 on dark grounds, 0.03 on light. Always the top layer. */
-export const Grain: React.FC<{ amount?: number; blend?: React.CSSProperties['mixBlendMode']; still?: boolean }> = ({ amount = 0.06, blend = 'overlay', still = false }) => {
+/**
+ * Film grain: animated, fine, subtle (0.03-0.06), always the top layer. For photographs and footage, and at most a touch
+ * on a deep ground. On a light ground (luma 0.6 or more) it draws NOTHING unless `force`: visible grain on a flat light
+ * ground reads as mud, a dirty screen, not film. It finds the ground itself (the Ground, Field or Paper mounted beside it
+ * in the film), or takes `ground` (a colour) when you pass one. Banding is the Dither's job, not grain's.
+ */
+export const Grain: React.FC<{ amount?: number; blend?: React.CSSProperties['mixBlendMode']; still?: boolean; force?: boolean; ground?: string }> = ({
+  amount = 0.05,
+  blend = 'overlay',
+  still = false,
+  force = false,
+  ground,
+}) => {
   const frame = useCurrentFrame();
+  const ref = useRef<HTMLDivElement>(null);
+  const [off, setOff] = useState(false);
+  useLayoutEffect(() => {
+    let light = false;
+    if (!force) {
+      if (ground) light = luminance(ground) >= 0.6;
+      else {
+        // the nearest ancestor that holds a ground: every ground mounted on this frame must be light
+        let el: HTMLElement | null = ref.current?.parentElement ?? null;
+        for (let k = 0; el && k < 12; k++, el = el.parentElement) {
+          const gs = Array.from(el.querySelectorAll<HTMLElement>('[data-ground-lum]'));
+          if (gs.length) {
+            light = gs.every((g) => parseFloat(g.dataset.groundLum ?? '0') >= 0.6);
+            break;
+          }
+        }
+      }
+    }
+    if (light !== off) setOff(light);
+  }, [frame, force, ground, off]);
   // still: a fixed fibre (paper, card stock); otherwise film grain that moves every frame
   const seed = still ? 3 : frame % 8;
   return (
-    <AbsoluteFill style={{ pointerEvents: 'none', mixBlendMode: blend, opacity: amount * 6 }}>
-      <svg width="100%" height="100%">
-        <filter id={`grain${seed}`}>
-          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed={seed} stitchTiles="stitch" />
-          <feColorMatrix type="saturate" values="0" />
-        </filter>
-        <rect width="100%" height="100%" filter={`url(#grain${seed})`} />
-      </svg>
+    <AbsoluteFill ref={ref} style={{ pointerEvents: 'none', mixBlendMode: blend, opacity: amount * 6, display: off ? 'none' : undefined }}>
+      {!off && (
+        <svg width="100%" height="100%">
+          <filter id={`grain${seed}`}>
+            <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed={seed} stitchTiles="stitch" />
+            <feColorMatrix type="saturate" values="0" />
+          </filter>
+          <rect width="100%" height="100%" filter={`url(#grain${seed})`} />
+        </svg>
+      )}
     </AbsoluteFill>
   );
 };
 
-/** Vignette: pulls the eye to the centre. 0.25-0.45. */
+/**
+ * Four small marks that frame a line or a component without a box: dots (small squares, crisp at any size) or
+ * brackets at the corners of a w x h box. Place it in the same positioned parent as the thing it frames (its box starts
+ * at the parent's 0, 0); `inset` moves the marks inward (negative: outward, with air). From `appear` they arrive one by
+ * one in reading order (TL, TR, BR, BL), each sliding a few px out from the centre into its corner.
+ */
+export const CornerMarks: React.FC<{
+  w: number;
+  h: number;
+  inset?: number;
+  size?: number;
+  color?: string;
+  shape?: 'dot' | 'bracket';
+  appear?: number;
+  x?: number;
+  y?: number;
+  style?: React.CSSProperties;
+}> = ({ w, h, inset = 0, size, color = '#0E1116', shape = 'dot', appear, x = 0, y = 0, style }) => {
+  const frame = useCurrentFrame();
+  const s = size ?? (shape === 'dot' ? 9 : 22);
+  const t = shape === 'dot' ? s : Math.max(1.5, s * 0.09);
+  const corners: Array<[number, number]> = [[0, 0], [1, 0], [1, 1], [0, 1]];
+  return (
+    <div style={{ position: 'absolute', left: x, top: y, width: w, height: h, pointerEvents: 'none', ...style }}>
+      {corners.map(([cx, cy], i) => {
+        const p = appear === undefined ? 1 : at(frame, appear + i * 3, 10, ease.out);
+        if (p <= 0) return null;
+        const sx = cx ? -1 : 1; // toward the inside
+        const sy = cy ? -1 : 1;
+        const px = cx * w + sx * inset;
+        const py = cy * h + sy * inset;
+        const slide = (1 - p) * 14;
+        const common: React.CSSProperties = { position: 'absolute', opacity: Math.min(1, p * 1.6), transform: `translate(${sx * slide}px, ${sy * slide}px)` };
+        if (shape === 'dot')
+          return <div key={i} style={{ ...common, left: px - s / 2, top: py - s / 2, width: s, height: s, borderRadius: s * 0.16, background: color }} />;
+        // a bracket: two strokes meeting at the corner, opening toward the inside
+        return (
+          <div
+            key={i}
+            style={{
+              ...common,
+              left: cx ? px - s : px,
+              top: cy ? py - s : py,
+              width: s,
+              height: s,
+              boxSizing: 'border-box',
+              borderStyle: 'solid',
+              borderColor: color,
+              borderWidth: `${cy ? 0 : t}px ${cx ? t : 0}px ${cy ? t : 0}px ${cx ? 0 : t}px`,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
+/**
+ * Depth of field for SHAPES: wraps a card, an icon, a photograph or an object and blurs it by its distance from the
+ * plane in focus (`z` the thing's depth, `focusZ` the focus, both in the Camera's z units; `aperture` px of blur per
+ * 100 units, `max` the cap). Animate `focusZ` to pull focus from one object to another. Never wrap a block of text in
+ * it: blurred words read as a mistake, not as depth (dim or move text instead).
+ */
+export const Defocus: React.FC<{ z: number; focusZ?: number; aperture?: number; max?: number; children: React.ReactNode; style?: React.CSSProperties }> = ({
+  z,
+  focusZ = 0,
+  aperture = 2.2,
+  max = 16,
+  children,
+  style,
+}) => {
+  const b = Math.min(max, (Math.abs(z - focusZ) / 100) * aperture);
+  return <div style={{ filter: b > 0.15 ? `blur(${b.toFixed(2)}px)` : undefined, ...style }}>{children}</div>;
+};
+
+/**
+ * Vignette: darkened edges. A rare effect, for a photograph or footage plate only (a lens look), at 0.15-0.3; never on a
+ * flat or gradient ground, where it reads as dark corners, the first tell of a cheap film.
+ */
 export const Vignette: React.FC<{ amount?: number; color?: string }> = ({ amount = 0.35, color = '0,0,0' }) => (
   <AbsoluteFill style={{ pointerEvents: 'none', background: `radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(${color},${amount}) 100%)` }} />
 );
@@ -412,7 +778,7 @@ export const GlassPanel: React.FC<{ w?: number; h?: number; radius?: number; tin
       borderRadius: radius,
       overflow: 'hidden',
       background: `linear-gradient(160deg, ${tint}${Math.round(0x29 * lit).toString(16).padStart(2, '0')}, ${tint}0A)`,
-      boxShadow: `inset 0 1px 0 rgba(255,255,255,${0.45 * lit}), inset 0 0 0 1px rgba(255,255,255,${0.14 * lit}), 0 30px 60px -20px rgba(0,0,0,0.7)`,
+      boxShadow: `inset 0 1px 0 rgba(255,255,255,${0.45 * lit}), inset 0 0 0 1px rgba(255,255,255,${0.14 * lit}), ${softShadow(4, '#0B0C0F')}`,
       ...style,
     }}
   >
@@ -423,7 +789,7 @@ export const GlassPanel: React.FC<{ w?: number; h?: number; radius?: number; tin
 
 /** Paper: a still fibre texture over a flat ground colour (editorial worlds). Put it under the content. */
 export const Paper: React.FC<{ color?: string; fibre?: number }> = ({ color, fibre = 0.05 }) => (
-  <AbsoluteFill style={{ background: color }}>
+  <AbsoluteFill data-ground-lum={color ? luminance(color).toFixed(3) : undefined} style={{ background: color }}>
     <AbsoluteFill style={{ mixBlendMode: 'multiply', opacity: fibre * 8 }}>
       <svg width="100%" height="100%">
         <filter id="paper-fibre">

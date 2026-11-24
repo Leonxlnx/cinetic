@@ -5,7 +5,7 @@ in**. In both cases they must look like one shoot, and they must be *acted on*: 
 re-coloured by state. Random stock with mixed grades, used as wallpaper behind text, is the clearest template tell there is.
 All numbers at 30 fps, 1920x1080.
 
-Kit: Remotion's `Img`, `OffthreadVideo`, `staticFile`; `Camera`, `At` (camera); `Card`, `Box`, `Grain`, `Vignette`
+Kit: Remotion's `Img`, `OffthreadVideo`, `staticFile`; `Camera`, `At` (camera); `Card`, `Box`, `Grain` (on photographs only), `Defocus`
 (world); motion helpers. Most image treatments here are SVG filters or CSS layers; the reusable ones are listed as kit gaps.
 
 ## House rules

@@ -1,9 +1,11 @@
 # Worked films
 
 Five complete films made with the kit, one world each. Read one before your first film: they show the kit used the way the
-skill intends (one timeline `T`, one component per section, sound cues on the same frames). Take single moves, never
-the content or the order: these five share devices (a flood, a relay, a wall) that a new film should choose
-from the menus in `references/film-grammar.md`, not repeat. Render one inside this folder (`node scripts/frames.mjs sheet --film forge`).
+skill intends (one timeline `T`, one component per section, sound cues on the same frames). Every example shows one
+concept, and all five show the same one (one task, start to finish): read them for moves, never for the concept or the
+look. Pick the concept from the menu in `references/film-grammar.md`. Take single moves, never the content or the
+order: these five share devices (a flood, a relay, a wall) that a new film should choose from the same file's menus,
+not repeat. Render one inside this folder (`node scripts/frames.mjs sheet --film forge`).
 
 | Film | World | Moves worth studying | Needs fetched first |
 |---|---|---|---|

@@ -11,6 +11,8 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
 let shared: THREE.WebGLRenderer | null = null;
 const worlds = new Map<string, unknown>();
@@ -74,7 +76,10 @@ export function GLView<W, S>({
   );
 }
 
-/** A studio environment for metal and glass: dark room, soft strip lights (one warm strip in the accent's colour). */
+/**
+ * A dark studio of hard strip lights for metal and glass (one strip in the accent's colour). Kept for existing films:
+ * it gives hard stripes on black. New 3D starts from `softStudio`.
+ */
 export const studioEnvironment = (r: THREE.WebGLRenderer, accent = '#FF5B2E') => {
   const s = new THREE.Scene();
   s.background = new THREE.Color('#050506');
@@ -94,6 +99,90 @@ export const studioEnvironment = (r: THREE.WebGLRenderer, accent = '#FF5B2E') =>
   pm.dispose();
   return tex;
 };
+
+let blobTex: THREE.CanvasTexture | null = null;
+const contactBlob = () => {
+  if (blobTex) return blobTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d') as CanvasRenderingContext2D;
+  const img = g.createImageData(128, 128);
+  for (let y = 0; y < 128; y++)
+    for (let x = 0; x < 128; x++) {
+      const d = Math.hypot(x - 63.5, y - 63.5) / 64;
+      // a dense core where the object touches and a long soft skirt (ambient occlusion, baked)
+      const a = Math.max(0, 0.75 * Math.exp(-((d / 0.32) ** 2)) + 0.4 * Math.exp(-((d / 0.62) ** 2))) * Math.max(0, 1 - d) ** 0.6;
+      const o = (y * 128 + x) * 4;
+      img.data[o] = img.data[o + 1] = img.data[o + 2] = 255; // white: the material's colour tints it
+      img.data[o + 3] = Math.round(255 * Math.min(1, a));
+    }
+  g.putImageData(img, 0, 0);
+  blobTex = new THREE.CanvasTexture(c);
+  return blobTex;
+};
+
+/**
+ * Soft studio light, the default for new 3D: a large soft room (three's RoomEnvironment through PMREM: wide soft
+ * sources on a mid-grey room, so every surface gets a broad gradient, never hard stripes), one soft key from above-left
+ * that gives the form its shading, ACES tone mapping, and baked soft contact shadows on the floor (no SSAO: renders run
+ * on software GL). Call it in `build`:
+ *
+ *   const studio = softStudio(r, scene, { floorY: -1 });
+ *   const s1 = studio.shadow(0, 0, 2.4);        // one per object resting on the floor: (x, z, size, opacity)
+ *   // in draw, when the object moves or lifts: s1(x, z, size, opacity)
+ *
+ * `intensity` scales the room (default 0.6), `key` the key light (default 1.6, 0 for none), `exposure` the tone mapping,
+ * `tint` washes the floor shadows in the ground's hue (a shadow is the ground in less light), `background` sets
+ * scene.background (default none: the DOM ground shows through). Matte, clay and satin read best (MeshPhysicalMaterial
+ * roughness 0.35-0.7, a little clearcoat for gloss). It sets the shared renderer's tone mapping (ACES) and exposure.
+ */
+export const softStudio = (
+  r: THREE.WebGLRenderer,
+  scene: THREE.Scene,
+  o: { intensity?: number; key?: number; exposure?: number; floorY?: number; shadowOpacity?: number; tint?: string; background?: string } = {},
+) => {
+  r.toneMapping = THREE.ACESFilmicToneMapping;
+  r.toneMappingExposure = o.exposure ?? 1;
+  const pm = new THREE.PMREMGenerator(r);
+  const env = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+  pm.dispose();
+  scene.environment = env;
+  scene.environmentIntensity = o.intensity ?? 0.6;
+  if (o.background) scene.background = new THREE.Color(o.background);
+  if ((o.key ?? 1.6) > 0) {
+    const key = new THREE.DirectionalLight(0xffffff, o.key ?? 1.6);
+    key.position.set(-3, 6, 4);
+    scene.add(key);
+  }
+  const floorY = o.floorY ?? -1;
+  const base = o.shadowOpacity ?? 0.5;
+  /**
+   * Add a contact shadow under an object at (x, z), `size` world units across (about 1.6x the object's footprint);
+   * returns a placer to move, resize or fade it (lower the opacity as the object lifts off the floor).
+   */
+  const shadow = (x = 0, z = 0, size = 2.4, opacity = base) => {
+    const mat = new THREE.MeshBasicMaterial({ map: contactBlob(), color: new THREE.Color(o.tint ?? '#000000'), transparent: true, depthWrite: false, opacity, toneMapped: false });
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+    plane.rotation.x = -Math.PI / 2;
+    plane.renderOrder = -1;
+    scene.add(plane);
+    const place = (px: number, pz: number, ps = size, po = opacity) => {
+      plane.position.set(px, floorY + 0.001, pz);
+      plane.scale.set(ps, ps, 1);
+      mat.opacity = po;
+      plane.visible = po > 0.002;
+    };
+    place(x, z);
+    return place;
+  };
+  return { env, shadow };
+};
+
+/**
+ * A rounded box for GLView (three's RoundedBoxGeometry): the real bevelled solid that CSS `Box` can only suggest. Give it
+ * a MeshPhysicalMaterial under softStudio: the rounded edges catch the soft light as a fine bright line.
+ */
+export const glRoundedBox = (w: number, h: number, d: number, radius = Math.min(w, h, d) * 0.12, segments = 5) => new RoundedBoxGeometry(w, h, d, segments, radius);
 
 /** A camera on an orbit about (tx, ty, 0): yaw and pitch in degrees, dist in world units. Pure, so the scene's draw and a
  * DOM overlay can pose the same camera for a frame. */

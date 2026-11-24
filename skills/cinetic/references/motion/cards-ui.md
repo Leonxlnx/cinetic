@@ -15,16 +15,25 @@ Kit (`ui.tsx`): `Theme` (`lightUI`, `darkUI`), `useArrive`, `Card`, `Window`, `B
 2. **Native fonts for borrowed surfaces.** The product's UI in its own face; a third-party surface (a store, a calendar,
    a payment sheet) in its native face so it reads as real. Kit fonts: Inter for UI, Geist for technical products, a mono
    for code and data only (labels are sentence case in the UI face).
-3. **Flat and large, one component at a time**, or **one canvas under one camera** (see `camera.md` 6.1). Not a dozen
-   panels flying separately, not a phone mock in the middle of a dark gradient.
+3. **One calm component at a time**, flat or at one gentle tilt (12° or less), or **one canvas under one camera** (see
+   `camera.md` 6.1). Never two windows overlapping at an angle, never a chip pasted on a mock at another scale or light,
+   not a dozen panels flying separately, not a phone mock in the middle of a dark gradient. A whole screen may appear
+   once, calm, with its context shown before the camera pushes into a detail.
 4. **No device chrome unless the device is the point.** A chat floats on the film's ground; a card sits on the grid. Use
    `Window` when "it is an app on a desktop" matters, otherwise drop the chrome.
 5. **Interaction is state change.** Check marks land, a pill flips from Add to Added, digits settle, a field becomes a
    button. A cursor is optional; when it appears it is a character, not a pointer (section 6).
-6. **One radius family, soft shadows.** Radii from one scale (e.g. 14 / 22 / 34 / pill); shadows big, soft and low-opacity
-   (6-12 %), or none on flat worlds; glass only when there is something behind it to blur (`effects.md`).
+6. **One radius family, soft shadows from one light.** Radii from one scale (e.g. 14 / 22 / 34 / pill); shadows layered
+   and soft (`softShadow`), all falling the same way, or none on flat worlds; glass only when there is something behind
+   it to blur, once a shot (`effects.md`). White or frosted cards on a coloured ground are fine.
 7. **Show work, hide waiting.** Processing is staged (skeletons, status lines, a shimmer on the beat) and resolves in one
    decisive pass; typing and generation time are hidden in camera whips.
+8. **Pixel-real where it matters, quiet elsewhere.** Keep the region the beat is about at full detail and reduce the
+   surrounding chrome to quiet shapes in the UI's own tints at low contrast (no tab bars, docks, notifications or unrelated
+   sidebars). Fill it with plausible named data (real-sounding people, companies and prices, never "John Doe"), and
+   show code or a dense table only as one whole panel for at most 2 s.
+9. **Data lands exactly.** Values, prices, progress bars and the pointer's target never overshoot; UI states change at
+   product speed (150-250 ms) while the camera and the type carry the film's pace.
 
 ---
 
@@ -52,7 +61,8 @@ toasts.map((t, i) => {
     <Toast t={darkUI} start={t.at} icon={<BrandTile name="stripe" size={52} />} title={`Order #${t.id}`} body={t.body} /></div>;
 });
 ```
-**Avoid:** fading toasts in; equal spacing; every toast sharp; per-toast blur (blur belongs to the slot).
+**Avoid:** fading toasts in; equal spacing; every toast sharp; per-toast blur (blur belongs to the slot); a statement set
+over the pile (cut to the line on clean ground instead).
 
 ### 1.2 Deck spread (fan from behind)
 **What:** three identical cards; the back two slide out from **exactly behind** the front one into a tilted fan, with lag,
@@ -323,8 +333,8 @@ at the end. A code card can **peek** 30 px at the bottom before rising (`entranc
 
 - **Light UI on air:** white cards and pills (`lightUI`), soft blue-grey shadows, a light-tint user bubble, one accent that is
   born light and deepens. Depth of field as recency.
-- **Dark glass:** `darkUI` cards with `glass`, a lit top rim, a moving specular streak, bloom on bright elements, grain (see
-  `effects.md`). Near-black stage, never pure black.
+- **Dark glass:** `darkUI` cards with `glass`, a lit top rim, a moving specular streak, bloom on bright elements (see
+  `effects.md`). A deep stage in the accent's hue, never pure black.
 - **Product-colour stage:** flat glass cards (diagonal gradient sheen + 1 px rim at ~16 % white, no backdrop blur) on a
   saturated brand ground; a dark stage with a horizon glow for input moments; white for statements.
 - **Grid world:** UI shown flat, big and one component at a time on the same grid as the abstract shapes; sentence-case labels in the

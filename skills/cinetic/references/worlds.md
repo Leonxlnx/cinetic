@@ -1,8 +1,10 @@
 # Worlds: the graphic languages a film can live in
 
 A film lives in **one world**: one ground system, one palette, one type pairing, one family of materials, one motion
-character and a small set of signature devices. Switching worlds mid-film is the fastest way to look generated. A world
-may have two or three grounds that alternate as act markers (a colour script), but they share everything else.
+character and a small set of signature devices. Switching worlds mid-film is the fastest way to look generated, unless
+the concept is two worlds (before and after) or a montage: then each world is complete (its own ground, light and
+grade) and the type voice stays the same across all of them. A world may have two or three grounds that alternate as
+act markers (a colour script), but they share everything else.
 
 Each world below lists: when it fits, ground (and how it is lit), palette rules, type, materials, motion character, signature devices (with
 links to recipes), the effect budget, the kit pieces that build it, and what to avoid. A film takes one of its world's
@@ -13,22 +15,35 @@ signature devices as its own and repeats it; the others may appear once each (`f
 1. **If the product has a brand, derive everything from it**: its accent, its neutrals, its face. Read the real values from
    the live site or the press kit; a slightly wrong shade is noticeable.
 2. **For an invented brand: no purple, no violet, no green, and no default "AI" gradient** (purple-to-blue, rainbow, neon on
-   near-black). Take the one accent from the product's own object or domain, not from a list: a kiln's heat orange, a
-   darkroom's safelight red, a ledger's red ink, a lifeguard's yellow, a blueprint's blue. Say in `BRIEF.md` where it
-   comes from. Then two neutrals from the same world and at most one secondary. **Cobalt on warm white is overused**:
-   take it only when the product's own object is that blue, never as the safe pick.
-3. **One accent, used for meaning** (the newest word, the selected item, the live state, the mark). If the accent is
-   everywhere, it means nothing.
-4. **Gradients carry meaning or light, never decoration**: a colour ramp that encodes a state, a light falloff, one gradient
-   token reused by every beam. Never a gradient as a background "because it looks nice".
-5. **Dark grounds are never pure black** while content is visible (#08090C-#141414 with a lift, a glow or grain).
-6. Real third-party logos keep their own colours (or their sanctioned mono version) inside the world's UI.
-7. **Every ground is lit, unless a mass fills it.** One soft light per ground, in the ground's own hue: a horizon glow, a
-   radial behind the subject or a vignette, strong enough to see on a contact-sheet thumbnail (about 12-25 % from the lit
-   centre to the edges on a dark ground, less on a light one).
-   A flat fill holds only a mass that fills the frame (blocks, a floor plane, giant type); anything smaller sits in the
-   light. `<Ground light>` does it, placed behind the subject; turn it off only under a mass. Each world's **Ground** line
-   below says how its grounds are lit, not only their colour.
+   near-black). Take the one accent's hue from the product's own object or domain, and do not default to the
+   yellow-orange-red arc: blue, cyan, teal-blue, red, pink and ink are all open (a blueprint's blue, a pool's cyan, a
+   darkroom's safelight red, a ledger's red ink, a kiln's heat when the product is a kiln). No hue is the safe pick; say
+   in `BRIEF.md` where it comes from. Then two neutrals and at most one secondary.
+3. **Neutral grounds by default.** The light ground is neutral or cool white (#FFFFFF to #F4F5F7); cream and warm paper
+   only for paper and print products. The dark ground is a deep tone of the accent's own hue (navy for a blue, a deep
+   teal for a cyan, an oxblood for a red), not warm black or brown.
+4. **One accent, used for meaning** (the newest word, the selected item, the live state, the mark), on about a tenth of
+   the frame or less, except on one ground cut. Never on punctuation; at most one emphasised word or phrase a statement.
+   If the accent is everywhere, it means nothing.
+5. **Gradients carry light or meaning, never decoration**: a colour ramp that encodes a state, a light falloff, one
+   gradient token reused by every beam, a soft field of two or three neighbouring hues drifting slowly as a ground
+   (`Field`), a brand's own colour field lit by a gradient. Never a saturated swirl of distant hues, never a gradient
+   "because it looks nice".
+6. **Dark grounds are never pure black** while content is visible (#08090C-#141414 or a deep tone of the accent, with one
+   broad bloom; an invisible dither against banding, which the kit's grounds add, never visible grain).
+7. Real third-party logos keep their own colours (or their sanctioned mono version) inside the world's UI.
+8. **Clean grounds.** A ground is clean white, a soft field of neighbouring hues, a photograph, or a deep tone with one
+   broad bloom of its own hue. A light ground may be flat. A ground light (`<Ground light>`) lifts the centre in the
+   ground's own hue, strong enough to see on a thumbnail, and never darkens the edges below the ground's colour: no
+   vignette, no dark corners, no visible grain on a flat ground (grain belongs on photographs). Each world's **Ground**
+   line below says what its grounds are.
+
+**Light and material (all worlds).** One light direction for the whole film: every shadow falls the same way, soft and
+layered (`softShadow`: several shadows with offsets and blurs doubling, each faint, tinted to the ground). Cards and
+objects sit in that light with a contact shadow, or on a clean flat rule in flat worlds. 3D is soft-lit, rounded and matte
+or frosted (`softStudio` for `GLView`, `Box` with `bevel` and `material`), never flat unlit boxes or chrome lit by hard
+strips. Glow and glass at most once a shot, and only on the accent. Depth of field blurs shapes (`Defocus`), never text.
+White or frosted cards on a coloured ground are fine.
 
 Kit fonts (`fonts`): `inter` (the default voice for statements and UI, with optical sizing), `geist` (a tighter
 technical sans for a developer brand, then the whole voice), `serif` (Newsreader: only for a brand whose voice is a serif,
@@ -43,19 +58,20 @@ count, one spectacle size, labels in the UI face; the **Type** lines below give 
 
 **Fits:** infrastructure, developer platforms, data and security products: anything that is a "system".
 **Ground:** colour fields, each act owning one colour; every ground carries a faint 1 px grid (6-10 % contrast; e.g. 80 px
-pitch), sometimes a coarser second grid of section lines. White, near-black and the accent alternate as grounds. A field
-stays flat only while blocks or a floor plane fill most of the frame; when it holds less (a chip, a caret, one window) it
-is lit: a soft radial in its own hue behind the subject (paper white lifting toward #FFFFFF, near-black toward #1E1E1E),
-or a low floor glow under the blocks.
-**Palette:** black #101010 / paper white #F6F5F2 as the two main grounds; one hot accent (e.g. signal orange #FF5A1F) as a
-full-frame ground for the opener and as the "live" colour; 2-3 flat secondaries for the hub objects (e.g. cobalt #2E4BFF,
-sand #E9DCC4, butter #FFE07A); spot red for alerts only. No gradients except one light beam and each ground's own soft light.
+pitch), sometimes a coarser second grid of section lines. White, a deep tone of the accent and the accent alternate as
+grounds. A light field may stay flat; a dark one gets a soft radial in its own hue behind the subject, or a low floor
+glow under the blocks.
+**Palette:** a deep ink #0E1420 / white #F4F5F7 as the two main grounds; one accent (e.g. signal blue #2F5BFF, or a
+signal red #FF3B30) as a full-frame ground for one cut and as the "live" colour; 1-2 quiet secondaries for the hub
+objects (e.g. pale grey #DADDE3, sky #CFE0FF); spot red for alerts only. No gradients except one light beam and each
+ground's own soft light.
 **Type:** one neo-grotesk (`inter`, or `geist` for a developer brand, 450-550, tracking by size), sentence case, printed
 on floors and block faces or centred; object names on white chips with a small coloured square bullet, sentence case in
 the same face at tracking 0 (34 px or more when the viewer must read them, 20-28 px as texture); `mono` only for code and
 data inside a terminal or on a block's face.
-**Materials:** flat-shaded isometric blocks (top lightest, left mid, right darkest; no lighting gradients, no shadows),
-slabs, cubes, voxels; hairline connectors with travelling dots; halftone patches as texture.
+**Materials:** isometric blocks with a small bevel, a top-lit face gradient (top lightest, left mid, right darkest) and a
+soft contact shadow (`Box bevel material="matte"`), in an orderly grid with air round the cluster; slabs, cubes, voxels;
+hairline connectors with travelling dots; halftone patches as texture.
 **Motion character:** two clocks. Digital things (mosaics, cell growth, voxels, the mark) step on twos/threes with no easing;
 the camera eases smoothly. Orthographic for system diagrams, perspective for emotional beats.
 **Signature devices:** cell bloom into a dive (`turns.md` 4.4); type printed on tilted floors and on object faces (`text.md`
@@ -67,23 +83,23 @@ changes and no cursor; selection boxes with corner handles; a mosaic bookend.
 `Terminal`, `Tiles`.
 
 ```tsx
-<Ground color="#F6F5F2">
+<Ground color="#F4F5F7">
   <GridLines size={80} color="rgba(0,0,0,.08)" />
   <Camera perspective={20000} cam={{ rx: 54.7, rz: -45 }}>
-    <At x={820} y={540}><Box w={200} d={200} h={70} color="#FFFFFF" topContent={<Label>Index 1</Label>} /></At>
-    <At x={1100} y={540}><Box w={200} d={200} h={140} color="#FF5A1F" /></At>
+    <At x={820} y={540}><Box w={200} d={200} h={70} color="#FFFFFF" bevel={6} material="matte" topContent={<Label>Index 1</Label>} /></At>
+    <At x={1100} y={540}><Box w={200} d={200} h={140} color="#2F5BFF" bevel={6} material="matte" /></At>
   </Camera>
 </Ground>
 ```
-**Avoid:** soft shadows, glows, gradients on blocks, rounded corners on blocks, glass.
+**Avoid:** flat unlit boxes, a random scatter of blocks cropping every edge, glows, glass, labels on faces under 34 px.
 
 ---
 
 ## 2. Editorial paper
 
 **Fits:** image, design, publishing, creative tools; products whose output is pictures or pages.
-**Ground:** off-white paper (#F0EFEC) lit from one side as if by a window (a soft lift behind the subject, the far edge 5-8 %
-darker), with a fine monochrome grain and static paper fibre, sometimes a 1 px grey graph grid (120 px pitch); full-bleed
+**Ground:** clean white (#FFFFFF) or, for a print or paper product, an off-white paper (#F2F1EE), flat or with a soft
+lift behind the subject, no grain and no darkened edges, sometimes a 1 px grey graph grid (120 px pitch); full-bleed
 photographs as the alternate ground.
 **Palette:** paper, near-black ink #0D0D0D, white type on pictures; **one accent saved for the tool grammar** (handles, corner
 squares, the brand tile): e.g. vermilion #E4472B or ultramarine #2A3FD6. The pictures carry all other colour.
@@ -98,15 +114,15 @@ are cuts; photographs and footage on every frame; hard cuts every 9-30 f; slow p
 3.1); glyph reroll and font cycle for names; staircase settle over a picture montage; type hides the swap; canvas return
 (`turns.md` 8.5); letters as windows; outpaint window; selection handles that blink, stretch and converge into the mark;
 before/after by cut on one picture; the artefact in the world (pull-backs on print and screens).
-**Effects:** grain and speckle; one white flash cut; a texture montage once if the claim needs it. No glow, no motion blur.
-**Kit:** `Ground`, `GridLines`, `Photo`, `Words` (cut/rise), `Scramble`, `Camera`, `Grain`; stepped clock `Math.floor(frame / 2) * 2`.
+**Effects:** grain on photographs only, never on the paper; one white flash cut; a texture montage once if the claim
+needs it. No glow, no motion blur.
+**Kit:** `Ground`, `GridLines`, `Photo`, `Words` (cut/rise), `Scramble`, `Camera`, `CornerMarks`; stepped clock `Math.floor(frame / 2) * 2`.
 
 ```tsx
 const fe = Math.floor(frame / 2) * 2;     // graphics on twos
-<Ground color="#F0EFEC">
-  <GridLines size={120} color="#CDCDCD" />
+<Ground color="#FFFFFF">
+  <GridLines size={120} color="#DADDE3" />
   <Photo src="img/still-04.jpg" x={keys(fe, [[0, 1500], [4, 1380], [12, 1380], [16, 1260]], ease.snap)} y={300} w={360} h={450} />
-  <Grain amount={0.03} />
 </Ground>
 ```
 **Avoid:** rounded shadowed photo cards, glass, gradients in UI, tweens on graphics, a different grade per feature.
@@ -116,10 +132,11 @@ const fe = Math.floor(frame / 2) * 2;     // graphics on twos
 ## 3. Paper collage
 
 **Fits:** brand identities, creative and "idea" products, manifestos; when the film should feel handmade.
-**Ground:** white or cream paper under one soft light (a lift where the pieces land, the corners a few percent darker);
-warm-dark (#1C1712) and graphite (#1A1A1A) grounds for the mark, each with one low glow in its own hue behind it;
-photographic layers torn over each other.
-**Palette:** cream #F8F1E6, warm ink #1A1612, one hot accent (e.g. vermilion #E4412B or ultramarine #2A3FD6); all imagery through **one**
+**Ground:** white or cream paper under one soft light (a lift where the pieces land, the edges never darker than the
+paper); a deep tone of the accent for the mark, with one low glow in its own hue behind it; photographic layers torn
+over each other.
+**Palette:** white #FFFFFF (cream #F8F1E6 only for a paper or print product), ink #16181C, one accent (e.g. ultramarine
+#2A3FD6 or vermilion #E4412B); all imagery through **one**
 gradient-map grade derived from the palette (`imagery.md` 1).
 **Type:** one voice for every statement: `inter` 430-550, or, when the brand's voice is a serif, that serif (`serif`
 400-600) and never both; sentence case, no caps lines. Resting lines stay modest next to the pieces (84-100 px for a
@@ -144,12 +161,13 @@ ends; card flip swap for stationery.
 **Ground:** a pale, out-of-focus sky field (#EAF0F5 with soft white lobes and a slightly deeper bottom band, kit `Aura`),
 its brightest lobe behind the subject; photographic plates graded pale to match it, so switching from plate to field is
 invisible.
-**Palette:** sky, white, warm charcoal ink #2B2F33, **one accent that is born light and deepens** (e.g. coral #E8573A born at
-#F5AE97), one cool secondary (a pale sky blue) used sparingly.
-**Type:** one soft neo-grotesk for everything (`inter` 450-500 statements, 400 UI) in the warm ink, centred; accent words
+**Palette:** sky, white, charcoal ink #2B2F33, **one accent that is born light and deepens** (e.g. a clear blue #2F7BF6
+born at #A9CBFB, or a rose #E8576F born at #F6B5C0), one cool secondary (a pale sky blue) used sparingly.
+**Type:** one soft neo-grotesk for everything (`inter` 450-500 statements, 400 UI) in the ink, centred; accent words
 born light; resting lines at the low end of their size range.
-**Materials:** white pills, bubbles and cards with very soft blue-grey shadows (6-10 %, 18-50 px blur); white glass tiles with a
-1 px rim and a faint iridescent inner edge; matte clay or soft CG objects; no device chrome.
+**Materials:** white pills, bubbles and cards with very soft layered blue-grey shadows (`softShadow`); white glass tiles
+with a 1 px rim (one a shot); matte clay or soft CG objects under `softStudio`, with shallow depth of field
+(`Defocus`); no device chrome.
 **Motion character:** few cuts (6-10 in 35 s), one continuous camera through morphs; cut-on words with rising second lines;
 ease-out arrivals with no overshoot; depth of field as recency.
 **Signature devices:** cut-on stack; occluder crane; orbit with per-object focus; bottom-anchored chat with recency blur;
@@ -169,33 +187,33 @@ brand accent.
 ## 5. Dark stage, shaped light and glass
 
 **Fits:** brand films for platforms and tools that want spectacle; launches of a "flagship"; wordless films with a voice-over.
-**Ground:** near-black (#08090C or a deep tone of the brand, never #000) with a lift in the gradient token's hue: a radial
-glow under the hero, a horizon or floor glow, soft rotating light lobes, fine grain against banding. Never a bare dark
-field behind a small subject.
-**Palette:** one **gradient token** (three related hues from the brand, e.g. coral #FF6B4A -> amber #FFB347 -> cream #FFE7C2, or
-cobalt -> sky -> ice) reused in every beam, bar and glow; white for light cores; the dark ground. For invented brands avoid
-the magenta-violet "synthwave" family entirely.
+**Ground:** a deep tone of the brand's hue (a navy #0A1226 for a blue brand, never #000) with one broad bloom in the
+gradient token's hue: a radial glow under the hero, or a horizon or floor glow; an invisible dither against banding.
+**Palette:** one **gradient token** (three neighbouring hues from the brand, e.g. cobalt #2F5BFF -> sky #7FB2FF -> ice
+#E3F0FF, or red #FF3B30 -> coral #FF7A66 -> blush #FFE1DA) reused in every beam, bar and glow; white for light cores; the
+dark ground. For invented brands avoid the magenta-violet "synthwave" family entirely.
 **Type:** almost none on screen: the one word or the wordmark in `inter` or `geist` 600-700, sentence case; any other
 line at 430-550. Restraint is the point after the spectacle.
-**Materials:** designer glass (per-face tints, white edges, fresnel rims, interior light, frost-to-clear states); dark glass by
-rim alone; additive shaped light (pillars, hard-edged cones, neon arcs that thin with distance); one glossy hero object.
+**Materials:** one hero object, soft-lit (`softStudio`), smooth and rounded, matte or frosted glass (per-face tints, a
+fresnel rim, interior light, frost-to-clear states), with a real contact shadow; additive shaped light (pillars,
+hard-edged cones, arcs that thin with distance); no faceted chrome, no wireframe edges.
 **Motion character:** one continuous flight; few hard cuts, each on motion; pull-backs establish, accelerating pushes leave;
 light timed as events (charge, dock flash, impact wash).
 **Signature devices:** hero relay (one object in every scene, `film-grammar.md` 3.4); light first (glow, solid, rig); z-fly
 entrance; two-shape lens iris; snap morph licensed by a flash; docking flow bar; dot-drop-flash-bloom; locked hero over a
 drifting world (night, then day); screen becomes world; lights-out exit; the mark assembled from the motifs.
-**Effects:** grain (anti-banding), bloom in each light's own hue, glows sized to source, motion blur on the 4-6 fastest frames,
-2-3 flashes.
-**Kit:** `Ground`, `Glow`, `Aura`, `Box`, `Camera`, `At`, `Flash`, `Grain`, `Sheen`, `Card glass`, `darkUI` with the brand accent.
+**Effects:** bloom in each light's own hue, glows sized to source (one a shot), motion blur on the 4-6 fastest frames,
+2-3 flashes; dither, never visible grain.
+**Kit:** `Ground`, `Glow`, `Aura`, `GLView` + `softStudio`, `Defocus`, `Camera`, `At`, `Flash`, `Sheen`, `Card glass`, `darkUI` with the brand accent.
 
 ```tsx
-<Ground color="#08090C">
-  <Glow x={960} y={620} r={360} color="#FF8A4A" strength={0.35} pulse={0.06} />
+<Ground color="#0A1226">
+  <Glow x={960} y={620} r={360} color="#2F5BFF" strength={0.35} pulse={0.06} />
   <Camera keys={[{ f: 0, zoom: 1 }, { f: 70, zoom: 0.9, curve: ease.out }]}><StageLights /><Hero /></Camera>
-  <Grain amount={0.05} />
 </Ground>
 ```
-**Avoid:** white glows on coloured light, fog cones, a different hero per scene, pure black, text on every beat.
+**Avoid:** white glows on coloured light, fog cones, a different hero per scene, pure black, warm black or brown stages,
+neon on black, text on every beat.
 
 ---
 
@@ -205,8 +223,9 @@ drifting world (night, then day); screen becomes world; lights-out exit; the mar
 **Ground:** real footage or aerial plates (low saturation, always slowly pushing), shown through masks and glass; deep dark
 fields with a floor light in the accent family; bright pale fields with drifting soft blobs, the brightest behind the
 subject; the grounds rotate by act.
-**Palette:** a deep graphite (#0B0D10) and a bright pale (#F8F7F4) as the two poles; one accent family (e.g. amber #FFB547 ->
-burnt orange #E8742C); colour temperature contrast comes from the footage (one warm human shot is the warmest frame in the film).
+**Palette:** a deep tone of the accent (e.g. #0A1622) and a bright pale (#F6F7F9) as the two poles; one accent family
+(e.g. cyan #22B8E8 -> deep teal-blue #0E6E9C, or amber when the product's object is warm); colour temperature contrast
+comes from the footage (one warm human shot is the warmest frame in the film).
 **Type:** one sans (`inter` 430-550, 600-700 only for the one headline word), centred, sentence case, sized by word count
 (most lines 84-150 px); key lines with a light left-to-right gradient that sweeps and parks on the key word (lit from one
 side); a blurred copy as glow only on hero words.
@@ -228,9 +247,9 @@ consecutive scenes (they merge in memory).
 ## 7. Swiss poster type
 
 **Fits:** bold launches, developer tools with attitude, events, short social spots; when copy is the hero.
-**Ground:** white or off-white and full-bleed colour fields; no texture; strict margins and a visible or implied column
-grid. A field stays flat only under a mass (giant type, a solid block, the product filling the frame); a smaller subject
-(a caption alone, a logo, a chip) gets one soft radial in the field's own hue behind it, a few percent lighter.
+**Ground:** white and full-bleed colour fields, flat; no texture; strict margins and a visible or implied column grid.
+A small subject (a caption alone, a logo, a chip) may get one soft radial in the field's own hue behind it, a few percent
+lighter.
 **Palette:** black, white, and **one loud colour** (red-orange #FF3B1F, cobalt #1F3BFF or yellow #FFD400) used as full grounds
 and for one word per scene.
 **Type:** a neo-grotesk at extremes: the spectacle word giant and cropped by the frame (`inter` or `geist` 600-700,
@@ -240,7 +259,7 @@ centre); numbers in tabular figures.
 **Materials:** none beyond type, rules (2-4 px), solid blocks and real logos.
 **Motion character:** hard cuts on the beat, masked rises, marquee pans, size steps as cuts; very fast cadence (6-12 f beats in
 lists) and a long final hold.
-**Signature devices:** masked rise (`Words arrive="rise"`); marquee pair (`text.md` 8.1); giant type pan; ghost type; size steps
+**Signature devices:** masked rise (`Words arrive="rise"`); marquee pair (`text.md` 8.1); giant type pan; size steps
 as cuts; colour wave on the payoff word; ground cuts on the beat; push turns between same-tone grounds; corner collapse.
 **Effects:** none. No blur except smear on the 2-3 fastest frames of a pan.
 **Kit:** `Ground`, `Words`, `Swap`, `Push`, `Marker`, `Camera` (pans), `Brand`.
@@ -289,8 +308,8 @@ random-order status reveals; cut counters; hidden cuts inside zoom whips; a URL 
 ## 9. Pixel and dither
 
 **Fits:** products with pixel or retro heritage, creative AI, games, identity reels.
-**Ground:** graphite (#121212) with one low glow in the accent's hue behind the mark; white for collage, falling off a few
-percent to the corners; photographs graded into one world.
+**Ground:** graphite (#121212) or a deep tone of the accent with one low glow in the accent's hue behind the mark; clean
+white for collage; photographs graded into one world.
 **Palette:** off-white, graphite, one hot accent (electric blue #2D5BFF or signal red #FF3B30); the image world's gradient map
 derived from the palette; a light glow colour reserved for the end card.
 **Type:** one clean sans for every statement (`geist` or `inter` 450-550, sentence case); a serif only when the brand's
@@ -311,8 +330,8 @@ mark's clip as the bookend.
 
 **Fits:** AI products that should feel serious and quiet; explainers with a voice-over; abstract products (agents, indexing,
 understanding).
-**Ground:** white and nothing else, but lit: #FFFFFF behind the subject easing to a cool grey 4-6 % darker at the corners,
-a tint from the brand's ramp. No texture, no shapes. Chapters end by fading to white, never to black.
+**Ground:** white and nothing else: #FFFFFF, flat or with a faint lift in a tint from the brand's ramp behind the
+subject, never darker at the corners. No texture, no shapes. Chapters end on white, never on black.
 **Palette:** black ink #000/#111 and **colour only as state**: a ramp derived from the brand
 that every new word cools through on arrival and every outgoing element heats through on exit (for a blue brand: pale sky ->
 cobalt -> navy -> ink); pictures in a brand duotone while "processing", true colour when "found", washed out as "the archive".
@@ -337,6 +356,95 @@ scale-out finale; a hard music stop and silent end card.
 
 ---
 
+## 11. Photo plates
+
+**Fits:** consumer, travel, food, health and place products; manifesto and brand films; any brief with real photographs
+and no footage.
+**Ground:** licensed stills as full-bleed plates, all through one gradient-map grade (`Photo grade`), each slowly
+pushing (0.2-0.6 % a frame); clean white or a deep tone of the accent as the base between them.
+**Palette:** the grade's two or three tones plus one accent for the line's key word; the pictures carry the colour.
+**Type:** one sans, centred on a calm area of the plate or on a clean band across it, never over detail; or in a thin
+pill or ring over the picture.
+**Materials:** pictures masked into rounded shapes (pills, circles, squircles) beside flat colour shapes; one glass bar
+blurring the plate under it when UI appears.
+**Signature devices:** an organic iris (a cloud or scallop mask) opening from a glyph onto a plate; letters as windows;
+a duotone that develops to true colour; a slow push carried across a hard cut.
+**Avoid:** pictures from different shoots and grades; type over faces or busy detail; stock as wallpaper.
+
+## 12. Daylight set
+
+**Fits:** consumer AI, assistants, playful products, brand films that want warmth without paper.
+**Ground:** a three.js diorama under overcast light (`GLView` + `softStudio`): a pale sky field or a soft two-hue `Field`
+behind, a floor that catches soft contact shadows.
+**Palette:** pastel neighbours of the accent (sky, peach, rose; never lilac or mint for an invented brand) on white.
+**Type:** one soft sans, centred above or beside the object with air; never on the object.
+**Materials:** matte clay, frosted glass and rounded solids with ambient occlusion and shallow depth of field
+(`Defocus`); one character or hero object at a time.
+**Signature devices:** the object turning to show a new face for each benefit; a camera orbit that stops on the name;
+a 3D mark built from small solids, then flattened into the 2D glyph.
+**Avoid:** hard shadows, chrome, black rooms, more than one hero in frame.
+
+## 13. Brand field
+
+**Fits:** a supplied brand with one strong colour; bold launches where the colour is the identity.
+**Ground:** the brand colour as a full field, lit by a gradient: a vertical sweep from white at the top into the
+saturated colour below, a horizon arc of light, or a few broad arcs in neighbouring tones.
+**Palette:** the brand colour, white, and one ink; nothing else.
+**Type:** white or ink, centred, at 7:1 against the part of the field it sits on.
+**Materials:** white or frosted glass cards and pills on the colour, soft layered shadows tinted to the field.
+**Signature devices:** cards rising out of the field's light; reflective light bands with cropped giant type over them;
+the field's arc becoming the mark's curve.
+**Avoid:** for an invented brand, a purple or green field; a second saturated colour; type on the brightest band.
+
+## 14. Marker on grid
+
+**Fits:** planning, education, analytics and note products; films that should feel thought through by a person.
+**Ground:** clean white with a precise grid (1 px, 6-10 % contrast) or hairline construction lines.
+**Palette:** ink, one accent for the marker strokes, a pale tint of it for highlight blocks.
+**Type:** one sans, centred or on the grid; `fonts.hand` only for the marks a person makes inside the product.
+**Materials:** a ragged marker stroke (circles, underlines, arrows, a flat highlight block behind one word, a little
+offset) over precise type and UI.
+**Signature devices:** the marker circling the one thing that matters; a highlight block wiping behind the key word;
+the grid folding into a chart.
+**Avoid:** handwriting as a statement, more than one marker colour, scribbles as decoration.
+
+## 15. Design canvas
+
+**Fits:** design, whiteboard, no-code and editing tools; products whose world is a canvas.
+**Ground:** a light-grey canvas (#F4F5F7) or a deep tone of the accent, flat, with guides appearing only while used.
+**Palette:** canvas, ink, one selection accent; the user's content carries other colour.
+**Type:** one sans for statements; labels on handles in the UI face at 34 px or more when they must be read.
+**Materials:** frames, selection boxes with corner handles, measurement guides, multiplayer pointers with names, all
+pixel-real at film size.
+**Signature devices:** a selection that resizes into the next scene; guides snapping as an object lands; handles that
+converge into the mark; `CornerMarks` framing a line.
+**Avoid:** dashed wireframes as the opening, overlapping tilted editor windows, a dozen pointers at once.
+
+---
+
+## Looks inside a world
+
+A world sets the rules; a look is one way to make it. Pick one look for a film, from its world or from this list:
+- a soft pastel field: two or three neighbouring hues drifting slowly, type in ink over it;
+- a sky or cloud plate as the ground, with a glass bar blurring it;
+- a clay or plush hero in soft key light and shallow focus;
+- glossy app tiles standing on a frosted shelf, shallow focus, cool grey ground;
+- graded editorial photographs of people at work, the line in a thin pill over them;
+- a deep navy with one large bloom, glossy outlined pills, soft blurred shapes;
+- a horizon arc of light at the bottom of a dark frame, small type above it;
+- cool white falling into a saturated brand colour, white glass cards on it;
+- hairline construction: thin circles and guides as structure behind a short line;
+- liquid light bands: reflective stripes in one hue family, cropped giant type over them;
+- a field of small squares in tints of the accent, filling and draining;
+- a wall of identical soft objects in perspective with depth of field, one pointer among them;
+- a calm architectural room where the product's screen lives;
+- engraving and photo collage on white, recoloured into the palette;
+- four corner dots around a short line on white: air with structure, no box;
+- a highlight block in the accent behind one word, slightly offset;
+- the mark assembled from small solids in 3D, then flattened into the 2D glyph.
+
+---
+
 ## Choosing a world
 
 | Product / brief | First choice | Second choice |
@@ -349,7 +457,12 @@ scale-out finale; a hard music stop and silent end card.
 | flagship platform brand film | dark stage, light and glass | block grid |
 | app with a human use case | footage + glass UI | soft air |
 | abstract AI (agents, indexing) | ink on white | block grid |
-| bold short social launch | Swiss poster type | ink on white |
+| bold short social launch | Swiss poster type | brand field |
+| consumer, travel, food, place; brand film | photo plates | daylight set |
+| playful consumer AI, assistants | daylight set | soft air |
+| a supplied brand with one strong colour | brand field | ink on white |
+| planning, education, notes | marker on grid | ink on white |
+| design, whiteboard, editing tools | design canvas | editorial paper |
 
 If the brand already has a strong visual system, the world is the brand's system translated into motion with these rules;
 the table is for when it does not.

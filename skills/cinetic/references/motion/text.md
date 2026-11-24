@@ -7,7 +7,7 @@ useTyped, Scramble, Odometer, Marker, at, mix, ease, springAt, springs, stagger,
 ## House rules (read before any recipe)
 
 1. **Pick one or two arrival styles per film** and use them everywhere. Five styles is a template.
-2. **Emphasis is colour (one accent per line) and timing. Never a second face, a heavier weight or a bounce.** Text does
+2. **Emphasis is colour (at most one accent word or phrase a statement, never the punctuation) and timing. Never a second face, a heavier weight or a bounce.** Text does
    not overshoot, wobble or spring.
    The only overshoot allowed is a 4-7 % scale overshoot on individually tossed letters (one title per film at most).
 3. **Never fade text alone.** A plain opacity ramp reads unsure. Cut on, or combine with blur, colour, a mask or a move.
@@ -20,6 +20,8 @@ useTyped, Scramble, Odometer, Marker, at, mix, ease, springAt, springs, stagger,
 6. **Copy**: 2-6 words at once (most titles 2-4), built 1-3 at a time, sentence case, real nouns. A line should be readable
    in `words / 3 + 0.5` s; the film's pace decides the rest.
 7. **Decode, scramble and glitch only on short strings** (names, labels, URLs, under ~20 characters).
+8. **Readable or absent.** No blurred, ghosted or faded copies of words behind or around a line, and no line cut by the
+   frame edge except the one spectacle word; a resting line keeps 8 % from every edge.
 
 ---
 
@@ -430,15 +432,11 @@ UI (chips, an input, a chart) lives in the gaps between the words.
 black -> white with a horizontal gradient sweep (white edge crossing the letters over 6 f) so it stays legible on both
 grounds. Three things at once, no cut.
 
-### 8.4 Ghost type
-**What:** a frame-filling word at 3 % contrast to the ground (an emboss) behind a small word in full ink. Scale is
-expressed without motion.
-
-### 8.5 Size steps are cuts
+### 8.4 Size steps are cuts
 **What:** a word changes size by cutting (big for 6 f, then 0.66x for 4 f, then off), or a punch-in on the word only
 (x1.30, then x1.15) while the picture keeps its framing: type scale used as a camera move.
 
-### 8.6 Scale-jump cut
+### 8.5 Scale-jump cut
 **What:** the same words at two scales with nothing between: giant and cropped by the frame, then a hard cut to the same
 words small and whole, with the rest of the line. The size change is the event.
 **Numbers:** giant for 15-20 f, cap at 55-60 % of the frame height, cropped on the first letter, drifting 4-8 px/f; cut on
@@ -461,8 +459,8 @@ and the line below moves into contact. Letters never scale on their own; only li
 
 ### 9.3 Carried word
 The last word of shot A, still fading in (~60 %), is the first word of shot B on a new ground. In B it grows 1.0 -> 1.43 over
-20 f (`cubic-bezier(0.23,0.85,1,1.02)`), its fill sweeps to a two-tone gradient over 15 f, a blurred copy behind it blooms
-with the colour, and its neighbour word stays blurred ~3.5 px (typographic depth of field).
+20 f (`cubic-bezier(0.23,0.85,1,1.02)`) and its fill sweeps to the accent over 15 f. Its neighbour words stay sharp: depth
+of field never blurs words.
 
 ### 9.4 Letter erosion swap
 The old word erodes from its end, one letter per 1-2 f, each smearing 8-12 px horizontally as it fades in 2 f; overlapping
@@ -511,7 +509,7 @@ soft scan is last on purpose: it finishes a wordmark beside a mark, it does not 
 - **Swell and stop:** a hard cut to a flat ground with the wordmark already at size; it swells 1.0 -> 1.22x on a long
   `ease.out` (most of it in the first 6 f, settling over ~24 f, no overshoot) while one sheen crosses it (`effects.md`
   section 8); the music drops out 0.7 s before the cut and a single kick lands on it.
-- **Scale-jump to tiny:** the claim giant and cropped for 15-20 f (8.6), then a hard cut to the same words at a cap of about
+- **Scale-jump to tiny:** the claim giant and cropped for 15-20 f (8.5), then a hard cut to the same words at a cap of about
   4 % of the frame height (34 px or more) under the mark, which is already settling.
 - **Letter toss** (one title per film): one glyph per frame, each from (-55..-75, -60..-82) px, +35..+40 deg, scale 0.5,
   opacity 0.6, blur 3 px; position and rotation over 5 f `cubic-bezier(0.43,1.06,0.65,1.11)`; scale 0.5, 0.63, 0.79, 0.92,

@@ -30,7 +30,7 @@ A resting line (the size a normal statement settles at) is sized by how many wor
 | the spectacle, once a film | 280-700 px, may crop at the frame edge | 500-700 | -0.03 to -0.05 em, line height 0.85-0.95 |
 | the wordmark on the end card | cap height 90-140 px | 600-700 for a sans mark, regular for a serif mark | by size |
 | a label the viewer needs | 34 px or more | the UI's weight | 0 |
-| a texture label (chips, status lines, tags) | 20-28 px | the UI's weight | 0 |
+| a texture label inside a UI component (chips, status lines, tags) | 20-28 px | the UI's weight | 0 |
 | UI text, on screen after the camera's zoom | 30-44 px | the UI's weight | 0 |
 
 - No statement word is under 64 px: not a lead-in word, not a second line, not the small word beside a giant one.
@@ -74,13 +74,15 @@ A resting line (the size a normal statement settles at) is sized by how many wor
 ## 7. Centred, alone
 
 - By default a line sits at the frame's centre: x 960, its optical centre at y 520-540 (a hair above the middle).
-- It is alone: the only words on screen, on a clean patch of ground. Nothing behind it is busier than a lit field, a soft
-  gradient or a dimmed, blurred picture, and its contrast against what is behind it is 7:1 or more. A brand accent that
-  cannot reach that against the neutrals (a mid blue, an orange) never carries a statement as its ground or its colour:
-  use it for shapes, the accent word's underline or glow, and a lighter tint of it for text on dark.
-- Clean ground over the film's picture (a claim, a veil) is the last image dimmed and blurred: it keeps its colour, and at
-  least a third of the frame stays in a mid or dark tone. Never wash it to near-white or cut to bare canvas to make the
-  line read; that empties the frame instead of quieting it.
+- It is alone: the only words on screen, on a clean patch of ground. Nothing behind it is busier than a clean ground, a
+  soft field of neighbouring hues or a calm area of a photograph, and its contrast against what is behind it is 7:1 or
+  more. A brand accent that cannot reach that against the neutrals (a mid blue, an orange) never carries a statement as
+  its ground or its colour: use it for shapes, the accent word's underline or glow, and a lighter tint of it for text on
+  dark.
+- Text is readable or absent: never blurred, ghosted or faded copies of words, rows or code behind or around a line.
+  When a claim answers what was just shown, cut the picture away (or out of frame) and set the line on clean ground; a
+  short line alone on a clean, lit ground is a calm frame, not an empty one. `CornerMarks` can frame it without a box.
+- It keeps 8 % or more from every edge. Only the one spectacle word may be cut by the frame edge.
 - As words append, the line re-centres (`<Build>`; [lead-heavy re-centre](motion/text.md#12-lead-heavy-re-centre-append-mode)).
 - Off-centre only when the line answers an object beside it: a left-aligned block next to a UI card or a 3D object, 60 px
   of air or more between them, text and object centred together as one group. A poster world sets lines flush-left on its
@@ -111,9 +113,10 @@ The born tint is one option, not the default.
 
 ## 9. Emphasis by colour
 
-One accent per line, by one of:
-- an accent word in the brand accent (`accent` + `accentStyle` on `<Words>`, `wordStyle` on `<Build>`);
-- a two-tone tail: the lead words in ink, the key words in the accent;
+At most one emphasised word or phrase a statement, in the accent; everything else in the ink. Punctuation is never
+coloured, and a line is never split into two colours with no word singled out. Emphasis by one of:
+- an accent word or short closing phrase in the brand accent (`accent` + `accentStyle` on `<Words>`, `wordStyle` on
+  `<Build>`);
 - a tint that sweeps the line and parks on the key word ([colour wake](motion/text.md#27-colour-wake));
 - a highlight block behind the key word (`<Marker>`);
 - an object inline at cap height in a word gap: an icon, a photo chip or a partner's mark (a `<Build>` slot;
@@ -145,6 +148,8 @@ Never a third face, and never a serif because the film should "feel human" or "f
 - "Introducing" is its own beat or the first word of the line, at the line's size.
 - A lead-in before a giant word ("under" before "a second") is part of the same sentence: same face, same case, at 64 px
   or more, read straight into the giant word.
+- A figure never carries a label above it. Its unit or name follows it on the same line, or sits under it at 34 px or
+  more, in the same face. A product name in small type above a UI element or a figure is a kicker.
 
 ## 12. Labels and mono
 
@@ -198,8 +203,10 @@ const voice = { fontFamily: fonts.inter, color: INK };
   "developer" feel; an extended techno face.
 - Large type at UI spacing (tracking 0, optical sizing off): it reads as interface text blown up.
 - A heading alone in a top-left corner, or a left-aligned line on an empty ground with nothing beside it to answer.
-- Words over a busy picture without a plate; contrast under 7:1. Or the opposite: a claim on a picture washed to
-  near-white, so the frame is empty.
+- Words over a busy picture without a plate; contrast under 7:1. Blurred, ghosted or faded copies of words behind a
+  line, or a claim over dimmed, blurred UI.
+- A resting line cut by the frame edge, or cut on two sides with the UI around it.
+- A label above a figure; a coloured full stop; a statement in two colours.
 - The same treatment in every film: one flat accent word, the born tint on every statement.
 - Gradient fills on every headline, decorative glows (anything beyond the accent word's own soft light), outlines, drop
   shadows, letters bouncing one by one.

@@ -22,7 +22,7 @@ it in a `Sequence` that spans both shots. Most of the best turns are hand-built 
 
 Ask how the two beats relate, then pick from the matching row. Never use the same device on two consecutive seams, and
 across the film repeat only the signature device (`film-grammar.md` devices), on at most 3 seams; use flashes at most 3-4
-times. The two ground cuts use two different devices, and a colour flood from an object (`Flood`) is at most one of them.
+times. The ground changes (two in a film over 12 s) use two different devices, and a colour flood from an object (`Flood`) is at most one of them.
 
 | Relation between beat A and beat B | First choice | Second choice | Never |
 |---|---|---|---|

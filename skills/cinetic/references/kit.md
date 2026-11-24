@@ -132,13 +132,32 @@ push and turn to add to a held camera. **`shake(frame, start, dur, amp)`** an im
 
 ## 4. World
 
-- **`<Ground color light>`** a ground lit in its own hue (a soft light behind the subject, a gentle fall-off to the edges;
-  `light={{ x, y, size, amount }}` places it, `light={false}` only under a mass that fills the frame or where the fill must
-  match a flood exactly). **`<Aura base blobs={[{ color, x, y, r }]} speed>`** a slow living gradient of soft fields.
+- **`<Ground color light tint>`** a ground and its light. The light only LIFTS a broad area in the ground's own hue and
+  falls to exactly the ground's colour: never dark corners. A dark ground (luma < 0.5) gets one broad soft bloom (14 %,
+  up to 30 %); a light one lifts 2.5 % (at most 4 %): a light ground is clean, not lit. `tint` gives the bloom a
+  neighbouring hue (navy with a brighter blue). `light={{ x, y, size, amount }}` places it; `light={false}` is flat. Dithered
+  against banding.
+- **`<Field colors={[a, b, c]} points={[{ x, y, r }]} drift speed seed>`** a full-frame soft field of 2-4 neighbouring
+  hues that drift slowly, blended per pixel in OKLab (no grey seams) and dithered. Light on a ground, not a wallpaper:
+  keep the hues neighbours (one step of hue or lightness apart) and the defaults (`drift` 0.04 of the frame, a wander of
+  about 20 s). Points are shares of the frame, one per colour. **`<Aura base blobs speed>`** the older blurred-blob version.
+- **`softShadow(level = 3, ground)`** a CSS box-shadow: a contact line plus 5 layers whose offset and blur double, a few %
+  alpha each, tinted to `ground`'s hue, light from above. `level` is the height: 1 a chip, 2 a resting card, 3 a raised
+  card (the themes' default), 4-5 a hero object, 6-8 a device or a modal. Give it the real ground
+  (`{ ...lightUI, shadow: softShadow(3, PAPER) }`); never a single hard black shadow.
+- **`<CornerMarks w h inset size color shape="dot" | "bracket" appear x y>`** four small marks framing a line or a
+  component without a box (crisp squares or brackets at the corners of w x h, in the parent's box). From `appear` they
+  arrive one by one with a short slide. Structure for air; one framed thing at a time, not every element.
+- **`<Defocus z focusZ aperture max>`** depth of field for SHAPES: blurs its child by its distance from the plane in focus
+  (`aperture` px per 100 units, `max` the cap); animate `focusZ` to pull focus. For cards, icons, photographs and
+  objects; never for a block of text (blurred words read as a mistake; dim or move text instead).
 - **`<GridLines size color thickness start reveal>`** a line grid; inside a `Camera` with `rx` it becomes a floor.
-- **`<Box w d h color top front side topContent frontContent sideContent radius edge shadow>`** a solid CSS 3D block with a
-  contact shadow on the floor (`shadow={0}` for none); content sits *on*
-  its faces (type and UI printed on objects). Light from the top-left. `shade(hex, amt)` darkens or lightens.
+- **`<Box w d h color top front side topContent frontContent sideContent radius edge shadow bevel material ground>`** a
+  solid CSS 3D block lit from above: top-lit face gradients, a 1 px light edge where faces meet, and a two-part contact
+  shadow (tight at the base, wider and softer with height; `ground` tints it). `material`: `matte` (default), `gloss` (a
+  specular band, brighter edges), `glass` (tinted see-through faces). `bevel` (px) rounds the edges by light only;
+  a truly rounded solid is `glRoundedBox` in a `GLView`. A face given as a CSS gradient is used as it is.
+  `shade(hex, amt)`, `mixLab(a, b, p)`, `liftColor(c, amt, tint)` mix colours (the last two in OKLab).
 - **`<DepthStack items={[{ f, node }]} x y scale lift blur dim push rise>`** a depth ladder: each arrival pushes the older items back
   a slot (smaller, lifted, blurred, dimmer).
 - **`<Beam open color x w0 w1 floor>`** a hard-edged beam from above; **`<Pool open color x y>`** its pool on the floor;
@@ -146,14 +165,20 @@ push and turn to add to a held camera. **`shake(frame, start, dur, amp)`** an im
 - **`lerpBox(p, a, b)`** (motion) one box becoming another: position, size and radius together, so a plate visibly becomes a
   bar that becomes a card.
 - **`<Glow x y r color strength pulse>`** a light sized to its source. **`<Sheen start dur angle>`** a light crossing glass once.
-- **`<Grain amount still>`** (always the top layer, 0.03-0.08; `still` for paper fibre), **`<Paper color fibre>`** a still paper
-  ground (without `color`: only the fibre, to lay over other layers), **`<Stroke d start dur color width wobble>`** a hand-drawn line that draws itself (sketches, underlines, circles),
-  **`<Vignette amount color>`**.
+- **`<Grain amount still force ground>`** film grain, the top layer, 0.03-0.06: for photographs and footage. On a light
+  ground (luma 0.6 or more, found from the mounted Ground, Field or Paper, or from `ground`) it draws nothing unless
+  `force`: grain on a flat light ground reads as mud, not film. Banding is `<Dither>`'s job (Ground and Field carry it).
+  **`<Paper color fibre>`** a still paper ground (without `color`: only the fibre, to lay over other layers),
+  **`<Stroke d start dur color width wobble>`** a hand-drawn line that draws itself (sketches, underlines, circles),
+  **`<Vignette amount color>`** darkened edges: rare, on a photograph or footage plate only, never on a ground.
 
 ## 5. Product UI
 
 Themes: `lightUI`, `darkUI`; spread one and set the brand: `const ui: Theme = { ...lightUI, accent: '#E8572A', font: fonts.inter }`.
-Fields: `surface ink muted line fill accent accentInk radius font mono shadow`.
+Fields: `surface ink muted line fill accent accentInk radius font mono shadow`. The accent defaults to the ink (set the
+brand's); `shadow` is `softShadow(3)` on a neutral ground: pass the film's ground (`shadow: softShadow(3, GROUND)`).
+Every surface (Card, Window, Bubble, Toast, Chip, InputBar) takes the theme's shadow; `Phone` and `Laptop` take a
+`ground` for theirs.
 
 - **`useArrive(start, kind = 'card' | 'pop' | 'ui' | 'heavy', from)`** returns `{ p, style }`: rise, scale and de-blur on a spring.
 - **`<Card t w h pad glass>`**, **`<Window t w h title>`** (app chrome), **`<Bubble t from="me|them" start size>`** (springs from its
@@ -230,8 +255,14 @@ screen): see [turns.md](motion/turns.md).
 **`<GLView id build draw state width height ss>`** draws a three.js world (a ring, a device, a glass solid) with ONE
 shared WebGL renderer into each view's own canvas, so the 36-frame sheet never runs out of WebGL contexts (a
 `<ThreeCanvas>` per view does). `build(renderer)` makes the scene once; `draw(world, state, renderer)` poses it for a
-frame; keep `state` a small plain object. **`studioEnvironment(renderer, accent)`** is a dark studio of strip lights for
-metal and glass (`scene.environment = ...`, a `MeshPhysicalMaterial` with metalness 1, roughness 0.25-0.35).
+frame; keep `state` a small plain object.
+**`softStudio(renderer, scene, { intensity, exposure, floorY, shadowSize, shadowOpacity, tint, background })`** the default
+light for new 3D: a large soft room (RoomEnvironment through PMREM), ACES tone mapping, and a baked soft contact shadow on
+a floor plane at `floorY` (returns `{ env, plane, shadow(x, z, size, opacity) }`: move it under the object, fade it as
+the object lifts). Matte, clay and satin read best (`MeshPhysicalMaterial` roughness 0.35-0.7, a little clearcoat).
+**`glRoundedBox(w, h, d, radius, segments)`** a rounded box geometry: the real bevelled solid CSS `Box` only suggests.
+**`studioEnvironment(renderer, accent)`** the older dark studio of hard strip lights, kept for existing films: it gives
+hard stripes on black chrome, the look of cheap 3D; do not start new films from it.
 For glass use `transmission` on a `MeshPhysicalMaterial`; anything meant to show inside the glass (a beam, a glow sprite) needs
 `depthTest: false`, or the glass reads opaque. GL frames render slowly on the CPU: keep `ss` at 1-1.25 and split finals into
 short parts.
@@ -250,7 +281,12 @@ object carries the film.
   marks remain their owners' trademarks) in the brand's own colour. Some brands are not in Simple Icons (their owners asked for
   removal, e.g. OpenAI, Slack, Microsoft products, AWS): fetch the official file with
   `node scripts/logos.mjs get <name> --film .` and pass `file="logos/<slug>.svg"`.
-- **`brandHex(name)`** the brand colour. **`<BrandTile name size bg radius>`** a mark on an app-icon tile.
+- **`brandHex(name)`** the brand colour. **`<BrandTile name size bg radius>`** a mark on a flat rounded tile.
+- **`<AppIcon size colors={[top, bottom]} glyph gloss depth rim>`**: a crafted app icon: a true squircle
+  (`squirclePath(s)`), a two-stop gradient blended in OKLab, a soft top highlight (`gloss` 0-1, default 0.6), a 1 px rim lit
+  at the top and shaded below (`rim`), a layered drop shadow in the tile's own hue (`depth` 0-1) and the glyph centred
+  (`glyph={<Icon name="Mic" size={size * 0.46} color="#fff" />}`, a mark, or a drawn SVG). Show it at 96 px or more;
+  keep the two colours one step apart (a lighter and a deeper shade of one hue), never two hues.
 - **`<Icon name="Calendar" size color stroke>`**: interface glyphs from Lucide (lucide.dev/icons), by component name.
 
 ## 8. Sound

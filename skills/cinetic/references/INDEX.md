@@ -2,10 +2,13 @@
 
 Find a move by what it does, then open its section. File order: plan, look, sound, motion, kit, assets, rendering.
 
-## [film-grammar.md](film-grammar.md): Film grammar: how a 20-60 s launch film is built
+## [film-grammar.md](film-grammar.md): Film grammar: how a film is built
 
+- [Concepts](film-grammar.md#concepts)
 - [1. Lengths and what they can hold](film-grammar.md#1-lengths-and-what-they-can-hold)
-- [2. Sections and their jobs](film-grammar.md#2-sections-and-their-jobs)
+- [2. Sections and structures](film-grammar.md#2-sections-and-structures)
+  - [Structures](film-grammar.md#structures)
+  - [Sections of a problem-reveal launch film (one structure of eleven)](film-grammar.md#sections-of-a-problem-reveal-launch-film-one-structure-of-eleven)
 - [3. How ideas chain](film-grammar.md#3-how-ideas-chain)
   - [3.1 Shared element (the object becomes the next beat)](film-grammar.md#31-shared-element-the-object-becomes-the-next-beat)
   - [3.2 Sentence relay (the line carries across cuts)](film-grammar.md#32-sentence-relay-the-line-carries-across-cuts)
@@ -15,19 +18,18 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [3.6 Recurring word or shape (the rhyme)](film-grammar.md#36-recurring-word-or-shape-the-rhyme)
   - [3.7 Colour script (grounds as act markers)](film-grammar.md#37-colour-script-grounds-as-act-markers)
 - [4. Rhythm](film-grammar.md#4-rhythm)
-  - [4.1 The density curve](film-grammar.md#41-the-density-curve)
+  - [4.1 The pace curve](film-grammar.md#41-the-pace-curve)
   - [4.2 Shot and beat lengths (30 fps)](film-grammar.md#42-shot-and-beat-lengths-30-fps)
   - [4.3 Accelerating cadence](film-grammar.md#43-accelerating-cadence)
   - [4.4 Designed silences](film-grammar.md#44-designed-silences)
   - [4.5 Cut on motion](film-grammar.md#45-cut-on-motion)
   - [4.6 Nothing holds](film-grammar.md#46-nothing-holds)
 - [5. Two clocks](film-grammar.md#5-two-clocks)
-- [6. Four proven structures](film-grammar.md#6-four-proven-structures)
+- [6. Four worked structures](film-grammar.md#6-four-worked-structures)
   - [A. Hub and dive (platform launch, 60 s, no voice-over)](film-grammar.md#a-hub-and-dive-platform-launch-60-s-no-voice-over)
   - [B. Sentence relay (consumer spot, 15 s)](film-grammar.md#b-sentence-relay-consumer-spot-15-s)
   - [C. UI chain (feature launch, 45 s, with voice-over)](film-grammar.md#c-ui-chain-feature-launch-45-s-with-voice-over)
   - [D. Hero relay (brand or agent film, 35-45 s, very few cuts)](film-grammar.md#d-hero-relay-brand-or-agent-film-35-45-s-very-few-cuts)
-  - [Variants worth knowing](film-grammar.md#variants-worth-knowing)
   - [Update film](film-grammar.md#update-film)
 - [Compositions](film-grammar.md#compositions)
 - [Devices](film-grammar.md#devices)
@@ -38,6 +40,16 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [Integrations](film-grammar.md#integrations)
   - [Lockups](film-grammar.md#lockups)
 - [7. Planning discipline](film-grammar.md#7-planning-discipline)
+
+## [formats.md](formats.md): Formats: when the film is not a launch film
+
+- [Loop](formats.md#loop)
+- [Logo sting](formats.md#logo-sting)
+- [Vertical teaser](formats.md#vertical-teaser)
+- [Feature update](formats.md#feature-update)
+- [Explainer](formats.md#explainer)
+- [Brand film](formats.md#brand-film)
+- [Series opener](formats.md#series-opener)
 
 ## [worlds.md](worlds.md): Worlds: the graphic languages a film can live in
 
@@ -52,20 +64,26 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [8. Terminal](worlds.md#8-terminal)
 - [9. Pixel and dither](worlds.md#9-pixel-and-dither)
 - [10. Ink on white](worlds.md#10-ink-on-white)
+- [11. Photo plates](worlds.md#11-photo-plates)
+- [12. Daylight set](worlds.md#12-daylight-set)
+- [13. Brand field](worlds.md#13-brand-field)
+- [14. Marker on grid](worlds.md#14-marker-on-grid)
+- [15. Design canvas](worlds.md#15-design-canvas)
+- [Looks inside a world](worlds.md#looks-inside-a-world)
 - [Choosing a world](worlds.md#choosing-a-world)
 
-## [taste.md](taste.md): Taste: what separates a premium launch film from a generated one
+## [taste.md](taste.md): Taste: what separates a premium film from a generated one
 
 - [1. The tells (avoid every one)](taste.md#1-the-tells-avoid-every-one)
-  - [Structure](taste.md#structure)
-  - [Motion](taste.md#motion)
-  - [Type](taste.md#type)
   - [Look](taste.md#look)
+  - [Type](taste.md#type)
+  - [Motion](taste.md#motion)
   - [Sound](taste.md#sound)
-  - [Habit](taste.md#habit)
+  - [Structure and habit](taste.md#structure-and-habit)
+  - [Overused now](taste.md#overused-now)
 - [2. The qualities (hit every one)](taste.md#2-the-qualities-hit-every-one)
 - [3. Fixes for the most common failures](taste.md#3-fixes-for-the-most-common-failures)
-- [4. The contact-sheet rubric (15 points)](taste.md#4-the-contact-sheet-rubric-15-points)
+- [4. The contact-sheet rubric (20 points)](taste.md#4-the-contact-sheet-rubric-20-points)
 
 ## [type.md](type.md): Type: how a film sets its words
 
@@ -149,9 +167,8 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [8.1 Marquee pair](motion/text.md#81-marquee-pair)
   - [8.2 Giant type pan](motion/text.md#82-giant-type-pan)
   - [8.3 Giant word as a camera reveal](motion/text.md#83-giant-word-as-a-camera-reveal)
-  - [8.4 Ghost type](motion/text.md#84-ghost-type)
-  - [8.5 Size steps are cuts](motion/text.md#85-size-steps-are-cuts)
-  - [8.6 Scale-jump cut](motion/text.md#86-scale-jump-cut)
+  - [8.4 Size steps are cuts](motion/text.md#84-size-steps-are-cuts)
+  - [8.5 Scale-jump cut](motion/text.md#85-scale-jump-cut)
 - [9. Words, objects and seams](motion/text.md#9-words-objects-and-seams)
   - [9.1 Object born between words](motion/text.md#91-object-born-between-words)
   - [9.2 Words pushed by an object](motion/text.md#92-words-pushed-by-an-object)
@@ -440,7 +457,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [3.3 The moving specular streak](motion/effects.md#33-the-moving-specular-streak)
   - [3.4 Glass solids (3D)](motion/effects.md#34-glass-solids-3d)
   - [3.5 Frost to clear (a state change as a beat)](motion/effects.md#35-frost-to-clear-a-state-change-as-a-beat)
-- [4. Grain](motion/effects.md#4-grain)
+- [4. Grain and dither](motion/effects.md#4-grain-and-dither)
 - [5. Motion blur only at real speed](motion/effects.md#5-motion-blur-only-at-real-speed)
 - [6. Depth of field](motion/effects.md#6-depth-of-field)
 - [7. Chromatic, pixel and dither: devices, not filters](motion/effects.md#7-chromatic-pixel-and-dither-devices-not-filters)
@@ -449,6 +466,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [10. Shaped light (dark-stage worlds)](motion/effects.md#10-shaped-light-dark-stage-worlds)
 - [11. Vignette, lens and particles](motion/effects.md#11-vignette-lens-and-particles)
 - [12. Finish](motion/effects.md#12-finish)
+- [13. Shadows and 3D light](motion/effects.md#13-shadows-and-3d-light)
 
 ## [kit.md](kit.md): The kit: API reference
 

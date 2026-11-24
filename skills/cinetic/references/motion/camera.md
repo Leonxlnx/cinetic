@@ -30,6 +30,12 @@ push, turn)`, `shake(frame, start, dur, amp)`, `camAt`. From motion: `creep`, `l
 5. **Motion blur only at the peaks** of whips, rushes and zooms (4-6 frames); holds are razor sharp.
 6. **No handheld wobble, almost no shake.** One impact shake per film at most (`shake`, 8-10 f). No roll except to sell speed.
 7. **Square-on to read, yawed to look.** A UI plane faces the lens only when it must be read or used.
+8. **Drift with a direction.** A drift moves at most 3-4 % of the frame's width a second (about 2 px/f at 1080p), points
+   somewhere that means something, and changes or stops with the story; a uniform float under everything is a tell.
+9. **Context before a zoom.** Show the whole (the window, the page, the map) before pushing into a detail, with a landmark
+   both frames share; centre on the evidence, not the click; never zoom out before the result has been read.
+10. **The machine's turn moves, the person's turn holds.** While the person types, picks or presses, the camera is still
+    (under ~10 px in 2.5 s); while the product works, the camera travels.
 
 ---
 

@@ -6,8 +6,11 @@ world can carry 60 s with a single 3-frame glow; a white stage with black type n
 blur at all; even a glass world, where light is everything, gives every light a shape, a colour and a cue. Flatness is a
 premium signal. All numbers at 30 fps, 1920x1080.
 
-Kit (`world.tsx`, `turns.tsx`): `Glow`, `Sheen`, `Grain`, `Vignette`, `Aura`, `GridLines`, `Flash`; motion helpers
-`landBlur`, `speedOf`.
+Kit (`world.tsx`, `turns.tsx`): `Glow`, `Sheen`, `Grain`, `Aura`, `Field`, `Defocus`, `softShadow`, `GridLines`, `Flash`;
+motion helpers `landBlur`, `speedOf`.
+
+Across every world: one light direction for the whole film; glow and glass at most once a shot, and only on the accent;
+blur on shapes and on fast frames, never on words a viewer should read; no vignette, no visible grain on a flat ground.
 
 ## Effect budget by world
 
@@ -15,9 +18,9 @@ Kit (`world.tsx`, `turns.tsx`): `Glow`, `Sheen`, `Grain`, `Vignette`, `Aura`, `G
 |---|---|---|---|---|---|---|
 | block grid | none | one moment | none (stepped jumps instead) | none | none or 1 | stepped mosaic, halftone |
 | ink on white | none | none | none | none | none | colour state (born tint, ramps) |
-| editorial paper | fine + paper fibre | none | none | none | 1 (white reset) | speckle, corner markers |
+| editorial paper | on photographs only | none | none | none | 1 (white reset) | speckle, corner markers |
 | soft air | none | click bloom, 1 rim | short, fast moves only | white glass, real backdrop | none | depth of field |
-| dark stage, light and glass | fine (anti-banding) | everywhere light exists, in its own hue | peaks only | lit rims, frosted states | 2-3 | shaped light |
+| dark stage, light and glass | invisible dither only | where light exists, in its own hue, one a shot | peaks only | lit rims, frosted states | 2-3 | shaped light |
 | footage + glass | none on UI | text glow on hero words | peaks only | backdrop blur scaled to slab | 1-2 | light floods |
 | pixel / dither | on photos only | end card only | none | one glass panel | none | mosaic, edge dots |
 
@@ -102,7 +105,7 @@ rgba(255,255,255,0.10), transparent 40%)` highlight, a 1 px rim at ~16 % white, 
 **What:** what makes a dark rectangle read as glass: a short white streak on the rim that **slides**. A 3 x 170 px white core
 whose opacity along its length is a Gaussian (sigma ~45 px), plus a 10 px soft glow, additive, clipped to the rim band (±8 px).
 One streak parked on the top rim at ~55 % of the width; one on the bottom rim sliding right to left ~25 px/f over ~24 f
-(`ease.inOut`), its brightness flickering 0.4-1.0 slowly. Bloom the core; add grain so it does not band.
+(`ease.inOut`), its brightness flickering 0.4-1.0 slowly. Bloom the core; dither it so it does not band.
 **Avoid:** a full-width shine sweeping across the face (cheap), a streak brighter than the text.
 
 ### 3.4 Glass solids (3D)
@@ -116,19 +119,19 @@ A frosted object (bright bevel edges, milky inside) clears over ~12-15 f into tr
 
 ---
 
-## 4. Grain
+## 4. Grain and dither
 
-**What:** animated, fine, re-seeded per frame.
-**When:** dark gradients and dark stages (to stop banding: sigma ~1.2 on 0-255), photographs and paper (~2.5 % luma, plus a static
-paper fibre on paper scenes). **Not** on flat bright grounds, flat UI worlds, or ink-on-white films: those stay perfectly clean.
-**Kit:** `Grain` (SVG turbulence, overlay blend; 0.04-0.08 on dark, 0.03 on light), always the top layer.
+**Grain** (animated, fine, re-seeded per frame) belongs on photographs and footage only (~2.5 % luma). **Not** on any flat
+ground, light or dark, nor on UI: those stay clean.
+**Dither** against banding on dark gradients and fields is invisible (under 1 % luma); the kit's grounds and `Field` add
+it, so you do not add grain for it.
+**Kit:** `Grain` (SVG turbulence, overlay blend, 0.03-0.05), scoped to the photographic layer (wrap only the photo in a
+container with its own grain).
 
 ```tsx
-<AbsoluteFill>{scene}<Grain amount={0.05} /></AbsoluteFill>
+<div style={{ position: 'relative', overflow: 'hidden' }}><Photo src={src} w={1200} h={800} /><Grain amount={0.04} /></div>
 ```
-Scope grain to the photographic layer when the film mixes flat UI and photos (wrap only the photo in a container with its
-own grain).
-**Avoid:** grain on white; boiling grain at high amounts; grain as a "cinematic" default.
+**Avoid:** grain on white or paper; grain on a flat dark ground; boiling grain; grain as a "cinematic" default.
 
 ---
 
@@ -160,13 +163,13 @@ const n = v > 15 ? 5 : 1;
 
 ## 6. Depth of field
 
-Depth of field is a storytelling tool, not a filter:
-- **as recency** (older chat items blur and fade as they rise);
+Depth of field is a storytelling tool, not a filter, and it blurs shapes (cards, icons, photographs, objects), never a
+block of text (`Defocus` wraps children placed at a depth and blurs each by its distance from the focus):
+- **as recency** (older chat items blur and fade as they rise out of frame, never under a statement);
 - **as depth** in an orbit (front-centre 1-3 px, sides 4-8, nearest 8-12, background 3-4);
-- **as hierarchy** (typographic depth of field: the second word of a pair at ~3.5 px blur);
 - **as an entrance** (focus pull: 40 -> 0 px over 22 f decoupled from position);
 - **as isolation** (unchosen options blur 4-12 px).
-Never blanket-blur a whole UI for "cinematic depth".
+Never blanket-blur a whole UI for "cinematic depth", and never set a statement over blurred UI.
 
 ---
 
@@ -247,8 +250,7 @@ Budget 2-4 per film. A flash hides a swap or punctuates an impact; it is never d
 
 ## 11. Vignette, lens and particles
 
-- **Vignette:** most premium references use none. Use the kit's `Vignette` (0.25-0.35) only on a dark photographic stage to pull
-  the eye, never on white or flat worlds.
+- **Vignette:** none. No dark corners; a ground light lifts the centre instead of darkening the edges.
 - **Barrel bulge:** only during a push into dense UI (edges bow ~14 px, k up to 0.06), crisp at the peak (`camera.md` 2.4).
 - **Particles:** almost never. Allowed: small dots travelling along lines (data flow), ~40 star dots of 1-2 px in a deep-space
   transit, 6-10 speed lines (2-3 px x 80-300 px at 60 %) when an object flies between two others, and a few light-painting curls
@@ -259,12 +261,25 @@ Budget 2-4 per film. A flash hides a swap or punctuates an impact; it is never d
 
 ## 12. Finish
 
-- **Never pure black while content is visible** on a dark stage (#07080B-#0A0A0A with a glow and grain); true black only as an
+- **Never pure black while content is visible** on a dark stage (a deep tone with one bloom and dither); true black only as an
   effect frame or after the last beat.
 - **Breathing:** halos pulse ±5-8 % on a ~24-30 f period; gradient fields drift; stripes scroll. "Never two identical frames"
   until the lockup's final hold.
-- **Banding check:** every dark gradient on a contact sheet at 100 %; add grain or dither where it bands.
+- **Banding check:** every dark gradient on a contact sheet at 100 %; add dither (never visible grain) where it bands.
 - **Colour:** render and deliver in BT.709; check the darkest and brightest frames after encoding.
+
+---
+
+## 13. Shadows and 3D light
+
+- **Layered soft shadows** from the film's one light (`softShadow`): 4-6 shadows whose offset and blur double (1, 2, 4, 8,
+  16 px ...), each at about 7-12 % alpha, tinted toward the ground's hue at lower lightness. One grey `box-shadow` looks
+  flat; shadows falling different ways on different objects look pasted.
+- **Contact shadow:** a short, darker shadow where an object meets its surface, spreading and softening with height.
+- **3D:** soft area light on a mid-grey environment (`softStudio`), rounded or bevelled forms, matte, clay or frosted
+  materials, depth of field on the background. Never a black room with hard light strips, never faceted chrome.
+- **Icons with depth** (`AppIcon`): 2-4 layers lit from the same side as the scene's shadows (a base fill, a lighter top,
+  a 1 px inner highlight on the lit edge, a tinted contact shadow), shown large and few, one meaningful part animated.
 
 ---
 
@@ -281,7 +296,6 @@ Budget 2-4 per film. A flash hides a swap or punctuates an impact; it is never d
 - **`Halftone`** and **`EdgeDots`** (offline generator + static overlay + flare exit).
 - **`ChromaticSplit`:** an RGB offset wrapper for large type and texture montages.
 - **`SpeedLines`**, **`TravelDots`** (dots along a path), **`Comets`** (twin heads on a spiral with tapered trails).
-- **`Grain` scope and seed:** `Grain` is full-frame only and re-seeds on an 8-frame cycle; needs a scoped mode (inside a
-  container), a static mode (paper fibre) and a sigma-style amount.
+- **`Grain` scope and seed:** a sigma-style amount for photographs.
 - **`Glow` events:** `Glow` only breathes; a `charge` / `flash` envelope (rise, peak, decay frames) would cover dock flashes,
   impact washes and charge-ups.

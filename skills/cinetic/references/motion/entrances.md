@@ -16,8 +16,13 @@ Chip` from ui; `Camera, At` from camera; `Glow` from world; `Brand, BrandTile` f
 4. **Vary by object.** Heroes fly or rise out of focus; cards land by shrinking or slide out from behind each other; UI
    children pop in reading order; light grows from an edge; logos converge, spin a fraction of a turn or draw on.
 5. **One overshoot budget per film.** A 3-10 % pop belongs to one small family of objects (chips, a badge, tossed letters).
-   Cameras, cards and heroes brake without bounce.
-6. **No entrance without a sound or a reason** (see `sound-design.md`): landings, docks and pops get a transient on the
+   Cameras, cards and heroes brake without bounce, and nothing that carries data overshoots: values, prices, progress
+   bars, charts and the pointer's target land exactly.
+6. **Springs by duration and bounce.** Pick how long the move should feel, then its bounce: 0 by default (no overshoot),
+   about 0.15 for a brisk UI tail, about 0.3 only for a playful accent, never above 0.4. Lighter objects bounce less.
+7. **Staggers are for reading.** Items the viewer reads arrive about 0.15-0.2 s (5-6 f) apart, with at most about five
+   visible steps; a panel, its title and its shadow arrive as one event (its children may ripple 1-2 f apart inside it).
+8. **No entrance without a sound or a reason** (see `sound-design.md`): landings, docks and pops get a transient on the
    landing frame, not the start.
 
 ---
