@@ -1,5 +1,8 @@
 // The film. One file to start: a timeline object T (every scene and sound reads its frames from it), one
 // component per section, and the film that places them. Split into files once it grows.
+// Write BEATS.md first: the five-line story, the concept, the devices, one row per beat. Take turns, type moves and
+// product UI from the motion library (references/library.md) and adapt them; hand-build only what it lacks.
+// The ground is flat by default: a flat clean colour, a real picture, or a bold designed scene.
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { creep, fonts, Ground, Words } from '../../kit';

@@ -14,14 +14,17 @@ received:
   layer under it stays, the exit is an editorial choice the viewer can feel.
 - **Almost nothing should leave on its own.** Objects are carried by the camera, covered by the next
   object, transformed into it, pushed out by it, slid into a slot, retracted into a hero or switched off. A self-contained
-  fade-out is the rarest exit, used for 3-4 frames at most.
+  fade-out is the rarest exit, for shapes only, 3-4 frames at most.
+- **Text never leaves by fading out while it rises.** A line leaves by a hard cut, a wipe by what arrives (the next
+  object's edge sweeps across it), a mask that closes over it, or pushed out (by the next thing or by a camera move).
+  Section 6 lists them.
 
 Rule of thumb: **arrive decelerating, leave accelerating.** Entrances use `ease.out`; exits use `ease.in` or the kit's
 `accel` (each frame's step = r x the previous, r = 1.35-1.6) and end at peak speed on a cut, a wipe or a hand-off.
 All numbers at 30 fps.
 
-Kit: `accel, at, ease, mix, speedOf, envelope, clamp` from motion; `Words` (`leave`, `leaveAt`, `leaveDur`); `Flash`,
-`Push`, `Pixelate` from turns.
+Kit: `accel, at, ease, mix, speedOf, envelope, clamp` from motion; `Words` (`leave`, `leaveAt`, `leaveDur`); `Push`,
+`Pixelate` from turns.
 
 ---
 
@@ -55,15 +58,15 @@ const burst = -[0, 3, 8, 17, 32, 59, 106, 188][clamp(frame - s - 8, 0, 7)];
 <div style={{ transform: `translateX(${creepX + burst}px)` }}>{line}</div>
 ```
 
-### 1.3 Asymmetric whip into a flash
+### 1.3 Asymmetric whip into the cut
 **What:** a reposition whip is asymmetric (12 f build, 7 f stop, `cubic-bezier(0.854,0.06,0.425,0.936)`); the exit whip is
 **pure acceleration** (`cubic-bezier(0.23,0,0.72,0.12)`, +245 px over 12 f, last step ~54 px/f) with a stage blur pulse
-1, 6, 12, 18 px and +6 % brightness on the last 4 f, then a one-frame flash (see `turns.md`, flash gate).
+1, 6, 12, 18 px on the last 4 f, cut on its fastest frame into a shot already moving the same way (never a flash).
 
 ### 1.4 Shrink into the cut
 **What:** a word, a line or a lockup shrinks 5-30 % on an ease-in over 10-20 f and is **cut before it finishes**.
-**When:** the most reusable text exit; a film can use it 5-6 times without it becoming a tic because it is nearly
-invisible: it just makes every cut land on motion.
+**When:** the most reusable text exit, because it is nearly invisible: it just makes every cut land on motion. Vary its
+amount, length and anchor each time; the same shrink identically at most twice in a film.
 
 ```tsx
 const s = 1 - 0.11 * at(frame, end - 12, 12, ease.in);   // cut at `end`
@@ -119,12 +122,12 @@ word right at ~15 px/f, with a 4-6 px horizontal smear, while the middle word sh
 cut, the next shot's words are in the same positions moving the same ways.
 
 ### 3.2 One layer leaves, the other stays
-**What:** a headline rises (accelerating 4 -> 20 px/f), blurs 0 -> 10 px and fades over 8 f while the input under it stays
-sharp, opaque and still, and is hard-cut. The survivor holds the eye across the cut.
+**What:** a headline is cut away (or closed by a mask from its baseline in 6 f, `ease.in`) while the input under it stays
+sharp, opaque and still; the survivor holds the eye across the cut. Never a headline that rises while it fades.
 
 ```tsx
-<Words text="Say what you need" leaveAt={208} leave="blur" leaveDur={8} />
-<InputBar t={theme} text="" start={0} />   {/* untouched */}
+<Words text="Say what you need" leaveAt={208} />   {/* leaveAt alone: a cut on that frame */}
+<InputBar t={theme} text="" start={0} />           {/* untouched */}
 ```
 
 ### 3.3 Losers blur out
@@ -132,12 +135,14 @@ sharp, opaque and still, and is hard-cut. The survivor holds the eye across the 
 px) while the winner grows 1.24x and stays sharp. No checkmark needed: growth + isolation is the selection.
 
 ### 3.4 Defocus while moving
-**What:** a title block accelerates upward (4 -> 18 px/f) while its blur ramps 0.3 -> 12 px over 16 f; **opacity stays 1**:
-the lightening is the blur. Often paired with a foreground occluder passing in front.
+**What:** a card, a picture or an object accelerates out (4 -> 18 px/f) while its blur ramps 0.3 -> 12 px over 16 f;
+**opacity stays 1**. Often paired with a foreground occluder passing in front. Shapes only: text leaves by a cut, a
+mask or a push (section 6).
 
-### 3.5 Recency blur
-**What:** in a crowded chat stack, items rising past a threshold blur 0 -> 3-6 px and fade 1 -> 0.38 (or 0) over ~17-20 f;
-the avatar and name stay sharp. Exit as a function of age, not of time.
+### 3.5 Pushed out of the stack
+**What:** in a chat or a feed, older items are pushed up by the new ones and leave past the panel's top edge, clipped by
+it (the panel is the mask), sharp to the last pixel; never blurred and faded while they rise. Exit as a function of
+age, not of time.
 
 ---
 
@@ -202,22 +207,23 @@ box is discarded. Cut, and let the button's "pixels" fall into the next shot (5.
 ## 5. Light, colour and texture exits
 
 ### 5.1 Lights out
-**What:** a bright world tilts up and out **while dimming to grey** (a multiply layer white -> #808090 -> black over 6 f);
-the brightest block at the edge stays lit 2 extra frames (an afterglow band), so it reads as light being switched off, not
-a fade to black. A short string stab on the tilt start.
+**What:** when the story moves from day to night: a bright world tilts up and out **while dimming** (a multiply layer
+white -> #808090 over 6 f); the brightest block at the edge stays lit 2 extra frames (an afterglow band), and the cut
+lands on the tilt's fastest frame into the night scene, already moving. Never a fade to black.
 
 ### 5.2 Glow sink
 **What:** the floor glow under a line drains away (peak luma 150 -> 45, top edge 600 -> 910 px in 9 f) while the line
 pushes in: the ground leaves from under the text.
 
-### 5.3 Heat out, bleach, fade to white
-**What:** elements leave by heating (warming through the film's light tints) and then bleaching to the stage white, often
-with a 6 px blur on pictures, over 4-8 f; tiles may warm from grey to the light accent over 7 f and bleach over 8 f (a
-15 f warm pulse). On white worlds, **chapters end to white, never to black**.
+### 5.3 Heat out (shapes)
+**What:** tiles and pictures leave by warming through the film's light tints and bleaching toward the stage colour over
+4-8 f, cut before they are gone, while the next scene is already on screen. Shapes and pictures only, never a line of
+text, and never the frame emptying to white.
 
-### 5.4 Bloom to white
-**What:** tiles and a line glow up 10 % -> 100 % over 7 f (drop-shadow glow + brightness + white overlay) while the line sinks
-65 px, then a hard cut to a white page. A glow ramp as an exit, mirroring a glow ramp at the entry.
+### 5.4 Wiped by what arrives
+**What:** the next scene's lead object (a card, a picture, a panel) sweeps across the frame and the old line is masked
+by its leading edge as it passes: the line is not animated at all, it is covered. 6-10 f, the edge on `ease.inOut`
+with a soft 20 px shadow onto the old side; the new object settles where the line was.
 
 ### 5.5 Mosaic overrun
 **What:** the lockup is not faded: it is **eaten** by spawning grid-snapped blocks (a burst every 2-3 f) until the frame is
@@ -227,7 +233,7 @@ covered, then a hard cut. Bookends a mosaic opener.
 **What:** a decoded word runs its decode backwards (into its cipher) in 6 f and vanishes. For words that entered by decode.
 
 ### 5.7 Pixels fall out
-**What:** after a hard cut, a few glowing squares (the "pixels" of the object that just left) tumble down-left on **twos**
+**What:** after a hard cut, a few squares (the "pixels" of the object that just left) tumble down-left on **twos**
 (each pose held exactly 2 f, positions jumping 30-150 px, sizes changing, two merging), gone by frame 12, while the
 background decays from a lifted grey to the stage colour over 15 f. One stepped element inside a smooth film.
 
@@ -248,16 +254,22 @@ and darkens the bottom over 9 f. The contrast reset makes the next scene land.
 
 ## 6. Text exits
 
-`Words` supports exits directly: `leave="rise" | "fall"` (masked, staggered at half the build gap), `"blur"` (blur 0 -> 16
-px and fade), `"scale"` (to 1.25x with blur and fade), with `leaveAt` and `leaveDur`.
+A line leaves in one of four ways, and never by fading out while it rises:
+- **A hard cut** on the beat after it has been read (`<Words leaveAt>` alone cuts on that frame: `leave="cut"` is the
+  default when `leaveAt` is given).
+- **A mask that closes:** `leave="rise" | "fall"` travels each word out behind its own mask, staggered at half the build
+  gap, at full opacity.
+- **A wipe by what arrives:** the next object's edge covers it (5.4).
+- **Pushed out:** the next element pushes it (2.2), the camera carries it (2.1), the words make room (3.1), or it shrinks
+  into the cut (1.4).
+
+`leave="blur"` and `leave="scale"` fade as they go: for a shape or a word used as an object, never for a statement.
 
 ```tsx
 <Words text="Fewer tabs" arrive="rise" start={0} leaveAt={40} leave="rise" leaveDur={8} />
 ```
 
-Use the text exits in this order of preference: shrink into the cut (1.4), one layer leaves (3.2), carried by the camera
-(2.1), make room (3.1), defocus while moving (3.4), masked rise out (`leave="rise"`), heat out (5.3), re-encode (5.6).
-Never a plain fade of more than 4 f.
+Never a plain fade of more than 4 f, and no exit repeated identically more than twice in a film.
 
 ---
 
@@ -270,8 +282,8 @@ Never a plain fade of more than 4 f.
 | a choice was made | losers blur out; the winner collapses into the next element |
 | a confirmation leads to an action | bloom-morph |
 | the element has done its job, the world continues | carried by the camera |
-| a chapter ends on a white world | heat out / fade to white in 4-8 f |
-| the film moves from day to night or to the lockup | lights out |
+| a line has been read | hard cut, a closing mask, or wiped by what arrives |
+| the story moves from day to night | lights out |
 | the old hero is replaced | demoted under the next hero |
 | a stack or list completes | rows vanish top-down, or pushed out by the next element |
 | a split layout | doors part |
@@ -284,12 +296,11 @@ Checks before render: every cut in the timeline lands on a frame where something
 
 ## Not in the kit yet (build these by hand from the recipes above)
 
-- **`Exit` wrapper**: a component taking `start`, `dur`, `kind` ("accel-x", "accel-scale", "shrink", "lift", "rise-blur")
+- **`Exit` wrapper**: a component taking `start`, `dur`, `kind` ("accel-x", "accel-scale", "shrink", "lift", "mask")
   and computing per-frame speed blur automatically (via `speedOf`), so peak-speed exits are one line.
 - **`speedBlur(fn, frame, k, max)`**: directional blur amount from the per-frame displacement (the kit has `speedOf` but no
   directional blur; CSS `blur()` is isotropic, so a ghost-copy smear helper is needed for real directional blur).
 - **`Doors`**, **`SlotClip`**, **`CornerCollapse`**: small components for the three structural exits.
 - **`LightsOut`**: multiply layer + afterglow band + tilt in one component.
 - **`MosaicOverrun`**: grid-snapped block spawner that eats a layer (the kit's `Pixelate` is a symmetric transition).
-- **`Words` exits**: `heat` (ramp out), `erode`, `reencode`, `shrink` (ease-in scale into a cut) are missing.
-- **`RecencyBlur`** for stacks: blur and opacity as a function of an item's age or position.
+- **`Words` exits**: `wipe` (covered by an edge), `reencode`, `shrink` (ease-in scale into a cut) are missing.

@@ -4,12 +4,16 @@ Type in a launch film is an **event**, not a caption. A line lands, the newest w
 the next, and it leaves on motion. All numbers are at 30 fps and 1920x1080. Kit imports: `import { Words, Swap, Typing,
 useTyped, Scramble, Odometer, Marker, at, mix, ease, springAt, springs, stagger, rand } from './kit'`.
 
+**Start from the library.** The motion library's type moves ([library-type.md](../library-type.md): `RollType`,
+`TrackedType`, `TileWord`, `DotWord`, `DotDive`, `BounceWord`, `BarStack`, `BlurSweep`, `HostType`) are finished and
+judged: pick one there first and adapt its content, colour and timing. The recipes below are for what the library lacks.
+
 ## House rules (read before any recipe)
 
-1. **Pick one or two arrival styles per film** and use them everywhere. Five styles is a template.
+1. **Pick one or two arrival styles in a film** and use them everywhere. Five styles is a template.
 2. **Emphasis is colour (at most one accent word or phrase a statement, never the punctuation) and timing. Never a second face, a heavier weight or a bounce.** Text does
    not overshoot, wobble or spring.
-   The only overshoot allowed is a 4-7 % scale overshoot on individually tossed letters (one title per film at most).
+   The only overshoot allowed is a 4-7 % scale overshoot on individually tossed letters (one title in a film at most).
 3. **Never fade text alone.** A plain opacity ramp reads unsure. Cut on, or combine with blur, colour, a mask or a move.
    Fades of 2-4 f inside a word are fine; a 20 f fade-in of a whole line is not.
 4. **Front-load every move.** Re-centres and arrivals put 50-80 % of their travel in the first 1-2 frames. A symmetric
@@ -21,7 +25,12 @@ useTyped, Scramble, Odometer, Marker, at, mix, ease, springAt, springs, stagger,
    in `words / 3 + 0.5` s; the film's pace decides the rest.
 7. **Decode, scramble and glitch only on short strings** (names, labels, URLs, under ~20 characters).
 8. **Readable or absent.** No blurred, ghosted or faded copies of words behind or around a line, and no line cut by the
-   frame edge except the one spectacle word; a resting line keeps 8 % from every edge.
+   frame edge except the one spectacle word; a resting line keeps 8 % from every edge. One line on screen at a time; it
+   may sit on a picture (on a calm area, 7:1) or beside the object it answers, not only on a plain ground.
+9. **Never:** letters that start widely spaced and pull together (no tracking that closes); an animated full stop or
+   punctuation turned into an object (statements end without a full stop unless the sentence needs one); text that
+   leaves by fading while it rises ([exits](#11-exits-for-text)); a typing burst; smeared or pixelated rolling digits;
+   a move nobody can follow. No text move more than twice in a film; vary it the third time.
 
 ---
 
@@ -67,7 +76,7 @@ for (let i = 2; i <= shown; i++) x = mix(lead(frame - starts[i - 1]), x, -widthO
 
 ### 1.3 Masked rise
 **What:** each word slides up out of a clip mask with a few degrees of tilt settling to 0. The classic premium build.
-**When:** statements on flat grounds, lockup lines, one style per film. Strong on poster and grid worlds.
+**When:** statements on flat grounds, lockup lines, one style in a film. Strong on poster and grid worlds.
 **Numbers:** from 105 % of the line height and 6 deg to 0 over 14 f, `ease.out`, gap 3.5 f compressing.
 
 ```tsx
@@ -244,7 +253,7 @@ next line, first in a light "generating" tint with 2-3 letters missing (2 f), co
 
 ### 3.5 Last-word swap
 **What:** the line holds; only its last word is replaced, by a hard cut on the beat, two to four times. The prefix never
-moves, and the last word carries the meaning ("Your week, planned. / sorted. / shared.").
+moves, and the last word carries the meaning ("Your week, planned / sorted / shared").
 **Numbers:** each word holds 14-24 f; the swap is one frame: the old word cuts out, the new one cuts on born in the accent and
 cooling to ink over 6 f; the line is left-aligned on its prefix so nothing re-centres; a light tick per swap; the whole line
 creeps 0.5 % a beat. Hold the last swap back 6-10 f longer: that is the punch.
@@ -252,14 +261,14 @@ creeps 0.5 % a beat. Hold the last swap back 6-10 f longer: that is the punch.
 **Avoid:** rolling or fading the word (that is the slot roll, 3.1); more than four swaps.
 
 ```tsx
-const words = ['planned.', 'sorted.', 'shared.'], times = [0, 20, 44];
+const words = ['planned', 'sorted', 'shared'], times = [0, 20, 44];
 const i = Math.max(0, times.filter((t) => frame >= t).length - 1);
 <div style={{ position: 'absolute', left: 360, top: 470, whiteSpace: 'pre', color: INK }}>
   Your week, <Words key={i} text={words[i]} start={times[i]} arrive="cut" born={ACCENT} settle={6} style={{ color: INK }} /></div>
 ```
 
 ### 3.6 Style cycle
-**What:** once per film, one word arrives through three or four type styles in a row (a pixel face, a serif, a mono, then
+**What:** once in a film, one word arrives through three or four type styles in a row (a pixel face, a serif, a mono, then
 the film's display face), 1-2 f each, and lands on the display face. It says "any style" or "it renders anything" in 6 f.
 **Numbers:** 1-2 f per style, hard cuts, every style matched to the same cap height and baseline so the word does not jump;
 the last style holds and creeps; a tick on each step. The kit's `fonts` give the serif and the mono; a pixel face must be
@@ -272,22 +281,23 @@ styles whose widths differ so much that the word lurches.
 ## 4. Typing
 
 ### 4.1 Realistic cadence
-**What:** a human types: 1-3 characters per frame, faster inside words, stalls of 2 f on a few characters, longer pauses
-after commas and full stops, never a constant rate. The caret blinks on **its own clock** (10-15 f on, 10-15 f off),
+**What:** a human types: about one character every 2 f, faster inside words, stalls of 2-4 f on a few characters,
+longer pauses after commas, never a constant rate, and never a jump: every character of the line is typed, to the end. The caret blinks on **its own clock** (10-15 f on, 10-15 f off),
 independent of typing, and is solid while typing.
 **When:** every input field, prompt and composer.
-**Numbers:** 12-20 chars/s average for prompts; 30-60 chars/s for "the machine writes"; the kit's `useTyped` adds seeded
-jitter and pauses on spaces and punctuation.
+**Numbers:** 15-18 chars/s for a person (the kit's default `cps` is 17, about 15 with its seeded hesitations and pauses
+on spaces and punctuation); a machine's output streams (4.2), it is not typed.
 
 ```tsx
-<InputBar t={theme} text="Draft the launch email for Friday" start={12} cps={16} sendAt={80} />
-<Typing text="npm create app@latest" start={6} cps={22} caretColor={accent} />
+<InputBar t={theme} text="Draft the launch email for Friday" start={12} sendAt={80} />
+<Typing text="npm create app@latest" start={6} caretColor={accent} />
 ```
 Upgrades: **delete and retype** (placeholder deleted one char per frame with one multi-char skip, a 1 f beat, then the real
-value typed unevenly: 3 chars on the first frame, then 1 per 1-2 f); **soft newest characters** (the newest 2 chars at
+value typed unevenly, 1 char per 1-3 f); **soft newest characters** (the newest 2 chars at
 3 px blur / 60 %, the third at 1.5 px / 85 %: text condenses onto glass); **born colour** per word (2.4).
-**Avoid:** showing the whole typing time. Hide it: type during a camera whip, cut inside a zoom whip to a later state, or
-let the camera follow the caret (see `camera.md`).
+**Avoid:** `burst` (the rest of a line landing at once reads as a glitch); speeding up the last words. When the line is
+too long for its beat, start with a prefix already typed (4.3) or shorten the line; let the camera follow the caret so
+the typing is worth watching (see `camera.md`).
 
 ### 4.2 Streaming answers
 **What:** an AI answer appears faster than typing: one block (header, sentence, row) per frame top-down, each block
@@ -296,9 +306,15 @@ list rows: icon cuts on first, then text streams ~4-5 chars/f, characters cut on
 chars/f with stalls.
 **When:** chat answers, generated documents. Fast enough to read as machine speed, slow enough to see structure.
 
-### 4.3 Parallel and hyper-fast typing
-**What:** headline, body and button all type at once, 1-2 chars per frame, while the block pans out of frame mid-sentence.
-The text is never finished on screen: speed says "it writes for you".
+### 4.3 A prefix already typed
+**What:** when time is short, the field opens with the first part of the line already there (caret after it) and only
+the rest is typed, at the normal pace, to the end.
+**Numbers:** keep 8-20 typed characters; the prefix is on screen from the first frame of the shot, never landing later.
+
+```tsx
+const PREFIX = 'Draft the launch email ', REST = 'for Friday';
+<span>{PREFIX}<Typing text={REST} start={T.type} caretColor={accent} /></span>
+```
 
 ---
 
@@ -329,8 +345,9 @@ the accent with a 14 px glow; resolved letters lock left to right from state 4; 
 disappears on the frame the word resolves (crisp = done). Meanwhile the group zooms 1.44 -> 1.0 over 15 f, expo-out.
 
 ### 5.4 Counters
-- **Rolling odometer** (mechanical, each digit a reel, low digits blurred by speed): budgets, limits, prices typed into a
-  field. Lock the leftmost column first; ~30 f total.
+- **Rolling odometer** (mechanical, each digit a reel): budgets, limits, prices. Digits stay sharp: no speed blur, no
+  smear, no pixelated digits (`<Odometer>` draws sharp reels; its `blur` prop, default 0, exists for old films only).
+  Lock the leftmost column first; ~30 f total, slow enough that the digits can be followed.
 
 ```tsx
 <Odometer value={1500} from={0} start={10} dur={30} prefix="$" style={{ fontSize: 64, fontWeight: 600 }} />
@@ -407,7 +424,7 @@ The next cut arrives before the full word is ever seen: anticipation through cro
 
 ### 7.5 One gradient through a line
 **What:** a single multi-stop gradient clipped to all glyphs of a line (`background-clip: text`) on a plain ground, with
-only a slow push. It reads as the film's imagery printed into the type. Once per film.
+only a slow push. It reads as the film's imagery printed into the type. Once in a film.
 
 ### 7.6 Letterpress speckle
 **What:** a fixed-seed mask of pinholes and specks (2-6 px, 5-12 % of the ink) and slightly rough edges on a serif. Makes
@@ -488,11 +505,10 @@ grows 1.6x in 5 f on `ease.in` and hard-cuts to the same picture full frame, alr
 **Avoid:** a picture floating over the line; a slot rounder than the world's radius.
 
 ### 9.8 Flanking words
-**What:** two words sit at the left and right edges of a central picture or object, as if holding it, and tighten into place
-from the edge they touch.
-**Numbers:** each word starts at letter-spacing -0.35 em, its letters bunched against the object, and opens to 0 over
-10-12 f (`ease.out`, no overshoot), anchored on its inner edge so it grows outward; the second word 2-3 f after the first; the
-object pushes 1.00 -> 1.04 meanwhile.
+**What:** two words sit at the left and right edges of a central picture or object, as if holding it, and slide into place
+from behind the edge they touch.
+**Numbers:** each word slides out from behind the object, masked by its edge, 60-90 px over 10-12 f (`ease.out`, no
+overshoot), its letter-spacing fixed; the second word 2-3 f after the first; the object pushes 1.00 -> 1.04 meanwhile.
 **Sells it:** the words take their shape from what stands between them.
 
 ---
@@ -502,8 +518,7 @@ object pushes 1.00 -> 1.04 meanwhile.
 How the mark is born is chosen from the lockup menu (`film-grammar.md` lockups); these are the type recipes for it. The
 soft scan is last on purpose: it finishes a wordmark beside a mark, it does not give birth to one.
 
-- **Spaced cut-on:** letters cut on one per frame at +30 % letter-spacing; the gaps close expo-out over ~4 f; mark parts
-  slide together; the lockup settles 1 -> 0.9 and drifts.
+Never letters that start spaced and close up, and never the claim's full stop growing into the mark.
 - **Glyph birth in light:** one glyph per 3 f, each born glowing in a light tint and cooling to white over 12 f, with a
   large soft glow (1000 x 700 px) travelling with the newest glyph; the lockup re-centres in small cuts.
 - **Swell and stop:** a hard cut to a flat ground with the wordmark already at size; it swells 1.0 -> 1.22x on a long
@@ -511,7 +526,7 @@ soft scan is last on purpose: it finishes a wordmark beside a mark, it does not 
   section 8); the music drops out 0.7 s before the cut and a single kick lands on it.
 - **Scale-jump to tiny:** the claim giant and cropped for 15-20 f (8.5), then a hard cut to the same words at a cap of about
   4 % of the frame height (40 px or more) under the mark, which is already settling.
-- **Letter toss** (one title per film): one glyph per frame, each from (-55..-75, -60..-82) px, +35..+40 deg, scale 0.5,
+- **Letter toss** (one title in a film): one glyph per frame, each from (-55..-75, -60..-82) px, +35..+40 deg, scale 0.5,
   opacity 0.6, blur 3 px; position and rotation over 5 f `cubic-bezier(0.43,1.06,0.65,1.11)`; scale 0.5, 0.63, 0.79, 0.92,
   1.04, 1.06, 1.05, 1.03, 1.0. Only scale overshoots. 3-4 glyphs mid-flight at once.
 - **Per-letter cut-on**, left to right ~2 f per character, leading characters light grey until they lock.
@@ -529,8 +544,9 @@ const p = mix(at(frame, 1, 9, ease.out), 900, 1350) - 960 + 500; // mask centre 
 ---
 
 ## 11. Exits for text
-See `exits.md` section 6: shrink into the cut, one layer leaves, carried by the camera, make room, defocus while
-moving, masked rise out (`leave="rise"`), heat out, re-encode. Never a plain fade longer than 4 f.
+Text leaves by a hard cut (`<Words leaveAt>` cuts by default), a wipe by what arrives, a mask that closes (`leave="rise"`
+or `"fall"`: out behind its own mask, no fade), or pushed out by the next thing; more in `exits.md` section 6. Never a fade
+while it rises, never a plain fade longer than 4 f.
 
 ---
 
@@ -539,8 +555,7 @@ moving, masked rise out (`leave="rise"`), heat out, re-encode. Never a plain fad
 - **Append build re-centre styles:** `<Build>` re-centres with the lead-heavy jump; the `pre`, `drawer` and `none` styles
   described above are still built by hand.
 - **Explicit unit timing.** `Words` needs `starts?: number[]` (beat-locked builds, held-back last word) instead of only `gap`.
-- **New `Words` arrivals:** `'hot'` (oversized + blurred, exponential settle: 1.2/2.1), `'track'` (letter-spacing snap from
-  -0.08 em or +0.18 em to 0 in 3-4 f, 80 % on the first frame), `'stair'` (per-word start offsets, 1.4), `'ramp'` (gradient
+- **New `Words` arrivals:** `'hot'` (oversized + blurred, exponential settle: 1.2/2.1), `'stair'` (per-word start offsets, 1.4), `'ramp'` (gradient
   print, 2.3), `'drop'` variant from above-left with scale-to-centre.
 - **New `Words` exits:** `'heat'` (ramp out), `'erode'` (letters leave from the end with horizontal smear), `'reencode'`.
 - **`born` with non-hex colours.** `mixColor` only parses `#rrggbb`; `style.color` must be hex or blending fails silently.

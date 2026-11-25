@@ -1,11 +1,12 @@
 # Index: every recipe and section
 
-Find a move by what it does, then open its section. File order: plan, look, sound, motion, kit, assets, rendering.
+Find a move by what it does, then open its section. File order: plan, look, sound, motion, library, kit, assets, rendering.
 
 ## [film-grammar.md](film-grammar.md): Film grammar: how a film is built
 
+- [Story](film-grammar.md#story)
 - [Concepts](film-grammar.md#concepts)
-- [1. Lengths and what they can hold](film-grammar.md#1-lengths-and-what-they-can-hold)
+- [1. Lengths and acts](film-grammar.md#1-lengths-and-acts)
 - [2. Sections and structures](film-grammar.md#2-sections-and-structures)
   - [Structures](film-grammar.md#structures)
   - [Sections of a problem-reveal launch film (one structure of eleven)](film-grammar.md#sections-of-a-problem-reveal-launch-film-one-structure-of-eleven)
@@ -16,14 +17,19 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [3.4 Hero relay (one through-line object)](film-grammar.md#34-hero-relay-one-through-line-object)
   - [3.5 One invented product carried through every feature (verb ladder)](film-grammar.md#35-one-invented-product-carried-through-every-feature-verb-ladder)
   - [3.6 Recurring word or shape (the rhyme)](film-grammar.md#36-recurring-word-or-shape-the-rhyme)
-  - [3.7 Colour script (grounds as act markers)](film-grammar.md#37-colour-script-grounds-as-act-markers)
+  - [3.7 Grounds follow the story](film-grammar.md#37-grounds-follow-the-story)
+- [Joins](film-grammar.md#joins)
+  - [The join test](film-grammar.md#the-join-test)
 - [4. Rhythm](film-grammar.md#4-rhythm)
   - [4.1 The pace curve](film-grammar.md#41-the-pace-curve)
   - [4.2 Shot and beat lengths (30 fps)](film-grammar.md#42-shot-and-beat-lengths-30-fps)
   - [4.3 Accelerating cadence](film-grammar.md#43-accelerating-cadence)
   - [4.4 Designed silences](film-grammar.md#44-designed-silences)
   - [4.5 Cut on motion](film-grammar.md#45-cut-on-motion)
-  - [4.6 Nothing holds](film-grammar.md#46-nothing-holds)
+  - [4.6 Holds that are read](film-grammar.md#46-holds-that-are-read)
+- [Action and escalation](film-grammar.md#action-and-escalation)
+  - [Clarity of action](film-grammar.md#clarity-of-action)
+  - [Escalation: one, then more, then many](film-grammar.md#escalation-one-then-more-then-many)
 - [5. Two clocks](film-grammar.md#5-two-clocks)
 - [6. Four worked structures](film-grammar.md#6-four-worked-structures)
   - [A. Hub and dive (platform launch, 60 s, no voice-over)](film-grammar.md#a-hub-and-dive-platform-launch-60-s-no-voice-over)
@@ -35,7 +41,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [Devices](film-grammar.md#devices)
   - [Type treatment](film-grammar.md#type-treatment)
   - [Openings](film-grammar.md#openings)
-  - [Seams and ground cuts](film-grammar.md#seams-and-ground-cuts)
+  - [Ground changes](film-grammar.md#ground-changes)
   - [Spectacle](film-grammar.md#spectacle)
   - [Integrations](film-grammar.md#integrations)
   - [Lockups](film-grammar.md#lockups)
@@ -74,6 +80,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 
 ## [taste.md](taste.md): Taste: what separates a premium film from a generated one
 
+- [Never](taste.md#never)
 - [1. The tells (avoid every one)](taste.md#1-the-tells-avoid-every-one)
   - [Look](taste.md#look)
   - [Type](taste.md#type)
@@ -84,6 +91,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [2. The qualities (hit every one)](taste.md#2-the-qualities-hit-every-one)
 - [3. Fixes for the most common failures](taste.md#3-fixes-for-the-most-common-failures)
 - [4. The contact-sheet rubric (20 points)](taste.md#4-the-contact-sheet-rubric-20-points)
+- [5. The polish loop](taste.md#5-the-polish-loop)
 
 ## [type.md](type.md): Type: how a film sets its words
 
@@ -93,7 +101,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [4. Weight](type.md#4-weight)
 - [5. Tracking by size](type.md#5-tracking-by-size)
 - [6. Sentence case](type.md#6-sentence-case)
-- [7. Centred, alone](type.md#7-centred-alone)
+- [7. Centred, one line at a time](type.md#7-centred-one-line-at-a-time)
 - [8. Few words, built](type.md#8-few-words-built)
 - [9. Emphasis by colour](type.md#9-emphasis-by-colour)
 - [10. Serif only with a reason](type.md#10-serif-only-with-a-reason)
@@ -105,18 +113,19 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 ## [sound-design.md](sound-design.md): Sound design: placing sound on picture
 
 - [1. Principles](sound-design.md#1-principles)
-- [2. Two ways to score a film](sound-design.md#2-two-ways-to-score-a-film)
-- [3. Placement rules](sound-design.md#3-placement-rules)
-- [4. Designed silences](sound-design.md#4-designed-silences)
-  - [4.1 The earned opener](sound-design.md#41-the-earned-opener)
-  - [4.2 Breath gaps before hits](sound-design.md#42-breath-gaps-before-hits)
-  - [4.3 The breakdown](sound-design.md#43-the-breakdown)
-  - [4.4 Register change at the story's turn](sound-design.md#44-register-change-at-the-storys-turn)
-  - [4.5 The ending](sound-design.md#45-the-ending)
-- [5. Levels](sound-design.md#5-levels)
-- [6. The sync grid](sound-design.md#6-the-sync-grid)
-- [7. Effect vocabulary (what to fetch)](sound-design.md#7-effect-vocabulary-what-to-fetch)
-- [8. Checklist before render](sound-design.md#8-checklist-before-render)
+- [2. The palette, measured](sound-design.md#2-the-palette-measured)
+- [3. Hard rules](sound-design.md#3-hard-rules)
+- [4. Placement](sound-design.md#4-placement)
+- [5. Designed silences](sound-design.md#5-designed-silences)
+  - [5.1 The opener](sound-design.md#51-the-opener)
+  - [5.2 Breath gaps before the hit](sound-design.md#52-breath-gaps-before-the-hit)
+  - [5.3 The breakdown](sound-design.md#53-the-breakdown)
+  - [5.4 Register change at the story's turn](sound-design.md#54-register-change-at-the-storys-turn)
+  - [5.5 The ending](sound-design.md#55-the-ending)
+- [6. Levels](sound-design.md#6-levels)
+- [7. The sync grid](sound-design.md#7-the-sync-grid)
+- [8. What to fetch](sound-design.md#8-what-to-fetch)
+- [9. Checklist before render](sound-design.md#9-checklist-before-render)
 
 ## [motion/text.md](motion/text.md): Text in motion
 
@@ -146,7 +155,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [4. Typing](motion/text.md#4-typing)
   - [4.1 Realistic cadence](motion/text.md#41-realistic-cadence)
   - [4.2 Streaming answers](motion/text.md#42-streaming-answers)
-  - [4.3 Parallel and hyper-fast typing](motion/text.md#43-parallel-and-hyper-fast-typing)
+  - [4.3 A prefix already typed](motion/text.md#43-a-prefix-already-typed)
 - [5. Decode, counters and numbers](motion/text.md#5-decode-counters-and-numbers)
   - [5.1 Cipher settle](motion/text.md#51-cipher-settle)
   - [5.2 Random-order reveal (no glyphs)](motion/text.md#52-random-order-reveal-no-glyphs)
@@ -233,7 +242,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [1. Accelerating exits](motion/exits.md#1-accelerating-exits)
   - [1.1 Peak-speed exit](motion/exits.md#11-peak-speed-exit)
   - [1.2 Creep, then burst (velocity-doubling whip)](motion/exits.md#12-creep-then-burst-velocity-doubling-whip)
-  - [1.3 Asymmetric whip into a flash](motion/exits.md#13-asymmetric-whip-into-a-flash)
+  - [1.3 Asymmetric whip into the cut](motion/exits.md#13-asymmetric-whip-into-the-cut)
   - [1.4 Shrink into the cut](motion/exits.md#14-shrink-into-the-cut)
   - [1.5 Lift out the top](motion/exits.md#15-lift-out-the-top)
   - [1.6 Rise and leave (layout passes through)](motion/exits.md#16-rise-and-leave-layout-passes-through)
@@ -248,7 +257,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [3.2 One layer leaves, the other stays](motion/exits.md#32-one-layer-leaves-the-other-stays)
   - [3.3 Losers blur out](motion/exits.md#33-losers-blur-out)
   - [3.4 Defocus while moving](motion/exits.md#34-defocus-while-moving)
-  - [3.5 Recency blur](motion/exits.md#35-recency-blur)
+  - [3.5 Pushed out of the stack](motion/exits.md#35-pushed-out-of-the-stack)
 - [4. Transforming exits (the object becomes something)](motion/exits.md#4-transforming-exits-the-object-becomes-something)
   - [4.1 Collapse into the next element](motion/exits.md#41-collapse-into-the-next-element)
   - [4.2 Bloom-morph](motion/exits.md#42-bloom-morph)
@@ -261,8 +270,8 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [5. Light, colour and texture exits](motion/exits.md#5-light-colour-and-texture-exits)
   - [5.1 Lights out](motion/exits.md#51-lights-out)
   - [5.2 Glow sink](motion/exits.md#52-glow-sink)
-  - [5.3 Heat out, bleach, fade to white](motion/exits.md#53-heat-out-bleach-fade-to-white)
-  - [5.4 Bloom to white](motion/exits.md#54-bloom-to-white)
+  - [5.3 Heat out (shapes)](motion/exits.md#53-heat-out-shapes)
+  - [5.4 Wiped by what arrives](motion/exits.md#54-wiped-by-what-arrives)
   - [5.5 Mosaic overrun](motion/exits.md#55-mosaic-overrun)
   - [5.6 Re-encode](motion/exits.md#56-re-encode)
   - [5.7 Pixels fall out](motion/exits.md#57-pixels-fall-out)
@@ -293,22 +302,18 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [4.3 Pixel bridge](motion/turns.md#43-pixel-bridge)
   - [4.4 Cell bloom (grid opener into a dive)](motion/turns.md#44-cell-bloom-grid-opener-into-a-dive)
 - [5. Object hand-off and morph](motion/turns.md#5-object-hand-off-and-morph)
-  - [5.1 Dot, drop, flash, bloom](motion/turns.md#51-dot-drop-flash-bloom)
+  - [5.1 Drop and bloom (the object carried)](motion/turns.md#51-drop-and-bloom-the-object-carried)
   - [5.2 Button becomes window](motion/turns.md#52-button-becomes-window)
   - [5.3 Highlight becomes the next object](motion/turns.md#53-highlight-becomes-the-next-object)
   - [5.4 Choice collapses into progress; confirmation blooms into action](motion/turns.md#54-choice-collapses-into-progress-confirmation-blooms-into-action)
   - [5.5 Blur morph (glass handover)](motion/turns.md#55-blur-morph-glass-handover)
-  - [5.6 Snap morph licensed by a flash](motion/turns.md#56-snap-morph-licensed-by-a-flash)
+  - [5.6 Snap morph hidden in blur](motion/turns.md#56-snap-morph-hidden-in-blur)
   - [5.7 Docking](motion/turns.md#57-docking)
   - [5.8 Morph chain](motion/turns.md#58-morph-chain)
-- [6. Flash-hidden swap](motion/turns.md#6-flash-hidden-swap)
-  - [6.1 Flash gate (two exposure frames)](motion/turns.md#61-flash-gate-two-exposure-frames)
-  - [6.2 Light flood](motion/turns.md#62-light-flood)
-  - [6.3 Dip, then flash](motion/turns.md#63-dip-then-flash)
-  - [6.4 Flash cut to white](motion/turns.md#64-flash-cut-to-white)
+- [6. No flash](motion/turns.md#6-no-flash)
 - [7. Push, whip and hidden cuts](motion/turns.md#7-push-whip-and-hidden-cuts)
   - [7.1 Push (kit)](motion/turns.md#71-push-kit)
-  - [7.2 Whip into darkness](motion/turns.md#72-whip-into-darkness)
+  - [7.2 Whip into the next set](motion/turns.md#72-whip-into-the-next-set)
   - [7.3 Staged push wipe](motion/turns.md#73-staged-push-wipe)
   - [7.4 Hidden cut inside a whip](motion/turns.md#74-hidden-cut-inside-a-whip)
 - [8. Occluders and carriers](motion/turns.md#8-occluders-and-carriers)
@@ -319,7 +324,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [8.5 Canvas return](motion/turns.md#85-canvas-return)
 - [9. Word and ground seams](motion/turns.md#9-word-and-ground-seams)
   - [9.1 Ground swap under a layer that stays](motion/turns.md#91-ground-swap-under-a-layer-that-stays)
-  - [9.2 Colour-flip cut with a size step](motion/turns.md#92-colour-flip-cut-with-a-size-step)
+  - [9.2 Colour-flip cut (dropped)](motion/turns.md#92-colour-flip-cut-dropped)
 - [10. Hub and dive (chapter structure)](motion/turns.md#10-hub-and-dive-chapter-structure)
 
 ## [motion/camera.md](motion/camera.md): Camera
@@ -362,7 +367,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [7. Projection and clocks](motion/camera.md#7-projection-and-clocks)
   - [7.1 Orthographic for systems, perspective for feeling](motion/camera.md#71-orthographic-for-systems-perspective-for-feeling)
   - [7.2 Two clocks](motion/camera.md#72-two-clocks)
-  - [7.3 Impact shake](motion/camera.md#73-impact-shake)
+  - [7.3 Landing weight, never a shake](motion/camera.md#73-landing-weight-never-a-shake)
 - [8. Spectacle shots](motion/camera.md#8-spectacle-shots)
   - [8.1 Cascade (speed, automation)](motion/camera.md#81-cascade-speed-automation)
   - [8.2 Accelerating montage (variety)](motion/camera.md#82-accelerating-montage-variety)
@@ -442,7 +447,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [8.4 Texture montage](motion/imagery.md#84-texture-montage)
 - [9. 3D renders](motion/imagery.md#9-3d-renders)
 
-## [motion/effects.md](motion/effects.md): Effects, with restraint
+## [motion/effects.md](motion/effects.md): Effects, with a job
 
 - [Effect budget by world](motion/effects.md#effect-budget-by-world)
 - [1. Glow and bloom](motion/effects.md#1-glow-and-bloom)
@@ -457,16 +462,66 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [3.3 The moving specular streak](motion/effects.md#33-the-moving-specular-streak)
   - [3.4 Glass solids (3D)](motion/effects.md#34-glass-solids-3d)
   - [3.5 Frost to clear (a state change as a beat)](motion/effects.md#35-frost-to-clear-a-state-change-as-a-beat)
-- [4. Grain and dither](motion/effects.md#4-grain-and-dither)
+- [4. Texture: one family in a film](motion/effects.md#4-texture-one-family-in-a-film)
 - [5. Motion blur only at real speed](motion/effects.md#5-motion-blur-only-at-real-speed)
 - [6. Depth of field](motion/effects.md#6-depth-of-field)
 - [7. Chromatic, pixel and dither: devices, not filters](motion/effects.md#7-chromatic-pixel-and-dither-devices-not-filters)
 - [8. Light sweeps](motion/effects.md#8-light-sweeps)
-- [9. Flashes](motion/effects.md#9-flashes)
+- [9. No flashes](motion/effects.md#9-no-flashes)
 - [10. Shaped light (dark-stage worlds)](motion/effects.md#10-shaped-light-dark-stage-worlds)
 - [11. Vignette, lens and particles](motion/effects.md#11-vignette-lens-and-particles)
 - [12. Finish](motion/effects.md#12-finish)
 - [13. Shadows and 3D light](motion/effects.md#13-shadows-and-3d-light)
+
+## [library.md](library.md): The motion library: the default vocabulary
+
+- [The three sections](library.md#the-three-sections)
+- [How to use it](library.md#how-to-use-it)
+
+## [library-turns.md](library-turns.md): Library: turns and effects
+
+- [Turns](library-turns.md#turns)
+  - [DotReveal](library-turns.md#dotreveal)
+  - [BlockBurst](library-turns.md#blockburst)
+  - [GrowIris](library-turns.md#growiris)
+  - [DiveInto](library-turns.md#diveinto)
+  - [WhipGate](library-turns.md#whipgate)
+  - [Shove](library-turns.md#shove)
+  - [ShapeMatch](library-turns.md#shapematch)
+  - [GlitchCut](library-turns.md#glitchcut)
+- [Effects](library-turns.md#effects)
+  - [LightSweep](library-turns.md#lightsweep)
+  - [Bloom](library-turns.md#bloom)
+  - [TrackOverlay](library-turns.md#trackoverlay)
+  - [DotScreen](library-turns.md#dotscreen)
+  - [ChromaHit](library-turns.md#chromahit)
+  - [MorphBox](library-turns.md#morphbox)
+- [Helpers](library-turns.md#helpers)
+
+## [library-ui.md](library-ui.md): Library: product UI
+
+- [The design bar](library-ui.md#the-design-bar)
+- [Shared parts](library-ui.md#shared-parts)
+  - [Surfaces and small parts](library-ui.md#surfaces-and-small-parts)
+  - [Pointer](library-ui.md#pointer)
+  - [Caret, InkTyped, InkWords](library-ui.md#caret-inktyped-inkwords)
+- [Stacks](library-ui.md#stacks)
+  - [NoticePile](library-ui.md#noticepile)
+  - [CardFan](library-ui.md#cardfan)
+  - [BannerPop](library-ui.md#bannerpop)
+- [Lists and grids](library-ui.md#lists-and-grids)
+  - [RowExpand](library-ui.md#rowexpand)
+  - [PickList](library-ui.md#picklist)
+  - [BoardDrag](library-ui.md#boarddrag)
+  - [StepList](library-ui.md#steplist)
+  - [TaskRun](library-ui.md#taskrun)
+  - [CalendarWave](library-ui.md#calendarwave)
+- [Input and state](library-ui.md#input-and-state)
+  - [PromptAnswer](library-ui.md#promptanswer)
+  - [ChatThread](library-ui.md#chatthread)
+  - [ActionMorph](library-ui.md#actionmorph)
+  - [SettingsCard, ToggleSwitch, ValueSlider, SelectFrame](library-ui.md#settingscard-toggleswitch-valueslider-selectframe)
+  - [PhoneDrop](library-ui.md#phonedrop)
 
 ## [kit.md](kit.md): The kit: API reference
 

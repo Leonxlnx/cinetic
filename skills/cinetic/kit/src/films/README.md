@@ -1,16 +1,17 @@
 # Worked films
 
-Five complete films made with the kit, one world each. Read one before your first film: they show the kit used the way the
-skill intends (one timeline `T`, one component per section, sound cues on the same frames). Every example shows one
-concept, and all five show the same one (one task, start to finish): read them for moves, never for the concept or the
-look. Pick the concept from the menu in `references/film-grammar.md`. Take single moves, never the content or the
-order: these five share devices (a flood, a relay, a wall) that a new film should choose from the same file's menus,
-not repeat. Render one inside this folder (`node scripts/frames.mjs sheet --film forge`).
+Five complete films made with the kit, one world each. Read them for how the kit is used (one timeline `T`, one
+component per section, sound cues on the same frames), not as a standard: their look and structure are below the bar
+(14-16 s, no story, plain frames, generic UI, joins that carry a token while the ground changes colour) and they will be
+replaced. All five show the same concept (one task, start to finish). Start a film from its story
+(`references/film-grammar.md`, story) and the motion library (`references/library.md`); take single kit techniques
+from these, never their content, order, palettes, marks or lockups. Render one inside this folder
+(`node scripts/frames.mjs sheet --film forge`).
 
 | Film | World | Moves worth studying | Needs fetched first |
 |---|---|---|---|
-| `brief` | light paper, product UI | a depth-ladder pile, a full stop that grows into the accent ground, a typed ask, a wall of every update read in one wave, the four results landing giant, the approved plate carried through three hosts | the sounds in `src/sfx.ts` (`node scripts/sfx.mjs get <ids>`); `your-breath` |
-| `forge` | isometric blocks on ink | thirty labelled blocks, floor type that faces the camera, a dive into a block's face that is a terminal, a caret-following camera, three ground cuts carried by objects, integrations as surfaces, a counter tower | the sounds |
+| `brief` | light paper, product UI | a depth-ladder pile, a typed ask, a wall of every update read in one wave, the four results landing giant, the approved plate carried through three hosts | the sounds in `src/sfx.ts` (`node scripts/sfx.mjs get <ids>`); `your-breath` |
+| `forge` | isometric blocks on ink | thirty labelled blocks, floor type that faces the camera, a dive into a block's face that is a terminal, a caret-following camera, integrations as surfaces, a counter tower | the sounds |
 | `fieldnote` | editorial paper, satellite photographs | a stepped mosaic, letters as windows that change place, a dive into a letter stroke, a scan grid and punch-ins, a before/after, a lockup inside a letter | the sounds; NASA earth observations (public domain) in `public/img/` (see the paths at the top of the film); `sonor-01` |
 | `lumen` | dark stage, a 3D glass prism (`GLView`) | the typed question collapsing into a beam, rays (lens-facing ribbons, now `glRay` in the kit) fanning onto three numbers, a flood to a bone ground with a live 3D simulation as the answer, labels pinned to 3D points, the name on an amber flood | the sounds; `wheres-hope` |
 | `inkwell` | cream paper, one coral | the claim as the document's own title, the weak sentence struck out and falling while the strong one lands in macro, the sentence lifting off as a plate | the sounds; `coffee-or-tea`; the current Google Docs mark (`node scripts/logos.mjs get google-docs --film .`) |

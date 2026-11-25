@@ -85,11 +85,11 @@ export const Dither: React.FC<{ amount?: number }> = ({ amount = 1 }) => {
 };
 
 /**
- * A ground in one colour, and its light. Never dark corners: the light only LIFTS a broad area in the ground's own hue
- * and falls to exactly the ground's colour at its edge. A dark ground (luminance < 0.5) gets one broad soft bloom (14 %
- * by default); a light ground lifts 2.5 % at most 4 % (a light ground is clean, not lit). `tint` gives the bloom a
- * neighbouring hue (a navy ground with a brighter blue bloom). `light={{ x, y, size, amount }}` places it (shares of the
- * frame); `light={false}` keeps it flat. A dither keeps the gradient from banding.
+ * A ground in one flat, clean colour (the default). A faint gradient ground (a pale gradient field, a dark ground with a
+ * soft bloom) reads as cheap, so the light is opt-in, for a 3D stage where an object needs a floor of light: `light`
+ * (or `light={{ x, y, size, amount }}`, shares of the frame) lifts a broad area in the ground's own hue and falls to
+ * exactly the ground's colour at its edge (never dark corners); a dark ground lifts 14 % by default, a light one 2.5 %.
+ * `tint` gives that lift a neighbouring hue. A dither keeps the gradient from banding.
  */
 export const Ground: React.FC<{
   color: string;
@@ -97,7 +97,7 @@ export const Ground: React.FC<{
   tint?: string;
   children?: React.ReactNode;
   style?: React.CSSProperties;
-}> = ({ color, light = true, tint, children, style }) => {
+}> = ({ color, light = false, tint, children, style }) => {
   const l = light === false ? null : light === true ? {} : light;
   const lum = luminance(color);
   const dark = lum < 0.5;
@@ -123,6 +123,8 @@ export const Ground: React.FC<{
 };
 
 /**
+ * Not a ground: a faint gradient field reads as cheap. Use it as light inside a designed scene (a 3D stage, behind a
+ * photograph's subject), never as the film's ground. Kept so older films compile.
  * A soft field of 2-4 neighbouring hues that drift slowly: light on a ground, never a blob wallpaper. Every pixel is a
  * blend of the colours in OKLab (so two hues meet through their true midpoint, never a grey seam), drawn on a small
  * canvas and scaled up (the field is smooth, so nothing is lost), then dithered. Deterministic from the frame.
@@ -234,8 +236,8 @@ export const softShadow = (level = 3, ground = '#F2F2F0') => {
 };
 
 /**
- * A soft living gradient: 2-4 blurred colour fields that drift slowly. For "air" worlds (soft UI on a pale sky,
- * a dark stage with one warm light). Keep the colours close in hue; one may be the accent.
+ * @deprecated as a ground: a pale blurred-blob field reads as cheap. Kept so older films compile.
+ * A soft living gradient: 2-4 blurred colour fields that drift slowly. Keep the colours close in hue.
  */
 export const Aura: React.FC<{
   base: string;

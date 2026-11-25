@@ -1,11 +1,13 @@
-// Turns: how one section becomes the next. A cut is never bare: it is carried by speed, a shape, an object or light.
+// Turns: how one section becomes the next. A join carries the thing the viewer is watching, large, or it is a hard cut
+// on a musical event. The library's turns (library/turns*.tsx, references/library-turns.md) come first; these are the
+// older building blocks.
 //
 //   <Iris>       the next shot opens inside a growing shape (circle, rounded rect, any SVG path, a logo)
 //   <Tiles>      the frame breaks into a grid of tiles that flip/scale in a sweep, revealing the next shot
 //   <Pixelate>   mosaic up, swap, mosaic down (digital, on-beat)
 //   <Push>       both shots travel together like one strip of film, with smear on the fastest frames
 //   <ZoomThrough> fly into an element until it fills the frame, then it IS the next shot
-//   <Flash>      a burst of light (white or the accent) that hides the swap at its peak
+//   <Flash>      deprecated: a screen flash is never used (kept so older films compile)
 //
 // Each takes the outgoing shot as `from`, the incoming as `to`, a start frame and a duration. Put them in a
 // Sequence that spans both shots, or render `from`/`to` yourself and use the progress helpers.
@@ -191,7 +193,10 @@ export const ZoomThrough: React.FC<TurnProps & { x: number; y: number; depth?: n
   );
 };
 
-/** A flash of light that hides a swap: peaks at start + dur/2, where the shot underneath should change. */
+/**
+ * @deprecated A screen flash is never used to hide a cut: carry the subject across the join or cut hard on a musical event
+ * (references/motion/turns.md). Kept only so older films compile.
+ */
 export const Flash: React.FC<{ start: number; dur?: number; color?: string; strength?: number }> = ({ start, dur = 10, color = '#ffffff', strength = 1 }) => {
   const frame = useCurrentFrame();
   const p = (frame - start) / dur;

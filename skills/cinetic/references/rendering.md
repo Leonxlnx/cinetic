@@ -22,8 +22,10 @@ preview, not from single frames.
 - `strip` shows a moment of the preview at 15 frames a second, so you can judge motion, not just layout.
 - `check` measures the preview (how crowded the frames are, change every half second, empty frames, ending length) and
   prints what to fix. Its `air` line says how much of the frame is sharp detail, how often three or more things share a
-  frame and how often the frame cuts on two sides; a crowded film fails. The coverage figure is information, never a
-  target: do not add things to raise it. `--format loop` drops the sound, ending and music lines and fails when the last
+  frame and how often the frame cuts on two sides: information, never a target (a rich frame is not a crowded one; a film
+  fails as crowded only when detail covers 35 % or more of the frame in over a quarter of its samples). The coverage
+  figure is information too. Still half-seconds are named past a quarter (each hold must have something to read) and
+  fail past 40 %. `--format loop` drops the sound, ending and music lines and fails when the last
   frame does not match the first; `--format sting` has no pace gate under 8 s and lets the ending hold.
 
 ## Safety

@@ -9,4 +9,5 @@ export * from './sound';
 export * from './icons';
 export * from './imagery';
 export * from './gl';
+export * from './library';
 export { fonts } from './fonts';

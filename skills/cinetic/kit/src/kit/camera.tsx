@@ -123,7 +123,10 @@ export const At: React.FC<{
   </div>
 );
 
-/** Screen shake on impact: decays over `dur` frames. Returns a CSS translate. Use sparingly: one or two a film. */
+/**
+ * @deprecated A screen shake is never used, not even a small one on a landing: give a landing weight by the object's own
+ * settle, its contact shadow and the target's reaction. Kept only so older films compile.
+ */
 export const shake = (frame: number, start: number, dur = 10, amp = 10) => {
   const t = frame - start;
   if (t < 0 || t > dur) return 'translate(0px, 0px)';

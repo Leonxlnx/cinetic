@@ -5,6 +5,14 @@ in**. In both cases they must look like one shoot, and they must be *acted on*: 
 re-coloured by state. Random stock with mixed grades, used as wallpaper behind text, is the clearest template tell there is.
 All numbers at 30 fps, 1920x1080.
 
+Real pictures make a film rich; an empty ground with a small token on it reads as cheap. Give every film at least one
+licensed photograph or footage plate, and use pictures in these roles:
+- **the world behind the UI:** a landscape behind the calendar, a desk at the hour the story happens, a room the screen lives in;
+- **the content the product acts on:** the shoot that is masked, the portrait that is selected, the page that is edited;
+- **a breather between UI scenes:** a plate that holds while a line is read on it, then carries the next scene in;
+- **the payoff in the world:** the campaign on a street, the shop that is live, the table at the wedding;
+- **a metaphor:** a sunset for a lost evening, a tree in flower for making things.
+
 Kit: Remotion's `Img`, `OffthreadVideo`, `staticFile`; `Camera`, `At` (camera); `Card`, `Box`, `Grain` (on photographs only), `Defocus`
 (world); motion helpers. Most image treatments here are SVG filters or CSS layers; the reusable ones are listed as kit gaps.
 
@@ -13,16 +21,19 @@ Kit: Remotion's `Img`, `OffthreadVideo`, `staticFile`; `Camera`, `At` (camera); 
 1. **One image world.** Every picture, including the ones inside UI mock-ups and billboards, goes through the same grade (a
    gradient map derived from the palette), or every picture is shot/curated to the same light and palette. 30 images must
    read as one universe.
-2. **Content is the colour.** When pictures are the product, keep the layout quiet (white or paper ground, one ink, small
-   type) and let the photos carry all the colour.
+2. **Content is the colour.** When pictures are the product, keep the layout around them simple (white or paper ground,
+   one ink, type sized by `type.md`) and let the photos carry the colour.
 3. **Curate like a mood board, not a stock search.** One casting, one light (e.g. bright daylight, faces large), 2-3 dominant
    hues; every image must read at 250 px wide; reject dark or off-palette pictures.
 4. **Colour state means something.** If pictures arrive tinted, the tint always means the same thing (processing, generated,
    claimed by the brand) and the true colour always means "found / real / done".
-5. **Pictures are acted on.** Masked by an iris, pushed by a panel, shrunk back into a card, developed, selected with a
-   chime. A full-bleed photo that just sits there gets at most 1.5 s and a slow move.
-6. **Licences.** Use your own, licensed stock, generated imagery the client owns, or public-domain material; never pictures
-   lifted from someone else's film.
+5. **Pictures are acted on.** Masked by an iris, pushed by a panel, shrunk back into a card, developed, selected. A
+   full-bleed photo with nothing happening in it always pushes slowly and holds only while something on it is read.
+6. **Licences.** Use the user's own pictures, licensed stock or public-domain material, listed in `CREDITS.md`; never
+   generated images, never pictures lifted from someone else's film.
+7. **One texture family.** A film may carry one material across its pictures and joins (grain on photographs, halftone,
+   dither, a lens, tracking marks, paper), used as transition material at least twice; never on a flat colour ground,
+   never several families in one film.
 
 ---
 
@@ -31,7 +42,7 @@ Kit: Remotion's `Img`, `OffthreadVideo`, `staticFile`; `Camera`, `At` (camera); 
 **What:** a gradient map on luminance applied to every picture: 5-7 stops from the palette's darkest tone (never below a
 lifted black) through its mids to a warm or cool near-white, mixed ~80/20 with the original, plus a light screen tint at
 ~18 % and contrast -10 %.
-**When:** any film with more than ~5 pictures from different sources; mandatory for generated imagery.
+**When:** any film with more than ~5 pictures from different sources.
 **How:** an SVG filter with `feColorMatrix` (to luminance) and `feComponentTransfer type="table"` per channel, applied with
 `filter: url(#world)`. Derive the stops from the brand (for invented brands: no purple, no green, no default AI gradient).
 
@@ -51,7 +62,7 @@ const lut = { r: [0.10, 0.22, 0.62, 0.93, 0.98, 1.0], g: [0.08, 0.20, 0.42, 0.55
 
 ## 2. Develop and materialise
 
-The "generated / found" moment without a progress bar. Pick one family per film.
+The "generated / found" moment without a progress bar. Pick one family in a film.
 
 ### 2.1 Tint develop
 Cards enter in one **shared tint** (a screen layer of the tint at opacity `1 - p` plus a multiply at `0.6 x (1 - p)`) and
@@ -81,8 +92,7 @@ vertical blur 30 -> 0 px for grids. Every picture is first "claimed" by the bran
 Three filters per thumbnail: **warm or brand duotone** = in the library, being processed; **true colour** = found, selected,
 understood; **wash-out** (saturation 0.2, contrast 0.25 over white) = the background archive. Optional category gradient maps
 (one hue family per kind of understanding) with true-colour faces inside white detection boxes. A library arrives duotone,
-deepens to colour over ~36 f, recedes to wash over 15 f; a selected clip returns to true colour with a 4 % bump for 4 f and a
-bright chime. Switching category: a hard text cut + a 3 f crossfade of the map through a 50 % desaturated midpoint.
+deepens to colour over ~36 f, recedes to wash over 15 f; a selected clip returns to true colour with a 4 % bump for 4 f. Switching category: a hard text cut + a 3 f crossfade of the map through a 50 % desaturated midpoint.
 **Avoid:** random per-clip grades; a state colour that sometimes means something else.
 
 ### 2.5 Printing reveal
@@ -134,7 +144,8 @@ the tint), deepen to full colour over ~30 f, then wash out to become the backdro
 ### 3.5 Orbit tiles
 Four square photo tiles (~330 px, no radius, no shadow) on a ring of radius ~520 px around a short centred line, viewed from ~18 deg
 above; they dive in from the camera side at the top glowing white (bloom 1, 0.7, 0.45, 0.25, 0.1, 0 over 6 f) and orbit ~250 deg
-over 68 f, front-loaded; one passes in front of the line. The reverse bloom over the last 7 f into a cut to white.
+over 68 f, front-loaded; one passes in front of the line. Over the last 7 f they fly back out past the camera, and the last
+one to pass carries the cut.
 
 ---
 
@@ -146,8 +157,7 @@ and one label strip with a short line in the film's voice that is always on top.
 slides or fades), several in 2-3 steps (a torn fragment first, the whole a step later), 1-2 steps apart; the label adds a word
 every 2-3 steps and re-centres by a cut; on 3-4 steps every piece jitters by a seeded 1-2 px (re-placement wobble); a drawn
 line or contour "boils" (redrawn with a 2-4 px drift each step). The camera runs smooth on every frame: 0.96 -> 1.0 linear,
-then 1.0 -> 1.27 sine in-out over 30 f, hold, ease-in back to ~1.08 into the exit. Optional 3-8 f full-frame texture flashes at
-15-25 % opacity (a handwriting wash, a giant pale sketch).
+then 1.0 -> 1.27 sine in-out over 30 f, hold, ease-in back to ~1.08 into the exit.
 
 ```tsx
 const step = Math.floor(frame / 5);
@@ -216,8 +226,8 @@ disc, a horizon) and a quiet horizontal band (y ~420-660) where the word sits; r
 an arc) for continuity between unrelated images. The stills are static; only the grain lives.
 
 ### 8.2 Footage, acted on
-Real footage appears briefly and is used by the product: seen only through an iris, pushed off by the product's panel (the
-human moment hands the action to the product), or masked inside glass. A warm human shot in a cool film is the warmest frame in
+Real footage is used by the product: seen through an iris, pushed off by the product's panel (the human moment hands the
+action to the product), or masked inside glass, held as long as it carries the story. A warm human shot in a cool film is the warmest frame in
 it, which is why it reads. Enter it pre-punched (1.406 -> 1.0 over 15 f) with a low boom; hold it clean ~15 f; then act on it.
 24 fps footage in a 30 fps film is fine under a push.
 
@@ -237,7 +247,7 @@ in contrasting palettes so the brand art pops, one live element (a passer-by cro
 ### 8.4 Texture montage
 When a claim needs energy rather than content (precision, imagination), pictures can become texture: blurred 15-30 px,
 gradient-mapped, with a chromatic offset (red +20-30 px right, blue -20-30 px left), horizontal smears on 10-25 % of rows, grain,
-cut every 2-8 f under a **static** title. Once per film, never as a house look.
+cut every 2-8 f under a **static** title that stays readable throughout. Once in a film, never as a house look.
 
 ---
 

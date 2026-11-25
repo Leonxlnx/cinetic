@@ -1,14 +1,18 @@
 # Turns: how one section becomes the next
 
-A cut is never bare. Between two beats, something carries the eye across: **speed, an object, a word, a shape, light,
-or a ground change on a beat**. Template films crossfade or slide; premium films make the seam out of the scene's own
-material, so the film reads as one camera moving through one world. A good film has dozens of seams and almost no
-dissolves; a film of 45 s may contain only four true hard cuts, everything else being camera moves, masks, morphs and
-flashes. All numbers at 30 fps, 1920x1080.
+A join is never bare. Every join carries the thing the viewer is watching, large (the object, the sentence being read,
+the card, the picture), or it is a hard cut on a musical event. Template films crossfade or slide; premium films make the
+join out of the scene's own material, so the film reads as one camera moving through one world. All numbers at 30 fps,
+1920x1080.
 
-Kit (`turns.tsx`): `Iris`, `Tiles`, `Pixelate`, `Push`, `ZoomThrough`, `Flash`, plus `turn = { at, ease, logScale, mix }`
-for hand-built turns. Each component takes the outgoing shot as `from`, the incoming as `to`, a `start` and a `dur`; put
-it in a `Sequence` that spans both shots. Most of the best turns are hand-built per film from the helpers below.
+**Start from the library.** [library-turns.md](../library-turns.md) holds finished, clean turns (`DotReveal`,
+`BlockBurst`, `GrowIris`, `DiveInto`, `WhipGate`, `Shove`, `ShapeMatch`, `GlitchCut`, `MorphBox` and more): at their peak
+the whole frame is covered and the next scene lands whole. Take one and adapt it to the scene's own objects; build a
+turn by hand from the recipes below only for what the library lacks.
+
+Kit (`turns.tsx`): `Iris`, `Tiles`, `Pixelate`, `Push`, `ZoomThrough`, plus `turn = { at, ease, logScale, mix }` for
+hand-built turns (`Flash` is deprecated: never flash the screen). Each component takes the outgoing shot as `from`, the
+incoming as `to`, a `start` and a `dur`; put it in a `Sequence` that spans both shots.
 
 ```tsx
 <Sequence from={300} durationInFrames={60}>
@@ -20,26 +24,45 @@ it in a `Sequence` that spans both shots. Most of the best turns are hand-built 
 
 ## 0. The rule for choosing
 
-Never a cross-fade between scenes and never an empty frame: at a seam the next ground already holds its subject at full
-size while the old one shrinks away. Ask how the two beats relate, then pick from the matching row. Never use the same device on two consecutive seams, and
-across the film repeat only the signature device (`film-grammar.md` devices), on at most 3 seams; use flashes at most 3-4
-times. The ground changes (two in a film over 12 s) use two different devices, and a colour flood from an object (`Flood`) is at most one of them.
+Pick every join by what the viewer is watching at the end of A. The classes, with how to build each, are in
+[film-grammar.md](../film-grammar.md#joins); list every join and what it carries with the
+[join test](../film-grammar.md#the-join-test) before the final. In short:
 
-| Relation between beat A and beat B | First choice | Second choice | Never |
+- **Carry the subject:** the thing the eye is on (about a sixth of the frame tall or more) is the first thing of B, at the
+  same screen spot and within 10 % of its size; the new world assembles round it or arrives while it moves (5, 9.1).
+- **Match on shape:** A ends on a silhouette, B starts with another object of that silhouette, same place and size (3, 5).
+- **The word still being read:** the sentence continues across the cut on the same baseline, or the line holds while
+  what is behind it changes, or the key word lifts out and becomes the next scene (9).
+- **Movement through the cut:** cut on the fastest frame of an accelerating exit; B moves on in the same direction (1, 7).
+- **Cause and effect:** A ends on the act (a press, a send, a drop); B is its result forming where it happened (5.2, 5.3).
+- **Camera into or out of the object:** a dive until the frame is covered, a rack focus, a pull-back to one of many (2, 10).
+- **Material bridge:** only the film's own texture, and only when it builds the next image (4.3, 4.4).
+- **Hard cut on the beat:** on the story's turn, a music event (a kick, a drop, a stop), a new act that opens mid-action,
+  or the cut into the mark. At most one join in five; never two in a row.
+
+Never: a cross-fade, an empty frame, a token carried (a full stop, a small pill, a dot) while everything else changes, a
+flash of light, a flood or iris that ends before it covers the frame, the ground changing first and the object after
+it. At the switch frame the whole frame is covered (by the object, by motion blur, by the dive). Two joins of one class in
+a row are fine; vary the third.
+
+**Ground, colour mode and accent change only when the story changes place or state** (a new act, a time of day, the
+turn), and then the whole frame changes at once under one clean turn; never an object that suddenly turns the accent
+colour. A film may stay on one ground. A ground is a flat clean colour, a real picture or a bold designed scene, never a
+faint gradient or a dark field with a soft bloom.
+
+| What the viewer watches at the end of A | First choice | Second choice | Never |
 |---|---|---|---|
-| same subject, closer or further | punch-in cut, zoom cut | carried cut | crossfade |
-| same direction of travel / same energy | carried cut (velocity hand-off) | push / whip | ease to stop + cut |
-| B is *inside* A (a cell, a window, a card, a screen) | zoom-through / diegetic dive | window dive | iris from nowhere |
-| B is caused by A (a choice, a press, a result) | object hand-off / morph | carrier panel | slide |
-| same idea, different world | shape iris from A's geometry | occluder wipe | generic circle wipe |
-| tonal jump (dark to white, footage to UI) | flash-hidden swap, light flood | ground cut on a beat | crossfade (the midpoint is mud) |
-| new chapter of a feature map | hub and dive | ground cut on a beat | title card |
-| time skip in a demo (typing, loading) | hidden cut inside a whip | punch-in cut | showing the wait |
-| brand identity moment | brand device (mosaic, tear, mark iris) | tiles | stock "glitch" |
-| a new act, same cast | ground swap under a layer that stays (9.1) | colour-flip cut with a size step (9.2) | a flood every time |
-| one thing, many worlds | object-lock swap (`cards-ui.md`) | ground swap under the thing (9.1) | a row of cards |
+| a subject that is also in B, closer or further | punch-in cut, zoom cut | carried cut | crossfade |
+| a move with a direction and an energy | carried cut (velocity hand-off) | push / whip | ease to stop + cut |
+| a container B lives *inside* (a cell, a window, a card, a screen) | zoom-through / diegetic dive | window dive | iris from nowhere |
+| an action whose result is B (a choice, a press, a send) | object hand-off / morph | carrier panel | slide |
+| a shape that B shares | shape iris from A's geometry | occluder wipe | generic circle wipe |
+| a tonal jump the story needs (night to day, footage to UI) | dive or occluder that covers the frame | hard cut on the music | crossfade, a flash |
+| a feature map, a new chapter | hub and dive | hard cut on a beat into a scene mid-action | title card |
+| a time skip in a demo (typing, loading) | hidden cut inside a whip | punch-in cut | showing the wait |
+| one thing in many places | object-lock swap (`cards-ui.md`) | ground swap under the large thing (9.1) | a row of cards |
 | B is A in another form, several times | morph chain (5.8) | object hand-off (5) | cut to a fresh layout |
-| a line is being read | **no transition**: hard cut on the beat after the read | | any move while reading |
+| a line being read | **no transition**: the line carries, or a hard cut on the beat after the read | | any move while reading |
 
 ---
 
@@ -114,9 +137,8 @@ const k = mix(p, 1, Math.max(1920 / w, 1080 / h) * 1.05);
 
 ### 2.3 Push into a face or screen
 **What:** an accelerating push (`ease.in`, x1.46-1.74 over 15 f) into a product object's face, a device's screen or a
-bubble's bright centre until its colour fills the frame; that colour is the next ground; the incoming world starts in that
-colour. "Screen becomes world": push into a device, the screen content fills, its background turns into the next world's
-ground in 2 f.
+card until it covers the whole frame; what is on that face or screen is the next scene, already moving. "Screen
+becomes world": push into a device until its screen content fills the frame, and that content is the next world.
 
 ### 2.4 Zoom-through a card onto what lies below
 From a finished answer card, push in and pan down on an accelerating exponential (width x1.00 -> 1.01 over 22 f, then 1.06,
@@ -161,11 +183,11 @@ window onto the world. Radius per frame 202, 305, 396, 472, 538, 593, 643, 688, 
 crisp edge with a 2 px white 50 % outline; remove the mask on the last frame.
 
 ### 3.4 Iris from behind
-**What:** a sharp-edged rectangle (not rounded) grows from behind a group of objects until the ground is a new colour;
-the objects stay in front. A ground change that keeps the cast.
+**What:** a sharp-edged rectangle (not rounded) grows from behind a group of large objects until it covers the whole
+frame and the world behind them is the next place; the objects stay in front. Only when the story changes place.
 
 **Avoid (all irises):** scaling the inner scene a lot (only the mask grows; the kit's 1.18 -> 1.0 is the maximum); a fading
-mask; more than two irises per film.
+mask; an iris that stops before it covers the frame; more than two irises in a film.
 
 ---
 
@@ -176,9 +198,9 @@ mask; more than two irises per film.
 `color` turns the old tiles into a flat colour first. 20-30 f. Use for grid worlds and data products.
 
 ### 4.2 Tile flood
-**What:** an isometric floor of rhombus tiles flips from ground A to ground B in clusters spreading from a few seeds;
-flipping is instant (or a 2 f squash of the rhombus height). **Fast version** (4-6 f) works as a cut; **slow version**
-(25-30 f, while objects keep animating) works as a mood change.
+**What:** an isometric floor of rhombus tiles flips from ground A to ground B in clusters spreading from a few seeds until
+every tile has flipped; flipping is instant (or a 2 f squash of the rhombus height). **Fast version** (4-6 f) works as a
+cut; **slow version** (25-30 f, while objects keep animating) for a change of act the story asks for.
 **Numbers:** tile ~120 x 60 px; t_i = start + distance to the nearest seed / speed + jitter 0-3 f; overlap tiles by 1 px.
 **Avoid:** dissolving the grounds; seams.
 
@@ -205,12 +227,11 @@ frame; its colour and grid continue as the next scene's ground and grid.
 **What:** the element that matters in A physically becomes the element of B. The viewer sees cause and effect. This is the
 strongest family of turns; build at least one per film.
 
-### 5.1 Dot, drop, flash, bloom
-The final dot of a written line swells (r 10 -> 15 over 2 f, then expo-out to ~75 over 4 f), turns white, falls with gravity
-(dy 38, 90, 168, 270 px/f, vertical motion blur 20-40 px), squashes 10 % on impact, and the impact floods the frame (an
-additive tinted layer 0 -> 0.85 -> 0 over 4 f) while the new ground crossfades in under it. Out of the impact point a
-ring appears (r 70, 20 px band), becomes a glass sphere (r 130), and grows to r ~200 on an arc; the content fades up inside
-from +7 f; a second bubble spawns 2 f later on an opposite arc. The flash *is* the cut.
+### 5.1 Drop and bloom (the object carried)
+The card, the photo or the object the viewer is watching (never a full stop or a dot) is released and falls with gravity
+(dy 38, 90, 168, 270 px/f, vertical motion blur 20-40 px), squashes 6-10 % on impact without any shake, and the next scene
+opens out of the impact point as the object itself (it unfolds into the next window, its picture becomes the ground);
+at the switch frame the object or its opening covers the whole frame. No flash: the object *is* the cut.
 
 ### 5.2 Button becomes window
 At macro scale the send control is pressed (r 1.0 -> 0.77 over 6 f, accelerating); its fill **drains** from the bottom up
@@ -221,8 +242,8 @@ light on its lower edge. The payoff line then appears around it (see `text.md`, 
 ### 5.3 Highlight becomes the next object
 From a feed: push in +2 % over 5 f; over 3 f desaturate everything to grey while the highlighted item saturates to the
 accent and its edges brighten; blur everything else; the highlight becomes the next scene's pill (same screen position,
-scaled up, blurred), the ground darkens over 4 f, the pill settles with a tiny overshoot (0.5 deg, 6 px). The audience sees
-*which* item became the insight.
+scaled up to a sixth of the frame or more, blurred), the pill settles with a tiny overshoot (0.5 deg, 6 px). The audience
+sees *which* item became the insight. The ground stays unless the story changes place.
 
 ### 5.4 Choice collapses into progress; confirmation blooms into action
 See `exits.md` 4.1 and 4.2. Both should be followed by the next element arriving exactly where the old one ended.
@@ -234,18 +255,18 @@ became another. The input-to-bubble "send glow" is the same idea: the input blur
 pill of moving colour blobs that travels to the bubble's place, then re-sharpens over 5 f as the sent bubble, still tinted,
 cooling by +6 f.
 
-### 5.6 Snap morph licensed by a flash
-An exploded object compacts (10 f), white square sparks appear on its faces, a glow ring flares (r ~450, 2 f), and on a 2 f
-dissolve with +30 % brightness the object becomes a *different* object (a frosted tile), which then clears over 12-15 f.
-The flash licenses the change of shape.
+### 5.6 Snap morph hidden in blur
+An exploded object compacts (10 f) and, inside a stage blur pulse (as 5.5), becomes a *different* object (a frosted
+tile), which then sharpens over 12-15 f. The blur and the compaction license the change of shape; never a flash.
 
 ### 5.7 Docking
 The hero stays; a new element shoots in from off-frame and docks into it (right end x -> the hero's edge over 6-9 f,
-`ease.out`), with a dock flash (6 px white ring + white halo 0.8, 0.4, 0 over 3 f). The world can change around a docked hero.
+`ease.out`); the hero answers the contact (a 2-4 px dip, its rim lights for 3 f). The world can change around a docked hero
+when the story moves on.
 
 ### 5.8 Morph chain
-**What:** one element becomes the next several times running, with no cut: the send dot becomes a pill, the pill a progress
-bar, the bar the answer card, the card the window of the next screen. A carrier from beat to beat that needs no ground cut.
+**What:** one element becomes the next several times running, with no cut: the send button becomes a pill, the pill a progress
+bar, the bar the answer card, the card the window of the next screen. A carrier from beat to beat that needs no ground change.
 **Numbers:** 4-8 links; each holds 6-12 f as itself while something happens in it (a label, a fill, a count). Each change
 takes 5-8 f: position, size and radius together with `lerpBox` on `ease.out` (60-70 % of it in the first 2 f), the fill
 with `mixColor` over the same frames; the old content cuts out on the change's first frame, the new content cuts on 2-3 f
@@ -267,35 +288,12 @@ cut inside it or hide it in blur or light); morphing between unrelated objects.
 
 ---
 
-## 6. Flash-hidden swap
+## 6. No flash
 
-**What:** light hides the change. The swap happens at the flash's peak.
-**Kit:** `Flash` peaks at `start + 0.4 x dur` (ease-in to the peak, ease-out after), `mix-blend-mode: screen`; tint it in
-the world's light colour, not pure white on a dark world.
-
-```tsx
-<>{frame < 214 ? <ShotA /> : <ShotB />}<Flash start={210} dur={10} color="#FFF4EA" strength={0.9} /></>
-```
-
-### 6.1 Flash gate (two exposure frames)
-Inside the fastest frame of an exit whip: **frame N** is full-frame light grey (#EDEDED) with a 30 px-blurred grey ghost of
-the object and its key element inverted; **frame N+1** is darker than the stage with ~12 thin horizontal light streaks
-(2-4 px tall, 300-1000 px long, 40 px horizontal blur, brightest at the right ends); **frame N+2** the next shot enters at
-whip speed with 20 px smear. A reversed noise swell from 10 f before, peaking 3 f after.
-**Avoid:** a flash longer than one frame; a "black" frame as bright as the stage.
-
-### 6.2 Light flood
-To hide a cut between two UI scenes: over the last 12 f of A, a diagonal light from the top-left ramps 0 -> ~0.85 on the
-left third while the right third goes to near black; A pulls back and turns away underneath. Cut on the frame of maximum
-light to a field whose own gradient is the same diagonal light, settling over 6 f; the next text starts appearing 1 f later.
-**Avoid:** a white flash (too hot) or a crossfade (reads as a dissolve, not as light).
-
-### 6.3 Dip, then flash
-Dim the scene for 6 f (mean luma down ~30 %), then overlay a pale field 0, 0.10, 0.30, 0.55, 0.80, 1.0 over 6 f while the old
-scene desaturates. The dip makes the flash land. Use for a night-to-day change.
-
-### 6.4 Flash cut to white
-An accelerating push on a detail ends in a white frame holding the next subject as a clean cut-out: a white "reset".
+A flash of light that hides a swap (white, tinted, a light flood, a dip then flash, a cut to white) is retired: the
+screen never flashes. Where a flash used to hide a change, cover the frame with something the viewer is watching: a dive
+into the object (2), an occluder (8.1), a carrier panel with the next hero on it (8.2), a blur morph (5.5), a hidden cut
+inside a whip (7.4), or a hard cut on the music.
 
 ---
 
@@ -305,9 +303,10 @@ An accelerating push on a detail ends in a white frame holding the next subject 
 `Push` moves both shots as one strip (`dir` left, right, up, down) with smear on the fastest frames (`smear` px). 12-18 f,
 `ease.inOut`. Join scenes of the **same tone** only; a push across a tonal jump shows a strip of mud.
 
-### 7.2 Whip into darkness
-The world slides 150-250 px/f with 60-120 px horizontal smear, empties to near black for 2 f (smeared point streaks), then a
-glow and a grid fade in and a new object enters big from the side **carrying the momentum** into the next set.
+### 7.2 Whip into the next set
+The world slides 150-250 px/f with 60-120 px horizontal smear; on the fastest frame the next set is already moving in at
+the same speed and a new object enters big from the side **carrying the momentum**; the frame is never empty between
+them.
 
 ### 7.3 Staged push wipe
 A solid panel with a hard vertical edge (20 px soft shadow onto the old side) pushes the old shot (footage moves at 0.5x the
@@ -347,8 +346,8 @@ const y = mix(at(frame, s, 6, ease.out), 1080, 0);
 
 ### 8.3 Fly-through panel
 A frosted white rounded rectangle larger than the frame (its blurred edges visible as light bands just inside the frame)
-scales down toward the next window's rect over ~20 f (`cubic-bezier(0.2,0.8,0.25,1)`); the frame whites out for 3 f; the
-white region **is** the next window's interior, which develops from white and 12 px blur to its content over ~12 f.
+scales down toward the next window's rect over ~20 f (`cubic-bezier(0.2,0.8,0.25,1)`); the panel **is** the next
+window, and its content is already sharp on it as it lands (never a white-out frame).
 
 ### 8.4 Glass morph
 The next scene's frosted panel appears over the current picture at 60 % opacity (the area under it turned into a 12 px dot
@@ -368,7 +367,8 @@ It says "these are pictures in an editor".
   0.87x; hard cut; the outer slots hold the next two words at the same positions, moving the same ways and decelerating
   (140-230 px over ~25 f, asymmetric); the middle slot holds a picture card at 1.8x shrinking to rest in ~5 f.
 - **Carried word:** see `text.md` 9.3.
-- **Ground cut on a beat:** a full-frame ground-colour change on a beat is itself a section marker; nothing else is needed.
+- **Line holds, picture changes:** the line being read stays fixed while the picture behind it swaps on the beat (each
+  swap a real picture that says the line's next word); the line is the carrier.
 - **Dimension swing:** the same object re-seen in another projection: flat -> isometric (the camera swings in ~6 f), isometric
   -> top-down (blocks flatten into rectangles over ~8 f), isometric -> front orthographic (a cube becomes a square card).
   Use 3D for "concept" and flat for "interface".
@@ -378,28 +378,27 @@ It says "these are pictures in an editor".
 - **Corner collapse** and **doors part:** see `exits.md`.
 
 ### 9.1 Ground swap under a layer that stays
-**What:** the ground hard-cuts to another of the world's grounds on the downbeat while everything above it (the line of type,
-the product, the pointer) stays exactly where it is and keeps moving. The persisting layer carries the seam.
-**Numbers:** the swap is one frame, on the beat; on that frame the persisting layer re-inks for the new ground (dark ink to
-white over 2 f) and takes a +2-3 % scale step; the camera's creep runs on across the cut unchanged; the new ground's texture
-(grid, grain) is already drifting.
-**Sells it:** the overlay not flinching. Check its contrast on both grounds (4.5:1 for every word).
-**Avoid:** a fade between the grounds (mud); the overlay re-laying out on the cut.
+**What:** only when the story changes place or state: the subject (the product, the card, the picture, a line at
+statement size, about a sixth of the frame or more) stays exactly where it is and keeps moving while the whole world
+behind it is replaced on the downbeat. Never under a small token (a pill, a dot, a full stop): then the eye sees only the
+colour jump.
+**Numbers:** the change is one frame, on the beat, and everything behind the subject changes on that frame (ground,
+secondary objects, light): never the ground first and the card after it. On that frame the subject re-inks for the new
+ground over 2 f if it must; the camera's creep runs on across the cut unchanged; the new world is already moving.
+**Sells it:** the subject not flinching, and a reason in the story (write it next to the join in `BEATS.md`). Check its
+contrast on both grounds (4.5:1 for every word).
+**Avoid:** a fade between the grounds (mud); the subject re-laying out on the cut; a light/dark switch with no story reason.
 
 ```tsx
-const g = frame < cut ? BASE : ACCENT;                                  // one frame, on the beat
-const k = 1 + 0.025 * (frame >= cut ? 1 : 0) + 0.0006 * (frame - s);   // a small step, the creep runs on
-<AbsoluteFill style={{ background: g }}>
-  <div style={{ transform: `scale(${k})`, color: mixColor(INK, PAPER, at(frame, cut, 2, ease.out)) }}><Line /></div>
-</AbsoluteFill>
+const world = frame < cut ? <Kitchen /> : <Market />;                   // the whole world, one frame, on the beat
+const k = 1 + 0.0006 * (frame - s);                                     // the creep runs on
+<AbsoluteFill>{world}<div style={{ transform: `scale(${k})` }}><Card /></div></AbsoluteFill>
 ```
 
-### 9.2 Colour-flip cut with a size step
-**What:** on the downbeat, ground and ink swap (ink on paper becomes paper on ink, or the accent takes the ground) and the
-subject jumps one size step on the same frame. Two changes on one frame read as a decision.
-**Numbers:** the subject steps x1.25-1.4 (or x0.7) on the cut with a landing blur of 4, 2, 0 px, then creeps; the ground is
-flat, no gradient; nothing else changes; a kick on the frame.
-**Avoid:** easing the size (that is a zoom); a third change on the same frame.
+### 9.2 Colour-flip cut (dropped)
+A hard swap of ground and ink on a beat (ink on paper becoming paper on ink, the accent taking the ground) was tried and
+dropped: it reads as a sudden colour change. When the story changes mode, change the whole world under a large subject
+(9.1) or dive into an object whose inside is the new world (2.3).
 
 ---
 
@@ -436,8 +435,6 @@ it with `toScreen` (which follows the camera's pan, zoom and tilt).
 - **`Pixelate`:** non-square blocks, mean-colour averaging (the `feFlood` trick samples a point, it does not average), an
   explicit block-size list, and a `flare` pre-roll.
 - **`TileFlood`:** isometric rhombus floor with seeded cluster flips (fast and slow modes).
-- **`FlashGate`:** the two-frame exposure (light frame with ghost, dark frame with streaks).
-- **`LightFlood`:** diagonal light / dark gradient overlay with a matching settle on the incoming side.
 - **`CarrierWipe`**, **`PushWipe`** (two stages with a mid-hold, pushed footage at 0.5x, edge shadow), **`FlyThroughPanel`**,
   **`GlassMorph`**, **`TearStep`**, **`CanvasReturn`**, **`CellBloom`**.
 - **`BlurMorph`:** A/B crossfade inside a stage blur pulse with B's shrink landing.

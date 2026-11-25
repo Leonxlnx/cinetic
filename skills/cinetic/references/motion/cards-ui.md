@@ -4,6 +4,12 @@ The product's interface is the hero of most launch films, so it has to be **real
 legible, with specific copy and plausible data, and shown changing state. A blurry dashboard in a tilted laptop is
 decoration; a card that rewrites itself into the product is a story. All numbers at 30 fps, 1920x1080.
 
+**Start from the library.** The motion library's UI pieces ([library-ui.md](../library-ui.md): `NoticePile`, `CardFan`,
+`BannerPop`, `RowExpand`, `PickList`, `BoardDrag`, `StepList`, `TaskRun`, `CalendarWave`, `PromptAnswer`, `ChatThread`,
+`ActionMorph`, `SettingsCard`, `PhoneDrop`, and the crafted `Pointer`) are built to the design bar in that file: take one,
+give it this product's names, data and colours, and adapt its timing. The recipes below are for what the library lacks,
+and whatever you build beside them meets the same bar.
+
 Kit (`ui.tsx`): `Theme` (`lightUI`, `darkUI`), `useArrive`, `Card`, `Window`, `Bubble`, `Thinking`, `InputBar`, `Cursor`
 (+ `cursorAt`), `Button`, `Row`, `Chip`, `Toast`, `Terminal`, `Progress`, `Avatar`. Icons: `Icon` (Lucide), `Brand`,
 `BrandTile` (real marks). Type: `Typing`, `useTyped`, `Odometer`.
@@ -15,25 +21,38 @@ Kit (`ui.tsx`): `Theme` (`lightUI`, `darkUI`), `useArrive`, `Card`, `Window`, `B
 2. **Native fonts for borrowed surfaces.** The product's UI in its own face; a third-party surface (a store, a calendar,
    a payment sheet) in its native face so it reads as real. Kit fonts: Inter for UI, Geist for technical products, a mono
    for code and data only (labels are sentence case in the UI face).
-3. **One calm component at a time**, flat or at one gentle tilt (12° or less), or **one canvas under one camera** (see
-   `camera.md` 6.1). Never two windows overlapping at an angle, never a chip pasted on a mock at another scale or light,
-   not a dozen panels flying separately, not a phone mock in the middle of a dark gradient. A whole screen may appear
-   once, calm, with its context shown before the camera pushes into a detail.
-4. **No device chrome unless the device is the point.** A chat floats on the film's ground; a card sits on the grid. Use
-   `Window` when "it is an app on a desktop" matters, otherwise drop the chrome.
+3. **One focal component at a time, in its context**, flat or at one gentle tilt (12° or less), or **one canvas under one
+   camera** (see `camera.md` 6.1). The component sits in its app (a window with its title bar and sidebar, a palette, a
+   phone, a panel with a header and a composer), not alone on the ground; the context is real but quieter, the focal
+   component carries the detail. Never two windows overlapping at an angle, never a chip pasted on a mock at another
+   scale or light, not a dozen panels flying separately.
+4. **Designed like a shipped product.** Inside the focal component: avatars, names, timestamps, states and counts, small
+   icons (`Icon`), hairline dividers, hover and focus states, one title weight and muted secondary lines, even padding on
+   every pill and row, nothing cut inside its container (fit it with `useTextWidth` or shorten it). A generic white card
+   with two grey lines reads as cheap. A floating phone or laptop mock as a wrapper is not context: use a device only
+   when the device is the point.
 5. **Interaction is state change.** Check marks land, a pill flips from Add to Added, digits settle, a field becomes a
    button. A cursor is optional; when it appears it is a character, not a pointer (section 6).
 6. **One radius family, soft shadows from one light.** Radii from one scale (e.g. 14 / 22 / 34 / pill); shadows layered
    and soft (`softShadow`), all falling the same way, or none on flat worlds; glass only when there is something behind
    it to blur, once a shot (`effects.md`). White or frosted cards on a coloured ground are fine.
-7. **Show work, hide waiting.** Processing is staged (skeletons, status lines, a shimmer on the beat) and resolves in one
-   decisive pass; typing and generation time are hidden in camera whips.
-8. **Pixel-real where it matters, quiet elsewhere.** Keep the region the beat is about at full detail and reduce the
-   surrounding chrome to quiet shapes in the UI's own tints at low contrast (no tab bars, docks, notifications or unrelated
-   sidebars). Fill it with plausible named data (real-sounding people, companies and prices, never "John Doe"), and
-   show code or a dense table only as one whole panel for at most 2 s.
+7. **Show the work.** Processing is a working state that says what it is doing ("Reading 3,412 comments", a percentage,
+   plan lines, skeletons resolved by a band) and resolves in one decisive pass; typing runs at a believable speed to the
+   end (`text.md` 4.1), with a prefix already typed when time is short.
+8. **Pixel-real where it matters.** The region the beat is about is at full detail, filled with plausible named data
+   (real-sounding people, companies and prices, different in every row, never "John Doe"). Dense UI and code are shown
+   at a readable crop, the camera going to the part that matters, for as long as an action is happening in it.
 9. **Data lands exactly.** Values, prices, progress bars and the pointer's target never overshoot; UI states change at
    product speed (150-250 ms) while the camera and the type carry the film's pace.
+10. **Before, during, after** ([action and escalation](../film-grammar.md#action-and-escalation)). Before (8-15 f): the
+    actor (pointer, finger, caret) and the target in one frame, the actor travelling to it on an arc. During: one contact
+    frame where the target visibly flips state (the whole button, not part of it), then 10-30 f of a working state with a
+    reason. After (20-45 f): the result where the action happened, UI text 30 px or more, held until read, then it becomes
+    the next object.
+11. **Scrolls have a reader and a stop.** A counter or a fixed marker says what the scroll is ("Reading 3,412 comments", a
+    highlight bar); the scroll stops because it found the one item that matters, which lights up. No scroll without both.
+12. **A real third-party product** appears as its real full-colour mark (`<Brand>`) or as a faithful, detailed rebuild of
+    its real screen ([entrances.md 5.7](entrances.md#57-real-third-party-logos)); never a rough mock of a product people know.
 
 ---
 
@@ -62,7 +81,7 @@ toasts.map((t, i) => {
 });
 ```
 **Avoid:** fading toasts in; equal spacing; every toast sharp; per-toast blur (blur belongs to the slot); a statement set
-over the pile (cut to the line on clean ground instead).
+over the pile (set it beside the pile, or carry the top toast into the line's beat).
 
 ### 1.2 Deck spread (fan from behind)
 **What:** three identical cards; the back two slide out from **exactly behind** the front one into a tilted fan, with lag,
@@ -70,8 +89,8 @@ then collapse back, and the front card flies off.
 **Numbers:** back offsets at full spread (-284, -68) and (-517, -125) px; the second lags the first by 2 f; spread curve
 circ-in over 13 f into a peak with 24 px motion blur; stack tilt 0 -> -6.6 deg with a 0.6 deg settle back; per-card
 `rotateY` +4 deg (perspective 1600); back cards x0.85 brightness; camera +7.8 % quart-out over 9 f after the peak. Hold 8 f,
-collapse with the reverse ease-in over 11 f, then the front card accelerates up (x1.5 per frame) and fades 0.8 -> 0 over its
-last 3 f while the next title begins.
+collapse with the reverse ease-in over 11 f, then the front card accelerates up (x1.5 per frame) and leaves the frame at
+full speed, no fade, as the next title arrives under it.
 **Avoid:** cards from the frame edges; uniform timing for all cards.
 
 ### 1.3 Self-dealing deck
@@ -197,7 +216,7 @@ down, becoming a soft horizontal gradient of the accent (f4-14). (3) A near-whit
 ~300 px gradient band ahead (f11-25) while the card grows **upward** (bottom anchored). (4) Text streams in behind the front:
 first lines by a soft wipe with an 80 px blurred leading edge; list rows icon first, then ~4 chars/f; the closing question
 slower, 1-2 chars/f with 2 f stalls.
-**Avoid:** dots fading out and a card fading in; constant-speed typing for the whole answer.
+**Avoid:** dots fading out and a card fading in; an answer typed at a person's speed (a machine's answer streams).
 
 ### 4.3 Send glow
 The input blurs 0 -> 16 px over 5 f and becomes a blurred pill of moving warm colour blobs (in the brand's light tints) that
@@ -236,7 +255,7 @@ In macro, put the camera on the caret (`camera.md` 6.2).
 ```
 
 ### 5.3 Click feedback
-Pick one per film and keep it:
+Pick one in a film and keep it:
 - **Glow bloom:** a light radial bloom (core in the light accent, half-intensity radius ~150 px, gone by ~290 px) under the
   text and over the field's fill, appearing 2 f after the click, growing for 4 f, fading over 6 f. No sound needed.
 - **Dot + ring + wash:** a dot blooms to ~18 px with a soft halo over 3 f, a thin ring expands to ~40 px and fades over 6 f, a
@@ -294,7 +313,7 @@ mass, intention and a personality.
 - **Design-tool grammar** (only when the product is an editor or builder): a 1 px selection box with square handles that snaps
   to its content's width in one frame; handles that cut on one at a time (TL, TR, BL, BR over 6 f) and a "blink" that travels
   around them (2 f per state); handles that stretch into bars while the box resizes, then contract; a marquee drag (translucent
-  white rectangle from a fixed corner) whose release makes the selected subject flash a 2-3 px white outline for 3 f ("mask
+  white rectangle from a fixed corner) whose release lights a 2-3 px white outline round the selected subject for 3 f ("mask
   applied").
 
 ---
@@ -302,9 +321,9 @@ mass, intention and a personality.
 ## 8. Toasts, terminals and code
 
 ### 8.1 Toasts
-`Toast` drops in from above with a spring. Use real app icons (`BrandTile`) and plausible copy. The first toast of a run gets a
-glassy two-partial ding; later ones softer pops. For many, use the depth ladder (1.1). For a pill that expands from its icon,
-see `entrances.md` 2.8.
+`Toast` drops in from above with a spring. Use real app icons (`BrandTile`) and plausible copy. Sound, if any, is one soft dry
+tick, quieter for each later toast; never a ding, chime or bell (`sound-design.md`). For many, use the depth ladder (1.1).
+For a pill that expands from its icon, see `entrances.md` 2.8.
 
 ### 8.2 Terminal
 `Terminal` prints lines on their frames: `cmd` lines type with a block caret, `out` / `ok` / `dim` lines rise 6 px and fade in
@@ -312,31 +331,31 @@ over 6 f.
 
 ```tsx
 <Terminal t={darkUI} w={1100} h={560} title="zsh" size={24} lines={[
-  { f: 10, text: 'acme deploy --prod', kind: 'cmd', cps: 24 },
+  { f: 10, text: 'acme deploy --prod', kind: 'cmd', cps: 18 },
   { f: 46, text: '✓ built in 4.1s', kind: 'ok' },
   { f: 52, text: '✓ 38 routes, 2 edge functions', kind: 'ok' },
   { f: 60, text: '→ https://acme.dev', kind: 'out' },
 ]} />
 ```
 Upgrades for a CLI flow: a multi-select whose bullets become check marks one per ~5 f, a `>` marker stepping down the options,
-a Yes/No where Yes turns the accent, then output printed in a burst. Push the camera in ~1.8x so the text is legible, pull back
-after. Keep the type real (real commands, real flags, real versions).
+a Yes/No where Yes turns the accent, then the machine's output streams line by line. Push the camera in ~1.8x so the text is
+legible, pull back after. Keep the type real (real commands, real flags, real versions).
 
 ### 8.3 Code card
-Code streams fast where the camera is moving and blurred (lines 1-3 type at ~14 chars/f; then 2-3 lines per frame during a
-blurred pull-out), so the viewer feels volume rather than reads. Syntax colours from a familiar dark theme; one "Copy" pill pressed
-at the end. A code card can **peek** 30 px at the bottom before rising (`entrances.md` 2.3).
+Code streams as a machine writes it (1-2 lines a frame), while the camera holds the one line that matters at a readable size
+(26 px or more on screen) and lights it; a pull-out afterwards may show the volume. Syntax colours from a familiar dark theme;
+one "Copy" pill pressed at the end. A code card can **peek** 30 px at the bottom before rising (`entrances.md` 2.3).
 
 ---
 
 ## 9. Worlds for UI
 
-- **Light UI on air:** white cards and pills (`lightUI`), soft blue-grey shadows, a light-tint user bubble, one accent that is
-  born light and deepens. Depth of field as recency.
-- **Dark glass:** `darkUI` cards with `glass`, a lit top rim, a moving specular streak, bloom on bright elements (see
-  `effects.md`). A deep stage in the accent's hue, never pure black.
+- **Light UI on a clean ground:** white cards and pills (`lightUI`) on a flat white or a real picture, soft blue-grey shadows,
+  a light-tint user bubble, one accent that is born light and deepens. Depth of field as recency.
+- **Dark glass:** `darkUI` cards with `glass` over a picture or a scene that is really behind them, a lit top rim, a moving
+  specular streak (see `effects.md`). A flat deep tone of the accent's hue, never pure black, never a soft bloom as the ground.
 - **Product-colour stage:** flat glass cards (diagonal gradient sheen + 1 px rim at ~16 % white, no backdrop blur) on a
-  saturated brand ground; a dark stage with a horizon glow for input moments; white for statements.
+  flat saturated brand ground; the ground changes only when the story changes place or state.
 - **Grid world:** UI shown flat, big and one component at a time on the same grid as the abstract shapes; sentence-case labels in the
   UI face on chips with a coloured square bullet (20-28 px as texture, 40 px or more when read); corner handles as a recurring motif.
 
@@ -387,8 +406,13 @@ match cut on its box, a morph from the UI element that made it (`turns.md` 5.8),
 cuts in the frame it lands. A flood out of the plate's box (`<Flood from={box} to={<FirstHost />} reveal>`, as `inkwell`
 does) is allowed only if the film has not spent its one flood elsewhere.
 
-**Avoid:** three cards of one component on one ground (a carousel); logos as decoration; hosts that sit still while
-their text is read (each host holds under 0.8 s); the same three compositions (full-bleed, macro, tilted plane) every time.
+**Following one artefact through real places.** When the story is a journey (a sketch that becomes a frame, then code, then a
+merged pull request), give each place its own act: the artefact arrives, a real state change happens there (converted,
+streamed, checks pass, merged), the result is held until read, and the camera travels on to the next place carrying the
+artefact. That is one demo told through several places; two unrelated demos in one film are not.
+
+**Avoid:** three cards of one component on one ground (a carousel); logos as decoration; a host that only shows a mark and
+moves on with nothing happening in it; the same three compositions (full-bleed, macro, tilted plane) every time.
 
 ### Object-lock swap
 

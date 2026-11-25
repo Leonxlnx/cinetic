@@ -1,16 +1,18 @@
 # Formats: when the film is not a launch film
 
-The default path in SKILL.md builds a 20-30 s launch or feature film. Other requests are other formats with their own
+The default path in SKILL.md builds a 30-45 s launch film (up to 60 s) or a 20-30 s feature film. Other requests are other formats with their own
 length, sections and ending. Set the format in `BRIEF.md` first; it decides which concepts fit (the numbers refer to the
 [concept menu](film-grammar.md#concepts)) and how the film may end.
 
-What never changes with the format: one subject and air in every frame, readable or absent text, clean grounds, the
-palette rules, carried seams, no cross-fades, no dead holds before the end, legibility sizes and contrast, real marks,
-licensed pictures and sound, no generated images.
+What never changes with the format: a story the viewer can follow (even a sting has a want and a payoff in one
+image), one focal subject in a rich frame, readable or absent text, clean grounds, the palette rules, joins that carry
+the subject, no cross-fades, no hold with nothing to read before the end, legibility sizes and contrast, real marks,
+licensed pictures and sound, no generated images, and the never list ([taste.md](taste.md#never)).
 
 | Format | Length | Concepts that fit | Ending |
 |---|---|---|---|
-| Launch or feature film | 10-30 s (a type or number film 10-15 s) | any whose needs the brief meets; one task only when it is literally one flow | lockup at most 2.5 s, claim and lockup at most a fifth of the film (3.5 s under 18 s) |
+| Launch film | 30-45 s, up to 60 s (15-20 s only when the user asks) | any that tells the story; one task only when it is literally one flow | lockup at most 2.5 s, claim and lockup at most a fifth of the film (3.5 s under 18 s) |
+| Feature film | 20-30 s | any that tells the feature's small story | as a launch film |
 | Feature update | 8-20 s | 12, 2, 1, 9 | the name small with the CTA, or the product left working |
 | Loop | 4-12 s | 15, 2, 6 | none: the last frame is the first |
 | Logo sting | 3-5 s (7 at most) | 3, 2, 5 | the mark is the film |
@@ -77,7 +79,7 @@ For people who already use the product. The beat table is in [film-grammar.md](f
   end card of 3-4 s with the CTA.
 - **Different:** the words on screen are the words spoken, built word by word; one type build repeated, varied about
   every 20 s so it does not turn mechanical; the demo act runs slower (beats of 3-4 s) than the premise (1-1.5 s), so the
-  0.8-1.6 s beat rule applies to the premise only; every zoom starts from a context frame with a landmark both share;
+  launch film's beat lengths apply to the premise only; every zoom starts from a context frame with a landmark both share;
   the music drops for 5-10 s before the main reveal.
 
 ## Brand film

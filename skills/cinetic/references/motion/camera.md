@@ -6,7 +6,7 @@ gets depth, parallax and a reason to move. All numbers at 30 fps, 1920x1080.
 
 Kit (`camera.tsx`): `Camera` (keyframes `{ f, x, y, zoom, rx, ry, rz, curve }`, zoom interpolated in log space, the later
 key's curve shapes each segment, default `ease.inOut`), `At` (place a child at x, y, z with rotation), `drift(frame, dur,
-push, turn)`, `shake(frame, start, dur, amp)`, `camAt`. From motion: `creep`, `logScale`, `keys`, `accel`, `ease`.
+push, turn)`, `camAt`. From motion: `creep`, `logScale`, `keys`, `accel`, `ease`.
 
 ```tsx
 <Camera keys={[
@@ -28,7 +28,8 @@ push, turn)`, `shake(frame, start, dur, amp)`, `camAt`. From motion: `creep`, `l
    start and crawl at the end.
 4. **The camera has mass.** It brakes without bounce (at most 0.6-0.7 % overshoot on a pull-out); whips are asymmetric.
 5. **Motion blur only at the peaks** of whips, rushes and zooms (4-6 frames); holds are razor sharp.
-6. **No handheld wobble, almost no shake.** One impact shake per film at most (`shake`, 8-10 f). No roll except to sell speed.
+6. **No shake, ever.** No handheld wobble and no screen shake, not even a small one on a landing (`shake()` is deprecated
+   and never used): weight comes from the object itself (7.3). No roll except to sell speed.
 7. **Square-on to read, yawed to look.** A UI plane faces the lens only when it must be read or used.
 8. **Drift with a direction.** A drift moves at most 3-4 % of the frame's width a second (about 2 px/f at 1080p), points
    somewhere that means something, and changes or stops with the story; a uniform float under everything is a tell.
@@ -39,6 +40,9 @@ push, turn)`, `shake(frame, start, dur, amp)`, `camAt`. From motion: `creep`, `l
 11. **The camera goes to the event.** A framing may hold while something large changes in it about every 0.7 s (a line
     lands, a panel turns, the UI acts); when only a label or a detail changes, move on: a push, a ride along the object, a
     cut to macro. When the next thing happens somewhere else, the camera is already travelling to it.
+12. **A camera that performs.** It pushes in on typing, racks focus between two layers to say which one matters, rides
+    the pointer's travel to its target, and pulls back while a count grows (one thing near and large, then many far and
+    small), so escalation never crowds a single frame.
 
 ---
 
@@ -91,10 +95,10 @@ const zoom = frame < 90 ? 1 : frame < 125 ? 1.347 : 1.347 * 1.126;
 ```
 
 ### 2.2 Push into a transition
-**What:** an accelerating push (quad-in or `accel`) into the subject, ending on the cut, the flash or the dive. The cut
+**What:** an accelerating push (quad-in or `accel`) into the subject, ending on the cut or the dive. The cut
 feels *caused* by the push.
 **Numbers:** x1.46-1.74 over 15 f, optional roll up to 12 deg; or a stepped push 1.000, 1.020, 1.067, 1.143, 1.248, 1.379,
-1.529 into a flash cut; radial smear 20-60 px on the last 4 f.
+1.529 into the cut; radial smear 20-60 px on the last 4 f.
 
 ### 2.3 Push on a decision
 **What:** when an option is selected, push x1.05 -> 1.46 over 18 f with **one peak-speed frame** (scale jumps ~0.11 in one
@@ -299,11 +303,18 @@ fps (hold 5 f), sprites on 2-3 f per cel. A smooth push over stepped content is 
 Footage and stills standing in for footage: let them run every frame, or step in a seeded pattern every 1-2 f; keep the
 camera smooth over them.
 
-### 7.3 Impact shake
-At most one or two per film, on a real impact (a heavy landing, the drop):
+### 7.3 Landing weight, never a shake
+The frame never shakes, not even a little on a landing or on the drop. A heavy arrival sells its weight in the object
+and around it: it comes in on `ease.in` and stops on one frame, squashes 3-5 % along the fall and settles over 6-8 f
+(`ease.out`, no bounce on data); its contact shadow tightens and darkens as it touches; the thing it lands on reacts (a
+2-4 px dip, a row nudged aside, a ripple in what it lands in); a physical sound only if something physical happened
+([sound-design.md](../sound-design.md)). The camera may brake into the landing; it never jitters.
 
 ```tsx
-<AbsoluteFill style={{ transform: shake(frame, 704, 10, 8) }}>{scene}</AbsoluteFill>
+const fall = at(frame, T.drop, 9, ease.in);                       // 0 -> 1, stops dead on the landing frame
+const settle = at(frame, T.drop + 9, 8, ease.out);
+const squash = fall < 1 ? 1 : 1 - 0.04 * (1 - settle);            // 4 % squash that settles
+<div style={{ transform: `translateY(${mix(fall, -700, 0)}px) scale(${1 / squash}, ${squash})`, transformOrigin: '50% 100%' }}>{object}</div>
 ```
 
 ---
@@ -361,7 +372,7 @@ marker's two 1 px ticks cut on 2 f apart and its value (mono) steps by cuts. A t
 ## 9. Camera checklist
 
 - Every shot has a written camera: establish (pull-back), hold (creep), leave (push / whip / pull) or locked hero.
-- The fastest camera frame of each shot is where its cut, flash or dive happens.
+- The fastest camera frame of each shot is where its cut or dive happens.
 - Pushes into transitions accelerate; pull-backs on establishing holds decelerate.
 - No two consecutive shots use the same move in the same direction unless it is a deliberate direction relay.
 - Blur appears only on frames moving > ~15 px/f or > ~3 %/f in scale.

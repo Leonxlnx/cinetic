@@ -5,7 +5,9 @@ front, from the camera's side of the glass, from a dot, from the previous shot's
 wrong answer, and it is the default answer of template films. All numbers at 30 fps, 1920x1080.
 
 Kit: `at, mix, ease, springAt, springs, logScale, landBlur, keys, clamp` from motion; `useArrive, Card, Toast, Button,
-Chip` from ui; `Camera, At` from camera; `Glow` from world; `Brand, BrandTile` from icons.
+Chip` from ui; `Camera, At` from camera; `Glow` from world; `Brand, BrandTile` from icons. For product UI start from the
+library's finished arrivals ([library-ui.md](../library-ui.md): `PhoneDrop`, `BannerPop`, `CardFan`, `NoticePile`) and
+for words from [library-type.md](../library-type.md); build by hand only what the library lacks.
 
 ## House rules
 
@@ -15,15 +17,17 @@ Chip` from ui; `Camera, At` from camera; `Glow` from world; `Brand, BrandTile` f
    reads as a new slide.
 4. **Vary by object.** Heroes fly or rise out of focus; cards land by shrinking or slide out from behind each other; UI
    children pop in reading order; light grows from an edge; logos converge, spin a fraction of a turn or draw on.
-5. **One overshoot budget per film.** A 3-10 % pop belongs to one small family of objects (chips, a badge, tossed letters).
+5. **One overshoot budget in a film.** A 3-10 % pop belongs to one small family of objects (chips, a badge, tossed letters).
    Cameras, cards and heroes brake without bounce, and nothing that carries data overshoots: values, prices, progress
    bars, charts and the pointer's target land exactly.
 6. **Springs by duration and bounce.** Pick how long the move should feel, then its bounce: 0 by default (no overshoot),
    about 0.15 for a brisk UI tail, about 0.3 only for a playful accent, never above 0.4. Lighter objects bounce less.
 7. **Staggers are for reading.** Items the viewer reads arrive about 0.15-0.2 s (5-6 f) apart, with at most about five
    visible steps; a panel, its title and its shadow arrive as one event (its children may ripple 1-2 f apart inside it).
-8. **No entrance without a sound or a reason** (see `sound-design.md`): landings, docks and pops get a transient on the
-   landing frame, not the start.
+8. **No entrance without a reason**; a sound only where something physical happens (see `sound-design.md`), its
+   transient on the landing frame, not the start.
+9. **Weight without shake.** A landing never shakes the screen, not even a little: weight comes from the brake, a 2 f
+   squash, a contact shadow that tightens, and what is under it reacting (a 2-4 px dip). No flash on arrival either.
 
 ---
 
@@ -231,7 +235,7 @@ New rows arrive at the bottom of a block and **push the block up in a 3-frame ex
 Rows every 20 f for a calm process, accelerating for a montage (see `cards-ui.md`).
 
 ### 3.5 Pop with overshoot (budgeted)
-Small objects that spawn from a parent (icons popping out of a device as it opens; a badge on a card) may scale from 0 with ~10 % overshoot over 4-6 f, staggered 4 f. Use once or twice per film.
+Small objects that spawn from a parent (icons popping out of a device as it opens; a badge on a card) may scale from 0 with ~10 % overshoot over 4-6 f, staggered 4 f. Use once or twice in a film.
 
 ```tsx
 const p = springAt(frame, fps, 870, springs.pop);
@@ -298,7 +302,7 @@ const ghosts = Math.abs(step) > 2 ? [0, 0.25, 0.5, 0.75, 1] : [0];
 
 ### 5.2 Slam
 The wordmark hard-cuts in at 1.34x; 47 % of the travel to 1.0 happens on the first frame, the rest over ~12 f
-(`cubic-bezier(0.08,0.38,0,0.87)`). Holds ~15 f, recedes on an accelerating curve and fades in its last 5 f.
+(`cubic-bezier(0.08,0.38,0,0.87)`). Holds ~15 f, then recedes on an accelerating curve into the next cut (no fade-out).
 
 ### 5.3 Converge
 Four diagonal ticks (the film's selection grammar) point at a small tile; the tile becomes the glyph; the ticks lengthen,
@@ -319,11 +323,13 @@ The closing mark is assembled from the film's recurring objects (the hero shape,
 block) while the world's light goes out. See `exits.md` (lights out).
 
 ### 5.7 Real third-party logos
-In "works with" rows, integrations and model pickers, use **real marks** of real products in their official form:
-`<BrandTile name="figma" />`, `<Brand name="stripe" color="#ffffff" />`, or an official file fetched into
-`public/logos` (`<Brand name="acme" file="logos/acme.svg" />`). Arrive them as cut-on placement (3.3) or reading-order
-pops (3.1); never draw a look-alike, never a generic glyph or an emoji for a logo, never animate a third-party mark
-itself (no spins, no morphs).
+A real product appears either as its **real, current, full-colour mark** or as a faithful, detailed rebuild of its real
+screen; never a rough mock of a product people know. Marks: `<Brand name="gmail" />` draws the official full-colour file
+by default, `<BrandTile name="figma" />` its app icon, an official file fetched into `public/logos`
+(`<Brand name="acme" file="logos/acme.svg" />`) anything else; run `logos.mjs verify` and replace every one-colour
+fallback that matters. Arrive them as cut-on placement (3.3) or reading-order pops (3.1); never draw a look-alike, never
+a one-colour silhouette of a full-colour mark, never a generic glyph or an emoji for a logo, never animate a third-party
+mark itself (no spins, no morphs).
 
 ---
 

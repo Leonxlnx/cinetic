@@ -4,8 +4,9 @@ The film's own words (statements, the one spectacle word, the claim, the wordmar
 first. A film follows the rules below. Sizes are font sizes in px for a 1920x1080 frame unless they say cap height. The
 faces are in `src/kit/fonts.ts`; the arrival moves are in [motion/text.md](motion/text.md).
 
-Readability comes mostly from isolation, not from raw size: one short line, centred, alone on a clean ground, in high
-contrast.
+Readability comes mostly from isolation, not from raw size: one short line at a time, in high contrast against what is
+behind it (a flat ground, a calm area of a picture, a plate), centred or set beside the object it answers. The library's
+type moves ([library-type.md](library-type.md)) come first; [motion/text.md](motion/text.md) has the rest.
 
 ## 1. One sans voice
 
@@ -71,17 +72,16 @@ A resting line (the size a normal statement settles at) is sized by how many wor
 - No ALL CAPS statements, no Title Case.
 - Capitals only where the words have them (an acronym, a product name), or once for a stat set with its unit.
 
-## 7. Centred, alone
+## 7. Centred, one line at a time
 
 - By default a line sits at the frame's centre: x 960, its optical centre at y 520-540 (a hair above the middle).
-- It is alone: the only words on screen, on a clean patch of ground. Nothing behind it is busier than a clean ground, a
-  soft field of neighbouring hues or a calm area of a photograph, and its contrast against what is behind it is 7:1 or
-  more. A brand accent that cannot reach that against the neutrals (a mid blue, an orange) never carries a statement as
+- It is the only line on screen. Behind it: a flat ground, a calm area of a photograph or of the product's surface, or
+  a plate over a busy picture; its contrast against what is behind it is 7:1 or more. A statement alone on an empty
+  ground is for a line that must land (the turn, the claim), not the default beat: most lines sit over their picture or
+  beside their object. A brand accent that cannot reach that against the neutrals (a mid blue, an orange) never carries a statement as
   its ground or its colour: use it for shapes, the accent word's underline or glow, and a lighter tint of it for text on
   dark.
 - Text is readable or absent: never blurred, ghosted or faded copies of words, rows or code behind or around a line.
-  When a claim answers what was just shown, cut the picture away (or out of frame) and set the line on clean ground; a
-  short line alone on a clean, lit ground is a calm frame, not an empty one. `CornerMarks` can frame it without a box.
 - It keeps 8 % or more from every edge. The frame edge may cut only a single giant word (280 px or more) alone in the
   frame, or one component in close-up that leaves on one side while the camera follows it: never a resting line of
   normal size, never two or more sides at once, never the words the beat is about. The film's key figure or claim is
@@ -95,6 +95,8 @@ A resting line (the size a normal statement settles at) is sized by how many wor
 ## 8. Few words, built
 
 - 2-6 words on screen at once. A longer thought becomes two beats.
+- A statement ends without a full stop unless the sentence needs one (a two-part line, a quote); a question keeps its
+  question mark.
 - Build them 1-3 words at a time, on the music: cut-on words (`<Words arrive="cut" times>`), an append that re-centres
   (`<Build>`), a last-word swap (`<Swap>`), a decode, a colour wake, type set on a surface, a masked rise (two a film).
   Two arrival styles a film. Never fade a whole line in.
@@ -118,8 +120,9 @@ The born tint is one option, not the default.
 ## 9. Emphasis by colour
 
 At most one emphasised word or phrase a statement, in the accent, and in at most two statements a film; everything
-else in the ink. Punctuation is never
-coloured, and a line is never split into two colours with no word singled out. Emphasis by one of:
+else in the ink. Punctuation is never coloured, never animated and never turned into an object (a full stop that grows,
+travels or becomes the mark), and a line is never split into two colours with no word singled out. The kit's `<Words>`
+and `<Build>` keep punctuation in the line's colour. Emphasis by one of:
 - an accent word or short closing phrase in the brand accent (`accent` + `accentStyle` on `<Words>`, `wordStyle` on
   `<Build>`);
 - a tint that sweeps the line and parks on the key word ([colour wake](motion/text.md#27-colour-wake));
@@ -136,7 +139,7 @@ line, in a hue not the accent's), and never two accents in one line.
 
 ## 10. Serif only with a reason
 
-The default is no serif. A serif appears only:
+The default is no serif, and a serif is rarely the right voice. A serif appears only:
 - **as the brand's voice**, when the brand's own type is a serif, or when the product is a writing, publishing or
   editorial brand (a writing tool, a publisher, a magazine, a newsletter), which may set every statement in its serif
   even when the brand is invented. Then it sets every statement: `fonts.serif` (Newsreader; its optical sizing gives a
@@ -145,7 +148,8 @@ The default is no serif. A serif appears only:
 - **as the wordmark**, when the brand's mark is a serif.
 - **as one italic accent word** inside a sans line, at most once a film: at the sans's cap height, the line's only accent.
 
-Never a third face, and never a serif because the film should "feel human" or "feel premium".
+Never a third face, and never a serif because the film should "feel human" or "feel premium". No handwriting font by
+default (`fonts.hand` only for a mark a person makes inside a product, when the story needs it).
 
 ## 11. No eyebrows, no kickers
 
@@ -163,10 +167,13 @@ Never a third face, and never a serif because the film should "feel human" or "f
   stat's unit, a caption, a date, a name under an avatar, the line under a giant word, the CTA) is a third of the line it
   serves and 40 px or more.
 - Text never crops inside its own box (a chip, a field, a card): fit it (`useTextWidth`) or shorten it.
-- In product UI, type the first two or three words and land the rest at once (`<Typing burst>`).
+- Typing runs at a believable speed to the end, about 15-18 characters a second (the kit's default `cps` 17), never a
+  burst where the rest of the line lands at once. When time is short, show a prefix as already typed and type the rest
+  on screen, or shorten the line.
 - `fonts.mono` is for code and data as written, inside UI or a terminal: commands, file names, numbers in a log. Never a
   statement, never an uppercase label, never letter-spaced.
-- `fonts.hand` is for a sketch or a note inside a product (a napkin, a margin). Never a statement.
+- `fonts.hand` is for a sketch or a note inside a product (a napkin, a margin), and only when the story needs it.
+  Never a statement.
 
 ## 13. In code
 
@@ -180,7 +187,7 @@ const voice = { fontFamily: fonts.inter, color: INK };
 // 3 words: 130 px, 500, -0.015 em. One word joins at a time and the line re-centres; the key word stays in the accent.
 // Build's box is 1.2 em tall, so top 452 puts its middle at y 530.
 <div style={{ position: 'absolute', left: 0, right: 0, top: 452 }}>
-  <Build words={['Drafts', 'write', 'themselves.']} times={[T.a, T.b, T.c]}
+  <Build words={['Drafts', 'write', 'themselves']} times={[T.a, T.b, T.c]}
     style={{ ...voice, fontSize: 130, fontWeight: 500, letterSpacing: '-0.015em' }}
     wordStyle={(i) => (i === 2 ? { color: ACCENT } : undefined)} />
 </div>
@@ -210,11 +217,13 @@ const voice = { fontFamily: fonts.inter, color: INK };
 - A serif or script accent word dropped into a sans line by habit; two faces in one line; a mono statement for a
   "developer" feel; an extended techno face.
 - Large type at UI spacing (tracking 0, optical sizing off): it reads as interface text blown up.
-- A heading alone in a top-left corner, or a left-aligned line on an empty ground with nothing beside it to answer.
+- A heading alone in a top-left corner, or a left-aligned line on an empty ground with nothing beside it to answer;
+  every line alone on an empty ground, beat after beat.
 - Words over a busy picture without a plate; contrast under 7:1. Blurred, ghosted or faded copies of words behind a
   line, or a claim over dimmed, blurred UI.
 - A resting line cut by the frame edge, or cut on two sides with the UI around it.
-- A label above a figure; a coloured full stop; a statement in two colours.
+- A label above a figure; a full stop on every statement, a coloured or animated one; a statement in two colours.
+- Letters that start widely spaced and pull together; a typing burst; a rolling number that smears or pixelates.
 - The same treatment in every film: one flat accent word, the born tint on every statement.
 - Gradient fills on every headline, decorative glows (anything beyond the accent word's own soft light), outlines, drop
   shadows, letters bouncing one by one.

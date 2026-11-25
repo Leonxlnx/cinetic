@@ -15,11 +15,13 @@ export type Arrive =
   | 'blur' // each unit sharpens from a blur while it drifts up a little and fades in
   | 'scale' // each unit grows from 70 % with a blur, like it is coming toward the lens
   | 'drop' // each unit falls in from above with a spring
-  | 'slide' // the line slides in sideways as one, letters spaced wide then tightening
+  | 'slide' // the line slides in sideways as one (every unit on the first unit's frame: its spacing never changes)
   | 'flip' // each unit turns up from 90 degrees around its baseline (3D)
   | 'cut'; // no animation: the line is just there (for hard-cut rhythm)
 
-export type Leave = 'none' | 'rise' | 'fall' | 'blur' | 'scale';
+// How a line leaves from `leaveAt`: 'cut' (the default once leaveAt is given) is gone on that frame; 'rise' and 'fall'
+// travel out behind a mask that closes; 'blur' and 'scale' fade, and are not for statements (text never fades out).
+export type Leave = 'none' | 'cut' | 'rise' | 'fall' | 'blur' | 'scale';
 
 type WordsProps = {
   text: string;
@@ -32,7 +34,7 @@ type WordsProps = {
   gap?: number;
   /** Frames each unit takes to arrive. */
   dur?: number;
-  /** Frame the line starts to leave, and how. */
+  /** Frame the line starts to leave, and how (default 'cut' when leaveAt is given: gone on that frame). */
   leaveAt?: number;
   leave?: Leave;
   leaveDur?: number;
@@ -83,7 +85,7 @@ export const Words: React.FC<WordsProps> = ({
   gap,
   dur,
   leaveAt,
-  leave = 'none',
+  leave: leaveProp,
   leaveDur = 10,
   accent = [],
   accentStyle,
@@ -100,13 +102,15 @@ export const Words: React.FC<WordsProps> = ({
   const g = gap ?? (by === 'char' ? 1.6 : by === 'line' ? 6 : 3.5);
   const d = dur ?? (arrive === 'blur' ? 16 : arrive === 'scale' ? 18 : 14);
   const accents = new Set(accent.map(norm));
+  const leave: Leave = leaveProp ?? (leaveAt !== undefined ? 'cut' : 'none');
 
   const lines = text.split('\n');
   let unitIndex = 0;
 
   const unit = (content: string, key: string, isAccent: boolean) => {
     const i = unitIndex++;
-    const s = times && times[i] !== undefined ? times[i] : start + stagger(i, g);
+    // a slide moves the line as one: every unit starts with the first, so the gaps never open and close
+    const s = arrive === 'slide' ? (times?.[0] ?? start) : times && times[i] !== undefined ? times[i] : start + stagger(i, g);
     let p = arrive === 'cut' ? (frame >= s ? 1 : 0) : at(frame, s, d, arrive === 'scale' ? ease.soft : ease.out);
     let transform = '';
     let filter = '';
@@ -145,7 +149,7 @@ export const Words: React.FC<WordsProps> = ({
         opacity = p;
         break;
     }
-    if (leaveAt !== undefined && leave !== 'none') {
+    if (leaveAt !== undefined && leave !== 'none' && leave !== 'cut') {
       const q = at(frame, leaveAt + stagger(i, g * 0.5), leaveDur, ease.in);
       if (leave === 'rise') {
         clip = true;
@@ -162,7 +166,10 @@ export const Words: React.FC<WordsProps> = ({
         opacity *= 1 - q;
       }
     }
-    const hidden = (arrive !== 'cut' && frame < s) || (leaveAt !== undefined && (leave === 'rise' || leave === 'fall') && frame >= leaveAt + stagger(i, g * 0.5) + leaveDur);
+    const hidden =
+      (arrive !== 'cut' && frame < s) ||
+      (leaveAt !== undefined && leave === 'cut' && frame >= leaveAt) ||
+      (leaveAt !== undefined && (leave === 'rise' || leave === 'fall') && frame >= leaveAt + stagger(i, g * 0.5) + leaveDur);
     const bornColor = born && frame < s + (arrive === 'cut' ? 0 : d) + settle + 1 ? mixColor(born, (style?.color as string) ?? '#000000', at(frame, s + (arrive === 'cut' ? 0 : d * 0.4), settle, ease.inOut)) : undefined;
     // punctuation is never coloured: a tinted unit's trailing marks keep the line's own colour
     const tail = !tintPunctuation && ((isAccent && accentStyle?.color) || bornColor) ? punctTail(content) : '';
@@ -282,11 +289,12 @@ export const Swap: React.FC<{
 };
 
 /**
- * Typed text with a caret. Human pace: about 14 chars a second with small seeded hesitations, faster
- * inside words. `cps` sets the average speed.
+ * Typed text with a caret, at a believable pace to the end: `cps` 17 by default (about 15 characters a second once the
+ * seeded hesitations and the pauses after spaces and punctuation are counted). When time is short, show a prefix as
+ * already typed and type the rest; `burst` (the rest landing at once) is kept for older films and is never used.
  */
 /** The frame each character of `text` appears on, typed from `start` at about `cps` characters a second (useTyped's cadence). */
-export const typingTimes = (text: string, start: number, fps = 30, cps = 26, seed = 3, burst?: number | string) => {
+export const typingTimes = (text: string, start: number, fps = 30, cps = 17, seed = 3, burst?: number | string) => {
   // burst: a number of words, or the text typed before the rest lands at once (an email, a path: 'maya@')
   const burstChars = typeof burst === 'string' && text.startsWith(burst) && burst.length > 0 ? burst.length : -1;
   const per = fps / cps;
@@ -314,7 +322,7 @@ export const typingTimes = (text: string, start: number, fps = 30, cps = 26, see
   return out;
 };
 
-export const useTyped = (text: string, start: number, cps = 26, seed = 3, burst?: number | string) => {
+export const useTyped = (text: string, start: number, cps = 17, seed = 3, burst?: number | string) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   if (burst !== undefined) {
@@ -363,9 +371,9 @@ export const Typing: React.FC<{
   style?: React.CSSProperties;
   placeholder?: string;
   placeholderColor?: string;
-  /** Type the first `burst` words (or this prefix string), then land the rest at once. */
+  /** @deprecated The rest landing at once reads as a jump: type at a believable speed, or show a prefix as typed. */
   burst?: number | string;
-}> = ({ text, start = 0, cps = 26, caret = true, caretColor = 'currentColor', style, placeholder, placeholderColor = 'rgba(128,128,128,.6)', burst }) => {
+}> = ({ text, start = 0, cps = 17, caret = true, caretColor = 'currentColor', style, placeholder, placeholderColor = 'rgba(128,128,128,.6)', burst }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { shown, done, doneAt } = useTyped(text, start, cps, 3, burst);
@@ -424,7 +432,7 @@ export const Scramble: React.FC<{ text: string; start?: number; per?: number; fl
 
 /**
  * A number that rolls to its value like a mechanical counter. Every digit column is a reel 0-9 placed by the
- * continuous value at its place, so low digits spin fast (blurred by their speed) and high digits tick over last.
+ * continuous value at its place, so low digits spin fast and high digits tick over last. Digits stay sharp.
  * Integers only; pass prefix/suffix for "$", "%", "k".
  */
 export const Odometer: React.FC<{
@@ -436,11 +444,13 @@ export const Odometer: React.FC<{
   suffix?: string;
   /** Thousands separator every 3 digits. */
   sep?: string;
+  /** Motion blur on fast reels, max px (default 0: rolling digits stay sharp, never smeared). */
+  blur?: number;
   /** Digits after the decimal point (92.4 -> decimals 1). */
   decimals?: number;
   style?: React.CSSProperties;
   curve?: Ease;
-}> = ({ value, from = 0, start = 0, dur = 40, prefix = '', suffix = '', sep = ',', decimals = 0, style, curve = ease.out }) => {
+}> = ({ value, from = 0, start = 0, dur = 40, prefix = '', suffix = '', sep = ',', decimals = 0, style, curve = ease.out, blur: blurMax = 0 }) => {
   const frame = useCurrentFrame();
   const k10 = Math.pow(10, decimals);
   // snap float noise (0.94 * 100 = 93.99999...) so a number at rest shows exactly its digits
@@ -462,7 +472,7 @@ export const Odometer: React.FC<{
     const frac = k === 0 ? pos - whole : lower > scale - 1 ? lower - (scale - 1) : 0;
     const y = (whole + frac) % 10;
     const speed = Math.abs(cur - prev) / scale;
-    const blur = Math.min(6, speed * 6);
+    const blur = Math.min(blurMax, speed * 6);
     cols.push(
       <span key={k} style={{ display: 'inline-block', height: `${H}em`, overflow: 'hidden', width: needed ? undefined : 0, verticalAlign: 'bottom' }}>
         <span style={{ display: 'block', transform: `translateY(${-y * H}em)`, filter: blur > 0.3 ? `blur(${blur}px)` : undefined }}>
@@ -679,7 +689,7 @@ export const SlotLine: React.FC<{
   items: Array<{ mark: React.ReactNode; name: string }>;
   /** The frame each item takes the slot. */
   times: number[];
-  /** Text after the name ("." ends the sentence). */
+  /** Text after the name (none by default: a statement ends without a full stop unless the sentence needs one). */
   after?: string;
   /** Frames the words before the slot arrive, one per word (default: all at times[0]). */
   enter?: number[];
@@ -708,8 +718,8 @@ export const SlotLine: React.FC<{
 
 /**
  * The laid-out width (px) of a piece of text in a given style, measured from the real face once the fonts have loaded
- * (0 until then; the render waits). Place an object right after a word: the full stop that becomes a tile, a mark
- * beside a name, an underline of the exact length.
+ * (0 until then; the render waits). Place an object right after a word: a mark beside a name, an underline of the
+ * exact length.
  */
 /** Resolves once the exact face of a style (its weight, slant and size) has loaded, not only the faces already in use. */
 const whenFace = (style: React.CSSProperties, text: string): Promise<unknown> => {

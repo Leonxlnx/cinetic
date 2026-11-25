@@ -292,7 +292,8 @@ function checkFilm(file, lockupS, format = 'launch') {
   const cut = air.filter((x) => x.cut >= 2);
   const detailMed = air.length ? air.map((x) => x.detail).sort((a, b) => a - b)[Math.floor(air.length / 2)] : 0;
   console.log(`check: ${file} (${dur.toFixed(1)} s)`);
-  console.log(`  air        sharp detail (type, UI, hard edges) covers ${pc(detailMed)} of the frame at the median (references: 12 %); 3+ separate things in ${pc(share(air.filter((x) => x.things >= 3)))} of samples (references: 26 %); cut on 2+ sides in ${pc(share(cut))} (references: 14 %)`);
+  // information, not a target: a rich frame (a picture, a detailed UI, texture) is right when the eye knows where to look
+  console.log(`  air        sharp detail (type, UI, hard edges) covers ${pc(detailMed)} of the frame at the median; 3+ separate things in ${pc(share(air.filter((x) => x.things >= 3)))} of samples; cut on 2+ sides in ${pc(share(cut))}  (information, not a target: richness is not crowding)`);
   console.log(`  coverage   mean subject width ${(avgW * 100).toFixed(0)} % of the frame; ${sparse.length} of ${body.length} samples under 45 %  (information, not a target: references 44-100 %, median 75 %)`);
   console.log(`  pace       ${slow.length} of ${pace.length} half-seconds with almost nothing changing${slow.length ? `  [from ${fmt(slow)} s]` : ''}`);
   console.log(`  stretches  longest sparse run ${sparseRun.s.toFixed(1)} s${sparseRun.s ? ` (from ${sparseRun.at.toFixed(1)} s)` : ''}; longest still stretch ${stillRun.s.toFixed(1)} s${stillRun.s ? ` (from ${stillRun.at.toFixed(1)} s)` : ''}`);
@@ -308,8 +309,11 @@ function checkFilm(file, lockupS, format = 'launch') {
   const noPace = sting && dur < 8;
   const fails = [];
   // coverage is no gate: it rises with clutter, and it did not tell a calm film from a crowded one
-  if (share(crowded) > CROWD) fails.push(`crowded: sharp detail covers 35 %+ of the frame in ${pc(share(crowded))} of the samples (36 of 40 references stay under ${pc(CROWD)}) [at ${fmt(crowded)} s]: give most frames one subject on calm ground, keep density for one beat`);
-  if (!noPace && slow.length > pace.length * Number(process.env.CINETIC_CHECK_STILL || 0.25)) fails.push('pace: more than a quarter of the half-seconds hold still. A reading hold with a slow creep is fine; a film that waits is not: between holds something visible changes every half second (a word, a block, a crop, a value)');
+  if (share(crowded) > CROWD) fails.push(`crowded: sharp detail covers 35 %+ of the frame in ${pc(share(crowded))} of the samples (36 of 40 references stay under ${pc(CROWD)}) [at ${fmt(crowded)} s]: the eye has nowhere to land: keep one focal subject in each frame and set the rest behind it by scale, focus or depth, or give it its own beat`);
+  // holds that are read (a statement, a result) are fine; past a quarter the frames are named, past 40 % it fails
+  const stillShare = slow.length / Math.max(1, pace.length);
+  if (!noPace && stillShare > Number(process.env.CINETIC_CHECK_STILL || 0.4)) fails.push('pace: more than 40 % of the half-seconds hold still. A hold that is read (a statement, a result) is fine; a hold with nothing to read is not: between holds something visible changes every half second (a word, a block, a crop, a value)');
+  else if (!noPace && stillShare > Number(process.env.CINETIC_CHECK_STILL_LOOK || 0.25)) console.log(`  LOOK       ${pc(stillShare)} of the half-seconds hold still [from ${fmt(slow)} s]: each hold must have something to read (a statement, a result held until read), never a wait`);
   // limits set generously (2.5 s still, 3.5 s sparse): this catches a true freeze or a long stretch of small things, not a slow
   // creep over a finished state (pixels still change there): judge that by eye with the rubric
   if (!noPace && stillRun.s > 2.5) fails.push(`a ${stillRun.s.toFixed(1)} s stretch from ${stillRun.at.toFixed(1)} s where almost nothing changes`);
@@ -326,10 +330,10 @@ function checkFilm(file, lockupS, format = 'launch') {
   if (!loop) fails.push(...musicRunsOut(dur));
   // LOOK lines name the frames; the share at which they speak is where 3 in 4 references stay (a small subject alone on calm
   // ground is NOT flagged: 28 of 40 references hold one)
-  if (busy.length && share(busy) > BUSY) console.log(`  LOOK       3+ separate things with 20 %+ of the frame in detail at ${fmt(busy)} s (${pc(share(busy))} of samples; 3 in 4 references stay under ${pc(BUSY)}): one subject, at most one supporting element`);
+  if (busy.length && share(busy) > BUSY) console.log(`  LOOK       3+ separate things with 20 %+ of the frame in detail at ${fmt(busy)} s (${pc(share(busy))} of samples; 3 in 4 references stay under ${pc(BUSY)}): make sure one of them is the focal subject the eye goes to first and the rest support it`);
   if (cut.length && share(cut) > CUT) console.log(`  LOOK       the frame edge cuts detail on 2+ sides at ${fmt(cut)} s (${pc(share(cut))} of samples; 3 in 4 references stay under ${pc(CUT)}): crop only a lone giant word, or one component off one side`);
   console.log(fails.length ? `  FIX: ${fails.join('\n  FIX: ')}` : '  pass');
-  if (!fails.length) console.log('  (passing is necessary, not sufficient: check cannot see a finished state that only creeps, a repeated layout, a second full demo, faint or blurred text used as texture, or a weak idea; score the sheet with the rubric)');
+  if (!fails.length) console.log('  (passing is necessary, not sufficient: check cannot see a hold with nothing to read, a join that carries a token instead of the subject, a repeated layout, a second full demo, faint or blurred text used as texture, or a weak idea; score the sheet with the rubric)');
 }
 
 /**

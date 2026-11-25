@@ -200,9 +200,9 @@ export const InputBar: React.FC<{
   /** Frame the send button is pressed (it dips and flashes). */
   sendAt?: number;
   style?: React.CSSProperties;
-  /** Type the first `burst` words (or this prefix string), then land the rest at once. */
+  /** @deprecated The rest landing at once reads as a jump: type at a believable speed, or show a prefix as typed. */
   burst?: number | string;
-}> = ({ t, text, start, w = 1100, size = 34, placeholder = 'Ask anything', cps = 26, leading, sendIcon, sendAt, style, burst }) => {
+}> = ({ t, text, start, w = 1100, size = 34, placeholder = 'Ask anything', cps = 17, leading, sendIcon, sendAt, style, burst }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { shown, done, doneAt } = useTyped(text, start, cps, 3, burst);
