@@ -288,7 +288,7 @@ often breaks the frames beside it (a third of the fixes in one tested polish pas
 join is exported with `node scripts/frames.mjs joins` (frames J-4 .. J+4, 960 px each; the film exports `JOINS` beside
 `T`) before the final and again after every fix that touches it, and every cell is looked at for: anything cut by the
 frame or its container, overlapping or overprinted text, an empty slab, a one-frame pop or flip of ground, a camera
-snap, misaligned parts, a thing leaving before the cut. A fix is closed only when its join image is clean. A move that
+snap, misaligned parts, a thing leaving before the cut. A fix is closed only when its join image is clean. Clean means: every frame of the join is looked at, one by one with no frame skipped (the nine consecutive frames `joins` exports; `--pad 8` for a long move); nothing of the old scene is left on screen once the new one has landed; nothing pops in a frame late; no cell is waved through as an intended smear unless it is motion blur on the one thing that is moving. A move that
 cannot be made clean is replaced by a simpler one: a hard cut on the beat beats a broken transition.
 
 **Bugs are blockers.** Before the final, render a full-size still of every beat with type or UI
