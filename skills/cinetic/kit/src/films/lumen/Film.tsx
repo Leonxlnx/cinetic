@@ -893,23 +893,21 @@ export const LumenFilm: React.FC = () => {
   const s = sfx;
   const keysAt = typingTimes(PROMPT, TYPE_AT, 30, 20, 3, 3).filter((k) => k >= 0);
   const band = f >= T.flood && f < T.flood + 16 ? bandAt(f) : null;
+  // Sound (study 2026-11-25): dry, soft and few. No chimes, tones, bubbles, swells or booms; the ending is music only.
   const cues = [
-    ...[keysAt[0], keysAt[3], keysAt[keysAt.length - 1]].map((k, i) => ({ at: k, ...s['mixkit-2533'], volume: 0.32 + i * 0.05 })),
-    { at: T.send, ...s['mixkit-3124'], volume: 0.45 },
-    { at: T.line, ...s['mixkit-168'], volume: 0.35 },
-    { at: T.hit, ...s['mixkit-784'], volume: 0.45 },
-    { at: T.hit, ...s['mixkit-2299'], volume: 0.95 },
-    { at: T.hit + 6, ...s['mixkit-1492'], volume: 0.3 },
-    ...T.nums.map((t, i) => ({ at: t, ...s['mixkit-2568'], volume: 0.42, rate: 0.95 + i * 0.08 })),
-    ...T.nums.map((t) => ({ at: t + 3, ...s['mixkit-1049'], volume: 0.18 })),
-    ...[T.nums[1] - 8, T.nums[2] - 8].map((t) => ({ at: t + 3, ...s['mixkit-175'], volume: 0.22 })),
-    { at: T.flood + 6, ...s['mixkit-175'], volume: 0.4 },
-    ...T.claims.map((t, i) => ({ at: t, ...s['mixkit-3000'], volume: 0.28, rate: 1 + i * 0.06 })),
+    ...[keysAt[0], keysAt[3], keysAt[keysAt.length - 1]].map((k, i) => ({ at: k, ...s['mixkit-2533'], volume: 0.28 + i * 0.04 })),
+    { at: T.send, ...s['mixkit-3124'], volume: 0.4 },
+    { at: T.line, ...s['mixkit-168'], volume: 0.3 },
+    // the strike: one soft low knock; the lift of the music carries it
+    { at: T.hit, ...s['kenney-rpg-footstep05'], volume: 0.85 },
+    ...T.nums.map((t, i) => ({ at: t, ...s['kenney-interface-click_001'], volume: 0.4, rate: 0.95 + i * 0.08 })),
+    ...[T.nums[1] - 8, T.nums[2] - 8].map((t) => ({ at: t + 3, ...s['mixkit-175'], volume: 0.2 })),
+    { at: T.flood + 6, ...s['kenney-rpg-cloth1'], volume: 0.4 },
+    ...T.claims.map((t, i) => ({ at: t, ...s['kenney-interface-bong_001'], volume: 0.25, rate: 1 + i * 0.06 })),
     { at: T.shotB + 4, ...s['mixkit-168'], volume: 0.25 },
-    { at: T.impact, ...s['mixkit-2384'], volume: 0.45 },
-    { at: T.impact, ...s['mixkit-2299'], volume: 0.4 },
-    { at: T.iris + 4, ...s['mixkit-168'], volume: 0.3 },
-    { at: T.word, ...s['mixkit-2299'], volume: 0.7 },
+    { at: T.impact, ...s['mixkit-2384'], volume: 0.35 },
+    { at: T.impact, ...s['kenney-rpg-footstep04'], volume: 0.45 },
+    // the iris and the word: the music alone
   ];
   return (
     <AbsoluteFill style={{ background: OX }}>

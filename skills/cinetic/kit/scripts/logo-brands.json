@@ -34,7 +34,9 @@
     "gilbarbara": "current: openai-icon.svg; unknown: openai.svg",
     "svgl": "current: openai; current: openai:dark",
     "commons": "current: OpenAI logo 2025 (symbol).svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "openai.com site icon"
   },
   "chatgpt": {
    "name": "ChatGPT",
@@ -62,7 +64,9 @@
    ],
    "sources": {
     "commons": "current: ChatGPT-Logo.svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "chatgpt.com site icon"
   },
   "anthropic": {
    "name": "Anthropic",
@@ -123,7 +127,9 @@
     "gilbarbara": "current: claude-icon.svg; unknown: claude.svg",
     "svgl": "current: claude-ai-icon",
     "simple-icons": "current: claude (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "claude.com icon.svg (#D97757)"
   },
   "gemini": {
    "name": "Gemini",
@@ -161,7 +167,9 @@
     "svgl": "current: gemini",
     "simple-icons": "retired colour: googlegemini (one colour)",
     "commons": "current: Google Gemini icon 2025.svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "gemini.google.com site icon"
   },
   "perplexity": {
    "name": "Perplexity",
@@ -388,7 +396,9 @@
     "gilbarbara": "current: cursor-icon.svg; unknown: cursor.svg",
     "svgl": "current: cursor_light; current: cursor_light:dark",
     "simple-icons": "current: cursor (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "cursor.com site icon"
   },
   "grok": {
    "name": "Grok",
@@ -514,7 +524,9 @@
     "svgl": "current: google",
     "simple-icons": "current: google (one colour)",
     "commons": "current: Google Favicon 2025.svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
   },
   "gmail": {
    "name": "Gmail",
@@ -570,7 +582,9 @@
     "svgl": "retired 2020-10 to 2026-05: gmail",
     "simple-icons": "retired 2020-10 to 2026-05: gmail (one colour)",
     "commons": "current: Gmail icon (2026).svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
   },
   "google-drive": {
    "name": "Google Drive",
@@ -609,7 +623,9 @@
     "svgl": "retired 2020-10 to 2026-05: drive",
     "simple-icons": "retired 2020-10 to 2026-05: googledrive (one colour)",
     "commons": "current: Google Drive icon (2026).svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
   },
   "google-calendar": {
    "name": "Google Calendar",
@@ -648,7 +664,9 @@
     "svgl": "retired 2020-10 to 2026-05: google-calendar",
     "simple-icons": "retired 2020-10 to 2026-05: googlecalendar (one colour)",
     "commons": "current: Google Calendar icon (2026).svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
   },
   "google-meet": {
    "name": "Google Meet",
@@ -687,7 +705,9 @@
     "svgl": "retired 2020-10 to 2026-05: google-meet",
     "simple-icons": "retired 2020-10 to 2026-05: googlemeet (one colour)",
     "commons": "current: Google Meet icon (2026).svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
   },
   "google-docs": {
    "name": "Google Docs",
@@ -718,7 +738,9 @@
    "sources": {
     "simple-icons": "retired colour: googledocs (one colour)",
     "commons": "current: Google Docs icon (2026).svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
   },
   "google-sheets": {
    "name": "Google Sheets",
@@ -763,7 +785,9 @@
     "svgl": "retired 2020-10 to 2026-05: google-sheets",
     "simple-icons": "retired 2020-10 to 2026-05: googlesheets (one colour)",
     "commons": "current: Google Sheets icon (August 2026).svg; current: Google Sheets icon (2026).svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
   },
   "google-slides": {
    "name": "Google Slides",
@@ -807,7 +831,11 @@
     "svgl": "retired 2020-10 to 2026-05: google-slides",
     "simple-icons": "retired 2020-10 to 2026-05: googleslides (one colour)",
     "commons": "current: Google Slides icon (2026).svg"
-   }
+   },
+   "tile": "none",
+   "tileNote": "the slide is a card, not an app tile: it sits on a white tile",
+   "verified": "2026-11-25",
+   "verifyNote": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
   },
   "google-keep": {
    "name": "Google Keep",
@@ -964,7 +992,9 @@
     "svgl": "retired colour: youtube",
     "simple-icons": "retired colour: youtube (one colour)",
     "commons": "current: YouTube full-color icon (2024).svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "youtube.com site icon"
   },
   "google-chrome": {
    "name": "Google Chrome",
@@ -1008,7 +1038,9 @@
     "svgl": "current: chrome",
     "simple-icons": "current: googlechrome (one colour)",
     "commons": "current: Google Chrome icon (February 2022).svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "google.com/chrome site icon"
   },
   "android": {
    "name": "Android",
@@ -1035,7 +1067,9 @@
    "sources": {
     "gilbarbara": "current: android-icon.svg; unknown: android.svg; unknown: android-vertical.svg",
     "svgl": "current: android-icon"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "android.com site icon"
   },
   "google-cloud": {
    "name": "Google Cloud",
@@ -1199,7 +1233,9 @@
     "gilbarbara": "retired 2019 to 2025-10: microsoft-teams.svg",
     "svgl": "current: microsoft-teams",
     "commons": "current: Microsoft Office Teams (2025–present).svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "microsoft.design, the 2025 Microsoft 365 icons"
   },
   "microsoft-outlook": {
    "name": "Microsoft Outlook",
@@ -1242,7 +1278,9 @@
    "sources": {
     "svgl": "current: microsoft-outlook",
     "commons": "current: Microsoft Outlook Icon (2025–present).svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "microsoft.design, the 2025 Microsoft 365 icons"
   },
   "microsoft-word": {
    "name": "Microsoft Word",
@@ -1285,7 +1323,9 @@
    "sources": {
     "svgl": "current: microsoft-word",
     "commons": "current: Microsoft Office Word (2025–present).svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "microsoft.design, the 2025 Microsoft 365 icons"
   },
   "microsoft-excel": {
    "name": "Microsoft Excel",
@@ -1321,7 +1361,9 @@
    "sources": {
     "svgl": "current: microsoft-excel",
     "commons": "current: Microsoft Office Excel (2025–present).svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "microsoft.design, the 2025 Microsoft 365 icons"
   },
   "microsoft-powerpoint": {
    "name": "Microsoft PowerPoint",
@@ -1514,7 +1556,9 @@
    "sources": {
     "gilbarbara": "current: visual-studio-code.svg",
     "svgl": "current: vscode"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "code.visualstudio.com site icon"
   },
   "linkedin": {
    "name": "LinkedIn",
@@ -1576,7 +1620,9 @@
     "gilbarbara": "current: apple.svg",
     "svgl": "current: apple; current: apple:dark",
     "simple-icons": "current: apple (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "apple.com site icon"
   },
   "app-store": {
    "name": "App Store",
@@ -1635,7 +1681,9 @@
     "gilbarbara": "current: safari.svg",
     "svgl": "current: safari",
     "simple-icons": "current: safari (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "no site icon of its own; the flat compass Apple still draws outside iOS 26"
   },
   "apple-music": {
    "name": "Apple Music",
@@ -1705,7 +1753,9 @@
     "gilbarbara": "current: slack-icon.svg; unknown: slack.svg",
     "svgl": "current: slack",
     "commons": "current: Slack icon 2019.svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "slack.com site icon"
   },
   "notion": {
    "name": "Notion",
@@ -1734,7 +1784,9 @@
     "gilbarbara": "current: notion-icon.svg; unknown: notion.svg",
     "svgl": "current: notion",
     "simple-icons": "unknown: notion (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "notion.com site icon"
   },
   "figma": {
    "name": "Figma",
@@ -1763,7 +1815,9 @@
     "gilbarbara": "current: figma.svg",
     "svgl": "current: figma",
     "simple-icons": "unknown: figma (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "figma.com site icon"
   },
   "linear": {
    "name": "Linear",
@@ -1771,7 +1825,7 @@
    "page": "https://linear.app/brand",
    "mark": {
     "since": null,
-    "what": "the striped disc",
+    "what": "the striped disc in near-black (#222326), white on dark",
     "fp": "fp1 a1 pk100 g0 c02aeea200bffffe265cffffa785cfffe5885cffe75885cfa2b5885b202757600 h.kkkkkk..kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.kkkkk..",
     "from": "gilbarbara:linear-icon.svg"
    },
@@ -1786,14 +1840,23 @@
    },
    "prefer": [
     "gilbarbara:linear-icon.svg",
-    "svgl:linear",
     "simple-icons:linear"
    ],
    "sources": {
     "gilbarbara": "current: linear-icon.svg; unknown: linear.svg",
-    "svgl": "current: linear",
+    "svgl": "retired colour: linear (#5E6AD2)",
     "simple-icons": "current: linear (one colour)"
-   }
+   },
+   "hex": [
+    "#222326",
+    "#ffffff"
+   ],
+   "retired": [
+    "#5e6ad2"
+   ],
+   "retiredWhat": "the indigo (#5E6AD2) the brand kit no longer uses",
+   "verified": "2026-11-25",
+   "verifyNote": "linear.app/brand assets (Linear-Brand-Assets.zip): logo-dark.svg #222326, logo-light.svg white"
   },
   "asana": {
    "name": "Asana",
@@ -1823,7 +1886,9 @@
     "gilbarbara": "current: asana-icon.svg; unknown: asana.svg",
     "svgl": "current: asana-logo",
     "simple-icons": "current: asana (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "asana.com site icon"
   },
   "jira": {
    "name": "Jira",
@@ -1862,7 +1927,9 @@
    "sources": {
     "gilbarbara": "retired 2017-09 to 2025: gb-jira.svg",
     "simple-icons": "retired 2017-09 to 2025: jira (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "atlassian.design/foundations/logos jira_app.zip Jira_icon.svg"
   },
   "confluence": {
    "name": "Confluence",
@@ -1908,10 +1975,10 @@
    "owner": "Atlassian",
    "page": "https://atlassian.design/foundations/logos",
    "mark": {
-    "since": null,
-    "what": "the blue board tile",
-    "fp": "fp1 a1 pI100 g0 ccffffffcfc8cc8cff808807ff808807ff808dbdff808ffffffefffffcffffffc hIIIIIIIIIIIIIIIIII.II.IIII.II.IIII.IIIIIII.IIIIIIIIIIIIIIIIIIIII",
-    "from": "svgl:trello"
+    "since": "2025",
+    "what": "the two white boards on a flat Atlassian-blue tile (#1558BC) (no open collection draws it yet)",
+    "fp": "fp1 a1 pI90.w10 g0 c5effffe5effffffeffffffffffffffffffffffffffffffffeffffffe5effffe5 hIIIIIIIIIIIIIIIIIIwIIwIIIIwIIwIIIIwIIIIIIIwIIIIIIIIIIIIIIIIIIIII",
+    "from": null
    },
    "members": {
     "gilbarbara": [
@@ -1922,16 +1989,31 @@
     ],
     "simple-icons": "trello"
    },
-   "prefer": [
-    "svgl:trello",
-    "gilbarbara:trello.svg",
-    "simple-icons:trello"
-   ],
+   "prefer": [],
    "sources": {
-    "gilbarbara": "current: trello.svg",
-    "svgl": "current: trello",
-    "simple-icons": "current: trello (one colour)"
-   }
+    "gilbarbara": "retired 2017 to 2025: trello.svg",
+    "svgl": "retired 2017 to 2025: trello",
+    "simple-icons": "retired colour: trello (#0052CC)"
+   },
+   "hex": [
+    "#1558bc"
+   ],
+   "retired": [
+    "#0052cc",
+    "#2684ff"
+   ],
+   "retiredWhat": "the blue gradient of the 2017-2025 Atlassian marks",
+   "verified": "2026-11-25",
+   "verifyNote": "atlassian.design/foundations/logos trello_app.zip Trello_icon.svg; trello.com favicon",
+   "outdated": [
+    {
+     "since": "2017",
+     "until": "2025",
+     "what": "the boards on a blue gradient tile",
+     "fp": "fp1 a1 pI100 g0 ccffffffcfc8cc8cff808807ff808807ff808dbdff808ffffffefffffcffffffc hIIIIIIIIIIIIIIIIII.II.IIII.II.IIII.IIIIIII.IIIIIIIIIIIIIIIIIIIII",
+     "from": "svgl:trello"
+    }
+   ]
   },
   "airtable": {
    "name": "Airtable",
@@ -1957,7 +2039,9 @@
     "gilbarbara": "current: airtable.svg",
     "simple-icons": "current: airtable (one colour)",
     "commons": "unknown: Airtable Logo.svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "airtable.com site icon"
   },
   "zapier": {
    "name": "Zapier",
@@ -1981,7 +2065,9 @@
    "sources": {
     "gilbarbara": "unknown: zapier.svg",
     "simple-icons": "current: zapier (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "zapier.com site icon (the orange tile) and brand.zapier.com"
   },
   "monday": {
    "name": "monday.com",
@@ -2119,7 +2205,9 @@
     "gilbarbara": "current: dropbox.svg",
     "svgl": "unknown: dropbox",
     "simple-icons": "current: dropbox (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "dropbox.com site icon"
   },
   "box": {
    "name": "Box",
@@ -2149,14 +2237,14 @@
   "zoom": {
    "name": "Zoom",
    "owner": "Zoom Communications, Inc.",
-   "page": "https://brand.zoom.com/media-library/",
-   "verified": null,
-   "verifyNote": "the media library draws its files in script and the public brand guidelines name only the wordmark in Zoom blue; the app icon's current glyph is not confirmed there",
+   "page": "https://www.zoom.com/en/about/media-kit/",
+   "verified": "2026-11-25",
+   "verifyNote": "zoom.com media kit: the wordmark only (zoom-logo-2025.png); zoom.com and brand.zoom.com favicons: the \"zm\" squircle, no vector file published",
    "mark": {
-    "since": "2022-11",
-    "what": "the blue disc mark in #0B5CFF",
-    "fp": "fp1 a1 pI91.w9 g0 c06cffc606ffffff6cffffffcffffffffffffffffcffffffc6ffffff606cffc60 h.IIIIII.IIIIIIIIIIIIwwIIIIIIwIIIIIIwIIIIIIwIIIIIIIIIIIII.IIIIII.",
-    "from": "gilbarbara:zoom-icon.svg"
+    "since": "2025",
+    "what": "the zoom wordmark in Zoom blue (#0B5CFF); the app icon is a \"zm\" squircle with no vector file (unavailable)",
+    "fp": null,
+    "from": "gilbarbara:zoom.svg"
    },
    "retired": [
     "#2d8cff"
@@ -2172,14 +2260,22 @@
     "simple-icons": "zoom"
    },
    "prefer": [
-    "gilbarbara:zoom-icon.svg",
-    "svgl:zoom"
+    "gilbarbara:zoom.svg"
    ],
    "sources": {
-    "gilbarbara": "current: zoom-icon.svg; unknown: zoom.svg",
-    "svgl": "current: zoom",
-    "simple-icons": "unknown: zoom (one colour)"
-   }
+    "gilbarbara": "retired 2022-11 to 2025: zoom-icon.svg; current wordmark: zoom.svg",
+    "svgl": "retired: zoom (the camera)",
+    "simple-icons": "retired: zoom (the camera, one colour)"
+   },
+   "outdated": [
+    {
+     "since": "2022-11",
+     "until": "2025",
+     "what": "the camera in a blue disc",
+     "fp": "fp1 a1 pI91.w9 g0 c06cffc606ffffff6cffffffcffffffffffffffffcffffffc6ffffff606cffc60 h.IIIIII.IIIIIIIIIIIIwwIIIIIIwIIIIIIwIIIIIIwIIIIIIIIIIIII.IIIIII.",
+     "from": "gilbarbara:zoom-icon.svg"
+    }
+   ]
   },
   "discord": {
    "name": "Discord",
@@ -2213,7 +2309,9 @@
     "gilbarbara": "current: discord-icon.svg; unknown: discord.svg",
     "svgl": "current: discord",
     "simple-icons": "current: discord (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "discord.com site icon"
   },
   "whatsapp": {
    "name": "WhatsApp",
@@ -2271,7 +2369,9 @@
     "gilbarbara": "current: telegram.svg",
     "svgl": "current: telegram",
     "simple-icons": "current: telegram (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "telegram.org site icon"
   },
   "instagram": {
    "name": "Instagram",
@@ -2312,7 +2412,9 @@
     "svgl": "current: instagram-icon",
     "simple-icons": "unknown: instagram (one colour)",
     "commons": "current: Instagram logo 2022.svg"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "instagram.com site icon"
   },
   "facebook": {
    "name": "Facebook",
@@ -2438,7 +2540,9 @@
     "gilbarbara": "current: x.svg",
     "svgl": "current: x; current: x:dark",
     "simple-icons": "current: x (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "x.com site icon"
   },
   "threads": {
    "name": "Threads",
@@ -2530,7 +2634,9 @@
     "gilbarbara": "current: spotify-icon.svg; unknown: spotify.svg",
     "svgl": "current: spotify",
     "simple-icons": "current: spotify (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "open.spotify.com site icon"
   },
   "reddit": {
    "name": "Reddit",
@@ -2642,7 +2748,9 @@
     "gilbarbara": "current: github-icon.svg; unknown: github.svg; unknown: github-octocat.svg",
     "svgl": "current: github_light; current: github_light:dark",
     "simple-icons": "current: github (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "github.com favicon.svg"
   },
   "gitlab": {
    "name": "GitLab",
@@ -2672,7 +2780,9 @@
     "gilbarbara": "current: gitlab-icon.svg; unknown: gitlab.svg",
     "svgl": "current: gitlab",
     "simple-icons": "current: gitlab (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "about.gitlab.com site icon"
   },
   "bitbucket": {
    "name": "Bitbucket",
@@ -2742,7 +2852,9 @@
     "gilbarbara": "current: vercel-icon.svg; unknown: vercel.svg",
     "svgl": "current: vercel; current: vercel:dark",
     "simple-icons": "current: vercel (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "vercel.com site icon"
   },
   "netlify": {
    "name": "Netlify",
@@ -2932,8 +3044,8 @@
    "owner": "Stripe, Inc.",
    "page": "https://stripe.com/newsroom/brand-assets",
    "mark": {
-    "since": null,
-    "what": "the blurple mark",
+    "since": "2025",
+    "what": "the slanted bar, white on a #533AFD tile (the site icon) or #533AFD alone",
     "fp": "fp1 a1 pJ100 g0 c000147ad69cffffffffffffffffffffffffffffffffffffffffffc96da741000 h....JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ....",
     "from": "svgl:stripe"
    },
@@ -2957,7 +3069,12 @@
     "gilbarbara": "unknown: stripe.svg",
     "svgl": "current: stripe",
     "simple-icons": "unknown: stripe (one colour)"
-   }
+   },
+   "hex": [
+    "#533afd"
+   ],
+   "verified": "2026-11-25",
+   "verifyNote": "stripe.com favicon.svg: the slanted bar in white on #533AFD; svgl draws the same bar in #533AFD without the tile"
   },
   "shopify": {
    "name": "Shopify",
@@ -2987,17 +3104,19 @@
     "gilbarbara": "current: shopify.svg",
     "svgl": "current: shopify",
     "simple-icons": "current: shopify (one colour)"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "shopify.com site icon"
   },
   "hubspot": {
    "name": "HubSpot",
    "owner": "HubSpot, Inc.",
-   "page": "https://www.hubspot.com/style-guide",
+   "page": "https://www.hubspot.com/",
    "mark": {
-    "since": null,
-    "what": "the sprocket",
-    "fp": "fp1 a0.95 pB100 g0 cc80008507a600b6000792a600004fbd80005b02e0003e58c00298ba200990000 hBB...BB.BBB..BB...BB.BB....BBBBB...BB.BB...BBBBB..BBBBBB..BB....",
-    "from": "simple-icons:hubspot"
+    "since": "2025",
+    "what": "the sprocket in the 2025 orange (#FF4800)",
+    "fp": "fp1 a0.95 pB100 g0 cd90009508a600b6000692a600004fbd90005c02f0003e58c00398ba2009a0000 hBB...BB.BBB..BB...BBBBB....BBBBB...BB..B...BBBBB..BBBBBB..BB....",
+    "from": null
    },
    "members": {
     "gilbarbara": [
@@ -3005,13 +3124,20 @@
     ],
     "simple-icons": "hubspot"
    },
-   "prefer": [
-    "simple-icons:hubspot"
-   ],
+   "prefer": [],
    "sources": {
     "gilbarbara": "unknown: hubspot.svg",
-    "simple-icons": "current: hubspot (one colour)"
-   }
+    "simple-icons": "retired colour: hubspot (#FF7A59)"
+   },
+   "hex": [
+    "#ff4800"
+   ],
+   "retired": [
+    "#ff7a59"
+   ],
+   "retiredWhat": "the pre-2025 orange (#FF7A59)",
+   "verified": "2026-11-25",
+   "verifyNote": "hubspot.com header logo and sprocket SVG (#FF4800); favicon HubSpot-Inversed-Favicon.png"
   },
   "salesforce": {
    "name": "Salesforce",
@@ -3038,7 +3164,9 @@
    "sources": {
     "gilbarbara": "current: salesforce.svg",
     "svgl": "current: salesforce"
-   }
+   },
+   "verified": "2026-11-25",
+   "verifyNote": "salesforce.com site icon"
   },
   "intercom": {
    "name": "Intercom",

@@ -1,6 +1,6 @@
 {
  "catalogue": 1,
- "updated": "2026-11-22",
+ "updated": "2026-11-25",
  "about": "Real sound effects for cinetic films: links, never audio (the audio is fetched at film time by sfx.mjs into the film's audio/sfx/ with a licence record, and never committed). Each sound was auditioned with earshot (a forced choice between its role and cheap or cartoon alternatives) and measured: onset (first sample at 10 % of the peak), lead before it, peak, loudness, floor, centroid. align: onset roles put their transient on the cue frame, peak roles (whooshes, risers, swells) their loudest point. \"roles\" maps a kit role to the kinds that may play it; \"actions\" (the actions of scripts/audio/actions.py) wins where the cast names the role's action. Every sound carries heard_as and not_heard_as: the actions and kit roles its kind may play that earshot 0.4.1 heard its take as (the sound as kit.py real places it: 48 kHz, from just before it starts, at most 2.5 s, its lead-in trimmed for an onset role; z >= 2 for the best of the action's phrasings or the role's words, the forced choice against four cheap-synth descriptions won), and the ones it heard as something else; its ear is that verdict for the action it was taken for (a kind no action lists: the kit role), and a sound heard as none of them is in rejected. sfx.mjs pick plays a heard sound first and one heard as something else last. The onset, peak, end and loudness of the sounds added on 2026-11-06 are kit.py's own measure_take (loudness: the loudest 400 ms and 50 ms), lead is kit.py lead_in, floor the 10th percentile of 50 ms levels.",
  "sources": {
   "mixkit-sfx": {
@@ -60,17 +60,19 @@
    "tick"
   ],
   "hit": [
-   "impact",
-   "note"
-  ],
-  "land": [
    "impact"
   ],
+  "land": [
+   "impact",
+   "paper"
+  ],
   "land.light": [
-   "click.soft"
+   "click.soft",
+   "paper"
   ],
   "pop": [
-   "pop"
+   "click.soft",
+   "paper"
   ],
   "whoosh.short": [
    "whoosh.short",
@@ -80,19 +82,11 @@
    "whoosh.long",
    "whoosh.medium"
   ],
-  "suck": [
-   "reverse"
-  ],
-  "riser": [
-   "riser",
-   "reverse"
-  ],
-  "swell": [
-   "reverse",
-   "riser"
-  ],
+  "suck": [],
+  "riser": [],
+  "swell": [],
   "drop": [
-   "sub"
+   "impact"
   ],
   "key": [
    "key"
@@ -108,34 +102,22 @@
    "click.hard"
   ],
   "click.confirm": [
-   "note"
+   "click.soft"
   ],
   "snap": [
    "shutter",
    "click.hard"
   ],
-  "bell": [
-   "glass",
-   "note",
-   "notification"
-  ],
-  "text": [
-   "note"
-  ]
+  "bell": [],
+  "text": []
  },
  "actions": {
-  "logo-lock": [
-   "impact",
-   "sub",
-   "note"
-  ],
+  "logo-lock": [],
   "reveal": [
-   "impact",
-   "lockup"
+   "impact"
   ],
   "thud": [
-   "impact",
-   "sub"
+   "impact"
   ],
   "land": [
    "impact"
@@ -181,33 +163,20 @@
   ],
   "error": [],
   "appear": [
-   "pop"
+   "click.soft",
+   "paper"
   ],
   "shape": [
    "whoosh.short"
   ],
-  "build": [
-   "riser",
-   "reverse"
-  ],
-  "swell": [
-   "reverse",
-   "riser"
-  ],
+  "build": [],
+  "swell": [],
   "detent": [
    "tick",
    "click.soft"
   ],
-  "chime": [
-   "glass",
-   "note",
-   "notification"
-  ],
-  "success": [
-   "notification",
-   "glass",
-   "note"
-  ],
+  "chime": [],
+  "success": [],
   "shutter": [
    "shutter"
   ],
@@ -219,66 +188,9 @@
    "typing",
    "key"
   ],
-  "text": [
-   "note"
-  ]
+  "text": []
  },
  "sounds": [
-  {
-   "id": "mixkit-275",
-   "source": "mixkit-sfx",
-   "title": "Fast double click on mouse",
-   "role": "click.hard",
-   "page": "https://mixkit.co/free-sound-effects/click/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/275/275.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 0.465,
-   "end_s": 0.26,
-   "onset_ms": 112.4,
-   "lead_ms": 11.6,
-   "peak_ms": 113.6,
-   "peak_db": -3.85,
-   "lufs": -21.8,
-   "l50_db": -24.3,
-   "floor_db": -159.7,
-   "centroid_hz": 11362,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "short",
-    "sharp",
-    "narrow",
-    "click",
-    "mouse"
-   ],
-   "ear": {
-    "query": "a dry quick click",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 3.51,
-    "action": "jump-cut",
-    "real": 0.9
-   },
-   "heard_as": {
-    "actions": [
-     "jump-cut",
-     "press",
-     "toggle",
-     "lock"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": [
-     "click",
-     "snap"
-    ]
-   }
-  },
   {
    "id": "mixkit-2997",
    "source": "mixkit-sfx",
@@ -668,123 +580,6 @@
    }
   },
   {
-   "id": "mixkit-1120",
-   "source": "mixkit-sfx",
-   "title": "Modern click box check",
-   "role": "click.soft",
-   "page": "https://mixkit.co/free-sound-effects/click/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1120/1120.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 0.237,
-   "end_s": 0.18,
-   "onset_ms": 100,
-   "lead_ms": 0,
-   "peak_ms": 101.9,
-   "peak_db": -10,
-   "lufs": -23.9,
-   "l50_db": -22.5,
-   "floor_db": -159.8,
-   "centroid_hz": 1283,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "short",
-    "sharp",
-    "narrow",
-    "click"
-   ],
-   "ear": {
-    "query": "a small mechanical tick, a detent clicking over",
-    "p": 0.605,
-    "verdict": "weak",
-    "top_alt": "a video game blip",
-    "z": 2.06,
-    "action": "detent",
-    "real": 0.01
-   },
-   "heard_as": {
-    "actions": [
-     "detent"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "press",
-     "touch",
-     "toggle",
-     "letter"
-    ],
-    "roles": [
-     "tick",
-     "tick.crisp",
-     "land.light",
-     "click"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-2568",
-   "source": "mixkit-sfx",
-   "title": "Cool interface click tone",
-   "role": "click.soft",
-   "page": "https://mixkit.co/free-sound-effects/click/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2568/2568.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 0.199,
-   "end_s": 0.06,
-   "onset_ms": 0,
-   "lead_ms": 0,
-   "peak_ms": 1.4,
-   "peak_db": -6.11,
-   "lufs": -18.8,
-   "l50_db": -21.1,
-   "floor_db": -77.7,
-   "centroid_hz": 3703,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "tiny",
-    "sharp",
-    "narrow",
-    "interface",
-    "click"
-   ],
-   "ear": {
-    "query": "a small mechanical tick, a detent clicking over",
-    "p": 0.989,
-    "verdict": "strong",
-    "top_alt": "a video game blip",
-    "z": 3.13,
-    "action": "detent",
-    "real": 0.05
-   },
-   "heard_as": {
-    "actions": [
-     "detent"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "press",
-     "touch",
-     "toggle",
-     "letter"
-    ],
-    "roles": [
-     "tick",
-     "tick.crisp",
-     "land.light",
-     "click"
-    ]
-   }
-  },
-  {
    "id": "mixkit-3124",
    "source": "mixkit-sfx",
    "title": "Modern technology select",
@@ -961,66 +756,6 @@
    }
   },
   {
-   "id": "mixkit-2577",
-   "source": "mixkit-sfx",
-   "title": "Interface device click",
-   "role": "click.soft",
-   "page": "https://mixkit.co/free-sound-effects/click/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2577/2577.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.047,
-   "end_s": 0.12,
-   "onset_ms": 2,
-   "lead_ms": 0.1,
-   "peak_ms": 8.1,
-   "peak_db": -1.79,
-   "lufs": -15.9,
-   "l50_db": -13.2,
-   "floor_db": -73.6,
-   "centroid_hz": 7486,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "short",
-    "sharp",
-    "narrow",
-    "interface",
-    "click",
-    "technology"
-   ],
-   "ear": {
-    "query": "a small mechanical tick, a detent clicking over",
-    "p": 0.936,
-    "verdict": "weak",
-    "top_alt": "a video game blip",
-    "z": 2.09,
-    "action": "detent",
-    "real": 0.16
-   },
-   "heard_as": {
-    "actions": [
-     "detent"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "press",
-     "touch",
-     "toggle",
-     "letter"
-    ],
-    "roles": [
-     "tick",
-     "tick.crisp",
-     "land.light",
-     "click"
-    ]
-   }
-  },
-  {
    "id": "mixkit-1115",
    "source": "mixkit-sfx",
    "title": "Pen click and release",
@@ -1137,171 +872,6 @@
    }
   },
   {
-   "id": "mixkit-3109",
-   "source": "mixkit-sfx",
-   "title": "Relaxing bell chime",
-   "role": "glass",
-   "page": "https://mixkit.co/free-sound-effects/discover/chime/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/3109/3109.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.678,
-   "end_s": 1.52,
-   "onset_ms": 40.3,
-   "lead_ms": 37.2,
-   "peak_ms": 102,
-   "peak_db": -6.83,
-   "lufs": -22.2,
-   "l50_db": -16.9,
-   "floor_db": -51.8,
-   "centroid_hz": 6616,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "soft",
-    "narrow",
-    "chimes",
-    "bell",
-    "church-bell"
-   ],
-   "ear": {
-    "query": "a struck bell note",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 3.53,
-    "action": "chime",
-    "real": 0.94
-   },
-   "heard_as": {
-    "actions": [
-     "chime",
-     "success"
-    ],
-    "roles": [
-     "bell"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-154",
-   "source": "mixkit-sfx",
-   "title": "A couple of glasses clink",
-   "role": "glass",
-   "page": "https://mixkit.co/free-sound-effects/glass/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/154/154.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 2.637,
-   "end_s": 1.72,
-   "onset_ms": 113.5,
-   "lead_ms": 0,
-   "peak_ms": 113.7,
-   "peak_db": -8.6,
-   "lufs": -28,
-   "l50_db": -25,
-   "floor_db": -67,
-   "centroid_hz": 6133,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "sharp",
-    "narrow",
-    "restaurant",
-    "kitchen",
-    "glass"
-   ],
-   "ear": {
-    "query": "a struck bell note",
-    "p": 0.999,
-    "verdict": "weak",
-    "top_alt": "a video game blip",
-    "z": 2.35,
-    "action": "chime",
-    "real": 0.97
-   },
-   "heard_as": {
-    "actions": [
-     "chime",
-     "success"
-    ],
-    "roles": [
-     "bell"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-2150",
-   "source": "mixkit-sfx",
-   "title": "Impact of a blow",
-   "role": "impact",
-   "page": "https://mixkit.co/free-sound-effects/hit/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2150/2150.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 0.591,
-   "end_s": 0.5,
-   "onset_ms": 118.4,
-   "lead_ms": 13.3,
-   "peak_ms": 184.2,
-   "peak_db": -1.23,
-   "lufs": -18,
-   "l50_db": -14.8,
-   "floor_db": -166.7,
-   "centroid_hz": 6205,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "medium",
-    "soft",
-    "wide",
-    "blow",
-    "impact",
-    "hit"
-   ],
-   "ear": {
-    "query": "a single clean low impact",
-    "p": 0.993,
-    "verdict": "weak",
-    "top_alt": "a rising synth whip sweep",
-    "z": 2.11,
-    "action": "reveal",
-    "real": 0.99
-   },
-   "heard_as": {
-    "actions": [
-     "reveal"
-    ],
-    "roles": [
-     "hit"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "logo-lock",
-     "thud",
-     "land",
-     "card-land"
-    ],
-    "roles": [
-     "land"
-    ]
-   }
-  },
-  {
    "id": "mixkit-2182",
    "source": "mixkit-sfx",
    "title": "Wood hard hit",
@@ -1362,234 +932,6 @@
    }
   },
   {
-   "id": "mixkit-544",
-   "source": "mixkit-sfx",
-   "title": "Drum hit with eco",
-   "role": "impact",
-   "page": "https://mixkit.co/free-sound-effects/discover/drum/?page=2",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/544/544.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 4.8,
-   "end_s": 4.36,
-   "onset_ms": 13.6,
-   "lead_ms": 0.4,
-   "peak_ms": 437.2,
-   "peak_db": -0.17,
-   "lufs": -6.9,
-   "l50_db": -5.6,
-   "floor_db": -53.3,
-   "centroid_hz": 372,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "dark",
-    "long",
-    "swell",
-    "narrow",
-    "drum"
-   ],
-   "ear": {
-    "query": "a deep cinematic hit",
-    "p": 0.999,
-    "verdict": "plausible",
-    "top_alt": "a video game blip",
-    "z": 2.74,
-    "action": "reveal",
-    "real": 0.74
-   },
-   "heard_as": {
-    "actions": [
-     "reveal"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "logo-lock",
-     "thud",
-     "land",
-     "card-land"
-    ],
-    "roles": [
-     "hit",
-     "land"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-557",
-   "source": "mixkit-sfx",
-   "title": "Deep dark horror drum",
-   "role": "impact",
-   "page": "https://mixkit.co/free-sound-effects/discover/drum/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/557/557.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 3.456,
-   "end_s": 2.11,
-   "onset_ms": 3.5,
-   "lead_ms": 0.5,
-   "peak_ms": 51,
-   "peak_db": -0.42,
-   "lufs": -8.5,
-   "l50_db": -5,
-   "floor_db": -85.1,
-   "centroid_hz": 640,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "warm",
-    "long",
-    "soft",
-    "wide",
-    "drum",
-    "cinematic"
-   ],
-   "ear": {
-    "query": "a deep cinematic hit",
-    "p": 1,
-    "verdict": "plausible",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.71,
-    "action": "reveal",
-    "real": 0.99
-   },
-   "heard_as": {
-    "actions": [
-     "reveal"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "logo-lock",
-     "thud",
-     "land",
-     "card-land"
-    ],
-    "roles": [
-     "hit",
-     "land"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-562",
-   "source": "mixkit-sfx",
-   "title": "Hand tribal drum",
-   "role": "impact",
-   "page": "https://mixkit.co/free-sound-effects/discover/drum/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/562/562.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.12,
-   "end_s": 0.82,
-   "onset_ms": 55.5,
-   "lead_ms": 0.9,
-   "peak_ms": 58.5,
-   "peak_db": -0.89,
-   "lufs": -16.9,
-   "l50_db": -10,
-   "floor_db": -70.9,
-   "centroid_hz": 922,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "warm",
-    "medium",
-    "sharp",
-    "narrow",
-    "drum",
-    "tap"
-   ],
-   "ear": {
-    "query": "a single clean low impact",
-    "p": 1,
-    "verdict": "weak",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.25,
-    "action": "reveal",
-    "real": 0.71
-   },
-   "heard_as": {
-    "actions": [
-     "reveal"
-    ],
-    "roles": [
-     "hit"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "logo-lock",
-     "thud",
-     "land",
-     "card-land"
-    ],
-    "roles": [
-     "land"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-773",
-   "source": "mixkit-sfx",
-   "title": "Horror impact",
-   "role": "impact",
-   "page": "https://mixkit.co/free-sound-effects/impact/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/773/773.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 2.621,
-   "end_s": 1.94,
-   "onset_ms": 0.6,
-   "lead_ms": 0,
-   "peak_ms": 140.3,
-   "peak_db": -1.16,
-   "lufs": -11.7,
-   "l50_db": -9,
-   "floor_db": -87,
-   "centroid_hz": 2475,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "wide",
-    "impact",
-    "horror"
-   ],
-   "ear": {
-    "query": "a deep cinematic hit",
-    "p": 0.838,
-    "verdict": "weak",
-    "top_alt": "a rising synth whip sweep",
-    "z": 2.12,
-    "action": "reveal",
-    "real": 0.94
-   },
-   "heard_as": {
-    "actions": [
-     "reveal"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "logo-lock",
-     "thud",
-     "land",
-     "card-land"
-    ],
-    "roles": [
-     "hit",
-     "land"
-    ]
-   }
-  },
-  {
    "id": "mixkit-2070",
    "source": "mixkit-sfx",
    "title": "Light impact on the ground",
@@ -1642,123 +984,6 @@
    "not_heard_as": {
     "actions": [
      "land"
-    ],
-    "roles": [
-     "land"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-2187",
-   "source": "mixkit-sfx",
-   "title": "Low explosion indoors",
-   "role": "impact",
-   "page": "https://mixkit.co/free-sound-effects/discover/low/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2187/2187.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 5.088,
-   "end_s": 4.62,
-   "onset_ms": 25.4,
-   "lead_ms": 0.7,
-   "peak_ms": 61.5,
-   "peak_db": -0.62,
-   "lufs": -12.7,
-   "l50_db": -10,
-   "floor_db": -56.5,
-   "centroid_hz": 2254,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "soft",
-    "wide",
-    "explosion",
-    "impact",
-    "game"
-   ],
-   "ear": {
-    "query": "a deep cinematic hit",
-    "p": 0.649,
-    "verdict": "weak",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.35,
-    "action": "reveal",
-    "real": 0.93
-   },
-   "heard_as": {
-    "actions": [
-     "reveal"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "logo-lock",
-     "thud",
-     "land",
-     "card-land"
-    ],
-    "roles": [
-     "hit",
-     "land"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-2294",
-   "source": "mixkit-sfx",
-   "title": "Drum bass hit",
-   "role": "impact",
-   "page": "https://mixkit.co/free-sound-effects/discover/drum/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2294/2294.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.53,
-   "end_s": 1.34,
-   "onset_ms": 7.4,
-   "lead_ms": 0.4,
-   "peak_ms": 23.9,
-   "peak_db": -0.33,
-   "lufs": -9.2,
-   "l50_db": -6.5,
-   "floor_db": -53.2,
-   "centroid_hz": 519,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "warm",
-    "long",
-    "firm",
-    "narrow",
-    "brass",
-    "orchestra",
-    "drum"
-   ],
-   "ear": {
-    "query": "a deep cinematic hit",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 3.04,
-    "action": "reveal",
-    "real": 0.62
-   },
-   "heard_as": {
-    "actions": [
-     "logo-lock",
-     "reveal",
-     "thud"
-    ],
-    "roles": [
-     "hit"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "land",
-     "card-land"
     ],
     "roles": [
      "land"
@@ -2088,724 +1313,6 @@
    }
   },
   {
-   "id": "mixkit-2908",
-   "source": "mixkit-sfx",
-   "title": "Movie trailer epic impact",
-   "role": "lockup",
-   "page": "https://mixkit.co/free-sound-effects/impact/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2908/2908.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 4.866,
-   "end_s": 2.98,
-   "onset_ms": 60.4,
-   "lead_ms": 51.1,
-   "peak_ms": 920.1,
-   "peak_db": -0.69,
-   "lufs": -13.9,
-   "l50_db": -6.7,
-   "floor_db": -73.7,
-   "centroid_hz": 1574,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "wide",
-    "movie",
-    "impact",
-    "transition"
-   ],
-   "ear": {
-    "query": "a deep cinematic hit",
-    "p": 0.917,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 3.15,
-    "action": "reveal",
-    "real": 0.91
-   },
-   "heard_as": {
-    "actions": [
-     "reveal"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-2909",
-   "source": "mixkit-sfx",
-   "title": "Cool impact movie trailer",
-   "role": "lockup",
-   "page": "https://mixkit.co/free-sound-effects/transition/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2909/2909.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 6,
-   "end_s": 4.1,
-   "onset_ms": 67.8,
-   "lead_ms": 22.4,
-   "peak_ms": 2054.2,
-   "peak_db": -0.69,
-   "lufs": -12.5,
-   "l50_db": -6.7,
-   "floor_db": -76.1,
-   "centroid_hz": 3060,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "wide",
-    "movie",
-    "drum",
-    "transition"
-   ],
-   "ear": {
-    "query": "a deep cinematic hit",
-    "p": 0.987,
-    "verdict": "plausible",
-    "top_alt": "a rising synth whip sweep",
-    "z": 2.86,
-    "action": "reveal",
-    "real": 0.95
-   },
-   "heard_as": {
-    "actions": [
-     "reveal"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-1107",
-   "source": "mixkit-sfx",
-   "title": "Page forward single chime",
-   "role": "note",
-   "page": "https://mixkit.co/free-sound-effects/interface/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1107/1107.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.689,
-   "end_s": 1.04,
-   "onset_ms": 138.9,
-   "lead_ms": 0,
-   "peak_ms": 299.2,
-   "peak_db": -5.03,
-   "lufs": -13.5,
-   "l50_db": -9.4,
-   "floor_db": -84.8,
-   "centroid_hz": 5487,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "narrow",
-    "chimes",
-    "interface",
-    "page",
-    "paper"
-   ],
-   "ear": {
-    "query": "a kalimba or marimba note",
-    "p": 0.565,
-    "verdict": "weak",
-    "top_alt": "a rising synth whip sweep",
-    "z": 2.09,
-    "action": "text",
-    "real": 0.96
-   },
-   "heard_as": {
-    "actions": [
-     "text"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "logo-lock",
-     "chime",
-     "success"
-    ],
-    "roles": [
-     "hit",
-     "click.confirm",
-     "bell",
-     "text"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-2323",
-   "source": "mixkit-sfx",
-   "title": "Quick guitar tone",
-   "role": "note",
-   "page": "https://mixkit.co/free-sound-effects/discover/guitar/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2323/2323.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 0.517,
-   "end_s": 0.49,
-   "onset_ms": 15.1,
-   "lead_ms": 0.1,
-   "peak_ms": 19.8,
-   "peak_db": -5.01,
-   "lufs": -15.4,
-   "l50_db": -12.2,
-   "floor_db": -25.7,
-   "centroid_hz": 1740,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "medium",
-    "sharp",
-    "narrow",
-    "guitar",
-    "music",
-    "instrument"
-   ],
-   "ear": {
-    "query": "a kalimba or marimba note",
-    "p": 0.836,
-    "verdict": "plausible",
-    "top_alt": "an 8-bit chiptune sound",
-    "z": 2.58,
-    "action": "text",
-    "real": 0.72
-   },
-   "heard_as": {
-    "actions": [
-     "success",
-     "text"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "logo-lock",
-     "chime"
-    ],
-    "roles": [
-     "hit",
-     "click.confirm",
-     "bell",
-     "text"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-2325",
-   "source": "mixkit-sfx",
-   "title": "Acute guitar single string",
-   "role": "note",
-   "page": "https://mixkit.co/free-sound-effects/discover/guitar/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2325/2325.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 0.996,
-   "end_s": 0.77,
-   "onset_ms": 222.1,
-   "lead_ms": 0.8,
-   "peak_ms": 244.1,
-   "peak_db": -16.92,
-   "lufs": -26.2,
-   "l50_db": -19.3,
-   "floor_db": -92.7,
-   "centroid_hz": 2656,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "medium",
-    "firm",
-    "wide",
-    "guitar",
-    "instrument",
-    "music"
-   ],
-   "ear": {
-    "query": "a soft plucked or mallet note",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 4.18,
-    "action": "text",
-    "real": 0.96
-   },
-   "heard_as": {
-    "actions": [
-     "logo-lock",
-     "chime",
-     "text"
-    ],
-    "roles": [
-     "hit",
-     "click.confirm",
-     "bell",
-     "text"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "success"
-    ],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-2326",
-   "source": "mixkit-sfx",
-   "title": "Guitar string tone",
-   "role": "note",
-   "page": "https://mixkit.co/free-sound-effects/discover/guitar/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2326/2326.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.233,
-   "end_s": 1.14,
-   "onset_ms": 240.8,
-   "lead_ms": 0.3,
-   "peak_ms": 272.7,
-   "peak_db": -22.25,
-   "lufs": -30.2,
-   "l50_db": -24.5,
-   "floor_db": -85.8,
-   "centroid_hz": 2834,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "soft",
-    "wide",
-    "guitar",
-    "instrument",
-    "music"
-   ],
-   "ear": {
-    "query": "a soft plucked or mallet note",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 4.38,
-    "action": "text",
-    "real": 0.96
-   },
-   "heard_as": {
-    "actions": [
-     "logo-lock",
-     "chime",
-     "success",
-     "text"
-    ],
-    "roles": [
-     "hit",
-     "click.confirm",
-     "bell",
-     "text"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-2327",
-   "source": "mixkit-sfx",
-   "title": "Musical guitar string clink",
-   "role": "note",
-   "page": "https://mixkit.co/free-sound-effects/discover/guitar/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2327/2327.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.242,
-   "end_s": 1.18,
-   "onset_ms": 233.2,
-   "lead_ms": 0,
-   "peak_ms": 250.9,
-   "peak_db": -24.03,
-   "lufs": -32.4,
-   "l50_db": -25.9,
-   "floor_db": -83.7,
-   "centroid_hz": 3233,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "firm",
-    "wide",
-    "guitar",
-    "instrument",
-    "music"
-   ],
-   "ear": {
-    "query": "a soft plucked or mallet note",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 4.23,
-    "action": "text",
-    "real": 0.96
-   },
-   "heard_as": {
-    "actions": [
-     "logo-lock",
-     "chime",
-     "text"
-    ],
-    "roles": [
-     "hit",
-     "click.confirm",
-     "bell",
-     "text"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "success"
-    ],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-2863",
-   "source": "mixkit-sfx",
-   "title": "Elevator tone",
-   "role": "notification",
-   "page": "https://mixkit.co/free-sound-effects/notification/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2863/2863.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.376,
-   "end_s": 1.02,
-   "onset_ms": 6.1,
-   "lead_ms": 5.1,
-   "peak_ms": 57.2,
-   "peak_db": -2.18,
-   "lufs": -16.4,
-   "l50_db": -10.9,
-   "floor_db": -72.8,
-   "centroid_hz": 2133,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "soft",
-    "wide",
-    "tones",
-    "notification"
-   ],
-   "ear": {
-    "query": "a soft rounded ding, a success",
-    "p": 0.978,
-    "verdict": "plausible",
-    "top_alt": "a video game blip",
-    "z": 2.6,
-    "action": "success",
-    "real": 0.04
-   },
-   "heard_as": {
-    "actions": [
-     "chime",
-     "success"
-    ],
-    "roles": [
-     "bell"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-2866",
-   "source": "mixkit-sfx",
-   "title": "Digital quick tone",
-   "role": "notification",
-   "page": "https://mixkit.co/free-sound-effects/notification/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2866/2866.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.287,
-   "end_s": 1.02,
-   "onset_ms": 0.7,
-   "lead_ms": 0.2,
-   "peak_ms": 126.9,
-   "peak_db": -0.61,
-   "lufs": -12.1,
-   "l50_db": -11.6,
-   "floor_db": -58,
-   "centroid_hz": 3261,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "narrow",
-    "tones",
-    "bleep",
-    "alerts",
-    "notification"
-   ],
-   "ear": {
-    "query": "a soft rounded ding, a success",
-    "p": 0.863,
-    "verdict": "plausible",
-    "top_alt": "a video game blip",
-    "z": 2.63,
-    "action": "success",
-    "real": 0.02
-   },
-   "heard_as": {
-    "actions": [
-     "success"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "chime"
-    ],
-    "roles": [
-     "bell"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-2867",
-   "source": "mixkit-sfx",
-   "title": "Confirmation tone",
-   "role": "notification",
-   "page": "https://mixkit.co/free-sound-effects/notification/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2867/2867.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.304,
-   "end_s": 1.02,
-   "onset_ms": 4.8,
-   "lead_ms": 0,
-   "peak_ms": 193.4,
-   "peak_db": -0.64,
-   "lufs": -12.2,
-   "l50_db": -12,
-   "floor_db": -57.8,
-   "centroid_hz": 3582,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "narrow",
-    "tones",
-    "bleep",
-    "alerts",
-    "notification"
-   ],
-   "ear": {
-    "query": "a soft rounded ding, a success",
-    "p": 0.97,
-    "verdict": "plausible",
-    "top_alt": "a video game blip",
-    "z": 2.78,
-    "action": "success",
-    "real": 0.02
-   },
-   "heard_as": {
-    "actions": [
-     "success"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "chime"
-    ],
-    "roles": [
-     "bell"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-2574",
-   "source": "mixkit-sfx",
-   "title": "Software interface start",
-   "role": "notification",
-   "page": "https://mixkit.co/free-sound-effects/notification/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2574/2574.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 2.347,
-   "end_s": 1.82,
-   "onset_ms": 1.6,
-   "lead_ms": 0.1,
-   "peak_ms": 133.7,
-   "peak_db": -1,
-   "lufs": -19,
-   "l50_db": -11.4,
-   "floor_db": -73.4,
-   "centroid_hz": 1441,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "narrow",
-    "interface",
-    "notification",
-    "alerts"
-   ],
-   "ear": {
-    "query": "a soft rounded ding, a success",
-    "p": 0.969,
-    "verdict": "plausible",
-    "top_alt": "a video game blip",
-    "z": 2.98,
-    "action": "success",
-    "real": 0.08
-   },
-   "heard_as": {
-    "actions": [
-     "success"
-    ],
-    "roles": [
-     "bell"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "chime"
-    ],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-2861",
-   "source": "mixkit-sfx",
-   "title": "Clear announce tones",
-   "role": "notification",
-   "page": "https://mixkit.co/free-sound-effects/notification/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2861/2861.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 3.975,
-   "end_s": 3.58,
-   "onset_ms": 66.1,
-   "lead_ms": 0,
-   "peak_ms": 567.8,
-   "peak_db": -0.3,
-   "lufs": -10.7,
-   "l50_db": -9,
-   "floor_db": -63.3,
-   "centroid_hz": 3733,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "wide",
-    "tones",
-    "alerts",
-    "notification"
-   ],
-   "ear": {
-    "query": "a chime",
-    "p": 1,
-    "verdict": "plausible",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.56,
-    "action": "chime",
-    "real": 0.65
-   },
-   "heard_as": {
-    "actions": [
-     "chime",
-     "success"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": [
-     "bell"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-2575",
-   "source": "mixkit-sfx",
-   "title": "Software interface back",
-   "role": "notification",
-   "page": "https://mixkit.co/free-sound-effects/notification/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2575/2575.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.329,
-   "end_s": 1.1,
-   "onset_ms": 1.6,
-   "lead_ms": 0,
-   "peak_ms": 129.6,
-   "peak_db": -1,
-   "lufs": -15.8,
-   "l50_db": -12.3,
-   "floor_db": -63.7,
-   "centroid_hz": 3301,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "narrow",
-    "interface",
-    "notification",
-    "alerts"
-   ],
-   "ear": {
-    "query": "a soft rounded ding, a success",
-    "p": 0.99,
-    "verdict": "strong",
-    "top_alt": "a video game blip",
-    "z": 3.22,
-    "action": "success",
-    "real": 0.25
-   },
-   "heard_as": {
-    "actions": [
-     "success"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "chime"
-    ],
-    "roles": [
-     "bell"
-    ]
-   }
-  },
-  {
    "id": "mixkit-1530",
    "source": "mixkit-sfx",
    "title": "Paper slide",
@@ -2853,112 +1360,6 @@
    "not_heard_as": {
     "actions": [
      "card-land"
-    ],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-2380",
-   "source": "mixkit-sfx",
-   "title": "Paper quick movement",
-   "role": "paper",
-   "page": "https://mixkit.co/free-sound-effects/paper/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2380/2380.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 0.902,
-   "end_s": 0.9,
-   "onset_ms": 205.1,
-   "lead_ms": 88.9,
-   "peak_ms": 422.2,
-   "peak_db": -1.84,
-   "lufs": -21.2,
-   "l50_db": -21.6,
-   "floor_db": -51.7,
-   "centroid_hz": 6930,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "wide",
-    "paper",
-    "school",
-    "office"
-   ],
-   "ear": {
-    "query": "a paper swipe",
-    "p": 0.944,
-    "verdict": "plausible",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.52,
-    "action": "swipe",
-    "real": 0.95
-   },
-   "heard_as": {
-    "actions": [
-     "swipe"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "card-land",
-     "slide"
-    ],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-2386",
-   "source": "mixkit-sfx",
-   "title": "Pages of paper moving",
-   "role": "paper",
-   "page": "https://mixkit.co/free-sound-effects/paper/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2386/2386.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.452,
-   "end_s": 1.44,
-   "onset_ms": 147.9,
-   "lead_ms": 107.8,
-   "peak_ms": 1232.1,
-   "peak_db": -7.38,
-   "lufs": -31,
-   "l50_db": -31.5,
-   "floor_db": -24.7,
-   "centroid_hz": 6390,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "wide",
-    "paper",
-    "school",
-    "office"
-   ],
-   "ear": {
-    "query": "a paper swipe",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 3.71,
-    "action": "swipe",
-    "real": 0.94
-   },
-   "heard_as": {
-    "actions": [
-     "card-land",
-     "swipe"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "slide"
     ],
     "roles": []
    }
@@ -3014,550 +1415,6 @@
      "slide"
     ],
     "roles": []
-   }
-  },
-  {
-   "id": "mixkit-3000",
-   "source": "mixkit-sfx",
-   "title": "Liquid bubble",
-   "role": "pop",
-   "page": "https://mixkit.co/free-sound-effects/discover/bubble/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/3000/3000.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.047,
-   "end_s": 0.48,
-   "onset_ms": 8.2,
-   "lead_ms": 0.7,
-   "peak_ms": 55.7,
-   "peak_db": -0.67,
-   "lufs": -13.4,
-   "l50_db": -6.2,
-   "floor_db": -96.9,
-   "centroid_hz": 736,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "warm",
-    "medium",
-    "soft",
-    "narrow",
-    "bubbles",
-    "water",
-    "nature"
-   ],
-   "ear": {
-    "query": "a mouth pop",
-    "p": 0.999,
-    "verdict": "plausible",
-    "top_alt": "a video game blip",
-    "z": 2.89,
-    "action": "appear",
-    "real": 0.76
-   },
-   "heard_as": {
-    "actions": [
-     "appear"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": [
-     "pop"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-3192",
-   "source": "mixkit-sfx",
-   "title": "Egg bubble pop",
-   "role": "pop",
-   "page": "https://mixkit.co/free-sound-effects/discover/bubble/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/3192/3192.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 0.75,
-   "end_s": 0.26,
-   "onset_ms": 76.1,
-   "lead_ms": 0.7,
-   "peak_ms": 78.8,
-   "peak_db": -4.83,
-   "lufs": -23.3,
-   "l50_db": -15.2,
-   "floor_db": -96.4,
-   "centroid_hz": 5406,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "short",
-    "sharp",
-    "narrow",
-    "bubbles"
-   ],
-   "ear": {
-    "query": "a mouth pop",
-    "p": 0.999,
-    "verdict": "weak",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.25,
-    "action": "appear",
-    "real": 0.96
-   },
-   "heard_as": {
-    "actions": [
-     "appear"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": [
-     "pop"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-784",
-   "source": "mixkit-sfx",
-   "title": "Reverse cinematic impact trailer",
-   "role": "reverse",
-   "page": "https://mixkit.co/free-sound-effects/discover/cinematic/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/784/784.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 10.077,
-   "end_s": 9.98,
-   "onset_ms": 111.1,
-   "lead_ms": 10.3,
-   "peak_ms": 257.6,
-   "peak_db": -0.09,
-   "lufs": -12.1,
-   "l50_db": -6.9,
-   "floor_db": -23.4,
-   "centroid_hz": 2551,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "wide",
-    "cinematic",
-    "movie",
-    "impact",
-    "hit"
-   ],
-   "ear": {
-    "query": "a short dark riser",
-    "p": 0.996,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 3.02,
-    "action": "build",
-    "real": 0.91
-   },
-   "heard_as": {
-    "actions": [
-     "build",
-     "swell"
-    ],
-    "roles": [
-     "swell"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": [
-     "suck",
-     "riser"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-2903",
-   "source": "mixkit-sfx",
-   "title": "Movie whoosh impact presentation",
-   "role": "reverse",
-   "page": "https://mixkit.co/free-sound-effects/whoosh/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2903/2903.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 3.527,
-   "end_s": 3.24,
-   "onset_ms": 50.1,
-   "lead_ms": 44.6,
-   "peak_ms": 1028.3,
-   "peak_db": -0.27,
-   "lufs": -9.4,
-   "l50_db": -7.8,
-   "floor_db": -57.8,
-   "centroid_hz": 1704,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "wide",
-    "movie",
-    "intro",
-    "whoosh"
-   ],
-   "ear": {
-    "query": "a rising whoosh",
-    "p": 0.988,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 3.86,
-    "action": "build",
-    "real": 0.83
-   },
-   "heard_as": {
-    "actions": [
-     "build",
-     "swell"
-    ],
-    "roles": [
-     "suck",
-     "riser",
-     "swell"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-1088",
-   "source": "mixkit-sfx",
-   "title": "Tape rewind cinematic transition",
-   "role": "reverse",
-   "page": "https://mixkit.co/free-sound-effects/discover/rewind/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1088/1088.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 4.389,
-   "end_s": 4.28,
-   "onset_ms": 437.8,
-   "lead_ms": 0,
-   "peak_ms": 1358.7,
-   "peak_db": 0,
-   "lufs": -7.9,
-   "l50_db": -4.8,
-   "floor_db": -35.4,
-   "centroid_hz": 1913,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "wide",
-    "rewind",
-    "movie",
-    "cinematic"
-   ],
-   "ear": {
-    "query": "a reverse swell",
-    "p": 0.995,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 3.39,
-    "action": "swell",
-    "real": 0.57
-   },
-   "heard_as": {
-    "actions": [
-     "build",
-     "swell"
-    ],
-    "roles": [
-     "suck",
-     "swell"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": [
-     "riser"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-1092",
-   "source": "mixkit-sfx",
-   "title": "Fast tape rewind cinematic transition",
-   "role": "reverse",
-   "page": "https://mixkit.co/free-sound-effects/discover/rewind/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1092/1092.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 1.917,
-   "end_s": 1.85,
-   "onset_ms": 197.7,
-   "lead_ms": 6.6,
-   "peak_ms": 410.2,
-   "peak_db": -0.59,
-   "lufs": -10,
-   "l50_db": -7.8,
-   "floor_db": -38.8,
-   "centroid_hz": 3230,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "wide",
-    "tape-machine",
-    "rewind",
-    "tv"
-   ],
-   "ear": {
-    "query": "a reverse swell",
-    "p": 0.993,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 3.66,
-    "action": "swell",
-    "real": 0.72
-   },
-   "heard_as": {
-    "actions": [
-     "swell"
-    ],
-    "roles": [
-     "suck",
-     "swell"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "build"
-    ],
-    "roles": [
-     "riser"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-1094",
-   "source": "mixkit-sfx",
-   "title": "Sci fi rewind woosh",
-   "role": "reverse",
-   "page": "https://mixkit.co/free-sound-effects/discover/rewind/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1094/1094.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 4.557,
-   "end_s": 4.29,
-   "onset_ms": 156.7,
-   "lead_ms": 0,
-   "peak_ms": 2126.3,
-   "peak_db": -0.02,
-   "lufs": -9.7,
-   "l50_db": -6.3,
-   "floor_db": -47.7,
-   "centroid_hz": 4972,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "wide",
-    "woosh",
-    "rewind"
-   ],
-   "ear": {
-    "query": "a reverse swell",
-    "p": 0.525,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 3,
-    "action": "swell",
-    "real": 0.86
-   },
-   "heard_as": {
-    "actions": [
-     "swell"
-    ],
-    "roles": [
-     "swell"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "build"
-    ],
-    "roles": [
-     "suck",
-     "riser"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-2668",
-   "source": "mixkit-sfx",
-   "title": "Simple swell bass",
-   "role": "reverse",
-   "page": "https://mixkit.co/free-sound-effects/swell/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2668/2668.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 11.499,
-   "end_s": 10.31,
-   "onset_ms": 484.1,
-   "lead_ms": 0,
-   "peak_ms": 1959.8,
-   "peak_db": -4.69,
-   "lufs": -11.4,
-   "l50_db": -10.3,
-   "floor_db": -65.3,
-   "centroid_hz": 3690,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "wide",
-    "metal",
-    "spin"
-   ],
-   "ear": {
-    "query": "a short dark riser",
-    "p": 0.986,
-    "verdict": "plausible",
-    "top_alt": "a video game blip",
-    "z": 2.74,
-    "action": "build",
-    "real": 0.49
-   },
-   "heard_as": {
-    "actions": [
-     "build"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "swell"
-    ],
-    "roles": [
-     "suck",
-     "riser",
-     "swell"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-790",
-   "source": "mixkit-sfx",
-   "title": "Cinematic trailer riser",
-   "role": "riser",
-   "page": "https://mixkit.co/free-sound-effects/discover/cinematic/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/790/790.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 2.575,
-   "end_s": 2.56,
-   "onset_ms": 1319.6,
-   "lead_ms": 791.2,
-   "peak_ms": 2449.6,
-   "peak_db": -6.27,
-   "lufs": -21.5,
-   "l50_db": -16.5,
-   "floor_db": -54.6,
-   "centroid_hz": 1231,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "wide",
-    "cinematic",
-    "movie"
-   ],
-   "ear": {
-    "query": "a reversed cymbal",
-    "p": 0.994,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 4.26,
-    "action": "swell",
-    "real": 0.92
-   },
-   "heard_as": {
-    "actions": [
-     "build",
-     "swell"
-    ],
-    "roles": [
-     "riser",
-     "swell"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-645",
-   "source": "mixkit-sfx",
-   "title": "Cinematic synth riser",
-   "role": "riser",
-   "page": "https://mixkit.co/free-sound-effects/discover/riser/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/645/645.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 9.336,
-   "end_s": 9.18,
-   "onset_ms": 100.9,
-   "lead_ms": 0.9,
-   "peak_ms": 6470,
-   "peak_db": -0.95,
-   "lufs": -10.4,
-   "l50_db": -11.3,
-   "floor_db": -34.9,
-   "centroid_hz": 3989,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "wide",
-    "synth"
-   ],
-   "ear": {
-    "query": "a short dark riser",
-    "p": 0.712,
-    "verdict": "weak",
-    "top_alt": "a rising synth whip sweep",
-    "z": 2.41,
-    "action": "build",
-    "real": 0.15
-   },
-   "heard_as": {
-    "actions": [
-     "build"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "swell"
-    ],
-    "roles": [
-     "riser",
-     "swell"
-    ]
    }
   },
   {
@@ -3818,330 +1675,6 @@
     "roles": [
      "snap"
     ]
-   }
-  },
-  {
-   "id": "mixkit-498",
-   "source": "mixkit-sfx",
-   "title": "Deep heartbeat impact",
-   "role": "sub",
-   "page": "https://mixkit.co/free-sound-effects/discover/cinematic/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/498/498.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 3.469,
-   "end_s": 1.94,
-   "onset_ms": 39,
-   "lead_ms": 10.7,
-   "peak_ms": 92.9,
-   "peak_db": -0.73,
-   "lufs": -16.3,
-   "l50_db": -7.1,
-   "floor_db": -74.4,
-   "centroid_hz": 431,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "warm",
-    "long",
-    "soft",
-    "wide",
-    "impact",
-    "hit",
-    "cinematic"
-   ],
-   "ear": {
-    "query": "a deep short sub thud",
-    "p": 0.953,
-    "verdict": "weak",
-    "top_alt": "a rising synth whip sweep",
-    "z": 2.47,
-    "action": "thud",
-    "real": 0.84
-   },
-   "heard_as": {
-    "actions": [
-     "thud"
-    ],
-    "roles": [
-     "drop"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "logo-lock"
-    ],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-2299",
-   "source": "mixkit-sfx",
-   "title": "Short bass hit",
-   "role": "sub",
-   "page": "https://mixkit.co/free-sound-effects/discover/bass/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2299/2299.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 1.1,
-   "end_s": 0.92,
-   "onset_ms": 62.7,
-   "lead_ms": 3.3,
-   "peak_ms": 86.8,
-   "peak_db": -0.3,
-   "lufs": -14.5,
-   "l50_db": -4,
-   "floor_db": -76.5,
-   "centroid_hz": 320,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "dark",
-    "long",
-    "firm",
-    "narrow",
-    "bass",
-    "hit",
-    "drum"
-   ],
-   "ear": {
-    "query": "a deep short sub thud",
-    "p": 0.99,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 3.06,
-    "action": "thud",
-    "real": 0.05
-   },
-   "heard_as": {
-    "actions": [
-     "thud"
-    ],
-    "roles": [
-     "drop"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "logo-lock"
-    ],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-2300",
-   "source": "mixkit-sfx",
-   "title": "Knocking sub bass",
-   "role": "sub",
-   "page": "https://mixkit.co/free-sound-effects/discover/bass/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2300/2300.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 3.005,
-   "end_s": 2.54,
-   "onset_ms": 1067.4,
-   "lead_ms": 810,
-   "peak_ms": 2139.4,
-   "peak_db": -0.3,
-   "lufs": -15.1,
-   "l50_db": -4.3,
-   "floor_db": -55.3,
-   "centroid_hz": 1430,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "narrow",
-    "bass",
-    "hit",
-    "drum"
-   ],
-   "ear": {
-    "query": "a deep short sub thud",
-    "p": 0.985,
-    "verdict": "strong",
-    "top_alt": "a video game blip",
-    "z": 3.3,
-    "action": "thud",
-    "real": 0.05
-   },
-   "heard_as": {
-    "actions": [
-     "thud"
-    ],
-    "roles": [
-     "drop"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "logo-lock"
-    ],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-2301",
-   "source": "mixkit-sfx",
-   "title": "Quick bass switch",
-   "role": "sub",
-   "page": "https://mixkit.co/free-sound-effects/discover/bass/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2301/2301.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 2,
-   "end_s": 1.56,
-   "onset_ms": 134.5,
-   "lead_ms": 0.1,
-   "peak_ms": 165.2,
-   "peak_db": -9.06,
-   "lufs": -24.4,
-   "l50_db": -14.3,
-   "floor_db": -166.1,
-   "centroid_hz": 1416,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "soft",
-    "wide",
-    "bass",
-    "robot",
-    "cinematic"
-   ],
-   "ear": {
-    "query": "a deep short sub thud",
-    "p": 0.992,
-    "verdict": "weak",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.4,
-    "action": "thud",
-    "real": 0.52
-   },
-   "heard_as": {
-    "actions": [
-     "thud"
-    ],
-    "roles": [
-     "drop"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "logo-lock"
-    ],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-556",
-   "source": "mixkit-sfx",
-   "title": "Deep horror drum",
-   "role": "sub",
-   "page": "https://mixkit.co/free-sound-effects/discover/drum/?page=2",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/556/556.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 2.573,
-   "end_s": 2.12,
-   "onset_ms": 32.1,
-   "lead_ms": 0.5,
-   "peak_ms": 88.3,
-   "peak_db": -1,
-   "lufs": -14.5,
-   "l50_db": -9.7,
-   "floor_db": -67.7,
-   "centroid_hz": 169,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "dark",
-    "long",
-    "soft",
-    "narrow",
-    "drum"
-   ],
-   "ear": {
-    "query": "a deep short sub thud",
-    "p": 0.998,
-    "verdict": "weak",
-    "top_alt": "a video game blip",
-    "z": 2.47,
-    "action": "thud",
-    "real": 0.94
-   },
-   "heard_as": {
-    "actions": [
-     "thud"
-    ],
-    "roles": [
-     "drop"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "logo-lock"
-    ],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-565",
-   "source": "mixkit-sfx",
-   "title": "Hard horror hit drum",
-   "role": "sub",
-   "page": "https://mixkit.co/free-sound-effects/discover/drum/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/565/565.wav",
-   "licence": "mixkit-sfx",
-   "align": "onset",
-   "dur_s": 4.143,
-   "end_s": 2.91,
-   "onset_ms": 57,
-   "lead_ms": 0.6,
-   "peak_ms": 63.3,
-   "peak_db": -0.69,
-   "lufs": -17,
-   "l50_db": -10.6,
-   "floor_db": -80,
-   "centroid_hz": 226,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "dark",
-    "long",
-    "sharp",
-    "narrow",
-    "drum",
-    "hit",
-    "cinematic",
-    "heartbeat",
-    "movie",
-    "horror"
-   ],
-   "ear": {
-    "query": "a deep short sub thud",
-    "p": 1,
-    "verdict": "plausible",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.8,
-    "action": "thud",
-    "real": 0.97
-   },
-   "heard_as": {
-    "actions": [
-     "logo-lock",
-     "thud"
-    ],
-    "roles": [
-     "drop"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": []
    }
   },
   {
@@ -4504,332 +2037,6 @@
    }
   },
   {
-   "id": "mixkit-1486",
-   "source": "mixkit-sfx",
-   "title": "Cinematic tunnel reverb woosh",
-   "role": "whoosh.long",
-   "page": "https://mixkit.co/free-sound-effects/swoosh/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1486/1486.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 6.747,
-   "end_s": 6,
-   "onset_ms": 294.6,
-   "lead_ms": 125.1,
-   "peak_ms": 819.4,
-   "peak_db": -1,
-   "lufs": -13.7,
-   "l50_db": -6.7,
-   "floor_db": -67.6,
-   "centroid_hz": 1204,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "wide",
-    "swoosh",
-    "cinematic",
-    "whoosh",
-    "transition"
-   ],
-   "ear": {
-    "query": "a long air whoosh",
-    "p": 0.998,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 4.31,
-    "role": "whoosh.long",
-    "real": 0.64
-   },
-   "heard_as": {
-    "actions": [],
-    "roles": [
-     "whoosh.long"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-2615",
-   "source": "mixkit-sfx",
-   "title": "Mighty mysterious swoosh",
-   "role": "whoosh.long",
-   "page": "https://mixkit.co/free-sound-effects/transition/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2615/2615.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 4.667,
-   "end_s": 3.82,
-   "onset_ms": 666.7,
-   "lead_ms": 337.3,
-   "peak_ms": 2115.5,
-   "peak_db": -0.6,
-   "lufs": -13,
-   "l50_db": -12.6,
-   "floor_db": -82.4,
-   "centroid_hz": 1431,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "wide",
-    "woosh",
-    "wind",
-    "transition"
-   ],
-   "ear": {
-    "query": "a long air whoosh",
-    "p": 0.99,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 5.07,
-    "role": "whoosh.long",
-    "real": 0.66
-   },
-   "heard_as": {
-    "actions": [],
-    "roles": [
-     "whoosh.long"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-1465",
-   "source": "mixkit-sfx",
-   "title": "Vacuum swoosh transition",
-   "role": "whoosh.medium",
-   "page": "https://mixkit.co/free-sound-effects/swoosh/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1465/1465.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 2.257,
-   "end_s": 2.12,
-   "onset_ms": 570.7,
-   "lead_ms": 501.7,
-   "peak_ms": 1553.7,
-   "peak_db": -0.55,
-   "lufs": -15.7,
-   "l50_db": -8.8,
-   "floor_db": -51.3,
-   "centroid_hz": 1089,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "warm",
-    "long",
-    "swell",
-    "wide",
-    "swoosh",
-    "transition"
-   ],
-   "ear": {
-    "query": "a fast air whoosh",
-    "p": 0.992,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 4.73,
-    "action": "whip",
-    "real": 0.96
-   },
-   "heard_as": {
-    "actions": [
-     "whip",
-     "pass"
-    ],
-    "roles": [
-     "whoosh.short",
-     "whoosh.long"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "swipe"
-    ],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-1489",
-   "source": "mixkit-sfx",
-   "title": "Air woosh",
-   "role": "whoosh.medium",
-   "page": "https://mixkit.co/free-sound-effects/whoosh/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1489/1489.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 2.321,
-   "end_s": 1.7,
-   "onset_ms": 426.6,
-   "lead_ms": 336.2,
-   "peak_ms": 714.8,
-   "peak_db": -1.53,
-   "lufs": -18,
-   "l50_db": -9.6,
-   "floor_db": -82.5,
-   "centroid_hz": 2021,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "long",
-    "swell",
-    "narrow",
-    "woosh",
-    "whoosh"
-   ],
-   "ear": {
-    "query": "a fast air whoosh",
-    "p": 0.968,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 5.34,
-    "action": "whip",
-    "real": 0.76
-   },
-   "heard_as": {
-    "actions": [
-     "whip",
-     "pass"
-    ],
-    "roles": [
-     "whoosh.long"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "swipe"
-    ],
-    "roles": [
-     "whoosh.short"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-1492",
-   "source": "mixkit-sfx",
-   "title": "Cinematic whoosh fast transition",
-   "role": "whoosh.medium",
-   "page": "https://mixkit.co/free-sound-effects/discover/cinematic/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1492/1492.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 1.334,
-   "end_s": 1.3,
-   "onset_ms": 547.6,
-   "lead_ms": 546.4,
-   "peak_ms": 1088.1,
-   "peak_db": -0.5,
-   "lufs": -13.1,
-   "l50_db": -11.8,
-   "floor_db": -36.4,
-   "centroid_hz": 4275,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "wide",
-    "cinematic",
-    "whoosh",
-    "transition"
-   ],
-   "ear": {
-    "query": "a fast air whoosh",
-    "p": 0.98,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 3.64,
-    "action": "whip",
-    "real": 0.96
-   },
-   "heard_as": {
-    "actions": [
-     "whip",
-     "pass"
-    ],
-    "roles": [
-     "whoosh.short",
-     "whoosh.long"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "swipe"
-    ],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-3161",
-   "source": "mixkit-sfx",
-   "title": "Transition flying swoosh",
-   "role": "whoosh.medium",
-   "page": "https://mixkit.co/free-sound-effects/swoosh/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/3161/3161.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 2.75,
-   "end_s": 2.36,
-   "onset_ms": 268.5,
-   "lead_ms": 113.9,
-   "peak_ms": 1091,
-   "peak_db": -9.9,
-   "lufs": -23,
-   "l50_db": -19.7,
-   "floor_db": -104.2,
-   "centroid_hz": 6926,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "wide",
-    "misc",
-    "swoosh",
-    "flying",
-    "transition"
-   ],
-   "ear": {
-    "query": "a deep air whoosh",
-    "p": 0.657,
-    "verdict": "plausible",
-    "top_alt": "a rising synth whip sweep",
-    "z": 2.73,
-    "action": "pass",
-    "real": 0.85
-   },
-   "heard_as": {
-    "actions": [
-     "pass"
-    ],
-    "roles": [
-     "whoosh.long"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "swipe",
-     "whip"
-    ],
-    "roles": [
-     "whoosh.short"
-    ]
-   }
-  },
-  {
    "id": "mixkit-1473",
    "source": "mixkit-sfx",
    "title": "Long hit swoosh",
@@ -4989,64 +2196,6 @@
    },
    "not_heard_as": {
     "actions": [
-     "pass",
-     "shape"
-    ],
-    "roles": [
-     "whoosh.short"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-1469",
-   "source": "mixkit-sfx",
-   "title": "Flying fast swoosh",
-   "role": "whoosh.short",
-   "page": "https://mixkit.co/free-sound-effects/discover/cinematic/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1469/1469.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 1.632,
-   "end_s": 1.24,
-   "onset_ms": 345,
-   "lead_ms": 128.2,
-   "peak_ms": 534.8,
-   "peak_db": -0.96,
-   "lufs": -15.9,
-   "l50_db": -13,
-   "floor_db": -166.8,
-   "centroid_hz": 6393,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "long",
-    "swell",
-    "narrow",
-    "swoosh",
-    "cinematic",
-    "flying",
-    "race-car"
-   ],
-   "ear": {
-    "query": "a fast air whoosh",
-    "p": 0.965,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 4.86,
-    "action": "whip",
-    "real": 0.85
-   },
-   "heard_as": {
-    "actions": [
-     "whip"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "swipe",
-     "slide",
      "pass",
      "shape"
     ],
@@ -5283,62 +2432,6 @@
    }
   },
   {
-   "id": "mixkit-3115",
-   "source": "mixkit-sfx",
-   "title": "Fast transitions swoosh",
-   "role": "whoosh.short",
-   "page": "https://mixkit.co/free-sound-effects/swoosh/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/3115/3115.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 0.574,
-   "end_s": 0.32,
-   "onset_ms": 76.1,
-   "lead_ms": 24.6,
-   "peak_ms": 113.5,
-   "peak_db": -3.86,
-   "lufs": -17.7,
-   "l50_db": -15.5,
-   "floor_db": -79.3,
-   "centroid_hz": 7798,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "short",
-    "soft",
-    "wide",
-    "transition",
-    "swoosh"
-   ],
-   "ear": {
-    "query": "a fast air whoosh, a whip pan",
-    "p": 0.787,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 3.67,
-    "action": "whip",
-    "real": 0.99
-   },
-   "heard_as": {
-    "actions": [
-     "whip"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "swipe",
-     "slide",
-     "pass",
-     "shape"
-    ],
-    "roles": [
-     "whoosh.short"
-    ]
-   }
-  },
-  {
    "id": "kenney-interface-switch_001",
    "source": "kenney-cc0",
    "title": "Interface Sounds: switch 001",
@@ -5372,43 +2465,6 @@
     "p": 1,
     "verdict": "strong",
     "top_alt": "a cheap synthesizer laser zap"
-   },
-   "page_kenney": "https://kenney.nl/assets/interface-sounds"
-  },
-  {
-   "id": "kenney-interface-glass_004",
-   "source": "kenney-cc0",
-   "title": "Interface Sounds: glass 004",
-   "role": "glass",
-   "page": "https://opengameart.org/content/interface-sounds",
-   "archive_url": "https://opengameart.org/sites/default/files/kenney_interfaceSounds.zip",
-   "member": "Audio/glass_004.ogg",
-   "licence": "kenney-cc0",
-   "align": "onset",
-   "dur_s": 0.6923,
-   "end_s": 0.6546,
-   "onset_ms": 0,
-   "lead_ms": 0,
-   "peak_ms": 2.5,
-   "peak_db": -1.12,
-   "lufs": -11.5,
-   "l50_db": -8,
-   "floor_db": -52.7,
-   "centroid_hz": 7311,
-   "channels": 1,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "medium",
-    "soft",
-    "chime",
-    "ring"
-   ],
-   "ear": {
-    "query": "a bright glass shimmer chime",
-    "p": 0.973,
-    "verdict": "plausible",
-    "top_alt": "a cheesy comedy sound"
    },
    "page_kenney": "https://kenney.nl/assets/interface-sounds"
   },
@@ -5598,82 +2654,6 @@
    "page_kenney": "https://kenney.nl/assets/rpg-audio"
   },
   {
-   "id": "kenney-interface-drop_002",
-   "source": "kenney-cc0",
-   "title": "Interface Sounds: drop 002",
-   "role": "pop",
-   "page": "https://opengameart.org/content/interface-sounds",
-   "archive_url": "https://opengameart.org/sites/default/files/kenney_interfaceSounds.zip",
-   "member": "Audio/drop_002.ogg",
-   "licence": "kenney-cc0",
-   "align": "onset",
-   "dur_s": 0.1882,
-   "end_s": 0.1882,
-   "onset_ms": 0,
-   "lead_ms": 0,
-   "peak_ms": 2.7,
-   "peak_db": -1.06,
-   "lufs": -20.56,
-   "l50_db": -14,
-   "floor_db": -49.2,
-   "centroid_hz": 902,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "dark",
-    "short",
-    "sharp",
-    "pop",
-    "bubble"
-   ],
-   "ear": {
-    "query": "a bubble pop",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
-   },
-   "page_kenney": "https://kenney.nl/assets/interface-sounds"
-  },
-  {
-   "id": "mixkit-3109-rev",
-   "source": "mixkit-sfx",
-   "title": "Relaxing bell chime (reversed)",
-   "role": "swell",
-   "page": "https://mixkit.co/free-sound-effects/discover/chime/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/3109/3109.wav",
-   "of": "mixkit-3109",
-   "transform": "reverse",
-   "transform_s": 2.2,
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 1.6776,
-   "end_s": 1.6776,
-   "onset_ms": 1214.3,
-   "lead_ms": 788.6,
-   "peak_ms": 1607.2,
-   "peak_db": -6.83,
-   "lufs": -24.7,
-   "l50_db": -16.9,
-   "floor_db": -65.9,
-   "centroid_hz": 5633,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "medium",
-    "soft",
-    "swell",
-    "reversed",
-    "recorded"
-   ],
-   "ear": {
-    "query": "a reverse cymbal swell",
-    "p": 1,
-    "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
-   }
-  },
-  {
    "id": "kenney-interface-tick_001",
    "source": "kenney-cc0",
    "title": "Interface Sounds: tick 001",
@@ -5711,197 +2691,403 @@
    "page_kenney": "https://kenney.nl/assets/interface-sounds"
   },
   {
-   "id": "mixkit-619-rev",
-   "source": "mixkit-sfx",
-   "title": "Cinematic church bell hit (reversed)",
-   "role": "riser",
-   "page": "https://mixkit.co/free-sound-effects/bell/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/619/619.wav",
-   "of": "mixkit-619",
-   "transform": "reverse",
-   "transform_s": 2.2,
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 2.2,
-   "end_s": 2.1974,
-   "onset_ms": 0,
-   "lead_ms": 0,
-   "peak_ms": 1556.2,
-   "peak_db": -0.3,
-   "lufs": -9.4,
-   "l50_db": -9.1,
-   "floor_db": -18.3,
-   "centroid_hz": 471,
+   "id": "kenney-rpg-footstep05",
+   "source": "kenney-cc0",
+   "title": "RPG Audio: footstep05",
+   "role": "impact",
+   "page": "https://opengameart.org/content/50-rpg-sound-effects",
+   "archive_url": "https://opengameart.org/sites/default/files/RPGsounds_Kenney.zip",
+   "member": "OGG/footstep05.ogg",
+   "licence": "kenney-cc0",
+   "align": "onset",
+   "dur_s": 0.2758,
+   "end_s": 0.219,
+   "onset_ms": 16.1,
+   "lead_ms": 14.1,
+   "peak_ms": 20.6,
+   "peak_db": -6.16,
+   "lufs": -27.6,
+   "l50_db": -20.3,
+   "floor_db": -48.4,
+   "centroid_hz": 313,
    "channels": 2,
-   "sr": 44100,
+   "sr": 48000,
+   "tags": [
+    "dark",
+    "short",
+    "soft",
+    "dry",
+    "foley",
+    "impact"
+   ],
+   "ear": {
+    "query": "a single clean low impact",
+    "p": 1,
+    "verdict": "plausible",
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 2.72
+   },
+   "page_kenney": "https://kenney.nl/assets/rpg-audio",
+   "study": {
+    "by": "sound study 2026-11-25 (loudness: RMS of the loudest 400 / 50 ms, unweighted)",
+    "decay_ms": 163,
+    "partial_hz": 0,
+    "stable_ms": 0,
+    "heard": [
+     "a punchy impact hit",
+     "a heavy thud"
+    ],
+    "note": "a muffled low knock: the softest dry low thud (no pitch, 160 ms)"
+   }
+  },
+  {
+   "id": "kenney-rpg-footstep04",
+   "source": "kenney-cc0",
+   "title": "RPG Audio: footstep04",
+   "role": "impact",
+   "page": "https://opengameart.org/content/50-rpg-sound-effects",
+   "archive_url": "https://opengameart.org/sites/default/files/RPGsounds_Kenney.zip",
+   "member": "OGG/footstep04.ogg",
+   "licence": "kenney-cc0",
+   "align": "onset",
+   "dur_s": 0.3228,
+   "end_s": 0.2581,
+   "onset_ms": 30.5,
+   "lead_ms": 28.5,
+   "peak_ms": 109.8,
+   "peak_db": -5.29,
+   "lufs": -25.9,
+   "l50_db": -18.7,
+   "floor_db": -48,
+   "centroid_hz": 399,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "dark",
+    "short",
+    "soft",
+    "dry",
+    "foley",
+    "impact"
+   ],
+   "ear": {
+    "query": "a single clean low impact",
+    "p": 0.997,
+    "verdict": "plausible",
+    "top_alt": "a cheesy comedy sound",
+    "z": 2.53
+   },
+   "page_kenney": "https://kenney.nl/assets/rpg-audio",
+   "study": {
+    "by": "sound study 2026-11-25 (loudness: RMS of the loudest 400 / 50 ms, unweighted)",
+    "decay_ms": 116,
+    "partial_hz": 323,
+    "stable_ms": 35,
+    "heard": [
+     "a punchy impact hit",
+     "footsteps on wood"
+    ],
+    "note": "a muffled low knock, a little brighter"
+   }
+  },
+  {
+   "id": "kenney-rpg-cloth1",
+   "source": "kenney-cc0",
+   "title": "RPG Audio: cloth1",
+   "role": "whoosh.short",
+   "page": "https://opengameart.org/content/50-rpg-sound-effects",
+   "archive_url": "https://opengameart.org/sites/default/files/RPGsounds_Kenney.zip",
+   "member": "OGG/cloth1.ogg",
+   "licence": "kenney-cc0",
+   "align": "peak",
+   "dur_s": 0.661,
+   "end_s": 0.5362,
+   "onset_ms": 104.8,
+   "lead_ms": 102.8,
+   "peak_ms": 130.8,
+   "peak_db": -4.01,
+   "lufs": -24.5,
+   "l50_db": -19.4,
+   "floor_db": -55.1,
+   "centroid_hz": 489,
+   "channels": 2,
+   "sr": 48000,
    "tags": [
     "dark",
     "medium",
     "soft",
-    "riser",
-    "build"
+    "dry",
+    "foley",
+    "whoosh"
    ],
    "ear": {
-    "query": "a cinematic riser building tension",
-    "p": 0.998,
+    "query": "a fast air whoosh",
+    "p": 0.999,
+    "verdict": "strong",
+    "top_alt": "a cartoon sound effect",
+    "z": 3.2
+   },
+   "page_kenney": "https://kenney.nl/assets/rpg-audio",
+   "study": {
+    "by": "sound study 2026-11-25 (loudness: RMS of the loudest 400 / 50 ms, unweighted)",
+    "decay_ms": 337,
+    "partial_hz": 366,
+    "stable_ms": 70,
+    "heard": [
+     "a fast whoosh",
+     "a whip pan transition"
+    ],
+    "note": "a cloth swish: an airy short whoosh"
+   }
+  },
+  {
+   "id": "kenney-rpg-cloth3",
+   "source": "kenney-cc0",
+   "title": "RPG Audio: cloth3",
+   "role": "paper",
+   "page": "https://opengameart.org/content/50-rpg-sound-effects",
+   "archive_url": "https://opengameart.org/sites/default/files/RPGsounds_Kenney.zip",
+   "member": "OGG/cloth3.ogg",
+   "licence": "kenney-cc0",
+   "align": "onset",
+   "dur_s": 0.4766,
+   "end_s": 0.4755,
+   "onset_ms": 52.9,
+   "lead_ms": 50.9,
+   "peak_ms": 169.2,
+   "peak_db": -11.66,
+   "lufs": -29.9,
+   "l50_db": -25.1,
+   "floor_db": -47,
+   "centroid_hz": 156,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "dark",
+    "medium",
+    "soft",
+    "dry",
+    "foley",
+    "paper"
+   ],
+   "ear": {
+    "query": "a card or a sheet landing on a table",
+    "p": 1,
+    "verdict": "strong",
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.02
+   },
+   "page_kenney": "https://kenney.nl/assets/rpg-audio",
+   "study": {
+    "by": "sound study 2026-11-25 (loudness: RMS of the loudest 400 / 50 ms, unweighted)",
+    "decay_ms": 313,
+    "partial_hz": 301,
+    "stable_ms": 12,
+    "heard": [
+     "an apple falling on grass",
+     "a punchy impact hit"
+    ],
+    "note": "a soft cloth landing, very low"
+   }
+  },
+  {
+   "id": "kenney-rpg-handlesmallleather",
+   "source": "kenney-cc0",
+   "title": "RPG Audio: handlesmallleather",
+   "role": "paper",
+   "page": "https://opengameart.org/content/50-rpg-sound-effects",
+   "archive_url": "https://opengameart.org/sites/default/files/RPGsounds_Kenney.zip",
+   "member": "OGG/handleSmallLeather.ogg",
+   "licence": "kenney-cc0",
+   "align": "onset",
+   "dur_s": 0.3382,
+   "end_s": 0.214,
+   "onset_ms": 73.4,
+   "lead_ms": 71.4,
+   "peak_ms": 128.3,
+   "peak_db": -14.63,
+   "lufs": -38.1,
+   "l50_db": -30.3,
+   "floor_db": -70.1,
+   "centroid_hz": 757,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "dark",
+    "short",
+    "soft",
+    "dry",
+    "foley",
+    "paper"
+   ],
+   "ear": {
+    "query": "a card or a sheet landing on a table",
+    "p": 0.999,
     "verdict": "plausible",
-    "top_alt": "a cartoon sound effect"
+    "top_alt": "a cheesy comedy sound",
+    "z": 2.88
+   },
+   "page_kenney": "https://kenney.nl/assets/rpg-audio",
+   "study": {
+    "by": "sound study 2026-11-25 (loudness: RMS of the loudest 400 / 50 ms, unweighted)",
+    "decay_ms": 93,
+    "partial_hz": 431,
+    "stable_ms": 35,
+    "heard": [
+     "a box lid closing",
+     "a quick swipe"
+    ],
+    "note": "a muted leather tap"
    }
   },
   {
-   "id": "mixkit-1842-rev",
-   "source": "mixkit-sfx",
-   "title": "Metal bowl hit (reversed)",
-   "role": "swell",
-   "page": "https://mixkit.co/free-sound-effects/hit/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1842/1842.wav",
-   "of": "mixkit-1842",
-   "transform": "reverse",
-   "transform_s": 2.2,
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 0.946,
-   "end_s": 0.9435,
-   "onset_ms": 855.8,
-   "lead_ms": 273.8,
-   "peak_ms": 938.4,
-   "peak_db": -1.4,
-   "lufs": -33.8,
-   "l50_db": -17.3,
-   "floor_db": -76.9,
-   "centroid_hz": 5006,
-   "channels": 2,
+   "id": "kenney-interface-bong_001",
+   "source": "kenney-cc0",
+   "title": "Interface Sounds: bong 001",
+   "role": "click.soft",
+   "page": "https://opengameart.org/content/interface-sounds",
+   "archive_url": "https://opengameart.org/sites/default/files/kenney_interfaceSounds.zip",
+   "member": "Audio/bong_001.ogg",
+   "licence": "kenney-cc0",
+   "align": "onset",
+   "dur_s": 0.1228,
+   "end_s": 0.1228,
+   "onset_ms": 0.2,
+   "lead_ms": 0,
+   "peak_ms": 1.5,
+   "peak_db": -0.89,
+   "lufs": -16.3,
+   "l50_db": -12.4,
+   "floor_db": -36.1,
+   "centroid_hz": 207,
+   "channels": 1,
    "sr": 44100,
    "tags": [
-    "bright",
-    "medium",
+    "dark",
+    "short",
     "soft",
-    "swell",
-    "reversed",
-    "recorded"
+    "dry",
+    "interface",
+    "click"
    ],
    "ear": {
-    "query": "a reverse cymbal swell",
+    "query": "a soft modern user interface click",
     "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.89
+   },
+   "page_kenney": "https://kenney.nl/assets/interface-sounds",
+   "study": {
+    "by": "sound study 2026-11-25 (loudness: RMS of the loudest 400 / 50 ms, unweighted)",
+    "decay_ms": 128,
+    "partial_hz": 0,
+    "stable_ms": 0,
+    "heard": [
+     "a wooden block hit",
+     "a kick drum"
+    ],
+    "note": "a muted low tap (no stable pitch measured despite the file name)"
    }
   },
   {
-   "id": "mixkit-2983-rev",
-   "source": "mixkit-sfx",
-   "title": "Factory hit with echo (reversed)",
-   "role": "swell",
-   "page": "https://mixkit.co/free-sound-effects/hit/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2983/2983.wav",
-   "of": "mixkit-2983",
-   "transform": "reverse",
-   "transform_s": 2.2,
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 2.0117,
-   "end_s": 2.0087,
-   "onset_ms": 972.9,
-   "lead_ms": 549.7,
-   "peak_ms": 1915.8,
-   "peak_db": -2.01,
-   "lufs": -20.5,
-   "l50_db": -12.8,
-   "floor_db": -64.1,
-   "centroid_hz": 1352,
-   "channels": 2,
+   "id": "kenney-interface-click_001",
+   "source": "kenney-cc0",
+   "title": "Interface Sounds: click 001",
+   "role": "click.soft",
+   "page": "https://opengameart.org/content/interface-sounds",
+   "archive_url": "https://opengameart.org/sites/default/files/kenney_interfaceSounds.zip",
+   "member": "Audio/click_001.ogg",
+   "licence": "kenney-cc0",
+   "align": "onset",
+   "dur_s": 0.1,
+   "end_s": 0.0172,
+   "onset_ms": 0.1,
+   "lead_ms": 0,
+   "peak_ms": 0.9,
+   "peak_db": -1.35,
+   "lufs": -26.5,
+   "l50_db": -23.5,
+   "floor_db": -49.6,
+   "centroid_hz": 1397,
+   "channels": 1,
    "sr": 44100,
    "tags": [
-    "warm",
-    "medium",
+    "mid",
+    "short",
     "soft",
-    "swell",
-    "reversed",
-    "recorded"
+    "dry",
+    "interface",
+    "click"
    ],
    "ear": {
-    "query": "a reverse swell",
+    "query": "a soft modern user interface click",
     "p": 1,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
+    "top_alt": "a cheap synthesizer laser zap",
+    "z": 3.86
+   },
+   "page_kenney": "https://kenney.nl/assets/interface-sounds",
+   "study": {
+    "by": "sound study 2026-11-25 (loudness: RMS of the loudest 400 / 50 ms, unweighted)",
+    "decay_ms": 35,
+    "partial_hz": 0,
+    "stable_ms": 0,
+    "heard": [
+     "a punchy impact hit",
+     "a snare hit"
+    ],
+    "note": "a soft dark click"
    }
   },
   {
-   "id": "mixkit-3139-rev",
-   "source": "mixkit-sfx",
-   "title": "Warehouse metal hit (reversed)",
-   "role": "swell",
-   "page": "https://mixkit.co/free-sound-effects/hit/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/3139/3139.wav",
-   "of": "mixkit-3139",
-   "transform": "reverse",
-   "transform_s": 2.2,
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 2.2,
-   "end_s": 2.1976,
-   "onset_ms": 1878,
-   "lead_ms": 673.9,
-   "peak_ms": 2054.1,
-   "peak_db": -2.45,
-   "lufs": -19,
-   "l50_db": -16.2,
-   "floor_db": -79.6,
-   "centroid_hz": 11067,
-   "channels": 2,
+   "id": "kenney-interface-click_003",
+   "source": "kenney-cc0",
+   "title": "Interface Sounds: click 003",
+   "role": "click.soft",
+   "page": "https://opengameart.org/content/interface-sounds",
+   "archive_url": "https://opengameart.org/sites/default/files/kenney_interfaceSounds.zip",
+   "member": "Audio/click_003.ogg",
+   "licence": "kenney-cc0",
+   "align": "onset",
+   "dur_s": 0.01,
+   "end_s": 0.01,
+   "onset_ms": 0,
+   "lead_ms": 0,
+   "peak_ms": 0.1,
+   "peak_db": -1.36,
+   "lufs": -16,
+   "l50_db": -16,
+   "floor_db": -16,
+   "centroid_hz": 2140,
+   "channels": 1,
    "sr": 44100,
    "tags": [
-    "bright",
-    "medium",
+    "mid",
+    "short",
     "soft",
-    "swell",
-    "reversed",
-    "recorded"
+    "dry",
+    "interface",
+    "click"
    ],
    "ear": {
-    "query": "a reverse cymbal swell",
-    "p": 1,
+    "query": "a soft modern user interface click",
+    "p": 0.96,
     "verdict": "strong",
-    "top_alt": "a cheap synthesizer laser zap"
-   }
-  },
-  {
-   "id": "mixkit-586-rev",
-   "source": "mixkit-sfx",
-   "title": "Attention bell ding (reversed)",
-   "role": "swell",
-   "page": "https://mixkit.co/free-sound-effects/bell/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/586/586.wav",
-   "of": "mixkit-586",
-   "transform": "reverse",
-   "transform_s": 2.2,
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 1.5196,
-   "end_s": 1.5196,
-   "onset_ms": 1078.6,
-   "lead_ms": 391.4,
-   "peak_ms": 1513.5,
-   "peak_db": -1.26,
-   "lufs": -16.8,
-   "l50_db": -11.5,
-   "floor_db": -96.9,
-   "centroid_hz": 5036,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "medium",
-    "soft",
-    "swell",
-    "reversed",
-    "recorded"
-   ],
-   "ear": {
-    "query": "a reverse cymbal swell",
-    "p": 0.998,
-    "verdict": "strong",
-    "top_alt": "a cheesy comedy sound"
+    "top_alt": "a video game blip",
+    "z": 3.18
+   },
+   "page_kenney": "https://kenney.nl/assets/interface-sounds",
+   "study": {
+    "by": "sound study 2026-11-25 (loudness: RMS of the loudest 400 / 50 ms, unweighted)",
+    "decay_ms": 35,
+    "partial_hz": 0,
+    "stable_ms": 0,
+    "heard": [
+     "a cheap synthesized beep",
+     "an error buzz"
+    ],
+    "note": "a short dry click"
    }
   }
  ],
@@ -6275,6 +3461,323 @@
    "id": "mixkit-3108",
    "role": "glass",
    "why": "earshot 0.4.1 did not hear its take as chime (z 0.98, p 0.689), success (z 1.15, p 0.264)"
+  },
+  {
+   "id": "mixkit-275",
+   "role": "click.hard",
+   "why": "sound study 2026-11-25: named by the owner: \"the mouse click a little sloppy\" (a double click under a single press)"
+  },
+  {
+   "id": "mixkit-1120",
+   "role": "click.soft",
+   "why": "sound study 2026-11-25: heard as a bell, chime or tone (earshot 0.70)"
+  },
+  {
+   "id": "mixkit-2568",
+   "role": "click.soft",
+   "why": "sound study 2026-11-25: named or tagged \"tone\"; heard as a bell, chime or tone (earshot 0.97)"
+  },
+  {
+   "id": "mixkit-2577",
+   "role": "click.soft",
+   "why": "sound study 2026-11-25: heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-3109",
+   "role": "glass",
+   "why": "sound study 2026-11-25: named by the owner: \"bell sfx at the end, so unnecessary\" (a test film, 18.76 s); named or tagged \"bell\"; pitched and ringing (a stable 2950 Hz partial for 290 ms, 917 ms to -30 dB); bright and long (centroid 3493 Hz, 917 ms to -30 dB); a cinematic or trailer sound (\"church\"); a long tail (917 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-154",
+   "role": "glass",
+   "why": "sound study 2026-11-25: named or tagged \"glasses\"; heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2150",
+   "role": "impact",
+   "why": "sound study 2026-11-25: heard as a big cinematic boom (earshot 0.93)"
+  },
+  {
+   "id": "mixkit-544",
+   "role": "impact",
+   "why": "sound study 2026-11-25: a long tail (2067 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a big cinematic boom (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-557",
+   "role": "impact",
+   "why": "sound study 2026-11-25: a cinematic or trailer sound (\"horror\"); a long tail (987 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a big cinematic boom (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-562",
+   "role": "impact",
+   "why": "sound study 2026-11-25: pitched (a stable 301 Hz partial for 116 ms, 441 ms to -30 dB); a cinematic or trailer sound (\"tribal\"); heard as a bell, chime or tone (earshot 0.53)"
+  },
+  {
+   "id": "mixkit-773",
+   "role": "impact",
+   "why": "sound study 2026-11-25: pitched and ringing (a stable 581 Hz partial for 128 ms, 1614 ms to -30 dB); a cinematic or trailer sound (\"horror\"); a long tail (1614 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a big cinematic boom (earshot 0.95)"
+  },
+  {
+   "id": "mixkit-2187",
+   "role": "impact",
+   "why": "sound study 2026-11-25: pitched and ringing (a stable 517 Hz partial for 139 ms, 2438 ms to -30 dB); a cinematic or trailer sound (\"explosion\"); a long tail (2438 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a big cinematic boom (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2294",
+   "role": "impact",
+   "why": "sound study 2026-11-25: a long tail (1080 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a big cinematic boom (earshot 0.98)"
+  },
+  {
+   "id": "mixkit-2908",
+   "role": "lockup",
+   "why": "sound study 2026-11-25: a cinematic or trailer sound (\"movie\"); a long tail (1916 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a big cinematic boom (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2909",
+   "role": "lockup",
+   "why": "sound study 2026-11-25: a cinematic or trailer sound (\"movie\"); a long tail (2392 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a big cinematic boom (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-1107",
+   "role": "note",
+   "why": "sound study 2026-11-25: named or tagged \"chime\"; pitched and ringing (a stable 883 Hz partial for 290 ms, 441 ms to -30 dB); heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2323",
+   "role": "note",
+   "why": "sound study 2026-11-25: named or tagged \"guitar\"; heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2325",
+   "role": "note",
+   "why": "sound study 2026-11-25: named or tagged \"guitar\"; pitched and ringing (a stable 861 Hz partial for 232 ms, 406 ms to -30 dB); heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2326",
+   "role": "note",
+   "why": "sound study 2026-11-25: named or tagged \"guitar\"; pitched and ringing (a stable 754 Hz partial for 360 ms, 499 ms to -30 dB); heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2327",
+   "role": "note",
+   "why": "sound study 2026-11-25: named or tagged \"guitar\"; pitched and ringing (a stable 2003 Hz partial for 255 ms, 569 ms to -30 dB); heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2863",
+   "role": "notification",
+   "why": "sound study 2026-11-25: named or tagged \"tone\"; pitched (a stable 431 Hz partial for 290 ms, 627 ms to -30 dB); heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2866",
+   "role": "notification",
+   "why": "sound study 2026-11-25: named or tagged \"tone\"; pitched and ringing (a stable 2089 Hz partial for 197 ms, 232 ms to -30 dB); heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2867",
+   "role": "notification",
+   "why": "sound study 2026-11-25: named by the owner twice: \"the coin sound, one of the worst\" (brief 8.33 s) and \"never use this one again\" (inkwell 1.93 s); named or tagged \"tone\"; pitched and ringing (a stable 2089 Hz partial for 197 ms, 221 ms to -30 dB); heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2574",
+   "role": "notification",
+   "why": "sound study 2026-11-25: named or tagged \"notification\"; pitched and ringing (a stable 775 Hz partial for 174 ms, 882 ms to -30 dB); a long tail (882 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2861",
+   "role": "notification",
+   "why": "sound study 2026-11-25: named or tagged \"tones\"; pitched and ringing (a stable 689 Hz partial for 464 ms, 1115 ms to -30 dB); a long tail (1115 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2575",
+   "role": "notification",
+   "why": "sound study 2026-11-25: named or tagged \"notification\"; pitched and ringing (a stable 517 Hz partial for 186 ms, 685 ms to -30 dB); heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2380",
+   "role": "paper",
+   "why": "sound study 2026-11-25: bright and long (centroid 6451 Hz, 441 ms to -30 dB)"
+  },
+  {
+   "id": "mixkit-2386",
+   "role": "paper",
+   "why": "sound study 2026-11-25: bright and long (centroid 4886 Hz, 1242 ms to -30 dB); a long tail (1242 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms)"
+  },
+  {
+   "id": "mixkit-3000",
+   "role": "pop",
+   "why": "sound study 2026-11-25: a pitched liquid bloop (a stable 409 Hz partial, 280 ms): on the ending the owner called out (fieldnote 13.66 s); named or tagged \"bubble\"; pitched (a stable 409 Hz partial for 116 ms, 279 ms to -30 dB); heard as a bell, chime or tone (earshot 0.82)"
+  },
+  {
+   "id": "mixkit-3192",
+   "role": "pop",
+   "why": "sound study 2026-11-25: named or tagged \"bubble\"; heard as a bell, chime or tone (earshot 0.83)"
+  },
+  {
+   "id": "mixkit-784",
+   "role": "reverse",
+   "why": "sound study 2026-11-25: named by the owner: \"too harsh, not modern\" (brief 3.03 s), \"exaggerated\" at the ending (brief 12.73 s) and in forge (4.70 s); pitched (a stable 388 Hz partial for 337 ms, 2171 ms to -30 dB); a cinematic or trailer sound (\"cinematic\"); a long tail (2171 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a big cinematic boom (earshot 0.95)"
+  },
+  {
+   "id": "mixkit-2903",
+   "role": "reverse",
+   "why": "sound study 2026-11-25: a cinematic or trailer sound (\"movie\"); a long tail (1869 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a big cinematic boom (earshot 0.98)"
+  },
+  {
+   "id": "mixkit-1088",
+   "role": "reverse",
+   "why": "sound study 2026-11-25: pitched (a stable 732 Hz partial for 116 ms, 1927 ms to -30 dB); a cinematic or trailer sound (\"rewind\"); a long tail (1927 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms)"
+  },
+  {
+   "id": "mixkit-1092",
+   "role": "reverse",
+   "why": "sound study 2026-11-25: a cinematic or trailer sound (\"rewind\"); a long tail (1428 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms)"
+  },
+  {
+   "id": "mixkit-1094",
+   "role": "reverse",
+   "why": "sound study 2026-11-25: a cinematic or trailer sound (\"sci fi\"); a long tail (1939 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms)"
+  },
+  {
+   "id": "mixkit-2668",
+   "role": "reverse",
+   "why": "sound study 2026-11-25: a long tail (1962 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a big cinematic boom (earshot 0.74)"
+  },
+  {
+   "id": "mixkit-790",
+   "role": "riser",
+   "why": "sound study 2026-11-25: a cinematic or trailer sound (\"cinematic\"); heard as a big cinematic boom (earshot 0.74)"
+  },
+  {
+   "id": "mixkit-645",
+   "role": "riser",
+   "why": "sound study 2026-11-25: pitched and ringing (a stable 517 Hz partial for 186 ms, 2159 ms to -30 dB); a cinematic or trailer sound (\"cinematic\"); a long tail (2159 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms)"
+  },
+  {
+   "id": "mixkit-498",
+   "role": "sub",
+   "why": "sound study 2026-11-25: a cinematic or trailer sound (\"heartbeat\"); a long tail (1033 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a big cinematic boom (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2299",
+   "role": "sub",
+   "why": "sound study 2026-11-25: named by the owner in four notes (a main hit, a colour cut and two endings: \"not professional\", \"exaggerated\"): a boomy sub with a 0.4 s tail; heard as a big cinematic boom (earshot 0.99)"
+  },
+  {
+   "id": "mixkit-2300",
+   "role": "sub",
+   "why": "sound study 2026-11-25: a long tail (906 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a big cinematic boom (earshot 0.96)"
+  },
+  {
+   "id": "mixkit-2301",
+   "role": "sub",
+   "why": "sound study 2026-11-25: a cinematic or trailer sound (\"cinematic\"); heard as a big cinematic boom (earshot 0.76)"
+  },
+  {
+   "id": "mixkit-556",
+   "role": "sub",
+   "why": "sound study 2026-11-25: a cinematic or trailer sound (\"horror\"); heard as a big cinematic boom (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-565",
+   "role": "sub",
+   "why": "sound study 2026-11-25: a cinematic or trailer sound (\"horror\"); a long tail (964 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a big cinematic boom (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-1486",
+   "role": "whoosh.long",
+   "why": "sound study 2026-11-25: a cinematic or trailer sound (\"cinematic\"); a long tail (2241 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a big cinematic boom (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-2615",
+   "role": "whoosh.long",
+   "why": "sound study 2026-11-25: pitched (a stable 431 Hz partial for 116 ms, 1974 ms to -30 dB); a cinematic or trailer sound (\"mighty\"); a long tail (1974 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms)"
+  },
+  {
+   "id": "mixkit-1465",
+   "role": "whoosh.medium",
+   "why": "sound study 2026-11-25: pitched (a stable 388 Hz partial for 197 ms, 882 ms to -30 dB); a cinematic or trailer sound (\"vacuum\"); a long tail (882 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms)"
+  },
+  {
+   "id": "mixkit-1489",
+   "role": "whoosh.medium",
+   "why": "sound study 2026-11-25: a long swelling whoosh (rise 290 ms, tail 499 ms)"
+  },
+  {
+   "id": "mixkit-1492",
+   "role": "whoosh.medium",
+   "why": "sound study 2026-11-25: named by the owner with mixkit-784 (forge 4.70 s, \"exaggerated, not professional\"): a cinematic swell, 0.56 s rise; a cinematic or trailer sound (\"cinematic\"); a long swelling whoosh (rise 557 ms, tail 163 ms); heard as a big cinematic boom (earshot 0.94)"
+  },
+  {
+   "id": "mixkit-3161",
+   "role": "whoosh.medium",
+   "why": "sound study 2026-11-25: a long tail (1173 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a bell, chime or tone (earshot 0.52)"
+  },
+  {
+   "id": "mixkit-1469",
+   "role": "whoosh.short",
+   "why": "sound study 2026-11-25: a cinematic or trailer sound (\"cinematic\"); a long swelling whoosh (rise 209 ms, tail 488 ms)"
+  },
+  {
+   "id": "mixkit-3115",
+   "role": "whoosh.short",
+   "why": "sound study 2026-11-25: heard as a bell, chime or tone (earshot 0.99)"
+  },
+  {
+   "id": "kenney-interface-glass_004",
+   "role": "glass",
+   "why": "sound study 2026-11-25: named or tagged \"glass\"; pitched and ringing (a stable 7343 Hz partial for 325 ms, 360 ms to -30 dB); heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "kenney-interface-drop_002",
+   "role": "pop",
+   "why": "sound study 2026-11-25: named or tagged \"bubble\"; heard as a bell, chime or tone (earshot 0.87)"
+  },
+  {
+   "id": "mixkit-3109-rev",
+   "role": "swell",
+   "why": "sound study 2026-11-25: named or tagged \"bell\"; heard as a bell, chime or tone (earshot 1.00)"
+  },
+  {
+   "id": "mixkit-619-rev",
+   "role": "riser",
+   "why": "sound study 2026-11-25: named or tagged \"bell\"; pitched (a stable 366 Hz partial for 592 ms, 1556 ms to -30 dB); a cinematic or trailer sound (\"cinematic\"); a long tail (1556 ms to -30 dB; the dry events measured on top launch films die in 60-180 ms); heard as a bell, chime or tone (earshot 0.70)"
+  },
+  {
+   "id": "mixkit-1842-rev",
+   "role": "swell",
+   "why": "sound study 2026-11-25: named or tagged \"bowl\"; heard as a bell, chime or tone (earshot 0.98)"
+  },
+  {
+   "id": "mixkit-2983-rev",
+   "role": "swell",
+   "why": "sound study 2026-11-25: a cinematic or trailer sound (\"factory\"); heard as a big cinematic boom (earshot 0.90)"
+  },
+  {
+   "id": "mixkit-3139-rev",
+   "role": "swell",
+   "why": "sound study 2026-11-25: a cinematic or trailer sound (\"warehouse\"); heard as a big cinematic boom (earshot 0.89)"
+  },
+  {
+   "id": "mixkit-586-rev",
+   "role": "swell",
+   "why": "sound study 2026-11-25: named or tagged \"bell\"; heard as a bell, chime or tone (earshot 0.98)"
   }
- ]
+ ],
+ "palette": {
+  "rule": "A modern, clean palette: short dry events only. No bells, chimes, glass, coins, notification tones, jingles, bubbles, swells, risers or trailer hits; the ending carries music only.",
+  "measured_on": "top launch films (40 with sound), 2026-11-25",
+  "dry_event_decay_ms": [
+   60,
+   180
+  ],
+  "effect_over_bed_db": {
+   "typical": [
+    4,
+    10
+   ],
+   "loudest_once": 14
+  },
+  "pitched_ringing_effects": "none found by hand among the flagged moments",
+  "kinds_left_empty": "glass, note, notification, pop, reverse, riser, swell, sub, lockup (their sounds are in rejected, with the measure that failed)"
+ }
 }

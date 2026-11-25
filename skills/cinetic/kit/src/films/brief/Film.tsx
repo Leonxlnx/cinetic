@@ -972,42 +972,36 @@ const burstKey = keyTimes[keyTimes.length - 1];
 export const BriefFilm: React.FC = () => {
   const f = useCurrentFrame();
   const s = sfx;
+  // Sound (study 2026-11-25): dry, soft and few. No chimes, tones, bubbles, swells or booms; the ending is music only.
   const cues = [
-    ...TOAST_F.map((x, i) => ({ at: Math.max(0, x), ...s['mixkit-3000'], volume: i < 5 ? 0.5 : 0.26, rate: 0.94 + (i % 4) * 0.05 })),
-    { at: T.recede + 2, ...s['mixkit-168'], volume: 0.35 },
-    ...T.words.map((w) => ({ at: w, ...s['mixkit-2384'], volume: 0.28 })),
-    { at: T.stop, ...s['mixkit-2568'], volume: 0.5 },
-    { at: HIT, ...s['mixkit-784'], volume: 0.5, maxS: 1.2 },
-    { at: HIT, ...s['mixkit-2299'], volume: 0.85 },
+    // the pile: a soft tap on every other toast, quieter as they crowd
+    ...TOAST_F.filter((_, i) => i % 2 === 0).map((x, i) => ({ at: Math.max(0, x), ...s['kenney-interface-click_001'], volume: i < 3 ? 0.45 : 0.28, rate: 0.94 + (i % 4) * 0.05 })),
+    { at: T.recede + 2, ...s['mixkit-168'], volume: 0.25 },
+    ...T.words.map((w) => ({ at: w, ...s['mixkit-2384'], volume: 0.22 })),
+    { at: T.stop, ...s['kenney-interface-click_001'], volume: 0.45 },
+    // the main hit: one soft low knock; the music coming back after its breath carries the rest
+    { at: HIT, ...s['kenney-rpg-footstep05'], volume: 0.8 },
     // one key sound per typed key, one for the rest landing at once
-    ...keyTimes.filter((k, i) => i === 0 || k !== keyTimes[i - 1]).map((k, i) => ({ at: k, ...s['mixkit-2533'], volume: k === burstKey ? 0.34 : 0.22, rate: 0.92 + rand(i * 1.7) * 0.18 })),
-    { at: T.send, ...s['mixkit-2568'], volume: 0.6 },
-    { at: T.wall + 4, ...s['mixkit-175'], volume: 0.4 },
-    // the reading front: a soft tick every few rows, closer as it speeds up, a brighter click as each of the four lights
-    ...[0, 2, 4, 7, 10, 14, 19, 25, 31, 38].map((r, k) => ({ at: Math.round(readF(r)), ...s['mixkit-2384'], volume: 0.14 + 0.012 * k, rate: 0.9 + k * 0.03 })),
-    ...CH_IDX.map((i) => ({ at: Math.round(readF(i)), ...s['mixkit-3124'], volume: 0.34 })),
-    { at: T.title, ...s['mixkit-2299'], volume: 0.5 },
-    { at: T.title, ...s['mixkit-2568'], volume: 0.4 },
-    { at: T.land, ...s['mixkit-3124'], volume: 0.4 },
-    { at: T.click, ...s['mixkit-2568'], volume: 0.45 },
-    { at: T.approve, ...s['mixkit-2568'], volume: 0.55 },
-    { at: T.approve + 2, ...s['mixkit-2867'], volume: 0.45 },
-    // the run of velocity cuts: air into each cut, a low hit under the ground cut, a click as each state lands
-    { at: T.cuts[0], ...s['mixkit-168'], volume: 0.4 },
-    { at: T.cuts[0], ...s['mixkit-2299'], volume: 0.6 },
-    { at: T.cuts[0] + 6, ...s['mixkit-3124'], volume: 0.36 },
-    { at: T.cuts[1], ...s['mixkit-175'], volume: 0.36 },
-    { at: T.cuts[1] + 6, ...s['mixkit-2568'], volume: 0.34 },
-    { at: T.cuts[2], ...s['mixkit-1492'], volume: 0.34 },
-    { at: T.dock, ...s['mixkit-3124'], volume: 0.42 },
+    ...keyTimes.filter((k, i) => i === 0 || k !== keyTimes[i - 1]).map((k, i) => ({ at: k, ...s['mixkit-2533'], volume: k === burstKey ? 0.26 : 0.18, rate: 0.92 + rand(i * 1.7) * 0.18 })),
+    { at: T.send, ...s['kenney-interface-click_001'], volume: 0.45 },
+    { at: T.wall + 4, ...s['mixkit-175'], volume: 0.28 },
+    // the reading front is silent; a dry click as each of the four that need you lights
+    ...CH_IDX.map((i) => ({ at: Math.round(readF(i)), ...s['mixkit-3124'], volume: 0.3 })),
+    { at: T.title, ...s['kenney-rpg-footstep04'], volume: 0.45 },
+    { at: T.land, ...s['mixkit-3124'], volume: 0.36 },
+    { at: T.click, ...s['kenney-interface-click_001'], volume: 0.5 },
+    { at: T.approve, ...s['kenney-interface-click_001'], volume: 0.55 },
+    // the run of velocity cuts: air into each cut, a soft knock under the ground cut, a click as each state lands
+    { at: T.cuts[0], ...s['mixkit-168'], volume: 0.3 },
+    { at: T.cuts[0], ...s['kenney-rpg-footstep05'], volume: 0.6 },
+    { at: T.cuts[0] + 6, ...s['mixkit-3124'], volume: 0.3 },
+    { at: T.cuts[1], ...s['mixkit-175'], volume: 0.28 },
+    { at: T.cuts[1] + 6, ...s['kenney-interface-click_001'], volume: 0.35 },
+    { at: T.cuts[2], ...s['kenney-rpg-cloth1'], volume: 0.5 },
+    { at: T.dock, ...s['mixkit-3124'], volume: 0.36 },
     // the four hours clearing: paper slices, rising
-    ...T.clears.map((c, i) => ({ at: c, ...s['mixkit-2384'], volume: 0.24, rate: 0.95 + i * 0.06 })),
-    { at: T.dive + 4, ...s['mixkit-168'], volume: 0.32 },
-    { at: T.proofIn, ...s['mixkit-2299'], volume: 0.7 },
-    { at: T.stop2, ...s['mixkit-3000'], volume: 0.36 },
-    { at: T.mark, ...s['mixkit-784'], volume: 0.45, maxS: 1.2 },
-    { at: T.mark, ...s['mixkit-2299'], volume: 0.8 },
-    { at: T.swap, ...s['mixkit-175'], volume: 0.28 },
+    ...T.clears.map((c, i) => ({ at: c, ...s['mixkit-2384'], volume: 0.2, rate: 0.95 + i * 0.06 })),
+    { at: T.dive + 4, ...s['mixkit-168'], volume: 0.25 },
   ];
   return (
     <AbsoluteFill style={{ background: GROUND }}>

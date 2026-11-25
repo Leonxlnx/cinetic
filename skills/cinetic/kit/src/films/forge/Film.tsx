@@ -570,37 +570,33 @@ const LockType: React.FC = () => {
 export const ForgeFilm: React.FC = () => {
   const f = useCurrentFrame();
   const s = sfx;
+  // Sound (study 2026-11-25): dry, soft and few. No chimes, tones, swells or booms; the ending is music only.
   const cues = [
-    { at: T.land, ...s['mixkit-2299'], volume: 0.9 },
-    ...T.one.map((t) => ({ at: t, ...s['mixkit-2533'], volume: 0.3 })),
-    ...CHORES.filter((_, i) => i % 2 === 0).map((b, i) => ({ at: b.f + 2, ...s['mixkit-2568'], volume: 0.2, rate: 0.88 + (i % 5) * 0.06 })),
-    { at: T.sink + 4, ...s['mixkit-175'], volume: 0.35 },
-    { at: T.term - 8, ...s['mixkit-1492'], volume: 0.45 },
-    { at: T.term, ...s['mixkit-784'], volume: 0.4, maxS: 1 },
+    // the main hit: the bed enters with one soft low knock
+    { at: T.land, ...s['kenney-rpg-footstep05'], volume: 0.9 },
+    ...T.one.map((t) => ({ at: t, ...s['mixkit-2533'], volume: 0.26 })),
+    ...CHORES.filter((_, i) => i % 4 === 0).map((b, i) => ({ at: b.f + 2, ...s['kenney-interface-tick_001'], volume: 0.18, rate: 0.9 + (i % 5) * 0.05 })),
+    { at: T.sink + 4, ...s['mixkit-175'], volume: 0.3 },
+    // into the face: a soft cloth swish, nothing cinematic
+    { at: T.term, ...s['kenney-rpg-cloth1'], volume: 0.3 },
     // one tick per typed key (every other one), and one firmer tick when the model name lands in its burst
-    ...[...new Set(KEYS)].filter((_, i) => i % 2 === 0).map((k, i) => ({ at: k, ...s['mixkit-2533'], volume: 0.22, rate: 0.92 + (i % 4) * 0.05 })),
-    { at: KEYS[KEYS.length - 1], ...s['mixkit-2533'], volume: 0.34, rate: 0.85 },
-    { at: T.enter, ...s['mixkit-2299'], volume: 0.7 },
-    { at: T.enter, ...s['mixkit-3124'], volume: 0.45 },
-    ...T.outs.map((o) => ({ at: o + 10, ...s['mixkit-1049'], volume: 0.32 })),
-    { at: T.url, ...s['mixkit-2384'], volume: 0.3 },
+    ...[...new Set(KEYS)].filter((_, i) => i % 2 === 0).map((k, i) => ({ at: k, ...s['mixkit-2533'], volume: 0.2, rate: 0.92 + (i % 4) * 0.05 })),
+    { at: KEYS[KEYS.length - 1], ...s['mixkit-2533'], volume: 0.26, rate: 0.85 },
+    { at: T.enter, ...s['mixkit-3124'], volume: 0.42 },
+    ...T.outs.filter((_, i) => i % 2 === 0).map((o) => ({ at: o + 10, ...s['kenney-interface-tick_001'], volume: 0.24 })),
+    { at: T.url, ...s['mixkit-2384'], volume: 0.25 },
     // the back half: out of the face, the block lights, the chain of replicas, the dive, the drain, the zero
-    { at: T.out + 4, ...s['mixkit-175'], volume: 0.42 },
-    { at: T.live, ...s['mixkit-2299'], volume: 0.62 },
-    { at: T.live, ...s['mixkit-3124'], volume: 0.4 },
-    // a tick per replica (every other one at the fast end), rising in pitch; one low hit on the last
-    ...REPS.filter((_, i) => i < 9 || i % 2 === 0).map((r, i) => ({ at: r.f + 7, ...s['mixkit-2568'], volume: 0.12, rate: 0.9 + i * 0.035 })),
-    { at: CHAIN_END + 7, ...s['mixkit-2299'], volume: 0.5 },
-    { at: T.dive2 + 2, ...s['mixkit-168'], volume: 0.4 },
-    { at: T.macro, ...s['mixkit-2299'], volume: 0.55 },
-    { at: T.drain, ...s['mixkit-784'], volume: 0.32, maxS: 1 },
-    ...[0, 4, 8, 12].map((k) => ({ at: T.drain + 2 + k, ...s['mixkit-1049'], volume: 0.2, rate: 1.1 - k * 0.02 })),
-    { at: T.back + 2, ...s['mixkit-175'], volume: 0.32 },
-    ...T.zero.map((t) => ({ at: t, ...s['mixkit-2533'], volume: 0.3 })),
-    { at: T.lock, ...s['mixkit-2299'], volume: 0.9 },
-    // each cube of the F lands and lights
-    ...SPLIT_AT.filter((_, i) => i % 2 === 1).map((t, i) => ({ at: t + SPLIT_DUR, ...s['mixkit-2568'], volume: 0.16, rate: 1 + i * 0.05 })),
-    { at: T.lock + 25, ...s['mixkit-3124'], volume: 0.35 },
+    { at: T.out + 4, ...s['mixkit-175'], volume: 0.3 },
+    { at: T.live, ...s['kenney-rpg-footstep05'], volume: 0.6 },
+    // a tick on every third replica, rising in pitch; one soft knock on the last
+    ...REPS.filter((_, i) => i % 3 === 0).map((r, i) => ({ at: r.f + 7, ...s['kenney-interface-tick_001'], volume: 0.14, rate: 0.9 + i * 0.05 })),
+    { at: CHAIN_END + 7, ...s['kenney-rpg-footstep04'], volume: 0.45 },
+    { at: T.dive2 + 2, ...s['mixkit-168'], volume: 0.3 },
+    { at: T.macro, ...s['kenney-rpg-footstep05'], volume: 0.5 },
+    ...[0, 8].map((k) => ({ at: T.drain + 2 + k, ...s['kenney-interface-tick_001'], volume: 0.18, rate: 1.05 - k * 0.02 })),
+    { at: T.back + 2, ...s['mixkit-175'], volume: 0.28 },
+    ...T.zero.map((t) => ({ at: t, ...s['mixkit-2533'], volume: 0.26 })),
+    // the block unfolding into the mark: the music alone
   ];
   return (
     <AbsoluteFill style={{ background: GROUND }}>

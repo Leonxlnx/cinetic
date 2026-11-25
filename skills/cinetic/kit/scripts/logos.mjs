@@ -7,14 +7,16 @@
  * finds the official marks in open collections whose terms allow use, keeps the brand's own colours and
  * proportions, writes the variants a film needs into <film>/public/logos/ and keeps a record of each one
  * (source, licence, trademark owner) in <film>/public/logos/logos.json, and an index for the code in <film>/src/logos.ts.
- * Show a mark with the kit: <Brand name="slug" file="logos/slug.svg" />.
+ * Show a mark with the kit: <Brand name="slug" /> draws the fetched full-colour file by default (the kit ships the
+ * marks films show most in its own public/logos, listed in public/logos/CREDITS.md).
  *
  *   node scripts/logos.mjs search <name> [--source all|gilbarbara,svgl,simple-icons,commons] [--limit 8] [--json]
- *   node scripts/logos.mjs get <name|#n|collection:id> [--variant all|mark|wordmark|mono] [--film .]
+ *   node scripts/logos.mjs get <name...|#n|collection:id> [--variant all|mark|wordmark|mono] [--film .]
  *        [--source <collection>] [--as <slug>] [--name "Shown name"] [--owner "Trademark owner"]
  *        [--tile own|none] [--allow-credit] [--refresh] [--file <brand's own svg>] [--allow-outdated]
  *   node scripts/logos.mjs list [--film .] [--json] [--write]
  *   node scripts/logos.mjs check [<film>] [--json]
+ *   node scripts/logos.mjs verify [<film>] [--json]   the marks the film's code shows that are still one-colour fallbacks
  *
  * The newest mark, never a retired one: brands redraw their marks (the 2026 Workspace icons, the 2025 Microsoft 365
  * icons, the gradient G, the X for the bird) and the collections lag or keep the old file under the brand's name.
@@ -69,6 +71,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
 import { commonsLicence } from './assets.mjs';
 
 export const UA = 'cinetic-logos/1.2 (official marks for films; +https://github.com/Leonxlnx/cinetic)';
@@ -640,6 +643,8 @@ export function toneOf(svg) {
   if (neutral.length === cs.length && cs.every((c) => c.L > 0.85)) return 'light';
   return 'colour';
 }
+/** Whether an SVG paints only with neutrals (black, white, greys): a one-colour mark whose dark-ground file may reverse them. */
+export const allNeutral = (svg) => { const cs = coloursOf(svg).map(rgbOf).filter(Boolean); return cs.length > 0 && cs.every((c) => lc(c).C < 0.04); };
 const hex2 = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
 /** The SVG with its neutrals reversed (dark parts light, light parts ink); saturated colours untouched. */
 export function reverseNeutrals(svg) {
@@ -1155,26 +1160,67 @@ export function readRecord(film) {
 }
 const VARIANT_FILES = { mark: '', markDark: '.dark', wordmark: '.wordmark', wordmarkDark: '.wordmark.dark', mono: '.mono', white: '.white', black: '.black' };
 
+/**
+ * The names a mark answers to, compacted (lower case, letters and digits only): its slug, its shown name, the brand
+ * row's other names and its Simple Icons slug, so <Brand name="googlecalendar">, "google-calendar" and "Google
+ * Calendar" all find the same file. The kit's <Brand> and `verify` match names the same way.
+ */
+export const compactName = (s) => String(s ?? '').toLowerCase().replace(/\+/g, 'plus').replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
+export function keysFor(slug, entry, brand = brandFor(slug) || brandFor(entry?.name || '')) {
+  const si = brand?.members?.['simple-icons'];
+  const ks = [slug, entry?.name, ...(brand ? [brand.slug, brand.name, ...(brand.aka || []), ...(brand.aliases || [])] : []), ...[].concat(si || [])].map(compactName).filter(Boolean);
+  return [...new Set(ks)];
+}
+
 /** The kit's index (src/logos.ts): names, files, proportions, tone and tile per mark; no colours, no record. */
 export function indexSource(record) {
   const rows = Object.entries(record.logos).sort(([a], [b]) => a.localeCompare(b)).map(([slug, e]) => {
     const files = Object.entries(e.files || {}).filter(([k]) => VARIANT_FILES[k] !== undefined)
       .map(([k, f]) => `${k}: { src: ${JSON.stringify(f.path)}, aspect: ${f.aspect} }`).join(', ');
-    return `  ${JSON.stringify(slug)}: { name: ${JSON.stringify(e.name)}, tone: ${JSON.stringify(e.tone || 'colour')}, tile: ${JSON.stringify(e.tile || 'none')}, files: { ${files} } },`;
+    const keys = e.keys?.length ? e.keys : keysFor(slug, e);
+    return `  ${JSON.stringify(slug)}: { name: ${JSON.stringify(e.name)}, tone: ${JSON.stringify(e.tone || 'colour')}, tile: ${JSON.stringify(e.tile || 'none')}, keys: ${JSON.stringify(keys)}, files: { ${files} } },`;
   });
   return `// The real marks this film shows: written by scripts/logos.mjs from public/logos/logos.json, which keeps each mark's
-// source, licence and trademark owner. Do not edit by hand: node scripts/logos.mjs get <name> adds a mark.
-// Use one with the kit: <Brand name="<slug>" file={LOGOS['<slug>'].files.mark.src} /> (or .white / .black on dark and light).
+// source, licence and trademark owner. Do not edit by hand: node scripts/logos.mjs get <name...> adds marks.
+// <Brand name="gmail" /> finds its row here by any of its keys and draws the full-colour file (tone 'dark': the
+// .dark file on a dark ground); a name with no row falls back to the one-colour Simple Icons glyph.
 export type LogoFile = { src: string; aspect: number };
-export type LogoEntry = { name: string; tone: string; tile: string; files: Partial<Record<'mark' | 'markDark' | 'wordmark' | 'wordmarkDark' | 'mono' | 'white' | 'black', LogoFile>> };
+export type LogoEntry = { name: string; tone: string; tile: string; keys?: string[]; files: Partial<Record<'mark' | 'markDark' | 'wordmark' | 'wordmarkDark' | 'mono' | 'white' | 'black', LogoFile>> };
 
 export const LOGOS: Record<string, LogoEntry> = {
 ${rows.join('\n')}${rows.length ? '\n' : ''}};
 `;
 }
+/**
+ * public/logos/CREDITS.md: every mark's files, where each came from, under which licence, its trademark owner and
+ * when it was last compared with the brand's own page. Written with the record; a private note, never on screen.
+ */
+export function creditsSource(record) {
+  const cell = (s) => String(s ?? '').replace(/\|/g, '/').replace(/\s+/g, ' ').trim();
+  const rows = Object.entries(record.logos).sort(([a], [b]) => a.localeCompare(b)).map(([slug, e]) => {
+    const files = Object.values(e.files || {}).map((f) => f.path.replace(/^logos\//, '')).join(', ');
+    const src = Object.values(e.files || {}).map((f) => f.url).filter(Boolean);
+    const from = [...new Set(Object.values(e.sources || {}).map((s) => `${s.collection}${s.licence ? ` (${s.licence})` : ''}`))].join('; ');
+    const checked = e.verified?.on ? `${e.verified.on}: ${e.verified.how || e.verified.page || 'the brand page'}` : 'not verified';
+    return `| ${cell(e.name)} | ${cell(files)} | ${cell(from)} | ${cell([...new Set(src)].join(' '))} | ${cell(e.owner || 'unknown')} | ${cell(checked)} |`;
+  });
+  return `# The marks in public/logos
+
+Written by scripts/logos.mjs from logos.json (the full record). Every mark is its owner's trademark, whatever the
+licence of the file: it is shown only to name the product it belongs to (what a product works with, imports from or
+runs on), unaltered, never as an endorsement or partnership, and nothing is credited on screen. "owner-supplied"
+is the brand's own file from its brand, press or site page, used the same way. A dark-ground file marked .dark is the
+brand's own dark version or, for a mark drawn only in black and white, its neutrals reversed.
+
+| Mark | Files | Source (licence of the file) | From | Trademark owner | Last compared with the brand's own logo |
+| --- | --- | --- | --- | --- | --- |
+${rows.join('\n')}
+`;
+}
 function writeRecord(film, record) {
   fs.mkdirSync(path.dirname(recordPath(film)), { recursive: true });
   fs.writeFileSync(recordPath(film), `${JSON.stringify(record, null, 1)}\n`);
+  fs.writeFileSync(path.join(path.dirname(recordPath(film)), 'CREDITS.md'), creditsSource(record));
   const src = path.join(film, 'src');
   if (fs.existsSync(src)) fs.writeFileSync(path.join(src, 'logos.ts'), indexSource(record));
 }
@@ -1258,7 +1304,7 @@ export async function getBrand(group, film, o = {}) {
     try {
       const raw = await svgAt(c.url, { refresh: o.refresh });
       if (!raw) notes.push(`${c.collection}: ${c.url} is gone`);
-      else { p = prepare(raw, { tile: o.tile }); if (brand) p.version = versionOf(brand, c.role === 'mono' && c.hex ? oneColour(p.svg, c.hex) : p.svg, table); }
+      else { p = prepare(raw, { tile: o.tile || brand?.tile }); if (brand) p.version = versionOf(brand, c.role === 'mono' && c.hex ? oneColour(p.svg, c.hex) : p.svg, table); }
     } catch (e) { if (e instanceof Blocked) throw e; notes.push(`${c.collection}: ${c.url}: ${e.message}`); }
     loaded.set(c.url, p);
     return p && { ...c, ...p };
@@ -1277,7 +1323,7 @@ export async function getBrand(group, film, o = {}) {
   // the brand's own file, passed with --file (downloaded from its brand or press page)
   if (o.file) {
     const raw = fs.readFileSync(o.file, 'utf8');
-    const p = { ...prepare(raw, { tile: o.tile }), collection: 'file', url: `file:${path.basename(o.file)}`, file: path.basename(o.file), licence: 'owner-supplied', page: brand?.page || null };
+    const p = { ...prepare(raw, { tile: o.tile || brand?.tile }), collection: 'file', url: o.from || `file:${path.basename(o.file)}`, file: path.basename(o.file), licence: 'owner-supplied', page: brand?.page || o.from || null };
     if (brand) p.version = versionOf(brand, p.svg, table);
     if (isRetired(p)) throw new Error(`${o.file} draws ${brand.name}'s retired mark (${p.version.what}); the current one${brand.mark?.since ? ` (since ${brand.mark.since})` : ''}: ${brand.mark?.what}${brand.page ? ` on ${brand.page}` : ''}`);
     got[p.aspect > 1.6 ? 'wordmark' : 'mark'] = p;
@@ -1328,12 +1374,13 @@ export async function getBrand(group, film, o = {}) {
     }
     throw new Error(`no usable file for ${group.name}${notes.length ? `:\n  ${notes.join('\n  ')}` : ''}`);
   }
-  // dark-ground versions: the collection's own, else the neutrals reversed
+  // dark-ground versions: the collection's own, else (for a mark drawn only in neutrals: black, white, greys) the
+  // neutrals reversed. A coloured mark with dark parts (the hugging face's eyes) is never reversed: it stays as drawn.
   for (const [light, dark] of [['mark', 'markDark'], ['wordmark', 'wordmarkDark']]) {
     const L = got[light];
     if (!L || got[dark]) continue;
     const tone = toneOf(L.svg);
-    if (tone === 'dark') got[dark] = { ...L, svg: reverseNeutrals(L.svg), derived: `${light} with its neutrals reversed for dark grounds` };
+    if (tone === 'dark' && allNeutral(L.svg)) got[dark] = { ...L, svg: reverseNeutrals(L.svg), derived: `${light} with its neutrals reversed for dark grounds` };
     else if (tone === 'light') { got[dark] = L; got[light] = { ...L, svg: reverseNeutrals(L.svg), derived: `${light} with its neutrals reversed for light grounds` }; }
   }
   if (variants.has('mono')) {
@@ -1378,6 +1425,12 @@ export async function getBrand(group, film, o = {}) {
     trademark: `${o.name || brand?.name || group.name} is a trademark of ${owner || 'its owner'}. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.`,
     fetched: new Date().toISOString().slice(0, 10),
   };
+  // the names <Brand name=...> finds it by, and when its mark was last compared with the brand's own page
+  entry.keys = keysFor(slug, entry, brand);
+  if (brand) { const vf = verification(brand, table); entry.verified = { on: vf.verified || null, page: vf.page || null, ok: vf.ok }; }
+  // the licence of the file the kit draws by default, in one place (sources keeps every collection used)
+  const lead = got.mark || got.wordmark;
+  if (lead) entry.licence = { file: lead.collection === 'file' ? `logos/${slug}.svg (the brand's own file)` : files.mark?.path || files.wordmark?.path, from: (COLLECTIONS[lead.collection] || OWN_FILE).name, licence: lead.licence || (COLLECTIONS[lead.collection] || OWN_FILE).licence, url: lead.url };
   return { slug, entry, notes, brand, version: v };
 }
 const by = (group, c) => group.members.find((m) => m.collection === c);
@@ -1385,7 +1438,7 @@ const by = (group, c) => group.members.find((m) => m.collection === c);
 // ------------------------------------------------------------------------------------------------ CLI
 export class Usage extends Error {}
 export function parseArgs(argv) {
-  const VALUED = new Set(['source', 'limit', 'variant', 'film', 'as', 'name', 'owner', 'tile', 'file']);
+  const VALUED = new Set(['source', 'limit', 'variant', 'film', 'as', 'name', 'owner', 'tile', 'file', 'from']);
   const FLAGS = new Set(['json', 'help', 'allow-credit', 'refresh', 'write', 'allow-outdated']);
   const args = { _: [] };
   for (let i = 0; i < argv.length; i++) {
@@ -1496,23 +1549,46 @@ async function resolveGroup(ref, args) {
   return g;
 }
 
+/**
+ * The marks `get` was asked for: several names (get gmail figma slack), each a brand row, #n or collection:id; words
+ * that are not all names on their own are one name, as before (get Google Calendar).
+ */
+export function getRefs(words, table = loadBrands()) {
+  const w = words.map((x) => String(x).trim()).filter(Boolean);
+  if (w.length > 1 && brandFor(w.join(' '), table)) return [w.join(' ')]; // "Google Calendar" is one brand
+  if (w.length > 1 && w.every((x) => /^#\d+$/.test(x) || /^(gilbarbara|svgl|simple-icons|commons):/.test(x) || brandFor(x, table))) return w;
+  return w.length ? [w.join(' ')] : [];
+}
+
 async function cmdGet(args) {
-  const ref = args._.join(' ').trim();
-  if (!ref) throw new Usage('get needs a name, #n or collection:id');
+  const refs = getRefs(args._);
+  if (!refs.length) throw new Usage('get needs a name (or several), #n or collection:id');
   const film = path.resolve(args.film || '.');
   if (!fs.existsSync(path.join(film, 'public'))) throw new Usage(`${film} has no public/ folder: run inside a film project or pass --film <film>`);
-  const group = await resolveGroup(ref, args);
-  const src = args.source && args.source !== 'all' ? args.source : null;
+  if (refs.length > 1 && (args.as || args.name || args.file || args.owner || args.from)) throw new Usage('--as, --name, --owner, --file and --from name one mark: get one name at a time with them');
+  if (args.from && !args.file) throw new Usage('--from names where a --file was downloaded (the brand page or the file\'s address)');
   if (args.file && !fs.existsSync(args.file)) throw new Usage(`--file ${args.file}: no such file`);
-  const { slug, entry, notes, brand, version } = await getBrand(group, film, { variant: args.variant, source: src, as: args.as, name: args.name, owner: args.owner, tile: args.tile, allowCredit: args['allow-credit'], refresh: args.refresh, file: args.file, allowOutdated: args['allow-outdated'] });
-  const record = readRecord(film);
-  record.logos[slug] = entry;
-  writeRecord(film, record);
-  console.log(`${entry.name} -> public/logos/ (${Object.keys(entry.files).join(', ')}); ${entry.owner ? `owner ${entry.owner}` : 'owner unknown'}; ${Object.entries(entry.sources).map(([k, s]) => `${k} ${s.licence}`).join(', ')}`);
-  if (brand) console.log(`mark: ${versionLine(brand, version || { status: 'unknown' }, loadBrands().checked)}${brand.page ? `; brand page ${brand.page}` : ''}`);
-  for (const n of notes) console.log(`note: ${n}`);
-  console.log(`use it: <Brand name="${slug}" file="logos/${slug}.svg" /> or <BrandTile name="${slug}" file="logos/${slug}.svg" /> (.white.svg / .black.svg variants for dark and light grounds); the record: public/logos/logos.json`);
-  return 0;
+  let failed = 0;
+  for (const ref of refs) {
+    try {
+      const a = { ...args };
+      const group = await resolveGroup(ref, a);
+      const src = a.source && a.source !== 'all' ? a.source : null;
+      const { slug, entry, notes, brand, version } = await getBrand(group, film, { variant: a.variant, source: src, as: a.as, name: a.name, owner: a.owner, tile: a.tile, allowCredit: a['allow-credit'], refresh: a.refresh, file: a.file, from: a.from, allowOutdated: a['allow-outdated'] });
+      const record = readRecord(film);
+      record.logos[slug] = entry;
+      writeRecord(film, record);
+      console.log(`${entry.name} -> public/logos/ (${Object.keys(entry.files).join(', ')}); ${entry.owner ? `owner ${entry.owner}` : 'owner unknown'}; ${Object.entries(entry.sources).map(([k, s]) => `${k} ${s.licence}`).join(', ')}`);
+      if (brand) console.log(`mark: ${versionLine(brand, version || { status: 'unknown' }, loadBrands().checked)}${brand.page ? `; brand page ${brand.page}` : ''}`);
+      for (const n of notes) console.log(`note: ${n}`);
+      console.log(`use it: <Brand name="${slug}" /> or <BrandTile name="${slug}" /> (the full-colour file is the default; on="dark" takes the dark-ground file); the record: public/logos/logos.json`);
+    } catch (e) {
+      if (e instanceof Usage || e instanceof Blocked || refs.length === 1) throw e;
+      failed++;
+      console.error(`${ref}: ${e.message}`);
+    }
+  }
+  return failed ? 1 : 0;
 }
 
 /** Problems with a film's record: files missing, no licence, no owner. */
@@ -1737,6 +1813,112 @@ function simpleIconUses(film) {
   return out;
 }
 
+/**
+ * The brand names a film's code shows with <Brand> / <BrandTile>: literal name="..." attributes, and, in a file where a
+ * name is passed as an expression (name={row.brand}), the string values of `brand:` keys and `mark: { name: }` objects.
+ * Rows: { name, file, line, explicit } (explicit: the tag passes file=, an official file named by hand).
+ */
+export function brandUses(film) {
+  const out = [];
+  const src = path.join(film, 'src');
+  for (const p of codeFiles(src)) {
+    const rel = path.relative(film, p).split(path.sep).join('/');
+    if (!/\.(tsx|jsx)$/.test(p) || rel.startsWith('src/kit/') || rel === 'src/logos.ts') continue;
+    let text = '';
+    try { text = fs.readFileSync(p, 'utf8'); } catch { continue; }
+    const lineOf = (i) => text.slice(0, i).split('\n').length;
+    let dynamic = false;
+    for (const m of text.matchAll(/<(Brand|BrandTile)\b((?:[^>"'{}]|"[^"]*"|'[^']*'|\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})*)\/?>/g)) {
+      const attrs = m[2];
+      const lit = attrs.match(/\bname=(?:"([^"]+)"|'([^']+)'|\{\s*["'`]([^"'`]+)["'`]\s*\})/);
+      if (lit) out.push({ name: lit[1] || lit[2] || lit[3], file: rel, line: lineOf(m.index), explicit: /\bfile=/.test(attrs) });
+      else if (/\bname=\{/.test(attrs)) dynamic = true;
+    }
+    if (!dynamic) continue;
+    for (const m of text.matchAll(/\b(?:brand|logo)\s*:\s*["']([A-Za-z0-9 .+&-]{1,40})["']|\bmark\s*:\s*\{\s*name\s*:\s*["']([A-Za-z0-9 .+&-]{1,40})["']([^}]*)\}/g)) {
+      out.push({ name: m[1] || m[2], file: rel, line: lineOf(m.index), explicit: m[3] ? /\bfile\s*:/.test(m[3]) : false });
+    }
+  }
+  return out;
+}
+
+/** Simple Icons' data as the film's own package has it ({ slug -> { title, hex } }), or null when it is not installed. */
+async function simpleIconsOf(film) {
+  for (const base of [film, path.dirname(path.dirname(fileURLToPath(import.meta.url)))]) {
+    try {
+      const req = createRequire(path.join(base, 'package.json'));
+      const mod = await import(pathToFileURL(req.resolve('simple-icons')).href);
+      const m = new Map();
+      for (const v of [...Object.values(mod), ...Object.values(mod.default && typeof mod.default === 'object' ? mod.default : {})]) if (v && typeof v === 'object' && v.slug && v.path) m.set(v.slug, { title: v.title, hex: `#${v.hex}` });
+      if (m.size) return m;
+    } catch { /* next */ }
+  }
+  return null;
+}
+
+/**
+ * Whether a brand row's current mark is one colour, read from its fingerprint's palette: neutrals only (black, white,
+ * grey), or with anyHue one colour class of any hue (an orange tile with its glyph cut out).
+ */
+export function rowIsOneColour(brand, { anyHue = false } = {}) {
+  const pal = ((brand?.mark?.fp || '').match(/\bp([^ ]+)/)?.[1] || '').split('.').map((x) => x.replace(/[\d]+$/, '')).filter(Boolean);
+  if (!pal.length) return false;
+  return pal.every((c) => /^[kgw]$/.test(c)) || (anyHue && pal.length === 1);
+}
+
+/**
+ * What <Brand> will draw for every name a film shows: the full-colour file of its record, a one-colour file of a mark
+ * that is one colour, or Simple Icons' one-colour glyph (a fallback: wrong for a mark that has colours). Rows:
+ * { name, file, line, slug, status: 'colour' | 'one-colour' | 'explicit' | 'fallback-ok' | 'fallback' | 'missing', why }.
+ */
+export async function verifyFilm(film, table = loadBrands()) {
+  const rec = readRecord(film);
+  const byKey = new Map();
+  for (const [slug, e] of Object.entries(rec.logos)) for (const k of (e.keys?.length ? e.keys : keysFor(slug, e))) if (!byKey.has(k)) byKey.set(k, [slug, e]);
+  const si = await simpleIconsOf(film);
+  const rows = [];
+  for (const u of brandUses(film)) {
+    const k = compactName(u.name);
+    const hit = byKey.get(k);
+    const brand = brandFor(u.name, table);
+    if (u.explicit) { rows.push({ ...u, status: 'explicit', why: 'passes file= (an official file named by hand)' }); continue; }
+    const lead = hit && (hit[1].files?.mark || hit[1].files?.wordmark);
+    if (lead) {
+      const [slug, e] = hit;
+      // a mark taken as Simple Icons' one-colour glyph is a fallback, unless the brand row says its mark is one colour
+      const derivedMono = lead.from === 'simple-icons' && /one-colour/.test(lead.derived || '');
+      const from = lead.from === 'file' ? "the brand's own file" : lead.from;
+      if (derivedMono && !(brand && rowIsOneColour(brand, { anyHue: true }))) rows.push({ ...u, slug, status: 'fallback', why: `${lead.path} is the one-colour Simple Icons glyph: no full-colour file was found (get ${slug} --file <the brand's own svg>)` });
+      else rows.push({ ...u, slug, status: 'real', why: `${lead.path} (${from})${e.files.markDark ? `; on dark grounds ${e.files.markDark.path}` : ''}${!e.files.mark ? '; the wordmark (no mark file)' : ''}` });
+      continue;
+    }
+    const ic = si?.get(k) || (brand && si?.get(String(brand.members?.['simple-icons'] || '')));
+    if (!ic) { rows.push({ ...u, status: 'missing', why: `no file in public/logos and no Simple Icons glyph: <Brand> throws. node scripts/logos.mjs get ${brand?.slug || u.name}` }); continue; }
+    const rgb = rgbOf(ic.hex);
+    const neutral = rgb && lc(rgb).C < 0.04;
+    if (brand ? rowIsOneColour(brand) : neutral) rows.push({ ...u, status: 'fallback-ok', why: `Simple Icons' ${ic.title} glyph: the mark is one colour, drawn black or white by ground (get ${brand?.slug || u.name} for the official file)` });
+    else rows.push({ ...u, status: 'fallback', why: `Simple Icons' one-colour ${ic.title} glyph in ${ic.hex}: not the real mark. node scripts/logos.mjs get ${brand?.slug || u.name}` });
+  }
+  return rows;
+}
+
+async function cmdVerify(args) {
+  const film = path.resolve(args._[0] || args.film || '.');
+  if (!fs.existsSync(path.join(film, 'src'))) throw new Usage(`${film} has no src/ folder: name a film project (verify <film>)`);
+  const rows = await verifyFilm(film);
+  const bad = rows.filter((r) => r.status === 'fallback' || r.status === 'missing');
+  if (args.json) { console.log(JSON.stringify({ film, marks: rows, fallbacks: bad.length }, null, 1)); return bad.length ? 1 : 0; }
+  // one line per name (its first use), the uses counted
+  const seen = new Map();
+  for (const r of rows) { const k = `${compactName(r.name)}|${r.status}`; if (seen.has(k)) seen.get(k).n++; else seen.set(k, { ...r, n: 1 }); }
+  for (const r of [...seen.values()].sort((a, b) => a.status.localeCompare(b.status))) {
+    const tag = r.status === 'fallback' ? 'FALLBACK' : r.status === 'missing' ? 'MISSING' : r.status;
+    console.log(`${tag.padEnd(11)} ${r.name.padEnd(18)} ${`${r.file}:${r.line}${r.n > 1 ? ` (+${r.n - 1})` : ''}`.padEnd(44)} ${r.why}`);
+  }
+  console.log(`${seen.size} marks shown: ${bad.length ? `${new Set(bad.map((r) => compactName(r.name))).size} still a one-colour fallback or missing` : 'every one the real mark'}`);
+  return bad.length ? 1 : 0;
+}
+
 function cmdCheck(args) {
   const film = path.resolve(args._[0] || args.film || '.');
   if (!fs.existsSync(path.join(film, 'public'))) throw new Usage(`${film} has no public/ folder: name a film project (check <film>)`);
@@ -1748,7 +1930,9 @@ function cmdCheck(args) {
   const old = rows.filter((r) => r.status === 'outdated');
   const table = loadBrands();
   // <Brand name="..."> / <BrandTile name="..."> without file= draws Simple Icons' path, which for some brands is a retired mark
+  const recKeys = new Set(Object.entries(record.logos).flatMap(([slug, e]) => (e.files?.mark ? (e.keys?.length ? e.keys : keysFor(slug, e)) : [])));
   for (const { file, line, si } of simpleIconUses(film)) {
+    if (recKeys.has(si)) continue; // <Brand> draws the record's file for this name
     const hit = Object.entries(table.brands).find(([, b]) => b.members?.['simple-icons'] === si && /^retired/.test(b.sources?.['simple-icons'] || ''));
     if (hit) problems.push(`OUTDATED ${file}:${line}: <Brand name="${si}"> draws Simple Icons' ${hit[1].name} mark, which is retired (${hit[1].sources['simple-icons']}). Fix: node scripts/logos.mjs get ${hit[0]} --film . and pass file="logos/${hit[0]}.svg"`);
   }
@@ -1776,7 +1960,7 @@ function cmdCheck(args) {
 export const USAGE = `logos.mjs: real company and product marks in their official colours, from open collections.
 
   search <name> [--source all|gilbarbara,svgl,simple-icons,commons] [--limit 8] [--json] [--refresh]
-  get    <name|#n|collection:id> [--variant all|mark|wordmark|mono] [--film .] [--source <collection>]
+  get    <name...|#n|collection:id> [--variant all|mark|wordmark|mono] [--film .] [--source <collection>]
          [--as <slug>] [--name "Shown name"] [--owner "Trademark owner"] [--tile own|none] [--allow-credit] [--refresh]
          writes <film>/public/logos/<slug>[.dark|.wordmark|.wordmark.dark|.mono|.white|.black].svg, the record
          <film>/public/logos/logos.json (source, licence, owner) and the kit's index <film>/src/logos.ts
@@ -1786,7 +1970,11 @@ export const USAGE = `logos.mjs: real company and product marks in their officia
                                             shown verified on its own page within 12 months, and no drawn stand-in
                                             for a listed brand (inline SVG named or labelled for it, or an unlisted file
                                             named for it): exit 1 if one fails
-  --file <svg>       get: the brand's own file from its brand page (when no open collection draws the current mark)
+  verify [<film>] [--json]                  every mark the film's code shows with <Brand> / <BrandTile>: the real
+                                            full-colour file, or still Simple Icons' one-colour glyph (a fallback,
+                                            right only for a mark that is one colour): exit 1 on a fallback or a miss
+  --file <svg>      get: the brand's own file from its brand page (when no open collection draws the current mark)
+  --from <url>      get --file: where that file was downloaded (kept in the record)
   --allow-outdated   get: keep a retired mark knowingly (check still flags it)
 
 Collections: gilbarbara (SVG Logos, CC0), svgl (MIT; light, dark and wordmark files), simple-icons (CC0 unless an
@@ -1810,7 +1998,8 @@ export async function main(argv) {
       case 'get': return await cmdGet(args);
       case 'list': return cmdList(args);
       case 'check': return cmdCheck(args);
-      default: throw new Usage(`unknown command ${cmd}: search, get, list, check`);
+      case 'verify': return await cmdVerify(args);
+      default: throw new Usage(`unknown command ${cmd}: search, get, list, check, verify`);
     }
   } catch (e) {
     if (e instanceof Usage) { console.error(`${e.message}\n\n${USAGE}`); return 2; }

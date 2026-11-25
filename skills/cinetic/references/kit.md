@@ -305,11 +305,15 @@ object carries the film.
 
 ## 7. Marks and icons
 
-- **`<Brand name="github" size color="brand" | "#fff" file>`**: a company mark. Without `file`, from Simple Icons (CC0 path data; the
-  marks remain their owners' trademarks) in the brand's own colour. Some brands are not in Simple Icons (their owners asked for
-  removal, e.g. OpenAI, Slack, Microsoft products, AWS): fetch the official file with
-  `node scripts/logos.mjs get <name> --film .` and pass `file="logos/<slug>.svg"`.
-- **`brandHex(name)`** the brand colour. **`<BrandTile name size bg radius>`** a mark on a flat rounded tile.
+- **`<Brand name="gmail" size on="light" | "dark" color="brand" | "white" | "black" file>`**: a company mark, by default its
+  real full-colour file from `public/logos/` (the kit ships the most used ones; `src/logos.ts` finds a mark by any of its
+  names). `on="dark"` (or `color="white"`) takes the white file of a mark drawn in black (GitHub, Notion, X, Vercel); a
+  full-colour mark is never recoloured. `file` names an official file by hand (a wordmark). A name with no file falls back
+  to Simple Icons' one-colour glyph (black or white by ground, else the brand's hex). Missing mark:
+  `node scripts/logos.mjs get <name...>`, then the same `<Brand name>`; `logos.mjs verify` lists the fallbacks left.
+- **`brandHex(name)`** the brand colour (for a glow, never a tile). **`<BrandTile name size bg radius shadow>`**: the mark
+  as its app icon looks: a mark that is its own tile (Jira, Trello, Stripe) fills it, any other sits on a white tile
+  (`bg`, default white); never a coloured tile the product does not have. **`logoFor(name)`** the mark's index entry or null.
 - **`<AppIcon size colors={[top, bottom]} glyph gloss depth rim>`**: a crafted app icon: a true squircle
   (`squirclePath(s)`), a two-stop gradient blended in OKLab, a soft top highlight (`gloss` 0-1, default 0.6), a 1 px rim lit
   at the top and shaded below (`rim`), a layered drop shadow in the tile's own hue (`depth` 0-1) and the glyph centred

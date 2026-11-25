@@ -529,42 +529,29 @@ export const FieldnoteFilm: React.FC = () => {
   // the key sounds follow the typed words; the burst lands as one louder key
   const keysAt = [...new Set(typingTimes(QUESTION, T.type, 30, 24, 3, BURST))];
   const burstAt = keysAt[keysAt.length - 2] ?? T.type;
+  // Sound (study 2026-11-25): dry, soft and few. No chimes, tones, bubbles, swells or booms; the ending is music only.
   const cues = [
-    ...[0, 2, 4, 6].map((c, i) => ({ at: c, ...s['mixkit-2384'], volume: 0.3, rate: 0.88 + i * 0.05 })),
-    ...[14, 18, 22, 26, 30, 34].map((c, i) => ({ at: c, ...s['mixkit-1049'], volume: 0.22, rate: 0.95 + i * 0.05 })),
-    { at: 4, ...s['mixkit-1492'], volume: 0.3, rate: 1.1 },
-    { at: T.converge + 2, ...s['mixkit-175'], volume: 0.35 },
-    { at: T.earth, ...s['mixkit-168'], volume: 0.4 },
-    { at: T.earth, ...s['mixkit-2299'], volume: 0.7 },
-    ...T.swaps.slice(1).map((c, i) => ({ at: c, ...s['mixkit-1049'], volume: 0.35, rate: 1 + i * 0.08 })),
-    { at: T.ask, ...s['mixkit-1492'], volume: 0.5 },
-    { at: T.ask + 2, ...s['mixkit-2384'], volume: 0.3, rate: 0.8 },
+    ...[0, 4].map((c, i) => ({ at: c, ...s['mixkit-2384'], volume: 0.25, rate: 0.88 + i * 0.1 })),
+    ...[14, 22, 30].map((c, i) => ({ at: c, ...s['kenney-interface-tick_001'], volume: 0.22, rate: 0.95 + i * 0.05 })),
+    { at: T.converge + 2, ...s['mixkit-175'], volume: 0.3 },
+    { at: T.earth, ...s['mixkit-168'], volume: 0.3 },
+    { at: T.earth, ...s['kenney-rpg-footstep05'], volume: 0.7 },
+    ...T.swaps.slice(1).map((c, i) => ({ at: c, ...s['kenney-interface-tick_001'], volume: 0.28, rate: 1 + i * 0.08 })),
+    { at: T.ask, ...s['kenney-rpg-cloth1'], volume: 0.5 },
+    { at: T.ask + 2, ...s['mixkit-2384'], volume: 0.25, rate: 0.8 },
     ...keysAt.filter((k) => k < burstAt).map((k, i) => ({ at: k, ...s['mixkit-2533'], volume: 0.16, rate: 0.95 + (i % 3) * 0.05 })),
-    { at: burstAt, ...s['mixkit-2533'], volume: 0.3, rate: 0.9 },
-    { at: burstAt, ...s['mixkit-2384'], volume: 0.22, rate: 1.2 },
-    { at: T.send, ...s['mixkit-2568'], volume: 0.55 },
-    { at: T.send + 4, ...s['mixkit-175'], volume: 0.28 },
-    { at: T.find, ...s['mixkit-3124'], volume: 0.45 },
-    { at: T.find + 6, ...s['mixkit-168'], volume: 0.22 },
-    { at: T.answer + 8, ...s['mixkit-3000'], volume: 0.4 },
-    { at: T.answer + 30, ...s['mixkit-2867'], volume: 0.25 },
-    { at: T.compare + 4, ...s['mixkit-175'], volume: 0.35 },
-    { at: T.compare + 20, ...s['mixkit-168'], volume: 0.22 },
-    // the proof: the whip, the landing, a tick per growth step, a tone as the sand completes
-    { at: T.proof - 4, ...s['mixkit-175'], volume: 0.3, rate: 1.1 },
-    { at: T.proof, ...s['mixkit-168'], volume: 0.32 },
-    { at: T.land, ...s['mixkit-3124'], volume: 0.32, rate: 0.85 },
-    { at: T.grow[0], ...s['mixkit-1049'], volume: 0.26, rate: 0.92 },
-    ...T.grow.slice(1).map((g, i) => ({ at: g, ...s['mixkit-1049'], volume: 0.32, rate: 1 + i * 0.09 })),
-    { at: T.grow[4], ...s['mixkit-2867'], volume: 0.2 },
-    // the colour flip on the beat
-    { at: T.flip, ...s['mixkit-2299'], volume: 0.7 },
-    { at: T.flip, ...s['mixkit-2384'], volume: 0.35, rate: 0.92 },
-    // the lockup
-    { at: T.lock, ...s['mixkit-1492'], volume: 0.4 },
-    { at: T.lock + 1, ...s['mixkit-2299'], volume: 0.55, rate: 0.94 },
-    { at: T.url, ...s['mixkit-3000'], volume: 0.22, rate: 0.9 },
-    { at: T.lift, ...s['mixkit-2299'], volume: 0.35, rate: 1.06 },
+    { at: burstAt, ...s['mixkit-2533'], volume: 0.26, rate: 0.9 },
+    { at: T.send, ...s['kenney-interface-click_001'], volume: 0.55 },
+    { at: T.send + 4, ...s['mixkit-175'], volume: 0.25 },
+    { at: T.find, ...s['mixkit-3124'], volume: 0.4 },
+    { at: T.answer + 8, ...s['kenney-interface-bong_001'], volume: 0.3 },
+    { at: T.compare + 4, ...s['mixkit-175'], volume: 0.3 },
+    // the proof: the whip, the landing, a soft tick on every other growth step
+    { at: T.proof, ...s['mixkit-168'], volume: 0.3 },
+    { at: T.land, ...s['mixkit-3124'], volume: 0.3, rate: 0.85 },
+    ...[0, 2, 4].map((k, i) => ({ at: T.grow[k], ...s['kenney-interface-tick_001'], volume: 0.24 + 0.03 * i, rate: 0.95 + i * 0.08 })),
+    // the colour flip on the beat; from the lockup on, the music alone
+    { at: T.flip, ...s['kenney-rpg-footstep05'], volume: 0.6 },
   ];
   return (
     <AbsoluteFill style={{ background: PAPER }}>

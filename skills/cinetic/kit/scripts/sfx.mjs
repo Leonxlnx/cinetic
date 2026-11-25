@@ -171,7 +171,8 @@ async function get(ids) {
   for (const id of ids) {
     const s = sounds.find((x) => x.id === id);
     if (!s) {
-      console.error(`unknown id ${id} (node scripts/sfx.mjs list <role>)`);
+      const r = (cat.rejected ?? []).find((x) => x.id === id);
+      console.error(r ? `${id} is rejected: ${r.why}. Pick a dry sound instead (node scripts/sfx.mjs list <role>)` : `unknown id ${id} (node scripts/sfx.mjs list <role>)`);
       process.exitCode = 1;
       continue;
     }
@@ -233,7 +234,7 @@ if (cmd === 'roles') {
   const n = Number(args[2] && !args[2].startsWith('--') ? args[2] : 1);
   const seed = flag('seed', path.basename(film));
   const list = sounds.filter((s) => s.role === role && verdict(s) !== 'weak');
-  if (!list.length) throw new Error(`no good sounds for role ${role}`);
+  if (!list.length) throw new Error(`no good sounds for role ${role}${sounds.some((s) => s.role === role) ? '' : ': the palette has none on purpose (bells, chimes, tones, swells, risers and trailer hits are rejected; see references/sound-design.md). Use a dry sound or let the music carry it'}`);
   const start = hash(seed) % list.length;
   const ids = Array.from({ length: Math.min(n, list.length) }, (_, i) => list[(start + i) % list.length].id);
   await get(ids);

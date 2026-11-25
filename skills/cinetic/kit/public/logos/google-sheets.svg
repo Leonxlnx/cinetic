@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 581.818" width="800" height="581.818" fill="none" xmlns:svg="http://www.w3.org/2000/svg">
+  <g transform="rotate(180,400,290.9091)">
+    <path fill="#009954" d="M0 193.6364c0-40.65 0-60.9773 6.3818-77.1a90.91 90.91 0 0 1 51.0637-51.0591c16.1227-6.3864 36.4454-6.3864 77.1-6.3864H410.909c40.65 0 60.9773 0 77.1 6.3818a90.91 90.91 0 0 1 51.0636 51.0637c6.3818 16.1227 6.3818 36.4454 6.3818 77.1v194.5454c0 40.65 0 60.9773-6.3818 77.1a90.91 90.91 0 0 1-51.0636 51.0637c-16.1227 6.3818-36.45 6.3818-77.1 6.3818H134.5454c-40.65 0-60.9772 0-77.1045-6.3818a90.91 90.91 0 0 1-51.059-51.0637C0 449.1591 0 428.8318 0 388.1818Z"/>
+    <mask id="a" width="160" height="128" x="24" y="32" maskUnits="userSpaceOnUse">
+      <rect width="160" height="128" x="24" y="32" fill="#fff" rx="20"/>
+    </mask>
+    <g mask="url(#a)" transform="matrix(4.5454545,0,0,4.5454545,-36.363636,-145.45454)">
+      <path fill="#0ebc5f" d="M24 32h160v128H24Z"/>
+      <g filter="url(#b)">
+        <rect width="144" height="102" fill="url(#c)" rx="25.6" transform="matrix(1,0,0,-1,8,147)" x="0" y="0"/>
+      </g>
+    </g>
+    <path stroke="#ffffff" stroke-linecap="round" stroke-width="54.5455" d="M327.2727 404.5455H709.091m-90.909 86.3636v-290.909"/>
+  </g>
+  <defs>
+    <linearGradient id="c" x1="122.24" x2="20.76" y1="43.31" y2="43.31" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0ebc5f"/>
+      <stop offset=".95" stop-color="#78c9ff"/>
+    </linearGradient>
+    <filter id="b" width="168" height="126" x="-4" y="33" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape" mode="normal"/>
+      <feGaussianBlur result="effect1_foregroundBlur_37435_8174" stdDeviation="6"/>
+    </filter>
+  </defs>
+</svg>

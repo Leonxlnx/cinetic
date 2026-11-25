@@ -1,13 +1,16 @@
 // Real marks and real interface icons. Never draw a look-alike of a company's logo.
 //
-//   <Brand name="claude" />  a company or product mark. From public/logos when fetched in its newest official form by
-//                            scripts/logos.mjs (pass file=), else from Simple Icons (CC0 data; the marks stay
-//                            trademarks of their owners) in the brand's own colour.
+//   <Brand name="gmail" />   a company or product mark, by default its real full-colour file: public/logos/<slug>.svg,
+//                            fetched in its current official form by scripts/logos.mjs (the kit ships the marks films
+//                            show most; `node scripts/logos.mjs get <name...>` adds others) and listed in src/logos.ts.
+//                            A name with no file falls back to Simple Icons' one-colour glyph (CC0 data), right only
+//                            for a mark that is one colour; `node scripts/logos.mjs verify` lists those.
 //   <Icon name="Search" />   an interface glyph from Lucide (ISC) for rows, buttons and chips.
 import React from 'react';
 import * as si from 'simple-icons';
 import * as lucide from 'lucide-react';
 import { Img, staticFile } from 'remotion';
+import { LOGOS, type LogoEntry } from '../logos';
 import { fromLab, mixLab, parseColor, softShadow, toLab } from './world';
 
 type SimpleIcon = { title: string; hex: string; path: string; slug: string };
@@ -29,34 +32,99 @@ const slugify = (s: string) =>
     .replace(/&/g, 'and')
     .replace(/[^a-z0-9]/g, '');
 
+/** The fetched marks by every name they answer to (slug, shown name, other names, Simple Icons slug), compacted. */
+const logoByKey = (() => {
+  const m = new Map<string, [string, LogoEntry]>();
+  for (const [slug, e] of Object.entries(LOGOS) as [string, LogoEntry][]) {
+    for (const k of [slug, e.name, ...(e.keys ?? [])].map(slugify)) if (k && !m.has(k)) m.set(k, [slug, e]);
+  }
+  return m;
+})();
+
+/** The fetched mark for a name ({ slug, entry }), or null: the same match `logos.mjs verify` makes. */
+export const logoFor = (name: string) => {
+  const hit = logoByKey.get(slugify(name));
+  return hit ? { slug: hit[0], entry: hit[1] } : null;
+};
+
+/** OKLab lightness of a CSS colour, or null when it cannot be read. */
+const lightness = (c: string) => {
+  const rgb = parseColor(c);
+  return rgb ? toLab(rgb)[0] : null;
+};
+const isNeutral = (c: string) => {
+  const rgb = parseColor(c);
+  if (!rgb) return false;
+  const [, a, b] = toLab(rgb);
+  return Math.hypot(a, b) < 0.04;
+};
+
+type Ground = 'light' | 'dark';
+
+/**
+ * A company or product mark, real and unaltered. By default the full-colour file the kit ships or `logos.mjs get`
+ * fetched (src/logos.ts lists them); a mark drawn in black (GitHub, Notion, X, Vercel, Apple, OpenAI) takes its
+ * dark-ground file with on="dark". A name with no file falls back to Simple Icons' one-colour glyph: black or white
+ * by ground for a neutral mark, else the brand's own hex (`logos.mjs verify` lists these: fetch the real file).
+ */
 export const Brand: React.FC<{
   name: string;
   size?: number;
-  /** 'brand' = the mark's own colour; any CSS colour = mono in that colour. */
-  color?: 'brand' | string;
-  /** An official file under public/ (from `node scripts/logos.mjs get <name> --film .`), e.g. 'logos/openai.svg'. */
+  /**
+   * 'brand' (default) = the real mark in its own colours. 'white' / 'black' (or any CSS colour, read as white or black
+   * by its lightness; the brand's own hex stays itself) = the one-colour version, for a mark that IS one colour. A
+   * full-colour mark is never recoloured: it draws in its own colours whatever is asked.
+   */
+  color?: 'brand' | 'white' | 'black' | string;
+  /** The ground the mark sits on: 'dark' takes the dark-ground file of a black mark (default: from `color`, else light). */
+  on?: Ground;
+  /** An official file under public/ named by hand (e.g. 'logos/openai.wordmark.svg'); wins over the lookup. */
   file?: string;
   style?: React.CSSProperties;
-}> = ({ name, size = 64, color = 'brand', file, style }) => {
-  if (file) return <Img src={staticFile(file)} style={{ width: size, height: size, objectFit: 'contain', ...style }} />;
+}> = ({ name, size = 64, color = 'brand', on, file, style }) => {
+  const box: React.CSSProperties = { width: size, height: size, objectFit: 'contain', flexShrink: 0, ...style };
+  if (file) return <Img src={staticFile(file)} style={box} />;
+  const asked = color === 'brand' ? null : color;
+  const askedL = asked ? (asked === 'white' ? 1 : asked === 'black' ? 0 : lightness(asked)) : null;
+  const ground: Ground = on ?? (askedL !== null && askedL > 0.6 ? 'dark' : 'light');
+  const hit = logoFor(name);
+  if (hit) {
+    const { entry } = hit;
+    const f = entry.files;
+    // its own file, in its own colours; on a dark ground the dark-ground file when it has one (a black mark's white
+    // version, or the brand's own dark file). A coloured mark has none unless the brand drew one: it stays as drawn.
+    const onLight = f.mark ?? f.wordmark;
+    const onDark = f.mark ? (f.markDark ?? f.mark) : (f.wordmarkDark ?? f.wordmark);
+    const src = ground === 'dark' ? onDark : onLight;
+    if (src) return <Img src={staticFile(src.src)} style={box} />;
+  }
   const ic = bySlug.get(slugify(name));
   if (!ic) {
-    throw new Error(`No Simple Icons mark for "${name}". Fetch the official file: node scripts/logos.mjs get ${name} --film . then pass file="logos/<slug>.svg".`);
+    throw new Error(`No mark for "${name}": fetch the official file with node scripts/logos.mjs get ${name} (it lands in public/logos and src/logos.ts; <Brand name="${name}" /> then draws it).`);
   }
+  // Simple Icons' glyph: a neutral mark black or white by ground, a coloured one in the brand's own hex (asked by
+  // name or by default), never another colour
+  const own = `#${ic.hex}`;
+  const keepsOwn = !isNeutral(own) && (!asked || asked.replace('#', '').toUpperCase() === ic.hex.toUpperCase());
+  const fill = keepsOwn ? own : ground === 'dark' ? '#FFFFFF' : '#000000';
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" style={style} role="img" aria-label={ic.title}>
-      <path d={ic.path} fill={color === 'brand' ? `#${ic.hex}` : color} />
+    <svg width={size} height={size} viewBox="0 0 24 24" style={{ flexShrink: 0, ...style }} role="img" aria-label={ic.title}>
+      <path d={ic.path} fill={fill} />
     </svg>
   );
 };
 
-/** The brand's own colour (for tiles and glows behind a mark). */
+/** The brand's own colour (for glows behind a mark; never a tile the product does not have). */
 export const brandHex = (name: string) => {
   const ic = bySlug.get(slugify(name));
   return ic ? `#${ic.hex}` : undefined;
 };
 
-/** A mark on a rounded tile, like an app icon or an integration chip. */
+/**
+ * A mark as an app icon or integration chip. A mark that is its own tile (Trello's board, a mark drawn on its square)
+ * fills the tile; every other mark sits on a white tile (`bg`), the way Gmail, Calendar, Slack and most app icons
+ * look: never a coloured tile the product does not have. On a dark `bg` a black mark takes its dark-ground file.
+ */
 export const BrandTile: React.FC<{ name: string; size?: number; bg?: string; color?: 'brand' | string; file?: string; radius?: number; shadow?: string }> = ({
   name,
   size = 96,
@@ -65,11 +133,23 @@ export const BrandTile: React.FC<{ name: string; size?: number; bg?: string; col
   file,
   radius,
   shadow = softShadow(2),
-}) => (
-  <div style={{ width: size, height: size, borderRadius: radius ?? size * 0.26, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: shadow, flexShrink: 0 }}>
-    <Brand name={name} size={size * 0.56} color={color} file={file} />
-  </div>
-);
+}) => {
+  const r = radius ?? size * 0.26;
+  const hit = file ? null : logoFor(name);
+  if (hit?.entry.tile === 'own' && hit.entry.files.mark) {
+    return (
+      <div style={{ width: size, height: size, borderRadius: r, overflow: 'hidden', boxShadow: shadow, flexShrink: 0 }}>
+        <Img src={staticFile(hit.entry.files.mark.src)} style={{ width: size, height: size, objectFit: 'cover', display: 'block' }} />
+      </div>
+    );
+  }
+  const L = lightness(bg);
+  return (
+    <div style={{ width: size, height: size, borderRadius: r, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: shadow, flexShrink: 0 }}>
+      <Brand name={name} size={size * 0.56} color={color} file={file} on={L !== null && L < 0.5 ? 'dark' : 'light'} />
+    </div>
+  );
+};
 
 /** An interface icon from Lucide by its component name: Search, Calendar, Check, Mail, ... (lucide.dev/icons). */
 export const Icon: React.FC<{ name: string; size?: number; color?: string; stroke?: number; style?: React.CSSProperties }> = ({ name, size = 28, color = 'currentColor', stroke = 2, style }) => {

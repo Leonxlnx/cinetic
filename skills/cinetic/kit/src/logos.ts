@@ -1,9 +1,60 @@
 // The real marks this film shows: written by scripts/logos.mjs from public/logos/logos.json, which keeps each mark's
-// source, licence and trademark owner. Do not edit by hand: node scripts/logos.mjs get <name> adds a mark.
-// Use one with the kit: <Brand name="<slug>" file={LOGOS['<slug>'].files.mark.src} /> (or .white / .black on dark and light).
+// source, licence and trademark owner. Do not edit by hand: node scripts/logos.mjs get <name...> adds marks.
+// <Brand name="gmail" /> finds its row here by any of its keys and draws the full-colour file (tone 'dark': the
+// .dark file on a dark ground); a name with no row falls back to the one-colour Simple Icons glyph.
 export type LogoFile = { src: string; aspect: number };
-export type LogoEntry = { name: string; tone: string; tile: string; files: Partial<Record<'mark' | 'markDark' | 'wordmark' | 'wordmarkDark' | 'mono' | 'white' | 'black', LogoFile>> };
+export type LogoEntry = { name: string; tone: string; tile: string; keys?: string[]; files: Partial<Record<'mark' | 'markDark' | 'wordmark' | 'wordmarkDark' | 'mono' | 'white' | 'black', LogoFile>> };
 
 export const LOGOS: Record<string, LogoEntry> = {
-  "google-docs": { name: "Google Docs", tone: "colour", tile: "none", files: { mark: { src: "logos/google-docs.svg", aspect: 0.727 }, white: { src: "logos/google-docs.white.svg", aspect: 0.727 }, black: { src: "logos/google-docs.black.svg", aspect: 0.727 } } },
+  "airtable": { name: "Airtable", tone: "colour", tile: "none", keys: ["airtable"], files: { mark: { src: "logos/airtable.svg", aspect: 1.191 } } },
+  "android": { name: "Android", tone: "dark", tile: "none", keys: ["android"], files: { mark: { src: "logos/android.svg", aspect: 1.717 } } },
+  "apple": { name: "Apple", tone: "dark", tile: "none", keys: ["apple"], files: { mark: { src: "logos/apple.svg", aspect: 0.813 }, markDark: { src: "logos/apple.dark.svg", aspect: 0.813 } } },
+  "asana": { name: "Asana", tone: "colour", tile: "none", keys: ["asana"], files: { mark: { src: "logos/asana.svg", aspect: 1.08 } } },
+  "chatgpt": { name: "ChatGPT", tone: "dark", tile: "none", keys: ["chatgpt"], files: { mark: { src: "logos/chatgpt.svg", aspect: 1 }, markDark: { src: "logos/chatgpt.dark.svg", aspect: 1 } } },
+  "claude": { name: "Claude", tone: "colour", tile: "none", keys: ["claude"], files: { mark: { src: "logos/claude.svg", aspect: 0.996 } } },
+  "cursor": { name: "Cursor", tone: "dark", tile: "none", keys: ["cursor"], files: { mark: { src: "logos/cursor.svg", aspect: 0.877 }, markDark: { src: "logos/cursor.dark.svg", aspect: 0.877 } } },
+  "discord": { name: "Discord", tone: "colour", tile: "none", keys: ["discord"], files: { mark: { src: "logos/discord.svg", aspect: 1.286 } } },
+  "docker": { name: "Docker", tone: "colour", tile: "none", keys: ["docker"], files: { mark: { src: "logos/docker.svg", aspect: 1.384 } } },
+  "dropbox": { name: "Dropbox", tone: "colour", tile: "none", keys: ["dropbox"], files: { mark: { src: "logos/dropbox.svg", aspect: 1.174 } } },
+  "figma": { name: "Figma", tone: "colour", tile: "none", keys: ["figma"], files: { mark: { src: "logos/figma.svg", aspect: 0.667 } } },
+  "gemini": { name: "Gemini", tone: "colour", tile: "none", keys: ["gemini","googlegemini"], files: { mark: { src: "logos/gemini.svg", aspect: 1 } } },
+  "github": { name: "GitHub", tone: "dark", tile: "none", keys: ["github"], files: { mark: { src: "logos/github.svg", aspect: 1.024 }, markDark: { src: "logos/github.dark.svg", aspect: 1.024 } } },
+  "gitlab": { name: "GitLab", tone: "colour", tile: "none", keys: ["gitlab"], files: { mark: { src: "logos/gitlab.svg", aspect: 1.036 } } },
+  "gmail": { name: "Gmail", tone: "colour", tile: "none", keys: ["gmail","googlegmail"], files: { mark: { src: "logos/gmail.svg", aspect: 1.255 } } },
+  "google": { name: "Google", tone: "colour", tile: "none", keys: ["google"], files: { mark: { src: "logos/google.svg", aspect: 0.979 } } },
+  "google-calendar": { name: "Google Calendar", tone: "colour", tile: "none", keys: ["googlecalendar"], files: { mark: { src: "logos/google-calendar.svg", aspect: 0.931 } } },
+  "google-chrome": { name: "Google Chrome", tone: "colour", tile: "none", keys: ["googlechrome","chrome"], files: { mark: { src: "logos/google-chrome.svg", aspect: 1 } } },
+  "google-docs": { name: "Google Docs", tone: "colour", tile: "none", keys: ["googledocs"], files: { mark: { src: "logos/google-docs.svg", aspect: 0.727 } } },
+  "google-drive": { name: "Google Drive", tone: "colour", tile: "none", keys: ["googledrive"], files: { mark: { src: "logos/google-drive.svg", aspect: 1.076 } } },
+  "google-meet": { name: "Google Meet", tone: "colour", tile: "none", keys: ["googlemeet"], files: { mark: { src: "logos/google-meet.svg", aspect: 1.274 } } },
+  "google-sheets": { name: "Google Sheets", tone: "colour", tile: "none", keys: ["googlesheets"], files: { mark: { src: "logos/google-sheets.svg", aspect: 1.375 } } },
+  "google-slides": { name: "Google Slides", tone: "colour", tile: "none", keys: ["googleslides"], files: { mark: { src: "logos/google-slides.svg", aspect: 1.037 } } },
+  "hubspot": { name: "HubSpot", tone: "colour", tile: "none", keys: ["hubspot"], files: { mark: { src: "logos/hubspot.svg", aspect: 0.954 } } },
+  "hugging-face": { name: "Hugging Face", tone: "dark", tile: "none", keys: ["huggingface"], files: { mark: { src: "logos/hugging-face.svg", aspect: 1.076 } } },
+  "instagram": { name: "Instagram", tone: "colour", tile: "own", keys: ["instagram"], files: { mark: { src: "logos/instagram.svg", aspect: 1 } } },
+  "jira": { name: "Jira", tone: "colour", tile: "own", keys: ["jira"], files: { mark: { src: "logos/jira.svg", aspect: 1 } } },
+  "linear": { name: "Linear", tone: "dark", tile: "none", keys: ["linear"], files: { mark: { src: "logos/linear.svg", aspect: 1 }, markDark: { src: "logos/linear.dark.svg", aspect: 1 } } },
+  "microsoft-excel": { name: "Microsoft Excel", tone: "colour", tile: "none", keys: ["microsoftexcel","excel"], files: { mark: { src: "logos/microsoft-excel.svg", aspect: 0.972 } } },
+  "microsoft-outlook": { name: "Microsoft Outlook", tone: "colour", tile: "none", keys: ["microsoftoutlook","outlook"], files: { mark: { src: "logos/microsoft-outlook.svg", aspect: 1.056 } } },
+  "microsoft-teams": { name: "Microsoft Teams", tone: "colour", tile: "none", keys: ["microsoftteams","teams"], files: { mark: { src: "logos/microsoft-teams.svg", aspect: 0.947 } } },
+  "microsoft-word": { name: "Microsoft Word", tone: "colour", tile: "none", keys: ["microsoftword","word"], files: { mark: { src: "logos/microsoft-word.svg", aspect: 0.972 } } },
+  "notion": { name: "Notion", tone: "dark", tile: "none", keys: ["notion"], files: { mark: { src: "logos/notion.svg", aspect: 0.955 }, markDark: { src: "logos/notion.dark.svg", aspect: 0.955 } } },
+  "nvidia": { name: "NVIDIA", tone: "dark", tile: "none", keys: ["nvidia"], files: { mark: { src: "logos/nvidia.svg", aspect: 1.358 }, markDark: { src: "logos/nvidia.dark.svg", aspect: 1.358 } } },
+  "obsidian": { name: "Obsidian", tone: "colour", tile: "none", keys: ["obsidian"], files: { mark: { src: "logos/obsidian.svg", aspect: 0.771 } } },
+  "openai": { name: "OpenAI", tone: "dark", tile: "none", keys: ["openai"], files: { mark: { src: "logos/openai.svg", aspect: 1 }, markDark: { src: "logos/openai.dark.svg", aspect: 1 } } },
+  "safari": { name: "Safari", tone: "dark", tile: "none", keys: ["safari"], files: { mark: { src: "logos/safari.svg", aspect: 0.996 } } },
+  "salesforce": { name: "Salesforce", tone: "colour", tile: "none", keys: ["salesforce"], files: { mark: { src: "logos/salesforce.svg", aspect: 1.429 } } },
+  "shopify": { name: "Shopify", tone: "colour", tile: "none", keys: ["shopify"], files: { mark: { src: "logos/shopify.svg", aspect: 0.879 } } },
+  "slack": { name: "Slack", tone: "colour", tile: "none", keys: ["slack"], files: { mark: { src: "logos/slack.svg", aspect: 1.001 } } },
+  "spotify": { name: "Spotify", tone: "colour", tile: "none", keys: ["spotify"], files: { mark: { src: "logos/spotify.svg", aspect: 1 } } },
+  "stripe": { name: "Stripe", tone: "colour", tile: "own", keys: ["stripe"], files: { mark: { src: "logos/stripe.svg", aspect: 1 } } },
+  "telegram": { name: "Telegram", tone: "colour", tile: "none", keys: ["telegram"], files: { mark: { src: "logos/telegram.svg", aspect: 1 } } },
+  "trello": { name: "Trello", tone: "colour", tile: "own", keys: ["trello"], files: { mark: { src: "logos/trello.svg", aspect: 1 } } },
+  "vercel": { name: "Vercel", tone: "dark", tile: "none", keys: ["vercel"], files: { mark: { src: "logos/vercel.svg", aspect: 1.153 }, markDark: { src: "logos/vercel.dark.svg", aspect: 1.153 } } },
+  "visual-studio-code": { name: "Visual Studio Code", tone: "colour", tile: "none", keys: ["visualstudiocode","vscode"], files: { mark: { src: "logos/visual-studio-code.svg", aspect: 1.008 } } },
+  "whatsapp": { name: "WhatsApp", tone: "colour", tile: "none", keys: ["whatsapp"], files: { mark: { src: "logos/whatsapp.svg", aspect: 0.992 } } },
+  "x": { name: "X", tone: "dark", tile: "none", keys: ["x","twitter","xformerlytwitter"], files: { mark: { src: "logos/x.svg", aspect: 0.98 }, markDark: { src: "logos/x.dark.svg", aspect: 0.98 } } },
+  "youtube": { name: "YouTube", tone: "colour", tile: "none", keys: ["youtube"], files: { mark: { src: "logos/youtube.svg", aspect: 1.45 } } },
+  "zapier": { name: "Zapier", tone: "colour", tile: "own", keys: ["zapier"], files: { mark: { src: "logos/zapier.svg", aspect: 1 } } },
+  "zoom": { name: "Zoom", tone: "colour", tile: "none", keys: ["zoom"], files: { wordmark: { src: "logos/zoom.wordmark.svg", aspect: 4.376 } } },
 };

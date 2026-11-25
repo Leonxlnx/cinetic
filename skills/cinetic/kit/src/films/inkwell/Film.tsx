@@ -598,29 +598,28 @@ const Bookend: React.FC = () => {
 export const InkwellFilm: React.FC = () => {
   const f = useCurrentFrame();
   const s = sfx;
+  // Sound (study 2026-11-25): dry, soft and few. No chimes, tones, bubbles, swells or booms; the ending is music only.
   const cues = [
-    ...[0, 1, 3].map((i) => ({ at: T.words[i], ...s['mixkit-2533'], volume: i === 3 ? 0.5 : 0.32 })),
-    { at: T.words[2] - 1, ...s['mixkit-3000'], volume: 0.45 },
+    ...[0, 1, 3].map((i) => ({ at: T.words[i], ...s['mixkit-2533'], volume: i === 3 ? 0.4 : 0.28 })),
+    { at: T.words[2] - 1, ...s['kenney-interface-bong_001'], volume: 0.35 },
     { at: T.select, ...s['mixkit-3124'], volume: 0.3 },
-    { at: T.land, ...s['mixkit-3000'], volume: 0.3, rate: 1.1 },
-    { at: T.type, ...s['mixkit-2533'], volume: 0.22 },
-    { at: T.type + 3, ...s['mixkit-2533'], volume: 0.26, rate: 0.9 },
-    { at: T.rewrite, ...s['mixkit-2867'], volume: 0.45 },
-    ...T.n.map((n, k) => ({ at: n, ...s['mixkit-2533'], volume: 0.3 + 0.12 * k, rate: 0.95 - 0.05 * k })),
-    ...T.rest.map((n, k) => ({ at: n, ...s['mixkit-2533'], volume: 0.18 + 0.03 * k, rate: 1.05 })),
-    // the swap: the main hit, then a tick on each later cut
-    { at: T.hA, ...s['mixkit-2299'], volume: 0.55 },
-    ...T.hosts.slice(1).map((h, k) => ({ at: h, ...s['mixkit-2568'], volume: 0.28, rate: k % 2 ? 1.06 : 0.96 })),
+    { at: T.land, ...s['kenney-interface-click_001'], volume: 0.3 },
+    { at: T.type, ...s['mixkit-2533'], volume: 0.2 },
+    { at: T.type + 3, ...s['mixkit-2533'], volume: 0.22, rate: 0.9 },
+    // the weak sentence is struck: a paper slice, no tone
+    { at: T.rewrite, ...s['mixkit-2384'], volume: 0.25 },
+    ...T.n.map((n, k) => ({ at: n, ...s['mixkit-2533'], volume: 0.28 + 0.06 * k, rate: 0.95 - 0.05 * k })),
+    ...T.rest.map((n, k) => ({ at: n, ...s['mixkit-2533'], volume: 0.16 + 0.02 * k, rate: 1.05 })),
+    // the swap: the main hit, then a click on each later cut
+    { at: T.hA, ...s['kenney-rpg-footstep05'], volume: 0.45 },
+    ...T.hosts.slice(1).map((h, k) => ({ at: h, ...s['kenney-interface-click_001'], volume: 0.3, rate: k % 2 ? 1.06 : 0.96 })),
     // the colour-flip cut into the navy, then each draft cut on, struck and rewritten
-    { at: T.sp, ...s['mixkit-2299'], volume: 0.42, rate: 1.08 },
-    ...T.drafts.map((d) => ({ at: d, ...s['mixkit-2568'], volume: 0.2 })),
-    ...T.rw.map((r) => ({ at: r - 4, ...s['mixkit-2384'], volume: 0.24 })),
-    ...T.rw.map((r, k) => ({ at: r, ...s['mixkit-2533'], volume: 0.42, rate: 0.92 + 0.04 * k })),
-    // the bookend: the sheet, the claim, the drop, the name
-    { at: T.page + 3, ...s['mixkit-175'], volume: 0.32 },
-    ...T.claim.map((w, i) => ({ at: w, ...s['mixkit-2533'], volume: 0.34 + 0.08 * i })),
-    { at: T.lift + 9, ...s['mixkit-3000'], volume: 0.55, rate: 0.85 },
-    { at: T.mark, ...s['mixkit-2299'], volume: 0.4 },
+    { at: T.sp, ...s['kenney-rpg-footstep04'], volume: 0.4 },
+    ...T.drafts.map((d) => ({ at: d, ...s['kenney-interface-tick_001'], volume: 0.2 })),
+    ...T.rw.map((r) => ({ at: r - 4, ...s['mixkit-2384'], volume: 0.22 })),
+    ...T.rw.map((r, k) => ({ at: r, ...s['mixkit-2533'], volume: 0.3, rate: 0.92 + 0.04 * k })),
+    // the bookend: the sheet slides up; the claim and the mark are the music alone
+    { at: T.page + 3, ...s['mixkit-175'], volume: 0.28 },
   ];
   return (
     <AbsoluteFill>

@@ -19,24 +19,35 @@ recorded. Keep a `CREDITS.md` in the film folder from the first fetched file.
 A film about a product that works with other products shows them as they are: the mail app's own mark, the code host's
 own mark, the model's own mark. Never redraw one, never stand a generic envelope or spark in for a real logo.
 
-- **Fast path:** `<Brand name="figma" />` draws the mark from Simple Icons, which can lag a brand's redesign (it may still
-  carry a retired mark) and draws every mark in ONE colour: a multicolour mark (Figma, Slack, Google's apps, Microsoft's)
-  needs its official file. For any brand `node scripts/logos.mjs search <name>` shows the current one, and
-  `node scripts/logos.mjs check` flags retired marks before the final. The mark from Simple Icons (path data CC0; trademarks belong to their owners)
-  in its own colour. `<BrandTile name="figma" />` puts it on an app-icon tile. Names are Simple Icons slugs
-  (`github`, `linear`, `notion`, `gmail`, `visualstudiocode` is not one: fetch `visual studio code` with logos.mjs, `googlecalendar`, `claude`, `anthropic`, `figma`, `stripe`, `vercel`, `supabase`,
-  `discord`, `zoom`, `jira`, `asana`, `dropbox`, `spotify`, `x`, `youtube`, `perplexity`, `huggingface`, `cursor`, ...).
-- **Official files:** some marks are missing from Simple Icons (their owners asked for removal: OpenAI/ChatGPT, Slack,
-  Microsoft and its products, AWS, others) and some brands redrew their marks recently. Use
-  `node scripts/logos.mjs search <name>` then `node scripts/logos.mjs get <name> --film .`: it takes the newest official mark
-  from open collections (or the brand's own press-kit file with `--file`), writes it to `public/logos/`, and records source,
-  licence and trademark owner in `public/logos/logos.json`. Then `<Brand name="openai" file="logos/openai.svg" />`.
-  `node scripts/logos.mjs check` flags retired marks.
-- **No official mark?** Some products have none in any collection (an OS feature, a sub-app like a health or wallet
-  app). Use the parent brand's mark with the product's name set in type beside it; never draw the icon.
-- **Use marks nominatively:** to show that the product works with them. Never imply an endorsement the user did not state.
-- **Presentation:** marks keep their proportions and colours; on a dark ground use the brand's own light version (or
-  `color="#fff"` for a mono mark if the brand allows it). One presentation per film (tiles in a row, chips in a line, a wall).
+- **The default is the real mark.** `<Brand name="gmail" />` draws the current official file in its own colours from
+  `public/logos/` (the index `src/logos.ts` finds it by any of its names: `googlecalendar`, `google-calendar` and
+  `Google Calendar` are one mark). The kit ships the 50 or so marks films show most (Google's 2026 Workspace icons, the
+  2025 Microsoft 365 icons, Figma, Slack, Linear, Notion, GitHub, the AI labs, the social apps ...), each compared with the
+  brand's own current logo; `public/logos/CREDITS.md` lists every one with its source, licence and owner.
+- **Any other brand:** `node scripts/logos.mjs get <name...> --film .` (several at once: `get loom miro canva`). It takes the
+  newest full-colour file from open collections, in this order: SVG Logos (gilbarbara/logos, CC0, full colour, kept
+  current), svgl (MIT, light and dark files), Wikimedia Commons (public domain or CC0 files only), and Simple Icons only as
+  the last resort (CC0, one colour). The brand table (`scripts/logo-brands.json`) names each listed brand's current mark and
+  the marks and colours it retired, so a retired file is never taken. Source, licence and owner go into
+  `public/logos/logos.json` and `CREDITS.md`; nothing else to pass: `<Brand name="loom" />` then draws it.
+- **Before the final:** `node scripts/logos.mjs verify` lists every mark the film's code shows that is still a one-colour
+  fallback or missing (exit 1); `node scripts/logos.mjs check` flags retired marks, unverified brands and drawn stand-ins.
+- **When a mark is missing:**
+  - no file in any collection, or only a retired one: download the brand's own SVG from its brand, press or site page and
+    run `get <name> --file <svg> --from <where>`; never redraw it, never recolour another file.
+  - no vector anywhere (Zoom's "zm" app icon): show the brand's wordmark, which the brand does publish.
+  - no mark at all (an OS feature, a sub-app like a health or wallet app): the parent brand's mark with the product's name
+    set in type beside it; never draw the icon.
+- **Colour and ground:** a full-colour mark always draws in its own colours, whatever `color` says. A mark drawn in black
+  (GitHub, Notion, X, Vercel, Apple, OpenAI, Linear) takes its white file on a dark ground: `on="dark"`, or
+  `color="white"`. Only a name with no file falls back to Simple Icons' one-colour glyph: black or white by ground for a
+  neutral mark, the brand's own hex otherwise; never an invented tint.
+- **Tiles:** `<BrandTile name="slack" />` shows a mark the way its app icon looks: a mark that is its own tile (Jira,
+  Trello, Stripe, Zapier, Instagram) fills it; every other mark sits on a white tile (Gmail, Calendar, Slack, Figma). Never
+  invent a coloured tile for a product that has none.
+- **Use marks nominatively:** a logo is its owner's trademark whatever the licence of the file. Show a product's own mark
+  only to name that product (what it works with, imports from, runs on), unaltered, and never imply an endorsement or
+  partnership the user did not state. One presentation per film (tiles in a row, chips in a line, a wall).
 
 ## 2. Interface icons
 
@@ -74,22 +85,26 @@ Never generated images. In order of preference:
 ## 5. Sound effects
 
 `scripts/sfx-catalogue.json` lists recorded effects whose licence allows commercial films without credit (the Mixkit Sound
-Effects Free License, https://mixkit.co/license/#sfxFree), each judged by ear on the job it does in a film and measured
-(onset, peak, loudness) so it lands on the frame.
+Effects Free License, https://mixkit.co/license/#sfxFree, and Kenney's CC0 packs), each judged by ear on the job it does
+in a film and measured (onset, peak, loudness, decay, pitch) so it lands on the frame. It offers a dry palette only: clicks,
+ticks, keys, paper and cloth, muted low knocks and short airy whooshes. Bells, chimes, glass, coins, notification tones,
+bubbles, swells, risers, sub booms and trailer hits are in its `rejected` list with the measure that failed, and `get`
+refuses them ([sound-design.md](sound-design.md#3-hard-rules)).
 
 ```
-node scripts/sfx.mjs roles                  # click.hard click.soft key typing pop whoosh.short whoosh.medium whoosh.long
-                                            # reverse riser sub impact lockup notification note paper shutter tick glass
+node scripts/sfx.mjs roles                  # click.hard click.soft key typing paper tick impact shutter whoosh.short whoosh.medium
 node scripts/sfx.mjs list whoosh.short      # strong and plausible picks first
-node scripts/sfx.mjs get mixkit-168 mixkit-2568 ...   # -> public/sfx/*.wav + src/sfx.ts
-node scripts/sfx.mjs pick pop 2 --seed <film>         # a different pick per film
+node scripts/sfx.mjs get mixkit-168 kenney-interface-click_001 ...   # -> public/sfx/* + src/sfx.ts
+node scripts/sfx.mjs pick paper 2 --seed <film>       # a different pick per film
 ```
 
 Other sources, if the catalogue lacks the sound you need (read the licence page and record it):
 - Freesound (https://freesound.org): CC0 is free to use; CC BY needs the credit; never CC BY-NC in a commercial film.
 - Pixabay sound effects (https://pixabay.com/service/license-summary/): commercial use, no credit; the file may not be
   redistributed on its own, so never commit it.
-- Kenney audio packs (https://kenney.nl/assets, CC0) for UI clicks and pops.
+- Kenney audio packs (https://kenney.nl/assets, CC0) for UI clicks and foley; many of their interface sounds are
+  synthesized beeps: measure and listen before you add one.
+Whatever the source, the rules of [sound-design.md](sound-design.md#3-hard-rules) hold: nothing pitched, ringing or swelling.
 Never rip a sound from a game, an operating system or a brand (notification tones of a known device, a game's UI sounds).
 
 ## 6. Music

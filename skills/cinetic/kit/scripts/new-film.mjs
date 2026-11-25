@@ -25,13 +25,15 @@ if (fs.existsSync(out) && fs.readdirSync(out).length) {
 const copy = (rel, filter = () => true) => {
   const from = path.join(kit, rel);
   if (!fs.existsSync(from)) return;
-  fs.cpSync(from, path.join(out, rel), { recursive: true, filter: (p) => !/node_modules|[\\/]out[\\/]?|[\\/]public[\\/](sfx|music|logos)/.test(p.slice(kit.length)) && filter(p) });
+  fs.cpSync(from, path.join(out, rel), { recursive: true, filter: (p) => !/node_modules|[\\/]out[\\/]?|[\\/]public[\\/](sfx|music)/.test(p.slice(kit.length)) && filter(p) });
 };
 fs.mkdirSync(out, { recursive: true });
 for (const f of ['package.json', 'tsconfig.json', 'remotion.config.ts', '.gitignore']) copy(f);
 copy('scripts', (p) => !p.endsWith('new-film.mjs'));
 copy('src/kit');
-for (const f of ['index.ts', 'Root.tsx', 'Sheet.tsx']) copy(`src/${f}`);
+// the real marks the kit ships (public/logos, its record and CREDITS.md) and their index, which <Brand> reads
+copy('public/logos');
+for (const f of ['index.ts', 'Root.tsx', 'Sheet.tsx', 'logos.ts']) copy(`src/${f}`);
 copy('starter', () => true);
 // the blank film and the registry that points at it
 fs.mkdirSync(path.join(out, 'src', 'films', 'main'), { recursive: true });
