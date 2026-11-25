@@ -125,6 +125,12 @@ the x-height's centre (centre an object on a lowercase letter at `cx, xMid`). A 
 style)`** gives the whole line at once (`width, height, baseline, xHeight, xMid, chars, words`). For "the camera dives
 into the o" or "the last word travels into the mark" (never punctuation turned into an object): for a line centred at
 (X, Y) the glyph is at `X - L.width / 2 + g.cx, Y - L.height / 2 + g.cy`.
+**One line carried across a cut at the same place and size** ("the word still being read"): draw the line once, in a
+layer above the turn (a sibling after the turn or the two Sequences, never inside `from` and `to`), with one style
+object and fixed coordinates; what is behind it swaps. When each scene must own the line (it moves with scene B
+afterwards), render both from one component with the same `style`, `left` and `top`, and place anything that docks to
+it from `useTextLayout(text, style)` with the formula above; the second half of a sentence arrives on scene B at the
+first half's baseline. `ScaleJump` (library-type.md) carries a word across a change of size.
 **`mixColor(a, b, p)`** blend two colours.
 
 ## 3. Camera
@@ -138,6 +144,11 @@ strongly depth reads: a large object hinged inside the world (a door, a lid) swi
 perspective, so give it its own layer with a longer one. To add an offset to a keyframed camera, add to the values
 `camAt(frame, keys)` returns (`cam={{ ...c, x: c.x + dx }}`); replacing `x`/`y` throws the keyframed pan away.
 **`<At x y z rx ry rz scale anchor>`** places a child in the world (z toward the camera).
+**A CSS 3D box in a close-up:** `Camera` zooms with a 2D `scale()`, so a `<Box>`'s height (its depth toward the lens)
+does not grow with the zoom: the footprint triples, the height does not, and the top face drifts and skews against the
+sides. Place the box so its top face lies on the world plane (`<At z={-h}>`: the top at z 0, the sides receding below
+it); that face then scales exactly like the flat world and stays flat in any zoom. For a close-up of the sides, build
+the box at the close-up size and frame it by pan, or bring it toward the lens with `z`, never by zooming the camera.
 **`safeBox(frameW, frameH)`** the box type and the subject stay inside (vertical films: clear of the platform's UI at the top
 and bottom). **`camSmear(frame, keys)`** motion blur in px from the camera's own speed (apply to the world group on fast moves).
 **`fillZoom(w, h, frac = 0.8)`** the zoom that makes a w x h box fill the frame. **`diveZoom(w, h)`** the zoom at which a box
@@ -354,9 +365,19 @@ sizes, weights and tracking: [type.md](type.md). To add a face,
 src/films/main/Film.tsx   the film (timeline T + sections)      src/films.ts    registers films (id, component, duration, fps, size)
 src/kit/                  the kit                                src/Sheet.tsx   the 36-frame storyboard composition
 src/sfx.ts                fetched sounds (generated)             public/         sfx/, music/, logos/, images (never commit audio)
-scripts/frames.mjs        sheet | still | render | final | audio | mux | strip | check   (mux without audio joins muted parts
-                          silent; check --format launch | loop | sting, --silent)
+scripts/frames.mjs        sheet | still | render | final | audio | mux | strip | joins | check   (mux without audio joins muted
+                          parts silent; joins: every join at real size, frames J-4 .. J+4; check --format launch | loop | sting,
+                          --silent)
 src/films/library/        the motion library's reels (--film library-type | library-turns | library-ui | library-hosts)
 scripts/sfx.mjs           roles | list | get | pick | shortlist | music | analyze | fit | credits   (music/analyze/fit decode audio: light, seconds)
 scripts/logos.mjs         search | get | list | check | verify   scripts/new-film.mjs  start a project
 ```
+
+**What the film exports for the scripts** (beside `T`, in `src/films/main/Film.tsx`):
+- `export const JOINS = [T.turn, T.dive, T.press + 6];` the first frame of the next scene at every join.
+  `frames.mjs joins` reads it when no `--at` is given (plain numbers, or fields of a `T` made of plain numbers and
+  arithmetic; a value from an imported helper such as a beat grid cannot be read: write the number, or pass `--at`).
+- The lockup's first frame: `lockup` in `T` (`T.lockup`), or `export const LOCKUP = 1210;` (LOCKUP wins when both are
+  there). `frames.mjs check` measures "the ending holds still" from that frame on, so a held payoff picture before the
+  claim counts as a hold (judged by the pace lines), not as the ending; without either, the ending is the still stretch
+  before the last frame, as before. `--lockup <s>` still sets how much of the end the body measures leave out.

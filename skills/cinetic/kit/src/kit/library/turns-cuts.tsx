@@ -485,7 +485,8 @@ export const WhipGate: React.FC<
  * frames (alternate bands may go the other way, so the lines peel apart), while the next scene slides in underneath from
  * another side and lands. The next scene is full-frame from the first frame, so there is never a gap.
  * Measured: bands 2 f apart, each 14 f ease-in out of frame with a smear on the last 3 f; the incoming scene drops ~35 % of
- * the frame and lands with expo out over ~16 f, starting with the first band.
+ * the frame and lands with expo out over ~16 f. Clean: every band (and its smear) is off the frame on its last drawn frame,
+ * and the incoming scene starts to land only in the last band's fast frames, so no slab of the old scene stays beside it.
  */
 export const Shove: React.FC<
   Scenes & {
@@ -515,12 +516,18 @@ export const Shove: React.FC<
   const D = sp(dur, speed);
   const LG = Math.max(0, Math.round(lag / speed));
   const LD = sp(land, speed);
-  const end = start + Math.max(D + (bands - 1) * LG, LD + 2);
+  // the next scene lands only once the last band is in its fast frames: no band of the old scene shares a frame with the
+  // next scene settled and readable
+  const landAt = start + (bands - 1) * LG + Math.max(2, D - 4);
+  const end = Math.max(start + D + (bands - 1) * LG, landAt + LD);
   if (frame < start) return <AbsoluteFill>{from}</AbsoluteFill>;
   if (frame >= end) return <AbsoluteFill>{to}</AbsoluteFill>;
   const horiz = dir === 'left' || dir === 'right';
   const size = horiz ? W : H;
-  const u = ease.out(t01(frame, start + 2, LD));
+  // every band is wholly off the frame (its smear too) on its last drawn frame: nothing of the old scene is left behind
+  const travel = size + 2 * smear + 24;
+  const qLast = ease.in((D - 1) / D) || 1;
+  const u = ease.out(t01(frame, landAt, LD));
   const eo = (1 - u) * enter * (enterFrom === 'top' || enterFrom === 'bottom' ? H : W) * (enterFrom === 'top' || enterFrom === 'left' ? -1 : 1);
   const et = enterFrom === 'top' || enterFrom === 'bottom' ? `translateY(${eo}px)` : `translateX(${eo}px)`;
   const strips: React.ReactNode[] = [];
@@ -529,9 +536,9 @@ export const Shove: React.FC<
     const t = t01(frame, s0, D);
     if (t >= 1) continue;
     const sign = (dir === 'left' || dir === 'up' ? -1 : 1) * (alternate && k % 2 ? -1 : 1);
-    const q = ease.in(t);
-    const v = Math.abs(ease.in(t01(frame + 1, s0, D)) - q) * size * 1.1;
-    const o = sign * q * size * 1.1;
+    const q = Math.min(1, ease.in(t) / qLast);
+    const v = Math.abs(Math.min(1, ease.in(t01(frame + 1, s0, D)) / qLast) - q) * travel;
+    const o = sign * q * travel;
     const a = edges ? edges[k] : (k / bands) * (horiz ? H : W);
     const b = edges ? edges[k + 1] : ((k + 1) / bands) * (horiz ? H : W);
     const clip = horiz ? `inset(${a}px 0 ${H - b - 0.5}px 0)` : `inset(0 ${W - b - 0.5}px 0 ${a}px)`;
@@ -689,3 +696,64 @@ export const GlitchCut: React.FC<
   return <AbsoluteFill style={{ overflow: 'hidden', background: '#000' }}>{bands}</AbsoluteFill>;
 };
 export const glitchCutEnd = (at: number, steps = 8, hold = 1) => at + steps * hold;
+
+// ---------------------------------------------------------------------------------------------------------------------
+const openCurve: Ease = Easing.bezier(0.32, 0, 0.12, 1);
+
+/**
+ * WindowOpen: a window or panel opens out of the button or card that was pressed. The button's rounded rectangle grows
+ * into the window's rectangle (position, size and radius together), and inside it the next scene's window is already laid
+ * out and drawn whole, scaled to fit the growing rectangle (cover, centred): never an empty plate, never a reveal through
+ * a sliding clip edge. The button's own face (`face`) sits on top and fades out in the first fifth, growing 15 % at most. On its last frame the
+ * rectangle is the window and the next scene is whole.
+ * Measured: 12-16 f; a short lift out of the button then a long settle (cubic-bezier 0.32, 0, 0.12, 1); the shadow grows
+ * with it. The scene around the window must be the same in both scenes (one desk, one ground); otherwise open to the
+ * full frame (`win` omitted).
+ */
+export const WindowOpen: React.FC<
+  Scenes & {
+    /** The button or card in the old scene (its centre, size and radius), exactly as drawn there. */
+    box: TurnBox;
+    /** The window in the next scene (its centre, size and radius); default the full frame. */
+    win?: TurnBox;
+    dur?: number;
+    /** The button's face (its label and fill, laid out at `box` size), fading out over the first fifth. */
+    face?: React.ReactNode;
+    /** The window's surface colour, under its content while it grows. */
+    surface?: string;
+    /** A shadow under the growing rectangle (`softShadow(...)`). */
+    shadow?: string;
+  }
+> = ({ from, to, at: start, speed = 1, box, win, dur = 14, face, surface = '#FFFFFF', shadow }) => {
+  const frame = useCurrentFrame();
+  const { width: W, height: H } = useVideoConfig();
+  const D = sp(dur, speed);
+  if (frame < start) return <AbsoluteFill>{from}</AbsoluteFill>;
+  if (frame >= start + D - 1) return <AbsoluteFill>{to}</AbsoluteFill>;
+  const w1 = win ?? { x: W / 2, y: H / 2, w: W, h: H, r: 0 };
+  const p = openCurve(t01(frame, start, D));
+  const cx = mix(p, box.x, w1.x);
+  const cy = mix(p, box.y, w1.y);
+  const cw = mix(p, box.w, w1.w);
+  const ch = mix(p, box.h, w1.h);
+  const cr = mix(p, box.r ?? 0, w1.r ?? 0);
+  // the window's content, drawn whole and scaled to cover the rectangle (centred on it): it grows, it is never uncovered
+  const s = Math.max(cw / w1.w, ch / w1.h);
+  const left = cx - cw / 2;
+  const top = cy - ch / 2;
+  // the face leaves fast and barely grows: a label scaled up over the window's content reads as an overprint
+  const faceO = 1 - clamp(t01(frame, start, Math.max(2, Math.round(D / 5))));
+  const fs = Math.min(1.15, cw / box.w, ch / box.h);
+  return (
+    <AbsoluteFill>
+      <AbsoluteFill>{from}</AbsoluteFill>
+      <div style={{ position: 'absolute', left, top, width: cw, height: ch, borderRadius: cr, overflow: 'hidden', background: surface, boxShadow: shadow }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: '0 0', transform: `translate(${cw / 2 - w1.x * s}px, ${ch / 2 - w1.y * s}px) scale(${s})` }}>{to}</div>
+        {face && faceO > 0.01 && (
+          <div style={{ position: 'absolute', left: cw / 2 - box.w / 2, top: ch / 2 - box.h / 2, width: box.w, height: box.h, opacity: faceO, transform: `scale(${fs})` }}>{face}</div>
+        )}
+      </div>
+    </AbsoluteFill>
+  );
+};
+export const windowOpenEnd = (at: number, o: { dur?: number; speed?: number } = {}) => at + sp(o.dur ?? 14, o.speed) - 1;

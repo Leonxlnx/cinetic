@@ -2037,401 +2037,6 @@
    }
   },
   {
-   "id": "mixkit-1473",
-   "source": "mixkit-sfx",
-   "title": "Long hit swoosh",
-   "role": "whoosh.medium",
-   "page": "https://mixkit.co/free-sound-effects/swoosh/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1473/1473.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 0.99,
-   "end_s": 0.82,
-   "onset_ms": 128.2,
-   "lead_ms": 16.9,
-   "peak_ms": 185.5,
-   "peak_db": -0.01,
-   "lufs": -12.9,
-   "l50_db": -7.5,
-   "floor_db": -173.4,
-   "centroid_hz": 2771,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "medium",
-    "soft",
-    "narrow",
-    "swoosh",
-    "hit"
-   ],
-   "ear": {
-    "query": "a fast air whoosh, a whip pan",
-    "p": 0.999,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 5.71,
-    "action": "whip",
-    "real": 0.91
-   },
-   "heard_as": {
-    "actions": [
-     "whip"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "swipe",
-     "pass"
-    ],
-    "roles": [
-     "whoosh.short",
-     "whoosh.long"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-168",
-   "source": "mixkit-sfx",
-   "title": "Fast air sweep transition",
-   "role": "whoosh.short",
-   "page": "https://mixkit.co/free-sound-effects/swoosh/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/168/168.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 0.861,
-   "end_s": 0.78,
-   "onset_ms": 84.5,
-   "lead_ms": 44.9,
-   "peak_ms": 324.4,
-   "peak_db": -0.09,
-   "lufs": -14,
-   "l50_db": -10.8,
-   "floor_db": -68.7,
-   "centroid_hz": 2789,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "mid",
-    "medium",
-    "swell",
-    "wide",
-    "sweep",
-    "swoosh"
-   ],
-   "ear": {
-    "query": "a fast air whoosh, a whip pan",
-    "p": 0.973,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 5.3,
-    "action": "whip",
-    "real": 0.88
-   },
-   "heard_as": {
-    "actions": [
-     "whip"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "swipe",
-     "slide",
-     "pass",
-     "shape"
-    ],
-    "roles": [
-     "whoosh.short"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-175",
-   "source": "mixkit-sfx",
-   "title": "Short transition sweep",
-   "role": "whoosh.short",
-   "page": "https://mixkit.co/free-sound-effects/transition/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/175/175.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 0.606,
-   "end_s": 0.54,
-   "onset_ms": 277.3,
-   "lead_ms": 103.6,
-   "peak_ms": 460.4,
-   "peak_db": -2.84,
-   "lufs": -16.9,
-   "l50_db": -15,
-   "floor_db": -166.1,
-   "centroid_hz": 10943,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "medium",
-    "swell",
-    "wide",
-    "sweep",
-    "movie",
-    "transition"
-   ],
-   "ear": {
-    "query": "a fast air whoosh, a whip pan",
-    "p": 0.98,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 3.39,
-    "action": "whip",
-    "real": 0.9
-   },
-   "heard_as": {
-    "actions": [
-     "swipe",
-     "slide",
-     "whip"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "pass",
-     "shape"
-    ],
-    "roles": [
-     "whoosh.short"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-1491",
-   "source": "mixkit-sfx",
-   "title": "Arrow whoosh",
-   "role": "whoosh.short",
-   "page": "https://mixkit.co/free-sound-effects/whoosh/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1491/1491.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 1.099,
-   "end_s": 0.44,
-   "onset_ms": 210.6,
-   "lead_ms": 84.6,
-   "peak_ms": 295.6,
-   "peak_db": -1,
-   "lufs": -22.4,
-   "l50_db": -9.8,
-   "floor_db": -76.6,
-   "centroid_hz": 1165,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "warm",
-    "medium",
-    "soft",
-    "narrow",
-    "whoosh",
-    "woosh"
-   ],
-   "ear": {
-    "query": "a fast air whoosh",
-    "p": 0.998,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 4.61,
-    "action": "whip",
-    "real": 0.93
-   },
-   "heard_as": {
-    "actions": [
-     "slide",
-     "whip",
-     "pass",
-     "shape"
-    ],
-    "roles": [
-     "whoosh.short"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "swipe"
-    ],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-1487",
-   "source": "mixkit-sfx",
-   "title": "Dagger woosh",
-   "role": "whoosh.short",
-   "page": "https://mixkit.co/free-sound-effects/swoosh/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/1487/1487.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 0.284,
-   "end_s": 0.28,
-   "onset_ms": 57.6,
-   "lead_ms": 39.7,
-   "peak_ms": 135,
-   "peak_db": -2.74,
-   "lufs": -14,
-   "l50_db": -14.6,
-   "floor_db": -38.7,
-   "centroid_hz": 6694,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "short",
-    "soft",
-    "wide",
-    "woosh",
-    "swoosh",
-    "sword"
-   ],
-   "ear": {
-    "query": "a fast air whoosh, a whip pan",
-    "p": 0.974,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 4.26,
-    "action": "whip",
-    "real": 0.99
-   },
-   "heard_as": {
-    "actions": [
-     "whip"
-    ],
-    "roles": []
-   },
-   "not_heard_as": {
-    "actions": [
-     "swipe",
-     "slide",
-     "pass",
-     "shape"
-    ],
-    "roles": [
-     "whoosh.short"
-    ]
-   }
-  },
-  {
-   "id": "mixkit-174",
-   "source": "mixkit-sfx",
-   "title": "Fast sweep transition",
-   "role": "whoosh.short",
-   "page": "https://mixkit.co/free-sound-effects/swoosh/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/174/174.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 1.002,
-   "end_s": 0.86,
-   "onset_ms": 310.8,
-   "lead_ms": 122,
-   "peak_ms": 517.6,
-   "peak_db": -6.04,
-   "lufs": -18.5,
-   "l50_db": -17,
-   "floor_db": -163.2,
-   "centroid_hz": 7225,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "medium",
-    "swell",
-    "narrow",
-    "sweep",
-    "swoosh",
-    "movie"
-   ],
-   "ear": {
-    "query": "a fast air whoosh",
-    "p": 0.99,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 3.57,
-    "action": "whip",
-    "real": 0.98
-   },
-   "heard_as": {
-    "actions": [
-     "whip"
-    ],
-    "roles": [
-     "whoosh.short"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "swipe",
-     "slide",
-     "pass",
-     "shape"
-    ],
-    "roles": []
-   }
-  },
-  {
-   "id": "mixkit-2637",
-   "source": "mixkit-sfx",
-   "title": "Fast air transition sweep",
-   "role": "whoosh.short",
-   "page": "https://mixkit.co/free-sound-effects/hit/",
-   "file_url": "https://assets.mixkit.co/active_storage/sfx/2637/2637.wav",
-   "licence": "mixkit-sfx",
-   "align": "peak",
-   "dur_s": 0.948,
-   "end_s": 0.78,
-   "onset_ms": 339,
-   "lead_ms": 122.1,
-   "peak_ms": 489.5,
-   "peak_db": -5.02,
-   "lufs": -16.8,
-   "l50_db": -15.2,
-   "floor_db": -165.1,
-   "centroid_hz": 8128,
-   "channels": 2,
-   "sr": 44100,
-   "tags": [
-    "bright",
-    "medium",
-    "swell",
-    "narrow",
-    "hit",
-    "woosh",
-    "sweep"
-   ],
-   "ear": {
-    "query": "a fast air whoosh",
-    "p": 0.988,
-    "verdict": "strong",
-    "top_alt": "a rising synth whip sweep",
-    "z": 3.36,
-    "action": "whip",
-    "real": 0.94
-   },
-   "heard_as": {
-    "actions": [
-     "whip"
-    ],
-    "roles": [
-     "whoosh.short"
-    ]
-   },
-   "not_heard_as": {
-    "actions": [
-     "swipe",
-     "slide",
-     "pass",
-     "shape"
-    ],
-    "roles": []
-   }
-  },
-  {
    "id": "kenney-interface-switch_001",
    "source": "kenney-cc0",
    "title": "Interface Sounds: switch 001",
@@ -2988,6 +2593,191 @@
      "an error buzz"
     ],
     "note": "a short dry click"
+   }
+  },
+  {
+   "id": "kenney-interface-click_002",
+   "source": "kenney-cc0",
+   "title": "Interface Sounds: click 002",
+   "role": "click.soft",
+   "page": "https://opengameart.org/content/interface-sounds",
+   "archive_url": "https://opengameart.org/sites/default/files/kenney_interfaceSounds.zip",
+   "member": "Audio/click_002.ogg",
+   "licence": "kenney-cc0",
+   "align": "onset",
+   "dur_s": 0.0116,
+   "end_s": 0.01,
+   "onset_ms": 0,
+   "lead_ms": 0,
+   "peak_ms": 0.1,
+   "peak_db": -0.84,
+   "lufs": -16.2,
+   "l50_db": -16.2,
+   "floor_db": -16.2,
+   "centroid_hz": 1271,
+   "channels": 1,
+   "sr": 44100,
+   "tags": [
+    "mid",
+    "tiny",
+    "soft",
+    "dry",
+    "interface",
+    "click"
+   ],
+   "page_kenney": "https://kenney.nl/assets/interface-sounds",
+   "study": {
+    "by": "measured 2026-11-25 with ffmpeg (onset at 10 % of the peak, loudness: RMS of the loudest 400 / 50 ms, unweighted); not ear-tested: audition it in the mix",
+    "decay_ms": 10,
+    "note": "a 12 ms dry click, about 1.3 kHz"
+   }
+  },
+  {
+   "id": "kenney-interface-click_005",
+   "source": "kenney-cc0",
+   "title": "Interface Sounds: click 005",
+   "role": "click.soft",
+   "page": "https://opengameart.org/content/interface-sounds",
+   "archive_url": "https://opengameart.org/sites/default/files/kenney_interfaceSounds.zip",
+   "member": "Audio/click_005.ogg",
+   "licence": "kenney-cc0",
+   "align": "onset",
+   "dur_s": 0.0071,
+   "end_s": 0.007,
+   "onset_ms": 0.7,
+   "lead_ms": 0,
+   "peak_ms": 1.3,
+   "peak_db": -0.64,
+   "lufs": -11.6,
+   "l50_db": -11.6,
+   "floor_db": -11.6,
+   "centroid_hz": 3116,
+   "channels": 1,
+   "sr": 44100,
+   "tags": [
+    "bright",
+    "tiny",
+    "sharp",
+    "dry",
+    "interface",
+    "click"
+   ],
+   "page_kenney": "https://kenney.nl/assets/interface-sounds",
+   "study": {
+    "by": "measured 2026-11-25 with ffmpeg (onset at 10 % of the peak, loudness: RMS of the loudest 400 / 50 ms, unweighted); not ear-tested: audition it in the mix",
+    "decay_ms": 0,
+    "note": "a 7 ms dry tick-click, about 3 kHz; loud for its size: start at db(-18)"
+   }
+  },
+  {
+   "id": "kenney-interface-tick_002",
+   "source": "kenney-cc0",
+   "title": "Interface Sounds: tick 002",
+   "role": "tick",
+   "page": "https://opengameart.org/content/interface-sounds",
+   "archive_url": "https://opengameart.org/sites/default/files/kenney_interfaceSounds.zip",
+   "member": "Audio/tick_002.ogg",
+   "licence": "kenney-cc0",
+   "align": "onset",
+   "dur_s": 0.0203,
+   "end_s": 0.02,
+   "onset_ms": 0,
+   "lead_ms": 0,
+   "peak_ms": 0.6,
+   "peak_db": 1.09,
+   "lufs": -16.9,
+   "l50_db": -16.9,
+   "floor_db": -16.9,
+   "centroid_hz": 5249,
+   "channels": 1,
+   "sr": 44100,
+   "tags": [
+    "bright",
+    "tiny",
+    "sharp",
+    "dry",
+    "tick",
+    "detent"
+   ],
+   "page_kenney": "https://kenney.nl/assets/interface-sounds",
+   "study": {
+    "by": "measured 2026-11-25 with ffmpeg (onset at 10 % of the peak, loudness: RMS of the loudest 400 / 50 ms, unweighted); not ear-tested: audition it in the mix",
+    "decay_ms": 20,
+    "note": "a 20 ms bright tick"
+   }
+  },
+  {
+   "id": "kenney-rpg-dropleather",
+   "source": "kenney-cc0",
+   "title": "RPG Audio: dropLeather",
+   "role": "paper",
+   "page": "https://opengameart.org/content/50-rpg-sound-effects",
+   "archive_url": "https://opengameart.org/sites/default/files/RPGsounds_Kenney.zip",
+   "member": "OGG/dropLeather.ogg",
+   "licence": "kenney-cc0",
+   "align": "onset",
+   "dur_s": 0.4151,
+   "end_s": 0.33,
+   "onset_ms": 45.7,
+   "lead_ms": 43.7,
+   "peak_ms": 126.9,
+   "peak_db": -4.85,
+   "lufs": -21.3,
+   "l50_db": -13.9,
+   "floor_db": -65.3,
+   "centroid_hz": 2806,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "mid",
+    "short",
+    "soft",
+    "dry",
+    "foley",
+    "paper"
+   ],
+   "page_kenney": "https://kenney.nl/assets/rpg-audio",
+   "study": {
+    "by": "measured 2026-11-25 with ffmpeg (onset at 10 % of the peak, loudness: RMS of the loudest 400 / 50 ms, unweighted); not ear-tested: audition it in the mix",
+    "decay_ms": 150,
+    "note": "a soft leather drop: a card or a folder landing, dies in 150 ms"
+   }
+  },
+  {
+   "id": "kenney-rpg-clothbelt",
+   "source": "kenney-cc0",
+   "title": "RPG Audio: clothBelt",
+   "role": "whoosh.short",
+   "page": "https://opengameart.org/content/50-rpg-sound-effects",
+   "archive_url": "https://opengameart.org/sites/default/files/RPGsounds_Kenney.zip",
+   "member": "OGG/clothBelt.ogg",
+   "licence": "kenney-cc0",
+   "align": "peak",
+   "dur_s": 0.7225,
+   "end_s": 0.7,
+   "onset_ms": 51.3,
+   "lead_ms": 49.3,
+   "peak_ms": 552,
+   "peak_db": -1.36,
+   "lufs": -26.4,
+   "l50_db": -18.8,
+   "floor_db": -45.3,
+   "centroid_hz": 8757,
+   "channels": 2,
+   "sr": 48000,
+   "tags": [
+    "bright",
+    "medium",
+    "soft",
+    "dry",
+    "foley",
+    "cloth"
+   ],
+   "page_kenney": "https://kenney.nl/assets/rpg-audio",
+   "study": {
+    "by": "measured 2026-11-25 with ffmpeg (onset at 10 % of the peak, loudness: RMS of the loudest 400 / 50 ms, unweighted); not ear-tested: audition it in the mix",
+    "decay_ms": 90,
+    "note": "a cloth swish with a belt rustle: a fast exit, not an air sweep; its peak lands on the cut"
    }
   }
  ],
@@ -3671,6 +3461,41 @@
    "id": "kenney-rpg-footstep04",
    "role": "impact",
    "why": "review 2026-11-25: a footstep recording (Kenney RPG Audio footstep04, heard as \"footsteps on wood\"); used as an interface impact it reads as someone stepping, not as the product acting. Kept for real feet only: fetch it by hand from the Kenney pack when a person walks on screen; a landing takes a paper or cloth landing, a muted tap (kenney-interface-bong_001) or the music alone"
+  },
+  {
+   "id": "mixkit-1473",
+   "role": "whoosh.medium",
+   "why": "review 2026-11-25: an air whoosh (\"Long hit swoosh\"); the whoosh roles are what joins and interface moves draw from, and an air sweep there reads as a trailer move, heard on a turn as the cheap transition (a second critique found it on a turn in a film built from the catalogue). A join is carried by the picture and the music; a fast exit takes a cloth swish (kenney-rpg-cloth1, kenney-rpg-clothbelt) or nothing"
+  },
+  {
+   "id": "mixkit-168",
+   "role": "whoosh.short",
+   "why": "review 2026-11-25: an air whoosh (\"Fast air sweep transition\"); the whoosh roles are what joins and interface moves draw from, and an air sweep there reads as a trailer move, heard on a turn as the cheap transition (a second critique found it on a turn in a film built from the catalogue). A join is carried by the picture and the music; a fast exit takes a cloth swish (kenney-rpg-cloth1, kenney-rpg-clothbelt) or nothing"
+  },
+  {
+   "id": "mixkit-175",
+   "role": "whoosh.short",
+   "why": "review 2026-11-25: an air whoosh (\"Short transition sweep\"); the whoosh roles are what joins and interface moves draw from, and an air sweep there reads as a trailer move, heard on a turn as the cheap transition (a second critique found it on a turn in a film built from the catalogue). A join is carried by the picture and the music; a fast exit takes a cloth swish (kenney-rpg-cloth1, kenney-rpg-clothbelt) or nothing"
+  },
+  {
+   "id": "mixkit-1491",
+   "role": "whoosh.short",
+   "why": "review 2026-11-25: an air whoosh (\"Arrow whoosh\"); the whoosh roles are what joins and interface moves draw from, and an air sweep there reads as a trailer move, heard on a turn as the cheap transition (a second critique found it on a turn in a film built from the catalogue). A join is carried by the picture and the music; a fast exit takes a cloth swish (kenney-rpg-cloth1, kenney-rpg-clothbelt) or nothing"
+  },
+  {
+   "id": "mixkit-1487",
+   "role": "whoosh.short",
+   "why": "review 2026-11-25: an air whoosh (\"Dagger woosh\"); the whoosh roles are what joins and interface moves draw from, and an air sweep there reads as a trailer move, heard on a turn as the cheap transition (a second critique found it on a turn in a film built from the catalogue). A join is carried by the picture and the music; a fast exit takes a cloth swish (kenney-rpg-cloth1, kenney-rpg-clothbelt) or nothing"
+  },
+  {
+   "id": "mixkit-174",
+   "role": "whoosh.short",
+   "why": "review 2026-11-25: an air whoosh (\"Fast sweep transition\"); the whoosh roles are what joins and interface moves draw from, and an air sweep there reads as a trailer move, heard on a turn as the cheap transition (a second critique found it on a turn in a film built from the catalogue). A join is carried by the picture and the music; a fast exit takes a cloth swish (kenney-rpg-cloth1, kenney-rpg-clothbelt) or nothing"
+  },
+  {
+   "id": "mixkit-2637",
+   "role": "whoosh.short",
+   "why": "review 2026-11-25: an air whoosh (\"Fast air transition sweep\"); the whoosh roles are what joins and interface moves draw from, and an air sweep there reads as a trailer move, heard on a turn as the cheap transition (a second critique found it on a turn in a film built from the catalogue). A join is carried by the picture and the music; a fast exit takes a cloth swish (kenney-rpg-cloth1, kenney-rpg-clothbelt) or nothing"
   }
  ],
  "palette": {

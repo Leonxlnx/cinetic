@@ -18,7 +18,9 @@ import {
   ShapeMatch,
   TrackOverlay,
   WhipGate,
+  WindowOpen,
   blockBurstEnd,
+  windowOpenEnd,
   dotRevealEnd,
   whipGateEnd,
   glitchCutEnd,
@@ -732,6 +734,63 @@ const MorphDemo: React.FC = () => {
   );
 };
 
+// the button grows into the report window, its real content drawn whole inside the growing rectangle from the first frame;
+// the card it sits on lies wholly inside the window's rectangle, so nothing of the old scene is left beside the window
+const WO_BTN = { x: 1300, y: 772, w: 340, h: 92, r: 46 };
+const WO_WIN = { x: 880, y: 540, w: 1460, h: 840, r: 30 };
+const WO_AT = 24;
+const WindowOpenDemo: React.FC = () => {
+  const rows: Array<[string, string, boolean]> = [
+    ['Delta, dry season', 'Today, 09:12', true],
+    ['Sand bars after the storm', 'Mon, 16:40', false],
+    ['Kelp farms, south coast', 'Sun, 11:05', false],
+    ['Cloud streets', 'Sat, 07:30', false],
+  ];
+  const from = (
+    <Ground color={PAPER} light={false}>
+      <div style={{ position: 'absolute', left: 930, top: 560, width: 620, height: 330, borderRadius: 32, background: '#fff', boxShadow: softShadow(4, PAPER), fontFamily: fonts.inter, color: INK, textAlign: 'left', padding: '40px 44px', boxSizing: 'border-box' }}>
+        <div style={{ fontSize: 40, fontWeight: 600 }}>Delta, dry season</div>
+        <div style={{ fontSize: 30, opacity: 0.55, marginTop: 8 }}>New field report, 12 photos</div>
+      </div>
+      <div style={{ position: 'absolute', left: WO_BTN.x - WO_BTN.w / 2, top: WO_BTN.y - WO_BTN.h / 2, width: WO_BTN.w, height: WO_BTN.h }}>{btn}</div>
+    </Ground>
+  );
+  const to = (
+    <Ground color={PAPER} light={false}>
+      <div style={{ position: 'absolute', left: WO_WIN.x - WO_WIN.w / 2, top: WO_WIN.y - WO_WIN.h / 2, width: WO_WIN.w, height: WO_WIN.h, borderRadius: WO_WIN.r, background: '#fff', boxShadow: softShadow(5, PAPER), overflow: 'hidden', fontFamily: fonts.inter, color: INK, textAlign: 'left' }}>
+        <div style={{ height: 76, display: 'flex', alignItems: 'center', gap: 12, padding: '0 30px', borderBottom: '1px solid rgba(0,0,0,.07)' }}>
+          {[CORAL, SUN, SKY].map((c) => (
+            <div key={c} style={{ width: 16, height: 16, borderRadius: 8, background: c }} />
+          ))}
+          <div style={{ marginLeft: 24, fontSize: 30, fontWeight: 550 }}>Field reports</div>
+          <div style={{ marginLeft: 'auto' }}>
+            <Avatars n={3} size={46} />
+          </div>
+        </div>
+        <div style={{ position: 'absolute', left: 24, top: 100, width: 420 }}>
+          {rows.map(([t, d, on]) => (
+            <div key={t} style={{ padding: '20px 22px', borderRadius: 20, background: on ? '#EEF2FF' : 'transparent', marginBottom: 8 }}>
+              <div style={{ fontSize: 31, fontWeight: on ? 600 : 500 }}>{t}</div>
+              <div style={{ fontSize: 26, opacity: 0.5, marginTop: 4 }}>{d}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ position: 'absolute', left: 480, top: 100, right: 30, bottom: 30, display: 'flex', flexDirection: 'column', gap: 22 }}>
+          <div style={{ height: 470, borderRadius: 22, overflow: 'hidden' }}>
+            <Pic src={IMG.delta} />
+          </div>
+          <div style={{ fontSize: 48, fontWeight: 600, letterSpacing: '-0.02em' }}>Delta, dry season</div>
+          <div style={{ fontSize: 30, opacity: 0.6 }}>Seen from 400 km at 09:12. The channels have moved 40 m since March.</div>
+        </div>
+      </div>
+    </Ground>
+  );
+  return <WindowOpen from={from} to={to} at={WO_AT} box={WO_BTN} win={WO_WIN} dur={14} face={btn} shadow={softShadow(5, PAPER)} />;
+};
+const btn = (
+  <div style={{ width: '100%', height: '100%', borderRadius: 46, background: COBALT, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: fonts.inter, fontSize: 34, fontWeight: 560 }}>Open report</div>
+);
+
 const SEGS: Seg[] = [
   { name: 'Dot reveal', len: dotRevealEnd(22) + 30, C: DotRevealDemo },
   { name: 'Dot reveal, square cells out of a photo', len: dotRevealEnd(18, { sweep: 16 }) + 40, C: PixelDissolveDemo },
@@ -748,6 +807,7 @@ const SEGS: Seg[] = [
   { name: 'Dot screen', len: 84, C: DotScreenDemo },
   { name: 'Chroma hit', len: 72, C: ChromaDemo },
   { name: 'Morph box', len: 100, C: MorphDemo },
+  { name: 'Window open', len: windowOpenEnd(WO_AT) + 40, C: WindowOpenDemo },
 ];
 
 export const reelTurnsStarts = SEGS.reduce<number[]>((acc, s, i) => [...acc, i === 0 ? 0 : acc[i - 1] + SEGS[i - 1].len], []);

@@ -20,13 +20,19 @@
 //   node scripts/frames.mjs check [out/main-preview.mp4] [--film main] [--lockup 2] [--format launch|loop|sting] [--silent]
 //        measures a rendered film against the bar: air (how much of the frame is sharp detail, how many separate things,
 //        how often the frame edge cuts them), pace (how much changes in every half second), empty frames, how long the
-//        ending is, the sound, and how many motion-library pieces the film's source (src/films/<film>) imports. Flags
+//        ending is (from the film's exported LOCKUP or T.lockup frame when it has one), the sound, and which
+//        motion-library pieces the film's source (src/films/<film>) imports and how often it uses each. Flags
 //        what fails; LOOK lines name frames to look at. Thresholds: CINETIC_CHECK_* env. Fails a file that is silent
 //        while the film's source plays sound cues or music (the sound insert failed); --silent for a film meant silent.
 //        --format loop: no sound, ending or music lines; fails when the last frame does not match the first.
 //        --format sting: no pace gate on a film under 8 s; the ending may hold. Default launch.
 //   node scripts/frames.mjs strip out/film.mp4 --at 4.5 [--dur 2] [--fps 15] [--out out/strip.jpg]
 //        a dense contact strip of a moment of a rendered video (motion check: an entrance, a turn, a morph)
+//   node scripts/frames.mjs joins [--film main] [--at 120,245,390] [--pad 4] [--full] [--out out/joins]
+//        every join at real size: for each join frame J the frames J-4 .. J+4, each 960 px wide (--full: 1920), tiled
+//        into one image a join (out/joins/<film>-join-<J>.png), the frame number on each cell, the join frame outlined.
+//        Without --at it reads the film's exported JOINS (frame numbers, beside T). One browser, one render call.
+//        Look at every cell before the final and after every fix that touches the join.
 //
 // GL: set CINETIC_GL=swangle to render on the CPU (software GL) when the GPU is unstable; otherwise Remotion's default.
 // Concurrency: CINETIC_CONCURRENCY (default 2). CINETIC_BROWSER: a Chrome Headless Shell shared by every film project.
@@ -237,35 +243,157 @@ function filmSources() {
   return out;
 }
 
-/** The motion library's pieces: the components (capitalised, not ALL_CAPS) exported by src/kit/library/{type,turns,ui,hosts}.tsx. */
+/**
+ * The motion library's pieces: the components (capitalised, not ALL_CAPS) exported by src/kit/library/{type,turns,ui,hosts}.tsx,
+ * each with its section (type, turns, ui, hosts).
+ */
 function libraryPieces() {
   const dir = path.join(process.cwd(), 'src', 'kit', 'library');
-  const names = new Set();
+  const names = new Map();
   for (const f of ['type.tsx', 'turns.tsx', 'ui.tsx', 'hosts.tsx']) {
     const p = path.join(dir, f);
     if (!fs.existsSync(p)) continue;
+    const section = f.replace('.tsx', '');
     const src = fs.readFileSync(p, 'utf8');
-    for (const m of src.matchAll(/export\s*\{([^}]*)\}\s*from/g)) for (const n of m[1].split(',')) { const k = n.trim().split(/\s+as\s+/).pop(); if (/^[A-Z]\w*$/.test(k ?? '') && /[a-z]/.test(k)) names.add(k); }
-    for (const m of src.matchAll(/export\s+(?:const|function)\s+([A-Z]\w*)/g)) if (/[a-z]/.test(m[1])) names.add(m[1]);
+    for (const m of src.matchAll(/export\s*\{([^}]*)\}\s*from/g)) for (const n of m[1].split(',')) { const k = n.trim().split(/\s+as\s+/).pop(); if (/^[A-Z]\w*$/.test(k ?? '') && /[a-z]/.test(k)) names.set(k, section); }
+    for (const m of src.matchAll(/export\s+(?:const|function)\s+([A-Z]\w*)/g)) if (/[a-z]/.test(m[1])) names.set(m[1], section);
   }
   return names;
 }
 
-/** The library pieces the film's source imports from the kit (named value imports whose path reaches the kit). */
+/**
+ * The library pieces the film's source imports from the kit (named value imports whose path reaches the kit), and how
+ * often each is placed (`<Piece` in the source, under the name it was imported as).
+ */
 function libraryUse(sources) {
   const pieces = libraryPieces();
-  const used = new Set();
+  const local = new Map(); // the name in the film's code -> the piece
   for (const { src } of sources)
     for (const m of src.matchAll(/import\s*(type\s*)?\{([^}]*)\}\s*from\s*['"]([^'"]*kit[^'"]*)['"]/g)) {
       if (m[1]) continue;
-      for (const n of m[2].split(',')) { const k = n.trim().replace(/^type\s+/, '').split(/\s+as\s+/)[0]; if (pieces.has(k)) used.add(k); }
+      for (const n of m[2].split(',')) {
+        const [k, as] = n.trim().replace(/^type\s+/, '').split(/\s+as\s+/);
+        if (pieces.has(k)) local.set(as || k, k);
+      }
     }
-  return { used: [...used].sort(), known: pieces.size };
+  const count = new Map();
+  for (const [name, k] of local) count.set(k, (count.get(k) || 0) + placements(sources, name));
+  const used = [...new Set(local.values())].sort();
+  return { used, known: pieces.size, count, section: (k) => pieces.get(k) };
 }
 
-function checkFilm(file, lockupS, format = 'launch', silentOk = false) {
+/**
+ * How often the code at `index` of `src` is placed: once, or as often as the local component it sits in is placed
+ * (a Statement helper holding one <Words>, placed five times, places it five times). One level deep.
+ */
+function hostUses(sources, src, index) {
+  const host = [...src.slice(0, index).matchAll(/(?:const|function)\s+([A-Z]\w*)\b/g)].pop()?.[1];
+  let uses = 0;
+  if (host) for (const t of sources) uses += (t.src.match(new RegExp(`<${host}\\b`, 'g')) || []).length;
+  return Math.max(1, uses);
+}
+/** How often a component is placed in the film (each `<Name`, counted through the local component that holds it). */
+function placements(sources, name) {
+  let n = 0;
+  for (const { src } of sources) for (const m of src.matchAll(new RegExp(`<${name}\\b`, 'g'))) n += hostUses(sources, src, m.index);
+  return n;
+}
+
+/** The film's entry in src/films.ts: its component's source file (resolved from the import), fps and size. */
+function filmEntry() {
+  const reg = fs.existsSync('src/films.ts') ? fs.readFileSync('src/films.ts', 'utf8') : '';
+  const entry = reg.match(new RegExp(`['"]?${film.replace(/[-]/g, '\\-')}['"]?\\s*:\\s*\\{[^}]*\\}`))?.[0] ?? '';
+  const comp = entry.match(/component:\s*(\w+)/)?.[1];
+  let file = null;
+  if (comp) {
+    const imp = [...reg.matchAll(/import\s*\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]/g)].find((m) => m[1].split(',').some((n) => n.trim().split(/\s+as\s+/).pop() === comp));
+    if (imp) for (const ext of ['.tsx', '.ts', '/index.tsx', '/index.ts']) { const p = path.join('src', imp[2] + ext); if (fs.existsSync(p)) { file = p; break; } }
+  }
+  return {
+    file,
+    fps: Number(entry.match(/fps:\s*(\d+)/)?.[1] ?? 30),
+    width: Number(entry.match(/width:\s*(\d+)/)?.[1] ?? 1920),
+    height: Number(entry.match(/height:\s*(\d+)/)?.[1] ?? 1080),
+  };
+}
+
+/** The film's own source texts: its registered component's file first, then every file under src/films/<film>. */
+function filmTexts() {
+  const { file } = filmEntry();
+  const out = [];
+  if (file) out.push(fs.readFileSync(file, 'utf8'));
+  for (const { file: f, src } of filmSources()) if (!file || path.resolve(f) !== path.resolve(file)) out.push(src);
+  return out;
+}
+
+/** The initialiser of a top-level `const NAME = ...` (exported or not) in a source text, comments dropped; null if none. */
+function constText(src, name) {
+  const m = new RegExp(`^(?:export\\s+)?const\\s+${name}\\b\\s*(?::[^=\\n]+)?=\\s*`, 'm').exec(src);
+  if (!m) return null;
+  let i = m.index + m[0].length, depth = 0, str = null, out = '';
+  for (; i < src.length; i++) {
+    const c = src[i];
+    if (str) { out += c; if (c === '\\') { out += src[++i]; continue; } if (c === str) str = null; continue; }
+    if (c === '/' && src[i + 1] === '/') { const e = src.indexOf('\n', i); i = (e < 0 ? src.length : e) - 1; continue; }
+    if (c === '/' && src[i + 1] === '*') { const e = src.indexOf('*/', i + 2); i = (e < 0 ? src.length : e + 2) - 1; continue; }
+    if (c === '"' || c === "'" || c === '`') { str = c; out += c; continue; }
+    if ('([{'.includes(c)) depth++;
+    if (')]}'.includes(c)) depth--;
+    if (depth <= 0 && c === ';') break;
+    if (depth <= 0 && c === '\n' && out.trim()) {
+      // the expression continues when the next line starts with an operator
+      const rest = src.slice(i + 1).replace(/^\s+/, '');
+      if (!/^[.?:+\-*/|&,]/.test(rest)) break;
+    }
+    out += c;
+  }
+  return out.replace(/\bas\s+const\b/g, '').replace(/\bsatisfies\s+[\w<>[\], ]+/g, '').trim();
+}
+
+/**
+ * The value of a plain constant of the film (JOINS, LOCKUP, T): numbers, arrays, objects and arithmetic on other plain
+ * constants of the film's files. Throws when it calls something that is not one (an imported helper).
+ */
+function filmConst(name, texts = filmTexts(), env = {}, depth = 0) {
+  if (Object.prototype.hasOwnProperty.call(env, name)) return env[name];
+  if (depth > 16) throw new Error(`${name}: too many nested constants`);
+  let expr = null;
+  for (const s of texts) { expr = constText(s, name); if (expr !== null) break; }
+  if (expr === null) throw new Error(`no plain const ${name} in the film's files`);
+  for (let k = 0; k < 40; k++) {
+    try {
+      const keys = Object.keys(env);
+      const v = new Function(...keys, `"use strict"; return (${expr});`)(...keys.map((x) => env[x]));
+      env[name] = v;
+      return v;
+    } catch (e) {
+      const miss = /^(\w+) is not defined/.exec(e.message)?.[1];
+      if (!miss || miss === name) throw e;
+      env[miss] = filmConst(miss, texts, env, depth + 1);
+    }
+  }
+  throw new Error(`${name} could not be read`);
+}
+
+/** Frame numbers out of a value (a number, or arrays of them, nested). */
+const frameList = (v) => [v].flat(Infinity).map(Number).filter(Number.isFinite).map(Math.round);
+
+/** The film's lockup frame: an exported LOCKUP, else T.lockup; null when it has neither (or they cannot be read). */
+function lockupFrame() {
+  const texts = filmTexts();
+  for (const [label, read] of [['LOCKUP', () => filmConst('LOCKUP', texts)], ['T.lockup', () => filmConst('T', texts)?.lockup]]) {
+    try { const f = frameList(read())[0]; if (Number.isFinite(f)) return { f, label }; } catch { /* not there, or not plain */ }
+  }
+  return null;
+}
+
+function checkFilm(file, lockupS, format = 'launch', silentOk = false, lockupGiven = false) {
   const loop = format === 'loop';
   const sting = format === 'sting';
+  // the film's own lockup frame (LOCKUP or T.lockup), when its source is here: the ending is measured from it, so a held
+  // picture before the claim is judged as a hold, not as the ending
+  const lock = loop ? null : lockupFrame();
+  const lockFps = filmEntry().fps || 30;
   const FPS = 4;
   // sample at the film's own aspect (a vertical film is measured vertical): the long side 192 px
   const dims = spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', file], { encoding: 'utf8' }).stdout.trim().split(',').map(Number);
@@ -275,6 +403,9 @@ function checkFilm(file, lockupS, format = 'launch', silentOk = false) {
   const probe = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file], { encoding: 'utf8' });
   const dur = parseFloat(probe.stdout);
   if (!Number.isFinite(dur)) throw new Error(`cannot read ${file}`);
+  const lockT = lock && lock.f / lockFps < dur - 0.2 ? lock.f / lockFps : null;
+  // without an explicit --lockup the body runs to the film's own lockup frame
+  if (lockT !== null && !lockupGiven) lockupS = Math.max(0, dur - lockT);
   const r = spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-vf', `fps=${FPS},scale=${W}:${H}:flags=area`, '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], { maxBuffer: 1 << 30 });
   const buf = r.stdout;
   const n = Math.floor(buf.length / (W * H * 3));
@@ -316,8 +447,9 @@ function checkFilm(file, lockupS, format = 'launch', silentOk = false) {
   const slow = pace.filter((x) => x.t > 0.2 && x.t < dur - lockupS - 0.5 && x.d < 0.012);
   const avgW = body.reduce((a, x) => a + x.width, 0) / Math.max(1, body.length);
   // the ending: from the last big change, how long the film stays nearly still
+  // (from the lockup frame on, when the film exports one: what holds before it is a hold, judged by the pace lines)
   let endStill = 0;
-  for (let i = pace.length - 1; i >= 0 && pace[i].d < 0.02; i--) endStill += 0.5;
+  for (let i = pace.length - 1; i >= 0 && pace[i].d < 0.02 && (lockT === null || pace[i].t >= lockT - 0.25); i--) endStill += 0.5;
   // empty runs: references have brief designed blanks (a flash, a breath); a blank that lasts is a hole
   let run = 0, longest = 0, runAt = 0;
   for (const x of frames) {
@@ -349,7 +481,7 @@ function checkFilm(file, lockupS, format = 'launch', silentOk = false) {
   console.log(`  pace       ${slow.length} of ${pace.length} half-seconds with almost nothing changing${slow.length ? `  [from ${fmt(slow)} s]` : ''}`);
   console.log(`  stretches  longest sparse run ${sparseRun.s.toFixed(1)} s${sparseRun.s ? ` (from ${sparseRun.at.toFixed(1)} s)` : ''}; longest still stretch ${stillRun.s.toFixed(1)} s${stillRun.s ? ` (from ${stillRun.at.toFixed(1)} s)` : ''}`);
   console.log(`  empty      ${empty.length} near-empty samples${empty.length ? `  [at ${fmt(empty)} s]` : ''}${frames[0] && frames[0].fill < EMPTY_FILL / 4 ? '  FRAME 0 IS EMPTY' : ''}`);
-  if (!loop) console.log(`  ending     the last ${endStill.toFixed(1)} s are nearly still (${((endStill / dur) * 100).toFixed(0)} % of the film)${sting ? '  (a sting may hold its mark)' : ''}`);
+  if (!loop) console.log(`  ending     the last ${endStill.toFixed(1)} s are nearly still (${((endStill / dur) * 100).toFixed(0)} % of the film)${lockT !== null ? `, measured from the lockup at frame ${lock.f} (${lock.label})` : ''}${sting ? '  (a sting may hold its mark)' : ''}`);
   const snd = loop ? { I: NaN, TP: NaN } : loudness(file);
   if (Number.isFinite(snd.I)) console.log(`  sound      ${snd.I.toFixed(1)} LUFS, true peak ${snd.TP.toFixed(1)} dBTP`);
   // the film's own source (when this project has it): does it play sound, and which library pieces does it take
@@ -357,9 +489,28 @@ function checkFilm(file, lockupS, format = 'launch', silentOk = false) {
   const wantsSound = sources.some(({ src }) => /<(Cues|Music|Sfx|Audio)\b/.test(src));
   const lib = sources.length ? libraryUse(sources) : null;
   if (lib && lib.known) {
-    console.log(`  library    ${lib.used.length} motion-library piece${lib.used.length === 1 ? '' : 's'} imported by src/films/${film}${lib.used.length ? ` (${lib.used.join(', ')})` : ''}  (information: BEATS.md's Devices block names the piece behind each join, type move and UI move, or why none fits)`);
+    const times = (k) => (lib.count.get(k) > 1 ? ` x${lib.count.get(k)}` : '');
+    console.log(`  library    ${lib.used.length} motion-library piece${lib.used.length === 1 ? '' : 's'} imported by src/films/${film}${lib.used.length ? ` (${lib.used.map((k) => k + times(k)).join(', ')})` : ''}  (information: BEATS.md's Devices block names the piece behind each join, type move and UI move, or why none fits)`);
     if (!lib.used.length) console.log('  LOOK       the film imports no library piece: the library is the default (references/library.md); take the turn, type move or UI piece that does each job and adapt it, and write in BEATS.md why none fits where you build by hand');
+    // the same arrival or the same turn more than twice is a pattern the eye counts
+    for (const k of lib.used) {
+      const n = lib.count.get(k) || 0;
+      const sec = lib.section(k);
+      if (n > 2 && (sec === 'type' || sec === 'turns')) console.log(`  LOOK       ${k} is placed ${n} times: ${sec === 'type' ? 'every line arrives the same way' : 'every join turns the same way'}; at most twice, and the claim arrives differently from the statements (references/film-grammar.md#devices)`);
+    }
+    // a words-led brief with no type piece: the words were set by hand, usually mid-weight on an empty ground
+    const brief = ['BRIEF.md', path.join('src', 'films', film, 'BRIEF.md')].find((p) => fs.existsSync(p));
+    const wordsLed = brief && /words[- ]led|mostly words|type[- ]led|all type|kinetic type/i.test(fs.readFileSync(brief, 'utf8'));
+    if (wordsLed && !lib.used.some((k) => lib.section(k) === 'type')) console.log(`  LOOK       ${brief} says the film is led by words, and it imports no library type piece: take the type moves that do the job (references/library-type.md) and make the brief's adjectives choices (references/type.md#4-weight)`);
   }
+  // one word arrival repeated: <Words arrive="..."> with the same arrival on more than two lines
+  const arrivals = new Map();
+  for (const { src } of sources)
+    for (const m of src.matchAll(/<Words\b[\s\S]*?\/>/g)) {
+      const a = m[0].match(/\barrive=["'](\w+)["']/)?.[1] ?? 'default';
+      arrivals.set(a, (arrivals.get(a) || 0) + hostUses(sources, src, m.index));
+    }
+  for (const [a, n] of arrivals) if (n > 2) console.log(`  LOOK       ${n} lines arrive by ${a === 'default' ? '<Words> with its default arrival' : `<Words arrive="${a}">`}: every line arrives the same way; vary it (a library type move, a line built from its object) and keep one arrival for the claim`);
   // a loop: the last frame must lead back into the first (frame N would equal frame 0)
   const seam = loop ? loopSeam(file, W, H) : null;
   const seamOpen = !!seam && (seam.seam.mean > Math.max(0.012, 2 * seam.step.mean + 0.004) || seam.seam.cell > Math.max(0.1, 2 * seam.step.cell + 0.03));
@@ -515,7 +666,38 @@ if (cmd === 'sheet') {
   const format = opt('format', 'launch');
   if (!['launch', 'loop', 'sting'].includes(format)) throw new Error('--format is launch, loop or sting');
   // a loop has no lockup: its body runs to the last frame
-  checkFilm(args[1] && !args[1].startsWith('--') ? args[1] : `out/${film}-preview.mp4`, Number(opt('lockup', format === 'loop' ? '0' : '2')), format, has('silent'));
+  checkFilm(args[1] && !args[1].startsWith('--') ? args[1] : `out/${film}-preview.mp4`, Number(opt('lockup', format === 'loop' ? '0' : '2')), format, has('silent'), opt('lockup') !== undefined);
+} else if (cmd === 'joins') {
+  // every join at real size: one render call (one browser); the Joins composition draws join i on its frame i
+  let joins;
+  if (opt('at')) joins = frameList(opt('at').split(','));
+  else {
+    try { joins = frameList(filmConst('JOINS')); } catch (e) {
+      console.error(`joins: no --at and the film's JOINS could not be read (${e.message}). Export the join frames beside T (export const JOINS = [T.turn, T.dive, ...], plain numbers or T's fields) or pass --at 120,245,390`);
+      process.exit(1);
+    }
+  }
+  joins = [...new Set(joins)].filter((j) => j >= 0).sort((a, b) => a - b);
+  if (!joins.length) { console.error('joins: no join frames (JOINS is empty and no --at)'); process.exit(1); }
+  const pad = Math.max(1, Math.min(6, Number(opt('pad', '4'))));
+  const cell = has('full') ? 1920 : 960;
+  const dir = opt('out', 'out/joins');
+  const seq = path.join(dir, `_frames_${process.pid}`); // no dot: Remotion reads a dot as an extension
+  fs.mkdirSync(seq, { recursive: true });
+  const props = { film, joins, pad, cell };
+  remotion(['render', 'src/index.ts', 'Joins', seq, '--sequence', '--image-format=png', `--frames=0-${joins.length - 1}`, `--props=${JSON.stringify(props)}`, ...gl, ...conc, '--log=error']);
+  const files = fs.readdirSync(seq).filter((f) => /\.png$/i.test(f)).sort((a, b) => Number(a.match(/(\d+)\D*$/)?.[1] ?? 0) - Number(b.match(/(\d+)\D*$/)?.[1] ?? 0));
+  const outs = [];
+  files.forEach((f, i) => {
+    if (i >= joins.length) return;
+    const to = path.join(dir, `${film}-join-${joins[i]}.png`);
+    fs.rmSync(to, { force: true });
+    fs.renameSync(path.join(seq, f), to);
+    outs.push(to);
+  });
+  fs.rmSync(seq, { recursive: true, force: true });
+  for (const o of outs) console.log(`join: ${o}`);
+  console.log(`${outs.length} join image${outs.length === 1 ? '' : 's'} (frames J-${pad} .. J+${pad}, ${cell} px cells). Look at every cell: anything cut by the frame or its box, overlapping or overprinted text, an empty slab, a one-frame pop or flip of ground, a camera snap, misaligned parts, a thing leaving before the cut.`);
 } else if (cmd === 'strip') {
   const src = args[1];
   const at = opt('at', '0');

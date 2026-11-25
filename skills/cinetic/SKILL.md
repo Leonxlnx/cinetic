@@ -72,7 +72,9 @@ kit, a blank film in `src/films/main/Film.tsx`, and the scripts. Work inside tha
 what the product *does* as input -> output; 3-5 features worth a beat; the format (launch, feature, update, loop, sting,
 teaser, explainer, brand film); the brand (logo, colours, fonts, screenshots, URL) or, if none is given, the brand you
 invent (name its colours, its face and where the accent's hue comes from; [palette rules](references/worlds.md#palette-rules-all-worlds));
-the licensed pictures the story needs. Pull real names, numbers and integrations from what the user gave you.
+the licensed pictures the story needs. Pull real names, numbers and integrations from what the user gave you. List each
+adjective the user wrote ("bold", "warm", "mostly words") and what it becomes in weight, size, pace, colour, picture and
+sound ([type.md](references/type.md#4-weight)).
 
 **3. Story (the first block of `BEATS.md`).** Write the five lines before anything else: who we follow from the first
 second; what they want and what it costs today, as one picture that gets worse; the turn; three to five steps done to
@@ -116,25 +118,27 @@ What each command shows: [rendering.md](references/rendering.md#the-loop).
   `node scripts/frames.mjs sheet --frames 120,126,132,...` for one moment.
 - `node scripts/frames.mjs still --frame N --full` for any beat with UI text or a label: read the words.
 - `node scripts/frames.mjs render` (half-size preview), then `node scripts/frames.mjs strip out/main-preview.mp4 --at 4.2`
-  to judge motion, joins and actions on consecutive frames.
+  to judge motion and actions on consecutive frames.
+- `node scripts/frames.mjs joins` exports every join (the film's `JOINS`) at real size, frames J-4 .. J+4: before the
+  final and after every fix that touches a join, look at every cell; a fix is closed only on a clean join image.
 - `node scripts/frames.mjs check out/main-preview.mp4` measures pace, holds, empty frames, crowding and the ending and
   prints what to fix (`--format loop` or `--format sting` for those formats); its `air` figures are information.
 Write the [join test](references/film-grammar.md#the-join-test) into `BEATS.md` and fix every join that fails. Bugs
-block the final: a full-size still of every beat with type or UI and a strip of every join; fix every cut text,
+block the final: a full-size still of every beat with type or UI and the join image of every join; fix every cut text,
 overlap, overprint, empty slab, one-frame pop and clipped digit; no fix row is closed as "accepted"
 ([polish loop](references/taste.md#5-the-polish-loop)). Score the
 sheet with the rubric in [taste.md](references/taste.md) (20 points); at 17 or more go to step 9.
 
 **9. Polish (required).** The first cut is never the film. Run at least two passes of the
-[polish loop](references/taste.md#5-the-polish-loop): watch strips of every join and every beat, write ten or more
+[polish loop](references/taste.md#5-the-polish-loop): watch strips of every beat and the join images, write ten or more
 concrete fixes in `BEATS.md`, do each and re-check it; tick at least eight of the ten effort marks (idle life, local
 reactions, specific content, a texture family, photographs, variation, sound on picture, a surprise, optics, bespoke
 joins).
 
 **10. Sound.** `node scripts/sfx.mjs roles`, `node scripts/sfx.mjs list <role>`, `node scripts/sfx.mjs get <id> ...` fetches
 judged, licensed recordings into `public/sfx` and writes `src/sfx.ts`; place them with `<Cues>` on the same `T` frames as
-the picture. Music: pick a licensed track whose character is this film's world ([assets.md](references/assets.md#6-music);
-`sfx.mjs shortlist`), fetch it with `sfx.mjs music`, then `sfx.mjs fit <track> --hit <frame> --len <frames>` gives the
+the picture. Music: pick a licensed track for this film's world, never one reused from a worked example
+([assets.md](references/assets.md#6-music); `sfx.mjs shortlist --mood "<its world>"`), fetch it with `sfx.mjs music`, then `sfx.mjs fit <track> --hit <frame> --len <frames>` gives the
 start that lands the film's main hit on a beat where the music lifts (for a bed that enters late, `--enter <frame>` with
 the `<Music enterAt>` frame). Duck it under the big hits, let it ring out under the end card.
 

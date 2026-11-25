@@ -292,10 +292,10 @@ turns ([library-turns.md](library-turns.md)) and adapt them; build by hand what 
 | **Match on shape** | End A on a silhouette (a phone edge-on, a dark card, a ring, a bar) and start B with a different object of the same silhouette at the same place and size; hold it 4-8 f before it changes (`ShapeMatch`). |
 | **The word still being read** | The sentence continues across the cut at the same baseline (the second half arrives on the new picture), or the line stays fixed while what is behind it swaps, or the key word lifts out of the line and becomes the next scene. |
 | **Movement through the cut** | Cut on the fastest frame of an accelerating exit (whip, rise, pull-back); B starts moving the same way at the same speed and decelerates; motion blur on both sides; the whole frame moves (`WhipGate`, `Shove`). |
-| **Cause and effect** | A ends on the action (a press, a send, a drop); B is its result forming (6-20 f of development) where the action happened (`GrowIris` from the pressed button). |
+| **Cause and effect** | A ends on the action (a press, a send, a drop); B is its result forming (6-20 f of development) where the action happened (`WindowOpen` from the pressed button into its window, `GrowIris` into a full scene). |
 | **Camera into or out of the object** | Dive through a shape until the frame is fully covered, rack focus between two layers over a background that stays, or pull back from a detail until it is one of many (`DiveInto`). |
 | **Material bridge** | Only with the film's own texture, and only when it builds the next image (the pile's cells become the next word); never generic noise (`DotReveal`, `BlockBurst`). |
-| **Hard cut on the beat** | Only on the story's turn, a music event (a kick, a drop, a stop), a new act in a tour that opens mid-action, or the cut into the mark. At most one join in five; never two in a row. |
+| **Hard cut on the beat** | Right on the story's turn, the second turn and the cut into the mark; elsewhere only on a music event (a kick, a drop, a stop) or a new act in a tour that opens mid-action, and there the join carries the subject wherever it can. Never two in a row. |
 
 Never: a ground colour change around a small object; the ground changing first and the object after it; a flood or iris
 that ends before it covers the frame; a light or dark switch without a story reason; a screen flash to hide a cut.
@@ -316,7 +316,15 @@ A required step before the final: list every join in `BEATS.md` as
 4. Every change of ground, colour mode or accent has its story reason written next to it (a new place, a time of day,
    the turn).
 5. Two joins of the same class in a row are fine; three in a row is a pattern: vary the third.
-Then check each join on a strip of consecutive frames (`frames.mjs strip`), not only on the sheet.
+6. Every join is exported at real size with `node scripts/frames.mjs joins` (frames J-4 .. J+4, 960 px each, one image a
+   join; `--full` for 1920 px cells) before the final and after every fix that touches it, and every cell is clean:
+   nothing cut by the frame or its container, no overlapping or overprinted text, no empty slab, no one-frame pop or
+   flip of ground, no camera snap, no misaligned parts, nothing leaving before the cut. A join that cannot be made clean
+   becomes a simpler one: a hard cut on the beat beats a broken transition.
+
+The film exports its join frames beside `T`, so the command needs no list: `export const JOINS = [T.turn, T.dive,
+T.press + 6];` (the first frame of the next scene at each join; plain numbers or fields of a `T` made of plain numbers,
+arithmetic allowed). `--at 120,245` overrides it.
 
 ---
 
@@ -644,7 +652,10 @@ Rules for the block:
 - **One family of moves, varied each time it recurs.** No move repeats identically, and none appears more than twice
   in a film; a move and its own return (a dive and the snap back out) count as one. The signature is the film's one
   visual idea (step 4 of the skill), an object or motif taken from the story or its world ([worlds.md](worlds.md)),
-  that returns 3-8 times (the hook, a few joins, the output or the lockup), each time by a different move.
+  that returns 3-8 times (the hook, a few joins, the output or the lockup), each time by a different move. Type
+  arrivals count as moves: no line arrival (a word cut-on, a rise, one library type piece) is used more than twice, and
+  the claim arrives differently from the statements (`frames.mjs check` names a type or turn piece placed more than
+  twice, and a `<Words arrive>` repeated on more than two lines).
 - **Budget:** one colour flood at most; a wall only when the claim is literally a quantity; two odometers at most;
   masked rise and born tint count among the film's two text arrivals.
 - **Joins by class.** Name each join's class ([joins](#joins)); at least two are built from the scene's own objects (its

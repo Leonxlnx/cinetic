@@ -516,6 +516,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [DiveInto](library-turns.md#diveinto)
   - [WhipGate](library-turns.md#whipgate)
   - [Shove](library-turns.md#shove)
+  - [WindowOpen](library-turns.md#windowopen)
   - [ShapeMatch](library-turns.md#shapematch)
   - [GlitchCut](library-turns.md#glitchcut)
 - [Effects](library-turns.md#effects)

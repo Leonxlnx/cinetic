@@ -12,6 +12,10 @@ const T = {
   end: 90,
 } as const;
 
+// The first frame of the next scene at every join: `frames.mjs joins` exports each one at real size (frames J-4 .. J+4).
+// Name the lockup's first frame in T as `lockup` (or export LOCKUP): `frames.mjs check` measures the ending from it.
+export const JOINS: number[] = [];
+
 const Open: React.FC = () => {
   const f = useCurrentFrame();
   const push = 1 + 0.02 * creep(f, T.open, T.end);

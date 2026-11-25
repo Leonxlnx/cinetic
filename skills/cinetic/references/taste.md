@@ -266,7 +266,7 @@ problem or the input, ghost text that raises its reach, a film with no story. Lo
 before you render the final.
 
 Also note three numbers for every film, they catch most problems: **mean beat length** (1.4-2.2 s), **number of hard
-cuts vs carried joins** (at most one join in five a hard cut, never two in a row), and **frames moving > 10 px/f at
+cuts vs carried joins** (hard cuts on the turn, the second turn and into the lockup; any other hard cut sits on a music event; never two in a row), and **frames moving > 10 px/f at
 each cut** (every cut except the one into the ending).
 
 ---
@@ -274,16 +274,25 @@ each cut** (every cut except the one into the ending).
 ## 5. The polish loop
 
 A film is not finished after the first cut. After it scores 17 or more, run at least two polish passes:
-1. Render a preview and make strips of consecutive frames (`frames.mjs strip <video> --at <s>`) of every join and every
-   beat, not only the 36-frame sheet.
+1. Render a preview and make strips of consecutive frames (`frames.mjs strip <video> --at <s>`) of every beat, and the
+   join images of every join (`frames.mjs joins`, below), not only the 36-frame sheet.
 2. Write a list of ten or more concrete fixes in `BEATS.md` (`frame | what is wrong | the fix | re-checked on`): a pill
    without padding, a press its target does not answer, a join whose frame is not covered, a hold with nothing to read,
-   a repeated move, a sound too loud.
-3. Do every fix, re-render, and re-check each one on its strip; tick it off.
+   a repeated move, a sound too loud. "Re-checked on" names the image the fix was closed on (for a join, its join image:
+   `out/joins/main-join-245.png`).
+3. Do every fix, re-render, and re-check each one on its strip or join image; tick it off.
 4. Run the pass again with a fresh list. Two passes is the minimum; stop when a pass finds fewer than five real faults.
 
+**Joins are judged at real size, every frame.** A small strip hides what breaks a join, and a fix made on one frame
+often breaks the frames beside it (a third of the fixes in one tested polish pass made a new fault at a join). So every
+join is exported with `node scripts/frames.mjs joins` (frames J-4 .. J+4, 960 px each; the film exports `JOINS` beside
+`T`) before the final and again after every fix that touches it, and every cell is looked at for: anything cut by the
+frame or its container, overlapping or overprinted text, an empty slab, a one-frame pop or flip of ground, a camera
+snap, misaligned parts, a thing leaving before the cut. A fix is closed only when its join image is clean. A move that
+cannot be made clean is replaced by a simpler one: a hard cut on the beat beats a broken transition.
+
 **Bugs are blockers.** Before the final, render a full-size still of every beat with type or UI
-(`frames.mjs still --frame N --full`) and a strip of every join and of every reflow or layout change, and fix every cut
+(`frames.mjs still --frame N --full`), the join image of every join and a strip of every reflow or layout change, and fix every cut
 text (by the frame, a mask or its own box), overlap, overprint, empty slab, one-frame pop and clipped digit. Each one
 blocks the final, whatever the rubric says. A row of the fix table is closed only by a fix or a redesign of the beat,
 re-checked on its frame: never "accepted", "noted", "minor" or "later".

@@ -9,9 +9,9 @@ else, the ending included. This file pairs with the kit's `Sfx`, `Cues` and `Mus
 import { Cues, Music, db, type Cue } from './kit';
 // one array beside the timeline, so picture and sound move together
 export const cues: Cue[] = [
-  { at: T.send, ...sfx['kenney-interface-click_001'], volume: db(-6) },
-  { at: T.land, ...sfx['mixkit-2384'], volume: db(-12) },
-  { at: T.reveal, ...sfx['kenney-interface-bong_001'], volume: db(-8) },
+  { at: T.send, ...sfx['kenney-interface-click_001'], volume: db(-14) },
+  { at: T.land, ...sfx['mixkit-2384'], volume: db(-14) },
+  { at: T.reveal, ...sfx['kenney-interface-bong_001'], volume: db(-12) },
 ];
 <Music src="music/bed.mp3" startFrom={12.4} volume={0.5} fadeIn={4} fadeOut={40} breaths={[T.reveal]} />
 <Cues cues={cues} />
@@ -23,7 +23,8 @@ export const cues: Cue[] = [
 
 1. **A modern, clean palette is dry.** Every effect is a short unpitched transient: a click, a tick, a tap, a paper slice,
    a cloth swish, a muted tap. Nothing rings, nothing sings, nothing swells. A sound is what the picture's object would
-   make: never a footstep as an interface impact (it reads as someone walking), a footstep only for feet on screen.
+   make: never a footstep as an interface impact (it reads as someone walking), a footstep only for feet on screen, and
+   never an air whoosh (a sweep reads as a trailer move).
 2. **The transient lands on the frame.** A sound's attack, not its file start, sits on the visual event (`leadMs` from
    `sfx.mjs get`; peak-aligned whooshes land their loudest point). Never retime the picture to fix audio.
 3. **Fewer and quieter.** Sound the events that carry meaning (a press, a landing, the one main hit); leave routine motion,
@@ -73,7 +74,11 @@ more pitched events than its music explains, and every hand-checked one was musi
   rewinds, horror drums. A product film is not a trailer: these read as harsh and exaggerated.
 - **No effect on the ending.** From the lockup on (the claim's last word, the mark, the wordmark, the URL) the music alone.
 - **No effect under a screen shake or a flash** (neither belongs in the picture either).
-- **No footstep as an interface impact** and **no whoosh on the story's turn** (principles 1 and 4).
+- **No footstep and no air whoosh** in anything an interface event or a join plays (principle 1), and **no whoosh on
+  the story's turn** (principle 4). The catalogue's roles hold neither: the footsteps and the air sweeps are in its
+  `rejected` list; a fast exit takes a cloth swish (`kenney-rpg-cloth1`, `kenney-rpg-clothbelt`) or nothing.
+- **Clicks sit under the big moments:** every interface click, tick and key peaks at least 6 dB under the film's
+  loudest moment (the music's lift, the main hit). The loudest event of a film is never a click.
 - **A double click never plays under a single press;** one press, one click.
 - `scripts/sfx.mjs` only offers sounds that pass these rules; the rest sit in the catalogue's `rejected` list with the
   measure that failed. Never fetch a rejected sound by URL.
@@ -90,7 +95,7 @@ more pitched events than its music explains, and every hand-checked one was musi
 | a card or sheet lands | a paper slice or a muted tap (`mixkit-2384`, `kenney-interface-bong_001`) | on the landing frame |
 | the main hit | the bed's breath and return; under it one muted tap or cloth landing (`kenney-interface-bong_001`, `kenney-rpg-cloth3`) or nothing | the first frame after the gap |
 | the story's turn | the music's lift or register change; no effect | on the downbeat inside the cut |
-| a fast exit or a whip (not the turn) | a short air whoosh or cloth swish (`mixkit-168`, `mixkit-175`, `kenney-rpg-cloth1`), varied | its peak on the cut frame |
+| a fast exit or a whip (not the turn) | a cloth swish (`kenney-rpg-cloth1`, `kenney-rpg-clothbelt`) or nothing; never an air sweep | its peak on the cut frame |
 | a carried cut in a music-only film | the bed's own kick | 2-3 f after the cut |
 | the ending | nothing | |
 
@@ -138,7 +143,7 @@ few seconds before the end and the card holds in silence; or a quiet tail. The l
 | integrated loudness, web delivery | -14 to -19 LUFS; quiet, premium mixes sit at -19 to -22 |
 | true peak | ≤ -1 dBTP |
 | bed under a voice | 8-12 dB under the voice |
-| UI effects (clicks, ticks, paper, taps) | +3 to +9 dB over the bed at their attack |
+| UI effects (clicks, ticks, paper, taps) | +3 to +9 dB over the bed at their attack, and at least 6 dB under the film's loudest moment (start a click at `db(-14)`, a key at `db(-18)`) |
 | typing | +0 to +4 dB over the bed; quieter than the clicks |
 | the main hit's knock | at most +12 dB over the bed (it lands from the breath, so less is needed) |
 | anything | never over +14 dB; nothing that rings past 400 ms |
@@ -166,7 +171,8 @@ Frames per beat at 30 fps = `1800 / BPM`:
 
 - **Music-only films:** cut on the beat or half-beat grid; put the kick 2-3 f after carried cuts. `node scripts/sfx.mjs fit
   <track> --hit <frame> --len <frames> [--enter <frame>]` lists the starts that land the main hit on a beat and prints the
-  grid in the film's frames (`beats(bpm, offset)`).
+  grid in the film's frames (`beats(bpm, offset)`). Each start says whether the hit lands on the first beat of a bar or
+  only on a beat: land the main hit on a bar's first beat.
 - **Voice-over films:** the picture follows the voice, the effects follow the picture.
 - Round per beat from a float grid; never accumulate rounded beats.
 
@@ -181,7 +187,8 @@ A small, consistent palette per film (4-8 files), all short and dry:
 - **paper or cloth** for landings and slides (`mixkit-2384`, `kenney-rpg-cloth3`, `kenney-rpg-bookflip3`);
 - **one muted tap** for the main hit, or none (`kenney-interface-bong_001`, `kenney-rpg-cloth3`,
   `kenney-rpg-handlesmallleather`); the two Kenney footsteps are rejected for interface use (they read as steps);
-- **one or two short airy whooshes** (`mixkit-168`, `mixkit-175`, `kenney-rpg-cloth1`, `mixkit-1491`).
+- **one cloth swish** for a fast exit, or none (`kenney-rpg-cloth1`, `kenney-rpg-clothbelt`); the air whooshes are
+  rejected for every role.
 
 `node scripts/sfx.mjs list <role>` shows what is left in each role; `get` fetches into `public/sfx` and writes `src/sfx.ts`.
 Licences: CC0 or royalty-free with commercial use; never redistribute a pack.
@@ -194,6 +201,8 @@ Licences: CC0 or royalty-free with commercial use; never redistribute a pack.
 - No cue uses a pitched, ringing, swelling or trailer sound (the catalogue's `rejected` list); no cue sits on the ending.
 - About one audible effect a second at most; series sounded on one member in two or three.
 - The main hit lands from a breath; its tap (if any) is at most +12 dB over the bed.
-- No footstep under an interface event, no whoosh on the turn; a warm or quiet film's bed has no hit on every beat.
+- No footstep and no air whoosh anywhere, no whoosh on the turn; a warm or quiet film's bed has no hit on every beat.
+- Every click, tick and key peaks 6 dB or more under the film's loudest moment.
+- The track was chosen for this film's world (`sfx.mjs shortlist --mood`), never a worked example's bed.
 - `frames.mjs check` on the muxed file shows sound (it fails a silent file whose code plays sound).
 - The audio rendered alone: integrated loudness, true peak and the loudest cues' level over the bed measured.

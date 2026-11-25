@@ -62,6 +62,22 @@ A resting line (the size a normal statement settles at) is sized by how many wor
 - 600-700 only for one headline word, a stat or the wordmark. Never 800-900.
 - Light (300) only on a light, airy ground at large sizes.
 - No bold word inside a line for emphasis: emphasis is colour (section 9).
+- A brief that asks for **bold** allows statement weights up to 700 (still never 800-900) and asks for at least two
+  lines over 250 px in the film.
+
+**The brief's adjectives become choices.** In `BRIEF.md`, list every adjective the user wrote and what it becomes in
+type weight and size, pace, colour, picture and sound, so each one can be checked on the sheet:
+
+| The brief says | It becomes |
+|---|---|
+| bold | statements 600-700, two or more lines over 250 px, words allowed to fill the frame (one lone giant word may crop); short holds, hard cuts on the beat; a strong accent on a tenth of the frame; a bed with a clear pulse |
+| mostly words, words-led | type leads at least half the beats; the type library is the default (`check` flags a words-led brief that imports no type piece); statements at 160 px or more, never mid-weight on an empty ground; a picture or object enters the line, not beside it |
+| warm | warm off-white or a warm photograph's light, 450-520 weight, softer arrivals, a sparse bed with no hit on every beat |
+| quiet, calm | fewer beats, longer read holds with idle life, one accent, a sparse bed, effects at the low end |
+| playful | a library playful-letters move once, a bounce up to 0.3, a brighter accent, a lighter bed |
+| make people feel it | a person seen (a face, a hand, a reaction), not only objects: the film's own person in the payoff, seen earlier in the film |
+
+Write it as `bold -> 650 weight, "Tomorrow" at 420 px and the claim at 280 px, cuts on the kick`, one line each.
 
 ## 5. Tracking by size
 

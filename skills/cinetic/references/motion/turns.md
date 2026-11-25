@@ -37,8 +37,9 @@ Pick every join by what the viewer is watching at the end of A. The classes, wit
 - **Cause and effect:** A ends on the act (a press, a send, a drop); B is its result forming where it happened (5.2, 5.3).
 - **Camera into or out of the object:** a dive until the frame is covered, a rack focus, a pull-back to one of many (2, 10).
 - **Material bridge:** only the film's own texture, and only when it builds the next image (4.3, 4.4).
-- **Hard cut on the beat:** on the story's turn, a music event (a kick, a drop, a stop), a new act that opens mid-action,
-  or the cut into the mark. At most one join in five; never two in a row.
+- **Hard cut on the beat:** right on the story's turn, the second turn and the cut into the mark; elsewhere only on a
+  music event (a kick, a drop, a stop) or a new act that opens mid-action, where the join carries the subject if it can.
+  Never two in a row.
 
 Never: a cross-fade, an empty frame, a token carried (a full stop, a small pill, a dot) while everything else changes, a
 flash of light, a flood or iris that ends before it covers the frame, the ground changing first and the object after

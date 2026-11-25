@@ -12,6 +12,7 @@ Treat the user's machine with care.
 | one frame, full size | `node scripts/frames.mjs still --frame 240 --full` | seconds |
 | motion preview | `node scripts/frames.mjs render` (half size) | ~0.2-0.4 s per frame on a laptop CPU |
 | motion check | `node scripts/frames.mjs strip out/main-preview.mp4 --at 7.5 --dur 2` | seconds |
+| every join at real size | `node scripts/frames.mjs joins` (the film's `JOINS`, or `--at 120,245`; `--full` for 1920 px cells) | one render call: ~30 s with bundling for a few joins |
 | final | `node scripts/frames.mjs final` (picture + sound + loudness in one pass) | ~0.5-2.5 s per frame on software GL (textures, blurs and photos are the slow ones) |
 
 Read every sheet and strip you make (they are images): that is how you see the film. Judge motion from strips of a rendered
@@ -20,6 +21,9 @@ preview, not from single frames.
   `--frames` zooms in on one moment (a turn, a morph). The sheet shows composition and rhythm, not small type: for any
   beat with UI text or a label, also render `still --frame N` at full size and read the words.
 - `strip` shows a moment of the preview at 15 frames a second, so you can judge motion, not just layout.
+- `joins` renders, for each join frame J, the frames J-4 .. J+4 at 960 px (one image a join, frame numbers on the
+  cells, the join frame outlined) from the source in one browser: what a strip is too small to show (a sliver left by a
+  turn, a one-frame pop, overprinted text). Look at every cell before the final and after every fix that touches a join.
 - `check` measures the preview (how crowded the frames are, change every half second, empty frames, ending length) and
   prints what to fix. Its `air` line says how much of the frame is sharp detail, how often three or more things share a
   frame and how often the frame cuts on two sides: information, never a target (a rich frame is not a crowded one; a film
@@ -27,7 +31,9 @@ preview, not from single frames.
   figure is information too. Still half-seconds are named past a quarter (each hold must have something to read) and
   fail past 40 %. `--format loop` drops the sound, ending and music lines and fails when the last
   frame does not match the first; `--format sting` has no pace gate under 8 s and lets the ending hold. Its `library`
-  line counts the motion-library pieces the film's source imports (a LOOK line when none). It fails a file that is
+  line counts the motion-library pieces the film's source imports and how often each is placed (a LOOK line when none,
+when a type or turn piece is placed more than twice, and when a words-led `BRIEF.md` imports no type piece). The
+ending is measured from the film's `LOCKUP` or `T.lockup` frame when it has one ([kit.md](kit.md#10-project-layout-and-scripts)). It fails a file that is
   silent (under about -45 LUFS, or no sound at all) while the film's code plays cues or music: the sound insert failed;
   `--silent` for a film meant to be silent.
 - `mux` joins parts and lays one sound under them, cut to the picture's length (joining never lengthens the film); an
@@ -52,7 +58,9 @@ preview, not from single frames.
   its own job. `mux` joins the parts without re-encoding, lays the sound on the picture's own start time (encoders shift the first
   frame by a few ms; joined parts with their own sound drift and click at every seam), and sets the loudness to -16 LUFS
   with true peaks under -1.5 dBTP. It prints the master's loudness. Split on a scene's first frame, and size parts by
-  measured speed: time the first part and keep each one under ~70 % of any per-job limit (150-250 frames on a CPU).
+  measured speed: time the first part and keep each one under ~70 % of any per-job limit (150-250 frames on a CPU
+alone). Under a shared CPU queue (several agents or jobs taking turns on one machine) a part of 100-140 frames is the
+safe size.
 
 ## Master settings
 

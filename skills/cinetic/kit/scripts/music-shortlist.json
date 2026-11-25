@@ -71,7 +71,8 @@
     0.0
    ],
    "first_beat_s": 0.04,
-   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)",
+   "worked_example": "forge"
   },
   {
    "id": "mixkit-deep-urban-623",
@@ -850,7 +851,8 @@
     0
    ],
    "first_beat_s": 0.16,
-   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)",
+   "worked_example": "inkwell"
   },
   {
    "id": "mixkit-tauro-596",
@@ -1180,7 +1182,8 @@
     0
    ],
    "first_beat_s": 0.0,
-   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)",
+   "worked_example": "brief"
   },
   {
    "id": "mixkit-kraft-twerk-115",
@@ -1889,7 +1892,8 @@
     0.01
    ],
    "first_beat_s": 0.2,
-   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)",
+   "worked_example": "fieldnote"
   },
   {
    "id": "mixkit-pop-track-03-729",
@@ -2476,7 +2480,8 @@
     0.08
    ],
    "first_beat_s": 0.0,
-   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)"
+   "measured": "2026-11-22 onset comb over the whole file (sfx.mjs analyze)",
+   "worked_example": "lumen"
   },
   {
    "id": "mixkit-south-waves-555",

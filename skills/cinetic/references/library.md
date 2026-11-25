@@ -9,7 +9,7 @@ then build it to the same standard (the motion references in `motion/*.md` have 
 | Section | What is in it | Reference |
 |---|---|---|
 | Type | words performed as events: rolls, tracking, words made of tiles or dots, a dive into a letter, words that bounce, stack or sweep, a line that sits in a host | [library-type.md](library-type.md) |
-| Turns and effects | joins that carry a real object or picture through the cut and cover the whole frame (a dot reveal, a block burst, a grow iris, a dive into a card, a whip, a shove, a shape match, a glitch cut) and finishing layers (a light sweep, bloom on a light source, tracking marks, a dot screen, a morphing box) | [library-turns.md](library-turns.md) |
+| Turns and effects | joins that carry a real object or picture through the cut and cover the whole frame (a dot reveal, a block burst, a grow iris, a dive into a card, a whip, a shove, a shape match, a glitch cut, a window opening out of its button) and finishing layers (a light sweep, bloom on a light source, tracking marks, a dot screen, a morphing box) | [library-turns.md](library-turns.md) |
 | Product UI | interface pieces designed like a shipped product (notices that pile up, a card fan, a row that opens, a palette that travels to one row, a board drag, a task run, a prompt answered, a chat, a settings card, a crafted pointer) and the design bar every UI in a film meets | [library-ui.md](library-ui.md) |
 | Host screens | faithful rebuilds of the third-party screens films show most (a GitHub pull request, a GitHub Projects column, a VS Code window in both themes) and a design-canvas app chrome, each taking the film's content as props | [library-hosts.md](library-hosts.md) |
 
@@ -23,7 +23,8 @@ then build it to the same standard (the motion references in `motion/*.md` have 
    join, each type move and each UI action (`- join 3: DiveInto into the rota card (carry the subject)`), or write why
    none fits (`- join 5: hand-built, the receipt tears along its own perforation`). A piece earns its place by what the
    story needs at that moment, never because it is in the reel. `frames.mjs check` prints how many library pieces the
-   film's source imports, and a LOOK line when it imports none.
+   film's source imports and how often each is placed, a LOOK line when it imports none and one when a type or turn
+   piece is placed more than twice.
 3. **Adapt, do not paste.** Every piece is deterministic by frame and takes its content, colours, sizes and timing as
    props: give it this film's real content (names, data, the product's own surfaces), its palette and its type voice,
    and set its frames from the film's timeline `T`. Turns also take `speed`.

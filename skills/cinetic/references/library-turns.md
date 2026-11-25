@@ -58,6 +58,10 @@ For a button, a pill or a card that opens into what it promises.
 - Numbers: 6 f from the object's size to the corners; the radius is 34, 49, 59, 79, 100 % of the way on frames 1-5
   (`1 - (1 - t)^1.35`); the scene inside goes 0.58 to 1 on expo out; a 6 px soft edge.
 - Caution: start it where the object really is (`x`, `y`, `r0` or `box` from the layout), or the shape pops.
+- Caution: the iris shows the next scene around its opening point first. When the next scene's content sits far from
+  that point (an editor whose code is at the top left, a page whose title is across the frame), the opening frames show
+  an almost empty plate: move the content to the opening point, or use `WindowOpen`, which scales the whole window into
+  the growing rectangle.
 
 ### DiveInto
 The camera dives into an object (a card, a window, a picture) and its inside is the next scene. The zoom is exponential
@@ -91,9 +95,30 @@ while the next scene slides in underneath from another side and lands. For a sta
 ```tsx
 <Shove from={statement} to={phoneScene} at={T.shove} dir="left" cuts={[449, 632]} lag={3} alternate enterFrom="top" enter={0.35} ground={WHITE} />
 ```
-- Numbers: bands 2-3 f apart, each 14 f on expo in, smear up to 28 px on its fastest frames; the next scene drops 35 % of
-  the frame and lands on expo out over 16 f, starting 2 f after the first band.
-- Caution: put `cuts` between lines; a band edge through a word reads as a mistake.
+- Numbers: bands 2-3 f apart, each 14 f on expo in, smear up to 28 px on its fastest frames; every band, its smear
+  included, is off the frame on its last drawn frame. The next scene drops 35 % of the frame and lands on expo out over
+  16 f, starting in the last band's fast frames (4 f before it leaves), so no slab of the old scene stays beside the next
+  scene settled.
+- Caution: put `cuts` between lines; a band edge through a word reads as a mistake. Give `ground` (the next scene's
+  ground) whenever the next scene is drawn without one: until it lands, the strip it uncovers shows the ground.
+
+### WindowOpen
+A window or panel opens out of the button or card that was pressed: the button's rounded rectangle grows into the
+window's rectangle (centre, size and radius together), and inside it the next scene's window is already laid out and
+drawn whole, scaled to cover the growing rectangle. Never an empty plate, never a reveal through a sliding clip edge.
+The commonest join a film builds by hand; take this one.
+```tsx
+<WindowOpen from={cardScene} to={editorScene} at={T.open} box={{ x: 1300, y: 772, w: 340, h: 92, r: 46 }} win={{ x: 880, y: 540, w: 1460, h: 840, r: 30 }} dur={14} face={<OpenButton />} shadow={softShadow(5, PAPER)} />
+```
+- `box`: the button exactly as drawn in the old scene. `win`: the window exactly as drawn in the next scene (omit it to
+  open to the full frame). `face`: the button's own label and fill at `box` size, fading out in the first fifth (3 f) and
+  growing 15 % at most. `windowOpenEnd(at, opts)` is its last frame.
+- Numbers: 14 f on cubic-bezier(0.32, 0, 0.12, 1) (a short lift out of the button, then a long settle); the content is
+  scaled by the larger of the two ratios (cover), centred on the rectangle.
+- Caution: the scene around the window must be the same in both scenes (one desk, one ground), and whatever the old
+  scene has around the button (its card) lies wholly inside `win`, or a sliver of it stays beside the window until the
+  last frame; otherwise open to the full frame. Lay the window's content out at its final size: it is scaled, never
+  reflowed.
 
 ### ShapeMatch
 A match cut on shape: one shape in the old scene (an icon tile, a chip, a dot) detaches and travels to where the same shape
@@ -194,7 +219,8 @@ the pieces use; put one in the tree and point a layer's `filter: url(#id)` at it
 ## In the reel
 
 Every piece's frames in the `library-turns` reel, and the one command that shows just that piece: a strip of 16 of its
-frames in one still (run it in a film project; `render --film library-turns --range a-b` for the piece in motion).
+frames in one still (run it in a film project; `render --film library-turns --range a-b` for the piece in motion, and
+`joins --film library-turns --at <frame>` for nine consecutive frames of a turn at real size).
 
 | Piece | Frames | Strip of just this piece |
 |---|---|---|
@@ -213,3 +239,4 @@ frames in one still (run it in a film project; `render --film library-turns --ra
 | DotScreen | 1019-1102 | `node scripts/frames.mjs sheet --film library-turns --from 1019 --to 1102 --grid 4` |
 | ChromaHit | 1103-1174 | `node scripts/frames.mjs sheet --film library-turns --from 1103 --to 1174 --grid 4` |
 | MorphBox | 1175-1274 | `node scripts/frames.mjs sheet --film library-turns --from 1175 --to 1274 --grid 4` |
+| WindowOpen | 1275-1351 | `node scripts/frames.mjs sheet --film library-turns --from 1275 --to 1351 --grid 4` |

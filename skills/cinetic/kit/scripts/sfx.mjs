@@ -228,6 +228,9 @@ if (cmd === 'roles') {
     .filter((s) => (!role || s.role === role) && (all || verdict(s) !== 'weak'))
     .sort((a, b) => rank[verdict(a)] - rank[verdict(b)]);
   for (const s of list) console.log(`${s.id.padEnd(14)} ${s.role.padEnd(13)} ${verdict(s).padEnd(9)} ${String(s.dur_s).padEnd(6)}s  ${s.title}  [${(s.tags || []).slice(0, 4).join(', ')}]`);
+  // interface sounds sit under the film's big moments: the loudest event of a film is the music, never a click
+  if (!role || /^(click|tick|key|typing)/.test(role)) console.log("\nInterface clicks, ticks and keys peak at least 6 dB under the film's loudest moment: start a click at volume db(-14) (0.2) and a key at db(-18), then measure the audio alone (frames.mjs audio) before the final.");
+  if (!list.length && role) console.log(`no sounds left in ${role}: the role is empty on purpose (see the catalogue's rejected list and references/sound-design.md); a cloth swish, a paper slide or the music carries it`);
 } else if (cmd === 'get') {
   await get(args.slice(1).filter((a) => !a.startsWith('--')));
 } else if (cmd === 'pick') {
@@ -244,15 +247,28 @@ if (cmd === 'roles') {
   const energy = flag('energy');
   const bpm = flag('bpm');
   const forWhat = flag('for');
+  // --mood: the film's world in words ("warm, quiet, family, piano"); the list is ordered by how many of them a track
+  // carries, and ties fall in an order of this film's own (its folder name), so two films never start from one track
+  const mood = (flag('mood') ?? '').toLowerCase().split(/[\s,;/]+/).filter((w) => w.length > 2);
+  const seed = flag('seed', path.basename(film));
   const [lo, hi] = bpm ? bpm.split('-').map(Number) : [0, 999];
-  const list = shortlist.tracks.filter((t) => {
-    const b = t.bpm_measured ?? Number(t.bpm) ?? 0;
-    return (!vibe || (t.vibe ?? '').includes(vibe)) && (!energy || String(t.energy) === energy) && (!bpm || (b >= lo && b <= (hi ?? lo))) && (!forWhat || (t.good_for ?? []).join(' ').toLowerCase().includes(forWhat.toLowerCase()));
-  });
-  for (const t of list)
-    console.log(`${t.id.padEnd(40)} ${String(t.bpm_measured ?? t.bpm).padStart(6)} bpm  energy ${t.energy}  starts ${String(t.good_from_s ?? '?').padStart(5)} s  ${t.vibe ?? ''}  ${(t.mood ?? []).join(', ')}  "${t.title}"${t.credit ? '  CREDIT REQUIRED' : ''}`);
+  const fit = (t) => {
+    const words = [...(t.mood ?? []), t.vibe ?? '', ...(t.good_for ?? []), t.title ?? ''].join(' ').toLowerCase();
+    return mood.reduce((a, w) => a + (new RegExp(`\\b${w.replace(/[^a-z0-9-]/g, '')}`).test(words) ? 1 : 0), 0);
+  };
+  const worked = (t) => (t.worked_example || /worked film/i.test(t.note ?? '') ? 1 : 0);
+  const list = shortlist.tracks
+    .filter((t) => {
+      const b = t.bpm_measured ?? Number(t.bpm) ?? 0;
+      return (!vibe || (t.vibe ?? '').includes(vibe)) && (!energy || String(t.energy) === energy) && (!bpm || (b >= lo && b <= (hi ?? lo))) && (!forWhat || (t.good_for ?? []).join(' ').toLowerCase().includes(forWhat.toLowerCase()));
+    })
+    .map((t) => ({ t, score: fit(t), tie: hash(`${seed}:${t.id}`) }))
+    // a worked example's bed goes last: a film never reuses it
+    .sort((a, b) => worked(a.t) - worked(b.t) || b.score - a.score || a.tie - b.tie);
+  for (const { t, score } of list)
+    console.log(`${t.id.padEnd(40)} ${mood.length ? `fit ${score}/${mood.length}  ` : ''}${String(t.bpm_measured ?? t.bpm).padStart(6)} bpm  energy ${t.energy}  starts ${String(t.good_from_s ?? '?').padStart(5)} s  ${t.vibe ?? ''}  ${(t.mood ?? []).join(', ')}  "${t.title}"${t.credit ? '  CREDIT REQUIRED' : ''}${worked(t) ? '  (a worked example\'s bed: never reuse it)' : ''}`);
   console.log(`
-${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it before you lock the edit.`);
+${list.length} tracks${mood.length ? `, ordered by fit to "${flag('mood')}"` : ' (pass --mood "<the film\'s world in words>" to order them by fit)'}. Choose for this film's world, never the track of a worked example or of your last film. Fetch one: node scripts/sfx.mjs music <id>. Audition it before you lock the edit.`);
 } else if (cmd === 'music') {
   const ref = args[1];
   const t = shortlist.tracks.find((x) => x.id === ref);
@@ -314,6 +330,13 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
     if (!Number.isFinite(hit) || !Number.isFinite(len)) throw new Error('usage: sfx.mjs fit <audio file> --hit <frame of the main hit> --len <film length in frames> [--cuts 12,44,104] [--fps 30]');
     const dB = (a, b) => { let m = 0, c = 0; for (let i = Math.max(0, Math.round(a * 100)); i < Math.min(n, Math.round(b * 100)); i++) { m += e[i] * e[i]; c++; } return c ? 10 * Math.log10(m / c + 1e-10) : -100; };
     const onMax = Math.max(...on) || 1;
+    // the bar: which beat of every four carries the strongest onsets over the whole track (the downbeat), and how clearly
+    const strength = (t) => { let k = 0; for (let i = Math.round(t) - 2; i <= Math.round(t) + 2; i++) k = Math.max(k, on[i] || 0); return k; };
+    const phase = [0, 0, 0, 0];
+    for (let t = bestPh, k = 0; t < n; t += beatHops, k++) phase[k % 4] += strength(t);
+    const down = phase.indexOf(Math.max(...phase));
+    const barClear = Math.max(...phase) / (phase.reduce((a, v) => a + v, 0) / 4 || 1) >= 1.08;
+    const barPos = (t) => (((Math.round((t - bestPh) / beatHops) - down) % 4) + 4) % 4;
     const cands = [];
     for (let t = bestPh; t < n; t += beatHops) {
       const b = t / 100; // a beat, in seconds of the track
@@ -325,16 +348,16 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
       let kick = 0;
       for (let i = Math.round(t) - 2; i <= Math.round(t) + 2; i++) kick = Math.max(kick, on[i] || 0);
       const rank = Math.min(lift, 12) + 3 * (kick / onMax) + 1.5 * Math.min(0, body + 8) + 0.5 * Math.min(0, open + 22);
-      cands.push({ S, lift, body, open, rank });
+      cands.push({ S, lift, body, open, rank, pos: barPos(t) });
     }
     cands.sort((a, b) => b.rank - a.rank);
     const beatF = (60 / bpm) * fps;
     console.log(`${path.basename(file)}: ${bpm.toFixed(2)} BPM, a beat every ${beatF.toFixed(2)} frames. Starts that put frame ${hit + enter} on a beat (best first):`);
     if (Math.abs(bpm - Math.round(bpm)) > 0.07) console.log('  (the measured tempo is not a clean number: this track may have no steady grid. Trust the lift, not the beat positions.)');
-    for (const c of cands.slice(0, 6)) console.log(`  startFrom={${c.S.toFixed(2)}}  the music ${c.lift >= 0 ? 'lifts +' : 'falls '}${c.lift.toFixed(0)} dB at the hit; under the film it sits ${c.body.toFixed(0)} dB below the track's loudest, the first second ${c.open.toFixed(0)} dB`);
+    for (const c of cands.slice(0, 6)) console.log(`  startFrom={${c.S.toFixed(2)}}  the music ${c.lift >= 0 ? 'lifts +' : 'falls '}${c.lift.toFixed(0)} dB at the hit; under the film it sits ${c.body.toFixed(0)} dB below the track's loudest, the first second ${c.open.toFixed(0)} dB; the hit lands ${c.pos === 0 ? 'on the first beat of a bar' : `only on a beat (beat ${c.pos + 1} of the bar)`}${barClear ? '' : ' (the bar is unclear in this track: listen)'}`);
     if (!cands.length) console.log('  none: the track is shorter than the film from any beat');
     const off = (hit + enter) % beatF;
-    console.log(`Beat grid in the film: beats(${bpm.toFixed(2)}, ${off.toFixed(1)}) (frame ${hit + enter} is a beat). Listen that it is the bar's first beat; if not, move startFrom by one beat (${(60 / bpm).toFixed(3)} s).`);
+    console.log(`Beat grid in the film: beats(${bpm.toFixed(2)}, ${off.toFixed(1)}) (frame ${hit + enter} is a beat). For the main hit prefer a start that lands it on the first beat of a bar; if your ear disagrees with the bar shown, move startFrom by one beat (${(60 / bpm).toFixed(3)} s).`);
     const cuts = (flag('cuts', '') || '').split(',').map(Number).filter((v) => Number.isFinite(v) && String(v) !== '');
     if (cuts.length) {
       const rows = cuts.map((c) => { const k = Math.round((c - off) / (beatF / 2)); const g = off + k * (beatF / 2); return { c, d: Math.round(g) - c, half: k % 2 !== 0 }; });

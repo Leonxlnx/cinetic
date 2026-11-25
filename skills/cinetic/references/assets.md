@@ -91,19 +91,26 @@ opening's real place (a desk, a room) returns in the payoff ([depth](worlds.md#d
 every one in `CREDITS.md` (page, author, licence), and write a statement over a busy picture by the
 [recipe in type.md](type.md#over-a-busy-photograph).
 
+**The payoff picture is the film's own.** It shows the film's person (the face seen, or a detail seen earlier in the
+film) and the product's own object: composite the product's label, tape or screen onto the object when the photograph
+lacks it. Never another brand's packaging, sticker or mark in the picture, never a person cut off at the neck by the
+crop unless the crop is the idea (an anonymous torso is a stock photo, not a payoff). Check every picture at full size
+(`frames.mjs still --frame N --full`) for marks, labels and text that are not the film's, and crop, retouch or replace
+the picture when one shows.
+
 ## 5. Sound effects
 
 `scripts/sfx-catalogue.json` lists recorded effects whose licence allows commercial films without credit (the Mixkit Sound
 Effects Free License, https://mixkit.co/license/#sfxFree, and Kenney's CC0 packs), each judged by ear on the job it does
 in a film and measured (onset, peak, loudness, decay, pitch) so it lands on the frame. It offers a dry palette only: clicks,
-ticks, keys, paper and cloth, muted taps and short airy whooshes. Bells, chimes, glass, coins, notification tones,
+ticks, keys, paper and cloth, muted taps and a cloth swish. Bells, chimes, glass, coins, notification tones,
 bubbles, swells, risers, sub booms and trailer hits are in its `rejected` list with the measure that failed, and `get`
 refuses them ([sound-design.md](sound-design.md#3-hard-rules)).
 
 ```
 node scripts/sfx.mjs roles                  # click.hard click.soft key typing paper tick impact shutter whoosh.short whoosh.medium
-node scripts/sfx.mjs list whoosh.short      # strong and plausible picks first
-node scripts/sfx.mjs get mixkit-168 kenney-interface-click_001 ...   # -> public/sfx/* + src/sfx.ts
+node scripts/sfx.mjs list click.soft        # strong and plausible picks first
+node scripts/sfx.mjs get kenney-interface-click_001 mixkit-2384 ...   # -> public/sfx/* + src/sfx.ts
 node scripts/sfx.mjs pick paper 2 --seed <film>       # a different pick per film
 ```
 
@@ -124,7 +131,7 @@ the brief wants them, and a moment where it "arrives" that you can line up with 
 `scripts/music-shortlist.json` lists licensed tracks that can be fetched by script, each measured: tempo, the second the beat
 is established (start the bed there), a 4-second energy profile, mood and what it suits.
 ```
-node scripts/sfx.mjs shortlist --energy 3 --bpm 100-125     # filter by --vibe, --energy, --bpm, --for "dev tool"
+node scripts/sfx.mjs shortlist --mood "warm quiet family" --energy 2   # ordered by fit; filter by --vibe, --energy, --bpm, --for
 node scripts/sfx.mjs music mixkit-tech-house-vibes-130       # -> public/music/bed.mp3 + its licence and credit
 node scripts/sfx.mjs music <url> --as bed --page <page you read> --licence cc-by-4.0 --credit "..."   # any other track
 ```
@@ -139,7 +146,9 @@ node scripts/sfx.mjs fit public/music/bed.mp3 --hit 112 --len 530 --cuts 50,96,1
 there, there is music under the whole film, the opening is not silence. With `--cuts` it shows which cuts sit off the beat
 grid (move a cut a frame or two, or let a sound carry it). For a bed that enters late (`<Music enterAt={f}>`), pass
 `--enter f`: the track plays from `startFrom` at that frame, and the printed grid is in the film's frames. Choose the track for the film's world: an editorial paper film and
-a dark-stage film should not share a bed. `frames.mjs check` fails a film whose music runs out before it ends.
+a dark-stage film should not share a bed. `shortlist --mood "<the film's world in words>"` orders the tracks by fit to
+it, ties in an order of this project's own, and puts the worked examples' beds last: never reuse a worked example's
+track or the track of your last film. `frames.mjs check` fails a film whose music runs out before it ends.
 Licences that work for a published launch film:
 - Mixkit Stock Music Free License (https://mixkit.co/license/#musicFree): web, social, ads; no credit needed; never
   redistribute the file or register it with a Content ID service.
