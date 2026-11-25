@@ -57,6 +57,15 @@ field on shapes and scale jumps (a giant word cut to a small one, a dive). Every
 rates; the second is a picture, a layer of the product or a reacting element.
 White or frosted cards on a coloured ground are fine.
 
+### Depth and the world (all worlds)
+
+One flat ground for half a film reads as cheap, however clean it is. A product's world has depth: a surface it sits on
+(a desk, a table, a shelf, the device), light from one direction with soft layered shadows on the objects, a material
+(paper, matte plastic, glass, wood), and the opening's real place (a desk, a room, a photograph) returning between the
+UI moments, at least every 8-10 s, and in the payoff. Depth comes from objects, light on objects and pictures, never
+from a gradient behind them: the ban on faint gradient grounds stands. Decorative concentric arcs, diagonal hairlines
+and stray rules laid over a ground as "texture" read as filler; a line is structure or it is gone.
+
 Kit fonts (`fonts`): `inter` (the default voice for statements and UI, with optical sizing), `geist` (a tighter
 technical sans for a developer brand, then the whole voice), `serif` (Newsreader: only for a brand whose voice is a serif,
 then every statement, or a serif wordmark), `mono` (Geist Mono: code and data inside UI or a terminal, never a statement,

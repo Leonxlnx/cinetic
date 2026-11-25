@@ -92,17 +92,20 @@ word by word, the line jumping to its new centre on each word.
 
 ### RollType
 A line typed in place, character by character at an uneven pace, without a caret; its last digit then rolls like a
-counter, one crisp step a frame with its neighbours faint above and below, and slows onto its value while a low dash
-appears after it. A year becoming the next ("Spring 2027"), a version, a count.
+counter, one crisp whole step a frame with its neighbours faint above and below, holds the digit before last, and lands
+on its value as a cut with a 2-frame settle while a low dash appears after it. A year becoming the next ("Spring
+2027"), a version, a count.
 ```tsx
 <RollType text="Spring 2027" from="3" at={T.year} size={160} />
 ```
 - Props: `text`, `at`, `from` (the starting digits of the rolling tail), `per` (frames per typed character, 1.6),
-  `rollDur` (frames of the last, slowing step, 5), `size`, `color`, `ghosts` (0.42), `caret`, `x`, `y`, `font`, `weight`,
+  `rollDur` (frames of the last, slowing step, 5), `whole` (true: whole digits on every frame; false: the old last step
+  that travels through fractions of a digit), `size`, `color`, `ghosts` (0.42), `caret`, `x`, `y`, `font`, `weight`,
   `seed`.
 - Numbers: typing gaps of 0.45 to 1.75 of `per`, 1.8x after a space; the roll starts about 2 f after the last typed
   character; neighbours sit 1.08 em above and below.
-- Caution: never blur the digits; a roll of more than 6 steps reads as a slot machine.
+- Caution: never blur the digits, never hold a frame with a digit half-rolled (`whole={false}` only for a roll that
+  never rests); a roll of more than 6 steps reads as a slot machine.
 
 ### TrackedType
 A word bent on a shallow crest, each letter in a thin outlined box that turns with it, its live screen coordinates
@@ -253,3 +256,28 @@ the right.
 
 The mask that closes is `RiseLine`'s `leaveAt`; the hard cut on the beat is `WeightLine`'s `leaveAt` (or the end of a
 Sequence).
+
+## In the reel
+
+Every piece's frames in the `library-type` reel, and the one command that shows just that piece: a strip of 16 of its
+frames in one still (run it in a film project; `render --film library-type --range a-b` for the piece in motion).
+
+| Piece | Frames | Strip of just this piece |
+|---|---|---|
+| WeightLine | 0-89 | `node scripts/frames.mjs sheet --film library-type --from 0 --to 89 --grid 4` |
+| BarStack | 90-169 | `node scripts/frames.mjs sheet --film library-type --from 90 --to 169 --grid 4` |
+| ScaleJump | 170-249 | `node scripts/frames.mjs sheet --film library-type --from 170 --to 249 --grid 4` |
+| BlockOut | 250-295 | `node scripts/frames.mjs sheet --film library-type --from 250 --to 295 --grid 4` |
+| RiseLine | 296-387 | `node scripts/frames.mjs sheet --film library-type --from 296 --to 387 --grid 4` |
+| MarkPhrase | 388-471 | `node scripts/frames.mjs sheet --film library-type --from 388 --to 471 --grid 4` |
+| BlurSweep | 472-541 | `node scripts/frames.mjs sheet --film library-type --from 472 --to 541 --grid 4` |
+| RollType | 542-603 | `node scripts/frames.mjs sheet --film library-type --from 542 --to 603 --grid 4` |
+| TrackedType | 604-673 | `node scripts/frames.mjs sheet --film library-type --from 604 --to 673 --grid 4` |
+| LightWord | 674-753 | `node scripts/frames.mjs sheet --film library-type --from 674 --to 753 --grid 4` |
+| TileWord | 754-823 | `node scripts/frames.mjs sheet --film library-type --from 754 --to 823 --grid 4` |
+| DotWord | 824-893 | `node scripts/frames.mjs sheet --film library-type --from 824 --to 893 --grid 4` |
+| DotDive | 894-938 | `node scripts/frames.mjs sheet --film library-type --from 894 --to 938 --grid 4` |
+| HostType | 939-1038 | `node scripts/frames.mjs sheet --film library-type --from 939 --to 1038 --grid 4` |
+| DropWord | 1039-1134 | `node scripts/frames.mjs sheet --film library-type --from 1039 --to 1134 --grid 4` |
+| ArcToss | 1135-1204 | `node scripts/frames.mjs sheet --film library-type --from 1135 --to 1204 --grid 4` |
+| PushApart | 1205-1280 | `node scripts/frames.mjs sheet --film library-type --from 1205 --to 1280 --grid 4` |

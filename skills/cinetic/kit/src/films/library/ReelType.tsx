@@ -86,7 +86,7 @@ const SEGS: Seg[] = [
     name: 'PushApart',
     dur: 76,
     ground: PAPER,
-    node: <PushApart left="Meet" right="Pico" from={2} at={30} objSize={420} size={130} color={INK} node={<AppIcon size={420} colors={['#FF8A5C', '#F2552C']} glyph={<Icon name="Sparkles" size={200} color="#FFFFFF" />} />} />,
+    node: <PushApart left="Meet" right="Pico" from={2} at={30} objSize={420} size={130} color={INK} node={<AppIcon size={420} colors={['#FF8A5C', '#F2552C']} glyph={<Icon name="Package" size={200} color="#FFFFFF" />} />} />,
   },
 ];
 

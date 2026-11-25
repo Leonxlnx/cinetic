@@ -26,7 +26,12 @@ preview, not from single frames.
   fails as crowded only when detail covers 35 % or more of the frame in over a quarter of its samples). The coverage
   figure is information too. Still half-seconds are named past a quarter (each hold must have something to read) and
   fail past 40 %. `--format loop` drops the sound, ending and music lines and fails when the last
-  frame does not match the first; `--format sting` has no pace gate under 8 s and lets the ending hold.
+  frame does not match the first; `--format sting` has no pace gate under 8 s and lets the ending hold. Its `library`
+  line counts the motion-library pieces the film's source imports (a LOOK line when none). It fails a file that is
+  silent (under about -45 LUFS, or no sound at all) while the film's code plays cues or music: the sound insert failed;
+  `--silent` for a film meant to be silent.
+- `mux` joins parts and lays one sound under them, cut to the picture's length (joining never lengthens the film); an
+  mp4 passed as `--audio` is the sound source, not a picture part.
 
 ## Safety
 

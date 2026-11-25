@@ -107,9 +107,10 @@ line. `burst` (the rest landing at once) is deprecated: never use it. `keyFrames
 sound on some of them, drive a caret-following camera from them).
 **`typingTimes(text, start, fps, cps)`** the same cadence as a pure function (key sounds, cameras outside the component).
 **`<Scramble text start per={1.5} flicker={8} />`** letters decode from glyphs, left to right: short labels only.
-**`<Odometer value from start dur prefix suffix sep decimals />`** digits on reels; low digits spin, high digits tick over last,
-every digit sharp (`blur` adds motion blur on fast reels; leave it at 0: a smeared number reads as a fault) (`decimals={1}`
-for 92.4).
+**`<Odometer value from start dur prefix suffix sep decimals roll />`** a count on reels; low digits change fast, high digits
+tick over last, every digit sharp. `roll="step"` (the default) shows whole digits on every frame, so no frame holds a
+digit clipped mid-roll; `roll="smooth"` is the old continuous reel (`blur` adds motion blur to it; leave it at 0: a
+smeared number reads as a fault) (`decimals={1}` for 92.4).
 **`<Marker start dur color>`** a highlight sweeping in behind a word.
 **`<Output text start hold travel from={{ x, y, size }} to={{ x, y, size }} born style />`** the product's result seen big once:
 its key words cut on giant (`from`), hold while they creep, then travel into their place in the UI at UI size (`to`); draw the
@@ -354,7 +355,8 @@ src/films/main/Film.tsx   the film (timeline T + sections)      src/films.ts    
 src/kit/                  the kit                                src/Sheet.tsx   the 36-frame storyboard composition
 src/sfx.ts                fetched sounds (generated)             public/         sfx/, music/, logos/, images (never commit audio)
 scripts/frames.mjs        sheet | still | render | final | audio | mux | strip | check   (mux without audio joins muted parts
-                          silent; check --format launch | loop | sting)
+                          silent; check --format launch | loop | sting, --silent)
+src/films/library/        the motion library's reels (--film library-type | library-turns | library-ui | library-hosts)
 scripts/sfx.mjs           roles | list | get | pick | shortlist | music | analyze | fit | credits   (music/analyze/fit decode audio: light, seconds)
 scripts/logos.mjs         search | get | list | check | verify   scripts/new-film.mjs  start a project
 ```

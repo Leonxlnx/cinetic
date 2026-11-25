@@ -190,3 +190,26 @@ content clears in the first frames.
 ## Helpers
 `PixelFilter`, `SmearFilter` (directional blur, edges duplicated) and `SplitFilter` (channel split) are the SVG filters
 the pieces use; put one in the tree and point a layer's `filter: url(#id)` at it.
+
+## In the reel
+
+Every piece's frames in the `library-turns` reel, and the one command that shows just that piece: a strip of 16 of its
+frames in one still (run it in a film project; `render --film library-turns --range a-b` for the piece in motion).
+
+| Piece | Frames | Strip of just this piece |
+|---|---|---|
+| DotReveal | 0-85 | `node scripts/frames.mjs sheet --film library-turns --from 0 --to 85 --grid 4` |
+| DotReveal (square cells out of a photo) | 86-179 | `node scripts/frames.mjs sheet --film library-turns --from 86 --to 179 --grid 4` |
+| BlockBurst (then a staircase eat) | 180-304 | `node scripts/frames.mjs sheet --film library-turns --from 180 --to 304 --grid 4` |
+| GrowIris (circle, then rounded) | 305-416 | `node scripts/frames.mjs sheet --film library-turns --from 305 --to 416 --grid 4` |
+| DiveInto | 417-510 | `node scripts/frames.mjs sheet --film library-turns --from 417 --to 510 --grid 4` |
+| WhipGate | 511-584 | `node scripts/frames.mjs sheet --film library-turns --from 511 --to 584 --grid 4` |
+| Shove | 585-660 | `node scripts/frames.mjs sheet --film library-turns --from 585 --to 660 --grid 4` |
+| ShapeMatch | 661-740 | `node scripts/frames.mjs sheet --film library-turns --from 661 --to 740 --grid 4` |
+| GlitchCut | 741-808 | `node scripts/frames.mjs sheet --film library-turns --from 741 --to 808 --grid 4` |
+| LightSweep | 809-874 | `node scripts/frames.mjs sheet --film library-turns --from 809 --to 874 --grid 4` |
+| Bloom | 875-938 | `node scripts/frames.mjs sheet --film library-turns --from 875 --to 938 --grid 4` |
+| TrackOverlay | 939-1018 | `node scripts/frames.mjs sheet --film library-turns --from 939 --to 1018 --grid 4` |
+| DotScreen | 1019-1102 | `node scripts/frames.mjs sheet --film library-turns --from 1019 --to 1102 --grid 4` |
+| ChromaHit | 1103-1174 | `node scripts/frames.mjs sheet --film library-turns --from 1103 --to 1174 --grid 4` |
+| MorphBox | 1175-1274 | `node scripts/frames.mjs sheet --film library-turns --from 1175 --to 1274 --grid 4` |

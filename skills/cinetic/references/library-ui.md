@@ -25,6 +25,11 @@ Every piece here is built that way, and anything you add beside them should be t
 - Nothing cut: rows and labels are sized for their text, scrolling lists soften only at the card's edges.
 - Logos: every piece that shows an app takes `mark` (a React node, for example a `<Brand>`); without one it draws a
   neutral glyph tile. Never draw a look-alike of a real product's mark.
+- Real third-party screens (GitHub, VS Code, Figma, Slack, a mail app): show either the product's mark alone (`<Brand>`,
+  `<BrandTile>`) or a faithful, detailed rebuild of its real screen, its own layout, colours, icons and wording, with
+  the film's content in it. Start from the [host screens](library-hosts.md) (`GitHubPullRequest`, `GitHubIssueColumn`,
+  `VSCodeWindow`); for a host they lack, rebuild it from a current screenshot of the real product, element by element.
+  Never a rough mock (a grey box with the host's name, a title bar and two lines).
 
 Never: a screen shake or a flash on a press, a card that leaves by fading while it rises, a thing that suddenly turns
 the accent colour, a colour or light-dark switch with no reason, a faint gradient ground or wallpaper, a button only
@@ -238,3 +243,25 @@ typed and sent, pulls back, and the phone leaves upward accelerating.
   push x2 over 22 f from +36 f (`cubic-bezier(0.6, 0, 0.1, 1)`); typing from +56 f; send 10 f after the last key; back
   at +100 f (16 f); leave at +122 f, each step 1.45x the last.
 - Caution: `screen` is the wallpaper: a solid colour or a real picture, never a faint gradient.
+
+## In the reel
+
+Every piece's frames in the `library-ui` reel, and the one command that shows just that piece: a strip of 16 of its
+frames in one still (run it in a film project; `render --film library-ui --range a-b` for the piece in motion).
+
+| Piece | Frames | Strip of just this piece |
+|---|---|---|
+| NoticePile | 0-169 | `node scripts/frames.mjs sheet --film library-ui --from 0 --to 169 --grid 4` |
+| CardFan | 170-281 | `node scripts/frames.mjs sheet --film library-ui --from 170 --to 281 --grid 4` |
+| BannerPop | 282-365 | `node scripts/frames.mjs sheet --film library-ui --from 282 --to 365 --grid 4` |
+| RowExpand (with Pointer) | 366-521 | `node scripts/frames.mjs sheet --film library-ui --from 366 --to 521 --grid 4` |
+| PickList | 522-633 | `node scripts/frames.mjs sheet --film library-ui --from 522 --to 633 --grid 4` |
+| BoardDrag | 634-765 | `node scripts/frames.mjs sheet --film library-ui --from 634 --to 765 --grid 4` |
+| StepList | 766-855 | `node scripts/frames.mjs sheet --film library-ui --from 766 --to 855 --grid 4` |
+| TaskRun | 856-955 | `node scripts/frames.mjs sheet --film library-ui --from 856 --to 955 --grid 4` |
+| ActionMorph | 956-1105 | `node scripts/frames.mjs sheet --film library-ui --from 956 --to 1105 --grid 4` |
+| PromptAnswer | 1106-1295 | `node scripts/frames.mjs sheet --film library-ui --from 1106 --to 1295 --grid 4` |
+| ChatThread | 1296-1495 | `node scripts/frames.mjs sheet --film library-ui --from 1296 --to 1495 --grid 4` |
+| SettingsCard (ToggleSwitch, ValueSlider) | 1496-1645 | `node scripts/frames.mjs sheet --film library-ui --from 1496 --to 1645 --grid 4` |
+| CalendarWave | 1646-1745 | `node scripts/frames.mjs sheet --film library-ui --from 1646 --to 1745 --grid 4` |
+| PhoneDrop | 1746-1895 | `node scripts/frames.mjs sheet --film library-ui --from 1746 --to 1895 --grid 4` |

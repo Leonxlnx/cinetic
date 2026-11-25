@@ -38,6 +38,12 @@ export const RollType: React.FC<{
   per?: number;
   /** Frames of the roll's last, slowing step (default 5); every step before it takes one frame. */
   rollDur?: number;
+  /**
+   * Whole digits only (default true): every frame shows whole digits, the last step lands as a cut after a held
+   * second-to-last digit, with a 2-frame settle of the landed digit; no frame ever holds a digit clipped mid-roll.
+   * false: the earlier roll, whose last step travels through fractions of a digit.
+   */
+  whole?: boolean;
   size?: number;
   color?: string;
   /** Neighbour digits' strength (0 hides them). */
@@ -48,7 +54,7 @@ export const RollType: React.FC<{
   font?: string;
   weight?: number;
   seed?: number;
-}> = ({ text, at = 0, from = '0', per = 1.6, rollDur = 5, size = 160, color = '#141414', ghosts = 0.42, caret = true, x, y, font = fonts.inter, weight = 500, seed = 3 }) => {
+}> = ({ text, at = 0, from = '0', per = 1.6, rollDur = 5, whole = true, size = 160, color = '#141414', ghosts = 0.42, caret = true, x, y, font = fonts.inter, weight = 500, seed = 3 }) => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
   const chars = Array.from(text);
@@ -83,9 +89,16 @@ export const RollType: React.FC<{
         // one whole digit per frame at first (crisp steps, never a smear), then the last step slows over four frames
         const steps = Math.max(0, span - 1);
         const t = frame - s;
-        const pos = a + (t <= steps ? Math.max(0, t) : steps + prog(frame, s + steps, Math.max(2, rollDur), ease.out));
+        const slow = Math.max(2, rollDur);
+        // whole: the second-to-last digit holds through the slow step and the last lands as a cut, settling 0.06 em
+        // over 2 frames; the old roll travels through fractions on its last step
+        const landed = whole && t >= steps + slow - 2;
+        const pos = whole
+          ? a + (t <= steps ? Math.max(0, t) : landed ? steps + 1 : steps)
+          : a + (t <= steps ? Math.max(0, t) : steps + prog(frame, s + steps, slow, ease.out));
         const base = Math.floor(pos);
         const frac = pos - base;
+        const settle = landed ? Math.max(0, 1 - (t - (steps + slow - 2)) / 2) * 0.06 : 0;
         return (
           <span key={`r${k}`} style={{ position: 'relative', display: 'inline-block', visibility: frame >= s ? 'visible' : 'hidden' }}>
             <span style={{ visibility: 'hidden' }}>0</span>
@@ -93,7 +106,7 @@ export const RollType: React.FC<{
               const yy = d - frac; // rows from the centre (0 = on the line)
               const dist = Math.abs(yy);
               const o = dist < 0.5 ? 1 - dist * (1 - ghosts) * 2 : Math.max(0, ghosts * (1.6 - dist));
-              const done = frame >= s + steps + Math.max(2, rollDur);
+              const done = frame >= s + steps + slow;
               if (done && Math.round(yy) !== 0) return null;
               return (
                 <span
@@ -102,7 +115,7 @@ export const RollType: React.FC<{
                     position: 'absolute',
                     left: 0,
                     top: 0,
-                    transform: `translateY(${yy * 1.08}em)`,
+                    transform: `translateY(${yy * 1.08 + settle}em)`,
                     opacity: done ? 1 : o,
                   }}
                 >

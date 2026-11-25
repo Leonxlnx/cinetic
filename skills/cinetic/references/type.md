@@ -48,6 +48,9 @@ A resting line (the size a normal statement settles at) is sized by how many wor
   largest type in the film and names the benefit or the product (or its object), never the problem or the input: the
   hours saved, not the pile of mail; the amount that arrives, not the amount sent. A viewer reads the biggest word as the
   brand.
+- The giant word is optional in a film led by product UI or photographs: there the scale contrast can come from a macro
+  of the UI or a full-frame picture instead, and the statements keep their sizes by word count. When a film has one, it
+  follows this section.
 - It may crop at the frame edge (never inside a box) as long as the word still reads.
 - Weight 500-700, tracking -0.03 to -0.05 em, line height 0.85-0.95.
 - The resting lines keep their sizes around it; the jump between the two is the point. No third size in between: a film
@@ -77,7 +80,7 @@ A resting line (the size a normal statement settles at) is sized by how many wor
 - By default a line sits at the frame's centre: x 960, its optical centre at y 520-540 (a hair above the middle).
 - It is the only line on screen. Behind it: a flat ground, a calm area of a photograph or of the product's surface, or
   a plate over a busy picture; its contrast against what is behind it is 7:1 or more. A statement alone on an empty
-  ground is for a line that must land (the turn, the claim), not the default beat: most lines sit over their picture or
+  ground is for a line that must land (the claim at the end), never the turn and not the default beat: most lines sit over their picture or
   beside their object. A brand accent that cannot reach that against the neutrals (a mid blue, an orange) never carries a statement as
   its ground or its colour: use it for shapes, the accent word's underline or glow, and a lighter tint of it for text on
   dark.
@@ -91,6 +94,16 @@ A resting line (the size a normal statement settles at) is sized by how many wor
   of air or more between them, text and object centred together as one group. A poster world sets lines flush-left on its
   column grid. Type printed on a surface (a floor, the face of a block) follows the surface.
 - Never a heading alone in a corner.
+
+### Over a busy photograph
+
+A statement over a busy picture (a room, a crowd, a street) sits on one of two things, never on the busy part:
+- **a solid plate:** a flat panel of the ground colour or white behind the line (radius from the UI's family, padding
+  0.4 of the size top and bottom, 0.6 at the sides), opaque, or
+- **a clean band of the picture:** frame or crop the photograph so the line lands on a calm area (a wall, the sky, a
+  table top) that is calm under every letter for the line's whole time on screen.
+Either way the line reaches 7:1 against what is directly behind it. Never dim, darken, blur or tint the whole picture
+to make room for words: the picture is the world, and a dimmed world reads as a slide.
 
 ## 8. Few words, built
 
@@ -160,13 +173,16 @@ default (`fonts.hand` only for a mark a person makes inside a product, when the 
 - A figure never carries a label above it. Its unit or name follows it on the same line, or sits under it at a third
   of the figure's size (40 px or more), in the same face. A product name in small type above a UI element or a figure is a kicker.
 
-## 12. Labels and mono
+## 12. Labels, figures and mono
 
 - Labels are sentence case in the UI face, tracking 0.
 - Texture labels (UI chips, status lines, data tags nobody must read) may sit at 20-28 px. A label the viewer needs (a
   stat's unit, a caption, a date, a name under an avatar, the line under a giant word, the CTA) is a third of the line it
   serves and 40 px or more.
 - Text never crops inside its own box (a chip, a field, a card): fit it (`useTextWidth`) or shorten it.
+- A rolling or counting figure moves in whole digits: every frame shows whole digits, and no digit is ever clipped
+  mid-roll on a frame that holds. The kit's `<Odometer>` (`roll="step"`) and the library's `RollType` (`whole`) step by
+  default; their old continuous roll (`roll="smooth"`, `whole={false}`) only for a figure that never rests on a frame.
 - Typing runs at a believable speed to the end, about 15-18 characters a second (the kit's default `cps` 17), never a
   burst where the rest of the line lands at once. When time is short, show a prefix as already typed and type the rest
   on screen, or shorten the line.
@@ -208,7 +224,8 @@ const voice = { fontFamily: fonts.inter, color: INK };
 
 ## Tells: what makes type look generated
 
-- Every line the same mid size whatever its word count, and nothing giant; or a six-word line blown up to 200 px.
+- Every line the same mid size whatever its word count, and no contrast of scale anywhere (no giant word, no macro, no
+  full-frame picture); or a six-word line blown up to 200 px.
 - A full sentence on screen at once, or two lines where one would do.
 - An eyebrow or kicker over a heading: a category label, a "New" pill, a feature number.
 - Uppercase mono labels, letter-spaced small caps, any tracking above +0.03 em.
@@ -219,11 +236,14 @@ const voice = { fontFamily: fonts.inter, color: INK };
 - Large type at UI spacing (tracking 0, optical sizing off): it reads as interface text blown up.
 - A heading alone in a top-left corner, or a left-aligned line on an empty ground with nothing beside it to answer;
   every line alone on an empty ground, beat after beat.
-- Words over a busy picture without a plate; contrast under 7:1. Blurred, ghosted or faded copies of words behind a
-  line, or a claim over dimmed, blurred UI.
+- Contrast under 7:1. Blurred, ghosted or faded copies of words behind a line, or a claim over dimmed, blurred UI.
 - A resting line cut by the frame edge, or cut on two sides with the UI around it.
 - A label above a figure; a full stop on every statement, a coloured or animated one; a statement in two colours.
-- Letters that start widely spaced and pull together; a typing burst; a rolling number that smears or pixelates.
+- Letters that start widely spaced and pull together; a typing burst; a rolling number that smears, pixelates or holds a
+  digit clipped mid-roll.
+- A turn or a claim told by a headline alone on an empty frame, or by the text inside one card swapped while the card
+  stays ([turns are shown](film-grammar.md#story)).
+- A statement over a busy photograph with no plate or clean band, or the whole picture dimmed or blurred behind it.
 - The same treatment in every film: one flat accent word, the born tint on every statement.
 - Gradient fills on every headline, decorative glows (anything beyond the accent word's own soft light), outlines, drop
   shadows, letters bouncing one by one.

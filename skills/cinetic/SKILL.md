@@ -21,7 +21,8 @@ Hold every film to all nine.
 
 1. **A story, not a feature list.** Someone wants something, it costs them today (one picture that gets worse), the
    turn comes at 20-30 %, three to five steps act on the same object, and a visible payoff pays the cost back with an
-   opening image returned changed ([story](references/film-grammar.md#story)).
+   opening image returned changed. Turns are events in a real surface, never a headline on an empty frame
+   ([story](references/film-grammar.md#story)).
 2. **Pace and escalation.** A new beat every 0.8-2.2 s; one thing first, held long enough to read and designed with
    care, then a second, then exponentially more. Every action shows before, during and after (a scroll travels to one
    row and picks it out; a press is answered by its target). Holds that are read (a line, a result) may fill about a
@@ -39,21 +40,22 @@ Hold every film to all nine.
    `drift`, a breath, a sheen) ([entrances.md](references/motion/entrances.md#house-rules)).
 6. **Type is an event, set clean.** One sans voice (`fonts.inter` unless the brand has its own), sentence case, weight
    430-550, sized by word count (84-100 px for 5-6 words, 110-150 px for 3-4, 160-240 px for 1-2, one spectacle size of
-   280-700 px a film). 2-6 words at once, one line on screen at a time, over its picture, beside its object or centred,
-   built 1-3 at a time, never faded in. At most one emphasised word a statement, in the accent, in at most two statements
-   a film. Everything else: [type.md](references/type.md).
+   280-700 px a film, optional when UI or photographs lead). 2-6 words at once, one line on screen at a time, over its
+   picture, beside its object or centred, built 1-3 at a time, never faded in. At most one emphasised word a statement,
+   in the accent, in at most two statements a film. Everything else: [type.md](references/type.md).
 7. **The real product, premium.** Its UI really used, designed like a shipped product: its app context, real names and
    data, states, small icons, even padding, nothing cut inside its container, a crafted pointer (start from the
    [library's UI](references/library-ui.md)). Other companies appear as their real, current, full-colour marks
-   (`<Brand>`) or as faithful, detailed rebuilds of their real screens; glyphs as real icons (`<Icon>`). Never a rough
+   (`<Brand>`) or as faithful, detailed rebuilds of their real screens ([hosts](references/library-hosts.md)); glyphs as
+   real icons (`<Icon>`). Never a rough
    mock of a product people know, never an emoji for a logo, never lorem ipsum.
 8. **One focus, rich frames.** One thing to read at a time, supported by a rich, specific world: licensed photographs,
    the product's real surfaces in detail, texture, depth in layers, secondary elements that react. A statement alone on
    an empty ground is for a line that must land, not the default beat; a resting line and the focal component keep 8 %
    or more from every edge ([compositions](references/film-grammar.md#compositions)).
 9. **Sound designed with the picture.** A licensed music bed that enters with the first idea; few, dry, quiet recorded
-   effects whose transient lands on the visual event; never a bell, chime, glass, coin or jingle; no effect on the
-   ending, music only ([sound-design.md](references/sound-design.md)).
+   effects whose transient lands on the visual event; never a bell, chime, glass, coin or jingle, a footstep for a UI
+   impact or a whoosh on the turn; no effect on the ending, music only ([sound-design.md](references/sound-design.md)).
 
 Read [taste.md](references/taste.md) once in a film: the never list, the tells, the rubric and the polish loop.
 
@@ -87,9 +89,9 @@ Never the concept of a worked example you just read. Write `Concept: <name>, bec
 
 **5. Devices, then beats (the rest of `BEATS.md`).** Find the signature: one motif from the story and the product's
 object, name or brand that opens the film, returns in joins and closes it. Write a **Devices** block: the opening, the
-type treatment, each join with its class, the spectacle, the integration form, the ending, each picked from the
-[motion library](references/library.md) first and the [menus](references/film-grammar.md#devices), by what the story
-needs, with a reason. No move repeats identically or more than twice. Then one row per beat
+type treatment, each join with its class, the spectacle, the integration form, the ending, each naming the
+[library](references/library.md) piece behind it (or why none fits; `check` counts them), else from the
+[menus](references/film-grammar.md#devices), by what the story needs. No move repeats identically or more than twice. Then one row per beat
 ([structures](references/film-grammar.md#structures)): frames, its composition tag, what the viewer sees, what moves and
 how, how it joins the next beat, the sound. A beat's length is set by its action, not a cap. Name the poster frame.
 
@@ -112,12 +114,15 @@ a project that shares another folder's `node_modules`, `node <that folder>/node_
 What each command shows: [rendering.md](references/rendering.md#the-loop).
 - `node scripts/frames.mjs sheet` (36 frames in one still; `--safe` outlines the 8 % margin), and
   `node scripts/frames.mjs sheet --frames 120,126,132,...` for one moment.
-- `node scripts/frames.mjs still --frame N` at full size for any beat with UI text or a label: read the words.
+- `node scripts/frames.mjs still --frame N --full` for any beat with UI text or a label: read the words.
 - `node scripts/frames.mjs render` (half-size preview), then `node scripts/frames.mjs strip out/main-preview.mp4 --at 4.2`
   to judge motion, joins and actions on consecutive frames.
 - `node scripts/frames.mjs check out/main-preview.mp4` measures pace, holds, empty frames, crowding and the ending and
   prints what to fix (`--format loop` or `--format sting` for those formats); its `air` figures are information.
-Write the [join test](references/film-grammar.md#the-join-test) into `BEATS.md` and fix every join that fails. Score the
+Write the [join test](references/film-grammar.md#the-join-test) into `BEATS.md` and fix every join that fails. Bugs
+block the final: a full-size still of every beat with type or UI and a strip of every join; fix every cut text,
+overlap, overprint, empty slab, one-frame pop and clipped digit; no fix row is closed as "accepted"
+([polish loop](references/taste.md#5-the-polish-loop)). Score the
 sheet with the rubric in [taste.md](references/taste.md) (20 points); at 17 or more go to step 9.
 
 **9. Polish (required).** The first cut is never the film. Run at least two passes of the
@@ -147,7 +152,7 @@ Import everything from `src/kit` (`import { Words, Camera, ease, at } from '../.
 
 | Need | Use |
 |---|---|
-| library (first) | finished type moves, turns and effects, product UI pieces, each with a reel (`frames.mjs render --film library-turns`, `library-type`, `library-ui`): [library.md](references/library.md) |
+| library (first) | finished type moves, turns and effects, product UI pieces, each with a reel (`frames.mjs render --film library-turns`, `library-type`, `library-ui`, `library-hosts`): [library.md](references/library.md) |
 | timing | `at(frame, start, dur, ease.out)` -> 0..1, `mix(p, a, b)`, `springAt(frame, fps, start, springs.card)`, `stagger(i)`, `accel()` for exits, `creep()` for holds, `keys()` for keyframes, `logScale()` for zooms |
 | curves | `ease.out` (arrive), `ease.soft` (heavy arrive), `ease.snap` (UI pop), `ease.inOut` / `ease.glide` (travel), `ease.in` (leave), `ease.back` (land with weight) |
 | type | `<Words text arrive="rise\|blur\|scale\|drop\|slide\|flip\|cut" by="word\|char\|line" born accent leaveAt times>`, `<Build words times>` (append with a re-centre jump), `<Swap items>`, `<SlotLine>`, `useGlyphBox()`, `<Typing>` (believable speed), `<Scramble>`, `<Odometer>` (sharp digits), `<Marker>`, `<Output>` (the result giant, then into the UI) |
@@ -170,7 +175,7 @@ joins), and they will be replaced. Never copy their content, order, palettes, ma
 Each rule's detail and numbers live in the linked section; read it when the rule applies.
 
 - **Never** a screen shake, a screen flash, text that fades out while rising, letters spaced wide that pull together, a
-  full stop on every statement or an animated one, a typing burst, a smeared rolling number, a faint gradient ground,
+  full stop on every statement or an animated one, a typing burst, a smeared or half-rolled number, a faint gradient ground,
   a handwriting font by default, a beat too fast to follow, a move repeated more than twice, colour without meaning
   ([the never list](references/taste.md#never)).
 - **Never linear motion** (a loop's constant cycle aside), never a cross-fade or an empty frame between scenes, never
@@ -205,15 +210,17 @@ Each rule's detail and numbers live in the linked section; read it when the rule
   line, never two sides, never the key figure ([type.md](references/type.md#7-centred-one-line-at-a-time)).
 - **UI premium and detailed,** flat or tilted 12° or less, in its app context, the region that matters pixel-real
   ([cards-ui.md](references/motion/cards-ui.md#house-rules), [library-ui.md](references/library-ui.md)).
-- **Light and material:** two planes moving at different rates in every beat, one light direction, soft rounded 3D, one
-  texture family ([light and material](references/worlds.md#palette-rules-all-worlds)).
+- **Light, material and depth:** two planes moving at different rates in every beat, one light direction, soft rounded
+  3D, one texture family; the product sits on a surface in light and the opening's place returns
+  ([depth](references/worlds.md#depth-and-the-world-all-worlds)).
 - **Clean grounds:** a flat clean colour, a real picture or a bold designed scene; no vignette, no grain on a flat
   ground, never dimmed UI as a ground ([palette rules](references/worlds.md#palette-rules-all-worlds) 8).
 - **Clean type:** no eyebrows or kickers, no uppercase mono labels, no ALL CAPS or Title Case, no 800-900 weights,
   serif rarely ([type.md](references/type.md#11-no-eyebrows-no-kickers)).
 - **Real marks only;** the product's own mark has an idea, never two or three primitive rectangles
   ([lockups](references/film-grammar.md#lockups), [logos](references/motion/entrances.md#57-real-third-party-logos)).
-- **No generated images, licensed pictures and sound only;** every external file is listed in `CREDITS.md` ([assets.md](references/assets.md)).
+- **No generated images, licensed pictures and sound only,** the same people and place through a film; every external
+  file is listed in `CREDITS.md` ([assets.md](references/assets.md#4-photos-and-footage)).
 - **Invented palettes:** no purple, no green, no purple-to-blue gradient; the accent's hue from the product's own object
   (three candidates in `BRIEF.md`) on a tenth of the frame or less; light ground #FFFFFF to #F4F5F7, dark ground a deep
   tone of the accent's hue ([palette rules](references/worlds.md#palette-rules-all-worlds)).

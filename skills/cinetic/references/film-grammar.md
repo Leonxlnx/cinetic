@@ -28,6 +28,12 @@ block of `BEATS.md`:
    (the evening back, the shelf sold out, the message sent), with one image from the opening that returns changed (the
    empty cell filled, the pile gone, the same question with the other answer).
 
+**Turns are shown, not told.** The turn, the second turn and every claim are an event in a real surface: the product
+acting (a reply arrives, a check goes green, the file is written), someone sending or breaking something, the picture
+changing. Never a headline alone on an empty frame ("Then the whole page", "On a phone?"), and never the text inside one
+card swapped while the card stays. Each step happens in a real surface too: the product, a named integration, the
+user's device or place.
+
 Test before building: tell the film aloud in one sentence with "until", "then" and "so" in it. If it is a list joined by
 "and", rewrite line 4. A film of 45 s or more adds a second turn at 55-70 % (a new obstacle, a joke, the stakes raised)
 and a "many" climax at 80-88 % ([acts](#1-lengths-and-acts)). Every later choice (the concept, the devices, the joins,
@@ -294,6 +300,10 @@ turns ([library-turns.md](library-turns.md)) and adapt them; build by hand what 
 Never: a ground colour change around a small object; the ground changing first and the object after it; a flood or iris
 that ends before it covers the frame; a light or dark switch without a story reason; a screen flash to hide a cut.
 
+A card whose text drops out while new text rises in, the card staying put, is a token join (the eye sees the same box):
+once a film at most. The second time, change the object: a notification arrives, a reply lands, another surface takes
+over.
+
 ### The join test
 
 A required step before the final: list every join in `BEATS.md` as
@@ -550,10 +560,10 @@ beat.
 |---|---|---|
 | `full-ui` | the product's UI as one component, large, camera 1.2-1.6x; one edge may leave the frame while the camera follows it | the core action |
 | `macro` | one detail at 3-6x: a caret, a button, a number, a row | the moment of the action |
-| `giant-type` | 1-3 words at 20-40 % of the frame height, alone, may crop at the frame edge | promise, claim, a turn |
+| `giant-type` | 1-3 words at 20-40 % of the frame height, alone, may crop at the frame edge | promise, claim, the result of a turn already shown |
 | `type-on-surface` | words laid on an object or plane in perspective (a block's face, a floor, a card) | hooks, chapter titles |
 | `ground` | one object or picture fills the frame, by any carrier (`forge`'s beat sheet calls it `flood`) | a join between places |
-| `statement` | a line that must land: alone on a flat ground, over a calm area of a picture, or beside its object | the turn, a claim that answers what was just shown |
+| `statement` | a line that must land: alone on a flat ground, over a calm area of a picture, or beside its object | a claim that answers what was just shown (the turn itself is an event, [story](#story)) |
 | `split` | two grounds or two states side by side (before / after, input / output) | proof, comparison |
 | `quantity` | many of a thing (twenty documents, a hundred runs), by any spectacle in the menu (`forge`'s `wall`) | "all of it", scale |
 | `panels` | a gutterless grid of 2-4 panels, each on its own clock (`motion/camera.md` 6.6) | the product doing several things at once |

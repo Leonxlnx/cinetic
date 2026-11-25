@@ -431,8 +431,9 @@ export const Scramble: React.FC<{ text: string; start?: number; per?: number; fl
 };
 
 /**
- * A number that rolls to its value like a mechanical counter. Every digit column is a reel 0-9 placed by the
- * continuous value at its place, so low digits spin fast and high digits tick over last. Digits stay sharp.
+ * A number that counts to its value like a mechanical counter. By default (`roll="step"`) it moves in whole digits:
+ * every frame shows whole numbers, low digits change fast and high digits tick over last. `roll="smooth"` is the
+ * earlier reel, each column placed by the continuous value (its lowest digit is mid-roll on most frames). Digits stay sharp.
  * Integers only; pass prefix/suffix for "$", "%", "k".
  */
 export const Odometer: React.FC<{
@@ -450,13 +451,19 @@ export const Odometer: React.FC<{
   decimals?: number;
   style?: React.CSSProperties;
   curve?: Ease;
-}> = ({ value, from = 0, start = 0, dur = 40, prefix = '', suffix = '', sep = ',', decimals = 0, style, curve = ease.out, blur: blurMax = 0 }) => {
+  /**
+   * 'step' (default): every frame shows whole digits (the count moves in whole units of its last digit), so no frame,
+   * held or not, shows a digit clipped mid-roll. 'smooth': the earlier reel whose lowest digit rolls continuously.
+   */
+  roll?: 'step' | 'smooth';
+}> = ({ value, from = 0, start = 0, dur = 40, prefix = '', suffix = '', sep = ',', decimals = 0, style, curve = ease.out, blur: blurMax = 0, roll = 'step' }) => {
   const frame = useCurrentFrame();
   const k10 = Math.pow(10, decimals);
   // snap float noise (0.94 * 100 = 93.99999...) so a number at rest shows exactly its digits
   const snap = (v: number) => (Math.abs(v - Math.round(v)) < 1e-6 ? Math.round(v) : v);
-  const cur = snap(mix(at(frame, start, dur, curve), from, value) * k10);
-  const prev = mix(at(frame - 1, start, dur, curve), from, value) * k10;
+  const whole = (v: number) => (roll === 'step' ? Math.round(v) : v);
+  const cur = whole(snap(mix(at(frame, start, dur, curve), from, value) * k10));
+  const prev = whole(mix(at(frame - 1, start, dur, curve), from, value) * k10);
   const nDigits = Math.max(decimals + 1, String(Math.round(Math.max(Math.abs(value), Math.abs(from)) * k10)).length);
   const H = 1.12;
   const cols: React.ReactNode[] = [];
@@ -472,7 +479,8 @@ export const Odometer: React.FC<{
     const frac = k === 0 ? pos - whole : lower > scale - 1 ? lower - (scale - 1) : 0;
     const y = (whole + frac) % 10;
     const speed = Math.abs(cur - prev) / scale;
-    const blur = Math.min(blurMax, speed * 6);
+    // whole steps are never blurred (a blurred whole digit is a smear); blur only on the smooth reel
+    const blur = roll === 'step' ? 0 : Math.min(blurMax, speed * 6);
     cols.push(
       <span key={k} style={{ display: 'inline-block', height: `${H}em`, overflow: 'hidden', width: needed ? undefined : 0, verticalAlign: 'bottom' }}>
         <span style={{ display: 'block', transform: `translateY(${-y * H}em)`, filter: blur > 0.3 ? `blur(${blur}px)` : undefined }}>

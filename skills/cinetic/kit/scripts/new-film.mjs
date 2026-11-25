@@ -3,7 +3,8 @@
 //
 //   node <skill>/kit/scripts/new-film.mjs <folder> [--name "Product"] [--no-install]
 //
-// Copies the kit (src/kit, scripts, configs) and a blank film (src/films/main) into <folder>, then installs the
+// Copies the kit (src/kit, scripts, configs), a blank film (src/films/main) and the motion library's reels
+// (src/films/library: --film library-type, library-turns, library-ui, library-hosts) into <folder>, then installs the
 // packages (skip with --no-install, e.g. when a node_modules folder sits in a parent folder already).
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -35,13 +36,38 @@ copy('src/kit');
 copy('public/logos');
 for (const f of ['index.ts', 'Root.tsx', 'Sheet.tsx', 'logos.ts']) copy(`src/${f}`);
 copy('starter', () => true);
+// the motion library's reels, so the project can render and sheet them (frames.mjs render --film library-ui); the
+// turns reel shows licensed photographs from public/img when the kit has them
+copy('src/films/library');
+const imgDir = path.join(kit, 'public', 'img');
+if (fs.existsSync(imgDir)) fs.cpSync(imgDir, path.join(out, 'public', 'img'), { recursive: true });
 // the blank film and the registry that points at it
 fs.mkdirSync(path.join(out, 'src', 'films', 'main'), { recursive: true });
+// the reels the kit has (an older kit may lack one): registered beside the film
+const REELS = [
+  { id: 'library-type', file: 'ReelType', comp: 'ReelType', dur: 'reelTypeDuration' },
+  { id: 'library-turns', file: 'ReelTurns', comp: 'ReelTurns', dur: 'reelTurnsDuration' },
+  { id: 'library-ui', file: 'ReelUi', comp: 'ReelUi', dur: 'reelUiDuration' },
+  { id: 'library-hosts', file: 'ReelHosts', comp: 'ReelHosts', dur: 'reelHostsDuration' },
+].filter((r) => fs.existsSync(path.join(out, 'src', 'films', 'library', `${r.file}.tsx`)));
 fs.copyFileSync(path.join(kit, 'starter', 'Film.tsx'), path.join(out, 'src', 'films', 'main', 'Film.tsx'));
 fs.rmSync(path.join(out, 'starter'), { recursive: true, force: true });
 fs.writeFileSync(
   path.join(out, 'src', 'films.ts'),
-  `// The films in this project. Each registers as its own composition (and is reachable by the Sheet).\nimport type React from 'react';\nimport { Film, duration } from './films/main/Film';\n\nexport const FILMS: Record<string, { component: React.FC; duration: number; fps: number; width?: number; height?: number }> = {\n  // a vertical film: add width: 1080, height: 1920 (and lay the film out for that frame)\n  main: { component: Film, duration, fps: 30 },\n};\n`,
+  [
+    '// The films in this project. Each registers as its own composition (and is reachable by the Sheet).',
+    "import type React from 'react';",
+    "import { Film, duration } from './films/main/Film';",
+    ...REELS.map((r) => `import { ${r.comp}, ${r.dur} } from './films/library/${r.file}';`),
+    '',
+    'export const FILMS: Record<string, { component: React.FC; duration: number; fps: number; width?: number; height?: number }> = {',
+    '  // a vertical film: add width: 1080, height: 1920 (and lay the film out for that frame)',
+    '  main: { component: Film, duration, fps: 30 },',
+    "  // the motion library's reels: every piece, named, one after another (frames.mjs render --film library-ui)",
+    ...REELS.map((r) => `  '${r.id}': { component: ${r.comp}, duration: ${r.dur}, fps: 30 },`),
+    '};',
+    '',
+  ].join('\n'),
 );
 fs.writeFileSync(path.join(out, 'src', 'sfx.ts'), '// Written by scripts/sfx.mjs get (empty until you fetch sounds).\nexport const sfx = {} as const;\n');
 fs.mkdirSync(path.join(out, 'public'), { recursive: true });
@@ -58,4 +84,5 @@ if (!args.includes('--no-install')) {
   const r = spawnSync(npm, ['install', '--no-audit', '--no-fund'], { cwd: out, stdio: 'inherit', shell: process.platform === 'win32' });
   if (r.status !== 0) process.exit(r.status ?? 1);
 }
+console.log('first: watch the library (node scripts/frames.mjs sheet --film library-ui; also library-type, library-turns, library-hosts; render --film <reel> to see them move)');
 console.log('next: BRIEF.md, BEATS.md (one row per beat, tagged by composition), then src/films/main/Film.tsx and: node scripts/frames.mjs sheet');

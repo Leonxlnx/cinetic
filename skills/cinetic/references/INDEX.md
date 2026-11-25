@@ -60,6 +60,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 ## [worlds.md](worlds.md): Worlds: the graphic languages a film can live in
 
 - [Palette rules (all worlds)](worlds.md#palette-rules-all-worlds)
+  - [Depth and the world (all worlds)](worlds.md#depth-and-the-world-all-worlds)
 - [1. Block grid](worlds.md#1-block-grid)
 - [2. Editorial paper](worlds.md#2-editorial-paper)
 - [3. Paper collage](worlds.md#3-paper-collage)
@@ -102,11 +103,12 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [5. Tracking by size](type.md#5-tracking-by-size)
 - [6. Sentence case](type.md#6-sentence-case)
 - [7. Centred, one line at a time](type.md#7-centred-one-line-at-a-time)
+  - [Over a busy photograph](type.md#over-a-busy-photograph)
 - [8. Few words, built](type.md#8-few-words-built)
 - [9. Emphasis by colour](type.md#9-emphasis-by-colour)
 - [10. Serif only with a reason](type.md#10-serif-only-with-a-reason)
 - [11. No eyebrows, no kickers](type.md#11-no-eyebrows-no-kickers)
-- [12. Labels and mono](type.md#12-labels-and-mono)
+- [12. Labels, figures and mono](type.md#12-labels-figures-and-mono)
 - [13. In code](type.md#13-in-code)
 - [Tells: what makes type look generated](type.md#tells-what-makes-type-look-generated)
 
@@ -478,6 +480,33 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [The three sections](library.md#the-three-sections)
 - [How to use it](library.md#how-to-use-it)
 
+## [library-type.md](library-type.md): Library: type
+
+- [Lines that land](library-type.md#lines-that-land)
+  - [WeightLine](library-type.md#weightline)
+  - [RiseLine](library-type.md#riseline)
+  - [MarkPhrase](library-type.md#markphrase)
+  - [BlurSweep](library-type.md#blursweep)
+- [Size as meaning](library-type.md#size-as-meaning)
+  - [ScaleJump](library-type.md#scalejump)
+- [Type with a texture](library-type.md#type-with-a-texture)
+  - [RollType](library-type.md#rolltype)
+  - [TrackedType](library-type.md#trackedtype)
+  - [TileWord](library-type.md#tileword)
+  - [DotWord](library-type.md#dotword)
+  - [LightWord](library-type.md#lightword)
+  - [DotDive](library-type.md#dotdive)
+- [Playful letters](library-type.md#playful-letters)
+  - [DropWord](library-type.md#dropword)
+  - [ArcToss](library-type.md#arctoss)
+  - [BarStack](library-type.md#barstack)
+- [Words inside a product](library-type.md#words-inside-a-product)
+  - [HostType](library-type.md#hosttype)
+- [Exits](library-type.md#exits)
+  - [PushApart](library-type.md#pushapart)
+  - [BlockOut](library-type.md#blockout)
+- [In the reel](library-type.md#in-the-reel)
+
 ## [library-turns.md](library-turns.md): Library: turns and effects
 
 - [Turns](library-turns.md#turns)
@@ -497,6 +526,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [ChromaHit](library-turns.md#chromahit)
   - [MorphBox](library-turns.md#morphbox)
 - [Helpers](library-turns.md#helpers)
+- [In the reel](library-turns.md#in-the-reel)
 
 ## [library-ui.md](library-ui.md): Library: product UI
 
@@ -522,6 +552,19 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [ActionMorph](library-ui.md#actionmorph)
   - [SettingsCard, ToggleSwitch, ValueSlider, SelectFrame](library-ui.md#settingscard-toggleswitch-valueslider-selectframe)
   - [PhoneDrop](library-ui.md#phonedrop)
+- [In the reel](library-ui.md#in-the-reel)
+
+## [library-hosts.md](library-hosts.md): Library: host screens
+
+- [How they are built](library-hosts.md#how-they-are-built)
+- [GitHub](library-hosts.md#github)
+  - [GitHubIssueColumn, GitHubIssueCard](library-hosts.md#githubissuecolumn-githubissuecard)
+  - [GitHubPullRequest](library-hosts.md#githubpullrequest)
+- [VS Code](library-hosts.md#vs-code)
+  - [VSCodeWindow, VSCodeNotice](library-hosts.md#vscodewindow-vscodenotice)
+- [A design canvas](library-hosts.md#a-design-canvas)
+  - [CanvasChrome, DotCanvas](library-hosts.md#canvaschrome-dotcanvas)
+- [In the reel](library-hosts.md#in-the-reel)
 
 ## [kit.md](kit.md): The kit: API reference
 

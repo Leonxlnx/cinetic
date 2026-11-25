@@ -22,8 +22,11 @@ Hard rules from review; each is a tell on sight. The file named after each owns 
 - A statement ends without a full stop unless the sentence needs one; punctuation is never animated or turned into an
   object ([type.md](type.md#9-emphasis-by-colour)).
 - Typing runs at a believable speed to the end (about 15-18 characters a second); no burst where the rest lands at once:
-  when time is short, show a prefix as already typed ([type.md](type.md#12-labels-and-mono)).
-- Rolling numbers stay sharp: no smear, no pixelated digits ([text](motion/text.md)).
+  when time is short, show a prefix as already typed ([type.md](type.md#12-labels-figures-and-mono)).
+- Rolling numbers stay sharp and move in whole digits: no smear, no pixelated digits, no digit clipped mid-roll on a
+  held frame ([type.md](type.md#12-labels-figures-and-mono)).
+- A turn or a claim is shown by an event in a real surface, never a headline alone on an empty frame or the text of one
+  card swapped in place ([story](film-grammar.md#story)).
 - No faint gradient grounds (a pale gradient field, a dark ground with a soft bloom): a ground is a flat clean colour,
   a real picture or a bold designed scene ([palette rules](worlds.md#palette-rules-all-worlds)).
 - No eyebrow lines; no handwriting font by default; serif rarely ([type.md](type.md#10-serif-only-with-a-reason)).
@@ -76,8 +79,9 @@ Hard rules from review; each is a tell on sight. The file named after each owns 
 12. **Random stock.** Pictures from five different shoots and grades; stock used as wallpaper behind text.
 
 ### Type
-13. **Medium everything.** Every line the same mid size whatever its word count, and no spectacle word: nothing giant.
-    Or the opposite: a six-word line blown up to 200 px.
+13. **Medium everything.** Every line the same mid size whatever its word count, and no contrast of scale (no giant
+    word; in a film led by UI or photographs, no macro or full-frame picture either). Or the opposite: a six-word line
+    blown up to 200 px.
 14. **Template type.** Eyebrows and kickers over a heading, uppercase mono labels, letter-spaced small caps, ALL CAPS or
     Title Case statements, weights of 800-900, a serif or script accent word by habit, a trend display face used as a
     default, two faces in one line, a mono statement; gradient fills on headlines, decorative glows, outlines, drop
@@ -132,6 +136,10 @@ Hard rules from review; each is a tell on sight. The file named after each owns 
     film.
 32. **A claim you cannot read.** The claim or the benefit fully on screen for less than its reading time
     (words / 3 + 0.5 s).
+33. **A turn told, not shown.** The turn or the second turn as a headline on an empty frame; the same card's text
+    swapped again and again as the join; a step that happens nowhere real.
+34. **Bugs left in.** Text cut by the frame or a mask, an overlap or overprint, an empty slab during a reflow, a
+    one-frame pop, a digit half-rolled on a held frame, a fix row closed as "accepted".
 
 ### Overused now
 
@@ -268,11 +276,17 @@ each cut** (every cut except the one into the ending).
 A film is not finished after the first cut. After it scores 17 or more, run at least two polish passes:
 1. Render a preview and make strips of consecutive frames (`frames.mjs strip <video> --at <s>`) of every join and every
    beat, not only the 36-frame sheet.
-2. Write a list of ten or more concrete fixes in `BEATS.md` (`frame | what is wrong | the fix`): a pill without padding,
-   a press its target does not answer, a join whose frame is not covered, a hold with nothing to read, a repeated move,
-   a sound too loud.
+2. Write a list of ten or more concrete fixes in `BEATS.md` (`frame | what is wrong | the fix | re-checked on`): a pill
+   without padding, a press its target does not answer, a join whose frame is not covered, a hold with nothing to read,
+   a repeated move, a sound too loud.
 3. Do every fix, re-render, and re-check each one on its strip; tick it off.
 4. Run the pass again with a fresh list. Two passes is the minimum; stop when a pass finds fewer than five real faults.
+
+**Bugs are blockers.** Before the final, render a full-size still of every beat with type or UI
+(`frames.mjs still --frame N --full`) and a strip of every join and of every reflow or layout change, and fix every cut
+text (by the frame, a mask or its own box), overlap, overprint, empty slab, one-frame pop and clipped digit. Each one
+blocks the final, whatever the rubric says. A row of the fix table is closed only by a fix or a redesign of the beat,
+re-checked on its frame: never "accepted", "noted", "minor" or "later".
 
 The effort checklist: add at least eight of these ten, deliberately, and tick them in `BEATS.md`.
 1. **Idle life:** everything that has landed keeps a small life of its own (a bob, a blink, a breathing light, a sheen

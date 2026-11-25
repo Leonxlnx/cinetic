@@ -17,10 +17,12 @@
 //   node scripts/frames.mjs mux out/part-a.mp4 out/part-b.mp4 ... [--audio out/audio.wav] [--out out/main.mp4]
 //        joins the parts without re-encoding, lays the sound on the picture's own start time, sets the loudness.
 //        Without --audio and without out/audio.wav it joins muted parts into a silent file (a loop, a preview in parts)
-//   node scripts/frames.mjs check [out/main-preview.mp4] [--lockup 2] [--format launch|loop|sting]
+//   node scripts/frames.mjs check [out/main-preview.mp4] [--film main] [--lockup 2] [--format launch|loop|sting] [--silent]
 //        measures a rendered film against the bar: air (how much of the frame is sharp detail, how many separate things,
 //        how often the frame edge cuts them), pace (how much changes in every half second), empty frames, how long the
-//        ending is, the sound. Flags what fails; LOOK lines name frames to look at. Thresholds: CINETIC_CHECK_* env.
+//        ending is, the sound, and how many motion-library pieces the film's source (src/films/<film>) imports. Flags
+//        what fails; LOOK lines name frames to look at. Thresholds: CINETIC_CHECK_* env. Fails a file that is silent
+//        while the film's source plays sound cues or music (the sound insert failed); --silent for a film meant silent.
 //        --format loop: no sound, ending or music lines; fails when the last frame does not match the first.
 //        --format sting: no pace gate on a film under 8 s; the ending may hold. Default launch.
 //   node scripts/frames.mjs strip out/film.mp4 --at 4.5 [--dur 2] [--fps 15] [--out out/strip.jpg]
@@ -48,20 +50,24 @@ const conc = [`--concurrency=${process.env.CINETIC_CONCURRENCY || 2}`];
 // CINETIC_BROWSER: a Chrome Headless Shell to share between film projects (otherwise Remotion downloads ~300 MB into each)
 const browser = process.env.CINETIC_BROWSER ? [`--browser-executable=${process.env.CINETIC_BROWSER}`] : [];
 
-const cli = (() => {
+// resolved on first use: check, strip, join and mux need only ffmpeg, not Remotion
+let cliPath;
+const cli = () => {
+  if (cliPath) return cliPath;
   try {
-    return path.join(path.dirname(require.resolve('@remotion/cli/package.json')), 'remotion-cli.js');
+    cliPath = path.join(path.dirname(require.resolve('@remotion/cli/package.json')), 'remotion-cli.js');
+    return cliPath;
   } catch {
     console.error('Remotion is not installed here: run npm install in the film project first.');
     process.exit(1);
   }
-})();
+};
 
 const run = (bin, a) => {
   const r = spawnSync(bin, a, { stdio: 'inherit', shell: false });
   if (r.status !== 0) process.exit(r.status ?? 1);
 };
-const remotion = (a) => run(process.execPath, [cli, ...a, ...browser]);
+const remotion = (a) => run(process.execPath, [cli(), ...a, ...browser]);
 const ensureDir = (p) => fs.mkdirSync(path.dirname(path.resolve(p)), { recursive: true });
 
 /** Start time (s) of the first video stream: an encoder delay or edit list shifts it from 0. */
@@ -81,7 +87,11 @@ const loudMux = (video, audioSrc, out) => {
   const I = parseFloat(((m.stderr || '').match(/I:\s+(-?[\d.]+) LUFS/g) || []).pop()?.match(/-?[\d.]+/)?.[0] ?? '-16');
   const gain = Number.isFinite(I) ? Math.max(-20, Math.min(20, -16 - I)) : 0;
   const af = `volume=${gain.toFixed(2)}dB,aresample=192000,alimiter=limit=0.74:attack=1:release=60:level=false,aresample=48000`;
-  run('ffmpeg', ['-v', 'error', '-y', '-i', video, ...a, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-af', af, '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart', out]);
+  // the sound is cut to the picture's length: joining parts with sound never lengthens the film (AAC priming and
+  // -shortest alone leave up to a tenth of a second of sound past the last frame)
+  const vd = parseFloat(spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=duration', '-of', 'csv=p=0', video], { encoding: 'utf8' }).stdout);
+  const len = Number.isFinite(vd) && vd > 0 ? ['-t', vd.toFixed(4)] : [];
+  run('ffmpeg', ['-v', 'error', '-y', '-i', video, ...a, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-af', af, '-c:a', 'aac', '-b:a', '256k', '-shortest', ...len, '-movflags', '+faststart', out]);
 };
 
 /** Loudness and true peak of a file's sound: { I, TP } (LUFS, dBTP). */
@@ -212,7 +222,48 @@ function loopSeam(file, W, H) {
 }
 
 /** Measure a rendered film: coverage, pace, empty frames, the length of its ending (low-res analysis via ffmpeg). */
-function checkFilm(file, lockupS, format = 'launch') {
+/** Every source file of the film (src/films/<film>, recursively). */
+function filmSources() {
+  const dir = path.join(process.cwd(), 'src', 'films', film);
+  const out = [];
+  const walk = (d) => {
+    for (const e of fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }) : []) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/\.(tsx?|jsx?)$/.test(e.name)) out.push({ file: p, src: fs.readFileSync(p, 'utf8') });
+    }
+  };
+  walk(dir);
+  return out;
+}
+
+/** The motion library's pieces: the components (capitalised, not ALL_CAPS) exported by src/kit/library/{type,turns,ui,hosts}.tsx. */
+function libraryPieces() {
+  const dir = path.join(process.cwd(), 'src', 'kit', 'library');
+  const names = new Set();
+  for (const f of ['type.tsx', 'turns.tsx', 'ui.tsx', 'hosts.tsx']) {
+    const p = path.join(dir, f);
+    if (!fs.existsSync(p)) continue;
+    const src = fs.readFileSync(p, 'utf8');
+    for (const m of src.matchAll(/export\s*\{([^}]*)\}\s*from/g)) for (const n of m[1].split(',')) { const k = n.trim().split(/\s+as\s+/).pop(); if (/^[A-Z]\w*$/.test(k ?? '') && /[a-z]/.test(k)) names.add(k); }
+    for (const m of src.matchAll(/export\s+(?:const|function)\s+([A-Z]\w*)/g)) if (/[a-z]/.test(m[1])) names.add(m[1]);
+  }
+  return names;
+}
+
+/** The library pieces the film's source imports from the kit (named value imports whose path reaches the kit). */
+function libraryUse(sources) {
+  const pieces = libraryPieces();
+  const used = new Set();
+  for (const { src } of sources)
+    for (const m of src.matchAll(/import\s*(type\s*)?\{([^}]*)\}\s*from\s*['"]([^'"]*kit[^'"]*)['"]/g)) {
+      if (m[1]) continue;
+      for (const n of m[2].split(',')) { const k = n.trim().replace(/^type\s+/, '').split(/\s+as\s+/)[0]; if (pieces.has(k)) used.add(k); }
+    }
+  return { used: [...used].sort(), known: pieces.size };
+}
+
+function checkFilm(file, lockupS, format = 'launch', silentOk = false) {
   const loop = format === 'loop';
   const sting = format === 'sting';
   const FPS = 4;
@@ -301,6 +352,14 @@ function checkFilm(file, lockupS, format = 'launch') {
   if (!loop) console.log(`  ending     the last ${endStill.toFixed(1)} s are nearly still (${((endStill / dur) * 100).toFixed(0)} % of the film)${sting ? '  (a sting may hold its mark)' : ''}`);
   const snd = loop ? { I: NaN, TP: NaN } : loudness(file);
   if (Number.isFinite(snd.I)) console.log(`  sound      ${snd.I.toFixed(1)} LUFS, true peak ${snd.TP.toFixed(1)} dBTP`);
+  // the film's own source (when this project has it): does it play sound, and which library pieces does it take
+  const sources = filmSources();
+  const wantsSound = sources.some(({ src }) => /<(Cues|Music|Sfx|Audio)\b/.test(src));
+  const lib = sources.length ? libraryUse(sources) : null;
+  if (lib && lib.known) {
+    console.log(`  library    ${lib.used.length} motion-library piece${lib.used.length === 1 ? '' : 's'} imported by src/films/${film}${lib.used.length ? ` (${lib.used.join(', ')})` : ''}  (information: BEATS.md's Devices block names the piece behind each join, type move and UI move, or why none fits)`);
+    if (!lib.used.length) console.log('  LOOK       the film imports no library piece: the library is the default (references/library.md); take the turn, type move or UI piece that does each job and adapt it, and write in BEATS.md why none fits where you build by hand');
+  }
   // a loop: the last frame must lead back into the first (frame N would equal frame 0)
   const seam = loop ? loopSeam(file, W, H) : null;
   const seamOpen = !!seam && (seam.seam.mean > Math.max(0.012, 2 * seam.step.mean + 0.004) || seam.seam.cell > Math.max(0.1, 2 * seam.step.cell + 0.03));
@@ -328,6 +387,9 @@ function checkFilm(file, lockupS, format = 'launch') {
   if (!isPreview && Number.isFinite(snd.TP) && snd.TP > -1) fails.push(`sound: true peak ${snd.TP.toFixed(1)} dBTP clips; re-mux (frames.mjs mux) or lower the loudest cue`);
   if (!isPreview && Number.isFinite(snd.I) && (snd.I > -13 || snd.I < -20)) fails.push(`sound: ${snd.I.toFixed(1)} LUFS is off the -16 LUFS target`);
   if (!loop) fails.push(...musicRunsOut(dur));
+  // a film whose code plays sound but whose file is silent: the sound never reached the render
+  const silentFile = !Number.isFinite(snd.I) || snd.I < -45;
+  if (!loop && !silentOk && wantsSound && silentFile) fails.push(`silent: src/films/${film} plays sound (Cues, Music or Sfx) but ${path.basename(file)} is silent (${Number.isFinite(snd.I) ? `${snd.I.toFixed(1)} LUFS` : 'no audio stream'}): the sound insert failed (a part rendered --muted, parts joined without --audio, a file missing from public/sfx or public/music); render the sound (frames.mjs audio) and mux it, or pass --silent for a film meant to be silent`);
   // LOOK lines name the frames; the share at which they speak is where 3 in 4 references stay (a small subject alone on calm
   // ground is NOT flagged: 28 of 40 references hold one)
   if (busy.length && share(busy) > BUSY) console.log(`  LOOK       3+ separate things with 20 %+ of the frame in detail at ${fmt(busy)} s (${pc(share(busy))} of samples; 3 in 4 references stay under ${pc(BUSY)}): make sure one of them is the focal subject the eye goes to first and the rest support it`);
@@ -409,7 +471,8 @@ if (cmd === 'sheet') {
   fs.rmSync(raw);
   report(out);
 } else if (cmd === 'mux') {
-  const parts = args.slice(1).filter((a) => a.endsWith('.mp4') && a !== opt('out'));
+  // an mp4 given as the sound source (--audio out/preview.mp4) is not a picture part
+  const parts = args.slice(1).filter((a) => a.endsWith('.mp4') && a !== opt('out') && a !== opt('audio'));
   const out = opt('out', `out/${film}.mp4`);
   const audio = opt('audio', 'out/audio.wav');
   if (!parts.length) throw new Error('mux needs the video parts');
@@ -452,7 +515,7 @@ if (cmd === 'sheet') {
   const format = opt('format', 'launch');
   if (!['launch', 'loop', 'sting'].includes(format)) throw new Error('--format is launch, loop or sting');
   // a loop has no lockup: its body runs to the last frame
-  checkFilm(args[1] && !args[1].startsWith('--') ? args[1] : `out/${film}-preview.mp4`, Number(opt('lockup', format === 'loop' ? '0' : '2')), format);
+  checkFilm(args[1] && !args[1].startsWith('--') ? args[1] : `out/${film}-preview.mp4`, Number(opt('lockup', format === 'loop' ? '0' : '2')), format, has('silent'));
 } else if (cmd === 'strip') {
   const src = args[1];
   const at = opt('at', '0');

@@ -82,12 +82,21 @@ Never generated images. In order of preference:
    Grade every picture into the film's world (one look across all of them), show it with intent (bare cards on paper, a
    window in type, a parallax plate), never as wallpaper behind text.
 
+**Pictures are the film's world, not decoration.** Choose them before the beats are written, from what the story needs:
+the same people and the same place through the whole film, one shoot where you can (a collection's photographer often
+has a series of one family or one studio). Check every picture's people against the cast: never a different adult or
+child standing in for a named character, never a second kitchen for the first. A photograph that is the world gets at
+least one full-frame beat in each act; prints inside UI (an avatar, an attachment) come in addition, never instead. The
+opening's real place (a desk, a room) returns in the payoff ([depth](worlds.md#depth-and-the-world-all-worlds)). Credit
+every one in `CREDITS.md` (page, author, licence), and write a statement over a busy picture by the
+[recipe in type.md](type.md#over-a-busy-photograph).
+
 ## 5. Sound effects
 
 `scripts/sfx-catalogue.json` lists recorded effects whose licence allows commercial films without credit (the Mixkit Sound
 Effects Free License, https://mixkit.co/license/#sfxFree, and Kenney's CC0 packs), each judged by ear on the job it does
 in a film and measured (onset, peak, loudness, decay, pitch) so it lands on the frame. It offers a dry palette only: clicks,
-ticks, keys, paper and cloth, muted low knocks and short airy whooshes. Bells, chimes, glass, coins, notification tones,
+ticks, keys, paper and cloth, muted taps and short airy whooshes. Bells, chimes, glass, coins, notification tones,
 bubbles, swells, risers, sub booms and trailer hits are in its `rejected` list with the measure that failed, and `get`
 refuses them ([sound-design.md](sound-design.md#3-hard-rules)).
 

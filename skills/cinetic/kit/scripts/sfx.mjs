@@ -18,7 +18,8 @@
 //   node scripts/sfx.mjs fit public/music/bed.mp3 --hit 104 --len 284 [--enter 8] [--cuts 12,44,182]
 //                                                   where to start the track so the film's main hit lands on a beat
 //                                                   where the music lifts, and which cuts sit off the beat
-//   node scripts/sfx.mjs credits                   print the CREDITS.md block for every sound, track, picture and mark used
+//   node scripts/sfx.mjs credits [--film main]     the CREDITS.md block for the sounds, music, pictures and marks the
+//                                                   film's source (src/films/<film>) uses
 //
 // The catalogue (scripts/sfx-catalogue.json) lists recordings whose licence allows commercial films, each with
 // its onset (lead) measured so <Sfx at={frame}> can land the transient exactly on the frame.
@@ -356,37 +357,40 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
   console.log(events.length ? events.map((v) => `  ${v}`).join('\n') : '  no clear gaps or drops: the track is even; cut on bars');
   console.log('The tempo is measured from this file (the shortlist values are rough, for choosing). Next: sfx.mjs fit <file> --hit <frame> --len <frames>.');
 } else if (cmd === 'credits') {
-  const all = readJson(path.join(film, 'public', 'sfx', 'sfx.json'), {});
-  // only the sounds the film's code actually plays (sfx['id'] in src/)
-  const used = new Set();
+  // only what the film's own source uses: src/films/<film> (--film, default main), or all of src/ outside the kit
+  const filmName = flag('film', 'main');
+  const filmDir = path.join(film, 'src', 'films', filmName);
+  const srcFiles = [];
   const walk = (d) => {
     for (const e of fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }) : []) {
       const p = path.join(d, e.name);
       if (e.isDirectory()) { if (e.name !== 'kit') walk(p); }
-      else if (/\.(tsx?|jsx?)$/.test(e.name) && e.name !== 'sfx.ts') {
-        const src = fs.readFileSync(p, 'utf8');
-        for (const id of Object.keys(all)) if (src.includes(`'${id}'`) || src.includes(`"${id}"`)) used.add(id);
-      }
+      else if (/\.(tsx?|jsx?)$/.test(e.name) && !['sfx.ts', 'logos.ts'].includes(e.name)) srcFiles.push(fs.readFileSync(p, 'utf8'));
     }
   };
-  walk(path.join(film, 'src'));
-  const s = Object.fromEntries(Object.entries(all).filter(([id]) => used.size === 0 || used.has(id)));
+  walk(fs.existsSync(filmDir) ? filmDir : path.join(film, 'src'));
+  const allSrc = srcFiles.join('\n');
+  const literals = new Set([...allSrc.matchAll(/['"`]([^'"`\n]{1,60})['"`]/g)].map((m) => m[1]));
+  // sounds: the ids the code plays (sfx['id'])
+  const all = readJson(path.join(film, 'public', 'sfx', 'sfx.json'), {});
+  const s = Object.fromEntries(Object.entries(all).filter(([id]) => literals.has(id)));
+  // music: the tracks the code plays (music/<file>), recorded or not
   const mAll = readJson(path.join(film, 'public', 'music', 'music.json'), {});
-  // only the tracks the film's code plays (music/<file> in src/), not every track auditioned
-  const srcText = [];
-  const collect = (d) => {
-    for (const e of fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }) : []) {
-      const p = path.join(d, e.name);
-      if (e.isDirectory()) { if (e.name !== 'kit') collect(p); }
-      else if (/\.(tsx?|jsx?)$/.test(e.name)) srcText.push(fs.readFileSync(p, 'utf8'));
-    }
-  };
-  collect(path.join(film, 'src'));
-  const allSrc = srcText.join('\n');
-  const m = Object.fromEntries(Object.entries(mAll).filter(([, t]) => !t.src || allSrc.includes(t.src)));
+  const m = Object.fromEntries(Object.entries(mAll).filter(([, t]) => t.src && allSrc.includes(t.src)));
+  const recorded = new Set(Object.values(m).map((t) => t.src));
+  const played = new Set([...allSrc.matchAll(/<Music\b[\s\S]*?\bsrc=\{?\s*(?:staticFile\()?['"`]([^'"`]+)['"`]/g)].map((x) => x[1].replace(/^\//, '')));
+  for (const lit of literals) if (/^\/?music\/[^\s]+\.(mp3|wav|m4a|ogg|aac|flac)$/i.test(lit)) played.add(lit.replace(/^\//, ''));
+  const unrecorded = [...played].filter((f) => !recorded.has(f));
   console.log('## Sound\n');
   for (const [name, t] of Object.entries(m))
     console.log(`- Music: "${t.title ?? name}"${t.artist ? ` by ${t.artist}` : ''} (${t.page}). Licence: ${t.licence} ${t.licenceUrl ?? LICENCE_URLS[t.licence] ?? ''}${t.credit ? `\n  Credit (required, keep it in the video description): ${t.credit}` : ''}`);
+  for (const f of unrecorded) {
+    const hit = shortlist.tracks?.find?.((t) => f.includes(t.id));
+    console.log(hit
+      ? `- Music: "${hit.title ?? hit.id}"${hit.artist ? ` by ${hit.artist}` : ''} (${hit.page ?? ''}). Licence: ${hit.licence ?? ''} ${LICENCE_URLS[hit.licence] ?? ''}`
+      : `- Music: public/${f} (TODO: not recorded in public/music/music.json: write its title, artist, page and licence here, or fetch it with sfx.mjs music so it is recorded)`);
+  }
+  if (!Object.keys(m).length && !unrecorded.length) console.log('- Music: none found in the film\'s code (no <Music src="music/...">)');
   for (const [, x] of Object.entries(s)) console.log(`- Sound: "${x.title}" (${x.page}). Licence: ${x.licence} ${LICENCE_URLS[x.licence] ?? ''}`);
   // photos, footage and marks recorded by assets.mjs and logos.mjs
   const pics = readJson(path.join(film, 'assets', 'licences.json'), readJson(path.join(film, 'public', 'assets', 'licences.json'), null));
@@ -394,25 +398,26 @@ ${list.length} tracks. Fetch one: node scripts/sfx.mjs music <id>. Audition it b
     console.log('\n## Pictures\n');
     for (const p of Array.isArray(pics) ? pics : Object.values(pics.items ?? pics)) if (p && typeof p === 'object') console.log(`- ${p.title ?? p.file ?? p.name ?? 'picture'}${p.author ? ` by ${p.author}` : ''} (${p.page ?? p.url ?? ''}). Licence: ${p.licence ?? p.license ?? ''}`);
   }
+  // marks: only those the film's code names (<Brand name="github" />, a name in its data), and the marks a library host
+  // screen it imports draws (GitHub's pages, VS Code's window)
+  const slug = (v) => String(v).toLowerCase().replace(/\+/g, 'plus').replace(/\./g, 'dot').replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
+  // a name in the data counts from three letters (a one-letter 'X' is a close icon, not the X mark); <Brand name> always
+  const named = new Set([...literals].map(slug).filter((n) => n.length >= 3));
+  for (const mm of allSrc.matchAll(/<Brand(?:Tile)?\b[^>]*?\bname=["']([^"']+)["']/g)) named.add(slug(mm[1]));
+  const HOST_MARKS = { GitHubPullRequest: 'github', GitHubIssueCard: 'github', GitHubIssueColumn: 'github', VSCodeWindow: 'visualstudiocode' };
+  for (const [comp, mark] of Object.entries(HOST_MARKS)) if (new RegExp(`<${comp}\\b`).test(allSrc)) named.add(mark);
   const marks = readJson(path.join(film, 'public', 'logos', 'logos.json'), null);
-  // marks drawn from the icon set (<Brand name="github" />, no file): found in the film's code
+  const shown = Object.entries(marks?.logos ?? {}).filter(([k, e]) => [k, e.name, ...(e.keys ?? [])].some((n) => named.has(slug(n))));
+  const known = new Set(Object.entries(marks?.logos ?? {}).flatMap(([k, e]) => [k, e.name, ...(e.keys ?? [])].map(slug)));
   const drawn = new Set();
-  const scan = (d) => {
-    for (const e of fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }) : []) {
-      const p = path.join(d, e.name);
-      if (e.isDirectory()) { if (e.name !== 'kit') scan(p); }
-      else if (/\.(tsx?|jsx?)$/.test(e.name)) for (const m of fs.readFileSync(p, 'utf8').matchAll(/<Brand(?:Tile)?\b[^>]*?\bname=["']([a-z0-9-]+)["'][^>]*>/g)) if (!/\bfile=/.test(m[0])) drawn.add(m[1]);
-    }
-  };
-  scan(path.join(film, 'src'));
-  if (marks?.logos || drawn.size) console.log('\n## Marks\n');
-  if (marks?.logos) {
-    for (const [, e] of Object.entries(marks.logos)) {
-      const f = e.files?.mark ?? Object.values(e.files ?? {})[0] ?? {};
-      console.log(`- ${e.name}: trademark of ${e.owner ?? 'its owner'}; mark file from ${f.from ?? 'an open collection'}${f.url ? ` (${f.url})` : ''}. Shown to say the product works with it.`);
-    }
+  for (const mm of allSrc.matchAll(/<Brand(?:Tile)?\b[^>]*?\bname=["']([a-z0-9 .+-]+)["'][^>]*>/gi)) if (!/\bfile=/.test(mm[0]) && !known.has(slug(mm[1]))) drawn.add(mm[1]);
+  if (shown.length || drawn.size) console.log('\n## Marks\n');
+  for (const [, e] of shown) {
+    const f = e.files?.mark ?? Object.values(e.files ?? {})[0] ?? {};
+    console.log(`- ${e.name}: trademark of ${e.owner ?? 'its owner'}; mark file from ${f.from ?? 'an open collection'}${f.url ? ` (${f.url})` : ''}. Shown to say the product works with it.`);
   }
   for (const n of drawn) console.log(`- ${n}: trademark of its owner; mark drawn from Simple Icons (path data CC0, https://simpleicons.org). Shown to say the product works with it.`);
 } else {
-  console.log(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 24).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
+  const head = fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n');
+  console.log(head.slice(1, head.findIndex((l) => l.startsWith('import'))).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
 }

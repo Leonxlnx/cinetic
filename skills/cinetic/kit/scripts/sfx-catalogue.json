@@ -2691,106 +2691,6 @@
    "page_kenney": "https://kenney.nl/assets/interface-sounds"
   },
   {
-   "id": "kenney-rpg-footstep05",
-   "source": "kenney-cc0",
-   "title": "RPG Audio: footstep05",
-   "role": "impact",
-   "page": "https://opengameart.org/content/50-rpg-sound-effects",
-   "archive_url": "https://opengameart.org/sites/default/files/RPGsounds_Kenney.zip",
-   "member": "OGG/footstep05.ogg",
-   "licence": "kenney-cc0",
-   "align": "onset",
-   "dur_s": 0.2758,
-   "end_s": 0.219,
-   "onset_ms": 16.1,
-   "lead_ms": 14.1,
-   "peak_ms": 20.6,
-   "peak_db": -6.16,
-   "lufs": -27.6,
-   "l50_db": -20.3,
-   "floor_db": -48.4,
-   "centroid_hz": 313,
-   "channels": 2,
-   "sr": 48000,
-   "tags": [
-    "dark",
-    "short",
-    "soft",
-    "dry",
-    "foley",
-    "impact"
-   ],
-   "ear": {
-    "query": "a single clean low impact",
-    "p": 1,
-    "verdict": "plausible",
-    "top_alt": "a cheap synthesizer laser zap",
-    "z": 2.72
-   },
-   "page_kenney": "https://kenney.nl/assets/rpg-audio",
-   "study": {
-    "by": "sound study 2026-11-25 (loudness: RMS of the loudest 400 / 50 ms, unweighted)",
-    "decay_ms": 163,
-    "partial_hz": 0,
-    "stable_ms": 0,
-    "heard": [
-     "a punchy impact hit",
-     "a heavy thud"
-    ],
-    "note": "a muffled low knock: the softest dry low thud (no pitch, 160 ms)"
-   }
-  },
-  {
-   "id": "kenney-rpg-footstep04",
-   "source": "kenney-cc0",
-   "title": "RPG Audio: footstep04",
-   "role": "impact",
-   "page": "https://opengameart.org/content/50-rpg-sound-effects",
-   "archive_url": "https://opengameart.org/sites/default/files/RPGsounds_Kenney.zip",
-   "member": "OGG/footstep04.ogg",
-   "licence": "kenney-cc0",
-   "align": "onset",
-   "dur_s": 0.3228,
-   "end_s": 0.2581,
-   "onset_ms": 30.5,
-   "lead_ms": 28.5,
-   "peak_ms": 109.8,
-   "peak_db": -5.29,
-   "lufs": -25.9,
-   "l50_db": -18.7,
-   "floor_db": -48,
-   "centroid_hz": 399,
-   "channels": 2,
-   "sr": 48000,
-   "tags": [
-    "dark",
-    "short",
-    "soft",
-    "dry",
-    "foley",
-    "impact"
-   ],
-   "ear": {
-    "query": "a single clean low impact",
-    "p": 0.997,
-    "verdict": "plausible",
-    "top_alt": "a cheesy comedy sound",
-    "z": 2.53
-   },
-   "page_kenney": "https://kenney.nl/assets/rpg-audio",
-   "study": {
-    "by": "sound study 2026-11-25 (loudness: RMS of the loudest 400 / 50 ms, unweighted)",
-    "decay_ms": 116,
-    "partial_hz": 323,
-    "stable_ms": 35,
-    "heard": [
-     "a punchy impact hit",
-     "footsteps on wood"
-    ],
-    "note": "a muffled low knock, a little brighter"
-   }
-  },
-  {
    "id": "kenney-rpg-cloth1",
    "source": "kenney-cc0",
    "title": "RPG Audio: cloth1",
@@ -3761,6 +3661,16 @@
    "id": "mixkit-586-rev",
    "role": "swell",
    "why": "sound study 2026-11-25: named or tagged \"bell\"; heard as a bell, chime or tone (earshot 0.98)"
+  },
+  {
+   "id": "kenney-rpg-footstep05",
+   "role": "impact",
+   "why": "review 2026-11-25: a footstep recording (Kenney RPG Audio footstep05); used as an interface impact it reads as someone stepping, not as the product acting (heard as \"a heavy thud\" and a step). Kept for real feet only: fetch it by hand from the Kenney pack when a person walks on screen; a landing or the main hit takes a paper or cloth landing, a muted tap (kenney-interface-bong_001) or the music alone"
+  },
+  {
+   "id": "kenney-rpg-footstep04",
+   "role": "impact",
+   "why": "review 2026-11-25: a footstep recording (Kenney RPG Audio footstep04, heard as \"footsteps on wood\"); used as an interface impact it reads as someone stepping, not as the product acting. Kept for real feet only: fetch it by hand from the Kenney pack when a person walks on screen; a landing takes a paper or cloth landing, a muted tap (kenney-interface-bong_001) or the music alone"
   }
  ],
  "palette": {
