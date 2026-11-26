@@ -6,6 +6,22 @@ detailed rebuild of its real screen with the film's content in it. These pieces 
 never hand-rolls a rough mock. Import them from the kit (`import { GitHubPullRequest, VSCodeWindow } from '../../kit';`).
 The reel `library-hosts` plays each one with its name.
 
+## At a glance
+
+<!-- library:pieces (written by scripts/library-docs.mjs from src/kit/library/catalog/; edit the catalogue, not this table) -->
+
+| Piece | Does | About | Looks like | Reach for it for |
+|---|---|---|---|---|
+| [GitHubIssueColumn](#githubissuecolumn-githubissuecard) | build | 30 f | a GitHub Projects status column: cards rise in, one can be taken out and the cards below close the gap | work tracked on GitHub: issues arriving, one picked up |
+| [GitHubIssueCard](#githubissuecolumn-githubissuecard) | build | 6 f | one GitHub Projects card (state glyph, repo and number, title, labels, assignees) that can lift and ride a pointer | a card carried out of its column |
+| [GitHubPullRequest](#githubpullrequest) | build | 120 f | a pull request's Conversation page as GitHub draws it: checks finish one by one, the merge button turns it purple | code reviewed, checked and merged |
+| [VSCodeWindow](#vscodewindow-vscodenotice) | build | 60 f | a VS Code window as it looks today, Dark Modern or Light Modern, the code written line by line and highlighted | code being written or read in an editor |
+| [VSCodeNotice](#vscodewindow-vscodenotice) | enter | 10 f | VS Code's notification toast for the product's message, with its source and buttons | the product speaking inside the editor |
+| [CanvasChrome](#canvaschrome-dotcanvas) | idle | 60 f | the fixed floating chrome of a design-canvas app (file pill, people, tool rail, zoom) over its moving canvas | the product's own canvas: a design tool, a whiteboard, an editor |
+| [DotCanvas](#canvaschrome-dotcanvas) | idle | 60 f | a design canvas's dot grid, moved under the chrome with the camera | the ground of a design-canvas scene |
+
+<!-- /library:pieces -->
+
 ## How they are built
 
 - **The host's chrome stays the host's.** Layout, spacing, colours, icons and wording follow the real product's current
@@ -114,13 +130,19 @@ product's colours (`colours`), its mark, and move the canvas under the chrome wi
 
 ## In the reel
 
-Every piece's frames in the `library-hosts` reel, and the one command that shows just that piece: a strip of 16 of its
-frames in one still (run it in a film project; `render --film library-hosts --range a-b` for the piece in motion).
+Every piece's frames in the reel (`--film library-hosts`), and the one command that shows just that piece: its frames in
+one still (run it in a film project; `render --film library-hosts --range a-b` for the piece in motion).
 
-| Piece | Frames | Strip of just this piece |
-|---|---|---|
-| GitHubIssueColumn, GitHubIssueCard | 0-129 | `node scripts/frames.mjs sheet --film library-hosts --from 0 --to 129 --grid 4` |
-| GitHubPullRequest | 130-289 | `node scripts/frames.mjs sheet --film library-hosts --from 130 --to 289 --grid 4` |
-| VSCodeWindow (Dark Modern), VSCodeNotice | 290-429 | `node scripts/frames.mjs sheet --film library-hosts --from 290 --to 429 --grid 4` |
-| VSCodeWindow (Light Modern) | 430-489 | `node scripts/frames.mjs sheet --film library-hosts --from 430 --to 489 --grid 4` |
-| CanvasChrome, DotCanvas | 490-589 | `node scripts/frames.mjs sheet --film library-hosts --from 490 --to 589 --grid 4` |
+<!-- library:reel (written by scripts/library-docs.mjs from src/kit/library/catalog/; edit the catalogue, not this table) -->
+
+| Piece | Reel | Frames | Strip of just this piece |
+|---|---|---|---|
+| GitHubIssueColumn | `library-hosts` | 0-129 | `node scripts/frames.mjs library --strip GitHubIssueColumn` |
+| GitHubIssueCard (in GitHubIssueColumn) | `library-hosts` | 50-90 | `node scripts/frames.mjs library --strip GitHubIssueCard` |
+| GitHubPullRequest | `library-hosts` | 130-289 | `node scripts/frames.mjs library --strip GitHubPullRequest` |
+| VSCodeWindow | `library-hosts` | 290-489 | `node scripts/frames.mjs library --strip VSCodeWindow` |
+| VSCodeNotice (in VSCodeWindow) | `library-hosts` | 375-429 | `node scripts/frames.mjs library --strip VSCodeNotice` |
+| CanvasChrome | `library-hosts` | 490-589 | `node scripts/frames.mjs library --strip CanvasChrome` |
+| DotCanvas (in CanvasChrome) | `library-hosts` | 490-589 | `node scripts/frames.mjs library --strip DotCanvas` |
+
+<!-- /library:reel -->

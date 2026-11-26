@@ -102,9 +102,10 @@ top of the film: ground, ink, accent, the statement face and its sizes ([type.md
 (`lightUI` / `darkUI` spread with the brand), radius, the light's direction, the texture family.
 
 **7. Build.** Write the film as one timeline object `T` (every scene and sound cue reads its frames from it) plus one
-component per section. Take turns, type moves and UI pieces from the library ([library.md](references/library.md)) and
-adapt them; [kit.md](references/kit.md) is the API, [type.md](references/type.md) covers every word on screen, and the
-motion references hold recipes for what the library lacks: [text](references/motion/text.md),
+component per section. Take turns, type moves and UI pieces from the library (`frames.mjs library` finds them by purpose,
+subject and mood: [library.md](references/library.md)) and adapt them; [kit.md](references/kit.md) is the API,
+[type.md](references/type.md) covers every word on screen, and the motion references hold recipes for what the library
+lacks: [text](references/motion/text.md),
 [entrances](references/motion/entrances.md), [exits](references/motion/exits.md), [turns](references/motion/turns.md),
 [camera](references/motion/camera.md), [cards and UI](references/motion/cards-ui.md),
 [imagery](references/motion/imagery.md), [effects](references/motion/effects.md). Build the poster frame first, then one
@@ -156,7 +157,7 @@ Import everything from `src/kit` (`import { Words, Camera, ease, at } from '../.
 
 | Need | Use |
 |---|---|
-| library (first) | finished type moves, turns and effects, product UI pieces, each with a reel (`frames.mjs render --film library-turns`, `library-type`, `library-ui`, `library-hosts`): [library.md](references/library.md) |
+| library (first) | finished type moves, turns, effects, product UI, host screens: find one with `frames.mjs library --category turn --purpose join` (also `--subject`, `--mood`), see it with `library --strip <Name>`; a reel a category (`--film library-turns`, `library-fx`, ...): [library.md](references/library.md) |
 | timing | `at(frame, start, dur, ease.out)` -> 0..1, `mix(p, a, b)`, `springAt(frame, fps, start, springs.card)`, `stagger(i)`, `accel()` for exits, `creep()` for holds, `keys()` for keyframes, `logScale()` for zooms |
 | curves | `ease.out` (arrive), `ease.soft` (heavy arrive), `ease.snap` (UI pop), `ease.inOut` / `ease.glide` (travel), `ease.in` (leave), `ease.back` (land with weight) |
 | type | `<Words text arrive="rise\|blur\|scale\|drop\|slide\|flip\|cut" by="word\|char\|line" born accent leaveAt times>`, `<Build words times>` (append with a re-centre jump), `<Swap items>`, `<SlotLine>`, `useGlyphBox()`, `<Typing>` (believable speed), `<Scramble>`, `<Odometer>` (sharp digits), `<Marker>`, `<Output>` (the result giant, then into the UI) |

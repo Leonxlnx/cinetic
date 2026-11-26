@@ -1,8 +1,9 @@
-# Library: turns and effects
+# Library: turns
 
-Finished animations for how one scene becomes the next, and the finishing layers that make a frame rich. Import them
-from the kit (`import { DotReveal, GrowIris, TrackOverlay } from '../../kit';`). The reel `library-turns` shows every
-piece with its name: render it to see them move.
+Finished animations for how one scene becomes the next. Import them from the kit
+(`import { DotReveal, GrowIris, WindowOpen } from '../../kit';`). The reel `library-turns` shows every piece with its
+name; `frames.mjs library --category turn` lists them. The finishing layers that make a frame rich (a light sweep,
+bloom, tracking marks, a dot screen, a channel split, a morphing box) are their own category: [library-fx.md](library-fx.md).
 
 Every turn is clean by construction: at its peak the whole frame is covered, the two scenes never show a gap, and on its
 last frame the next scene is whole and at rest (a move of `dur` frames starts on `at` and lands on `at + dur - 1`, so
@@ -14,6 +15,24 @@ from a phone, dive into a card, shape match, iris from a button) over an abstrac
 Never: a flash of light to hide a cut, a screen shake on an impact (not even a small one), a sudden change of ground
 colour or of light and dark mode with no object carrying it, a faint gradient ground, text that leaves by fading while
 it rises. Hard colour flips on a beat were tried and dropped: they read as a sudden colour change.
+
+## At a glance
+
+<!-- library:pieces (written by scripts/library-docs.mjs from src/kit/library/catalog/; edit the catalogue, not this table) -->
+
+| Piece | Does | About | Looks like | Reach for it for |
+|---|---|---|---|---|
+| [DotReveal](#dotreveal) | join | 34 f | the next scene arrives as a field of dots (or square cells) from an edge or an object, swelling until they merge | a picture or a full scene arriving out of a small object (a phone, an icon) or a calm screen |
+| [BlockBurst](#blockburst) | join | 19 f | square cells burst out of an object in a diamond until the next scene fills the frame; from an edge, a staircase | a digital or financial product, an icon that opens into its world |
+| [GrowIris](#growiris) | join | 6 f | a circle, rounded box or ellipse grows out of an object until it is the next scene, which settles from smaller inside | a button, a pill or a card that opens into what it promises |
+| [DiveInto](#diveinto) | join | 20 f | the camera dives into a card, a window or a picture, exponentially, and its inside is the next scene | going into the thing on screen: a card, a window, a picture |
+| [WhipGate](#whipgate) | join | 22 f | an accelerating whip, a two-frame gate inside the blur, and the next scene arriving at whip speed, its smear clearing | a fast move between two scenes on one ground tone |
+| [Shove](#shove) | join, exit | 24 f | the old scene is cut into bands shoved off one after another while the next slides in underneath and lands | a statement giving way to the product |
+| [ShapeMatch](#shapematch) | join | 14 f | one shape detaches and travels to where the same shape sits in the next scene, changing size, radius and colour | a match cut on shape: an icon tile, a chip or a dot that is in both scenes |
+| [GlitchCut](#glitchcut) | join | 8 f | a few frames where the picture breaks and the next scene flickers through, one broken state a frame, cut hard | a hit in the music, once |
+| [WindowOpen](#windowopen) | join | 14 f | a window opens out of the button that was pressed, the next scene's window drawn whole inside the growing rectangle | a press that opens a window or panel: the commonest hand-built join, take this one |
+
+<!-- /library:pieces -->
 
 ## Turns
 
@@ -142,101 +161,29 @@ into horizontal streaks, the channels pulled apart, clean frames of either scene
   stretched 1.4-2.4x; channel split 10 px; grid cells 18 px; scan rows 14 px torn with a 60 px streak. `glitchCutEnd(at, steps, hold)`.
 - Caution: once a film at most, on a hit in the music; never as the default cut.
 
-## Effects
-
-### LightSweep
-A band of light crosses a surface once: a broad soft glow with a thin hot line at its leading edge, clipped to the
-surface's rounded box. On a card, a button, a glass panel.
-```tsx
-<LightSweep at={T.sweep} dur={12} w={1000} h={150} radius={36} angle={18} color="#FFFFFF" strength={0.75} width={0.35}><Prompt /></LightSweep>
-```
-- Numbers: 10-14 f on expo in-out, the band 35 % of the surface, tilted 18 deg; `blend` screen (on a white surface use a
-  tinted `color` and `blend="multiply"`).
-- Caution: once per surface; a sweep on everything is wallpaper.
-
-### Bloom
-Light that spills in its own colour: a blurred copy of the content added on top, so bright parts glow; `pulse` swells it
-once on a hit.
-```tsx
-<Bloom radius={36} strength={0.45} pulse={{ at: T.live, up: 3, down: 14, gain: 2.2 }}>{orbAndWord}</Bloom>
-```
-- Numbers: blur 18-40 px at 30-45 %; a pulse to about 2x over 3 f and back over 12-14 f.
-- Caution: dark grounds only; on a light ground it greys the picture.
-
-### TrackOverlay
-Motion tracking laid over a moving object: a thin box round each target that turns with it, a dot at its centre, the live
-coordinates above it (they count every frame), dashed arcs that draw between the targets and sweep past them with an
-arrowhead; optional guide lines to the frame edges or corner brackets instead of boxes.
-```tsx
-<TrackOverlay at={T.track} track={(f) => glyphs.map((g) => ({ x: g.x(f), y: g.y(f), w: g.w, h: g.h, rot: g.rot(f) }))} color="#FF3B4E" dot="#FFB020" corners={false} guides={false} size={24} />
-```
-- Numbers: 1.8 px boxes, a 10 px dot, labels 24 px set 1.5 lines above the box, arcs 1.6 px dashed 10/8 drawing in over
-  10 f; it cuts on.
-- Caution: the target must move (a drift, a tilt); tracking a still object looks like a template.
-
-### DotScreen
-The content seen through a grid of round dots: an LED board or a coarse halftone; unlit dots show faintly on dark.
-`amount` blends it with the plain content, to key it on for a few frames or hold it.
-```tsx
-<DotScreen pitch={15} dot={0.8} amount={1} off="rgba(255,255,255,0.09)"><BigWord /></DotScreen>
-```
-- Numbers: an 11-16 px pitch, dots 0.8 of it, unlit dots about 9 % on black.
-- As a turn (the reel): the word's dots shrink to nothing over 6 f (ease in), the next picture lights up in the same grid
-  as its dots grow from 0.05 to 0.86 of the pitch over 10 f (ease out), then `amount` relaxes to 0.55 over 14 f. Animate
-  `dot`, never toggle `amount` on and off: a keyed flicker reads as a strobe.
-- Caution: words through it need weight 700 or more and 300 px or more, or they break up.
-
-### ChromaHit
-On an impact the colour channels split for two frames and snap back. Wrap the thing that lands, not the frame.
-```tsx
-<ChromaHit at={T.land} px={14} frames={2} angle={0}><PhotoCard /></ChromaHit>
-```
-- Numbers: 2 f at 14 px then 10 px, clean on the third. No push and no shake: the object's own landing (a scale from
-  1.2 to 1 over 6 f) does the moving.
-- Caution: one or two hits a film, on a landing the viewer sees; wrap the object, never the whole frame.
-
-### MorphBox
-One rounded shape that becomes the next (a thinking pill, a reply pill, a card, a window) with no pop: position, size,
-radius and colour move together, each stage's colour and content wipe in left to right behind a soft lead edge, the old
-content clears in the first frames.
-```tsx
-<MorphBox shadow={softShadow(4, GROUND)} stages={[
-  { at: 0, box: { x: 960, y: 560, w: 140, h: 72, r: 36 }, color: '#EEF1F6', content: <Dots /> },
-  { at: 16, box: { x: 960, y: 560, w: 520, h: 84, r: 42 }, color: '#FFFFFF', content: <Title />, dur: 10 },
-  { at: 32, box: { x: 960, y: 560, w: 720, h: 320, r: 34 }, color: '#FFFFFF', content: <Reply />, dur: 14 },
-  { at: 64, box: { x: 960, y: 560, w: 1240, h: 500, r: 28 }, color: '#FFFFFF', content: <Window />, dur: 14 },
-]} />
-```
-- Numbers: 10-14 f per stage on a quint out; the wipe starts 8 % into the stage and is done at 70 % (expo in-out), so no
-  soft band lingers on the far edge; old content gone in a quarter of the stage.
-- Caution: lay each stage's content out at that stage's size; content wider than its box is cut. Keep the stages in one
-  surface colour (grey thinking pill, then white): a stage that turns the accent colour reads as a sudden colour change.
-
 ## Helpers
 `PixelFilter`, `SmearFilter` (directional blur, edges duplicated) and `SplitFilter` (channel split) are the SVG filters
-the pieces use; put one in the tree and point a layer's `filter: url(#id)` at it.
+the turns and effects use (`src/kit/library/_shared.tsx`); put one in the tree and point a layer's `filter: url(#id)`
+at it.
 
 ## In the reel
 
-Every piece's frames in the `library-turns` reel, and the one command that shows just that piece: a strip of 16 of its
-frames in one still (run it in a film project; `render --film library-turns --range a-b` for the piece in motion, and
-`joins --film library-turns --at <frame>` for nine consecutive frames of a turn at real size).
+Every piece's frames in the reel (`--film library-turns`), and the one command that shows just that piece: its frames in
+one still (run it in a film project; `render --film library-turns --range a-b` for the piece in motion, and `joins
+--film library-turns --at <frame>` for nine consecutive frames of a turn at real size).
 
-| Piece | Frames | Strip of just this piece |
-|---|---|---|
-| DotReveal | 0-85 | `node scripts/frames.mjs sheet --film library-turns --from 0 --to 85 --grid 4` |
-| DotReveal (square cells out of a photo) | 86-179 | `node scripts/frames.mjs sheet --film library-turns --from 86 --to 179 --grid 4` |
-| BlockBurst (then a staircase eat) | 180-304 | `node scripts/frames.mjs sheet --film library-turns --from 180 --to 304 --grid 4` |
-| GrowIris (circle, then rounded) | 305-416 | `node scripts/frames.mjs sheet --film library-turns --from 305 --to 416 --grid 4` |
-| DiveInto | 417-510 | `node scripts/frames.mjs sheet --film library-turns --from 417 --to 510 --grid 4` |
-| WhipGate | 511-584 | `node scripts/frames.mjs sheet --film library-turns --from 511 --to 584 --grid 4` |
-| Shove | 585-660 | `node scripts/frames.mjs sheet --film library-turns --from 585 --to 660 --grid 4` |
-| ShapeMatch | 661-740 | `node scripts/frames.mjs sheet --film library-turns --from 661 --to 740 --grid 4` |
-| GlitchCut | 741-808 | `node scripts/frames.mjs sheet --film library-turns --from 741 --to 808 --grid 4` |
-| LightSweep | 809-874 | `node scripts/frames.mjs sheet --film library-turns --from 809 --to 874 --grid 4` |
-| Bloom | 875-938 | `node scripts/frames.mjs sheet --film library-turns --from 875 --to 938 --grid 4` |
-| TrackOverlay | 939-1018 | `node scripts/frames.mjs sheet --film library-turns --from 939 --to 1018 --grid 4` |
-| DotScreen | 1019-1102 | `node scripts/frames.mjs sheet --film library-turns --from 1019 --to 1102 --grid 4` |
-| ChromaHit | 1103-1174 | `node scripts/frames.mjs sheet --film library-turns --from 1103 --to 1174 --grid 4` |
-| MorphBox | 1175-1274 | `node scripts/frames.mjs sheet --film library-turns --from 1175 --to 1274 --grid 4` |
-| WindowOpen | 1275-1351 | `node scripts/frames.mjs sheet --film library-turns --from 1275 --to 1351 --grid 4` |
+<!-- library:reel (written by scripts/library-docs.mjs from src/kit/library/catalog/; edit the catalogue, not this table) -->
+
+| Piece | Reel | Frames | Strip of just this piece |
+|---|---|---|---|
+| DotReveal | `library-turns` | 0-179 | `node scripts/frames.mjs library --strip DotReveal` |
+| BlockBurst | `library-turns` | 180-304 | `node scripts/frames.mjs library --strip BlockBurst` |
+| GrowIris | `library-turns` | 305-416 | `node scripts/frames.mjs library --strip GrowIris` |
+| DiveInto | `library-turns` | 417-510 | `node scripts/frames.mjs library --strip DiveInto` |
+| WhipGate | `library-turns` | 511-584 | `node scripts/frames.mjs library --strip WhipGate` |
+| Shove | `library-turns` | 585-660 | `node scripts/frames.mjs library --strip Shove` |
+| ShapeMatch | `library-turns` | 661-740 | `node scripts/frames.mjs library --strip ShapeMatch` |
+| GlitchCut | `library-turns` | 741-808 | `node scripts/frames.mjs library --strip GlitchCut` |
+| WindowOpen | `library-turns` | 809-885 | `node scripts/frames.mjs library --strip WindowOpen` |
+
+<!-- /library:reel -->

@@ -7,8 +7,9 @@ import { Words, Camera, At, ease, at, mix, springAt, springs, Card, Brand, Cues,
 import { sfx } from '../../sfx'; // written by scripts/sfx.mjs get
 ```
 
-The motion library (finished turns, type moves and product UI, imported from the same place) is the default
-vocabulary: see [library.md](library.md). This file is the API of the building blocks under it.
+The motion library (finished type moves, turns, effects, product UI and host screens, imported from the same place) is
+the default vocabulary: see [library.md](library.md), and find a piece with `node scripts/frames.mjs library`. This file
+is the API of the building blocks under it.
 
 Frames are 30 fps unless you change `src/films.ts`. Positions are px in the film's frame (1920x1080 unless the film sets
 `width`/`height` in `src/films.ts`; `useVideoConfig()` gives them). Every component reads the
@@ -25,6 +26,7 @@ current frame itself; you pass **start frames** taken from the film's timeline o
 8. Sound (`sound.tsx`)
 9. Fonts (`fonts.ts`)
 10. Project layout and scripts
+11. Deprecated
 
 ---
 
@@ -103,7 +105,7 @@ be nodes: a mark plus a name; `times` sets the frame each item takes over; `ente
 **`<Typing text start cps={17} caret placeholder />`** and **`useTyped(text, start, cps)`** (returns `{ shown, done, doneAt }`):
 a believable cadence to the end (17 nominal, about 15 characters a second with the seeded hesitations and the pauses
 after spaces and punctuation); when time is short, show a prefix as already typed and type the rest, or shorten the
-line. `burst` (the rest landing at once) is deprecated: never use it. `keyFrames` is the frame of every key (put a key
+line. `burst` (the rest landing at once) is deprecated ([section 11](#11-deprecated)): never use it. `keyFrames` is the frame of every key (put a key
 sound on some of them, drive a caret-following camera from them).
 **`typingTimes(text, start, fps, cps)`** the same cadence as a pure function (key sounds, cameras outside the component).
 **`<Scramble text start per={1.5} flicker={8} />`** letters decode from glyphs, left to right: short labels only.
@@ -155,7 +157,7 @@ and bottom). **`camSmear(frame, keys)`** motion blur in px from the camera's own
 exactly covers the frame (dive into an element, cut to its inside at that frame). **`toScreen(cam, x, y, z?, { perspective, frameW, frameH })`** where a world
 point lands on screen under a `<Camera>`, tilted or turned too (returns `{ x, y, scale }`: start a flying card, a flood, a
 `Relay enter` or a pointer exactly where an object sits). **`drift(frame, dur, push, turn)`** a living
-push and turn to add to a held camera. `shake()` is deprecated: never shake the screen, not even on a landing.
+push and turn to add to a held camera. `shake()` is deprecated ([section 11](#11-deprecated)): never shake the screen, not even on a landing.
 
 ```tsx
 <Camera keys={[{ f: 0, zoom: 1.6, rx: 18 }, { f: 30, zoom: 1, rx: 8, curve: ease.out }, { f: 90, zoom: 1.04, rx: 6, curve: ease.glide }]}>
@@ -275,7 +277,7 @@ Each takes `from` and `to` (the two shots as nodes), `start`, `dur`, and renders
   covers the whole frame ([film-grammar.md](film-grammar.md#ground-changes)).
   `gather` runs it backwards: the ground drains into the box and becomes the object (a chip, a button, a tile; draw that
   object in `under` at the same box), uncovering `under`.
-- `<Flash>` is deprecated: never flash the screen to hide a cut.
+- `<Flash>` is deprecated ([section 11](#11-deprecated)): never flash the screen to hide a cut.
 The library's turns come first ([library-turns.md](library-turns.md)); the strongest hand-built turns carry the scene's
 own subject (the card that becomes the next screen, the phone the camera dives into): see [turns.md](motion/turns.md).
 
@@ -365,10 +367,17 @@ sizes, weights and tracking: [type.md](type.md). To add a face,
 src/films/main/Film.tsx   the film (timeline T + sections)      src/films.ts    registers films (id, component, duration, fps, size)
 src/kit/                  the kit                                src/Sheet.tsx   the 36-frame storyboard composition
 src/sfx.ts                fetched sounds (generated)             public/         sfx/, music/, logos/, images (never commit audio)
-scripts/frames.mjs        sheet | still | render | final | audio | mux | strip | joins | check   (mux without audio joins muted
+scripts/frames.mjs        sheet | still | render | final | audio | mux | strip | joins | check | library   (mux without audio joins muted
                           parts silent; joins: every join at real size, frames J-4 .. J+4; check --format launch | loop | sting,
                           --silent)
-src/films/library/        the motion library's reels (--film library-type | library-turns | library-ui | library-hosts)
+src/kit/library/          the motion library: a folder a category (type, turns, fx, camera, ui, hosts, objects, grounds,
+                          designs), one file a piece; catalog/<category>.ts lists each category's pieces (frames.mjs
+                          library [--category --purpose --subject --mood] | --show <Name> | --strip <Name>)
+src/films/library/        the motion library's reels, one a category (--film library-type | library-turns | library-fx |
+                          library-camera | library-ui | library-hosts | library-objects | library-grounds |
+                          library-designs), each a list of segments
+scripts/library-docs.mjs  writes the library's section tables from the catalogue; --check: docs, exports, catalogue and
+                          reel segments agree
 scripts/sfx.mjs           roles | list | get | pick | shortlist | music | analyze | fit | credits   (music/analyze/fit decode audio: light, seconds)
 scripts/logos.mjs         search | get | list | check | verify   scripts/new-film.mjs  start a project
 ```
@@ -381,3 +390,14 @@ scripts/logos.mjs         search | get | list | check | verify   scripts/new-fil
   there). `frames.mjs check` measures "the ending holds still" from that frame on, so a held payoff picture before the
   claim counts as a hold (judged by the pace lines), not as the ending; without either, the ending is the still stretch
   before the last frame, as before. `--lockup <s>` still sets how much of the end the body measures leave out.
+
+## 11. Deprecated
+
+Kept so older films compile; never use them in a new film. Each was retired by the never list.
+
+| Deprecated | Why | Use instead |
+|---|---|---|
+| `shake()` (`camera.tsx`) | a screen shake reads as an error, even a small one on a landing | the object's own landing (a scale from 1.2 to 1 over 6 f, `ease.back`), or `ChromaHit` on the object that lands |
+| `<Flash>` (`turns.tsx`) | a flash of light hides a cut instead of making one | a turn that carries the subject through the cut: `DotReveal`, `GrowIris`, `DiveInto`, `WindowOpen` ([library-turns.md](library-turns.md)) |
+| `<Aura>` (and `<Field>` as a ground, `world.tsx`) | a pale drifting gradient field reads as cheap | a flat `<Ground>` in the world's colour; depth from objects, light and pictures |
+| `<Typing burst>` (`type.tsx`) | the rest of a line landing at once breaks the typing | the believable cadence to the end: show a prefix as already typed and type the rest, or shorten the line |

@@ -231,6 +231,10 @@ jobs:
           done
           exit "$status"
 
+      - name: Motion library catalogue (docs, exports and reels agree)
+        working-directory: skills/cinetic/kit
+        run: node scripts/library-docs.mjs --check
+
       - name: Catalogues parse (sound effects, music shortlist, logo brands)
         run: |
           node -e "

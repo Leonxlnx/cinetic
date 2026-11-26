@@ -477,11 +477,15 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 
 ## [library.md](library.md): The motion library: the default vocabulary
 
-- [The three sections](library.md#the-three-sections)
+- [The categories](library.md#the-categories)
+- [Find a piece](library.md#find-a-piece)
 - [How to use it](library.md#how-to-use-it)
+- [Naming rules](library.md#naming-rules)
+- [How to add a piece](library.md#how-to-add-a-piece)
 
 ## [library-type.md](library-type.md): Library: type
 
+- [At a glance](library-type.md#at-a-glance)
 - [Lines that land](library-type.md#lines-that-land)
   - [WeightLine](library-type.md#weightline)
   - [RiseLine](library-type.md#riseline)
@@ -507,8 +511,9 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [BlockOut](library-type.md#blockout)
 - [In the reel](library-type.md#in-the-reel)
 
-## [library-turns.md](library-turns.md): Library: turns and effects
+## [library-turns.md](library-turns.md): Library: turns
 
+- [At a glance](library-turns.md#at-a-glance)
 - [Turns](library-turns.md#turns)
   - [DotReveal](library-turns.md#dotreveal)
   - [BlockBurst](library-turns.md#blockburst)
@@ -519,18 +524,30 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [WindowOpen](library-turns.md#windowopen)
   - [ShapeMatch](library-turns.md#shapematch)
   - [GlitchCut](library-turns.md#glitchcut)
-- [Effects](library-turns.md#effects)
-  - [LightSweep](library-turns.md#lightsweep)
-  - [Bloom](library-turns.md#bloom)
-  - [TrackOverlay](library-turns.md#trackoverlay)
-  - [DotScreen](library-turns.md#dotscreen)
-  - [ChromaHit](library-turns.md#chromahit)
-  - [MorphBox](library-turns.md#morphbox)
 - [Helpers](library-turns.md#helpers)
 - [In the reel](library-turns.md#in-the-reel)
 
+## [library-fx.md](library-fx.md): Library: finishing effects
+
+- [At a glance](library-fx.md#at-a-glance)
+- [The effects](library-fx.md#the-effects)
+  - [LightSweep](library-fx.md#lightsweep)
+  - [Bloom](library-fx.md#bloom)
+  - [TrackOverlay](library-fx.md#trackoverlay)
+  - [DotScreen](library-fx.md#dotscreen)
+  - [ChromaHit](library-fx.md#chromahit)
+  - [MorphBox](library-fx.md#morphbox)
+- [Helpers](library-fx.md#helpers)
+- [In the reel](library-fx.md#in-the-reel)
+
+## [library-camera.md](library-camera.md): Library: camera moves
+
+- [At a glance](library-camera.md#at-a-glance)
+- [In the reel](library-camera.md#in-the-reel)
+
 ## [library-ui.md](library-ui.md): Library: product UI
 
+- [At a glance](library-ui.md#at-a-glance)
 - [The design bar](library-ui.md#the-design-bar)
 - [Shared parts](library-ui.md#shared-parts)
   - [Surfaces and small parts](library-ui.md#surfaces-and-small-parts)
@@ -557,6 +574,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 
 ## [library-hosts.md](library-hosts.md): Library: host screens
 
+- [At a glance](library-hosts.md#at-a-glance)
 - [How they are built](library-hosts.md#how-they-are-built)
 - [GitHub](library-hosts.md#github)
   - [GitHubIssueColumn, GitHubIssueCard](library-hosts.md#githubissuecolumn-githubissuecard)
@@ -566,6 +584,21 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [A design canvas](library-hosts.md#a-design-canvas)
   - [CanvasChrome, DotCanvas](library-hosts.md#canvaschrome-dotcanvas)
 - [In the reel](library-hosts.md#in-the-reel)
+
+## [library-objects.md](library-objects.md): Library: objects and logos
+
+- [At a glance](library-objects.md#at-a-glance)
+- [In the reel](library-objects.md#in-the-reel)
+
+## [library-grounds.md](library-grounds.md): Library: grounds
+
+- [At a glance](library-grounds.md#at-a-glance)
+- [In the reel](library-grounds.md#in-the-reel)
+
+## [library-designs.md](library-designs.md): Library: design presets
+
+- [At a glance](library-designs.md#at-a-glance)
+- [In the reel](library-designs.md#in-the-reel)
 
 ## [kit.md](kit.md): The kit: API reference
 
@@ -581,6 +614,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [8. Sound](kit.md#8-sound)
 - [9. Fonts](kit.md#9-fonts)
 - [10. Project layout and scripts](kit.md#10-project-layout-and-scripts)
+- [11. Deprecated](kit.md#11-deprecated)
 
 ## [assets.md](assets.md): Assets: marks, icons, fonts, pictures, footage, sound and music
 

@@ -1,8 +1,18 @@
 // A contact sheet in ONE still render: the film frozen at 36 frames in a 6x6 grid (cols: 4 gives 16 bigger cells).
 // The fastest way to see a whole film: `node scripts/frames.mjs sheet [--film main] [--grid 6]`.
 import React from 'react';
-import { AbsoluteFill, Freeze, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, Freeze, Sequence, useCurrentFrame } from 'remotion';
 import { FILMS } from './films';
+
+/**
+ * The film's own size and length for everything inside it: a piece that reads useVideoConfig (a turn covering the frame,
+ * a line centred in it) lays itself out for the film, not for the sheet or the join image around it.
+ */
+const FilmSize: React.FC<{ F: (typeof FILMS)[string]; children: React.ReactNode }> = ({ F, children }) => (
+  <Sequence layout="none" width={F.width ?? 1920} height={F.height ?? 1080} durationInFrames={F.duration}>
+    {children}
+  </Sequence>
+);
 
 export const Sheet: React.FC<{ film?: string; from?: number; to?: number; frames?: number[]; cols?: number }> = ({ film, from = 0, to, frames, cols = 6 }) => {
   const F = FILMS[film ?? Object.keys(FILMS)[0]];
@@ -28,7 +38,9 @@ export const Sheet: React.FC<{ film?: string; from?: number; to?: number; frames
         <div key={i} style={{ position: 'absolute', left: (i % gc) * w, top: Math.floor(i / gc) * h, width: w, height: h, overflow: 'hidden', outline: '1px solid #000' }}>
           <div style={{ width: FW, height: FH, transform: `scale(${best.s})`, transformOrigin: '0 0', position: 'relative' }}>
             <Freeze frame={fr}>
-              <F.component />
+              <FilmSize F={F}>
+                <F.component />
+              </FilmSize>
             </Freeze>
           </div>
           <div style={{ position: 'absolute', left: 6, top: 4, font: `600 ${cols > 4 ? 12 : 15}px monospace`, color: '#ff0', background: 'rgba(0,0,0,.6)', padding: '1px 5px' }}>
@@ -80,7 +92,9 @@ export const Joins: React.FC<JoinsProps> = (props) => {
           <div key={k} style={{ position: 'absolute', left: (k % cols) * cell, top: Math.floor(k / cols) * ch, width: cell, height: ch, overflow: 'hidden' }}>
             <div style={{ width: FW, height: F.height ?? 1080, transform: `scale(${s})`, transformOrigin: '0 0', position: 'relative' }}>
               <Freeze frame={f}>
-                <F.component />
+                <FilmSize F={F}>
+                  <F.component />
+                </FilmSize>
               </Freeze>
             </div>
             <div style={{ position: 'absolute', inset: 0, boxShadow: fr === j ? `inset 0 0 0 ${Math.max(3, label / 5)}px #ff0` : 'inset 0 0 0 1px #000' }} />

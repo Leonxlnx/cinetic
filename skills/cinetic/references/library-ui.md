@@ -7,6 +7,33 @@ answered, a chat exchange, a settings card driven by a pointer, a week that fill
 Import them from the kit (`import { RowExpand, Pointer, lookLight } from '../../kit';`). The reel `library-ui` shows
 every piece with its name: render it to see them move.
 
+## At a glance
+
+<!-- library:pieces (written by scripts/library-docs.mjs from src/kit/library/catalog/; edit the catalogue, not this table) -->
+
+| Piece | Does | About | Looks like | Reach for it for |
+|---|---|---|---|---|
+| [NoticePile](#noticepile) | build | 90 f | one notice lands alone and is held, then more, faster and faster, in a pile with depth; it can fold back | "it keeps coming": orders, messages, sign-ups |
+| [CardFan](#cardfan) | enter, exit | 80 f | a card lands by shrinking and fans its siblings out from behind it, holds, folds them back and leaves upward | "it is connected to the rest" |
+| [BannerPop](#bannerpop) | enter | 54 f | a banner grows out of its icon, a badge pops, title and body arrive by word, a sheen crosses it once | one notification that matters |
+| [RowExpand](#rowexpand) | emphasis, build | 80 f | an inbox row opens in place into its message: the same avatar, sender and subject travel to the header | one item in a list that opens into its detail |
+| [PickList](#picklist) | emphasis | 70 f | a command palette: a query typed, the list travels in one move until the target row sits in the band, Enter | finding one thing among many |
+| [BoardDrag](#boarddrag) | build | 80 f | a project board; the pointer lifts one card, carries it along an arc and drops it into another column | work moving forward on a board |
+| [StepList](#steplist) | build, emphasis | 70 f | a stepped list carousel: the active label big beside an icon tile, neighbours fading by distance, steps accelerating | "every format, every kind" |
+| [TaskRun](#taskrun) | build | 80 f | rows join a card one by one with a spinner that closes to a check as the next arrives, the cadence accelerating | an agent or a setup working through its steps |
+| [ActionMorph](#actionmorph) | emphasis, build | 100 f | a button becomes its own progress bar and closes into a check, the done label sliding out beside it | the one action of a scene: publish, send, deploy |
+| [Pointer](#pointer) | emphasis | 40 f | a pointer that looks right: arcing, decelerating travel, a lifting shadow, a squash press and a soft ring | any press, drag or hover in a product scene |
+| [PromptAnswer](#promptanswer) | build | 150 f | a prompt typed and sent, the text travels to its bubble, an answer card grows out of the composer word by word | an assistant asked and answering |
+| [ChatThread](#chatthread) | build | 180 f | a chat in its window: typing dots widen into messages, a reply typed and sent from the composer, Read settles | a conversation between two people |
+| [SettingsCard](#settingscard-toggleswitch-valueslider-selectframe) | build | 130 f | a settings card driven by a pointer: a toggle, a segment and a slider changed one after another | configuring the product, one control at a time |
+| [ToggleSwitch](#settingscard-toggleswitch-valueslider-selectframe) | emphasis | 9 f | a switch whose knob travels with a stretch and a small overshoot while the track takes the accent | a setting turned on or off |
+| [ValueSlider](#settingscard-toggleswitch-valueslider-selectframe) | emphasis | 24 f | a slider thumb follows eased keys, swelling with a soft accent halo while dragged, its value in a pill | a value dragged to a new setting |
+| [CalendarWave](#calendarwave) | build | 60 f | a week fills in a wave: events appear as pale ghosts crossing the week diagonally, then take their colour | a schedule that fills itself |
+| [PhoneDrop](#phonedrop) | enter, build, exit | 140 f | a phone drops in with weight, a notice settles, the camera pushes into its reply field, a reply is sent, it leaves | a message received and answered on a phone |
+| [SelectFrame](#settingscard-toggleswitch-valueslider-selectframe) | emphasis | 18 f | a 2 px accent selection frame dragged open from its top-left corner, handles popping on one after another | a thing on a canvas being selected |
+
+<!-- /library:pieces -->
+
 ## The design bar
 
 Product UI in a film reads as real only when it is detailed: a generic white card with two grey lines reads as cheap.
@@ -229,7 +256,7 @@ keys, format }`); the pointer visits the controls in time order and presses each
 track (a straight move). `<ToggleSwitch L onAt offAt size />` the knob travels with a stretch (30 % wider mid-way, 9 f,
 a small overshoot), the track takes the accent over 6 f (its state). `<ValueSlider L keys w size format pill />` the
 thumb follows eased keys, swelling 10 % with a soft accent halo while dragged. `<SelectFrame L at left top w h tag />`
-a 2 px accent frame dragged open from its top-left corner (12 f), handles popping on 2 f apart (not in the reel).
+a 2 px accent frame dragged open from its top-left corner (12 f), handles popping on 2 f apart.
 - Caution: one control changes at a time; everything else in the card stays still.
 
 ### PhoneDrop
@@ -246,22 +273,30 @@ typed and sent, pulls back, and the phone leaves upward accelerating.
 
 ## In the reel
 
-Every piece's frames in the `library-ui` reel, and the one command that shows just that piece: a strip of 16 of its
-frames in one still (run it in a film project; `render --film library-ui --range a-b` for the piece in motion).
+Every piece's frames in the reel (`--film library-ui`), and the one command that shows just that piece: its frames in
+one still (run it in a film project; `render --film library-ui --range a-b` for the piece in motion).
 
-| Piece | Frames | Strip of just this piece |
-|---|---|---|
-| NoticePile | 0-169 | `node scripts/frames.mjs sheet --film library-ui --from 0 --to 169 --grid 4` |
-| CardFan | 170-281 | `node scripts/frames.mjs sheet --film library-ui --from 170 --to 281 --grid 4` |
-| BannerPop | 282-365 | `node scripts/frames.mjs sheet --film library-ui --from 282 --to 365 --grid 4` |
-| RowExpand (with Pointer) | 366-521 | `node scripts/frames.mjs sheet --film library-ui --from 366 --to 521 --grid 4` |
-| PickList | 522-633 | `node scripts/frames.mjs sheet --film library-ui --from 522 --to 633 --grid 4` |
-| BoardDrag | 634-765 | `node scripts/frames.mjs sheet --film library-ui --from 634 --to 765 --grid 4` |
-| StepList | 766-855 | `node scripts/frames.mjs sheet --film library-ui --from 766 --to 855 --grid 4` |
-| TaskRun | 856-955 | `node scripts/frames.mjs sheet --film library-ui --from 856 --to 955 --grid 4` |
-| ActionMorph | 956-1105 | `node scripts/frames.mjs sheet --film library-ui --from 956 --to 1105 --grid 4` |
-| PromptAnswer | 1106-1295 | `node scripts/frames.mjs sheet --film library-ui --from 1106 --to 1295 --grid 4` |
-| ChatThread | 1296-1495 | `node scripts/frames.mjs sheet --film library-ui --from 1296 --to 1495 --grid 4` |
-| SettingsCard (ToggleSwitch, ValueSlider) | 1496-1645 | `node scripts/frames.mjs sheet --film library-ui --from 1496 --to 1645 --grid 4` |
-| CalendarWave | 1646-1745 | `node scripts/frames.mjs sheet --film library-ui --from 1646 --to 1745 --grid 4` |
-| PhoneDrop | 1746-1895 | `node scripts/frames.mjs sheet --film library-ui --from 1746 --to 1895 --grid 4` |
+<!-- library:reel (written by scripts/library-docs.mjs from src/kit/library/catalog/; edit the catalogue, not this table) -->
+
+| Piece | Reel | Frames | Strip of just this piece |
+|---|---|---|---|
+| NoticePile | `library-ui` | 0-169 | `node scripts/frames.mjs library --strip NoticePile` |
+| CardFan | `library-ui` | 170-281 | `node scripts/frames.mjs library --strip CardFan` |
+| BannerPop | `library-ui` | 282-365 | `node scripts/frames.mjs library --strip BannerPop` |
+| RowExpand | `library-ui` | 366-521 | `node scripts/frames.mjs library --strip RowExpand` |
+| PickList | `library-ui` | 522-633 | `node scripts/frames.mjs library --strip PickList` |
+| BoardDrag | `library-ui` | 634-765 | `node scripts/frames.mjs library --strip BoardDrag` |
+| StepList | `library-ui` | 766-855 | `node scripts/frames.mjs library --strip StepList` |
+| TaskRun | `library-ui` | 856-955 | `node scripts/frames.mjs library --strip TaskRun` |
+| ActionMorph | `library-ui` | 956-1105 | `node scripts/frames.mjs library --strip ActionMorph` |
+| Pointer (in ActionMorph) | `library-ui` | 994-1062 | `node scripts/frames.mjs library --strip Pointer` |
+| PromptAnswer | `library-ui` | 1106-1295 | `node scripts/frames.mjs library --strip PromptAnswer` |
+| ChatThread | `library-ui` | 1296-1495 | `node scripts/frames.mjs library --strip ChatThread` |
+| SettingsCard | `library-ui` | 1496-1645 | `node scripts/frames.mjs library --strip SettingsCard` |
+| ToggleSwitch (in SettingsCard) | `library-ui` | 1530-1560 | `node scripts/frames.mjs library --strip ToggleSwitch` |
+| ValueSlider (in SettingsCard) | `library-ui` | 1590-1630 | `node scripts/frames.mjs library --strip ValueSlider` |
+| CalendarWave | `library-ui` | 1646-1745 | `node scripts/frames.mjs library --strip CalendarWave` |
+| PhoneDrop | `library-ui` | 1746-1895 | `node scripts/frames.mjs library --strip PhoneDrop` |
+| SelectFrame | `library-ui` | 1896-1955 | `node scripts/frames.mjs library --strip SelectFrame` |
+
+<!-- /library:reel -->

@@ -4,8 +4,9 @@
 //   node <skill>/kit/scripts/new-film.mjs <folder> [--name "Product"] [--no-install]
 //
 // Copies the kit (src/kit, scripts, configs), a blank film (src/films/main) and the motion library's reels
-// (src/films/library: --film library-type, library-turns, library-ui, library-hosts) into <folder>, then installs the
-// packages (skip with --no-install, e.g. when a node_modules folder sits in a parent folder already).
+// (src/films/library: --film library-type, library-turns, library-fx, library-camera, library-ui, library-hosts,
+// library-objects, library-grounds, library-designs) into <folder>, then installs the packages (skip with --no-install, e.g. when a node_modules folder
+// sits in a parent folder already).
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -30,7 +31,8 @@ const copy = (rel, filter = () => true) => {
 };
 fs.mkdirSync(out, { recursive: true });
 for (const f of ['package.json', 'tsconfig.json', 'remotion.config.ts', '.gitignore']) copy(f);
-copy('scripts', (p) => !p.endsWith('new-film.mjs'));
+// library-docs.mjs writes the skill's own reference docs: a kit tool, not a film project's
+copy('scripts', (p) => !p.endsWith('new-film.mjs') && !p.endsWith('library-docs.mjs'));
 copy('src/kit');
 // the real marks the kit ships (public/logos, its record and CREDITS.md) and their index, which <Brand> reads
 copy('public/logos');
@@ -47,8 +49,13 @@ fs.mkdirSync(path.join(out, 'src', 'films', 'main'), { recursive: true });
 const REELS = [
   { id: 'library-type', file: 'ReelType', comp: 'ReelType', dur: 'reelTypeDuration' },
   { id: 'library-turns', file: 'ReelTurns', comp: 'ReelTurns', dur: 'reelTurnsDuration' },
+  { id: 'library-fx', file: 'ReelFx', comp: 'ReelFx', dur: 'reelFxDuration' },
+  { id: 'library-camera', file: 'ReelCamera', comp: 'ReelCamera', dur: 'reelCameraDuration' },
   { id: 'library-ui', file: 'ReelUi', comp: 'ReelUi', dur: 'reelUiDuration' },
   { id: 'library-hosts', file: 'ReelHosts', comp: 'ReelHosts', dur: 'reelHostsDuration' },
+  { id: 'library-objects', file: 'ReelObjects', comp: 'ReelObjects', dur: 'reelObjectsDuration' },
+  { id: 'library-grounds', file: 'ReelGrounds', comp: 'ReelGrounds', dur: 'reelGroundsDuration' },
+  { id: 'library-designs', file: 'ReelDesigns', comp: 'ReelDesigns', dur: 'reelDesignsDuration' },
 ].filter((r) => fs.existsSync(path.join(out, 'src', 'films', 'library', `${r.file}.tsx`)));
 fs.copyFileSync(path.join(kit, 'starter', 'Film.tsx'), path.join(out, 'src', 'films', 'main', 'Film.tsx'));
 fs.rmSync(path.join(out, 'starter'), { recursive: true, force: true });
@@ -63,7 +70,7 @@ fs.writeFileSync(
     'export const FILMS: Record<string, { component: React.FC; duration: number; fps: number; width?: number; height?: number }> = {',
     '  // a vertical film: add width: 1080, height: 1920 (and lay the film out for that frame)',
     '  main: { component: Film, duration, fps: 30 },',
-    "  // the motion library's reels: every piece, named, one after another (frames.mjs render --film library-ui)",
+    "  // the motion library's reels: every piece of a category, named, in catalogue order (frames.mjs library --strip <Name>)",
     ...REELS.map((r) => `  '${r.id}': { component: ${r.comp}, duration: ${r.dur}, fps: 30 },`),
     '};',
     '',
@@ -84,5 +91,5 @@ if (!args.includes('--no-install')) {
   const r = spawnSync(npm, ['install', '--no-audit', '--no-fund'], { cwd: out, stdio: 'inherit', shell: process.platform === 'win32' });
   if (r.status !== 0) process.exit(r.status ?? 1);
 }
-console.log('first: watch the library (node scripts/frames.mjs sheet --film library-ui; also library-type, library-turns, library-hosts; render --film <reel> to see them move)');
+console.log('first: find in the library (node scripts/frames.mjs library [--category turn] [--purpose join]; --strip <Name> shows one piece; render --film library-turns, library-type, library-fx, library-ui or library-hosts to see a reel move)');
 console.log('next: BRIEF.md, BEATS.md (one row per beat, tagged by composition), then src/films/main/Film.tsx and: node scripts/frames.mjs sheet');

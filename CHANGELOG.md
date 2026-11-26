@@ -45,6 +45,14 @@ gives the agent a director's method, a kit that looks premium by default, and a 
 - The rubric has 20 points and scores look first.
 - A held framing is fine while something large changes in it; the product's output is seen big once; the claim is said
   once and may stay on as the lockup's line.
+- Story first: a film tells what happens to someone (a five-line story comes before the concept), runs 30-45 s by
+  default, and every join carries the thing being watched. A never list (no shake, no flash, no fade-and-rise exits, no
+  spaced letters closing, no animated full stops, no typing bursts, no faint gradient grounds, no change without a
+  reason) and a required polish loop that looks at every frame of every join; the brief's adjectives become choices.
+  `shake`, `Flash`, `Aura` and the typing `burst` are deprecated (`kit.md` lists what to use instead).
+- The sound catalogue is cleaned: every bell, chime, glass, coin, riser and trailer hit is gone (60 rejected), 8 dry
+  sounds are added, no air whoosh plays an interface role, clicks sit under the film's peak, the music shortlist is
+  ordered by mood, and `sound-design.md` is rewritten from measurements.
 
 ### Added
 
@@ -79,6 +87,28 @@ gives the agent a director's method, a kit that looks premium by default, and a 
   that hold an object, typing bursts after a prefix.
 - `sfx.mjs fit` places a track so the film's main hit lands on a beat where the music lifts; tempos are measured from
   the file; `frames.mjs check` fails a bed that runs out before the film ends and measures vertical films vertically.
+- The motion library (`kit/src/kit/library/`): 57 finished pieces, measured and built to the bar, that a film takes
+  whole and adapts, in nine categories with a folder each: type (17 moves: rolls, tracking, words of tiles or dots, a
+  dive into a letter, lines that land, clean exits), turns (9 joins that carry the subject and cover the frame), fx (6
+  finishing layers), ui (18 product UI pieces and the parts they are built from), hosts (7 faithful host screens: a pull
+  request page, an issue column, an editor window, a design canvas), and camera, objects, grounds and designs (design
+  presets as typed tokens, shown on a `DesignSwatch`), ready for their first pieces. One file a piece, named after it,
+  opening with the same header (what it is, its numbers, its caution); shared prop names (`at`, `dur` or `speed`,
+  `seed`, `color` / `ink` / `ground`), with older names kept beside them; every piece lays out from the frame's own
+  size. A reel a category (`--film library-type`, `library-turns`, `library-fx`, `library-camera`, `library-ui`,
+  `library-hosts`, `library-objects`, `library-grounds`, `library-designs`), each a list of segments, plays its pieces
+  in catalogue order, each named.
+- The library's catalogue (`catalog/<category>.ts`, merged in `catalog/index.ts`), one entry a piece: category, purpose,
+  subject, mood, length, what it looks like, when to use it, its caution and its reel frames. `frames.mjs library` lists
+  the pieces that match `--category`, `--purpose`, `--subject` and `--mood`; `--show <Name>` prints one in full with its
+  import line; `--strip <Name>` renders its frames from its reel. `scripts/library-docs.mjs` writes each section file's
+  tables from the catalogue, and `--check` (run by CI) fails when a doc is out of date, a piece has no entry, an entry
+  has no piece, or an entry's reel frames and its reel segment disagree. `frames.mjs check` counts library use from the
+  catalogue. Adding a piece touches five files of its own category only (`references/library.md`).
+- `frames.mjs joins`: every join of a film at real size, nine frames around it in one image with the join frame
+  outlined, read from the film's exported `JOINS`; a fix is closed only when its join image is clean.
+- Real marks: `Brand` draws each company's current full-colour mark; 51 verified marks ship with the kit, and
+  `logos.mjs verify` lists the one-colour fallbacks.
 
 ### Removed
 

@@ -6,9 +6,9 @@ join out of the scene's own material, so the film reads as one camera moving thr
 1920x1080.
 
 **Start from the library.** [library-turns.md](../library-turns.md) holds finished, clean turns (`DotReveal`,
-`BlockBurst`, `GrowIris`, `DiveInto`, `WhipGate`, `Shove`, `ShapeMatch`, `GlitchCut`, `MorphBox` and more): at their peak
-the whole frame is covered and the next scene lands whole. Take one and adapt it to the scene's own objects; build a
-turn by hand from the recipes below only for what the library lacks.
+`BlockBurst`, `GrowIris`, `DiveInto`, `WhipGate`, `Shove`, `ShapeMatch`, `GlitchCut`, `WindowOpen`; `MorphBox` in
+[library-fx.md](../library-fx.md)): at their peak the whole frame is covered and the next scene lands whole. Take one
+and adapt it to the scene's own objects; build a turn by hand from the recipes below only for what the library lacks.
 
 Kit (`turns.tsx`): `Iris`, `Tiles`, `Pixelate`, `Push`, `ZoomThrough`, plus `turn = { at, ease, logScale, mix }` for
 hand-built turns (`Flash` is deprecated: never flash the screen). Each component takes the outgoing shot as `from`, the

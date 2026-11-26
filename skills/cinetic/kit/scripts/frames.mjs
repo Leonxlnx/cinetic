@@ -33,6 +33,13 @@
 //        into one image a join (out/joins/<film>-join-<J>.png), the frame number on each cell, the join frame outlined.
 //        Without --at it reads the film's exported JOINS (frame numbers, beside T). One browser, one render call.
 //        Look at every cell before the final and after every fix that touches the join.
+//   node scripts/frames.mjs library [--category turn] [--purpose join] [--subject card] [--mood calm] [--json]
+//        the motion library's pieces that match (src/kit/library/catalog/), one line each: name, category, purpose,
+//        frames, what it looks like. A filter takes one value or several joined by commas (any of them matches).
+//   node scripts/frames.mjs library --show DiveInto
+//        one piece in full: when to use it, its caution, its import line, its file and the command for its strip
+//   node scripts/frames.mjs library --strip DiveInto [--out out/library/DiveInto.png]
+//        the piece's frames from its reel as one still (16 frames, 4x4)
 //
 // GL: set CINETIC_GL=swangle to render on the CPU (software GL) when the GPU is unstable; otherwise Remotion's default.
 // Concurrency: CINETIC_CONCURRENCY (default 2). CINETIC_BROWSER: a Chrome Headless Shell shared by every film project.
@@ -41,6 +48,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { CATEGORIES, loadLibrary } from './library-catalog.mjs';
 
 const require = createRequire(path.join(process.cwd(), 'package.json'));
 const args = process.argv.slice(2);
@@ -243,21 +251,10 @@ function filmSources() {
   return out;
 }
 
-/**
- * The motion library's pieces: the components (capitalised, not ALL_CAPS) exported by src/kit/library/{type,turns,ui,hosts}.tsx,
- * each with its section (type, turns, ui, hosts).
- */
+/** The motion library's pieces, read from its catalogue (src/kit/library/catalog/): name -> category. */
 function libraryPieces() {
-  const dir = path.join(process.cwd(), 'src', 'kit', 'library');
   const names = new Map();
-  for (const f of ['type.tsx', 'turns.tsx', 'ui.tsx', 'hosts.tsx']) {
-    const p = path.join(dir, f);
-    if (!fs.existsSync(p)) continue;
-    const section = f.replace('.tsx', '');
-    const src = fs.readFileSync(p, 'utf8');
-    for (const m of src.matchAll(/export\s*\{([^}]*)\}\s*from/g)) for (const n of m[1].split(',')) { const k = n.trim().split(/\s+as\s+/).pop(); if (/^[A-Z]\w*$/.test(k ?? '') && /[a-z]/.test(k)) names.set(k, section); }
-    for (const m of src.matchAll(/export\s+(?:const|function)\s+([A-Z]\w*)/g)) if (/[a-z]/.test(m[1])) names.set(m[1], section);
-  }
+  for (const e of loadLibrary() ?? []) names.set(e.name, e.category);
   return names;
 }
 
@@ -496,7 +493,7 @@ function checkFilm(file, lockupS, format = 'launch', silentOk = false, lockupGiv
     for (const k of lib.used) {
       const n = lib.count.get(k) || 0;
       const sec = lib.section(k);
-      if (n > 2 && (sec === 'type' || sec === 'turns')) console.log(`  LOOK       ${k} is placed ${n} times: ${sec === 'type' ? 'every line arrives the same way' : 'every join turns the same way'}; at most twice, and the claim arrives differently from the statements (references/film-grammar.md#devices)`);
+      if (n > 2 && (sec === 'type' || sec === 'turn')) console.log(`  LOOK       ${k} is placed ${n} times: ${sec === 'type' ? 'every line arrives the same way' : 'every join turns the same way'}; at most twice, and the claim arrives differently from the statements (references/film-grammar.md#devices)`);
     }
     // a words-led brief with no type piece: the words were set by hand, usually mid-weight on an empty ground
     const brief = ['BRIEF.md', path.join('src', 'films', film, 'BRIEF.md')].find((p) => fs.existsSync(p));
@@ -583,18 +580,74 @@ const report = (file) => {
   console.log(`master: ${file}  ${I.toFixed(1)} LUFS  true peak ${TP.toFixed(1)} dBTP${TP > -1 ? '  WARNING: true peak over -1 dBTP (it will clip on some players): lower the loudest cue or re-mux' : ''}`);
 };
 
-if (cmd === 'sheet') {
-  const out = opt('out', opt('frames') ? `out/${film}-moment.png` : `out/${film}-sheet.png`);
+/** One still of frozen frames of a film (props: film, cols, frames or from/to), written to `out`. */
+const sheet = (props, out, scale = 1, safe = false) => {
   ensureDir(out);
+  remotion(['still', 'src/index.ts', 'Sheet', out, `--props=${JSON.stringify(props)}`, '--frame=0', `--scale=${scale}`, ...gl, '--log=error']);
+  if (safe) safeMargins(out, props, scale);
+  console.log(`sheet: ${out}`);
+};
+
+/** The `library` command: find pieces in the catalogue, show one, or render one's frames from its reel. */
+function library() {
+  const lib = loadLibrary();
+  if (!lib) {
+    console.error('library: no src/kit/library/catalog/ here (run it in a film project or in the kit)');
+    process.exit(1);
+  }
+  const byName = (n) => {
+    const e = lib.find((x) => x.name.toLowerCase() === String(n).toLowerCase());
+    if (!e) {
+      const near = lib.filter((x) => x.name.toLowerCase().includes(String(n).toLowerCase())).map((x) => x.name);
+      console.error(`library: no piece "${n}"${near.length ? ` (did you mean ${near.join(', ')}?)` : ''}`);
+      process.exit(1);
+    }
+    return e;
+  };
+  const stripCmd = (e) => `node scripts/frames.mjs library --strip ${e.name}`;
+  if (opt('strip')) {
+    const e = byName(opt('strip'));
+    sheet({ film: e.reel.film, from: e.reel.from, to: e.reel.to, cols: 4 }, opt('out', `out/library/${e.name}.png`));
+    return;
+  }
+  if (opt('show')) {
+    const e = byName(opt('show'));
+    const where = CATEGORIES[e.category] ?? { folder: e.category, doc: `library-${e.category}.md` };
+    if (has('json')) return console.log(JSON.stringify(e, null, 2));
+    console.log(`${e.name}  (${e.category}; ${e.purpose.join(', ')}; ${e.subject.join(', ')}; ${e.mood.join(', ')}; about ${e.frames} f)`);
+    console.log(`  looks     ${e.summary}`);
+    console.log(`  use       ${e.use}`);
+    if (e.caution) console.log(`  caution   ${e.caution}`);
+    console.log(`  import    import { ${e.name} } from '../../kit';`);
+    console.log(`  file      src/kit/library/${where.folder}/${e.name}.tsx`);
+    console.log(`  docs      references/${where.doc}, the section on ${e.name} (its props, numbers and a usage line)`);
+    console.log(`  reel      --film ${e.reel.film}, frames ${e.reel.from}-${e.reel.to}${e.reel.shownIn ? ` (inside ${e.reel.shownIn}'s segment)` : ''}`);
+    console.log(`  strip     ${stripCmd(e)}`);
+    return;
+  }
+  const filters = ['category', 'purpose', 'subject', 'mood'].map((k) => [k, opt(k)]).filter(([, v]) => v);
+  const matches = lib.filter((e) => filters.every(([k, v]) => v.split(',').some((x) => [e[k]].flat().includes(x.trim()))));
+  if (has('json')) return console.log(JSON.stringify(matches, null, 2));
+  if (!matches.length) {
+    const vals = (k) => [...new Set(lib.flatMap((e) => [e[k]].flat()))].sort().join(', ');
+    console.log(`no piece matches. categories: ${vals('category')}; purposes: ${vals('purpose')}; subjects: ${vals('subject')}; moods: ${vals('mood')}`);
+    return;
+  }
+  const w = Math.max(...matches.map((e) => e.name.length));
+  const pw = Math.max(...matches.map((e) => e.purpose.join(',').length));
+  for (const e of matches) console.log(`${e.name.padEnd(w)}  ${e.category.padEnd(6)}  ${e.purpose.join(',').padEnd(pw)}  ${String(e.frames).padStart(3)} f  ${e.summary}`);
+  console.log(`${matches.length} of ${lib.length} pieces${filters.length ? ` (${filters.map(([k, v]) => `${k} ${v}`).join(', ')})` : ''}. One in full: library --show <Name>; its frames: library --strip <Name>`);
+}
+
+if (cmd === 'sheet') {
   const props = { film };
   if (opt('grid')) props.cols = Number(opt('grid'));
   if (opt('frames')) props.frames = opt('frames').split(',').map(Number);
   if (opt('from')) props.from = Number(opt('from'));
   if (opt('to')) props.to = Number(opt('to'));
-  const scale = has('half') ? 0.5 : 1;
-  remotion(['still', 'src/index.ts', 'Sheet', out, `--props=${JSON.stringify(props)}`, '--frame=0', `--scale=${scale}`, ...gl, '--log=error']);
-  if (has('safe')) safeMargins(out, props, scale);
-  console.log(`sheet: ${out}`);
+  sheet(props, opt('out', opt('frames') ? `out/${film}-moment.png` : `out/${film}-sheet.png`), has('half') ? 0.5 : 1, has('safe'));
+} else if (cmd === 'library') {
+  library();
 } else if (cmd === 'still') {
   const frame = opt('frame', '0');
   const out = opt('out', `out/${film}-f${frame}.png`);

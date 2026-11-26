@@ -7,8 +7,8 @@ that is timed and shaped. Richness comes from real pictures, real product detail
 haze. All numbers at 30 fps, 1920x1080.
 
 Kit (`world.tsx`): `Glow`, `Sheen`, `Grain`, `Defocus`, `softShadow`, `GridLines`; motion helpers `landBlur`, `speedOf`.
-The library's effects ([library-turns.md](../library-turns.md): `LightSweep`, `Bloom`, `TrackOverlay`, `DotScreen`,
-`ChromaHit`) are finished layers: start from them. `Flash` and `shake()` are deprecated: the screen never flashes and
+The library's effects ([library-fx.md](../library-fx.md): `LightSweep`, `Bloom`, `TrackOverlay`, `DotScreen`,
+`ChromaHit`, `MorphBox`) are finished layers: start from them. `Flash` and `shake()` are deprecated: the screen never flashes and
 never shakes. `Field` and `Aura` are not grounds (no faint gradient grounds).
 
 Across every world: one light direction for the whole film; glow and glass at most once a shot, only with a meaning (the

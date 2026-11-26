@@ -4,3 +4,8 @@ public/sfx/
 public/music/
 public/img/
 public/video/
+# scratch films (src/films/_debug and any src/films/_<name>): local experiments, never committed
+src/films/_*/
+# render leftovers outside out/: a stopped joins run, a sheet --safe overlay
+.join.txt
+*.safe.png

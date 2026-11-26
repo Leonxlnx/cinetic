@@ -1,6 +1,7 @@
-// A reel of the motion library's host screens (a GitHub Projects column, a GitHub pull request, a VS Code window in
-// both themes, a design canvas's chrome), one after another with its name in a small corner label: render it to see
-// them move and to pick from them. The product in every scene is invented demo content.
+// The reel of the motion library's host screens (a GitHub Projects column, a GitHub pull request, a VS Code window in
+// both themes, a design canvas's chrome): each piece in catalogue order (src/kit/library/catalog/), at its catalogue
+// frames, with its name in a small corner label. The product in every scene is invented demo content. A new host
+// screen: one segment appended to SEGMENTS.
 import React from 'react';
 import { AbsoluteFill, Sequence, useCurrentFrame } from 'remotion';
 import { at, ease, mix } from '../../kit/motion';
@@ -22,6 +23,7 @@ import {
   type GHIssue,
   type GitHubPRProps,
 } from '../../kit/library/hosts';
+import { Reel, reelDuration, type DemoProps, type Segment } from './reel';
 
 const Label: React.FC<{ n: number; name: string; dark?: boolean }> = ({ n, name, dark }) => (
   <div style={{ position: 'absolute', left: 56, bottom: 24, fontFamily: fonts.inter, fontSize: 26, fontWeight: 500, color: dark ? 'rgba(255,255,255,0.55)' : 'rgba(17,19,24,0.45)', zIndex: 500 }}>
@@ -55,7 +57,7 @@ const COL_A = { x: 200, y: 30 };
 const COL_B = { x: 1040, y: 30 };
 const S1_GRAB = 52;
 const S1_DROP = 84;
-const S1: React.FC = () => {
+const S1: React.FC<DemoProps> = ({ n, name }) => {
   const f = useCurrentFrame();
   const a0 = gitHubColumnCardBox(TODO, 0);
   const b0 = gitHubColumnCardBox(DOING, 0);
@@ -78,7 +80,7 @@ const S1: React.FC = () => {
         </div>
       )}
       <Pointer keys={keys} clicks={[S1_GRAB]} size={60} ring={false} />
-      <Label n={1} name="GitHub Projects column" />
+      <Label n={n} name={name} />
     </AbsoluteFill>
   );
 };
@@ -106,7 +108,7 @@ const PR: GitHubPRProps = {
   diff: [214, 9],
   start: 0,
 };
-const S2: React.FC = () => {
+const S2: React.FC<DemoProps> = ({ n, name }) => {
   const f = useCurrentFrame();
   const g = gitHubPRGeometry(PR);
   const ride = at(f, 18, 30, ease.inOut);
@@ -118,7 +120,7 @@ const S2: React.FC = () => {
         <GitHubPullRequest {...PR} />
       </div>
       <Pointer keys={[{ f: 80, x: btn.x + 560, y: btn.y + 260 }, { f: 117, x: btn.x, y: btn.y }, { f: 150, x: btn.x + 40, y: btn.y + 50 }]} clicks={[119]} size={60} ring={false} />
-      <Label n={2} name="GitHub pull request" />
+      <Label n={n} name={name} />
     </AbsoluteFill>
   );
 };
@@ -158,7 +160,7 @@ const FILES = [
   { name: 'package.json' },
   { name: 'README.md' },
 ];
-const S3: React.FC = () => (
+const S3: React.FC<DemoProps> = ({ n, name }) => (
   <AbsoluteFill style={{ background: '#1F1F1F' }}>
     <VSCodeWindow
       h={500}
@@ -177,12 +179,12 @@ const S3: React.FC = () => (
     >
       <VSCodeNotice message="PlanPicker.tsx uses 4 components from @ledger/ui" source="Ledger UI" buttons={['Open pull request', 'Review']} at={88} mark={<ProductMark size={16} />} />
     </VSCodeWindow>
-    <Label n={3} name="VS Code window, Dark Modern" dark />
+    <Label n={n} name={`${name}, Dark Modern`} dark />
   </AbsoluteFill>
 );
 
 // 4. VS Code, Light Modern: the same window in the light theme, no explorer, a JSON file
-const S4: React.FC = () => (
+const S4: React.FC<DemoProps> = ({ n, name }) => (
   <AbsoluteFill style={{ background: '#FFFFFF' }}>
     <VSCodeWindow
       h={500}
@@ -195,13 +197,13 @@ const S4: React.FC = () => (
       activeLine={5}
       status={{ branch: 'main', right: ['Ln 6, Col 30', 'Spaces: 2', 'UTF-8', 'JSON'] }}
     />
-    <Label n={4} name="VS Code window, Light Modern" />
+    <Label n={n} name={`${name}, Light Modern`} />
   </AbsoluteFill>
 );
 
 // ---------------------------------------------------------------------------------------------------------------------
 // 5. A design canvas's chrome: the canvas zooms under the fixed chrome, the tool changes
-const S5: React.FC = () => {
+const S5: React.FC<DemoProps> = ({ n, name }) => {
   const f = useCurrentFrame();
   const z = mix(at(f, 20, 40, ease.inOut), 1, 1.4);
   return (
@@ -219,28 +221,32 @@ const S5: React.FC = () => {
         </div>
       </div>
       <CanvasChrome mark={<ProductMark size={30} />} product="Ledger" path={['web']} file="pricing.fig" people={[{ initials: 'MO', color: '#5B6B8C' }, { initials: 'LP', color: '#8C6B5B' }]} action={{ label: 'Synced', icon: <Brand name="vscode" size={22} /> }} activeTool={f < 64 ? 0 : 1} zoom={z} />
-      <Label n={5} name="Design canvas chrome" />
+      <Label n={n} name={name} />
     </AbsoluteFill>
   );
 };
 
-const SHOTS: Array<[React.FC, number]> = [
-  [S1, 130],
-  [S2, 160],
-  [S3, 140],
-  [S4, 60],
-  [S5, 100],
+// the window twice: Dark Modern, then Light Modern
+const VSCODE_DARK = 140;
+const VSCodeTwice: React.FC<DemoProps> = ({ n, name }) => (
+  <>
+    <Sequence durationInFrames={VSCODE_DARK}>
+      <S3 n={n} name={name} />
+    </Sequence>
+    <Sequence from={VSCODE_DARK}>
+      <S4 n={n} name={name} />
+    </Sequence>
+  </>
+);
+
+// the pieces in the order the reel plays them; a new piece appends its segment (from = the last from + dur) and
+// gives its catalogue entry the same frames
+export const SEGMENTS: Segment[] = [
+  { name: 'GitHubIssueColumn', from: 0, dur: 130, render: S1 },
+  { name: 'GitHubPullRequest', from: 130, dur: 160, render: S2 },
+  { name: 'VSCodeWindow', from: 290, dur: 200, render: VSCodeTwice },
+  { name: 'CanvasChrome', from: 490, dur: 100, render: S5 },
 ];
 
-export const reelHostsStarts = SHOTS.reduce<number[]>((a, s, i) => [...a, i === 0 ? 0 : a[i - 1] + SHOTS[i - 1][1]], []);
-export const reelHostsDuration = SHOTS.reduce((a, s) => a + s[1], 0);
-
-export const ReelHosts: React.FC = () => (
-  <AbsoluteFill style={{ background: '#E9EBEF' }}>
-    {SHOTS.map(([C, d], i) => (
-      <Sequence key={i} from={reelHostsStarts[i]} durationInFrames={d}>
-        <C />
-      </Sequence>
-    ))}
-  </AbsoluteFill>
-);
+export const reelHostsDuration = reelDuration(SEGMENTS);
+export const ReelHosts: React.FC = () => <Reel film="library-hosts" segments={SEGMENTS} background="#E9EBEF" />;

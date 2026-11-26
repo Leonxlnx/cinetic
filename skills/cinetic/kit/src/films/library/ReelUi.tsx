@@ -1,6 +1,7 @@
-// A reel of the motion library's ui pieces, one after another with its name on screen: render it to see them move.
+// The reel of the motion library's product UI pieces: each piece in catalogue order (src/kit/library/catalog/), at its
+// catalogue frames, with its name in the corner. A new UI piece: one segment appended to SEGMENTS.
 import React from 'react';
-import { AbsoluteFill, Sequence } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { Ground, fonts } from '../../kit';
 import { Icon } from '../../kit/icons';
 import {
@@ -26,11 +27,13 @@ import {
   ActionMorph,
   SettingsCard,
   PhoneDrop,
+  SelectFrame,
   type Look,
   type NoticeData,
   type MailData,
   type PersonRow,
 } from '../../kit/library/ui';
+import { Reel, reelDuration, type DemoProps, type Segment } from './reel';
 
 const BLUE: [string, string] = ['#5B86FF', '#2350E6'];
 const ORANGE: [string, string] = ['#FF9A5C', '#EC5A2A'];
@@ -66,21 +69,21 @@ const orders: NoticeData[] = [
   { title: 'New order · $48', body: 'Jo Adams · Field kit in slate · Perth', time: 'now', icon: 'ShoppingBag', colors: ORANGE },
 ].reverse();
 
-const S1: React.FC = () => {
+const S1: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookDark('#FF7A3D', '#0E0F13');
   return (
-    <Shot L={L} n={1} name="Notice pile">
+    <Shot L={L} n={n} name={name}>
       <NoticePile L={{ ...L, surface: '#1D1E24' }} items={orders} at={4} hold={40} collapseAt={132} y={300} w={1080} size={40} />
     </Shot>
   );
 };
 
-const S2: React.FC = () => {
+const S2: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookDark('#5B86FF', '#0B0C0F');
   const Ld = { ...L, surface: '#202228' };
   const card = (n: NoticeData, k: number) => <Notice key={k} L={Ld} n={n} w={1000} size={38} />;
   return (
-    <Shot L={L} n={2} name="Card fan">
+    <Shot L={L} n={n} name={name}>
       <CardFan
         at={4}
         w={1000}
@@ -101,10 +104,10 @@ const S2: React.FC = () => {
   );
 };
 
-const S3: React.FC = () => {
+const S3: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookDark('#5B86FF', '#111216');
   return (
-    <Shot L={L} n={3} name="Banner from its icon">
+    <Shot L={L} n={n} name={name}>
       <BannerPop L={{ ...L, surface: '#1A1C22' }} at={8} n={{ title: 'Assistant', body: 'Want me to test a lower price this week?', time: 'now', icon: 'Sparkles', colors: BLUE }} y={520} w={1340} size={42} />
     </Shot>
   );
@@ -118,7 +121,7 @@ const mail: MailData[] = [
   { from: 'Jonas Weber', color: '#2C9BE8', time: 'Yesterday', subject: 'Re: Music licence', preview: 'They agreed to the two-year term. Contract is on its way.' },
 ];
 
-const S4: React.FC = () => {
+const S4: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookLight('#2B5BFF', '#E9EBEF');
   const s = 31;
   const line = (a: string, b: string, strong = false) => (
@@ -128,7 +131,7 @@ const S4: React.FC = () => {
     </div>
   );
   return (
-    <Shot L={L} n={4} name="Inbox row opens in place">
+    <Shot L={L} n={n} name={name}>
       <RowExpand
         L={L}
         rows={mail.slice(0, 4)}
@@ -188,16 +191,16 @@ const people: PersonRow[] = [
   trail: `${String(8 + ((i * 5) % 10)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`,
 }));
 
-const S5: React.FC = () => {
+const S5: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookLight('#2B5BFF', '#E9EBEF');
   return (
-    <Shot L={L} n={5} name="List travels to one row">
+    <Shot L={L} n={n} name={name}>
       <PickList L={L} rows={people} target={11} query="lea" at={8} dur={36} w={1320} size={30} />
     </Shot>
   );
 };
 
-const S6: React.FC = () => {
+const S6: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookLight('#E8572A', '#ECEBE8');
   const t = (label: string, color: string) => ({ label, color });
   const columns = [
@@ -229,13 +232,13 @@ const S6: React.FC = () => {
     },
   ];
   return (
-    <Shot L={L} n={6} name="Pointer drags a card across">
+    <Shot L={L} n={n} name={name}>
       <BoardDrag L={L} columns={columns} from={[0, 0]} to={[1, 0]} at={6} pressAt={42} dur={30} w={1680} h={900} y={538} size={30} />
     </Shot>
   );
 };
 
-const S7: React.FC = () => {
+const S7: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookLight('#E8572A', '#F1F0EE');
   const items = [
     { label: 'Video', icon: 'Video' },
@@ -250,22 +253,22 @@ const S7: React.FC = () => {
     { label: 'Slides', icon: 'Presentation' },
   ];
   return (
-    <Shot L={L} n={7} name="Stepped list">
+    <Shot L={L} n={n} name={name}>
       <StepList L={L} items={items} at={10} every={[10, 8, 7, 6, 5, 5, 4, 4, 4]} x={880} size={84} />
     </Shot>
   );
 };
 
-const S8: React.FC = () => {
+const S8: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookDark('#4F7BFF', '#0B0C10');
   return (
-    <Shot L={L} n={8} name="Task run">
+    <Shot L={L} n={n} name={name}>
       <TaskRun L={{ ...L, surface: '#17181D' }} at={10} working="Setting up" done="Created" doneAt={78} w={1180} size={38} title="Setting up your store" tasks={['Brand colours', 'Product page', 'Checkout', 'Order emails', 'Shipping rates', 'Tax settings', 'Domain', 'Analytics', 'Launch checklist']} />
     </Shot>
   );
 };
 
-const S9: React.FC = () => {
+const S9: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookLight('#2B5BFF', '#E9EBEF');
   const s = 34;
   const W = 1180;
@@ -279,7 +282,7 @@ const S9: React.FC = () => {
   const bx = 960;
   const by = top + 560;
   return (
-    <Shot L={L} n={9} name="Button to progress to check">
+    <Shot L={L} n={n} name={name}>
       <div style={{ ...surfaceStyle(L, 5, s * 1.05), position: 'absolute', left: 960 - W / 2, top, width: W, height: 660, fontFamily: L.font }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: s * 0.6, padding: `${s * 1.0}px ${s * 1.2}px`, borderBottom: `1px solid ${L.line}` }}>
           <MarkSlot icon="Rocket" colors={BLUE} size={s * 1.8} />
@@ -315,10 +318,10 @@ const S9: React.FC = () => {
   );
 };
 
-const S10: React.FC = () => {
+const S10: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookLight('#E8572A', '#EFEDEA');
   return (
-    <Shot L={L} n={10} name="Prompt sent and answered">
+    <Shot L={L} n={n} name={name}>
       <PromptAnswer
         L={L}
         at={8}
@@ -333,10 +336,10 @@ const S10: React.FC = () => {
   );
 };
 
-const S11: React.FC = () => {
+const S11: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookLight('#2B7BFF', '#E9EBEF');
   return (
-    <Shot L={L} n={11} name="Chat exchange">
+    <Shot L={L} n={n} name={name}>
       <ChatThread
         L={L}
         at={6}
@@ -357,10 +360,10 @@ const S11: React.FC = () => {
   );
 };
 
-const S12: React.FC = () => {
+const S12: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookLight('#2B5BFF', '#E9EBEF');
   return (
-    <Shot L={L} n={12} name="Settings driven by a pointer">
+    <Shot L={L} n={n} name={name}>
       <SettingsCard
         L={L}
         at={6}
@@ -378,7 +381,7 @@ const S12: React.FC = () => {
   );
 };
 
-const S13: React.FC = () => {
+const S13: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookLight('#2B5BFF', '#E9EBEF');
   const C = { blue: '#3D6BFF', orange: '#E8742E', amber: '#E0A21E', red: '#D9534A', sky: '#2C9BE8', slate: '#4D5666' };
   const ev = [
@@ -397,48 +400,58 @@ const S13: React.FC = () => {
     { day: 4, start: 15, len: 1.5, title: 'Retro', color: C.amber },
   ];
   return (
-    <Shot L={L} n={13} name="Week fills in a wave">
+    <Shot L={L} n={n} name={name}>
       <CalendarWave L={L} events={ev} at={18} wave={24} y={538} w={1680} h={900} size={33} />
     </Shot>
   );
 };
 
-const S14: React.FC = () => {
+const S14: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookLight('#2B5BFF', '#E6E8EC');
   return (
-    <Shot L={L} n={14} name="Phone drops, push into a control">
+    <Shot L={L} n={n} name={name}>
       <PhoneDrop L={L} at={4} n={{ title: 'Rosa Diaz', body: 'Can we move it to tomorrow?', time: 'now', letter: 'R', colors: ORANGE }} reply="Sure, see you at ten" y={570} w={480} />
     </Shot>
   );
 };
 
-const SHOTS: Array<[React.FC, number]> = [
-  [S1, 170],
-  [S2, 112],
-  [S3, 84],
-  [S4, 156],
-  [S5, 112],
-  [S6, 132],
-  [S7, 90],
-  [S8, 100],
-  [S9, 150],
-  [S10, 190],
-  [S11, 200],
-  [S12, 150],
-  [S13, 100],
-  [S14, 150],
+// a selection frame dragged open over a card on a canvas
+const S15: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookLight('#2B5BFF', '#E9EBEF');
+  const box = { left: 660, top: 300, w: 600, h: 400 };
+  return (
+    <Shot L={L} n={n} name={name}>
+      <div style={{ ...surfaceStyle(L, 3, 22), position: 'absolute', left: box.left, top: box.top, width: box.w, height: box.h, padding: 40, boxSizing: 'border-box', fontFamily: L.font, color: L.ink }}>
+        <div style={{ fontSize: 44, fontWeight: 650, letterSpacing: '-0.02em' }}>Pro</div>
+        <div style={{ marginTop: 14, fontSize: 30, color: L.muted }}>For teams that ship every week</div>
+        <div style={{ marginTop: 26, fontSize: 96, fontWeight: 620, letterSpacing: '-0.045em', lineHeight: 1 }}>$24</div>
+        <div style={{ position: 'absolute', left: 40, right: 40, bottom: 40, height: 64, borderRadius: 16, background: L.ink }} />
+      </div>
+      <SelectFrame L={L} at={14} left={box.left - 12} top={box.top - 12} w={box.w + 24} h={box.h + 24} tag="600 x 400" size={28} />
+      <Pointer keys={[{ f: 4, x: box.left - 60, y: box.top - 70 }, { f: 13, x: box.left - 12, y: box.top - 12 }, { f: 26, x: box.left + box.w + 12, y: box.top + box.h + 12, bow: 0 }, { f: 52, x: box.left + box.w + 90, y: box.top + box.h + 120 }]} clicks={[13]} size={64} ring={false} />
+    </Shot>
+  );
+};
+
+// the pieces in the order the reel plays them; a new piece appends its segment (from = the last from + dur) and
+// gives its catalogue entry the same frames
+export const SEGMENTS: Segment[] = [
+  { name: 'NoticePile', from: 0, dur: 170, render: S1 },
+  { name: 'CardFan', from: 170, dur: 112, render: S2 },
+  { name: 'BannerPop', from: 282, dur: 84, render: S3 },
+  { name: 'RowExpand', from: 366, dur: 156, render: S4 },
+  { name: 'PickList', from: 522, dur: 112, render: S5 },
+  { name: 'BoardDrag', from: 634, dur: 132, render: S6 },
+  { name: 'StepList', from: 766, dur: 90, render: S7 },
+  { name: 'TaskRun', from: 856, dur: 100, render: S8 },
+  { name: 'ActionMorph', from: 956, dur: 150, render: S9 },
+  { name: 'PromptAnswer', from: 1106, dur: 190, render: S10 },
+  { name: 'ChatThread', from: 1296, dur: 200, render: S11 },
+  { name: 'SettingsCard', from: 1496, dur: 150, render: S12 },
+  { name: 'CalendarWave', from: 1646, dur: 100, render: S13 },
+  { name: 'PhoneDrop', from: 1746, dur: 150, render: S14 },
+  { name: 'SelectFrame', from: 1896, dur: 60, render: S15 },
 ];
 
-export const reelUiStarts = SHOTS.reduce<number[]>((a, s, i) => [...a, i === 0 ? 0 : a[i - 1] + SHOTS[i - 1][1]], []);
-export const reelUiDuration = SHOTS.reduce((a, s) => a + s[1], 0);
-
-export const ReelUi: React.FC = () => (
-  <AbsoluteFill style={{ background: '#E9EBEF' }}>
-    {SHOTS.map(([C, d], i) => (
-      <Sequence key={i} from={reelUiStarts[i]} durationInFrames={d}>
-        <C />
-      </Sequence>
-    ))}
-  </AbsoluteFill>
-);
-
+export const reelUiDuration = reelDuration(SEGMENTS);
+export const ReelUi: React.FC = () => <Reel film="library-ui" segments={SEGMENTS} background="#E9EBEF" />;

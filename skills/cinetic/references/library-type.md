@@ -3,7 +3,7 @@
 Finished animations that make words an event: lines that land with weight, type with a texture or a treatment,
 playful letters, a statement typed into a product, and clean exits. Import them from the kit
 (`import { WeightLine, BarStack, LightWord } from '../../kit';`). The reel `library-type` shows every piece with its name
-in the corner: render it to see them move.
+in the corner; `frames.mjs library --category type` lists them.
 
 Every piece reads the frame itself and takes `at` (its first frame), its content, size (`size` is the font size in px),
 position (`x`, `y`, the centre; default the frame's centre), colours, a timing control (`dur`, `gap`, `per`, `cps` or
@@ -13,6 +13,32 @@ unless the sentence needs one; punctuation is never animated and never marked.
 Never: letters that start widely spaced and pull together; a line that leaves by fading while it rises (use one of the
 exits below or a hard cut on the beat); a typed line that lands its rest at once; a counter that blurs or smears; a
 flash or an inverted frame; a label in uppercase mono; an eyebrow line over a statement.
+
+## At a glance
+
+<!-- library:pieces (written by scripts/library-docs.mjs from src/kit/library/catalog/; edit the catalogue, not this table) -->
+
+| Piece | Does | About | Looks like | Reach for it for |
+|---|---|---|---|---|
+| [WeightLine](#weightline) | enter, emphasis | 40 f | words land one or two at a time with weight: big, blurred and warm, dropping to size while the line re-centres | a statement said word by word on the beats; optionally one word set on a block |
+| [BarStack](#barstack) | enter, exit | 25 f | three big lines slide in staggered, a solid bar wipes behind one so it reads reversed, then they drift apart | a short three-line claim with one word to stress |
+| [ScaleJump](#scalejump) | enter, emphasis | 30 f | one word giant and cropped, pushing in; hard cuts to a middle size, then to line size, the rest of the line joining | size as meaning: one word that should hit before its sentence |
+| [BlockOut](#blockout) | exit, join | 14 f | the line is replaced by a solid block of its width, which grows to cover the frame or snaps shut to the right | an exit that is also a turn into a shot on the cover colour |
+| [RiseLine](#riseline) | enter, exit | 20 f | each word rises from behind its own baseline mask; a word can roll to another in place; the mask closes to leave | the clean default entrance for a line; a word swapped in place; a clean exit |
+| [MarkPhrase](#markphrase) | emphasis | 14 f | a flat highlight sweeps behind a phrase (the words turn to its ink as it passes) or an underline draws under it | a line already on screen that needs one phrase marked |
+| [BlurSweep](#blursweep) | enter | 45 f | a line comes into focus left to right, each letter sharpening from a heavy blur inside a soft front | a message, a quote, a line that should feel spoken |
+| [RollType](#rolltype) | enter, emphasis | 30 f | a line typed unevenly in place, then its last digit rolls like a counter in whole steps and lands with a dash | a year becoming the next, a version, a count |
+| [TrackedType](#trackedtype) | enter, idle | 40 f | a word on a shallow crest, each letter in a turning outlined box with live coordinates, dashed loops between them | motion tracking laid over type: a technical, analytic voice |
+| [LightWord](#lightword) | enter, emphasis | 60 f | a bulging wall of coloured lights pulls back while a label decodes in the middle, then falls away to white lights | a year, a number or one short word, once, loud |
+| [TileWord](#tileword) | enter, emphasis | 30 f | a giant word builds out of a lattice of outlined cells on a tilted plane, then cuts flat, every tile dotted | the turn of an argument, full width, one or two short words |
+| [DotWord](#dotword) | enter | 20 f | a word in dot-matrix typed letter by letter, the dots soft square LEDs; glitch frames slip rows sideways | a short word with a digital, signal-like voice |
+| [DotDive](#dotdive) | join, exit | 34 f | one plain letter cuts to dot-matrix, grows toward the lens and becomes a deep field of dots the camera flies through | a letter as the way into the next shot |
+| [HostType](#hosttype) | build, enter | 60 f | one statement typed into a prompt field while the product around it changes by hard cut every few frames | a statement that is also the product in use, across many hosts |
+| [DropWord](#dropword) | enter, exit | 40 f | heavy lowercase letters fall in one by one, squash and bounce, small characters pop in around them; they scatter | a playful brand word with characters of its own |
+| [ArcToss](#arctoss) | enter, exit | 20 f | a word tossed in: letters drop on curves in a quick wave, a ribbon unrolling into place, then ease back | one word that should arrive lightly, a title |
+| [PushApart](#pushapart) | exit, join | 28 f | the gap in a short line prises open while a dot grows in it, then a cut to the object whole, the halves sliding off | a line that gives way to the product's icon, character or device |
+
+<!-- /library:pieces -->
 
 ## Lines that land
 
@@ -259,25 +285,29 @@ Sequence).
 
 ## In the reel
 
-Every piece's frames in the `library-type` reel, and the one command that shows just that piece: a strip of 16 of its
-frames in one still (run it in a film project; `render --film library-type --range a-b` for the piece in motion).
+Every piece's frames in the reel (`--film library-type`), and the one command that shows just that piece: its frames in
+one still (run it in a film project; `render --film library-type --range a-b` for the piece in motion).
 
-| Piece | Frames | Strip of just this piece |
-|---|---|---|
-| WeightLine | 0-89 | `node scripts/frames.mjs sheet --film library-type --from 0 --to 89 --grid 4` |
-| BarStack | 90-169 | `node scripts/frames.mjs sheet --film library-type --from 90 --to 169 --grid 4` |
-| ScaleJump | 170-249 | `node scripts/frames.mjs sheet --film library-type --from 170 --to 249 --grid 4` |
-| BlockOut | 250-295 | `node scripts/frames.mjs sheet --film library-type --from 250 --to 295 --grid 4` |
-| RiseLine | 296-387 | `node scripts/frames.mjs sheet --film library-type --from 296 --to 387 --grid 4` |
-| MarkPhrase | 388-471 | `node scripts/frames.mjs sheet --film library-type --from 388 --to 471 --grid 4` |
-| BlurSweep | 472-541 | `node scripts/frames.mjs sheet --film library-type --from 472 --to 541 --grid 4` |
-| RollType | 542-603 | `node scripts/frames.mjs sheet --film library-type --from 542 --to 603 --grid 4` |
-| TrackedType | 604-673 | `node scripts/frames.mjs sheet --film library-type --from 604 --to 673 --grid 4` |
-| LightWord | 674-753 | `node scripts/frames.mjs sheet --film library-type --from 674 --to 753 --grid 4` |
-| TileWord | 754-823 | `node scripts/frames.mjs sheet --film library-type --from 754 --to 823 --grid 4` |
-| DotWord | 824-893 | `node scripts/frames.mjs sheet --film library-type --from 824 --to 893 --grid 4` |
-| DotDive | 894-938 | `node scripts/frames.mjs sheet --film library-type --from 894 --to 938 --grid 4` |
-| HostType | 939-1038 | `node scripts/frames.mjs sheet --film library-type --from 939 --to 1038 --grid 4` |
-| DropWord | 1039-1134 | `node scripts/frames.mjs sheet --film library-type --from 1039 --to 1134 --grid 4` |
-| ArcToss | 1135-1204 | `node scripts/frames.mjs sheet --film library-type --from 1135 --to 1204 --grid 4` |
-| PushApart | 1205-1280 | `node scripts/frames.mjs sheet --film library-type --from 1205 --to 1280 --grid 4` |
+<!-- library:reel (written by scripts/library-docs.mjs from src/kit/library/catalog/; edit the catalogue, not this table) -->
+
+| Piece | Reel | Frames | Strip of just this piece |
+|---|---|---|---|
+| WeightLine | `library-type` | 0-89 | `node scripts/frames.mjs library --strip WeightLine` |
+| BarStack | `library-type` | 90-169 | `node scripts/frames.mjs library --strip BarStack` |
+| ScaleJump | `library-type` | 170-249 | `node scripts/frames.mjs library --strip ScaleJump` |
+| BlockOut | `library-type` | 250-295 | `node scripts/frames.mjs library --strip BlockOut` |
+| RiseLine | `library-type` | 296-387 | `node scripts/frames.mjs library --strip RiseLine` |
+| MarkPhrase | `library-type` | 388-471 | `node scripts/frames.mjs library --strip MarkPhrase` |
+| BlurSweep | `library-type` | 472-541 | `node scripts/frames.mjs library --strip BlurSweep` |
+| RollType | `library-type` | 542-603 | `node scripts/frames.mjs library --strip RollType` |
+| TrackedType | `library-type` | 604-673 | `node scripts/frames.mjs library --strip TrackedType` |
+| LightWord | `library-type` | 674-753 | `node scripts/frames.mjs library --strip LightWord` |
+| TileWord | `library-type` | 754-823 | `node scripts/frames.mjs library --strip TileWord` |
+| DotWord | `library-type` | 824-893 | `node scripts/frames.mjs library --strip DotWord` |
+| DotDive | `library-type` | 894-938 | `node scripts/frames.mjs library --strip DotDive` |
+| HostType | `library-type` | 939-1038 | `node scripts/frames.mjs library --strip HostType` |
+| DropWord | `library-type` | 1039-1134 | `node scripts/frames.mjs library --strip DropWord` |
+| ArcToss | `library-type` | 1135-1204 | `node scripts/frames.mjs library --strip ArcToss` |
+| PushApart | `library-type` | 1205-1280 | `node scripts/frames.mjs library --strip PushApart` |
+
+<!-- /library:reel -->
