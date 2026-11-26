@@ -2,24 +2,45 @@
 // catalogue frames, with its name in a small corner label, on flat grounds, silent. A new type piece: its look in
 // SEGS (ground and node) and one segment appended to SEGMENTS.
 import React from 'react';
-import { AbsoluteFill, Sequence } from 'remotion';
+import { AbsoluteFill, Img, Sequence, staticFile } from 'remotion';
 import { fonts } from '../../kit/fonts';
 import { AppIcon, Icon } from '../../kit/icons';
 import {
   ArcToss,
   BarStack,
+  CaretFollow,
+  ClipExit,
+  CornerLine,
+  CutAway,
+  GradientPass,
+  InlineChip,
+  LightStreak,
+  TypeHead,
   BlockOut,
   BlurSweep,
   DotDive,
   DotWord,
   DropWord,
+  EatSquares,
+  EchoStack,
+  FaceCycle,
+  GatherLine,
+  HingeWord,
   HostType,
+  HUE_PATH,
+  InkLine,
   LightWord,
   MarkPhrase,
+  PartStack,
   PushApart,
   RiseLine,
   RollType,
   ScaleJump,
+  ScrambleType,
+  SlideOff,
+  SplitWord,
+  StepWhip,
+  TagSlap,
   TileWord,
   TrackedType,
   WeightLine,
@@ -34,8 +55,79 @@ const PAPER = '#F3F2EE';
 const WHITE = '#FFFFFF';
 const INK = '#141414';
 const EMBER = '#FF5A1F';
+const COBALT = '#2F6BE0';
+
+// tonight's additions: each demo in its own Sequence parts where a piece has several modes
+const inkLineDemo = (
+  <>
+    <Sequence durationInFrames={46} layout="none">
+      <InkLine text="Your plans live in one place" at={2} gap={8} size={104} color={INK} />
+    </Sequence>
+    <Sequence from={46} durationInFrames={46} layout="none">
+      <AbsoluteFill style={{ background: '#F7F5F1' }} />
+      <InkLine text="What if your week planned itself" at={1} gap={7} size={100} color={INK} tint={HUE_PATH} />
+    </Sequence>
+    <Sequence from={92} durationInFrames={48} layout="none">
+      <AbsoluteFill style={{ background: WHITE }} />
+      <InkLine text="Notes that write themselves tonight" at={1} gap={7} size={96} color={INK} tint="heat" space="close" />
+    </Sequence>
+    <Sequence from={140} durationInFrames={52} layout="none">
+      <InkLine text="Every invoice, receipt and contract you have sent this year" at={1} gap={5} size={120} color={INK} fit={0.84} />
+    </Sequence>
+    <Sequence from={192} layout="none">
+      <InkLine text="Your work is split across nine tools" at={3} gap={10} size={104} color={INK} anticipate={2} lead={0.39} tau={4.5} space="close" />
+    </Sequence>
+  </>
+);
+
+const PICS = ['img/hokianga-tide-out.jpg', 'img/waves-009.jpg', 'img/seaweed-farms-in-south-korea.jpg', 'img/cloud-streets-over-the-bering-sea.jpg'];
+
+const tagDemo = (
+  <>
+    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: fonts.inter, fontWeight: 700, fontSize: 330, letterSpacing: '-0.05em', color: INK }}>Studio</div>
+    <TagSlap tags={[{ text: 'Launch films', at: 8, x: 0.42, y: 0.42, rot: -3 }, { text: 'Product demos', at: 26, x: 0.58, y: 0.55, rot: 2 }, { text: 'Weekly cuts', at: 42, x: 0.44, y: 0.68, rot: -2 }]} />
+  </>
+);
+
+const hingeDemo = (
+  <>
+    <div style={{ position: 'absolute', left: 560, top: 380, width: 320, height: 320, borderRadius: 28, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,.08), 0 18px 50px rgba(0,0,0,.12)' }}>
+      <Img src={staticFile('img/hokianga-tide-out.jpg')} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+    </div>
+    <HingeWord words={['Coastlines', 'Harbours', 'Islands']} times={[4, 30, 54]} x={940} y={540} size={84} />
+  </>
+);
 
 const SEGS: Record<string, Seg> = {
+  EatSquares: { ground: WHITE, node: <EatSquares text="Gridwork Studio" at={16} size={96} /> },
+  SlideOff: { ground: PAPER, node: <SlideOff lines={['Plan less', 'ship more']} at={16} dur={14} dir="shear" size={150} color={INK} /> },
+  PartStack: {
+    ground: NIGHT,
+    node: <PartStack text="Every coast matters" after={0} at={8} size={96} pictures={[...PICS, 'img/earth-observations-taken-by-expedition-26.jpg', 'img/earth-observations-taken-by-the-expedition.jpg']} />,
+  },
+  StepWhip: { ground: PAPER, node: <StepWhip text="Your inbox is a little full" times={[4, 6, 8, 18, 20, 22]} still={50} size={84} color={INK} /> },
+  HingeWord: { ground: WHITE, node: hingeDemo },
+  LightStreak: { ground: DARK, node: <LightStreak text="Everyone has a story" at={4} leaveAt={46} size={76} /> },
+  ClipExit: {
+    ground: PAPER,
+    node: <ClipExit text="Your team in one view" at={22} objectAt={0} size={92} color={INK} w={150} h={150} node={<AppIcon size={150} colors={['#FF8A5C', '#F2552C']} glyph={<Icon name="LayoutGrid" size={70} color="#FFFFFF" />} />} />,
+  },
+  SplitWord: { ground: WHITE, node: <SplitWord text="Mapping" split={3} at={4} pictures={['img/hokianga-tide-out.jpg', 'img/seaweed-farms-in-south-korea.jpg']} swaps={[34]} size={210} color={INK} /> },
+  EchoStack: { ground: DARK, node: <EchoStack text="Growing" at={3} size={210} labels={['team of four', 'first hundred users', 'twelve cities', 'week nine', 'two offices', 'six new hires']} zoomAt={36} ground={DARK} /> },
+  TagSlap: { ground: WHITE, node: tagDemo },
+  GatherLine: { ground: PAPER, node: <GatherLine text="Every note finds its place" at={0} gatherAt={26} size={84} color={INK} /> },
+  CornerLine: { ground: PAPER, node: <CornerLine text="Plans that keep themselves" at={4} gap={9} size={92} color={INK} flash={EMBER} /> },
+  CutAway: { ground: PAPER, node: <CutAway text="Your files sit in six different apps" at={16} size={88} color={INK} /> },
+  GradientPass: { ground: PAPER, node: <GradientPass text="Keep every idea without losing the thread" at={3} size={78} color={INK} /> },
+  TypeHead: { ground: WHITE, node: <TypeHead text="Find the slides from Tuesday" at={4} size={84} color={INK} accent={EMBER} caret /> },
+  CaretFollow: { ground: '#17171A', node: <CaretFollow text="Plan a dinner for twelve on Friday" at={2} accentFrom={5} accent="#7C9BFF" /> },
+  InlineChip: { ground: PAPER, node: <InlineChip text="We map the coast from above every morning" after={3} at={8} pictures={PICS} every={12} grow={{ at: 58, w: 2.4, h: 1.3 }} size={80} color={INK} /> },
+  InkLine: { ground: PAPER, node: inkLineDemo },
+  ScrambleType: {
+    ground: NIGHT,
+    node: <ScrambleType text="Draft" at={2} brackets size={96} swaps={[{ at: 34, text: 'Review', size: 132 }, { at: 56, text: 'Publish', size: 118 }]} closeAt={74} />,
+  },
+  FaceCycle: { ground: PAPER, node: <FaceCycle text="Every draft finds its reader" at={3} gap={4} size={72} color={INK} accent={COBALT} flip={{ index: 1, at: 44 }} /> },
   WeightLine: {
     ground: PAPER,
     node: <WeightLine text="Every invoice sent tonight" times={[4, 13, 13, 24]} size={130} color={INK} born={EMBER} block={{ index: 3, color: INK, ink: WHITE, at: 40 }} />,
@@ -84,7 +176,6 @@ const SEGS: Record<string, Seg> = {
   },
 };
 
-
 const isDark = (c: string) => {
   const h = c.replace('#', '');
   const n = parseInt(h.length === 3 ? h.split('').map((x) => x + x).join('') : h, 16);
@@ -123,6 +214,26 @@ export const SEGMENTS: Segment[] = [
   { name: 'DropWord', from: 1039, dur: 96, render: shot(SEGS.DropWord) },
   { name: 'ArcToss', from: 1135, dur: 70, render: shot(SEGS.ArcToss) },
   { name: 'PushApart', from: 1205, dur: 76, render: shot(SEGS.PushApart) },
+  { name: 'InkLine', from: 1281, dur: 240, render: shot(SEGS.InkLine) },
+  { name: 'ScrambleType', from: 1521, dur: 84, render: shot(SEGS.ScrambleType) },
+  { name: 'FaceCycle', from: 1605, dur: 64, render: shot(SEGS.FaceCycle) },
+  { name: 'CornerLine', from: 1669, dur: 70, render: shot(SEGS.CornerLine) },
+  { name: 'CutAway', from: 1739, dur: 40, render: shot(SEGS.CutAway) },
+  { name: 'GradientPass', from: 1779, dur: 84, render: shot(SEGS.GradientPass) },
+  { name: 'TypeHead', from: 1863, dur: 56, render: shot(SEGS.TypeHead) },
+  { name: 'CaretFollow', from: 1919, dur: 90, render: shot(SEGS.CaretFollow) },
+  { name: 'InlineChip', from: 2009, dur: 84, render: shot(SEGS.InlineChip) },
+  { name: 'EchoStack', from: 2093, dur: 43, render: shot(SEGS.EchoStack) },
+  { name: 'TagSlap', from: 2136, dur: 64, render: shot(SEGS.TagSlap) },
+  { name: 'GatherLine', from: 2200, dur: 56, render: shot(SEGS.GatherLine) },
+  { name: 'LightStreak', from: 2256, dur: 60, render: shot(SEGS.LightStreak) },
+  { name: 'ClipExit', from: 2316, dur: 50, render: shot(SEGS.ClipExit) },
+  { name: 'SplitWord', from: 2366, dur: 60, render: shot(SEGS.SplitWord) },
+  { name: 'HingeWord', from: 2426, dur: 76, render: shot(SEGS.HingeWord) },
+  { name: 'StepWhip', from: 2502, dur: 60, render: shot(SEGS.StepWhip) },
+  { name: 'PartStack', from: 2562, dur: 50, render: shot(SEGS.PartStack) },
+  { name: 'SlideOff', from: 2612, dur: 32, render: shot(SEGS.SlideOff) },
+  { name: 'EatSquares', from: 2644, dur: 44, render: shot(SEGS.EatSquares) },
 ];
 
 export const reelTypeDuration = reelDuration(SEGMENTS);

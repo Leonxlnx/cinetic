@@ -37,6 +37,26 @@ flash or an inverted frame; a label in uppercase mono; an eyebrow line over a st
 | [DropWord](#dropword) | enter, exit | 40 f | heavy lowercase letters fall in one by one, squash and bounce, small characters pop in around them; they scatter | a playful brand word with characters of its own |
 | [ArcToss](#arctoss) | enter, exit | 20 f | a word tossed in: letters drop on curves in a quick wave, a ribbon unrolling into place, then ease back | one word that should arrive lightly, a title |
 | [PushApart](#pushapart) | exit, join | 28 f | the gap in a short line prises open while a dot grows in it, then a cut to the object whole, the halves sliding off | a line that gives way to the product's icon, character or device |
+| [InkLine](#inkline) | enter, build | 45 f | a centred line built word by word: each word cuts on in a tint (grey, a hue path, warm light) and inks while the line re-centres, most of the move on the arrival frame | the voice-over line: a statement said word by word on the voice or the beat |
+| [ScrambleType](#scrambletype) | enter, emphasis | 20 f | wrong glyphs change every few frames and lock into the word letter by letter, optionally inside corner brackets that roll it to the next word | a word that is computed, decoded or chosen: a status, a label, a step name |
+| [FaceCycle](#facecycle) | enter, emphasis | 30 f | each new word of a caption arrives in a pixel face, cuts to an italic serif, then lands in the sans; one word may flip back to the serif | a caption with a playful maker voice beside pictures or products |
+| [CornerLine](#cornerline) | enter, build | 40 f | a line built word by word inside four small corner marks that jump outward as it widens; the marks arrive as doubled dashes that collapse to squares | one framed statement: a tagline, a definition, the line the film is about |
+| [CutAway](#cutaway) | exit | 4 f | a held line loses whole words by cut from its end (re-centring) or from its start (the rest in place), a step every frame or two | a line taken apart so the next phrase can take its spot |
+| [GradientPass](#gradientpass) | enter, emphasis | 60 f | a colour gradient clipped to the glyphs passes along the line: letters appear at a soft front in warm colours, run to cool and settle to the ink behind a slower front | a closing line or a title that should feel lit as it is said |
+| [TypeHead](#typehead) | enter | 30 f | a line typed letter by letter whose newest letters (or the word being typed) are in an accent that cools to the ink, a coloured head running with the caret | a query, a name or a title being typed, outside or inside a product |
+| [CaretFollow](#caretfollow) | enter | 60 f | a prompt typed at a giant size after two caret blinks, centred while it fits; then the camera holds the caret in short smeared jumps so the start of the line leaves the frame | the one prompt or question a film is about, said big |
+| [InlineChip](#inlinechip) | emphasis | 30 f | a rounded picture opens inside a sentence from a sliver to its width, pushing the words apart; its picture swaps every few frames and it can grow | a sentence that names something worth seeing: the photos, the product, the people |
+| [EchoStack](#echostack) | emphasis, exit | 40 f | one word repeated into a stack of echoes, each nearer copy hiding the ones behind; labels pop around it; then the centre copy zooms by cuts until a letter fragment fills the frame | a word that means growth or quantity, said once and loud, leading into the next scene |
+| [TagSlap](#tagslap) | emphasis | 40 f | small tilted label tags slap across a big word one after another, each opening from its centre in three frames | attributes of one thing (what a studio makes, what a product does) laid on it |
+| [GatherLine](#gatherline) | enter | 30 f | the words or letters of a line sit scattered across the frame and drift, then gather into one set line on a single frame or by a short slide | a line that comes together: sorting, collecting, a scattered idea made one |
+| [LightStreak](#lightstreak) | enter, exit | 8 f | a caption born from a horizontal streak of light: streak lines, the word doubled and smeared sideways, then sharp; it dies back into the streak | a caption over footage or a dark scene that should feel broadcast or remembered |
+| [ClipExit](#clipexit) | exit, join | 8 f | an object slides across a held line and the letters are cut at its leading edge, so the line disappears behind it | a line that hands the frame to the product: its icon, a window, a card the story goes into |
+| [SplitWord](#splitword) | enter, emphasis | 12 f | a big word split around a picture: the halves slide out from behind it, inner letters tucked under its edges, while the picture smears and swaps | a word whose subject is a picture: places, people, work being shown |
+| [HingeWord](#hingeword) | enter, emphasis | 10 f | a word flips up from lying flat on its baseline, rising and darkening to ink; to swap, it heats along a colour path, tips back and the next one flips up | one word in a slot beside a picture or a device that changes two or three times |
+| [StepWhip](#stepwhip) | enter | 30 f | each word cuts on far right of its place and jumps left in halving steps on a 12 fps clock until it sits; the line never re-centres and its spacing breathes | a hand-made, stepped voice for a short line said in phrases |
+| [PartStack](#partstack) | emphasis | 24 f | two words of a held line part to open a slot and small pictures cut on into it one after another, overlapping in a loose cluster | a line about people, places or things that should be seen: the pictures arrive inside the sentence |
+| [SlideOff](#slideoff) | exit | 10 f | a held line slides off sideways, accelerating and smearing more as it goes, cut on the move; two lines can shear apart | an exit into a shot that starts moving the same way |
+| [EatSquares](#eatsquares) | exit, join | 18 f | a name is eaten from the left a glyph a frame while a row of solid squares grows in its place, each from a speck, until only the squares remain | a name that becomes a mark or a grid made of squares |
 
 <!-- /library:pieces -->
 
@@ -283,6 +303,278 @@ the right.
 The mask that closes is `RiseLine`'s `leaveAt`; the hard cut on the beat is `WeightLine`'s `leaveAt` (or the end of a
 Sequence).
 
+### CutAway
+A held line taken apart by cut: from `at` it loses whole words from its end, two a frame, the rest re-centring on every
+step, or from its start, one every two frames, the rest staying where it was. The next phrase then cuts on alone.
+```tsx
+<CutAway text="Your files sit in six different apps" at={T.out} />
+<CutAway text="Get data from anywhere" at={T.out} from="start" per={2} />
+```
+- Props: `text`, `at`, `per` (1), `step` (2 from the end, 1 from the start), `from` (`end`, `start`), `size`, `color`,
+  `x`, `y`, `font`, `weight`.
+- Numbers: a five-word line is gone in 3 frames from the end; from the start a word every 2-3 frames, nothing moves.
+- Caution: a hard cut is still the default exit; use this when the taking apart is the point.
+
+### SlideOff
+A held line leaves sideways at speed: it creeps, then accelerates (each frame's step 1.3 times the last) and smears more as it
+goes, and the cut comes while it moves. Two lines can shear apart, the first to the left and the second to the right.
+```tsx
+<SlideOff lines={['Plan less', 'ship more']} at={T.out} dur={14} dir="shear" size={150} />
+```
+- Props: `lines` (one or two), `at`, `dur` (14), `dir` (`left`, `right`, `shear`), `leaveAt` (default `at + dur`),
+  `size`, `color`, `x`, `y`, `font`, `weight` (600).
+- Numbers: 45 % of the width over 14 f; the smear 0.15 of the speed in px, up to 0.35 em on the last frames.
+- Caution: an exit at speed belongs where the next shot starts moving the same way; before a still shot it stumbles.
+
+### EatSquares
+A name eaten from the left, a glyph a frame, while a row of solid squares grows in its place, each from a speck to full
+size, until only the squares remain: the word becomes a mark or the start of a grid.
+```tsx
+<EatSquares text="Gridwork Studio" at={T.eat} size={96} color={ACCENT} />
+```
+- Props: `text`, `at`, `per` (1), `count` (4), `size`, `color`, `square`, `leaveAt`, `x`, `y`, `font`, `weight`.
+- Numbers: a square starts when the eaten front passes its place and grows 22, 50, 80, 100 % over 4 f; squares 0.62
+  em, 0.45 em apart, the row centred where the word was.
+- Caution: the squares must lead somewhere (a mark, a grid of results).
+
+### ClipExit
+An object slides across a held line and the letters are cut at its leading edge: the line goes behind the thing the
+film shows next. Sideways, the object and the line travel toward each other (the line slides into the icon while the
+icon moves over it); from below, a window rises over a heading and cuts it at its top edge.
+```tsx
+<ClipExit text="Your team in one view" at={T.out} w={150} h={150} node={<AppIcon size={150} ... />} />
+```
+- Props: `text`, `at`, `dur` (2 frames a word sideways, 6 from below), `from` (`left`, `right`, `below`), `node`, `w`,
+  `h`, `meet` (0.5), `rest` (from below: where the object stops), `objectAt`, `size`, `color`, `x`, `y`, `font`,
+  `weight`.
+- Numbers: linear sideways, as if pushed; the object starts a quarter em clear of the line's first letter (show it from
+  the start with `objectAt`); from below 6 f ease-in.
+- Caution: the object must be what the film shows next; a plain shape crossing the line reads as a wipe.
+
+## Voice lines and captions
+
+### InkLine
+The voice-over line: words join a centred line one at a time, each cut on in a tint that becomes the ink, while the
+line re-centres with most of the move on the frame the word lands. The tint is a grey (the default), an accent, a path
+of hues walked one a frame (`HUE_PATH`: sand, cyan, sky, blue, deep blue; any path may be passed, kept clear of
+violet and green), or `'heat'`: the word printed in warm light that sweeps in from the right. The
+new word lands with 40 % of its space, which opens (`space="open"`), or lands wide and closes (`"close"`).
+```tsx
+<InkLine text="Your plans live in one place" times={[T.a, T.b, T.c, T.d, T.e]} size={104} color={INK} />
+<InkLine text="What if your week planned itself" at={T.q} gap={7} tint={HUE_PATH} />
+<InkLine text="Notes that write themselves" at={T.n} tint="heat" space="close" />
+```
+- Props: `text`, `at`, `gap` (9) or `times`, `size` (110), `color`, `accents` (`{ index: colour }`), `tint`, `settle`
+  (4), `inkOn` (`age`, `next`), `enter` (`cut`, `smear`, `blur`, `rise`), `space`, `lead` (0.55), `tau` (2.6),
+  `anticipate` (0), `fit` (0: share of the width past which the line shrinks), `leaveAt`, `x`, `y`, `font`, `weight`
+  (500), `tracking`. `inkLineLayout` gives the words' places for anything that frames the line.
+- Numbers: 55 % of the re-centre on the arrival frame, then an exponential glide with a 2.6 f time constant (about
+  10 f); grey to ink in 4 f; the hue path 9 steps, one a frame; the heat sweep 6 f, sine in-out. For a line that slides
+  before the word comes, `anticipate={2} lead={0.39} tau={4.5}`; for a word that shoves in from the right, `enter="smear"`.
+- Caution: one word every 6-12 frames; faster than 4 frames the tint never shows. Pass `fit` when the line could outgrow
+  the frame.
+
+### CornerLine
+InkLine framed by four small corner marks that jump outward with the line as each word lands. On the first frames each
+mark is a doubled dash in a flash colour that drops to one bar, then settles to a small square (or an L bracket).
+```tsx
+<CornerLine text="Plans that keep themselves" at={T.tag} gap={9} size={92} flash={ACCENT} />
+```
+- Props: `text`, `at`, `gap` (8) or `times`, `size` (84), `color`, `tint` (a deep rose settling over 18 f), `settle`,
+  `mark` (`square`, `bracket`), `markColor`, `flash`, `lead` (0.65), `space` (`still`), `anticipate` (1), `leaveAt`,
+  `x`, `y`, `font`, `weight`.
+- Numbers: marks 0.35 em beside and 0.25 em above and below the ink; doubled dash 2 f (two 10 x 3 px bars in a row, 4 px
+  apart, at 1080 p),
+  one bar 2 f, then a 7 px square (at 1080 p); the gap opens one frame before the word and 65 % of the move lands on
+  its frame.
+- Caution: structure for one framed line at a time; never frame every line of a film.
+
+### FaceCycle
+A caption that tries on faces: each new word arrives in a pixel face in the accent, cuts to an italic serif in the
+accent, then lands in the sans and the ink. `flip` turns one word back to the italic serif later, the accent of the
+finished line.
+```tsx
+<FaceCycle text="Every draft finds its reader" at={T.cap} gap={4} size={72} accent={ACCENT} flip={{ index: 1, at: T.cap + 40 }} />
+```
+- Props: `text`, `at`, `gap` (4) or `times`, `size` (64), `color`, `accent`, `holds` (`[2, 4]` frames in the pixel face
+  and the serif), `align` (`center`, `left`), `flip` `{ index, at }`, `leaveAt`, `x`, `y`, `font`, `weight`.
+- Numbers: a word every 3-4 f; 2 f pixel (the sans in a heavier weight rasterised to cells of 0.085 em), 4 f italic serif, then the sans; all
+  by cut.
+- Caution: a caption device for small and middle sizes; the faces change by cut, never blend, and the serif appears
+  as a passing state (the line's voice stays the sans).
+
+### TypeHead
+Typed text with a coloured head: the line types at the kit's believable cadence and each new letter lands in the accent
+and cools to the ink a few frames later (`by="letter"`), or the word being typed stays in the accent until it is done
+(`by="word"`).
+```tsx
+<TypeHead text="Find the slides from Tuesday" at={T.q} size={84} accent={ACCENT} caret />
+```
+- Props: `text`, `at`, `cps` (25), `typed` (characters shown as already typed), `by`, `accent`, `hold`, `settle`,
+  `caret`, `align`, `size`, `color`, `leaveAt`, `x`, `y`, `font`, `weight`, `seed`.
+- Numbers: a letter about every 1.2 f; its first frame 40 % of the accent, then the accent for 4 f, cooled over 3 f; by
+  word: cools 6 f after the word ends, over 4 f.
+- Caution: never a burst; when time is short show a prefix as already typed (`typed`).
+
+### CaretFollow
+The prompt said big: the caret blinks twice at the centre, then the line types at a giant size, centred and growing from
+the middle; once it is as wide as the frame the camera holds the caret instead, jumping with it in short smeared moves,
+so the start of the line leaves the frame.
+```tsx
+<CaretFollow text="Plan a dinner for twelve on Friday" at={T.prompt} accentFrom={5} accent={ACCENT} />
+```
+- Props: `text`, `at`, `cps` (11), `blinks` (2), `fill` (0.95), `edge` (0.6), `follow` (0.6), `accentFrom`, `accent`,
+  `size` (52 % of the height), `color`, `caretColor`, `leaveAt`, `y`, `font`, `weight` (350), `seed`.
+- Numbers: blinks on 10 f, off 6 f; the caret half the frame's height (cap height 38 %); a letter every 2-4 f; centred
+  until 95 % of the width, then the caret held at 60 %, the camera closing 60 % of its gap a frame (about 0.15 of the
+  width over 2 f) with a smear of 6 % of its speed in px.
+- Caution: one per film; keep the prompt under about 40 characters.
+
+### LightStreak
+A caption born from a horizontal streak of light: thin streak lines the width of the word, the word inside them, the
+word doubled and smeared sideways, then sharp; it dies back the same way (a ghost to the left, a smeared band, the
+streak, gone). Stepped like a tube settling.
+```tsx
+<LightStreak text="Everyone has a story" at={T.cap} leaveAt={T.capOut} size={76} />
+```
+- Props: `text`, `at`, `leaveAt`, `size` (64), `color`, `glow`, `x`, `y`, `font`, `weight`.
+- Numbers: in 7 f (a dim streak 3 f, a bright one 1 f, the word smeared and doubled 3 f), out 8 f in reverse after a
+  2 f ghost; the streak is three lines 0.025 em thick, 0.06 em apart, smeared 0.3 em and fading to both ends; the
+  word's smear 0.18 em.
+- Caution: on dark grounds and footage; on paper the streak reads as a smudge.
+
+### StepWhip
+A stepped, hand-made entrance: each word cuts on far to the right of its place and jumps left in halving steps on a
+12 fps clock until it sits; the words keep fixed places (the line never re-centres) and the spacing breathes a little
+while it holds.
+```tsx
+<StepWhip text="Your inbox is a little full" times={[T.a, T.a + 2, T.a + 4, T.b, T.b + 2, T.b + 4]} still={T.b + 30} />
+```
+- Props: `text`, `at`, `gap` (2) or `times`, `breathe`, `still`, `size` (80), `color`, `leaveAt`, `x`, `y`, `font`,
+  `weight`, `seed`.
+- Numbers: offsets 5.3, 2, 1, 0.5, 0.25, 0.12, 0 em, held 2 or 3 f each, a 0.08 em sideways smear on the second step
+  only; the gaps move by up to 0.08 em every 2 f while holding.
+- Caution: one line of short words; never on a calm brand.
+
+## Words with a treatment
+
+### ScrambleType
+A decode: wrong glyphs change every few frames and lock into the real letters one by one, one or two of the wrong ones
+in the accent, a soft glow behind while it scrambles. With `brackets` two corner brackets frame it and resize to the
+word; `swaps` roll it to the next word inside them (the old word up and out, the new one up from below, both with a
+vertical blur); `closeAt` shrinks the brackets' legs and dims the word.
+```tsx
+<ScrambleType text="Draft" at={T.step} brackets swaps={[{ at: T.s2, text: 'Review', size: 132 }]} closeAt={T.end} />
+<ScrambleType text="Routing" at={T.label} step={1} per={1} lockAfter={2} order="left" glow={false} size={40} />
+```
+- Props: `text`, `at`, `step` (3), `lockAfter` (8), `per` (3), `order` (`random`, `left`), `grow` (build the string
+  from the left, a glyph every n frames), `size` (90), `color`, `accent`, `glow`, `brackets`, `bracketColor`, `swaps`
+  (up to three, `{ at, text, size }`), `closeAt`, `leaveAt`, `x`, `y`, `font`, `weight`, `seed`. `scrambleAt` gives the
+  string at a frame.
+- Numbers: glyphs every 3 f; the first two letters lock after 8 f, then one every 3 f; the roll 7 f, 70 % in the first
+  3 f; brackets' legs 0.5 em, padding 0.42 em round the cap band; the close 6 f to 25 %.
+- Caution: short words and labels (up to about 12 letters); a long line of noise reads as a fault.
+
+### GradientPass
+A colour gradient clipped to the glyphs passes along a line: letters appear at a soft leading edge in the first colour,
+run through the colours, and a second, slower front turns them to the ink. With `from` the line is already there and
+the fronts recolour it (a coloured title swept to white).
+```tsx
+<GradientPass text="Keep every idea without losing the thread" at={T.close} size={78} />
+```
+- Props: `text`, `at`, `speed` (1.4 letters a frame), `inkAfter` (18; -1 keeps the colours), `inkSpeed` (0.8), `stops`
+  (`PASS_STOPS`: peach, pink, sky, blue), `soft` (3 letters), `slide` (0.4 em), `from`, `size` (96), `color`,
+  `leaveAt`, `x`, `y`, `font`, `weight`.
+- Numbers: a 40-letter line is revealed in about 28 f and inked by about 70 f; the ink front eases out at the end.
+- Caution: one per film, on a closing line or a title; it needs a calm ground to read.
+
+### TagSlap
+Small tilted label tags slap across a big word one after another, each opening from its centre in three frames with its
+text cropped by the opening edges.
+```tsx
+<TagSlap tags={[{ text: 'Launch films', at: T.a, x: 0.34, y: 0.44 }, { text: 'Product demos', at: T.b, x: 0.6, y: 0.58, rot: 2 }]} />
+```
+- Props: `tags` (`[{ text, at, x, y, rot }]`, places as shares of the frame), `color`, `ink`, `size` (0.075 of the
+  height), `arrow`, `leaveAt`, `font`, `weight`.
+- Numbers: 40 %, 75 %, 100 % of the width on the first three frames, no ease; tilted -3 to 3 degrees; a tag every 15-20 f.
+- Caution: two or three tags, each a real attribute of what it sits on; sentence case, never uppercase mono.
+
+### EchoStack
+One word repeated into a stack of echoes: rows above and below and copies behind it to the left and right, each nearer
+copy hiding the ones behind it, so only their ends show; small labels pop around it; then the centre copy zooms by cuts
+inside its own box until a fragment of one letter fills the frame (the way into the next scene).
+```tsx
+<EchoStack text="Growing" at={T.grow} labels={['team of four', 'first hundred users']} zoomAt={T.grow + 33} ground={DARK} />
+```
+- Props: `text`, `at`, `labels`, `labelsAt`, `zoomAt`, `size` (150), `color`, `ground` (must be the real ground),
+  `leaveAt`, `x`, `y`, `font`, `weight` (600).
+- Numbers: rows at 0.7 em; side copies show 27 %, 20 % and 10 % of the word, sliding out over 3 f; layers at 0, +4, +6
+  f; labels in pairs every 3 f; the zoom 1.7x, then 2.7x 3 f later, then a 14x fragment from 5 f.
+- Caution: one short word in a heavy sans on a flat ground.
+
+## Words and pictures
+
+### InlineChip
+A rounded picture opens inside a sentence between two words, from a sliver to its width, pushing the words apart while
+the line stays centred; its picture changes every few frames and it can grow later, the picture taking over.
+```tsx
+<InlineChip text="We map the coast from above every morning" after={3} at={T.chip} pictures={['img/a.jpg', 'img/b.jpg']} every={12} />
+```
+- Props: `text`, `after` (the word before the chip), `at`, `open` (4), `w` (1.4 em), `h` (0.8 em), `pictures` (files
+  under `public/` or nodes), `every` (11) or `times`, `grow` `{ at, dur, w, h }`, `words` (a frame per word), `size`,
+  `color`, `chip`, `leaveAt`, `x`, `y`, `font`, `weight`.
+- Numbers: opens in 4 f ease-out from 0.08 em; radius 22 % of its height; swaps by cut.
+- Caution: the chip shows what the sentence names, never a decoration; one chip a line.
+
+### PartStack
+Two words of a held line part to open a slot and small pictures cut on into it one after another, overlapping in a
+loose cluster: the people, places or things the line is about arrive inside the sentence.
+```tsx
+<PartStack text="Every coast matters" after={0} at={T.part} pictures={['img/a.jpg', 'img/b.jpg', 'img/c.jpg']} />
+```
+- Props: `text`, `after` (the word before the slot), `at`, `pictures` (files under `public/` or nodes), `every` (2.5),
+  `gap` (2.2 em), `size` (90), `color`, `edge`, `leaveAt`, `x`, `y`, `font` (the serif), `weight`, `seed`.
+- Numbers: the words part 2.2 em in 9 f (expo out), the left word taking 45 % of it; the first picture 2 f in, then one
+  every 2-3 f; tiles 0.78 x 0.92 em with a light edge; once full the slot narrows 0.2 em over 10 f.
+- Caution: four to seven real pictures of the subject; never icons or grey blanks.
+
+### SplitWord
+A big word split in two around a picture: the halves cut on either side of it, the left first, their inner letters
+tucked under its edges, while the picture smears vertically and swaps to the next one (`slide`: the halves slide out
+from behind it instead).
+```tsx
+<SplitWord text="Mapping" split={3} at={T.word} pictures={['img/a.jpg', 'img/b.jpg']} swaps={[T.word + 30]} size={210} />
+```
+- Props: `text`, `split` (letters in the left half), `at`, `stagger` (5), `slide`, `pictures`, `swaps`, `w` (1.3 em), `h` (1 em),
+  `size` (190), `color`, `leaveAt`, `x`, `y`, `font`, `weight` (600).
+- Numbers: the right half 5 f after the left, each tucked 0.12 em under the picture; the picture smears 5 f before a
+  swap and 1 f after.
+- Caution: one word of 6-10 letters, split where both halves read; the picture is the word's subject.
+
+### HingeWord
+A word in a slot that arrives hinged on its baseline, flipping up from lying flat while it rises a little and darkens
+from grey to ink; to swap, it heats along a colour path, tips back and rises out while the next word flips up.
+```tsx
+<HingeWord words={['Coastlines', 'Harbours', 'Islands']} times={[T.a, T.b, T.c]} x={940} size={84} />
+```
+- Props: `words`, `times`, `heat` (paths used in turn: `HEAT_GOLD`, `HEAT_ROSE`), `size` (72), `color`, `grey`, `align`
+  (`left`), `leaveAt`, `x`, `y`, `font`, `weight`.
+- Numbers: 70 to 0 degrees over 7 f (expo out), rising 0.35 em; the heat 9 f, a step every 2 f; out over 3 f to -60
+  degrees.
+- Caution: one word in a slot, not a whole line.
+
+### GatherLine
+The words (or letters) of a line sit scattered across the frame and drift slowly, then gather into one set line: on a
+single frame, or by a short ease-in slide.
+```tsx
+<GatherLine text="Every note finds its place" at={T.a} gatherAt={T.a + 26} size={84} />
+```
+- Props: `text`, `at`, `gatherAt`, `by` (`word`, `letter`), `mode` (`snap`, `slide`), `dur` (4), `spread` (`[0.5,
+  0.32]`), `drift` (4 px a frame at 1080 p), `colors` (scattered pieces shuffle colours every 3 f), `size`, `color`,
+  `leaveAt`, `x`, `y`, `font`, `weight`, `seed`.
+- Numbers: drift 3-5 px a frame for 15-25 f; the snap is one frame; the slide 4 f ease-in.
+- Caution: the scattered pieces are already the line's size and face, or the snap reads as a jump.
+
 ## In the reel
 
 Every piece's frames in the reel (`--film library-type`), and the one command that shows just that piece: its frames in
@@ -309,5 +601,25 @@ one still (run it in a film project; `render --film library-type --range a-b` fo
 | DropWord | `library-type` | 1039-1134 | `node scripts/frames.mjs library --strip DropWord` |
 | ArcToss | `library-type` | 1135-1204 | `node scripts/frames.mjs library --strip ArcToss` |
 | PushApart | `library-type` | 1205-1280 | `node scripts/frames.mjs library --strip PushApart` |
+| InkLine | `library-type` | 1281-1520 | `node scripts/frames.mjs library --strip InkLine` |
+| ScrambleType | `library-type` | 1521-1604 | `node scripts/frames.mjs library --strip ScrambleType` |
+| FaceCycle | `library-type` | 1605-1668 | `node scripts/frames.mjs library --strip FaceCycle` |
+| CornerLine | `library-type` | 1669-1738 | `node scripts/frames.mjs library --strip CornerLine` |
+| CutAway | `library-type` | 1739-1778 | `node scripts/frames.mjs library --strip CutAway` |
+| GradientPass | `library-type` | 1779-1862 | `node scripts/frames.mjs library --strip GradientPass` |
+| TypeHead | `library-type` | 1863-1918 | `node scripts/frames.mjs library --strip TypeHead` |
+| CaretFollow | `library-type` | 1919-2008 | `node scripts/frames.mjs library --strip CaretFollow` |
+| InlineChip | `library-type` | 2009-2092 | `node scripts/frames.mjs library --strip InlineChip` |
+| EchoStack | `library-type` | 2093-2135 | `node scripts/frames.mjs library --strip EchoStack` |
+| TagSlap | `library-type` | 2136-2199 | `node scripts/frames.mjs library --strip TagSlap` |
+| GatherLine | `library-type` | 2200-2255 | `node scripts/frames.mjs library --strip GatherLine` |
+| LightStreak | `library-type` | 2256-2315 | `node scripts/frames.mjs library --strip LightStreak` |
+| ClipExit | `library-type` | 2316-2365 | `node scripts/frames.mjs library --strip ClipExit` |
+| SplitWord | `library-type` | 2366-2425 | `node scripts/frames.mjs library --strip SplitWord` |
+| HingeWord | `library-type` | 2426-2501 | `node scripts/frames.mjs library --strip HingeWord` |
+| StepWhip | `library-type` | 2502-2561 | `node scripts/frames.mjs library --strip StepWhip` |
+| PartStack | `library-type` | 2562-2611 | `node scripts/frames.mjs library --strip PartStack` |
+| SlideOff | `library-type` | 2612-2643 | `node scripts/frames.mjs library --strip SlideOff` |
+| EatSquares | `library-type` | 2644-2687 | `node scripts/frames.mjs library --strip EatSquares` |
 
 <!-- /library:reel -->

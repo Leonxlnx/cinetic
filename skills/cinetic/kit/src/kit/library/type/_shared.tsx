@@ -1,5 +1,6 @@
 // Shared by the type pieces: absolute centring, a damped spring, word spans of a measured line, seeded typing
-// times, and a word rasterised into a grid of cells (dot-matrix, tile and pixel letters) with a seeded hash.
+// times, a word rasterised into a grid of cells (dot-matrix, tile and pixel letters) with a seeded hash, and a word
+// drawn in a hard pixel face (PixelText).
 import React from 'react';
 import { continueRender, delayRender } from 'remotion';
 import { ease, at as prog } from '../../motion';
@@ -187,3 +188,46 @@ export const typeTimes = (text: string, start: number, per: number, seed: number
   });
   return out;
 };
+
+/** A word drawn in a pixel face: the sans set small on a canvas, hard-thresholded and scaled up with square pixels. */
+export const PixelText: React.FC<{ text: string; size: number; font: string; weight: number; color: string; cell: number; baseline: number; height: number }> = ({ text, size, font, weight, color, cell, baseline, height }) => {
+  const ref = React.useRef<HTMLCanvasElement>(null);
+  const [handle] = React.useState(() => delayRender(`pixel ${text}`));
+  const s = size / cell;
+  const w = Math.ceil((text.length * size * 0.75) / cell) + 2;
+  const h = Math.ceil(height / cell) + 1;
+  React.useLayoutEffect(() => {
+    let alive = true;
+    const spec = `${weight} ${s}px ${font}`;
+    Promise.resolve()
+      .then(() => document.fonts.load(spec, text))
+      .catch(() => null)
+      .then(() => {
+        const c = ref.current;
+        if (!alive || !c) return;
+        const ctx = c.getContext('2d', { willReadFrequently: true })!;
+        ctx.clearRect(0, 0, c.width, c.height);
+        ctx.font = spec;
+        ctx.fillStyle = color;
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText(text, 0, baseline / cell);
+        const img = ctx.getImageData(0, 0, c.width, c.height);
+        for (let i = 3; i < img.data.length; i += 4) img.data[i] = img.data[i] > 100 ? 255 : 0;
+        ctx.putImageData(img, 0, 0);
+        continueRender(handle);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [text, s, font, weight, color, baseline, cell, handle]);
+  return <canvas ref={ref} width={w} height={h} style={{ position: 'absolute', left: 0, top: 0, width: w * cell, height: h * cell, imageRendering: 'pixelated' }} />;
+};
+
+/** A sideways smear (px) whose filter region reaches past the element, so the smear is never cut at the text's box. */
+export const WideSmear: React.FC<{ id: string; x: number }> = ({ id, x }) => (
+  <svg width="0" height="0" style={{ position: 'absolute' }}>
+    <filter id={id} x="-25%" y="-10%" width="150%" height="120%" colorInterpolationFilters="sRGB">
+      <feGaussianBlur stdDeviation={`${Math.max(0, x)} 0`} />
+    </filter>
+  </svg>
+);
