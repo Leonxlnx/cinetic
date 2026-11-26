@@ -1,9 +1,10 @@
 // The reel of the motion library's product UI pieces: each piece in catalogue order (src/kit/library/catalog/), at its
 // catalogue frames, with its name in the corner. A new UI piece: one segment appended to SEGMENTS.
 import React from 'react';
-import { AbsoluteFill } from 'remotion';
-import { Ground, fonts } from '../../kit';
+import { AbsoluteFill, staticFile } from 'remotion';
+import { Brand, Ground, fonts } from '../../kit';
 import { Icon } from '../../kit/icons';
+import { mixColor } from '../../kit/type';
 import {
   lookLight,
   lookDark,
@@ -28,12 +29,35 @@ import {
   SettingsCard,
   PhoneDrop,
   SelectFrame,
+  HubPill,
+  GhostFill,
+  FeedRush,
+  StatCount,
+  HandleGather,
+  DotCaret,
+  ChipRoll,
+  LinkPanel,
+  BentoFly,
+  SendLaunch,
+  FileDrop,
+  Cursor3D,
+  BackdropSwap,
+  FloodAway,
+  StickyType,
+  RowCool,
+  SkeletonSweep,
+  AppPane,
+  pressOf,
+  useUiFrame,
+  type FeedRow,
+  type GhostItem,
   type Look,
   type NoticeData,
   type MailData,
   type PersonRow,
 } from '../../kit/library/ui';
 import { Reel, reelDuration, type DemoProps, type Segment } from './reel';
+import { IMG, Photo } from './scenes';
 
 const BLUE: [string, string] = ['#5B86FF', '#2350E6'];
 const ORANGE: [string, string] = ['#FF9A5C', '#EC5A2A'];
@@ -433,6 +457,406 @@ const S15: React.FC<DemoProps> = ({ n, name }) => {
   );
 };
 
+
+// words append into a hub pill; each word brings a tool tile with its connector dot; the tiles fly out past the camera
+const S16: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookLight('#1D1F24', '#F6F4EF');
+  const t = (brand: string, dot: string, dx: number, dy: number, word: number) => ({ mark: <Brand name={brand} size={62} />, dot, dx, dy, word });
+  return (
+    <Shot L={L} n={n} name={name}>
+      <HubPill
+        L={L}
+        at={6}
+        words={['Works', 'inside', 'your', 'stack']}
+        every={[12, 14, 9]}
+        flyAt={62}
+        tiles={[t('figma', '#F2B33D', -0.31, -0.21, 0), t('notion', '#E0566B', 0.03, -0.33, 1), t('slack', '#3F7FE0', -0.21, 0.29, 2), t('github', '#4CAF7A', 0.2, 0.29, 3), t('google-drive', '#E0566B', 0.36, -0.12, 3)]}
+      />
+    </Shot>
+  );
+};
+
+// ghost slots round the mark take their colours one tile at a time, faster and faster
+const GF_COLORS: Array<[string, string]> = [['#FF9A5C', '#EC5A2A'], ['#6FD0FF', '#1F90E2'], ['#FF8FB1', '#E2457A'], ['#FFCB5C', '#F29A1E'], ['#5B86FF', '#2350E6'], ['#9AA3B5', '#5B6478'], ['#FF7A6B', '#D93A30'], ['#63D3C8', '#169C93']];
+const GF_ICONS = ['Clapperboard', 'Layers', 'Music', 'Type', 'Wand', 'Scissors', 'Film', 'Shapes', 'Palette', 'AudioLines', 'Crop', 'Sparkles', 'Captions', 'Image', 'Pen', 'Aperture'];
+const GF_SLOTS: Array<[number, number]> = [[0, -2], [-2, -1], [2, -1], [-1, -1], [1, -1], [-3, 0], [-1, 0], [1, 0], [3, 0], [-2, 1], [2, 1], [-1, 2], [1, 2], [0, -3], [-3, -2], [3, 2]];
+const ghostItems: GhostItem[] = GF_SLOTS.map(([c, r], i) => ({ c, r, icon: GF_ICONS[i], colors: GF_COLORS[i % GF_COLORS.length] }));
+
+const S17: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookLight('#2B5BFF', '#F7F5F0');
+  return (
+    <Shot L={L} n={n} name={name}>
+      <GhostFill
+        L={L}
+        at={8}
+        items={ghostItems}
+        cols={5}
+        rows={3}
+        center={<div style={{ width: 92, height: 92, borderRadius: 26, background: '#141519', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="Hexagon" size={48} color="#FFFFFF" stroke={2.4} /></div>}
+        labels={[{ item: 0, text: 'Beat sync', f: 52 }, { item: 9, text: 'Auto captions', f: 58 }, { item: 11, text: 'Colour match', f: 64 }]}
+        tile={92}
+      />
+    </Shot>
+  );
+};
+
+// a comment feed fills, rushes into a smear while the counter races, lands on one highlighted row
+const feed: FeedRow[] = [
+  ['Nora Field', '#3D6BFF', '2 hours ago', 'Finally a routine I can do in a small flat'],
+  ['Tomas Reyes', '#E8892A', '3 hours ago', 'How long before I should add weight?'],
+  ['Mila Novak', '#D9534A', '5 hours ago', 'Day 12 and my back feels so much better'],
+  ['Arjun Mehta', '#2C9BE8', '6 hours ago', 'Could you make a version for mornings?'],
+  ['Ellie Brandt', '#4D5666', '8 hours ago', 'The breathing cue at 4:10 changed everything'],
+  ['Sven Olsen', '#C8692E', '9 hours ago', 'Shared this with my whole running club'],
+  ['Hana Sato', '#3D6BFF', '11 hours ago', 'Any tips for tight hips after sitting all day?'],
+  ['Luca Bianchi', '#E8892A', '12 hours ago', 'Three weeks in, zero missed sessions'],
+  ['Ines Duarte', '#2C9BE8', '1 day ago', 'Please do one on mobility for desk workers'],
+  ['Owen Price', '#D9534A', '1 day ago', 'Been doing this for a month. When do I go heavier?'],
+  ['Zoe Laurent', '#4D5666', '1 day ago', 'My physio approved, which says a lot'],
+  ['Kofi Mensah', '#C8692E', '2 days ago', 'The pacing is perfect for beginners'],
+  ['Rita Gomes', '#3D6BFF', '2 days ago', 'Is there a printable plan somewhere?'],
+].map(([name, color, time, text]) => ({ name, color, time, text }));
+
+const S18: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookLight('#2B5BFF', '#E9EBEF');
+  return (
+    <Shot L={L} n={n} name={name}>
+      <FeedRush L={L} rows={feed} target={9} at={8} intro={3} every={8} dur={54} pass={24} total={3412} size={34} w={1240} />
+    </Shot>
+  );
+};
+
+// stat cards over a picture appear blank and count up, each at its own rate
+const S19: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookLight('#1F8A8A', '#E9EBEF');
+  return (
+    <AbsoluteFill>
+      <Photo src={IMG.tide} zoom={1.08} drift={0.0004} dim={0.12} />
+      <StatCount
+        L={L}
+        at={6}
+        cards={[
+          { label: 'Onboarding cost', sub: 'Last month', from: 10, to: 1240, rate: 27, prefix: '$', pill: { label: 'Paid', color: '#1F8A8A' }, f: 0, cx: 0.3, cy: 0.64, w: 0.27 },
+          { label: 'Hours trained', sub: 'This week', from: 0, to: 420, rate: 10, pill: { label: 'Logged' }, f: 11, cx: 0.2, cy: 0.25, w: 0.16 },
+          { label: 'Shifts covered', sub: 'Today', from: 0, to: 64, rate: 2, pill: { label: 'Live', color: '#E8742E' }, f: 18, cx: 0.82, cy: 0.4, w: 0.16 },
+        ]}
+      />
+      <Label n={n} name={name} dark />
+    </AbsoluteFill>
+  );
+};
+
+
+// scattered squares hop in and lock as the handles of a selection round a word typed in fresh ink
+const S20: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookLight('#2B5BFF', '#FFFFFF');
+  return (
+    <Shot L={L} n={n} name={name}>
+      <HandleGather L={L} text="Your release notes" at={8} size={56} />
+    </Shot>
+  );
+};
+
+// a dot drops into the address field and becomes the caret; the field widens, the view pushes in, a query types
+const S21: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookLight('#2B5BFF', '#F0F0F0');
+  return (
+    <Shot L={L} n={n} name={name}>
+      <DotCaret L={L} at={6} dropAt={10} text="brand assets from the spring shoot" typeAt={30} />
+    </Shot>
+  );
+};
+
+// an app chip inside the line rolls like a slot reel to the next tool
+const S22: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookLight('#2B5BFF', '#F0F0F0');
+  return (
+    <Shot L={L} n={n} name={name}>
+      <ChipRoll
+        L={L}
+        at={8}
+        before="find every"
+        after="file you made"
+        chips={[
+          { name: 'Figma', mark: <Brand name="figma" size={40} /> },
+          { name: 'Notion', mark: <Brand name="notion" size={40} /> },
+          { name: 'Docs', mark: <Brand name="google-docs" size={40} /> },
+        ]}
+        steps={[22, 34]}
+        stepDur={[6, 4]}
+        size={64}
+      />
+    </Shot>
+  );
+};
+
+
+// connectors draw from the sources into a panel, pulses run along them, rows land lit and settle, totals count
+const S23: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookDark('#3D8BFF', '#08090C');
+  const thumb = (src: string) => <img src={staticFile(`img/${src}`)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />;
+  return (
+    <Shot L={{ ...L, surface: '#16181D' }} n={n} name={name}>
+      <LinkPanel
+        L={{ ...L, surface: '#16181D' }}
+        at={6}
+        size={30}
+        panelX={0.65}
+        panelW={0.52}
+        sources={[
+          { title: 'Ten-minute core', thumb: thumb(IMG.waves), chip: '1,204 clicks', row: { label: 'Ten-minute core', meta: '64 sales', value: '$1,402' } },
+          { title: 'Desk stretch', thumb: thumb(IMG.tide), chip: '486 clicks', row: { label: 'Desk stretch', meta: '21 sales', value: '$512' } },
+          { title: 'Morning mobility', thumb: thumb(IMG.shore), chip: '304 clicks', row: { label: 'Morning mobility', meta: '17 sales', value: '$398' } },
+          { title: 'Run warm-up', thumb: thumb(IMG.cloud), chip: '567 clicks', row: { label: 'Run warm-up', meta: '28 sales', value: '$1,018' } },
+        ]}
+        totals={[
+          { label: 'Revenue', from: 3330, step: 37, steps: 9, prefix: '$' },
+          { label: 'Sales', from: 121, step: 1, steps: 9 },
+          { label: 'Conversion', from: 4.82, step: 0.03, steps: 9, suffix: ' %', decimals: 2 },
+        ]}
+      />
+    </Shot>
+  );
+};
+
+// tiles fly in from every side and brake into a bento grid
+const S24: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookLight('#1E3A5F', '#F4F1EA');
+  const im = (k: keyof typeof IMG) => `img/${IMG[k]}`;
+  return (
+    <Shot L={L} n={n} name={name}>
+      <BentoFly
+        L={L}
+        at={4}
+        cols={4}
+        rows={3}
+        tiles={[
+          { c: 0, r: 0, cw: 2, kind: 'photo', src: im('tide'), from: 'left' },
+          { c: 2, r: 0, kind: 'disc', color: '#1E3A5F', icon: 'Briefcase', from: 'top', delay: 1 },
+          { c: 3, r: 0, kind: 'photo', src: im('farms'), from: 'right', delay: 2 },
+          { c: 0, r: 1, rh: 2, kind: 'photo', src: im('waves'), from: 'left', delay: 1 },
+          { c: 1, r: 1, kind: 'solid', color: '#1E3A5F', from: 'bottom', delay: 0 },
+          { c: 2, r: 1, cw: 2, kind: 'photo', src: im('cloud'), from: 'right', delay: 3 },
+          { c: 1, r: 2, kind: 'pill', color: '#E8742E', node: <span style={{ fontFamily: fonts.inter, fontSize: 40, fontWeight: 600, color: '#FFFFFF', letterSpacing: '-0.01em' }}>Open roles</span>, from: 'bottom', delay: 4 },
+          { c: 2, r: 2, kind: 'photo', src: im('shore'), from: 'bottom', delay: 5 },
+          { c: 3, r: 2, kind: 'disc', src: im('delta'), from: 'right', delay: 7 },
+        ]}
+      />
+    </Shot>
+  );
+};
+
+
+// send: the button lifts away, the composer falls, a spark on the dark leads the app window in
+const S25: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookDark('#E8E8EA', '#0F0F10');
+  const Lw = { ...L, surface: '#18181A' };
+  const code = [
+    ['1', 'import', ' { Booking } ', 'from', " './booking'"],
+    ['2', 'export', ' function ', 'Wall', '() {'],
+    ['3', '  const', ' slots = ', 'useSlots', "('bouldering')"],
+    ['4', '  return', ' <Calendar ', 'slots', '={slots} />'],
+    ['5', '}', '', '', ''],
+  ];
+  const win = (
+    <AppPane L={Lw} w={1300} h={800} title="Climb app" icon="Mountain" size={30}>
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 440, borderRight: `1px solid ${Lw.line}`, padding: 28, boxSizing: 'border-box', fontFamily: Lw.font }}>
+        <div style={{ marginLeft: 40, padding: '16px 20px', borderRadius: 18, background: '#26272B', color: Lw.ink, fontSize: 30, lineHeight: 1.35 }}>Build a booking app for a climbing gym, with day passes</div>
+        <div style={{ marginTop: 26, display: 'inline-flex', alignItems: 'center', gap: 10, padding: '8px 16px', borderRadius: 30, border: `1px solid ${Lw.line}`, color: Lw.muted, fontSize: 26 }}>Building the app…</div>
+      </div>
+      <div style={{ position: 'absolute', left: 440, right: 0, top: 0, bottom: 0, padding: '28px 30px', fontFamily: fonts.mono, fontSize: 28, lineHeight: 1.7 }}>
+        {code.map((c) => (
+          <div key={c[0]} style={{ whiteSpace: 'pre' }}>
+            <span style={{ color: '#5C5F66', marginRight: 22 }}>{c[0]}</span>
+            <span style={{ color: '#E08A6B' }}>{c[1]}</span>
+            <span style={{ color: '#D8D9DC' }}>{c[2]}</span>
+            <span style={{ color: '#7FB4FF' }}>{c[3]}</span>
+            <span style={{ color: '#E9C46A' }}>{c[4]}</span>
+          </div>
+        ))}
+      </div>
+    </AppPane>
+  );
+  return (
+    <AbsoluteFill>
+      <SendLaunch L={{ ...L, surface: '#1C1C1E' }} at={24} size={36} prompt="Build a booking app for a climbing gym, with day passes" window={win} winW={1300} winH={800} />
+      <Label n={n} name={name} dark />
+    </AbsoluteFill>
+  );
+};
+
+// the pointer carries a file in on an arc, the file swinging from its tip, and drops it into the composer
+const S26: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookLight('#C4623E', '#F3F1EC');
+  return (
+    <Shot L={L} n={n} name={name}>
+      <FileDrop L={L} at={6} size={36} file={{ name: 'Lease agreement.pdf', size: '2.4 MB · 18 pages' }} greeting="What should we look at?" />
+    </Shot>
+  );
+};
+
+// an extruded cursor glides onto a button and presses; the button flips to its requested state
+const S27: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookLight('#2F4BD8', '#E6EAF5');
+  const f = useUiFrame();
+  const click = 34;
+  const p = pressOf(f, [click]);
+  const done = f >= click + 1;
+  const bx = 1166;
+  const by = 720;
+  return (
+    <Shot L={L} n={n} name={name}>
+      <div style={{ ...surfaceStyle(L, 4, 34), position: 'absolute', left: 560, top: 250, width: 800, height: 560, padding: 44, fontFamily: L.font }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+          <Face name="Lena Ortiz" color="#C8692E" size={64} />
+          <div>
+            <div style={{ fontSize: 30, fontWeight: 620, color: L.ink }}>Lena Ortiz</div>
+            <div style={{ fontSize: 27, color: L.muted }}>Research lead · Coastal lab</div>
+          </div>
+        </div>
+        <div style={{ marginTop: 32, fontSize: 40, fontWeight: 640, letterSpacing: '-0.02em', color: L.ink, lineHeight: 1.15 }}>Tide data for the northern estuary</div>
+        <div style={{ marginTop: 18, fontSize: 28, color: L.muted, lineHeight: 1.4 }}>Hourly readings from eleven stations since 2019, cleaned and labelled. Access on request.</div>
+        <div style={{ marginTop: 26, display: 'flex', gap: 12 }}>
+          <Pill L={L} label="Oceanography" color="#2C9BE8" size={22} />
+          <Pill L={L} label="Open data" size={22} />
+        </div>
+      </div>
+      <div style={{ position: 'absolute', left: bx - 150, top: by - 6, width: 300, height: 76, borderRadius: 20, background: done ? mixColor(L.surface, L.accent, 0.12) : L.accent, color: done ? L.accent : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: L.font, fontSize: 28, fontWeight: 600, transform: `scale(${1 - p * 0.04})`, boxShadow: done ? 'none' : '0 6px 16px rgba(47,75,216,0.3)' }}>
+        {done ? 'Requested' : 'Request access'}
+      </div>
+      <Cursor3D keys={[{ f: 10, x: bx + 260, y: by + 380 }, { f: 30, x: bx + 40, y: by + 40 }, { f: 70, x: bx + 70, y: by + 60 }]} clicks={[click]} ground="#33407A" color="#9FB0F7" size={84} />
+    </Shot>
+  );
+};
+
+// the phone holds still while the pictures behind it cut every five frames
+const S28: React.FC<DemoProps> = ({ n, name }) => {
+  const im = (k: keyof typeof IMG) => `img/${IMG[k]}`;
+  return (
+    <AbsoluteFill>
+      <BackdropSwap
+        at={4}
+        every={5}
+        end
+        ground="#E7E8EA"
+        backdrops={[{ src: im('waves') }, { src: im('tide') }, { color: '#1E4E8C' }, { src: im('shore') }, { src: im('cloud') }, { color: '#0F2F57' }, { src: im('farms') }]}
+      >
+        <div style={{ position: 'absolute', inset: 0, background: '#F5F6F8', fontFamily: fonts.inter, padding: '70px 22px 0' }}>
+          <div style={{ fontSize: 34, fontWeight: 650, color: '#111318' }}>Cards</div>
+          <div style={{ marginTop: 16, height: 168, borderRadius: 18, background: 'linear-gradient(140deg, #2D6BD8, #133E8F)', boxShadow: '0 8px 20px rgba(19,62,143,0.35)', padding: 18, boxSizing: 'border-box', color: '#FFFFFF' }}>
+            <div style={{ fontSize: 22, fontWeight: 600, opacity: 0.9 }}>Travel</div>
+            <div style={{ marginTop: 64, fontSize: 24, letterSpacing: '0.08em', fontVariantNumeric: 'tabular-nums' }}>•••• 4821</div>
+          </div>
+          {[['Contactless', 'On'], ['Spend abroad', 'No fees']].map(([a, b]) => (
+            <div key={a} style={{ display: 'flex', justifyContent: 'space-between', marginTop: 22, fontSize: 22, color: '#111318' }}>
+              <span>{a}</span>
+              <span style={{ color: '#2D6BD8', fontWeight: 600 }}>{b}</span>
+            </div>
+          ))}
+          <div style={{ marginTop: 34, height: 52, borderRadius: 26, background: '#111318', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 600 }}>Add to wallet</div>
+        </div>
+      </BackdropSwap>
+      <Label n={n} name={name} />
+    </AbsoluteFill>
+  );
+};
+
+// the cards round a line flood with colour and blow away outward
+const S29: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookLight('#2F45D0', '#F7F8FC');
+  const mini = (title: string, body: string, icon: string, c: [string, string]) => <Notice L={L} n={{ title, body, icon, colors: c, time: 'now' }} w={560} size={30} />;
+  const cards = [
+    { node: mini('Standup notes', 'Three blockers, one owner', 'FileText', BLUE), x: 0.17, y: 0.2, w: 0.29, h: 0.13, rot: -3 },
+    { node: mini('Q3 roadmap', 'Updated by Ada', 'Map', AMBER), x: 0.8, y: 0.17, w: 0.29, h: 0.13, rot: 2 },
+    { node: mini('Design review', 'Moved to 15:00', 'Calendar', ORANGE), x: 0.84, y: 0.78, w: 0.29, h: 0.13, rot: -2 },
+    { node: mini('Survey results', '214 new responses', 'ChartColumn', SKY), x: 0.15, y: 0.8, w: 0.29, h: 0.13, rot: 3 },
+    { node: mini('Interview 12', 'Transcript ready', 'Mic', BLUE), x: 0.5, y: 0.1, w: 0.29, h: 0.13, rot: 1 },
+    { node: mini('Budget sheet', '4 comments', 'Table', AMBER), x: 0.52, y: 0.9, w: 0.29, h: 0.13, rot: -1 },
+  ];
+  return (
+    <Shot L={L} n={n} name={name}>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 500, textAlign: 'center', fontFamily: fonts.inter, fontSize: 64, fontWeight: 560, color: L.ink, letterSpacing: '-0.025em' }}>Too many places to look</div>
+      <FloodAway cards={cards} at={14} color="#2F45D0" order={[3, 1, 4, 0, 5, 2]} blowAt={16} />
+    </Shot>
+  );
+};
+
+// a sticky label stretches while it types and draws its connector to the heading
+const S30: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookLight('#E8742E', '#ECECEE');
+  return (
+    <Shot L={L} n={n} name={name}>
+      <div style={{ ...surfaceStyle(L, 3, 20), position: 'absolute', left: 560, top: 230, width: 800, height: 600, padding: 56, fontFamily: L.font }}>
+        <div style={{ fontSize: 26, color: L.muted, fontWeight: 560 }}>Spring menu · draft 3</div>
+        <div style={{ marginTop: 18, fontSize: 64, fontWeight: 660, letterSpacing: '-0.03em', color: L.ink, lineHeight: 1.04 }}>Wild garlic and new potatoes</div>
+        <div style={{ marginTop: 24, fontSize: 30, color: L.muted, lineHeight: 1.4 }}>Served with brown butter, capers and a soft egg. Available from Thursday.</div>
+        <div style={{ marginTop: 40, width: '100%', height: 190, borderRadius: 14, overflow: 'hidden' }}>
+          <img src={staticFile(`img/${IMG.farms}`)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
+      </div>
+      <StickyType L={L} text="Make the title shorter" at={10} x={1160} y={150} to={{ x: 1200, y: 335 }} color="#FFD8BC" ink="#4A2A14" line="#4A2A14" size={30} />
+    </Shot>
+  );
+};
+
+// a progress log: each verb lands in its icon's colour and cools to the ink as the next arrives
+const S31: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookLight('#2B5BFF', '#EEF0F3');
+  return (
+    <Shot L={L} n={n} name={name}>
+      <div style={{ ...surfaceStyle(L, 3, 34), position: 'absolute', left: 500, top: 150, width: 920, height: 780 }} />
+      <RowCool
+        L={L}
+        at={4}
+        x={960}
+        y={540}
+        w={780}
+        size={42}
+        title="Working"
+        rows={[
+          { icon: 'Search', color: '#2B6BE8', verb: 'Searching', detail: '42 shots across three shoot days' },
+          { icon: 'FileText', color: '#E0782E', verb: 'Reading', detail: 'The brief and the client notes' },
+          { icon: 'Columns2', color: '#1E9CB8', verb: 'Comparing', detail: 'Takes 3, 7 and 12 of the opening' },
+          { icon: 'PenLine', color: '#D9A21E', verb: 'Drafting', detail: 'A 30 second cut with captions' },
+          { icon: 'ShieldCheck', color: '#D9534A', verb: 'Checking', detail: 'Music rights and logo clearance' },
+        ]}
+      />
+    </Shot>
+  );
+};
+
+// skeleton bars cascade in, then a warm band sweeps across and turns them into the answer
+const S32: React.FC<DemoProps> = ({ n, name }) => {
+  const L = lookLight('#E07A2E', '#FFFFFF');
+  return (
+    <Shot L={L} n={n} name={name}>
+      <div style={{ position: 'absolute', right: 520, top: 170, padding: '18px 26px', borderRadius: 22, background: '#F0F1EC', fontFamily: L.font, fontSize: 32, color: L.ink, maxWidth: 760, lineHeight: 1.35 }}>Turn these notes into a brief for the next shoot</div>
+      <div style={{ position: 'absolute', left: 340, top: 318, display: 'flex', alignItems: 'center', gap: 14, fontFamily: L.font, fontSize: 30, fontWeight: 600, color: L.ink }}>
+        <div style={{ width: 46, height: 46, borderRadius: 14, background: L.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="Sparkle" size={26} color="#FFFFFF" stroke={2.2} />
+        </div>
+        Assistant
+        <span style={{ fontWeight: 450, color: L.muted }}>· drafting the brief</span>
+      </div>
+      <SkeletonSweep
+        L={L}
+        at={8}
+        y={610}
+        w={1240}
+        size={36}
+        lines={[
+          { text: 'Brief: spring campaign, second shoot', scale: 1.3, weight: 640, gap: 0 },
+          { text: 'One take per scene, the camera at eye level', gap: 0.9 },
+          { text: 'Open on the product in use, no logo before 0:04', gap: 0.35 },
+          { text: 'Natural light only', bullet: true, gap: 0.9 },
+          { text: 'Two people, never more', bullet: true, gap: 0.35 },
+          { text: 'End on the sound of the door', bullet: true, gap: 0.35 },
+        ]}
+      />
+    </Shot>
+  );
+};
+
 // the pieces in the order the reel plays them; a new piece appends its segment (from = the last from + dur) and
 // gives its catalogue entry the same frames
 export const SEGMENTS: Segment[] = [
@@ -451,6 +875,23 @@ export const SEGMENTS: Segment[] = [
   { name: 'CalendarWave', from: 1646, dur: 100, render: S13 },
   { name: 'PhoneDrop', from: 1746, dur: 150, render: S14 },
   { name: 'SelectFrame', from: 1896, dur: 60, render: S15 },
+  { name: 'HubPill', from: 1956, dur: 90, render: S16 },
+  { name: 'GhostFill', from: 2046, dur: 90, render: S17 },
+  { name: 'FeedRush', from: 2136, dur: 130, render: S18 },
+  { name: 'StatCount', from: 2266, dur: 80, render: S19 },
+  { name: 'HandleGather', from: 2346, dur: 50, render: S20 },
+  { name: 'DotCaret', from: 2396, dur: 90, render: S21 },
+  { name: 'ChipRoll', from: 2486, dur: 70, render: S22 },
+  { name: 'LinkPanel', from: 2556, dur: 100, render: S23 },
+  { name: 'BentoFly', from: 2656, dur: 40, render: S24 },
+  { name: 'SendLaunch', from: 2696, dur: 60, render: S25 },
+  { name: 'FileDrop', from: 2756, dur: 70, render: S26 },
+  { name: 'Cursor3D', from: 2826, dur: 70, render: S27 },
+  { name: 'BackdropSwap', from: 2896, dur: 50, render: S28 },
+  { name: 'FloodAway', from: 2946, dur: 60, render: S29 },
+  { name: 'StickyType', from: 3006, dur: 45, render: S30 },
+  { name: 'RowCool', from: 3051, dur: 85, render: S31 },
+  { name: 'SkeletonSweep', from: 3136, dur: 50, render: S32 },
 ];
 
 export const reelUiDuration = reelDuration(SEGMENTS);

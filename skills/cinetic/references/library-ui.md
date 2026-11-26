@@ -3,7 +3,12 @@
 Finished animations for product interface in a film: notices that pile up, a card that fans out its siblings, a banner
 that grows out of its icon, an inbox row that opens into its message, a palette whose list travels to one row, a card
 dragged across a board, a stepped list, a task run, a button that becomes its own progress bar, a prompt sent and
-answered, a chat exchange, a settings card driven by a pointer, a week that fills in a wave, and a phone that drops in.
+answered, a chat exchange, a settings card driven by a pointer, a week that fills in a wave, a phone that drops in; a
+feed that rushes to one row, ghost slots that take their colours, connectors with pulses into a panel, stat cards that
+count, a hub pill with tool tiles, a chip that rolls like a slot, a sticky label, handles that gather, a dot that becomes
+the caret, a file carried on a swinging pendulum, an extruded cursor, a progress log that cools, skeleton bars swept
+into text, tiles flying into a bento grid, a send that launches the next window, a phone before swapping backdrops, and
+cards that flood and blow away.
 Import them from the kit (`import { RowExpand, Pointer, lookLight } from '../../kit';`). The reel `library-ui` shows
 every piece with its name: render it to see them move.
 
@@ -31,6 +36,23 @@ every piece with its name: render it to see them move.
 | [CalendarWave](#calendarwave) | build | 60 f | a week fills in a wave: events appear as pale ghosts crossing the week diagonally, then take their colour | a schedule that fills itself |
 | [PhoneDrop](#phonedrop) | enter, build, exit | 140 f | a phone drops in with weight, a notice settles, the camera pushes into its reply field, a reply is sent, it leaves | a message received and answered on a phone |
 | [SelectFrame](#settingscard-toggleswitch-valueslider-selectframe) | emphasis | 18 f | a 2 px accent selection frame dragged open from its top-left corner, handles popping on one after another | a thing on a canvas being selected |
+| [HubPill](#hubpill) | build | 75 f | words append into a hub pill that widens to fit and inks in from colour; each word brings a tool tile with a connector dot; the tiles fly out past the camera | "it connects to the tools you use": integrations as a line being said |
+| [GhostFill](#ghostfill) | build | 60 f | ghost slots round a mark take their colours one app tile at a time, scattered, faster and faster, label pills popping beside a few | "a whole set of tools in one place": a registry, a suite, templates |
+| [FeedRush](#feedrush) | emphasis | 80 f | a comment feed fills row by row, rushes into a vertical smear while a reading counter races, then brakes and lands on one highlighted row | "it read all of it and found the one that matters" |
+| [StatCount](#statcount) | enter, emphasis | 60 f | glass stat cards cut on blank over a picture, their figures appear and count up in whole numbers, each at its own rate | the cost or the scale of a problem, told in figures |
+| [HandleGather](#handlegather) | emphasis | 26 f | a word types in fresh ink while small squares hop in from round the frame and lock as the handles of its selection box | a name or a title being picked out on a canvas: the opening of a design or agent tool |
+| [DotCaret](#dotcaret) | enter | 40 f | a dot drops into a browser address field and stretches into the caret; the placeholder goes, the field widens, the view pushes in | a search or a request starting: the moment before typing |
+| [ChipRoll](#chiproll) | emphasis | 45 f | an app chip inside a sentence rolls like a slot reel to the next tool, its neighbours faint above and below, the line closing up | "it works with all of these", said inside one line |
+| [LinkPanel](#linkpanel) | build | 70 f | connectors draw from a column of sources into a panel, light pulses run along them, rows land lit and settle, the totals count up | "everything flows into one place": tracking, syncing, sources feeding a result |
+| [BentoFly](#bentofly) | enter | 20 f | on a cut, photo tiles, solid tiles, discs and a pill arrive from every side already moving and brake into a bento grid | a world or a set of stories assembling at once: the open of a section |
+| [SendLaunch](#sendlaunch) | join | 24 f | the send button lifts away and the composer falls out of frame; on the cut a small spark of pixels on a dark ground leads the app window in with a smear | a prompt sent and the product starting to work: from the request to the result |
+| [FileDrop](#filedrop) | build | 40 f | the pointer carries a file in on an arc, the file swinging from its tip like a pendulum, drops it into the composer, the send button appears | a document handed to the product: a contract, a brief, a spreadsheet |
+| [Cursor3D](#cursor3d) | emphasis | 20 f | a chunky extruded arrowhead cursor with a satin top, a side wall and a soft shadow glides onto a button, presses and rests with a slow tilt | a press in a soft, three-dimensional product world |
+| [BackdropSwap](#backdropswap) | emphasis | 35 f | a phone holds still at the centre while the pictures behind it hard-cut every five frames, the phone shifting a few pixels with each | "wherever you are": one product in many places |
+| [FloodAway](#floodaway) | exit | 30 f | the cards round a line flood one by one with a saturated colour and blur, then blow away outward, the outer ones first, turning edge-on | clearing a frame of clutter to leave one line: "too much of this", then the answer |
+| [StickyType](#stickytype) | emphasis | 16 f | a sticky label appears as a square, stretches while its words type into it and draws a connector to what it annotates | a comment or a note pinned on a design, a page, a plan |
+| [RowCool](#rowcool) | build | 60 f | a progress log under a shimmering header: each row lands with its verb in its icon's colour, cools to the ink as the next arrives, the block nudging up | an agent working through its steps, with each step's kind visible |
+| [SkeletonSweep](#skeletonsweep) | build | 34 f | tinted skeleton bars cascade in a row a frame, then a warm band sweeps across and turns them into the real text behind it | an answer or a document being written in one go |
 
 <!-- /library:pieces -->
 
@@ -271,6 +293,191 @@ typed and sent, pulls back, and the phone leaves upward accelerating.
   at +100 f (16 f); leave at +122 f, each step 1.45x the last.
 - Caution: `screen` is the wallpaper: a solid colour or a real picture, never a faint gradient.
 
+## Feeds, fills and links
+
+### FeedRush
+A comment feed in its panel (title, a "reading" counter with a spinner) fills one row at a time, then scrolls faster and
+faster into a vertical smear while the counter races, brakes hard and lands with one row highlighted in the middle.
+For "it read all of it and found the one that matters".
+```tsx
+<FeedRush L={lookLight('#2B5BFF', '#E9EBEF')} rows={feed} target={9} at={T.feed} intro={3} every={8} dur={54} pass={24} total={3412} />
+```
+- Rows: `{ name, color, time, text }`; 12 or more, all different; `target` is the one it lands on.
+- Numbers: intro rows every 8 f (fade-up 6 f, 6 px blur to 0); the rush (54 f, 24 rows) accelerates over its first
+  quarter, cruises a fifth at about a row a frame, brakes over the rest; vertical smear 0.11 of the speed in px (at
+  most 34 px); the counter is geometric with the travel; the highlight fills over the last 8 f; a 2 % push after
+  landing.
+- Caution: the landed row's text must be short enough to read whole; the counter is a whole number on every frame.
+
+### GhostFill
+Ghost slots round a mark (a shade darker than the ground, fading towards the field's edge) take their colours one app
+tile at a time, scattered, the interval shrinking; label pills pop beside a few. For "a whole set of tools in one
+place".
+```tsx
+<GhostFill L={lookLight('#2B5BFF', '#F7F5F0')} at={T.suite} items={[{ c: 0, r: -2, icon: 'Music', colors: [...] }, ...]} cols={5} rows={3} center={<Mark />} labels={[{ item: 2, text: 'Beat sync', f: 52 }]} />
+```
+- Numbers: a tile from a pale tint to full colour in 6 f (scale 0.94 to 1); intervals 6, 5, 5, 4, 4, 3, 3, 2, 2, 2, 1 f;
+  ghosts 4 % darker than the ground, radius 28 %; tiles 6.2 % of the frame height, pitch 1.42 of a tile.
+- Caution: 12-20 filled of 50-70 slots; real tools (`mark`) or distinct glyphs with one colour pair each.
+
+### LinkPanel
+Sources stand in a column; bracket connectors draw from each into a panel, light pulses run along them, the panel's
+rows land lit in the accent as their first pulse arrives and settle to the surface, and the totals count up in steps.
+For "everything flows into one place".
+```tsx
+<LinkPanel L={lookDark('#3D8BFF', '#08090C')} at={T.links} sources={[{ title, thumb, chip: '1,204 clicks', row: { label, meta, value } }, ...]} totals={[{ label: 'Revenue', from: 3330, step: 37, steps: 9, prefix: '$' }, ...]} />
+```
+- Numbers: sources drop in 4 f with blur; connectors draw in 6 f, 2 f apart, from +4 f; pulses 12 f source to panel,
+  3 f apart, every 24 f; rows land at +19 f, 3 f apart, lit 6 f then settle over 10 f; totals step every 3 f.
+- Caution: three to five sources; the totals must agree with the rows.
+
+### StatCount
+Glass stat cards cut on blank over a picture; the figure appears three frames later and counts up in whole numbers at
+a steady rate; smaller cards join round it, each at its own rate. For the cost or the scale of a problem.
+```tsx
+<StatCount L={lookLight('#1F8A8A', '#E9EBEF')} at={T.cost} cards={[{ label: 'Onboarding cost', sub: 'Last month', from: 10, to: 1240, rate: 27, prefix: '$', pill: { label: 'Paid' }, f: 0, cx: 0.24, cy: 0.66, w: 0.21 }, ...]} />
+```
+- Numbers: a card arrives in 3 f (blur 10 to 0, scale 1.05 to 1); figure at +3 f, `rate` units a frame to `to`; pill at
+  +12 f; later cards 11 f and 7 f after; glass: white at 74 % with a 22 px backdrop blur, a 1 px white rim, an accent
+  bloom in the lower left; radius 9 % of the card's height.
+- Caution: over a picture or a scene; different rates per card.
+
+## Pieces of a sentence
+
+### HubPill
+Words append into a hub pill that widens to fit them, each word inking in through a short colour walk; with each word a
+tool tile pops in round the pill with a coloured dot under it, and the same dot lands on the pill's edge; at `flyAt` the
+tiles fly out past the camera. For integrations said as a line.
+```tsx
+<HubPill L={lookLight('#1D1F24', '#F6F4EF')} at={T.hub} words={['Works', 'inside', 'your', 'stack']} tiles={[{ mark: <Brand name="figma" size={62} />, dot: '#F2B33D', dx: -0.31, dy: -0.21, word: 0 }, ...]} flyAt={62} />
+```
+- Numbers: words every 12, 14, 9 f; the pill steps to its new width in 3 f; the walk gold, rose, coral, sage, blue, navy,
+  ink at 2 f a step; tiles pop 0.6 to 1 in 3 f, 0.11 of the frame height, radius 22 %; fly-out 12 f ease-in to 1.35.
+- Caution: three to five words; the tiles are the tools' real marks.
+
+### ChipRoll
+An app chip (mark and name) inside a sentence rolls vertically like a slot reel; the next chip peeks below at 30 %, the
+reel creeps, then steps, faster each time; the chip's width follows its name and the line closes up.
+```tsx
+<ChipRoll L={lookLight('#2B5BFF', '#F0F0F0')} at={T.roll} before="find every" after="file you made" chips={[{ name: 'Figma', mark: <Brand name="figma" size={40} /> }, ...]} steps={[22, 34]} stepDur={[6, 4]} size={64} />
+```
+- Numbers: pitch 1.1 em; neighbours 30 % with 2 px blur; a creep of 0.15 pitch before the first step; steps 6 then 4 f
+  ease-in-out.
+- Caution: one-word names, three or four chips.
+
+### StickyType
+A sticky label appears as a small square and stretches as its words type into it, while a connector draws to what it
+annotates.
+```tsx
+<StickyType L={L} text="Make the title shorter" at={T.note} x={1160} y={150} to={{ x: 1200, y: 335 }} color="#FFD8BC" ink="#4A2A14" />
+```
+- Numbers: the square pops in 2 f; letters from +3 f at 1.3 a frame, the label's edge two frames behind the text;
+  connector 5 f from +2 f, straight unless `bow`; label 1.9 times the text size tall, radius 18 %.
+- Caution: three or four words; a colour that means a note in the product, never a random yellow.
+
+### HandleGather
+A word types in fresh ink while four small squares appear scattered round the frame, hop every two frames, close in late and
+lock as the handles of a selection box round it; the box takes a pale fill.
+```tsx
+<HandleGather L={lookLight('#2B5BFF', '#FFFFFF')} text="Your release notes" at={T.select} size={56} />
+```
+- Numbers: letters 1 a frame from +2 f, cooling from the accent over 4 f; squares appear at +0, +2, +4, +5 f and lock at
+  +14 to +20 f; fill at +23 f; squares 0.9 % of the frame height; box padding 0.35 by 0.25 em.
+- Caution: one short word or name.
+
+## Inputs and pointers
+
+### DotCaret
+A dot hovering over a browser toolbar drops into the address field and stretches into the caret; the placeholder and tab
+icon go, the field widens and the view pushes in; then a query types in fresh ink.
+```tsx
+<DotCaret L={lookLight('#2B5BFF', '#F0F0F0')} at={T.search} dropAt={10} text="brand assets from the spring shoot" typeAt={30} />
+```
+- Numbers: the drop 3 f ease-in, stretching 2.2 times tall; the caret thins to 2.5 px in 3 f; the field widens 1.7
+  times over 6 f from +3 f; the bar pushes 1 to 1.15 over 8 f.
+- Caution: the dot should come from the shot before (a full stop, a ball, a cursor).
+
+### FileDrop
+The pointer brings a file in from the lower right on a decelerating arc; the file hangs from its tip and swings as a
+damped pendulum, then drops into the composer's attachment slot; the send button cuts on and the box grows taller.
+```tsx
+<FileDrop L={lookLight('#C4623E', '#F3F1EC')} at={T.attach} file={{ name: 'Lease agreement.pdf', size: '2.4 MB · 18 pages' }} greeting="What should we look at?" />
+```
+- Numbers: travel 9 f on the pointer's arc, settle 6 f; the swing's period 12 f, about 30 degrees in flight, settled in
+  20 f; drop 5 f (scale 1 to 0.9); send button and growth 8 f later (22 % upward in 4 f).
+- Caution: one file with a real name.
+
+### Cursor3D
+A chunky extruded arrowhead (satin top, a darker side wall, a contact shadow tinted to the ground) that glides onto its
+target, presses into its wall and rests with a slow tilt. Takes the same `keys` and `clicks` as `Pointer`.
+```tsx
+<Cursor3D keys={[{ f: 10, x: 1300, y: 1070 }, { f: 30, x: 1080, y: 730 }]} clicks={[34]} color="#9FB0F7" ground="#33407A" />
+```
+- Numbers: press 3 f in, 6 f back: scale 0.9, the wall to 0.55 of its depth, the shadow's offset halved; wall 13 % of
+  its size; shadow (+0.11, +0.2) of its size; idle tilt 4 degrees; size 5.5 % of the frame height.
+- Caution: one per film, for a soft three-dimensional look; the target changes state on the press.
+
+### RowCool
+A progress log under a shimmering header: rows step on one at a time (an outline icon on a thin rule, a verb, a grey
+line of detail); each verb lands in its icon's colour and cools to the ink, and each arrival nudges the block up.
+```tsx
+<RowCool L={lookLight('#2B5BFF', '#EEF0F3')} at={T.work} rows={[{ icon: 'Search', color: '#2B6BE8', verb: 'Searching', detail: '42 shots across three shoot days' }, ...]} />
+```
+- Numbers: arrivals every 10, 8, 12, 10, 9, 8 f; a row fades in 3 f; the verb holds its colour 3 f and cools over 9 f;
+  the block stays centred, so it rises half a row per arrival; the shimmer crosses in 24 f.
+- Caution: one colour per kind of step, four to seven rows.
+
+### SkeletonSweep
+Tinted skeleton bars, measured to the text that will replace them, cascade in one row a frame; a warm band then sweeps
+across, warming the bars ahead of it and turning them into the text behind it.
+```tsx
+<SkeletonSweep L={lookLight('#E07A2E', '#FFFFFF')} at={T.answer} lines={[{ text: 'Brief: spring campaign', scale: 1.3, weight: 640 }, { text: '...', bullet: true }]} />
+```
+- Numbers: a row a frame, each widening 0.2 to 1 in 3 f; the sweep at rows + 8 f, 14 f ease-in-out; bars warm within
+  0.3 of the block ahead of the band.
+- Caution: never leave the bars standing as content.
+
+## Scenes and joins
+
+### BentoFly
+On a cut, photo tiles, solid tiles, discs and a pill arrive from every side already moving and brake into a bento grid.
+```tsx
+<BentoFly L={lookLight('#1E3A5F', '#F4F1EA')} at={T.world} cols={4} rows={3} tiles={[{ c: 0, r: 0, cw: 2, kind: 'photo', src: 'img/...', from: 'left' }, ...]} />
+```
+- Numbers: 70 % of the travel done on the first frame (less for late tiles), the rest in 12 f expo-out; delays 0-7 f;
+  radius 20 % of a tile's height; gutter 1.4 % of the frame width.
+- Caution: put the cut on its first frame; real pictures; one or two solid tiles.
+
+### SendLaunch
+The send button is pressed and lifts away up and to the right while the composer falls out of the bottom of the frame;
+on the cut a small spark of square pixels glows low on a dark ground and leads the next window in from the lower right.
+```tsx
+<SendLaunch L={lookDark('#E8E8EA', '#0F0F10')} at={T.send} prompt="Build a booking app for a climbing gym" window={<AppPane ... />} winW={1190} winH={756} />
+```
+- Numbers: press 3 f; the button rises 0.27 of the frame over 8 f (ease-in); the composer falls from +2 f over 6 f with
+  a 20 px smear; the cut at +8 f; the spark's light fades in 9 f, its squares fall out by +20 f; the window enters at
+  +11 f, 70 % in by +17 f, settled at +24 f, a 30 px horizontal smear clearing.
+- Caution: the window is the answer to the prompt, in the same product chrome.
+
+### BackdropSwap
+A phone holds still at the centre while the pictures behind it hard-cut every five frames; the phone shifts a few
+pixels and a degree with each, and its shadow falls on every one.
+```tsx
+<BackdropSwap at={T.world} every={5} backdrops={[{ src: 'img/...' }, { color: '#1E4E8C' }, ...]}><Wallet /></BackdropSwap>
+```
+- Numbers: exactly `every` frames each; at most 0.4 % of the frame, 1.5 degrees and 2 % of scale per backdrop.
+- Caution: backdrops that share a colour with the screen; at most eight.
+
+### FloodAway
+The cards round a line flood one by one with a saturated colour and blur, then blow away outward, the outer ones first,
+turning edge-on as they go. It clears the frame and leaves the line.
+```tsx
+<FloodAway cards={[{ node: <Notice ... />, x: 0.17, y: 0.2, w: 0.24, h: 0.11, rot: -3 }, ...]} at={T.clear} color="#2F45D0" blowAt={16} />
+```
+- Numbers: a card floods in 3 f (blur 0 to 12 px), 1-3 f apart; from `blowAt` outer cards first, 1 f apart, 12 f
+  ease-in, 0.28 of the frame width outward, turning 80 degrees.
+- Caution: the cards must already be there; the line stays sharp.
+
 ## In the reel
 
 Every piece's frames in the reel (`--film library-ui`), and the one command that shows just that piece: its frames in
@@ -298,5 +505,22 @@ one still (run it in a film project; `render --film library-ui --range a-b` for 
 | CalendarWave | `library-ui` | 1646-1745 | `node scripts/frames.mjs library --strip CalendarWave` |
 | PhoneDrop | `library-ui` | 1746-1895 | `node scripts/frames.mjs library --strip PhoneDrop` |
 | SelectFrame | `library-ui` | 1896-1955 | `node scripts/frames.mjs library --strip SelectFrame` |
+| HubPill | `library-ui` | 1956-2045 | `node scripts/frames.mjs library --strip HubPill` |
+| GhostFill | `library-ui` | 2046-2135 | `node scripts/frames.mjs library --strip GhostFill` |
+| FeedRush | `library-ui` | 2136-2265 | `node scripts/frames.mjs library --strip FeedRush` |
+| StatCount | `library-ui` | 2266-2345 | `node scripts/frames.mjs library --strip StatCount` |
+| HandleGather | `library-ui` | 2346-2395 | `node scripts/frames.mjs library --strip HandleGather` |
+| DotCaret | `library-ui` | 2396-2485 | `node scripts/frames.mjs library --strip DotCaret` |
+| ChipRoll | `library-ui` | 2486-2555 | `node scripts/frames.mjs library --strip ChipRoll` |
+| LinkPanel | `library-ui` | 2556-2655 | `node scripts/frames.mjs library --strip LinkPanel` |
+| BentoFly | `library-ui` | 2656-2695 | `node scripts/frames.mjs library --strip BentoFly` |
+| SendLaunch | `library-ui` | 2696-2755 | `node scripts/frames.mjs library --strip SendLaunch` |
+| FileDrop | `library-ui` | 2756-2825 | `node scripts/frames.mjs library --strip FileDrop` |
+| Cursor3D | `library-ui` | 2826-2895 | `node scripts/frames.mjs library --strip Cursor3D` |
+| BackdropSwap | `library-ui` | 2896-2945 | `node scripts/frames.mjs library --strip BackdropSwap` |
+| FloodAway | `library-ui` | 2946-3005 | `node scripts/frames.mjs library --strip FloodAway` |
+| StickyType | `library-ui` | 3006-3050 | `node scripts/frames.mjs library --strip StickyType` |
+| RowCool | `library-ui` | 3051-3135 | `node scripts/frames.mjs library --strip RowCool` |
+| SkeletonSweep | `library-ui` | 3136-3185 | `node scripts/frames.mjs library --strip SkeletonSweep` |
 
 <!-- /library:reel -->
