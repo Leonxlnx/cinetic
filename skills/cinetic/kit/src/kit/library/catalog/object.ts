@@ -13,7 +13,7 @@ export const OBJECT: LibraryEntry[] = [
     frames: 48,
     summary: 'photo tiles pop on one a frame, scattered, then gather into a rising ribbon; each is born two-tone and cuts to true colour',
     use: 'many pictures at once: a community, a catalogue, the people a product serves, at the opening of a film',
-    caution: 'it needs many pictures to read as many; with few photographs each tile takes its own crop',
+    caution: 'it needs many pictures to read as many; with few photographs each tile takes its own crop; not checked at full size',
     reel: { film: 'library-objects', from: 0, to: 59 },
   },
   {
@@ -25,7 +25,7 @@ export const OBJECT: LibraryEntry[] = [
     frames: 25,
     summary: 'photo cards dealt one on another in the gap of a line, each breaking through in square blocks, the stack fanning up and pushing the words apart',
     use: 'a line about variety or volume (every idea, all your moments) where the pictures are the proof',
-    caution: 'one word each side; the cards are pictures, never text to read',
+    caution: 'one word each side; the cards are pictures, never text to read; compared once only',
     reel: { film: 'library-objects', from: 60, to: 99 },
   },
   {
@@ -37,7 +37,7 @@ export const OBJECT: LibraryEntry[] = [
     frames: 32,
     summary: 'two round blobs drift together, merge with a liquid neck, split smaller, merge into a pill and shrink to a dot that snaps into the mark',
     use: 'the opening of a lockup for a brand whose mark is round or soft; two things becoming one',
-    caution: 'one in a film, on a flat ground, in the mark\'s own colour',
+    caution: 'one in a film, on a flat ground, in the mark\'s own colour; the squash added after the first check was not re-rendered',
     reel: { film: 'library-objects', from: 100, to: 147 },
   },
   {
@@ -61,7 +61,7 @@ export const OBJECT: LibraryEntry[] = [
     frames: 58,
     summary: 'an isometric cube splits into four, the four swing into a ring of eight blocks, and the ring tips over and lands flat as a pixel mark',
     use: 'a mark made of square cells; a product about building blocks, data or infrastructure',
-    caution: 'the mark must be made of cells on a grid (`cells`); keep the ground flat and light',
+    caution: 'the mark must be made of cells on a grid (`cells`); keep the ground flat and light; the split into four awaits a second check, and the ring is square, not octagonal',
     reel: { film: 'library-objects', from: 198, to: 281 },
   },
   {
@@ -85,19 +85,19 @@ export const OBJECT: LibraryEntry[] = [
     frames: 14,
     summary: 'a mark of square cells assembles by trial, partial sets blinking on and off, then holds as hairline guides run out along its cell edges',
     use: 'the opening or closing mark of a technical product whose mark is drawn in cells',
-    caution: 'a mark of cells only, on one flat ground; DotWord spells words',
+    caution: 'a mark of cells only, on one flat ground; DotWord spells words; checked at half size only',
     reel: { film: 'library-objects', from: 336, to: 375 },
   },
   {
     name: 'TumbleLockup',
     category: 'object',
     purpose: ['build'],
-    subject: ['logo', 'letter'],
+    subject: ['logo', 'mark', 'letter'],
     mood: ['playful', 'bold'],
     frames: 16,
     summary: 'the app tile grows from a dot with a tilt and overshoot, its glyph popping in, while the letters of the name tumble in two frames apart, small, slanted and tinted, rising into place in ink',
     use: 'the lockup of a consumer app with a coloured tile; a quick, bright ending',
-    caution: 'the letters move but keep the spacing of the name; the tile keeps the brand colour',
+    caution: 'the letters move but keep the spacing of the name; the tile keeps the brand colour; its raised overshoot and size were not re-checked',
     reel: { film: 'library-objects', from: 376, to: 411 },
   },
   {
@@ -109,7 +109,7 @@ export const OBJECT: LibraryEntry[] = [
     frames: 34,
     summary: 'scattered dots fly on arcs into a turning ring, stretch into dashes that close it, the ring floods with colour segment by segment and a light runs round it',
     use: 'a moment of connection: many inputs becoming one, a sync, a link made',
-    caution: 'the dots should come from something on screen; one in a film',
+    caution: 'the dots should come from something on screen; one in a film; checked at half size only',
     reel: { film: 'library-objects', from: 412, to: 473 },
   },
   {
@@ -133,7 +133,7 @@ export const OBJECT: LibraryEntry[] = [
     frames: 50,
     summary: 'tool pills burst out from behind a line and settle round it tilted; on the next line they fall under gravity and land in a heap at the bottom',
     use: 'the problem beat: too many tools, tabs or apps, then all of them falling apart',
-    caution: 'short names and generic icons or the real marks; the line is drawn above the pills',
+    caution: 'short names and generic icons or the real marks; the line is drawn above the pills; checked at half size only, and the pills were enlarged after that',
     reel: { film: 'library-objects', from: 552, to: 623 },
   },
   {
@@ -157,7 +157,7 @@ export const OBJECT: LibraryEntry[] = [
     frames: 60,
     summary: 'two bands of rounded picture cards run along one diagonal above and below a centred word, edge cards softened, each turned a little',
     use: 'volume behind a short word: a library, a feed, everything the product holds',
-    caution: 'the word stays short and calm; the cards are texture, not to be read',
+    caution: 'the word stays short and calm; the cards are texture, not to be read; compared once only; the spacing fix was seen at half size only',
     reel: { film: 'library-objects', from: 664, to: 713 },
   },
   {
@@ -169,7 +169,7 @@ export const OBJECT: LibraryEntry[] = [
     frames: 24,
     summary: 'a collage prints itself: rectangles land as flat pastel blocks and cut to their photographs a few frames later, some staying colour, the group creeping larger',
     use: 'an editorial or creative brand assembling its world; round a centred word with the corners layout',
-    caution: 'a print, never a fade; three or four pastel blocks',
+    caution: 'a print, never a fade; three or four pastel blocks; compared once only; the cluster stays smaller and sparser than planned',
     reel: { film: 'library-objects', from: 714, to: 753 },
   },
   {
@@ -193,7 +193,7 @@ export const OBJECT: LibraryEntry[] = [
     frames: 9,
     summary: 'a photograph breaks into coarse blocks and cuts to the mark as a coarse one-bit pixel figure that sharpens in held resolution steps',
     use: 'from a picture of the world to the mark; a pixel or retro brand; a bookend',
-    caution: 'the mark must be a bold closed shape; a thin one reads as noise at 10 cells',
+    caution: 'the mark must be a bold closed shape; a thin one reads as noise at 10 cells; compared once only',
     reel: { film: 'library-objects', from: 790, to: 813 },
   },
   {
@@ -217,7 +217,7 @@ export const OBJECT: LibraryEntry[] = [
     frames: 8,
     summary: 'a ring of square pixels opens from a point and races past the corners, the next scene inside settling from soft and large to sharp',
     use: 'onto a wordmark or a brand scene from a busy one; a digital product',
-    caution: 'the pixel tones come from the next scene; it is a join, one in a film',
+    caution: 'the pixel tones come from the next scene; it is a join, one in a film; its join image was not exported',
     reel: { film: 'library-objects', from: 840, to: 865 },
   },
   {
@@ -229,7 +229,7 @@ export const OBJECT: LibraryEntry[] = [
     frames: 24,
     summary: 'two handle dots, a hairline between them, a box opening to the right in held steps, and the name typing into it, each letter pale then ink',
     use: 'the wordmark of a design, building or developer tool; the name set the way the product sets things',
-    caution: 'the outline and handles stay quiet in one hairline colour; the name is the subject',
+    caution: 'the outline and handles stay quiet in one hairline colour; the name is the subject; checked at half size only; the box stays flat, never tilted in depth',
     reel: { film: 'library-objects', from: 866, to: 899 },
   },
   {
@@ -277,7 +277,7 @@ export const OBJECT: LibraryEntry[] = [
     frames: 60,
     summary: 'a hairline between two dots turns in space, splits into a triangle, lifts into a wire tetrahedron, fills face by face with frosted glass and swings close as a warm light blooms inside',
     use: 'an abstract opener: an idea taking form, a model, an engine, before the product',
-    caution: 'near-black ground only; an abstract opener, one in a film',
+    caution: 'near-black ground only; an abstract opener, one in a film; drawn in 2D, so the glass faces are flat gradients without refraction; seen in a half-size preview only',
     reel: { film: 'library-objects', from: 1048, to: 1123 },
   },
   {
@@ -301,7 +301,7 @@ export const OBJECT: LibraryEntry[] = [
     frames: 45,
     summary: 'between two words a picture card cuts to the next picture faster and faster, each a new size, the words hugging every card on the same frame',
     use: 'a line whose proof is many pictures (the work, the products, the people), told in one slot',
-    caution: 'one word each side; cuts only, never a slide or a fade',
+    caution: 'one word each side; cuts only, never a slide or a fade; compared once only',
     reel: { film: 'library-objects', from: 1168, to: 1221 },
   },
   {
@@ -313,7 +313,7 @@ export const OBJECT: LibraryEntry[] = [
     frames: 60,
     summary: 'small cards float round a centred line at several depths, each drifting slowly outward at its own speed, while extra chips pop into the gaps one at a time',
     use: 'the world round a short line: everything a product gathers, a canvas of work, held while the line is read',
-    caution: 'keep the line in the clear centre; every card is real content of the film',
+    caution: 'keep the line in the clear centre; every card is real content of the film; built from written measurements, never compared on frames',
     reel: { film: 'library-objects', from: 1222, to: 1281 },
   },
 ];

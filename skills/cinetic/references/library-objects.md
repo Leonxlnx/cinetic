@@ -1,5 +1,15 @@
 # Library: objects and logos
 
+**What it is for:** things and marks: pictures in numbers, solids, shapes that build, things held round a centre, the
+lockup. Reach first for `LockupType` (the default end card), `TilePop` (many pictures at once), `MarkCondense` (a mark
+arriving the way a design tool builds it), `OrbitRing` (the apps round one product) and `DotRing` (a connection made).
+Not here: words performed as type ([type](library-type.md)), interface ([ui](library-ui.md)), grounds
+([grounds](library-grounds.md)). Several pieces here were checked at half size or compared once only; their cautions say
+so. Near neighbours elsewhere: `PlateSqueeze` beside `FrameCollapse` (turn), `PixelIris` beside `GrowIris` and `DotIris`
+(turn), `SlotSwap` beside `InlineChip` (type), `DealtStack` beside `PartStack` (type), `CardDrift` and `OrbitRing`
+beside `DepthField` (camera), `CellStack` beside `StepScan` (fx); see
+[library.md](library.md#near-neighbours-across-categories) and [the lockup](library.md#the-lockup).
+
 Shapes, icons, pictures and logos that move or are built: a mark drawn stroke by stroke, an icon that assembles, a
 picture that is cut, folded or stacked, a device built from its parts. A company's mark is always its real one
 (`<Brand>`); a piece moves it, never redraws it. Each piece lives in `src/kit/library/objects/` (one file a piece, named

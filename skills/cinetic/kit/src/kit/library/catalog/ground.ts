@@ -13,7 +13,7 @@ export const GROUND: LibraryEntry[] = [
     frames: 40,
     summary: 'a white canvas ruled by 1 px hairlines that grow out of the centre crossing, tiny marks at the crossings, accent blocks hopping cell to cell by cuts',
     use: 'a clean product or developer brand whose one accent is a tool mark; paper grid for a serif look, graph grid under loud type',
-    caution: 'keep the lines about 10 % off the ground; blocks keep out of the box the type sits in; its motion not compared on a render frame by frame (stills only)',
+    caution: 'keep the lines about 10 % off the ground; blocks keep out of the box the type sits in; checked on stills only (its motion not compared frame by frame)',
     reel: { film: 'library-grounds', from: 0, to: 95 },
   },
   {
@@ -25,7 +25,7 @@ export const GROUND: LibraryEntry[] = [
     frames: 48,
     summary: 'black with dashed rules drawn from the centre, square ticks at the crossings (a few in one signal colour) and a thin ring that draws itself round the subject',
     use: 'a technical or event film at night: a word, a photo or a card framed by the drafting table',
-    caution: 'one signal colour on under 3 % of the frame; labels tiny and in sentence case; its motion not compared on a render frame by frame (stills only)',
+    caution: 'one signal colour on under 3 % of the frame; labels tiny and in sentence case; checked on stills only (its motion not compared frame by frame)',
     reel: { film: 'library-grounds', from: 96, to: 191 },
   },
   {
@@ -37,7 +37,7 @@ export const GROUND: LibraryEntry[] = [
     frames: 30,
     summary: 'a fine lattice of ring, round or square dots on black, filled in a wave from a point, lit from inside by slow pools, with a hole that opens for the type',
     use: 'a screen-material film (LED, pixels): the ground under a line or a page, or the first beat built from dots',
-    caution: 'the light is in the dots, never a haze; keep the type off the brightest pool; its motion not compared on a render frame by frame (stills only)',
+    caution: 'the light is in the dots, never a haze; keep the type off the brightest pool; checked on stills only (its fill wave not compared frame by frame)',
     reel: { film: 'library-grounds', from: 192, to: 287 },
   },
   {
@@ -49,7 +49,7 @@ export const GROUND: LibraryEntry[] = [
     frames: 46,
     summary: 'a light field of round halftone dots in two or three inks with black clusters; on each swap (a cut) the inks and the clusters change',
     use: 'behind a held line while the thing beside it swaps faster and faster (the field takes the colour of each)',
-    caution: 'the line sits on a plain backing box, never on the dots; one palette a swap; its motion not compared on a render frame by frame (stills only)',
+    caution: 'the line sits on a plain backing box, never on the dots; one palette a swap; checked on stills only (its motion not compared frame by frame)',
     reel: { film: 'library-grounds', from: 288, to: 377 },
   },
   {
@@ -61,7 +61,7 @@ export const GROUND: LibraryEntry[] = [
     frames: 30,
     summary: 'on black, a dark planet rises from the foot: a thin peach rim, a burnt band inside, warm light just above the rim; it sinks on an ease-in',
     use: 'under a product name or a claim on a black film, once (the opening title or the end card)',
-    caution: 'the light belongs to the rim; never a glow on its own over black',
+    caution: 'the light belongs to the rim; never a glow on its own over black; for an opening title pass a larger radius: the default planet suits the end card',
     reel: { film: 'library-grounds', from: 378, to: 477 },
   },
   {
@@ -73,7 +73,7 @@ export const GROUND: LibraryEntry[] = [
     frames: 22,
     summary: 'on a warm flat ground two hairline circles larger than the frame start as one, part, turn as a pair and keep turning slowly',
     use: 'under quiet statements on cream, so an empty ground never stands still',
-    caution: 'faint (about 8 % contrast) and mostly off-frame; the line of type is the subject (fade, part and turn match the source within a frame on a render)',
+    caution: 'faint (about 8 % contrast) and mostly off-frame; the line of type is the subject; its fade, part and turn were compared frame by frame on a render',
     reel: { film: 'library-grounds', from: 478, to: 567 },
   },
   {
@@ -85,7 +85,7 @@ export const GROUND: LibraryEntry[] = [
     frames: 60,
     summary: 'one flat saturated blue with faint concentric hairline arcs round a point under the frame, widening slowly outward',
     use: 'a brand-colour ground for glass cards and notices',
-    caution: 'keep the blue flat: no lighter centre, no glow at the foot; its motion not compared on a render frame by frame (stills only)',
+    caution: 'keep the blue flat: no lighter centre, no glow at the foot; checked on stills only (its motion not compared frame by frame)',
     reel: { film: 'library-grounds', from: 568, to: 657 },
   },
   {
@@ -97,7 +97,7 @@ export const GROUND: LibraryEntry[] = [
     frames: 60,
     summary: 'a full-bleed photograph pushing in slowly, thin white outline shapes drawing onto it, a re-grade that cuts on an event',
     use: 'a photograph as the world: under glass panels, under words, with outlines that frame the subject',
-    caution: 'one grade for every picture of a film; a re-grade needs a reason on screen; its motion not compared on a render frame by frame (stills only)',
+    caution: 'one grade for every picture of a film; a re-grade needs a reason on screen; checked on stills only (its motion not compared frame by frame)',
     reel: { film: 'library-grounds', from: 658, to: 747 },
   },
   {
@@ -109,7 +109,7 @@ export const GROUND: LibraryEntry[] = [
     frames: 60,
     summary: 'a tabletop from above: a slate cutting mat with its grid, a strip of desk, window-blind shadows across it, tracking slowly',
     use: 'a collage or paper look: tiles, stickers and cards laid on a real-looking table',
-    caution: 'things on the mat need a short contact shadow from the same window; keep words off the shadow bands; its motion not compared on a render frame by frame (stills only)',
+    caution: 'things on the mat need a short contact shadow from the same window; keep words off the shadow bands; checked on stills only (its motion not compared frame by frame)',
     reel: { film: 'library-grounds', from: 748, to: 837 },
   },
   {
@@ -121,7 +121,7 @@ export const GROUND: LibraryEntry[] = [
     frames: 30,
     summary: 'a flat light ground with one giant word a few percent lighter than it, cropped by the frame and drifting sideways',
     use: 'the home ground of a long film whose brand word is the texture under small type',
-    caution: 'if the ghost reads before the line in front, it is too strong; its motion not compared on a render frame by frame (stills only)',
+    caution: 'if the ghost reads before the line in front, it is too strong; checked on stills only (its motion not compared frame by frame)',
     reel: { film: 'library-grounds', from: 838, to: 927 },
   },
   {
@@ -133,7 +133,7 @@ export const GROUND: LibraryEntry[] = [
     frames: 120,
     summary: 'the frame split into four panels, each playing its own scene on its own loop length and phase, so the four never cut together',
     use: 'a showreel tile or a social loop that shows a body of work at once',
-    caution: 'one panel carries the words, the others pictures or UI; spread the phases so no two cuts fall within 6 f; its motion not compared on a render frame by frame (stills only)',
+    caution: 'one panel carries the words, the others pictures or UI; spread the phases so no two cuts fall within 6 f; checked on stills only (its motion not compared frame by frame)',
     reel: { film: 'library-grounds', from: 928, to: 1047 },
   },
   {
@@ -145,7 +145,7 @@ export const GROUND: LibraryEntry[] = [
     frames: 24,
     summary: 'a flat poster field ruled a shade darker that tilts from facing the lens into an isometric floor, with flat tiles lying on it',
     use: 'a section of a poster-colour film where blocks, slabs and tags stand on the ground',
-    caution: 'change the field by a cut or a flood, never a fade; no shadows on the floor; the tilt matches the source within a frame on a render, its cells were larger there (pass cell 0.3)',
+    caution: 'change the field by a cut or a flood, never a fade; no shadows on the floor; its tilt was compared frame by frame on a render; larger cells read better (pass cell 0.3)',
     reel: { film: 'library-grounds', from: 1048, to: 1137 },
   },
 ];

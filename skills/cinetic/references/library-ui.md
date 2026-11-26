@@ -1,5 +1,16 @@
 # Library: product UI
 
+**What it is for:** the product at work, designed like a shipped product: typing, sending, a list, a card opening, a
+state change, a pointer action, many things at once, integrations. Reach first for `Pointer` (any press or drag),
+`PromptAnswer` (an assistant asked and answering), `RowExpand` (an item opening into its detail), `ActionMorph` (the one
+action of a scene) and `NoticePile` (it keeps coming). Not here: other companies' real screens
+([hosts](library-hosts.md)), joins out of a press other than `SendLaunch` (`WindowOpen`, `GrowIris` in
+[turns](library-turns.md)), the product's mark ([objects](library-objects.md)). Near neighbours elsewhere: `ActionMorph`
+beside `MorphBox` (fx) and `CollapsePill` (turn), `SelectFrame` and `HandleGather` beside `CornerHunt` (fx) and
+`CornerLine` (type); inside the category, `TaskRun` beside `RowCool`; see
+[library.md](library.md#near-neighbours-across-categories) and [the product at
+work](library.md#showing-the-product-at-work).
+
 Finished animations for product interface in a film: notices that pile up, a card that fans out its siblings, a banner
 that grows out of its icon, an inbox row that opens into its message, a palette whose list travels to one row, a card
 dragged across a board, a stepped list, a task run, a button that becomes its own progress bar, a prompt sent and
@@ -18,13 +29,13 @@ every piece with its name: render it to see them move.
 
 | Piece | Does | About | Looks like | Reach for it for |
 |---|---|---|---|---|
-| [NoticePile](#noticepile) | build | 90 f | one notice lands alone and is held, then more, faster and faster, in a pile with depth; it can fold back | "it keeps coming": orders, messages, sign-ups |
-| [CardFan](#cardfan) | enter, exit | 80 f | a card lands by shrinking and fans its siblings out from behind it, holds, folds them back and leaves upward | "it is connected to the rest" |
+| [NoticePile](#noticepile) | build | 90 f | one notice lands alone and is held, then more, faster and faster, in a pile with depth; it can fold back | the "it keeps coming" beat: orders, messages or sign-ups arriving faster and faster |
+| [CardFan](#cardfan) | enter, exit | 80 f | a card lands by shrinking and fans its siblings out from behind it, holds, folds them back and leaves upward | the "it is connected to the rest" beat: one card shown among its siblings |
 | [BannerPop](#bannerpop) | enter | 54 f | a banner grows out of its icon, a badge pops, title and body arrive by word, a sheen crosses it once | one notification that matters |
 | [RowExpand](#rowexpand) | emphasis, build | 80 f | an inbox row opens in place into its message: the same avatar, sender and subject travel to the header | one item in a list that opens into its detail |
 | [PickList](#picklist) | emphasis | 70 f | a command palette: a query typed, the list travels in one move until the target row sits in the band, Enter | finding one thing among many |
 | [BoardDrag](#boarddrag) | build | 80 f | a project board; the pointer lifts one card, carries it along an arc and drops it into another column | work moving forward on a board |
-| [StepList](#steplist) | build, emphasis | 70 f | a stepped list carousel: the active label big beside an icon tile, neighbours fading by distance, steps accelerating | "every format, every kind" |
+| [StepList](#steplist) | build, emphasis | 70 f | a stepped list carousel: the active label big beside an icon tile, neighbours fading by distance, steps accelerating | the "every format, every kind" beat: a long list of kinds said one after another |
 | [TaskRun](#taskrun) | build | 80 f | rows join a card one by one with a spinner that closes to a check as the next arrives, the cadence accelerating | an agent or a setup working through its steps |
 | [ActionMorph](#actionmorph) | emphasis, build | 100 f | a button becomes its own progress bar and closes into a check, the done label sliding out beside it | the one action of a scene: publish, send, deploy |
 | [Pointer](#pointer) | emphasis | 40 f | a pointer that looks right: arcing, decelerating travel, a lifting shadow, a squash press and a soft ring | any press, drag or hover in a product scene |
@@ -36,19 +47,19 @@ every piece with its name: render it to see them move.
 | [CalendarWave](#calendarwave) | build | 60 f | a week fills in a wave: events appear as pale ghosts crossing the week diagonally, then take their colour | a schedule that fills itself |
 | [PhoneDrop](#phonedrop) | enter, build, exit | 140 f | a phone drops in with weight, a notice settles, the camera pushes into its reply field, a reply is sent, it leaves | a message received and answered on a phone |
 | [SelectFrame](#settingscard-toggleswitch-valueslider-selectframe) | emphasis | 18 f | a 2 px accent selection frame dragged open from its top-left corner, handles popping on one after another | a thing on a canvas being selected |
-| [HubPill](#hubpill) | build | 75 f | words append into a hub pill that widens to fit and inks in from colour; each word brings a tool tile with a connector dot; the tiles fly out past the camera | "it connects to the tools you use": integrations as a line being said |
-| [GhostFill](#ghostfill) | build | 60 f | ghost slots round a mark take their colours one app tile at a time, scattered, faster and faster, label pills popping beside a few | "a whole set of tools in one place": a registry, a suite, templates |
-| [FeedRush](#feedrush) | emphasis | 80 f | a comment feed fills row by row, rushes into a vertical smear while a reading counter races, then brakes and lands on one highlighted row | "it read all of it and found the one that matters" |
+| [HubPill](#hubpill) | build | 75 f | words append into a hub pill that widens to fit and inks in from colour; each word brings a tool tile with a connector dot; the tiles fly out past the camera | integrations said as a line ("it connects to the tools you use"), one tool tile a word |
+| [GhostFill](#ghostfill) | build | 60 f | ghost slots round a mark take their colours one app tile at a time, scattered, faster and faster, label pills popping beside a few | the "a whole set of tools in one place" beat: a registry, a suite, templates |
+| [FeedRush](#feedrush) | emphasis | 80 f | a comment feed fills row by row, rushes into a vertical smear while a reading counter races, then brakes and lands on one highlighted row | the "it read all of it and found the one that matters" beat |
 | [StatCount](#statcount) | enter, emphasis | 60 f | glass stat cards cut on blank over a picture, their figures appear and count up in whole numbers, each at its own rate | the cost or the scale of a problem, told in figures |
 | [HandleGather](#handlegather) | emphasis | 26 f | a word types in fresh ink while small squares hop in from round the frame and lock as the handles of its selection box | a name or a title being picked out on a canvas: the opening of a design or agent tool |
 | [DotCaret](#dotcaret) | enter | 40 f | a dot drops into a browser address field and stretches into the caret; the placeholder goes, the field widens, the view pushes in | a search or a request starting: the moment before typing |
-| [ChipRoll](#chiproll) | emphasis | 45 f | an app chip inside a sentence rolls like a slot reel to the next tool, its neighbours faint above and below, the line closing up | "it works with all of these", said inside one line |
-| [LinkPanel](#linkpanel) | build | 70 f | connectors draw from a column of sources into a panel, light pulses run along them, rows land lit and settle, the totals count up | "everything flows into one place": tracking, syncing, sources feeding a result |
+| [ChipRoll](#chiproll) | emphasis | 45 f | an app chip inside a sentence rolls like a slot reel to the next tool, its neighbours faint above and below, the line closing up | the "it works with all of these" beat, said inside one line |
+| [LinkPanel](#linkpanel) | build | 70 f | connectors draw from a column of sources into a panel, light pulses run along them, rows land lit and settle, the totals count up | the "everything flows into one place" beat: tracking, syncing, sources feeding one result |
 | [BentoFly](#bentofly) | enter | 20 f | on a cut, photo tiles, solid tiles, discs and a pill arrive from every side already moving and brake into a bento grid | a world or a set of stories assembling at once: the open of a section |
 | [SendLaunch](#sendlaunch) | join | 24 f | the send button lifts away and the composer falls out of frame; on the cut a small spark of pixels on a dark ground leads the app window in with a smear | a prompt sent and the product starting to work: from the request to the result |
 | [FileDrop](#filedrop) | build | 40 f | the pointer carries a file in on an arc, the file swinging from its tip like a pendulum, drops it into the composer, the send button appears | a document handed to the product: a contract, a brief, a spreadsheet |
 | [Cursor3D](#cursor3d) | emphasis | 20 f | a chunky extruded arrowhead cursor with a satin top, a side wall and a soft shadow glides onto a button, presses and rests with a slow tilt | a press in a soft, three-dimensional product world |
-| [BackdropSwap](#backdropswap) | emphasis | 35 f | a phone holds still at the centre while the pictures behind it hard-cut every five frames, the phone shifting a few pixels with each | "wherever you are": one product in many places |
+| [BackdropSwap](#backdropswap) | emphasis | 35 f | a phone holds still at the centre while the pictures behind it hard-cut every five frames, the phone shifting a few pixels with each | the "wherever you are" beat: one product in many places |
 | [FloodAway](#floodaway) | exit | 30 f | the cards round a line flood one by one with a saturated colour and blur, then blow away outward, the outer ones first, turning edge-on | clearing a frame of clutter to leave one line: "too much of this", then the answer |
 | [StickyType](#stickytype) | emphasis | 16 f | a sticky label appears as a square, stretches while its words type into it and draws a connector to what it annotates | a comment or a note pinned on a design, a page, a plan |
 | [RowCool](#rowcool) | build | 60 f | a progress log under a shimmering header: each row lands with its verb in its icon's colour, cools to the ink as the next arrives, the block nudging up | an agent working through its steps, with each step's kind visible |

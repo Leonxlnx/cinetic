@@ -1,5 +1,14 @@
 # Library: camera moves
 
+**What it is for:** moving the lens: in, back, along, or into a place. Reach first for `PullReveal` (where a thing
+lives), `RackFocus` (the next thing to read), `RowTrack` (a row as one object), `PullTilt` (a surface as an object) and
+`FloorTilt` (a statement becoming a place). Not here: the dive into an object (`DiveInto` is a
+[turn](library-turns.md)), a giant line trucked along (`GiantTruck` in [type](library-type.md)), a section seen through
+a lens (`LensBulge` in [fx](library-fx.md)). Near neighbours elsewhere: `CaretCam` beside `CaretFollow` (type),
+`FloorTilt` beside `IsoFloor` (ground), `DepthField` beside `CardDrift` and `OrbitRing` (object), `PlanetPull` beside
+`PlanetRim` (ground), `RackFocus` beside `BackdropFocus` (fx); see
+[library.md](library.md#near-neighbours-across-categories).
+
 Camera moves as finished pieces: a push, a pan, a dive, parallax between layers, a focus pull. Each wraps the scene it
 moves and takes `at`, `dur` or `speed` and its distances as props; it reads the frame size from `useVideoConfig()`. Each
 piece lives in `src/kit/library/camera/` (one file a piece, named after it), with its catalogue entry in
@@ -13,7 +22,7 @@ piece lives in `src/kit/library/camera/` (one file a piece, named after it), wit
 
 | Piece | Does | About | Looks like | Reach for it for |
 |---|---|---|---|---|
-| [CaretCam](#caretcam) | emphasis | 80 f | a prompt types in a small bar, the view cuts into the bar so the words type huge and the camera follows the caret, jumping on at each word, then snaps back | the one prompt of a film that should be read word by word: the request the product answers |
+| [CaretCam](#caretcam) | enter, emphasis | 80 f | a prompt types in a small bar, the view cuts into the bar so the words type huge and the camera follows the caret, jumping on at each word, then snaps back | the one prompt of a film that should be read word by word: the request the product answers |
 | [PullReveal](#pullreveal) | enter, join | 4 f | from a close view of one thing the camera pulls back hard to the whole of it, blurred on the one fast frame, then drifts on back | showing where a thing lives: a card in its feed, a message in its thread, a window on its desk |
 | [DepthField](#depthfield) | enter, exit, idle | 20 f | a field of chips at different depths: they arrive large from outside and shrink into place at their own speeds, drift apart, and fly out past the edges on a push | the many things a product connects (teams, tools, sources) gathering round one centre, and leaving it |
 | [FloorTilt](#floortilt) | build, join | 13 f | the flat ground a line sits on tilts away into a floor seen from above and turned, so the line lies on it and the next things land on it | turning a statement into a place: the floor the next objects stand on |

@@ -1,5 +1,12 @@
 # Library: design presets
 
+**What it is for:** a whole look as tokens, with the ground and the pieces that go with it. Reach first for `Quiet` (a
+sentence that builds), `Drafting` (structure and one loud colour), `Cream` (an assistant doing one task), `Ember`
+(darkness and one light) and `Gallery` (people and their work). Not here: motion (a preset moves nothing; its `moves`
+name the pieces), a purple or green look, a faint gradient ground. The presets are shown on the design reel only, never
+yet tried on a whole film. Which ground and type moves go with each: [a ground and a
+look](library.md#a-ground-and-a-look).
+
 Named looks as typed token objects (`Design`: palette, grounds, type scale and weights, radii, shadow recipe, stroke,
 texture) that a film spreads into its own tokens (`const W = { ...Quiet.palette, radius: Quiet.radii.card }`). A preset
 is a piece: `export const Quiet: Design = { ... }` in `designs/Quiet.ts`. Each piece lives in `src/kit/library/designs/`

@@ -217,7 +217,7 @@ export const TYPE: LibraryEntry[] = [
     frames: 45,
     summary: 'a centred line built word by word: each word cuts on in a tint (grey, a hue path, warm light) and inks while the line re-centres, most of the move on the arrival frame',
     use: 'the voice-over line: a statement said word by word on the voice or the beat',
-    caution: 'one word every 6-12 frames; faster and the tint never shows; pass fit when the line could outgrow the frame',
+    caution: 'one word every 6-12 frames; faster and the tint never shows; pass fit when the line could outgrow the frame; the heat path is a fair match only and fit was checked on a sheet only',
     reel: { film: 'library-type', from: 1281, to: 1520 },
   },
   {
@@ -229,7 +229,7 @@ export const TYPE: LibraryEntry[] = [
     frames: 20,
     summary: 'wrong glyphs change every few frames and lock into the word letter by letter, optionally inside corner brackets that roll it to the next word',
     use: 'a word that is computed, decoded or chosen: a status, a label, a step name',
-    caution: 'short words only; a long line of noise reads as a fault',
+    caution: 'short words only; a long line of noise reads as a fault; the bracket variant is a fair match only',
     reel: { film: 'library-type', from: 1521, to: 1604 },
   },
   {
@@ -253,7 +253,7 @@ export const TYPE: LibraryEntry[] = [
     frames: 40,
     summary: 'a line built word by word inside four small corner marks that jump outward as it widens; the marks arrive as doubled dashes that collapse to squares',
     use: 'one framed statement: a tagline, a definition, the line the film is about',
-    caution: 'structure for one line at a time; never frame every line of a film',
+    caution: 'structure for one line at a time; never frame every line of a film; a fair match only: the doubled-dash arrival is short and small and reads only at full size',
     reel: { film: 'library-type', from: 1669, to: 1738 },
   },
   {
@@ -277,7 +277,7 @@ export const TYPE: LibraryEntry[] = [
     frames: 60,
     summary: 'a colour gradient clipped to the glyphs passes along the line: letters appear at a soft front in warm colours, run to cool and settle to the ink behind a slower front',
     use: 'a closing line or a title that should feel lit as it is said',
-    caution: 'one per film; slow by nature (a 40-letter line takes about 2 s to ink)',
+    caution: 'one per film; slow by nature (a 40-letter line takes about 2 s to ink); a faint letter stem can show ahead of the colour band',
     reel: { film: 'library-type', from: 1779, to: 1862 },
   },
   {
@@ -301,7 +301,7 @@ export const TYPE: LibraryEntry[] = [
     frames: 60,
     summary: 'a prompt typed at a giant size after two caret blinks, centred while it fits; then the camera holds the caret in short smeared jumps so the start of the line leaves the frame',
     use: 'the one prompt or question a film is about, said big',
-    caution: 'one per film; keep the prompt under about 40 characters',
+    caution: 'one per film; keep the prompt under about 40 characters; its camera smear is lighter than planned and its demo face is a stand-in',
     reel: { film: 'library-type', from: 1919, to: 2008 },
   },
   {
@@ -397,7 +397,7 @@ export const TYPE: LibraryEntry[] = [
     frames: 10,
     summary: 'a word flips up from lying flat on its baseline, rising and darkening to ink; to swap, it heats along a colour path, tips back and the next one flips up',
     use: 'one word in a slot beside a picture or a device that changes two or three times',
-    caution: 'one word in a slot, not a whole line',
+    caution: 'one word in a slot, not a whole line; a fair match only',
     reel: { film: 'library-type', from: 2426, to: 2501 },
   },
   {
@@ -457,7 +457,7 @@ export const TYPE: LibraryEntry[] = [
     frames: 90,
     summary: 'a title writes itself as a thin double contour glyph by glyph at a hand pace, then fills left to right, each glyph blooming in from a blur while its contour fades',
     use: 'a title or a name that should feel drawn before it is set',
-    caution: 'one per film; it takes time (a ten-letter word draws in 2-3 s); a flat ground only',
+    caution: 'one per film; it takes time (a ten-letter word draws in 2-3 s); a flat ground only; each glyph is wiped on, never drawn stroke by stroke, and switching between two lines is not built',
     reel: { film: 'library-type', from: 2688, to: 2787 },
   },
   {
@@ -505,7 +505,7 @@ export const TYPE: LibraryEntry[] = [
     frames: 30,
     summary: 'code grows as blocks becoming words: each token appears as a tinted box its own width, then its text cuts on inside and the box clears',
     use: 'code or a query being written by the product',
-    caution: 'code or structured lines; in prose the boxes read as redaction',
+    caution: 'code or structured lines; in prose the boxes read as redaction; checked for its mechanism only, not frame by frame',
     reel: { film: 'library-type', from: 2934, to: 2983 },
   },
   {
@@ -517,7 +517,7 @@ export const TYPE: LibraryEntry[] = [
     frames: 30,
     summary: 'a cut to a giant line cropped by the frame, already moving: the camera trucks along it, fast and smeared at first, settling on its last word',
     use: 'a claim read as it passes, big, after a cut',
-    caution: 'three to six short words, one idea; hold on the last word',
+    caution: 'three to six short words, one idea; hold on the last word; its retimed speed was seen in a preview only, never compared on a render',
     reel: { film: 'library-type', from: 2984, to: 3033 },
   },
 ];

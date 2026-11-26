@@ -1,5 +1,16 @@
 # Library: type
 
+**What it is for:** making words the event: a statement landing, a line arriving, leaving, changing in place or being
+marked, words that carry pictures. Reach first for `RiseLine` (the clean default), `InkLine` (a line said word by word
+on the voice), `WeightLine` (a bold statement), `MarkPhrase` (one phrase marked) and `CutAway` (taking a line apart).
+Not here: full-frame joins ([turns](library-turns.md)), product UI that types (`PromptAnswer`, `ChatThread` in
+[ui](library-ui.md)), wordmarks and lockups ([objects](library-objects.md)). Near neighbours elsewhere: `CaretFollow`
+beside `CaretCam` (camera), `TrackedType` beside `TrackOverlay` (fx), `DotWord` beside `DotScreen` (fx), `PushApart`
+beside `DotIris` (turn), `InlineChip` beside `ChipBloom` (turn) and `SlotSwap` (object), `PartStack` beside `DealtStack`
+(object), `CornerLine` beside `CornerHunt` (fx), `BlockOut` beside `StampHop` (turn); which to use when is in
+[library.md](library.md#near-neighbours-across-categories), and the pieces by job in
+[library.md](library.md#pick-by-job).
+
 Finished animations that make words an event: lines that land with weight, type with a texture or a treatment,
 playful letters, a statement typed into a product, and clean exits. Import them from the kit
 (`import { WeightLine, BarStack, LightWord } from '../../kit';`). The reel `library-type` shows every piece with its name

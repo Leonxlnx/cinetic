@@ -1,5 +1,15 @@
 # Library: finishing effects
 
+**What it is for:** a layer that finishes a frame already right: light, an impact, a screen material, an analytic mark.
+Reach first for `LightSweep` (a surface catching light), `ChromaHit` (a landing), `GlyphSheen` (a payoff word),
+`ShimmerText` (the product working) and `BackdropFocus` (an arrival over its screen). Not here: joins (`MorphBox` is the
+one effect that also joins; the rest are [turns](library-turns.md)), camera moves ([camera](library-camera.md)), grounds
+([grounds](library-grounds.md); `GlowBars` is the one effect that serves as a ground). Near neighbours elsewhere:
+`TrackOverlay` beside `TrackedType` (type), `DotScreen` beside `DotWord` (type) and `DotLattice` (ground), `MorphBox`
+beside `CollapsePill` (turn) and `ActionMorph` (ui), `StepScan` beside `CellStack` (object), `CornerHunt` beside
+`CornerLine` (type) and `SelectFrame` (ui), `BackdropFocus` beside `RackFocus` (camera), `GlowBars` beside `PlanetRim`
+(ground); see [library.md](library.md#near-neighbours-across-categories).
+
 The finishing layers that make a frame rich: light crossing a surface, a bloom on a light source, tracking marks over a
 moving object, a dot screen, a channel split on a landing, and one rounded shape that becomes the next. Import them from
 the kit (`import { LightSweep, Bloom, MorphBox } from '../../kit';`). The reel `library-fx` shows every piece with its
@@ -19,7 +29,7 @@ moment that matters, and never as a way to hide a cut: a flash of light, a scree
 | [TrackOverlay](#trackoverlay) | idle, emphasis | 60 f | motion tracking over a moving object: turning boxes, centre dots, live coordinates and dashed arcs between targets | an analytic, technical layer over something that moves |
 | [DotScreen](#dotscreen) | idle, join | 30 f | the content seen through a grid of round dots, an LED board or a coarse halftone; animate the dot size to turn | a big word or a picture as an LED board; a turn between two through the same grid |
 | [ChromaHit](#chromahit) | emphasis | 2 f | on an impact the colour channels split for two frames and snap back | a landing the viewer sees: wrap the thing that lands |
-| [MorphBox](#morphbox) | build, join | 14 f | one rounded shape becomes the next (a pill, a card, a window), each stage's content wiping in behind a soft edge | thinking becoming an answer, a pill becoming a card becoming a window |
+| [MorphBox](#morphbox) | build, join | 14 f | one rounded shape becomes the next (a pill, a card, a window), each stage's content wiping in behind a soft edge | carries the object: one surface that changes shape keeps the eye; for thinking becoming an answer, a pill becoming a card becoming a window |
 | [GradeResolve](#graderesolve) | build, emphasis | 9 f | pictures switch to a gradient map (warm, cool, thermal, two-tone) or back to natural colour, cell by cell in a scattered order, each cell a cut | the product reading pictures: analysing, segmenting, sorting a library; or footage resolving to its true colour |
 | [Stepped](#stepped) | idle, build | 60 f | a treatment for any move: drawn on twos or held 3-5 frames a step like stop-motion, each step a hair off, with grain moving every frame | a collage or drawn scene that should read handmade; cut-outs that land and wobble |
 | [ShimmerText](#shimmertext) | loop | 30 f | a small status line with a lighter or darker band crossing it on a loop; the words swap by cut between passes | the product working: reading, thinking, building, while the viewer waits |

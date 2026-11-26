@@ -1,5 +1,11 @@
 # Library: host screens
 
+**What it is for:** another company's product shown as its real screen, or the product's own design canvas. Reach first
+for `GitHubPullRequest` (code reviewed and merged), `VSCodeWindow` (code written), `GitHubIssueColumn` (work tracked)
+and `CanvasChrome` with `DotCanvas` (the product's own canvas). Not here: the product's own interface
+([ui](library-ui.md)), integrations said as marks (`HubPill`, `ChipRoll`, `GhostFill` in [ui](library-ui.md)),
+look-alike screens of any kind. It has no near neighbours in other categories.
+
 Faithful rebuilds of the third-party screens a film shows most, and a design-canvas app chrome for the product's own
 canvas. A film shows another company's product in one of two ways only: its real mark alone (`<Brand>`), or a faithful,
 detailed rebuild of its real screen with the film's content in it. These pieces are the second way, built once so a film

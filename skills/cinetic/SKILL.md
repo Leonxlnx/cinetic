@@ -92,7 +92,7 @@ Never the concept of a worked example you just read. Write `Concept: <name>, bec
 **5. Devices, then beats (the rest of `BEATS.md`).** Find the signature: one motif from the story and the product's
 object, name or brand that opens the film, returns in joins and closes it. Write a **Devices** block: the opening, the
 type treatment, each join with its class, the spectacle, the integration form, the ending, each naming the
-[library](references/library.md) piece behind it (or why none fits; `check` counts them), else from the
+[library](references/library.md#pick-by-job) piece behind it, picked by job (or why none fits; `check` counts them), else from the
 [menus](references/film-grammar.md#devices), by what the story needs. No move repeats identically or more than twice. Then one row per beat
 ([structures](references/film-grammar.md#structures)): frames, its composition tag, what the viewer sees, what moves and
 how, how it joins the next beat, the sound. A beat's length is set by its action, not a cap. Name the poster frame.
@@ -103,7 +103,7 @@ top of the film: ground, ink, accent, the statement face and its sizes ([type.md
 
 **7. Build.** Write the film as one timeline object `T` (every scene and sound cue reads its frames from it) plus one
 component per section. Take turns, type moves and UI pieces from the library (`frames.mjs library` finds them by purpose,
-subject and mood: [library.md](references/library.md)) and adapt them; [kit.md](references/kit.md) is the API,
+subject and mood; [pick by job](references/library.md#pick-by-job)) and adapt them; [kit.md](references/kit.md) is the API,
 [type.md](references/type.md) covers every word on screen, and the motion references hold recipes for what the library
 lacks: [text](references/motion/text.md),
 [entrances](references/motion/entrances.md), [exits](references/motion/exits.md), [turns](references/motion/turns.md),

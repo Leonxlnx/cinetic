@@ -1,5 +1,14 @@
 # Library: grounds
 
+**What it is for:** the ground a film's scenes stand on and how it moves, each the ground of a design preset. Reach
+first for `HairlineGrid` (a clean light product), `TechGrid` (night and technical), `PhotoPlate` (a photograph as the
+world), `OrbitLines` (quiet statements on cream) and `IsoFloor` (poster fields with blocks). Not here: a ground change
+as a join (`TileFlood`, `PixelStair` in [turns](library-turns.md)), a glow (`GlowBars` in [fx](library-fx.md)), faint
+gradients or wallpapers. Most grounds here were checked on stills only; their cautions say so. Near neighbours
+elsewhere: `IsoFloor` beside `FloorTilt` (camera), `PlanetRim` beside `PlanetPull` (camera) and `GlowBars` (fx),
+`DotLattice` beside `DotScreen` (fx); see [library.md](library.md#near-neighbours-across-categories) and [a ground and a
+look](library.md#a-ground-and-a-look).
+
 Designed backgrounds and how they move: a flat ground that changes by an object, a grid or a pattern that breathes, a
 ground built from the film's own material. Never a faint gradient or a drifting wallpaper. Each piece lives in
 `src/kit/library/grounds/` (one file a piece, named after it), with its catalogue entry in

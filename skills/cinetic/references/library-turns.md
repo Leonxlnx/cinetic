@@ -1,5 +1,16 @@
 # Library: turns
 
+**What it is for:** the join, one scene becoming the next, covering the whole frame. Each entry's `use` starts with what
+it carries (the object, the press, the line being read, a shape, a colour field, the motion, a held layer, or nothing,
+on a hit in the music). Reach first for `DiveInto` (into the object), `WindowOpen` (a press opens its window), `DotIris`
+(the line carried), `ShapeMatch` (a shape in both scenes) and `VelocityCut` (the motion). Not here: line exits that also
+turn (`BlockOut`, `PushApart`, `ClipExit` in [type](library-type.md)), camera moves (`PullReveal`, `ExposureRamp` in
+[camera](library-camera.md)), the joins into a lockup (`PixelIris`, `PlateSqueeze` in [objects](library-objects.md)).
+Near neighbours elsewhere: `DotIris` beside `PushApart` (type), `ChipBloom` beside `InlineChip` (type), `FrameCollapse`
+beside `PlateSqueeze` (object), `GrowIris` beside `PixelIris` (object), `CollapsePill` beside `MorphBox` (fx),
+`StampHop` beside `BlockOut` (type); see [library.md](library.md#near-neighbours-across-categories) and the join table
+in [library.md](library.md#a-join-by-what-it-carries).
+
 Finished animations for how one scene becomes the next. Import them from the kit
 (`import { DotReveal, GrowIris, WindowOpen } from '../../kit';`). The reel `library-turns` shows every piece with its
 name; `frames.mjs library --category turn` lists them. The finishing layers that make a frame rich (a light sweep,
@@ -22,16 +33,16 @@ it rises. Hard colour flips on a beat were tried and dropped: they read as a sud
 
 | Piece | Does | About | Looks like | Reach for it for |
 |---|---|---|---|---|
-| [DotReveal](#dotreveal) | join | 34 f | the next scene arrives as a field of dots (or square cells) from an edge or an object, swelling until they merge | a picture or a full scene arriving out of a small object (a phone, an icon) or a calm screen |
-| [BlockBurst](#blockburst) | join | 19 f | square cells burst out of an object in a diamond until the next scene fills the frame; from an edge, a staircase | a digital or financial product, an icon that opens into its world |
-| [GrowIris](#growiris) | join | 6 f | a circle, rounded box or ellipse grows out of an object until it is the next scene, which settles from smaller inside | a button, a pill or a card that opens into what it promises |
-| [DiveInto](#diveinto) | join | 20 f | the camera dives into a card, a window or a picture, exponentially, and its inside is the next scene | going into the thing on screen: a card, a window, a picture |
-| [WhipGate](#whipgate) | join | 22 f | an accelerating whip, a two-frame gate inside the blur, and the next scene arriving at whip speed, its smear clearing | a fast move between two scenes on one ground tone |
-| [Shove](#shove) | join, exit | 24 f | the old scene is cut into bands shoved off one after another while the next slides in underneath and lands | a statement giving way to the product |
-| [ShapeMatch](#shapematch) | join | 14 f | one shape detaches and travels to where the same shape sits in the next scene, changing size, radius and colour | a match cut on shape: an icon tile, a chip or a dot that is in both scenes |
-| [GlitchCut](#glitchcut) | join | 8 f | a few frames where the picture breaks and the next scene flickers through, one broken state a frame, cut hard | a hit in the music, once |
-| [WindowOpen](#windowopen) | join | 14 f | a window opens out of the button that was pressed, the next scene's window drawn whole inside the growing rectangle | a press that opens a window or panel: the commonest hand-built join, take this one |
-| [DotIris](#dotiris) | join | 9 f | a dot appears at one point (the gap between two words, a button) and opens by a constant ratio a frame into the next scene, playing inside it at its own scale | carries the line (drawn at the same place in both scenes) and the opening point; for a line or a button that opens onto a lighter or darker world, the line carried in both |
+| [DotReveal](#dotreveal) | join | 34 f | the next scene arrives as a field of dots (or square cells) from an edge or an object, swelling until they merge | carries the object it grows from: the next scene swells as dots out of a phone, an icon or an edge; for a picture or a full scene arriving out of something small, or after a calm screen |
+| [BlockBurst](#blockburst) | join | 19 f | square cells burst out of an object in a diamond until the next scene fills the frame; from an edge, a staircase | carries the object it bursts from: square cells break out of an icon into its world; for a digital or financial product |
+| [GrowIris](#growiris) | join | 6 f | a circle, rounded box or ellipse grows out of an object until it is the next scene, which settles from smaller inside | carries the press: a button, a pill or a card grows into the scene it promises (cause and effect) |
+| [DiveInto](#diveinto) | join | 20 f | the camera dives into a card, a window or a picture, exponentially, and its inside is the next scene | carries the object: the camera goes into the card, window or picture on screen and its inside is the next scene |
+| [WhipGate](#whipgate) | join | 22 f | an accelerating whip, a two-frame gate inside the blur, and the next scene arriving at whip speed, its smear clearing | carries the motion: a fast whip between two scenes on one ground tone |
+| [Shove](#shove) | join, exit | 24 f | the old scene is cut into bands shoved off one after another while the next slides in underneath and lands | carries the motion: the old scene is shoved off in bands as the next slides in under it; for a statement giving way to the product |
+| [ShapeMatch](#shapematch) | join | 14 f | one shape detaches and travels to where the same shape sits in the next scene, changing size, radius and colour | carries a shape: an icon tile, a chip or a dot that is in both scenes travels to its next place (a match cut on shape) |
+| [GlitchCut](#glitchcut) | join | 8 f | a few frames where the picture breaks and the next scene flickers through, one broken state a frame, cut hard | carries nothing: the hard cut on a hit in the music, broken for a few frames, once |
+| [WindowOpen](#windowopen) | join | 14 f | a window opens out of the button that was pressed, the next scene's window drawn whole inside the growing rectangle | carries the press: the pressed button grows into the window or panel it opens; the commonest hand-built join, take this one |
+| [DotIris](#dotiris) | join | 9 f | a dot appears at one point (the gap between two words, a button) and opens by a constant ratio a frame into the next scene, playing inside it at its own scale | carries the line being read and the point it opens from (the gap between two words, a button), the line drawn at the same place in both scenes; for a line that opens onto a lighter or darker world |
 | [ChipBloom](#chipbloom) | join | 7 f | a picture chip inside a sentence grows, pushing the words apart, then opens to the full frame in two frames: its picture is the next scene | carries the object: the chip's own picture becomes the frame; for a sentence that names the thing the next scene shows |
 | [FaceDive](#facedive) | join | 12 f | the camera dives through a polygon face (a hexagon cube face, a tile) that already holds the next scene; the face outruns its picture | carries the object: its face already holds the next scene; for a diagram of objects where one of them is the next subject |
 | [VelocityCut](#velocitycut) | join | 11 f | the outgoing content's speed doubles every frame, the cut lands on the fastest frame and the next content enters moving the same way and brakes | carries the motion: the next content enters at the speed the old one left; for two scenes on one ground: a line to the product, one step of a flow to the next |

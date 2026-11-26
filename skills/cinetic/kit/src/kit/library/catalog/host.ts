@@ -85,7 +85,7 @@ export const HOST: LibraryEntry[] = [
     frames: 60,
     summary: 'a design canvas\'s dot grid, moved under the chrome with the camera',
     use: 'the ground of a design-canvas scene',
-    caution: '',
+    caution: 'under CanvasChrome only; keep the dots faint so the canvas content leads',
     reel: { film: 'library-hosts', from: 490, to: 589, shownIn: 'CanvasChrome' },
   },
 ];

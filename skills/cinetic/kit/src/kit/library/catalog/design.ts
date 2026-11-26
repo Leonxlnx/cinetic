@@ -145,7 +145,7 @@ export const DESIGN: LibraryEntry[] = [
     frames: 75,
     summary: 'a photograph or footage as the ground, frosted glass pills and panels over it showing the picture through, white type, a black send button',
     use: 'a consumer assistant set in the world (sky, travel, health)',
-    caution: 'the picture is the ground, never a pastel gradient field',
+    caution: 'the picture is the ground, never a pastel gradient field; its dimmed plate was checked on one frame for contrast only',
     reel: { film: 'library-designs', from: 825, to: 899 },
   },
   {

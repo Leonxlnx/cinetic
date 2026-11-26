@@ -7,7 +7,7 @@ export const CAMERA: LibraryEntry[] = [
   {
     name: 'CaretCam',
     category: 'camera',
-    purpose: ['emphasis'],
+    purpose: ['enter', 'emphasis'],
     subject: ['line', 'control'],
     mood: ['bold', 'technical'],
     frames: 80,
@@ -109,7 +109,7 @@ export const CAMERA: LibraryEntry[] = [
     frames: 100,
     summary: 'the camera tracks sideways along a row of slots, cards or years at a constant height, slowing steadily, each one taking its turn at the centre',
     use: 'a row of things that belong together (a tray, a timeline, a shelf) shown as one long object instead of cuts',
-    caution: 'end on a slow crawl, never a dead stop, never a reverse',
+    caution: 'end on a slow crawl, never a dead stop, never a reverse; its lowered smear was seen in a preview only',
     reel: { film: 'library-camera', from: 634, to: 743 },
   },
   {
@@ -121,7 +121,7 @@ export const CAMERA: LibraryEntry[] = [
     frames: 18,
     summary: 'a dark grid floor pulls back into the top of a gridded planet: the corners open onto a strong sky and the lit rim sinks to a low horizon',
     use: 'from a close, abstract floor to a big world; a horizon for a card or a line to rise over',
-    caution: 'the sky must be strong and saturated; keep the grid faint on the dark body',
+    caution: 'the sky must be strong and saturated; keep the grid faint on the dark body; its corrected timing was seen in a preview only, never compared on a render',
     reel: { film: 'library-camera', from: 744, to: 803 },
   },
   {
@@ -133,7 +133,7 @@ export const CAMERA: LibraryEntry[] = [
     frames: 46,
     summary: 'a small grid of cells scanned row by row replicates outward, a plus first, then a field, while the camera pulls back to a fine flickering field',
     use: 'one process becoming many: scale, parallel work, a fleet',
-    caution: 'one colour on a light ground; cut away once the field is fine',
+    caution: 'one colour on a light ground; cut away once the field is fine; it pulls back smoothly and never steps out in clear rings',
     reel: { film: 'library-camera', from: 804, to: 873 },
   },
 ];

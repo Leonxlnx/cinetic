@@ -72,7 +72,7 @@ export const FX: LibraryEntry[] = [
     mood: ['calm', 'technical'],
     frames: 14,
     summary: 'one rounded shape becomes the next (a pill, a card, a window), each stage\'s content wiping in behind a soft edge',
-    use: 'thinking becoming an answer, a pill becoming a card becoming a window',
+    use: 'carries the object: one surface that changes shape keeps the eye; for thinking becoming an answer, a pill becoming a card becoming a window',
     caution: 'keep the stages in one surface colour; lay each stage\'s content out at that stage\'s size',
     reel: { film: 'library-fx', from: 366, to: 465 },
   },
@@ -85,7 +85,7 @@ export const FX: LibraryEntry[] = [
     frames: 9,
     summary: 'pictures switch to a gradient map (warm, cool, thermal, two-tone) or back to natural colour, cell by cell in a scattered order, each cell a cut',
     use: 'the product reading pictures: analysing, segmenting, sorting a library; or footage resolving to its true colour',
-    caution: 'give it a reason the viewer sees; a whole frame turning a colour without one is a sudden colour change',
+    caution: 'give it a reason the viewer sees; a whole frame turning a colour without one is a sudden colour change; cells switch without a smear',
     reel: { film: 'library-fx', from: 466, to: 525 },
   },
   {
@@ -97,7 +97,7 @@ export const FX: LibraryEntry[] = [
     frames: 60,
     summary: 'a treatment for any move: drawn on twos or held 3-5 frames a step like stop-motion, each step a hair off, with grain moving every frame',
     use: 'a collage or drawn scene that should read handmade; cut-outs that land and wobble',
-    caution: 'step the drawing, never the camera, typing or a counting number',
+    caution: 'step the drawing, never the camera, typing or a counting number; the stop-motion collage use is checked on stills only',
     reel: { film: 'library-fx', from: 526, to: 585 },
   },
   {
@@ -133,7 +133,7 @@ export const FX: LibraryEntry[] = [
     frames: 7,
     summary: 'a pen over the frame: a hand loop round a point, a ring, a curved arrow with its head, a zigzag, a tick, drawn on twos as glowing light or a dry marker, retracting in order',
     use: 'pointing at the one thing in the frame the line is about',
-    caution: 'one or two marks at a time; more is a doodle',
+    caution: 'one or two marks at a time; more is a doodle; plain strokes only: no halo or ripple ring and no warm edge on the arrow',
     reel: { film: 'library-fx', from: 736, to: 819 },
   },
   {
@@ -145,7 +145,7 @@ export const FX: LibraryEntry[] = [
     frames: 14,
     summary: 'the whole scene through one barrel lens: the centre swelled, the edges bent and darker, a hair of colour fringe, optionally the pixel grid of a filmed screen',
     use: 'a section whose shots should read as one screen being filmed (a fisheye over devices, a monitor finish)',
-    caution: 'amount capped at 0.2 (stronger steps visibly); one lens for a whole section, never on and off; type out of the outer fifth',
+    caution: 'the lens effect is capped at 0.2 (stronger steps visibly), so it is gentler than a real fisheye; its entrance was not compared on a render; one lens for a whole section, never on and off; type out of the outer fifth',
     reel: { film: 'library-fx', from: 820, to: 869 },
   },
   {
@@ -181,7 +181,7 @@ export const FX: LibraryEntry[] = [
     frames: 45,
     summary: 'a viewfinder hunting round a phrase: tiny squares at the corners of an invisible box, 1-4 lit each frame, the box jumping between three sizes, never tweened',
     use: 'a phrase about finding, framing or selecting, while it holds',
-    caution: 'one phrase while it holds, settled or stopped when the phrase is done; never round running text',
+    caution: 'one phrase while it holds, settled or stopped when the phrase is done; never round running text; the box never wanders off to one side',
     reel: { film: 'library-fx', from: 1010, to: 1075 },
   },
   {
@@ -205,7 +205,7 @@ export const FX: LibraryEntry[] = [
     frames: 40,
     summary: 'a frosted band at the top of a scrolling column: what slides into it goes soft and pale, as if under frosted glass; or a whole surface clearing from frosted',
     use: 'a chat or a feed scrolling away under its header without a hard cut-off edge',
-    caution: 'the band must sit under something (a header, an avatar, the frame edge)',
+    caution: 'the band must sit under something (a header, an avatar, the frame edge); the clear-from-frosted option (clearAt) was not compared on a render',
     reel: { film: 'library-fx', from: 1136, to: 1199 },
   },
   {
@@ -217,7 +217,7 @@ export const FX: LibraryEntry[] = [
     frames: 70,
     summary: 'small glowing dots pop on one by one at seeded spots and drift into a loose cloud; or short hairline dashes that blink on, live a few frames and slide',
     use: 'a quiet beat on a night ground; the many small signals a product gathers',
-    caution: 'keep it out of the type box (avoid); never confetti on a hit',
+    caution: 'keep it out of the type box (avoid); never confetti on a hit; its larger dots were seen in a preview only',
     reel: { film: 'library-fx', from: 1200, to: 1289 },
   },
   {
@@ -229,7 +229,7 @@ export const FX: LibraryEntry[] = [
     frames: 16,
     summary: 'on a press a ring of halftone dots grows out of the button and thins as it goes, the dots largest on its crest; no flash',
     use: 'the one press that starts something (record, send, run)',
-    caution: 'once, on the press that matters; the button dips too',
+    caution: 'once, on the press that matters; the button dips too; the frame dims only a little, by design',
     reel: { film: 'library-fx', from: 1290, to: 1339 },
   },
   {
@@ -253,7 +253,7 @@ export const FX: LibraryEntry[] = [
     frames: 40,
     summary: 'white hairlines slide in from the top and bottom in mirrored pairs and cut a picture into bands that slip down by their own amounts',
     use: 'a photograph with one clear subject that should break or sink',
-    caution: 'photographs and footage only; on UI or type it reads as a fault',
+    caution: 'photographs and footage only; on UI or type it reads as a fault; its timing was read at a low frame rate and the default sink is gentle: raise it for a real fall',
     reel: { film: 'library-fx', from: 1420, to: 1479 },
   },
 ];
