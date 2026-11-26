@@ -145,7 +145,7 @@ export const FX: LibraryEntry[] = [
     frames: 14,
     summary: 'the whole scene through one barrel lens: the centre swelled, the edges bent and darker, a hair of colour fringe, optionally the pixel grid of a filmed screen',
     use: 'a section whose shots should read as one screen being filmed (a fisheye over devices, a monitor finish)',
-    caution: 'the lens effect is capped at 0.2 (stronger steps visibly), so it is gentler than a real fisheye; its entrance was not compared on a render; one lens for a whole section, never on and off; type out of the outer fifth',
+    caution: 'the lens effect is capped at 0.2 (stronger steps visibly), so it is gentler than a real fisheye; the bent edges pull the ground into the corners (black by default): use it as a filmed-screen look, never on a frame that must read edge to edge; its entrance was not compared on a render; one lens for a whole section, never on and off; type out of the outer fifth',
     reel: { film: 'library-fx', from: 820, to: 869 },
   },
   {
@@ -167,9 +167,9 @@ export const FX: LibraryEntry[] = [
     subject: ['line'],
     mood: ['bold', 'playful'],
     frames: 10,
-    summary: 'a heavily blurred blob in the colour of the line slides in under a bold line and settles; the letters over its dense part turn white',
+    summary: 'a soft-edged blob in the colour of the line slides in under a bold line and settles; the letters inside its edge turn white',
     use: 'the line that names the change, set bold and large on a light ground',
-    caution: 'one line, bold, 6 % of the frame height or more; the blob in the colour of the line',
+    caution: 'one line, bold, 6 % of the frame height or more; the blob in the colour of the line; a letter right on the blob edge is half and half, so keep the blob wider than the words it carries',
     reel: { film: 'library-fx', from: 960, to: 1009 },
   },
   {
@@ -229,7 +229,7 @@ export const FX: LibraryEntry[] = [
     frames: 16,
     summary: 'on a press a ring of halftone dots grows out of the button and thins as it goes, the dots largest on its crest; no flash',
     use: 'the one press that starts something (record, send, run)',
-    caution: 'once, on the press that matters; the button dips too; the frame dims only a little, by design',
+    caution: 'once, on the press that matters; the button dips too; leave `dim` at 0 on a light ground (a dim reads as the frame pulsing grey)',
     reel: { film: 'library-fx', from: 1290, to: 1339 },
   },
   {
@@ -253,7 +253,7 @@ export const FX: LibraryEntry[] = [
     frames: 40,
     summary: 'white hairlines slide in from the top and bottom in mirrored pairs and cut a picture into bands that slip down by their own amounts',
     use: 'a photograph with one clear subject that should break or sink',
-    caution: 'photographs and footage only; on UI or type it reads as a fault; its timing was read at a low frame rate and the default sink is gentle: raise it for a real fall',
+    caution: 'photographs and footage only, with a shape in every band (a horizon, a subject, rocks): over flat sky only the hairlines show and read as a fault; on UI or type it reads as a fault; the default sink is gentle: 0.2 for a slip one can follow',
     reel: { film: 'library-fx', from: 1420, to: 1479 },
   },
 ];

@@ -1,8 +1,10 @@
-// BlobKnock (fx, emphasis): a heavily blurred colour blob slides in under a bold line from one side and settles beneath
+// BlobKnock (fx, emphasis): a soft-edged colour blob slides in under a bold line from one side and settles beneath
 // it; where the blob is dense the letters turn white, so the words read through the colour.
-// Numbers: the blob two lobes, 30 % of the frame wide and 24 % high in all, centred a little under the line, blurred 3 %
-// of the frame height; it travels 30 % of the width in 10 f on an expo-out and keeps drifting 1 px a frame; the line in
-// the blob's own colour.
+// Numbers: the blob two lobes, 30 % of the frame wide and 24 % high in all, centred a little under the line, its edge
+// softened 0.8 % of the frame height (a wider blur leaves a band where letter and blob are the same tone and the word
+// breaks up); the letters turn exactly on the blob's edge (its half-tone contour), so no letter sits on a matching
+// tone; it travels 30 % of the width in 10 f on an expo-out and keeps drifting 1 px a frame; the line in the blob's own
+// colour.
 // Caution: one line, set bold and large (6 % of the frame height or more); the blob is the line's colour, not a second hue.
 // Catalogue: ../catalog/fx.ts; props and recipe: references/library-fx.md.
 import React from 'react';
@@ -44,8 +46,8 @@ export const BlobKnock: React.FC<{
     { x: bx - bw * 0.1, y: by, w: bw * 0.78, h: bh * 0.8 },
     { x: bx + bw * 0.24, y: by - bh * 0.2, w: bw * 0.5, h: bh * 0.56 },
   ];
-  const blur = H * 0.03;
-  const mask = lobes.map((l) => `radial-gradient(ellipse ${l.w * 0.5}px ${l.h * 0.46}px at ${l.x}px ${l.y}px, #000 70%, transparent 100%)`).join(', ');
+  const blur = H * 0.008;
+  const mask = lobes.map((l) => `radial-gradient(ellipse ${l.w * 0.5}px ${l.h * 0.5}px at ${l.x}px ${l.y}px, #000 99%, transparent 101%)`).join(', ');
   const line = (c: string) => (
     <div style={{ position: 'absolute', left: cx, top: cy, transform: 'translate(-50%, -50%)', fontFamily: fonts.inter, fontSize: S, fontWeight: 620, letterSpacing: '-0.03em', whiteSpace: 'pre', color: c, ...style }}>{text}</div>
   );
@@ -59,7 +61,7 @@ export const BlobKnock: React.FC<{
         </AbsoluteFill>
       )}
       {line(ink ?? color)}
-      {on && <AbsoluteFill style={{ WebkitMaskImage: mask, maskImage: mask }}>{line(knock)}</AbsoluteFill>}
+      {on && <AbsoluteFill style={{ WebkitMaskImage: mask, maskImage: mask, opacity: clamp((frame - at + 1) / 3) }}>{line(knock)}</AbsoluteFill>}
     </AbsoluteFill>
   );
 };

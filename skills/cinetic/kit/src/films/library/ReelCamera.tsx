@@ -204,7 +204,9 @@ const Page: React.FC = () => (
   <div style={{ background: '#F5F3EE', fontFamily: fonts.inter, color: INK, textAlign: 'left' }}>
     <div style={{ height: 560, position: 'relative' }}>
       <Pic src={IMG.waves} />
-      <div style={{ position: 'absolute', left: 60, bottom: 50, fontSize: 150, fontWeight: 700, letterSpacing: '-0.05em', color: '#fff' }}>Tide 26</div>
+      {/* a scrim under the title: the wave's white water sits right behind it */}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,10,18,0.72) 0%, rgba(6,10,18,0.38) 38%, rgba(6,10,18,0) 62%)' }} />
+      <div style={{ position: 'absolute', left: 60, bottom: 50, fontSize: 150, fontWeight: 700, letterSpacing: '-0.05em', color: '#fff', textShadow: '0 4px 40px rgba(0,0,0,0.35)' }}>Tide 26</div>
     </div>
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '40px 60px', fontSize: 34, fontWeight: 560 }}>
       <span>12-14 June, North beach</span>

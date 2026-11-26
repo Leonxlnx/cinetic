@@ -87,7 +87,9 @@ export const GradeResolve: React.FC<{
     .join('')}</svg>`;
   const mask = `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
   return (
-    <div style={{ position: 'relative', width: bw, height: bh, ...style }}>
+    // overflow hidden: content taller than the box (a grid whose rows grow to their pictures) would show natural below
+    // the cells the mapped copy covers
+    <div style={{ position: 'relative', width: bw, height: bh, overflow: 'hidden', ...style }}>
       <GradeFilter id={id} palette={palette} />
       <AbsoluteFill>{children}</AbsoluteFill>
       {mapped.length > 0 && (

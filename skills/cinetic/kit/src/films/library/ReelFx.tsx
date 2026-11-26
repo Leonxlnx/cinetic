@@ -228,7 +228,8 @@ const GradeDemo: React.FC = () => {
       <div style={{ position: 'absolute', left: 210, top: 150, fontFamily: fonts.inter, fontSize: 30, fontWeight: 560, color: INK }}>Library</div>
       <div style={{ position: 'absolute', left: 190, top: 220, padding: 20, borderRadius: 30, background: '#F1F1EF' }}>
         <GradeResolve at={20} dur={9} to="grade" palette={GRADES.warm} cols={6} rows={3} w={W} h={H} seed={4}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gridTemplateRows: 'repeat(3, 1fr)', width: W, height: H }}>
+          {/* minmax(0, 1fr): without it the rows grow to the pictures' own height and run past the box the grade covers */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gridTemplateRows: 'repeat(3, minmax(0, 1fr))', width: W, height: H }}>
             {Array.from({ length: 18 }, (_, i) => (
               <div key={i} style={{ padding: 7, boxSizing: 'border-box' }}>
                 <div style={{ width: '100%', height: '100%', borderRadius: 16, overflow: 'hidden' }}>
@@ -345,18 +346,19 @@ const GlowBarsDemo: React.FC = () => (
 /** A bold line on white; a blurred blob slides in under it and the words over it turn white. */
 const BlobKnockDemo: React.FC = () => (
   <AbsoluteFill style={{ background: '#FBFBFC' }}>
-    <BlobKnock text="From draft to shipped" at={12} dur={10} from={0.84} to={0.56} color="#2747D9" size={96} />
+    <BlobKnock text="From draft to shipped" at={12} dur={10} from={0.84} to={0.56} color="#2747D9" size={120} />
   </AbsoluteFill>
 );
 
-/** A phrase held on white with a viewfinder hunting round it; it settles when the phrase is done. */
+/** A phrase held over a photograph (dimmed so the white type reads) with a viewfinder hunting round it; it settles when
+ * the phrase is done. */
 const CornerHuntDemo: React.FC = () => (
-  <AbsoluteFill style={{ background: '#F7F7F5' }}>
+  <Photo src={IMG.tide} zoom={1.08} dim={0.42}>
     <Center>
-      <div style={{ ...say(58, INK, 500) }}>Find the right shot</div>
+      <div style={{ ...say(72, '#FFFFFF', 540), textShadow: shadowText }}>Find the right shot</div>
     </Center>
-    <CornerHunt at={6} until={52} w={520} h={70} color={INK} />
-  </AbsoluteFill>
+    <CornerHunt at={6} until={52} w={640} h={86} color="#FFFFFF" />
+  </Photo>
 );
 
 /** A white card: a 4 x 4 grid of cells read row by row, and the line beside it saying what is read. */
@@ -413,11 +415,15 @@ const FrostDemo: React.FC = () => {
 
 /** A night ground: small blue lights pop on one by one and drift into a loose cloud, a line arriving under them. */
 const DriftDemo: React.FC = () => {
-  const f = useCurrentFrame();
   return (
-    <AbsoluteFill style={{ background: '#05081A' }}>
-      <DriftField at={4} count={28} rate={2.5} area={[0.18, 0.18, 0.66, 0.52]} avoid={[0.3, 0.62, 0.4, 0.12]} color="#4A6BFF" vx={0.25} vy={-0.15} />
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 760, textAlign: 'center', ...say(56, '#E8ECFF', 500), opacity: f >= 50 ? 1 : 0 }}>Every request finds its way</div>
+    <AbsoluteFill style={{ background: '#06080F' }}>
+      <DriftField at={4} count={64} rate={1.1} area={[0.06, 0.1, 0.88, 0.62]} avoid={[0.22, 0.6, 0.56, 0.18]} color="#4A6BFF" vx={0.25} vy={-0.15} />
+      <DriftField at={10} count={36} rate={1.6} area={[0.1, 0.14, 0.8, 0.56]} shape="dash" color="#9FB2FF" seed={23} />
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 740, display: 'flex', justifyContent: 'center' }}>
+        <Rise at={40}>
+          <div style={{ ...say(72, '#F2F4FF', 520) }}>Every request finds its way</div>
+        </Rise>
+      </div>
     </AbsoluteFill>
   );
 };
@@ -428,7 +434,7 @@ const RingBurstDemo: React.FC = () => {
   const dip = f >= 14 && f < 20 ? 0.9 : 1;
   return (
     <AbsoluteFill style={{ background: '#FAFAF9' }}>
-      <RingBurst at={16} dur={16} from={70} to={420} color="#F07A2E" dim={0.12} />
+      <RingBurst at={16} dur={16} from={70} to={420} color="#F07A2E" dim={0} />
       <Center>
         <div style={{ width: 150, height: 150, borderRadius: 75, background: '#F07A2E', transform: `scale(${dip})`, boxShadow: '0 16px 40px rgba(240,122,46,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="Mic" size={70} color="#fff" />
@@ -473,10 +479,12 @@ const BackdropDemo: React.FC = () => (
   </BackdropFocus>
 );
 
-/** A photograph cut by hairlines that slide in from the top and bottom; the bands slip down by their own amounts. */
+/** A photograph cut by hairlines that slide in from the top and bottom; the bands slip down by their own amounts. The
+ * picture has a shape in every band (cloud banks, the breaking wave, the horizon, the rocks), and the slip is a fifth of
+ * the frame, so each band visibly breaks the shape it crosses. */
 const SliceDemo: React.FC = () => (
-  <SliceShift at={6} pairs={3} dur={30} sink={0.09}>
-    <Photo src={IMG.waves} zoom={1.08} drift={0} />
+  <SliceShift at={6} pairs={3} dur={30} sink={0.2} line="rgba(255,255,255,0.7)">
+    <Photo src={IMG.waves} zoom={1.0} drift={0} />
   </SliceShift>
 );
 

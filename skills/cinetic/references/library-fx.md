@@ -37,7 +37,7 @@ moment that matters, and never as a way to hide a cut: a flash of light, a scree
 | [PenMarks](#penmarks) | emphasis | 7 f | a pen over the frame: a hand loop round a point, a ring, a curved arrow with its head, a zigzag, a tick, drawn on twos as glowing light or a dry marker, retracting in order | pointing at the one thing in the frame the line is about |
 | [LensBulge](#lensbulge) | idle, enter | 14 f | the whole scene through one barrel lens: the centre swelled, the edges bent and darker, a hair of colour fringe, optionally the pixel grid of a filmed screen | a section whose shots should read as one screen being filmed (a fisheye over devices, a monitor finish) |
 | [GlowBars](#glowbars) | enter, idle | 34 f | a strong coloured glow rises from a corner of a dark ground seen through reeded glass: narrow soft columns that lean slowly while the glow drifts | the ground for one held thing (a dialog, a field, a wordmark) on dark |
-| [BlobKnock](#blobknock) | emphasis | 10 f | a heavily blurred blob in the colour of the line slides in under a bold line and settles; the letters over its dense part turn white | the line that names the change, set bold and large on a light ground |
+| [BlobKnock](#blobknock) | emphasis | 10 f | a soft-edged blob in the colour of the line slides in under a bold line and settles; the letters inside its edge turn white | the line that names the change, set bold and large on a light ground |
 | [CornerHunt](#cornerhunt) | idle | 45 f | a viewfinder hunting round a phrase: tiny squares at the corners of an invisible box, 1-4 lit each frame, the box jumping between three sizes, never tweened | a phrase about finding, framing or selecting, while it holds |
 | [StepScan](#stepscan) | loop | 16 f | a small grid of square cells with one strong row stepping down it by cuts, the row it left at a mid tint, the rest pale; an all-pale beat, then it restarts | a machine reading line by line, beside the line that says what it reads |
 | [FrostEdge](#frostedge) | idle, exit | 40 f | a frosted band at the top of a scrolling column: what slides into it goes soft and pale, as if under frosted glass; or a whole surface clearing from frosted | a chat or a feed scrolling away under its header without a hard cut-off edge |
@@ -126,8 +126,9 @@ resolving to its true colour region by region.
 <GradeResolve at={T.read} dur={9} to="grade" palette={GRADES.warm} cols={6} rows={3} w={1500} h={600}>{tileGrid}</GradeResolve>
 ```
 - Numbers: the switch spreads over 8-12 f; each cell changes on one frame, never a fade; lay a tile grid out on the same
-  `cols` x `rows` so each tile changes whole; `cells` takes explicit regions with their own frames (a room: the desk
-  first, the window last); `to="natural"` runs it the other way.
+  `cols` x `rows` so each tile changes whole (a CSS grid with `minmax(0, 1fr)` tracks: plain `1fr` rows grow to the
+  pictures' height and run past the box); the box clips what overflows it; `cells` takes explicit regions with their
+  own frames (a room: the desk first, the window last); `to="natural"` runs it the other way.
 - Caution: give it a reason the viewer sees (the product analysing); a whole frame turning a colour without one is a
   sudden colour change.
 
@@ -197,12 +198,14 @@ slowly from upright toward the diagonal while the glow drifts. A ground for one 
   busy UI.
 
 ### BlobKnock
-A heavily blurred blob in the line's own colour slides in under a bold line and settles; where it is dense the letters
-turn white, so the words read through the colour.
+A soft-edged blob in the line's own colour slides in under a bold line and settles; inside its edge the letters turn
+white, so the words read through the colour.
 ```tsx
-<BlobKnock text="From draft to shipped" at={T.line} dur={10} from={0.84} to={0.56} color="#2747D9" size={96} />
+<BlobKnock text="From draft to shipped" at={T.line} dur={10} from={0.84} to={0.56} color="#2747D9" size={120} />
 ```
-- Numbers: two lobes, 30 % of the frame wide and 24 % high in all, centred a little under the line, blurred 3 % of the height; 30 % of the width in 10 f
+- Numbers: two lobes, 30 % of the frame wide and 24 % high in all, centred a little under the line, the edge softened
+  0.8 % of the height and the letters turning exactly on it (a wider blur leaves letters on a matching tone, and the
+  word breaks up); 30 % of the width in 10 f
   on an expo-out, then 1 px a frame of drift.
 - Caution: one bold line, 6 % of the frame height or more; the blob is the line's colour, never a second hue.
 
@@ -271,11 +274,12 @@ on top; from `outAt` the arrival goes and the scene sharpens again.
 White hairlines slide in from the top and the bottom in mirrored pairs and cut a picture into horizontal bands; each band
 then slips down by its own amount, so the subject is sliced and sinks.
 ```tsx
-<SliceShift at={T.break} pairs={3} dur={30} sink={0.09}><Photo src={portrait} /></SliceShift>
+<SliceShift at={T.break} pairs={3} dur={30} sink={0.2}><Photo src={portrait} /></SliceShift>
 ```
-- Numbers: 3 pairs, each line sliding in over 8 f, 4 f apart; bands slip up to 9 % of the height over 30 f, the middle
-  ones most; lines 1 px at 1080, white at 85 %.
-- Caution: photographs and footage only; on UI or type it reads as a rendering fault.
+- Numbers: 3 pairs, each line sliding in over 8 f, 4 f apart; bands slip up to `sink` of the height (0.09 by default,
+  0.2 for a slip one can follow) over 30 f, the middle ones most; lines 1 px at 1080, white at 85 %.
+- Caution: photographs and footage only, with a shape in every band (a horizon, a subject, rocks): over flat sky only the
+  hairlines show and read as scan-line bugs; on UI or type it reads as a rendering fault.
 
 ## Helpers
 The effects use the library's SVG filters (`PixelFilter`, `SmearFilter`, `SplitFilter`, in
