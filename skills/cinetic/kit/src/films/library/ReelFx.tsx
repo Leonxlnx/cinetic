@@ -3,7 +3,7 @@
 // panels). No sound. A new effect: one segment appended to SEGMENTS.
 import React from 'react';
 import { AbsoluteFill, Sequence, useCurrentFrame } from 'remotion';
-import { BlobKnock, Bloom, ChromaHit, CornerHunt, DotScreen, DriftField, FrostEdge, StepScan, GlowBars, GlyphSheen, GradeResolve, GRADES, LensBulge, LightSweep, MorphBox, PenMarks, ShimmerText, Stepped, TrackOverlay } from '../../kit/library';
+import { BackdropFocus, BlobKnock, Bloom, ChromaHit, CornerHunt, DotScreen, DriftField, FrostEdge, RingBurst, SliceShift, StepScan, GlowBars, GlyphSheen, GradeResolve, GRADES, LensBulge, LightSweep, MorphBox, PenMarks, ShimmerText, Stepped, TrackOverlay } from '../../kit/library';
 import { Ground, Icon, fonts, softShadow, ease, mix, clamp, useTextLayout } from '../../kit';
 import { Reel, reelDuration, type DemoProps, type Segment } from './reel';
 import { Avatars, CORAL, COBALT, Center, IMG, INK, Label, NIGHT, ORANGE, PAPER, Photo, Pic, Prompt, Rise, SKY, SUN, say, shadowText } from './scenes';
@@ -422,6 +422,64 @@ const DriftDemo: React.FC = () => {
   );
 };
 
+/** A record button pressed on white: the button dips and a halftone ring spreads out of it and thins. */
+const RingBurstDemo: React.FC = () => {
+  const f = useCurrentFrame();
+  const dip = f >= 14 && f < 20 ? 0.9 : 1;
+  return (
+    <AbsoluteFill style={{ background: '#FAFAF9' }}>
+      <RingBurst at={16} dur={16} from={70} to={420} color="#F07A2E" dim={0.12} />
+      <Center>
+        <div style={{ width: 150, height: 150, borderRadius: 75, background: '#F07A2E', transform: `scale(${dip})`, boxShadow: '0 16px 40px rgba(240,122,46,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="Mic" size={70} color="#fff" />
+        </div>
+      </Center>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 780, textAlign: 'center', ...say(48, INK, 500) }}>Say it once</div>
+    </AbsoluteFill>
+  );
+};
+
+/** A pricing view on dark; a confirmation arrives and the view behind it softens, grows and dims. */
+const BackdropDemo: React.FC = () => (
+  <BackdropFocus
+    at={18}
+    outAt={64}
+    ground="#000000"
+    front={
+      <Center>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, padding: '28px 40px', borderRadius: 26, background: '#1C1E23', boxShadow: '0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', ...say(40, '#F3F4F6', 520) }}>
+          <div style={{ width: 44, height: 44, borderRadius: 22, background: '#2F5BFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="Check" size={28} color="#fff" />
+          </div>
+          Done building
+        </div>
+      </Center>
+    }
+  >
+    <AbsoluteFill style={{ background: '#0B0C0F', alignItems: 'center', justifyContent: 'center', gap: 40 }}>
+      <div style={{ ...say(120, '#F3F4F6', 600) }}>Plans</div>
+      <div style={{ display: 'flex', gap: 30 }}>
+        {[['Free', '$0'], ['Team', '$12'], ['Studio', '$29']].map(([n, v]) => (
+          <div key={n} style={{ width: 360, padding: '30px 34px', borderRadius: 26, background: '#15171B', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'left', fontFamily: fonts.inter, color: '#E9EBEF' }}>
+            <div style={{ fontSize: 26, opacity: 0.6 }}>{n}</div>
+            <div style={{ fontSize: 60, fontWeight: 600, marginTop: 8 }}>{v}<span style={{ fontSize: 26, opacity: 0.5 }}> / month</span></div>
+            {['Unlimited drafts', 'Shared folders', 'Export to video'].map((t) => (
+              <div key={t} style={{ fontSize: 24, opacity: 0.7, marginTop: 14 }}>{t}</div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </AbsoluteFill>
+  </BackdropFocus>
+);
+
+/** A photograph cut by hairlines that slide in from the top and bottom; the bands slip down by their own amounts. */
+const SliceDemo: React.FC = () => (
+  <SliceShift at={6} pairs={3} dur={30} sink={0.09}>
+    <Photo src={IMG.waves} zoom={1.08} drift={0} />
+  </SliceShift>
+);
+
 /** A demo and its name in the corner. */
 const named = (C: React.FC): React.FC<DemoProps> => ({ name }) => (
   <>
@@ -451,6 +509,9 @@ export const SEGMENTS: Segment[] = [
   { name: 'StepScan', from: 1076, dur: 60, render: named(StepScanDemo) },
   { name: 'FrostEdge', from: 1136, dur: 64, render: named(FrostDemo) },
   { name: 'DriftField', from: 1200, dur: 90, render: named(DriftDemo) },
+  { name: 'RingBurst', from: 1290, dur: 50, render: named(RingBurstDemo) },
+  { name: 'BackdropFocus', from: 1340, dur: 80, render: named(BackdropDemo) },
+  { name: 'SliceShift', from: 1420, dur: 60, render: named(SliceDemo) },
 ];
 
 export const reelFxDuration = reelDuration(SEGMENTS);

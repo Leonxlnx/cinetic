@@ -12,3 +12,5 @@ export { ExposureRamp, mixHex } from './ExposureRamp';
 export type { Exposure } from './ExposureRamp';
 export { TiltScroll, scrollAt } from './TiltScroll';
 export { RowTrack } from './RowTrack';
+export { PlanetPull } from './PlanetPull';
+export { FractalPull } from './FractalPull';

@@ -6,7 +6,7 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { fonts } from '../../kit/fonts';
 import { Camera, Icon, ease, softShadow } from '../../kit';
-import { CaretCam, DepthField, ExposureRamp, FloorTilt, PullReveal, PullTilt, RackFocus, RowTrack, TiltScroll, type DepthItem } from '../../kit/library';
+import { CaretCam, DepthField, ExposureRamp, FloorTilt, FractalPull, PlanetPull, PullReveal, PullTilt, RackFocus, RowTrack, TiltScroll, type DepthItem } from '../../kit/library';
 import { useCurrentFrame } from 'remotion';
 import { Reel, reelDuration, type DemoProps, type Segment } from './reel';
 import { Avatars, COBALT, IMG, INK, NIGHT, ORANGE, Photo, Pic, SKY, SUN, CORAL } from './scenes';
@@ -270,6 +270,33 @@ const RowTrackDemo: React.FC<DemoProps> = ({ n, name }) => (
   </>
 );
 
+/** A dark grid floor pulls back into the top of a gridded planet; a card rises over its horizon. */
+const PlanetDemo: React.FC<DemoProps> = ({ n, name }) => {
+  const f = useCurrentFrame();
+  const rise = Math.min(1, Math.max(0, (f - 30) / 12));
+  return (
+    <>
+      <PlanetPull at={10} dur={18} sky="linear-gradient(100deg, #E2403B 0%, #F3713F 55%, #FFD2A6 100%)" rim="#7C8CFF">
+        {rise > 0 && (
+          <div style={{ position: 'absolute', left: 760, top: 380 - rise * 120, width: 400, height: 150, borderRadius: 26, background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(10px)', boxShadow: '0 20px 50px rgba(120,20,20,0.25)', padding: '26px 30px', boxSizing: 'border-box', fontFamily: fonts.inter, color: INK, textAlign: 'left' }}>
+            <div style={{ fontSize: 30, fontWeight: 600 }}>Orbit 2</div>
+            <div style={{ fontSize: 22, opacity: 0.6, marginTop: 6 }}>Launches Thursday, 09:00</div>
+          </div>
+        )}
+      </PlanetPull>
+      <Label n={n} name={name} dark />
+    </>
+  );
+};
+
+/** One grid of cells scanned row by row replicates outward while the camera pulls back to a fine field. */
+const FractalDemo: React.FC<DemoProps> = ({ n, name }) => (
+  <>
+    <FractalPull at={8} dur={46} color="#E8492B" ground="#FFFFFF" />
+    <Label n={n} name={name} />
+  </>
+);
+
 // the pieces in the order the reel plays them, e.g. { name: 'PushIn', from: 0, dur: 90, render: PushInDemo }
 export const SEGMENTS: Segment[] = [
   { name: 'CaretCam', from: 0, dur: 120, render: CaretCamDemo },
@@ -281,6 +308,8 @@ export const SEGMENTS: Segment[] = [
   { name: 'ExposureRamp', from: 470, dur: 80, render: ExposureDemo },
   { name: 'TiltScroll', from: 550, dur: 84, render: TiltScrollDemo },
   { name: 'RowTrack', from: 634, dur: 110, render: RowTrackDemo },
+  { name: 'PlanetPull', from: 744, dur: 60, render: PlanetDemo },
+  { name: 'FractalPull', from: 804, dur: 70, render: FractalDemo },
 ];
 
 export const reelCameraDuration = reelDuration(SEGMENTS);

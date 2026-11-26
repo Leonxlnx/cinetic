@@ -21,3 +21,6 @@ export { CornerHunt } from './CornerHunt';
 export { StepScan } from './StepScan';
 export { FrostEdge } from './FrostEdge';
 export { DriftField } from './DriftField';
+export { RingBurst } from './RingBurst';
+export { BackdropFocus } from './BackdropFocus';
+export { SliceShift } from './SliceShift';

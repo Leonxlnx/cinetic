@@ -22,6 +22,8 @@ piece lives in `src/kit/library/camera/` (one file a piece, named after it), wit
 | [ExposureRamp](#exposureramp) | join | 32 f | without a cut the whole world brightens together from graphite to soft white while the camera keeps moving; lit things keep their colour | going from the dark part of a world to the light part of the same world (a night set becoming the day set) |
 | [TiltScroll](#tiltscroll) | idle, exit | 60 f | a long page turned a little in 3D on a dark ground scrolls up steadily like a poster passing the lens, then rushes into the cut with a vertical smear | showing a whole site or document the product made, in passing |
 | [RowTrack](#rowtrack) | idle, build | 100 f | the camera tracks sideways along a row of slots, cards or years at a constant height, slowing steadily, each one taking its turn at the centre | a row of things that belong together (a tray, a timeline, a shelf) shown as one long object instead of cuts |
+| [PlanetPull](#planetpull) | join, exit | 18 f | a dark grid floor pulls back into the top of a gridded planet: the corners open onto a strong sky and the lit rim sinks to a low horizon | from a close, abstract floor to a big world; a horizon for a card or a line to rise over |
+| [FractalPull](#fractalpull) | build, exit | 46 f | a small grid of cells scanned row by row replicates outward, a plus first, then a field, while the camera pulls back to a fine flickering field | one process becoming many: scale, parallel work, a fleet |
 
 <!-- /library:pieces -->
 
@@ -127,6 +129,28 @@ height, slowing steadily, so each one takes its turn at the centre and the row r
   width, gaps 5 %; a horizontal smear of up to 4 px while it is fast.
 - Caution: end on a slow crawl, never a dead stop and never a reverse; each item must be worth a look.
 
+### PlanetPull
+A dark grid floor that filled the frame pulls back into the top of a gridded planet: the corners open onto a sky, the
+lines bend into meridians and parallels, and the lit rim sinks to a low horizon a card can rise over (`children` draw over
+the sky, behind the planet).
+```tsx
+<PlanetPull at={T.world} dur={18} sky="linear-gradient(100deg, #E2403B, #F3713F 55%, #FFD2A6)" rim="#7C8CFF"><Card /></PlanetPull>
+```
+- Numbers: 18 f on a quadratic ease-out (the corners open in 3 f); the rim from above the frame to 37 % of the height
+  (`horizon`); the radius from 7x the
+  height to 1.05x the width; grid every 4 deg; a lit rim 0.6 % of the height.
+- Caution: the sky must be strong and saturated (it is the reveal); the grid stays faint on the dark body.
+
+### FractalPull
+A small grid of cells, a strong row stepping through it, replicates outward (a plus of grids first, then a field) while
+the camera pulls back without stopping, until the frame is a fine field flickering row by row.
+```tsx
+<FractalPull at={T.scale} dur={46} color="#E8492B" ground="#FFFFFF" />
+```
+- Numbers: units of 4 x 4 cells; neighbours appear by their distance from the centre (3 f for the plus, then faster);
+  the pull to 1/5 over 46 f on an in-out; each unit's row steps every 3 f with its own phase.
+- Caution: one colour on a light ground; cut away once the field is fine, never hold it.
+
 ## In the reel
 
 Every piece's frames in the reel (`--film library-camera`), and the one command that shows just that piece: its frames
@@ -145,5 +169,7 @@ in one still (run it in a film project; `render --film library-camera --range a-
 | ExposureRamp | `library-camera` | 470-549 | `node scripts/frames.mjs library --strip ExposureRamp` |
 | TiltScroll | `library-camera` | 550-633 | `node scripts/frames.mjs library --strip TiltScroll` |
 | RowTrack | `library-camera` | 634-743 | `node scripts/frames.mjs library --strip RowTrack` |
+| PlanetPull | `library-camera` | 744-803 | `node scripts/frames.mjs library --strip PlanetPull` |
+| FractalPull | `library-camera` | 804-873 | `node scripts/frames.mjs library --strip FractalPull` |
 
 <!-- /library:reel -->

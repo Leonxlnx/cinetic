@@ -32,6 +32,9 @@ moment that matters, and never as a way to hide a cut: a flash of light, a scree
 | [StepScan](#stepscan) | loop | 16 f | a small grid of square cells with one strong row stepping down it by cuts, the row it left at a mid tint, the rest pale; an all-pale beat, then it restarts | a machine reading line by line, beside the line that says what it reads |
 | [FrostEdge](#frostedge) | idle, exit | 40 f | a frosted band at the top of a scrolling column: what slides into it goes soft and pale, as if under frosted glass; or a whole surface clearing from frosted | a chat or a feed scrolling away under its header without a hard cut-off edge |
 | [DriftField](#driftfield) | build, idle | 70 f | small glowing dots pop on one by one at seeded spots and drift into a loose cloud; or short hairline dashes that blink on, live a few frames and slide | a quiet beat on a night ground; the many small signals a product gathers |
+| [RingBurst](#ringburst) | emphasis | 16 f | on a press a ring of halftone dots grows out of the button and thins as it goes, the dots largest on its crest; no flash | the one press that starts something (record, send, run) |
+| [BackdropFocus](#backdropfocus) | emphasis | 10 f | when a toast or dialog arrives the scene behind grows a little, softens and dims, the arrival sharp on top; it comes back into focus as the arrival leaves | a confirmation, a result or a notice over the screen it is about |
+| [SliceShift](#sliceshift) | emphasis, exit | 40 f | white hairlines slide in from the top and bottom in mirrored pairs and cut a picture into bands that slip down by their own amounts | a photograph with one clear subject that should break or sink |
 
 <!-- /library:pieces -->
 
@@ -234,6 +237,36 @@ Small particles pop on one by one at seeded spots, glow and drift slowly into a 
   a frame; dashes 2-4 % of the width, 1 px, living 4-8 f.
 - Caution: a texture for a quiet beat; keep it out of the type box (`avoid`), never confetti on a hit.
 
+### RingBurst
+On a press, a ring of halftone dots grows out of the button and thins as it goes: the dots are largest on its crest and
+shrink to nothing either side. The scene may dim a little for the press (`dim`); there is never a flash.
+```tsx
+<RingBurst at={T.press} dur={16} x={960} y={540} from={70} to={420} color="#F07A2E" dim={0.12} />
+```
+- Numbers: 16 f on an expo-out to 30-40 % of the frame height; the band 18 % of the height wide at the start, 6 % at the
+  end; dots on a 1.5 % pitch; `dim` 0-0.35, in over 6 f and back over 10 f.
+- Caution: once, on the press that starts something; the button dips too.
+
+### BackdropFocus
+When a toast, a dialog or a result arrives, the scene behind it grows a little, softens and dims, so the arrival sits sharp
+on top; from `outAt` the arrival goes and the scene sharpens again.
+```tsx
+<BackdropFocus at={T.done} outAt={T.done + 46} front={<Toast />}><PricingView /></BackdropFocus>
+```
+- Numbers: 10 f on an ease-out: the scene to 1.03x, 8 px of blur, 30 % dim; the arrival from 0.94x, 2 f later, over 8 f;
+  the way back 8 f.
+- Caution: one arrival at a time; keep the scene recognisable through the blur.
+
+### SliceShift
+White hairlines slide in from the top and the bottom in mirrored pairs and cut a picture into horizontal bands; each band
+then slips down by its own amount, so the subject is sliced and sinks.
+```tsx
+<SliceShift at={T.break} pairs={3} dur={30} sink={0.09}><Photo src={portrait} /></SliceShift>
+```
+- Numbers: 3 pairs, each line sliding in over 8 f, 4 f apart; bands slip up to 9 % of the height over 30 f, the middle
+  ones most; lines 1 px at 1080, white at 85 %.
+- Caution: photographs and footage only; on UI or type it reads as a rendering fault.
+
 ## Helpers
 The effects use the library's SVG filters (`PixelFilter`, `SmearFilter`, `SplitFilter`, in
 `src/kit/library/_shared.tsx`; see [library-turns.md](library-turns.md#helpers)).
@@ -265,5 +298,8 @@ one still (run it in a film project; `render --film library-fx --range a-b` for 
 | StepScan | `library-fx` | 1076-1135 | `node scripts/frames.mjs library --strip StepScan` |
 | FrostEdge | `library-fx` | 1136-1199 | `node scripts/frames.mjs library --strip FrostEdge` |
 | DriftField | `library-fx` | 1200-1289 | `node scripts/frames.mjs library --strip DriftField` |
+| RingBurst | `library-fx` | 1290-1339 | `node scripts/frames.mjs library --strip RingBurst` |
+| BackdropFocus | `library-fx` | 1340-1419 | `node scripts/frames.mjs library --strip BackdropFocus` |
+| SliceShift | `library-fx` | 1420-1479 | `node scripts/frames.mjs library --strip SliceShift` |
 
 <!-- /library:reel -->
