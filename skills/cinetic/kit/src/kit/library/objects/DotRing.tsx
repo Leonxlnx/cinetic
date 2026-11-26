@@ -3,8 +3,8 @@
 // by segment, and a light runs round it while a short label types in its middle.
 // Numbers: flights 12 f each, started 0-4 f apart, the dots from 0.8 % to 4 % of H; ring radius 36 % of H, turning 2
 // degrees a frame; dashes from 23 f, closed at 30 f (the stroke 4 to 5 % of H); a pale tint at 29 f, the colour
-// floods segment by segment 30-33 f; the light runs once round in 20 f from 34 f; the label types a letter a frame from
-// 26 f.
+// floods segment by segment 30-33 f; the light runs once round in 20 f from 34 f; the label (7.5 % of H, a word that
+// fills the ring's middle) types a letter a frame from 26 f.
 // Caution: the scattered dots should come from something on screen (the tips of lines, points of a map); the ring is a
 // moment of connection, one in a film.
 // Catalogue: ../catalog/object.ts; props and recipe: references/library-objects.md.
@@ -101,7 +101,7 @@ export const DotRing: React.FC<{
         {els}
       </svg>
       {typed && (
-        <div style={{ position: 'absolute', left: cx, top: cy, transform: 'translate(-50%, -50%)', fontFamily: fonts.inter, fontSize: H * 0.034, fontWeight: 500, color: labelColor, letterSpacing: '-0.01em', whiteSpace: 'pre' }}>
+        <div style={{ position: 'absolute', left: cx, top: cy, transform: 'translate(-50%, -50%)', fontFamily: fonts.inter, fontSize: H * 0.075, fontWeight: 560, color: labelColor, letterSpacing: '-0.03em', whiteSpace: 'pre' }}>
           <span>{typed}</span>
           <span style={{ visibility: 'hidden' }}>{label!.slice(typed.length)}</span>
         </div>

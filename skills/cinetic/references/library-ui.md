@@ -54,13 +54,13 @@ every piece with its name: render it to see them move.
 | [HandleGather](#handlegather) | emphasis | 26 f | a word types in fresh ink while small squares hop in from round the frame and lock as the handles of its selection box | a name or a title being picked out on a canvas: the opening of a design or agent tool |
 | [DotCaret](#dotcaret) | enter | 40 f | a dot drops into a browser address field and stretches into the caret; the placeholder goes, the field widens, the view pushes in | a search or a request starting: the moment before typing |
 | [ChipRoll](#chiproll) | emphasis | 45 f | an app chip inside a sentence rolls like a slot reel to the next tool, its neighbours faint above and below, the line closing up | the "it works with all of these" beat, said inside one line |
-| [LinkPanel](#linkpanel) | build | 70 f | connectors draw from a column of sources into a panel, light pulses run along them, rows land lit and settle, the totals count up | the "everything flows into one place" beat: tracking, syncing, sources feeding one result |
+| [LinkPanel](#linkpanel) | build | 70 f | a column of sources joined to the rows of a panel by bracket connectors, light pulses run along them, each row lights as its pulse arrives and settles, the totals count up | the "everything flows into one place" beat: tracking, syncing, sources feeding one result |
 | [BentoFly](#bentofly) | enter | 20 f | on a cut, photo tiles, solid tiles, discs and a pill arrive from every side already moving and brake into a bento grid | a world or a set of stories assembling at once: the open of a section |
 | [SendLaunch](#sendlaunch) | join | 24 f | the send button lifts away and the composer falls out of frame; on the cut a small spark of pixels on a dark ground leads the app window in with a smear | a prompt sent and the product starting to work: from the request to the result |
 | [FileDrop](#filedrop) | build | 40 f | the pointer carries a file in on an arc, the file swinging from its tip like a pendulum, drops it into the composer, the send button appears | a document handed to the product: a contract, a brief, a spreadsheet |
 | [Cursor3D](#cursor3d) | emphasis | 20 f | a chunky extruded arrowhead cursor with a satin top, a side wall and a soft shadow glides onto a button, presses and rests with a slow tilt | a press in a soft, three-dimensional product world |
 | [BackdropSwap](#backdropswap) | emphasis | 35 f | a phone holds still at the centre while the pictures behind it hard-cut every five frames, the phone shifting a few pixels with each | the "wherever you are" beat: one product in many places |
-| [FloodAway](#floodaway) | exit | 30 f | the cards round a line flood one by one with a saturated colour and blur, then blow away outward, the outer ones first, turning edge-on | clearing a frame of clutter to leave one line: "too much of this", then the answer |
+| [FloodAway](#floodaway) | exit | 30 f | the cards round a line flood one by one with a saturated colour, keeping their shape and corners, then blow away outward, the outer ones first, turning edge-on | clearing a frame of clutter to leave one line: "too much of this", then the answer |
 | [StickyType](#stickytype) | emphasis | 16 f | a sticky label appears as a square, stretches while its words type into it and draws a connector to what it annotates | a comment or a note pinned on a design, a page, a plan |
 | [RowCool](#rowcool) | build | 60 f | a progress log under a shimmering header: each row lands with its verb in its icon's colour, cools to the ink as the next arrives, the block nudging up | an agent working through its steps, with each step's kind visible |
 | [SkeletonSweep](#skeletonsweep) | build | 34 f | tinted skeleton bars cascade in a row a frame, then a warm band sweeps across and turns them into the real text behind it | an answer or a document being written in one go |
@@ -158,7 +158,7 @@ is connected to the rest".
 A banner grows out of its icon: a blurred pill with only the glyph (or `n.mark`) widens to the right in 4 f as it
 sharpens, a badge pops, the title and body arrive by word, the banner rises 56 px and a sheen crosses it once.
 ```tsx
-<BannerPop L={lookDark('#5B86FF', '#111216')} at={T.banner} n={{ title: 'Assistant', body: 'Want me to test a lower price this week?', time: 'now', icon: 'Sparkles' }} w={1340} size={42} />
+<BannerPop L={lookDark('#5B86FF', '#111216')} at={T.banner} n={{ title: 'Assistant', body: 'Want me to test a lower price this week?', time: 'now', icon: 'Tag' }} w={1340} size={42} />
 ```
 - Numbers: width 0.15, 0.3, 0.62, 0.9, 1 on frames 0-4, blur 8 to 0; badge at +3 f; words every 2 f from +4 f; rise
   56 px over 16 f expo-out; sheen at `sheenAt` (44 f), 10 f.
@@ -332,14 +332,17 @@ place".
 - Caution: 12-20 filled of 50-70 slots; real tools (`mark`) or distinct glyphs with one colour pair each.
 
 ### LinkPanel
-Sources stand in a column; bracket connectors draw from each into a panel, light pulses run along them, the panel's
-rows land lit in the accent as their first pulse arrives and settle to the surface, and the totals count up in steps.
+Sources stand in a column and the panel rises with its rows waiting (names, blank figures); a bracket connector joins
+each source to its row, light pulses run along them, each row lights in the accent as its first pulse arrives, its
+figures land and it settles to the surface, and the totals count up in steps.
 For "everything flows into one place".
 ```tsx
 <LinkPanel L={lookDark('#3D8BFF', '#08090C')} at={T.links} sources={[{ title, thumb, chip: '1,204 clicks', row: { label, meta, value } }, ...]} totals={[{ label: 'Revenue', from: 3330, step: 37, steps: 9, prefix: '$' }, ...]} />
 ```
-- Numbers: sources drop in 4 f with blur; connectors draw in 6 f, 2 f apart, from +4 f; pulses 12 f source to panel,
-  3 f apart, every 24 f; rows land at +19 f, 3 f apart, lit 6 f then settle over 10 f; totals step every 3 f.
+- Numbers: sources drop in 4 f with blur; each connector comes in whole, node to row with a port at each end, over
+  6 f, 2 f apart, from +8 f, following the panel as it settles (no end ever in mid-air); pulses 12 f source to row,
+  3 f apart, every 24 f, from +10 f; rows light at +22 f, 3 f apart, lit 6 f then settle over 10 f; totals step every
+  3 f.
 - Caution: three to five sources; the totals must agree with the rows.
 
 ### StatCount
@@ -480,14 +483,16 @@ pixels and a degree with each, and its shadow falls on every one.
 - Caution: backdrops that share a colour with the screen; at most eight.
 
 ### FloodAway
-The cards round a line flood one by one with a saturated colour and blur, then blow away outward, the outer ones first,
-turning edge-on as they go. It clears the frame and leaves the line.
+The cards round a line flood one by one with a saturated colour, keeping their shape and corners, then blow away
+outward at once, the outer ones first, turning edge-on as they go. It clears the frame and leaves the line.
 ```tsx
-<FloodAway cards={[{ node: <Notice ... />, x: 0.17, y: 0.2, w: 0.24, h: 0.11, rot: -3 }, ...]} at={T.clear} color="#2F45D0" blowAt={16} />
+<FloodAway cards={[{ node: <Notice ... style={{ width: '100%', height: '100%' }} />, x: 0.17, y: 0.2, w: 0.29, h: 0.13, rot: -3 }, ...]} at={T.clear} color="#2F45D0" radius={31.5 / 140} />
 ```
-- Numbers: a card floods in 3 f (blur 0 to 12 px), 1-3 f apart; from `blowAt` outer cards first, 1 f apart, 12 f
-  ease-in, 0.28 of the frame width outward, turning 80 degrees.
-- Caution: the cards must already be there; the line stays sharp.
+- Numbers: a card floods in 3 f (its own corners, a lit top edge, no defocus), 1-3 f apart; from `blowAt` (6 f) outer
+  cards first, 1 f apart, never before a card has flooded, 12 f quadratic ease-in (moving from the first frame), 0.28
+  of the frame width outward, turning 80 degrees, a motion blur of at most 4 px; no card holds flooded more than 8 f.
+- Caution: the cards must already be there; the line stays sharp; each node fills its w x h box and `radius` matches
+  its corner, or the flood will not cover the card exactly.
 
 ## In the reel
 

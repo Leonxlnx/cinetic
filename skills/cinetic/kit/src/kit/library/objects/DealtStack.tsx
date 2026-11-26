@@ -38,7 +38,7 @@ export const DealtStack: React.FC<{
   before?: string;
   after?: string;
   ink?: string;
-  /** Text size in px (default 3.2 % of the frame's height). */
+  /** Text size in px (default 6 % of the frame's height: a headline beside the stack). */
   size?: number;
   /** Card size as shares of the frame (width of W, height of H). */
   card?: { w: number; h: number };
@@ -62,8 +62,8 @@ export const DealtStack: React.FC<{
   // the stack's footprint: the cards' spread plus the turn, for the words to hug
   const spread = (n - 1) * step.x;
   const halfW = ((cw + spread) / 2) * grow + cw * 0.06;
-  const ts = size ?? H * 0.032;
-  const word: React.CSSProperties = { position: 'absolute', top: cy, transform: 'translateY(-50%)', fontFamily: fonts.inter, fontSize: ts, fontWeight: 450, color: ink, letterSpacing: '-0.01em', whiteSpace: 'nowrap' };
+  const ts = size ?? H * 0.06;
+  const word: React.CSSProperties = { position: 'absolute', top: cy, transform: 'translateY(-50%)', fontFamily: fonts.inter, fontSize: ts, fontWeight: 560, color: ink, letterSpacing: '-0.03em', whiteSpace: 'nowrap' };
   const cards: React.ReactNode[] = [];
   for (let k = 0; k < n; k++) {
     const age = t - times[k];
@@ -82,8 +82,8 @@ export const DealtStack: React.FC<{
   }
   return (
     <AbsoluteFill>
-      {before && <div style={{ ...word, right: W - cx + halfW + ts * 1.2 }}>{before}</div>}
-      {after && <div style={{ ...word, left: cx + halfW + ts * 1.2 }}>{after}</div>}
+      {before && <div style={{ ...word, right: W - cx + halfW + ts * 0.6 }}>{before}</div>}
+      {after && <div style={{ ...word, left: cx + halfW + ts * 0.6 }}>{after}</div>}
       <div style={{ position: 'absolute', left: cx, top: cy, transform: `scale(${mix(1, grow, 1)})` }}>{cards}</div>
     </AbsoluteFill>
   );

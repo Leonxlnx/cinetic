@@ -3,8 +3,9 @@
 // fade to pure hairlines; its faces fill one at a time with frosted glass, it swings close to the lens, and a warm light
 // (white core, amber edge) blooms inside one face with a faint spectrum along an edge.
 // Numbers: the segment turns 120 degrees on 0-22 f; the split 22-30 f; the fourth vertex 30-40 f (dots gone by 36 f);
-// faces fill 40, 42, 44, 46 f; the swing 48-56 f from 22 % to 110 % of H (log scale, in-out); the light from 50 f; then a
-// slow turn (0.6 degrees a frame); hairlines 1.2 px at 55 % white.
+// faces fill 40, 42, 44, 46 f; the swing 48-56 f from 22 % to 72 % of H (log scale, in-out; `size`: above about 0.8
+// the corners leave the frame); the light from 50 f; then a slow turn (0.6 degrees a frame); hairlines 1.2 px at 55 %
+// white.
 // Caution: on a near-black ground only; it is an abstract opener (an idea taking form), one in a film.
 // Catalogue: ../catalog/object.ts; props and recipe: references/library-objects.md.
 import React from 'react';
@@ -37,7 +38,7 @@ export const WireTetra: React.FC<{
   size?: number;
   x?: number;
   y?: number;
-}> = ({ at = 0, line = 'rgba(255,255,255,0.55)', glass = '#C9CACF', core = '#FFF6E8', warm = '#F2A44A', size = 1.1, x, y }) => {
+}> = ({ at = 0, line = 'rgba(255,255,255,0.55)', glass = '#C9CACF', core = '#FFF6E8', warm = '#F2A44A', size = 0.72, x, y }) => {
   const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
   const id = useUid('wiretetra');

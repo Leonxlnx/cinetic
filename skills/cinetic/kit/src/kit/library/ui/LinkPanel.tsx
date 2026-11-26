@@ -1,9 +1,10 @@
-// LinkPanel (ui, build): sources stand in a column; bracket connectors draw from each into a panel, light pulses run
-// along them, the panel's rows land lit in the accent and settle to the surface one after another, and the totals row
-// counts up in steps.
-// Numbers: sources drop in 4 f with blur; each connector draws in 6 f, 2 f apart, from +4 f; pulses run source to
-// panel in 12 f (linear), 3 f apart, every 24 f; rows land as their first pulse arrives (+19 f, 3 f apart), lit 6 f,
-// settling over 10 f; totals step every 3 f; lines 0.14 % of the frame height.
+// LinkPanel (ui, build): sources stand in a column, the panel rises with its rows waiting; a bracket connector joins
+// each source to its row, light pulses run along them, each row lights in the accent as its first pulse arrives, its
+// figures land and it settles to the surface; the totals row counts up in steps.
+// Numbers: sources drop in 4 f with blur; the panel rises from +2 f; each connector comes in whole (node to row, a
+// port at each end) over 6 f, 2 f apart, from +8 f, and follows the panel while it settles: no end ever hangs in the
+// air; pulses run source to row in 12 f (linear), 3 f apart, every 24 f, from +10 f; rows light as their first pulse
+// arrives (+22 f, 3 f apart), lit 6 f, settling over 10 f; totals step every 3 f; lines 0.14 % of the frame height.
 // Caution: three to five sources with real titles and figures; the totals must be the sum the rows suggest.
 // Catalogue: ../catalog/ui.ts; props and recipe: references/library-ui.md.
 import React from 'react';
@@ -60,7 +61,13 @@ const LinkPanelInner: React.FC<{
   const px0 = panelX * W - pw / 2;
   const py0 = H / 2 - ph / 2;
   const trunkX = mix(0.55, sx + cardW / 2, px0);
-  const entryY = (i: number) => py0 + headH + i * rowH + rowH / 2;
+  const enterP = springAt(frame, 30, start + 2, springs.ui);
+  const panelDy = mix(enterP, 24, 0);
+  // the connector ends on the row's left edge (the row is inset s * 0.6 in the panel), at the row's middle
+  const rowTop = (i: number) => headH + s * 0.35 + i * rowH;
+  const rowMidH = rowH - s * 0.3;
+  const entryY = (i: number) => py0 + panelDy + rowTop(i) + rowMidH / 2;
+  const endX = px0 + s * 0.6;
   const r = H * 0.012;
   const lw = Math.max(1.5, H * 0.0014);
   // the path of source i: right to the trunk, along it to its row's height, right into the panel
@@ -68,7 +75,7 @@ const LinkPanelInner: React.FC<{
     [sx + cardW / 2, cy(i)],
     [trunkX, cy(i)],
     [trunkX, entryY(i)],
-    [px0, entryY(i)],
+    [endX, entryY(i)],
   ];
   const pathD = (i: number) => {
     const [a, b, c, d] = pts(i);
@@ -92,46 +99,10 @@ const LinkPanelInner: React.FC<{
   };
   const lineC = L.dark ? 'rgba(255,255,255,0.22)' : 'rgba(17,19,24,0.2)';
   const glow = L.accent;
-  const enterP = springAt(frame, 30, start + 2, springs.ui);
-  const rowAt = (i: number) => start + 19 + i * 3; // as the first pulse along its line arrives
+  const rowAt = (i: number) => start + 22 + i * 3; // as the first pulse along its line arrives
   const totalsAt = rowAt(n - 1) + 12;
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, fontFamily: L.font }}>
-      {/* connectors and pulses */}
-      <svg width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible' }}>
-        {sources.map((_, i) => {
-          const d = at(frame, start + 4 + i * 2, 6, ease.out);
-          return <path key={i} d={pathD(i)} fill="none" stroke={lineC} strokeWidth={lw} pathLength={1} strokeDasharray="1 1" strokeDashoffset={1 - d} />;
-        })}
-        {sources.map((_, i) => {
-          const runs: React.ReactNode[] = [];
-          for (let k = 0; k < 6; k++) {
-            const t0 = start + 8 + i * 3 + k * 24;
-            const p = (frame - t0) / 12;
-            if (p < 0 || p > 1) continue;
-            const [hx, hy] = along(i, p);
-            const [tx, ty] = along(i, Math.max(0, p - 0.09));
-            runs.push(
-              <g key={k} opacity={p > 0.92 ? (1 - p) / 0.08 : 1}>
-                <line x1={tx} y1={ty} x2={hx} y2={hy} stroke={glow} strokeWidth={lw * 5} strokeLinecap="round" opacity={0.25} style={{ filter: `blur(${lw * 2.5}px)` }} />
-                <line x1={tx} y1={ty} x2={hx} y2={hy} stroke={mixColor(glow, '#FFFFFF', 0.35)} strokeWidth={lw * 1.8} strokeLinecap="round" />
-              </g>,
-            );
-          }
-          return <g key={`p${i}`}>{runs}</g>;
-        })}
-      </svg>
-      {/* chips on the lines */}
-      {sources.map((src, i) => {
-        const q = at(frame, start + 7 + i * 2, 4, ease.snap);
-        if (q <= 0) return null;
-        const mx = mix(0.5, sx + cardW / 2, trunkX);
-        return (
-          <div key={`c${i}`} style={{ position: 'absolute', left: mx, top: cy(i), transform: `translate(-50%, -50%) scale(${mix(q, 0.7, 1)})`, opacity: clamp(q * 2) }}>
-            <Pill L={L} label={src.chip} size={s * 0.8} style={{ background: L.surface, color: L.ink, border: `1px solid ${L.line}`, fontWeight: 560 }} />
-          </div>
-        );
-      })}
       {/* sources */}
       {sources.map((src, i) => {
         const q = at(frame, start + i * 1, 4, ease.out);
@@ -140,7 +111,7 @@ const LinkPanelInner: React.FC<{
             <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: cardH * 0.64, background: mixColor(L.surface, src.color ?? L.accent, 0.5), overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {src.thumb ?? <Icon name={src.icon ?? 'Play'} size={cardH * 0.26} color="#FFFFFF" stroke={2.2} />}
             </div>
-            <div style={{ position: 'absolute', left: s * 0.55, right: s * 0.55, bottom: 0, height: cardH * 0.36, display: 'flex', alignItems: 'center', fontSize: s * 0.9, fontWeight: 600, color: L.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{src.title}</div>
+            <div style={{ position: 'absolute', left: s * 0.55, right: s * 0.55, bottom: 0, height: cardH * 0.36, display: 'flex', alignItems: 'center', fontSize: s * 0.84, fontWeight: 600, color: L.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{src.title}</div>
           </div>
         );
       })}
@@ -154,17 +125,24 @@ const LinkPanelInner: React.FC<{
           <Pill L={L} label="Live" icon="Radio" color={L.accent} size={s * 0.66} />
         </div>
         {sources.map((src, i) => {
+          // the row waits in the panel (its picture and name, its figures as blank bars) and lands when its pulse arrives
           const t0 = rowAt(i);
-          if (frame < t0) return null;
           const q = at(frame, t0, 3, ease.out);
-          const cool = at(frame, t0 + 6, 10, ease.out);
-          const lit = 1 - cool;
+          const lit = frame < t0 ? 0 : 1 - at(frame, t0 + 6, 10, ease.out);
+          const wait = mixColor(L.ink, L.surface, 0.45);
+          const blank = L.dark ? 'rgba(255,255,255,0.08)' : 'rgba(17,19,24,0.07)';
           return (
-            <div key={`r${i}`} style={{ position: 'absolute', left: s * 0.6, right: s * 0.6, top: headH + s * 0.35 + i * rowH, height: rowH - s * 0.3, borderRadius: s * 0.5, background: mixColor(L.dark ? mixColor(L.surface, '#FFFFFF', 0.03) : '#F7F8FA', L.accent, lit * 0.9), display: 'flex', alignItems: 'center', gap: s * 0.6, padding: `0 ${s * 0.6}px`, boxSizing: 'border-box', opacity: q, transform: `translateX(${mix(q, -s, 0)}px)`, fontSize: s * 0.86, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
-              <div style={{ width: s * 2.2, height: s * 1.5, borderRadius: s * 0.28, overflow: 'hidden', background: mixColor(L.surface, src.color ?? L.accent, 0.55), flexShrink: 0, boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}>{src.thumb}</div>
-              <div style={{ flex: 1, color: mixColor(L.ink, '#FFFFFF', lit), fontWeight: 560, overflow: 'hidden', textOverflow: 'ellipsis' }}>{src.row.label}</div>
-              <div style={{ color: lit > 0.5 ? '#FFFFFF' : L.muted }}>{src.row.meta}</div>
-              <div style={{ width: s * 4.2, textAlign: 'right', color: mixColor(L.ink, '#FFFFFF', lit), fontWeight: 620 }}>{src.row.value}</div>
+            <div key={`r${i}`} style={{ position: 'absolute', left: s * 0.6, right: s * 0.6, top: rowTop(i), height: rowMidH, borderRadius: s * 0.5, background: mixColor(L.dark ? mixColor(L.surface, '#FFFFFF', 0.03) : '#F7F8FA', L.accent, lit * 0.9), display: 'flex', alignItems: 'center', gap: s * 0.6, padding: `0 ${s * 0.6}px`, boxSizing: 'border-box', fontSize: s * 0.86, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+              <div style={{ width: s * 2.2, height: s * 1.5, borderRadius: s * 0.28, overflow: 'hidden', background: mixColor(L.surface, src.color ?? L.accent, 0.55), flexShrink: 0, boxShadow: '0 0 0 1px rgba(255,255,255,0.08)', opacity: mix(q, 0.55, 1) }}>{src.thumb}</div>
+              <div style={{ flex: 1, color: mixColor(mixColor(wait, L.ink, q), '#FFFFFF', lit), fontWeight: 560, overflow: 'hidden', textOverflow: 'ellipsis' }}>{src.row.label}</div>
+              <div style={{ position: 'relative', color: lit > 0.5 ? '#FFFFFF' : L.muted }}>
+                <span style={{ opacity: q }}>{src.row.meta}</span>
+                <span style={{ position: 'absolute', right: 0, top: '50%', width: s * 3, height: s * 0.5, marginTop: -s * 0.25, borderRadius: s * 0.25, background: blank, opacity: 1 - q }} />
+              </div>
+              <div style={{ position: 'relative', width: s * 4.2, textAlign: 'right', color: mixColor(L.ink, '#FFFFFF', lit), fontWeight: 620 }}>
+                <span style={{ opacity: q }}>{src.row.value}</span>
+                <span style={{ position: 'absolute', right: 0, top: '50%', width: s * 2.4, height: s * 0.5, marginTop: -s * 0.25, borderRadius: s * 0.25, background: blank, opacity: 1 - q }} />
+              </div>
             </div>
           );
         })}
@@ -183,6 +161,49 @@ const LinkPanelInner: React.FC<{
           })}
         </div>
       </div>
+      {/* connectors and pulses, over the panel's edge so each ends on its row */}
+      <svg width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible' }}>
+        {sources.map((_, i) => {
+          const d = at(frame, start + 8 + i * 2, 6, ease.out);
+          if (d <= 0) return null;
+          const P = pts(i);
+          return (
+            <g key={i} opacity={d}>
+              <path d={pathD(i)} fill="none" stroke={lineC} strokeWidth={lw} strokeLinejoin="round" />
+              <circle cx={P[0][0]} cy={P[0][1]} r={lw * 2.2} fill={L.surface} stroke={lineC} strokeWidth={lw} />
+              <circle cx={P[3][0]} cy={P[3][1]} r={lw * 2.2} fill={frame >= rowAt(i) ? L.accent : lineC} />
+            </g>
+          );
+        })}
+        {sources.map((_, i) => {
+          const runs: React.ReactNode[] = [];
+          for (let k = 0; k < 6; k++) {
+            const t0 = start + 10 + i * 3 + k * 24;
+            const p = (frame - t0) / 12;
+            if (p < 0 || p > 1) continue;
+            const [hx, hy] = along(i, p);
+            const [tx, ty] = along(i, Math.max(0, p - 0.09));
+            runs.push(
+              <g key={k} opacity={p > 0.92 ? (1 - p) / 0.08 : 1}>
+                <line x1={tx} y1={ty} x2={hx} y2={hy} stroke={glow} strokeWidth={lw * 5} strokeLinecap="round" opacity={0.25} style={{ filter: `blur(${lw * 2.5}px)` }} />
+                <line x1={tx} y1={ty} x2={hx} y2={hy} stroke={mixColor(glow, '#FFFFFF', 0.35)} strokeWidth={lw * 1.8} strokeLinecap="round" />
+              </g>,
+            );
+          }
+          return <g key={`p${i}`}>{runs}</g>;
+        })}
+      </svg>
+      {/* chips on the lines */}
+      {sources.map((src, i) => {
+        const q = at(frame, start + 9 + i * 2, 4, ease.snap);
+        if (q <= 0) return null;
+        const mx = mix(0.5, sx + cardW / 2, trunkX);
+        return (
+          <div key={`c${i}`} style={{ position: 'absolute', left: mx, top: cy(i), transform: `translate(-50%, -50%) scale(${mix(q, 0.7, 1)})`, opacity: clamp(q * 2) }}>
+            <Pill L={L} label={src.chip} size={s * 0.8} style={{ background: L.surface, color: L.ink, border: `1px solid ${L.line}`, fontWeight: 560 }} />
+          </div>
+        );
+      })}
     </div>
   );
 };

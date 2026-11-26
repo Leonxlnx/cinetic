@@ -114,7 +114,7 @@ const PromptAnswerInner: React.FC<{
           <div style={{ ...surfaceStyle(L, 3, s * 0.95), position: 'absolute', left: x - w / 2, top: cardTop, width: w, height: cardH * grow, overflow: 'hidden' }}>
             <div style={{ position: 'absolute', left: cardPad, right: cardPad, top: cardPad, opacity: clamp(grow * 1.5 - 0.3) }}>
               <div style={{ height: headH - s * 0.5, display: 'flex', alignItems: 'center', gap: s * 0.5, marginBottom: s * 0.5 }}>
-                <MarkSlot mark={mark} icon="Sparkles" colors={['#FF9A5C', '#EC5A2A']} size={s * 1.3} />
+                <MarkSlot mark={mark} icon="MessageSquareText" colors={['#FF9A5C', '#EC5A2A']} size={s * 1.3} />
                 <span style={{ fontSize: s * 0.92, fontWeight: 620, color: L.ink }}>{name}</span>
                 <span style={{ fontSize: s * 0.86, color: L.faint }}>·</span>
                 <span style={{ position: 'relative', fontSize: s * 0.86, whiteSpace: 'nowrap' }}>

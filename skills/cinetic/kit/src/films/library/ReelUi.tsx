@@ -132,7 +132,7 @@ const S3: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookDark('#5B86FF', '#111216');
   return (
     <Shot L={L} n={n} name={name}>
-      <BannerPop L={{ ...L, surface: '#1A1C22' }} at={8} n={{ title: 'Assistant', body: 'Want me to test a lower price this week?', time: 'now', icon: 'Sparkles', colors: BLUE }} y={520} w={1340} size={42} />
+      <BannerPop L={{ ...L, surface: '#1A1C22' }} at={8} n={{ title: 'Assistant', body: 'Want me to test a lower price this week?', time: 'now', icon: 'Tag', colors: BLUE }} y={520} w={1340} size={42} />
     </Shot>
   );
 };
@@ -461,7 +461,7 @@ const S15: React.FC<DemoProps> = ({ n, name }) => {
 // words append into a hub pill; each word brings a tool tile with its connector dot; the tiles fly out past the camera
 const S16: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookLight('#1D1F24', '#F6F4EF');
-  const t = (brand: string, dot: string, dx: number, dy: number, word: number) => ({ mark: <Brand name={brand} size={62} />, dot, dx, dy, word });
+  const t = (brand: string, dot: string, dx: number, dy: number, word: number) => ({ mark: <Brand name={brand} size={76} />, dot, dx, dy, word });
   return (
     <Shot L={L} n={n} name={name}>
       <HubPill
@@ -470,7 +470,7 @@ const S16: React.FC<DemoProps> = ({ n, name }) => {
         words={['Works', 'inside', 'your', 'stack']}
         every={[12, 14, 9]}
         flyAt={62}
-        tiles={[t('figma', '#F2B33D', -0.31, -0.21, 0), t('notion', '#E0566B', 0.03, -0.33, 1), t('slack', '#3F7FE0', -0.21, 0.29, 2), t('github', '#4CAF7A', 0.2, 0.29, 3), t('google-drive', '#E0566B', 0.36, -0.12, 3)]}
+        tiles={[t('figma', '#F2B33D', -0.31, -0.21, 0), t('notion', '#E0566B', 0.03, -0.33, 1), t('slack', '#3F7FE0', -0.21, 0.29, 2), t('github', '#2B2F36', 0.2, 0.29, 3), t('google-drive', '#E0566B', 0.36, -0.12, 3)]}
       />
     </Shot>
   );
@@ -478,7 +478,7 @@ const S16: React.FC<DemoProps> = ({ n, name }) => {
 
 // ghost slots round the mark take their colours one tile at a time, faster and faster
 const GF_COLORS: Array<[string, string]> = [['#FF9A5C', '#EC5A2A'], ['#6FD0FF', '#1F90E2'], ['#FF8FB1', '#E2457A'], ['#FFCB5C', '#F29A1E'], ['#5B86FF', '#2350E6'], ['#9AA3B5', '#5B6478'], ['#FF7A6B', '#D93A30'], ['#63D3C8', '#169C93']];
-const GF_ICONS = ['Clapperboard', 'Layers', 'Music', 'Type', 'Wand', 'Scissors', 'Film', 'Shapes', 'Palette', 'AudioLines', 'Crop', 'Sparkles', 'Captions', 'Image', 'Pen', 'Aperture'];
+const GF_ICONS = ['Clapperboard', 'Layers', 'Music', 'Type', 'Video', 'Scissors', 'Film', 'Shapes', 'Palette', 'AudioLines', 'Crop', 'SlidersHorizontal', 'Captions', 'Image', 'Pen', 'Aperture'];
 const GF_SLOTS: Array<[number, number]> = [[0, -2], [-2, -1], [2, -1], [-1, -1], [1, -1], [-3, 0], [-1, 0], [1, 0], [3, 0], [-2, 1], [2, 1], [-1, 2], [1, 2], [0, -3], [-3, -2], [3, 2]];
 const ghostItems: GhostItem[] = GF_SLOTS.map(([c, r], i) => ({ c, r, icon: GF_ICONS[i], colors: GF_COLORS[i % GF_COLORS.length] }));
 
@@ -537,8 +537,8 @@ const S19: React.FC<DemoProps> = ({ n, name }) => {
         at={6}
         cards={[
           { label: 'Onboarding cost', sub: 'Last month', from: 10, to: 1240, rate: 27, prefix: '$', pill: { label: 'Paid', color: '#1F8A8A' }, f: 0, cx: 0.3, cy: 0.64, w: 0.27 },
-          { label: 'Hours trained', sub: 'This week', from: 0, to: 420, rate: 10, pill: { label: 'Logged' }, f: 11, cx: 0.2, cy: 0.25, w: 0.16 },
-          { label: 'Shifts covered', sub: 'Today', from: 0, to: 64, rate: 2, pill: { label: 'Live', color: '#E8742E' }, f: 18, cx: 0.82, cy: 0.4, w: 0.16 },
+          { label: 'Hours trained', sub: 'This week', from: 0, to: 420, rate: 10, pill: { label: 'Logged' }, f: 11, cx: 0.2, cy: 0.25, w: 0.23 },
+          { label: 'Shifts covered', sub: 'Today', from: 0, to: 64, rate: 2, pill: { label: 'Live', color: '#E8742E' }, f: 18, cx: 0.79, cy: 0.4, w: 0.23 },
         ]}
       />
       <Label n={n} name={name} dark />
@@ -600,9 +600,10 @@ const S23: React.FC<DemoProps> = ({ n, name }) => {
       <LinkPanel
         L={{ ...L, surface: '#16181D' }}
         at={6}
-        size={30}
-        panelX={0.65}
-        panelW={0.52}
+        size={34}
+        srcX={0.12}
+        panelX={0.67}
+        panelW={0.5}
         sources={[
           { title: 'Ten-minute core', thumb: thumb(IMG.waves), chip: '1,204 clicks', row: { label: 'Ten-minute core', meta: '64 sales', value: '$1,402' } },
           { title: 'Desk stretch', thumb: thumb(IMG.tide), chip: '486 clicks', row: { label: 'Desk stretch', meta: '21 sales', value: '$512' } },
@@ -724,7 +725,7 @@ const S27: React.FC<DemoProps> = ({ n, name }) => {
       <div style={{ position: 'absolute', left: bx - 150, top: by - 6, width: 300, height: 76, borderRadius: 20, background: done ? mixColor(L.surface, L.accent, 0.12) : L.accent, color: done ? L.accent : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: L.font, fontSize: 28, fontWeight: 600, transform: `scale(${1 - p * 0.04})`, boxShadow: done ? 'none' : '0 6px 16px rgba(47,75,216,0.3)' }}>
         {done ? 'Requested' : 'Request access'}
       </div>
-      <Cursor3D keys={[{ f: 10, x: bx + 260, y: by + 380 }, { f: 30, x: bx + 40, y: by + 40 }, { f: 70, x: bx + 70, y: by + 60 }]} clicks={[click]} ground="#33407A" color="#9FB0F7" size={84} />
+      <Cursor3D keys={[{ f: 10, x: bx + 260, y: by + 380 }, { f: 30, x: bx + 40, y: by + 40 }, { f: 70, x: bx + 70, y: by + 60 }]} clicks={[click]} ground="#2A2F3A" color="#F4F5F7" size={84} />
     </Shot>
   );
 };
@@ -764,7 +765,7 @@ const S28: React.FC<DemoProps> = ({ n, name }) => {
 // the cards round a line flood with colour and blow away outward
 const S29: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookLight('#2F45D0', '#F7F8FC');
-  const mini = (title: string, body: string, icon: string, c: [string, string]) => <Notice L={L} n={{ title, body, icon, colors: c, time: 'now' }} w={560} size={30} />;
+  const mini = (title: string, body: string, icon: string, c: [string, string]) => <Notice L={L} n={{ title, body, icon, colors: c, time: 'now' }} w={557} size={30} style={{ width: '100%', height: '100%' }} />;
   const cards = [
     { node: mini('Standup notes', 'Three blockers, one owner', 'FileText', BLUE), x: 0.17, y: 0.2, w: 0.29, h: 0.13, rot: -3 },
     { node: mini('Q3 roadmap', 'Updated by Ada', 'Map', AMBER), x: 0.8, y: 0.17, w: 0.29, h: 0.13, rot: 2 },
@@ -776,7 +777,7 @@ const S29: React.FC<DemoProps> = ({ n, name }) => {
   return (
     <Shot L={L} n={n} name={name}>
       <div style={{ position: 'absolute', left: 0, right: 0, top: 500, textAlign: 'center', fontFamily: fonts.inter, fontSize: 64, fontWeight: 560, color: L.ink, letterSpacing: '-0.025em' }}>Too many places to look</div>
-      <FloodAway cards={cards} at={14} color="#2F45D0" order={[3, 1, 4, 0, 5, 2]} blowAt={16} />
+      <FloodAway cards={cards} at={14} color="#2F45D0" order={[3, 1, 4, 0, 5, 2]} blowAt={6} radius={31.5 / 140} />
     </Shot>
   );
 };

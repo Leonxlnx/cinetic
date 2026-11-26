@@ -80,7 +80,7 @@ blocks, each card stepping up and right with a small turn, so a fanned stack gro
 ```
 - Numbers: deals compressing (8, 12, 16, 19, 23 f); each a 2 f block dissolve (blocks 2.2 % of the card); each card
   1.3 % W right, 1.1 % H up, 2.5 degrees on; the stack scales 1 to 1.22 linearly over 24 f; card 23 % W x 45 % H;
-  words 3.2 % of H.
+  words 6 % of H, weight 560.
 - Caution: one short word each side; the cards are pictures, never text to read.
 
 ### DiagonalStream
@@ -110,8 +110,8 @@ hug every card on the same frame; the last picture holds.
 ```tsx
 <SlotSwap pics={work} at={T.proof} before="Every" after="kept" gaps={[7, 6, 6, 5, 5, 4, 4, 4]} />
 ```
-- Numbers: cuts 7, 6, 6, 5, 5, 4, 4, 4 f apart; cards 18-30 % of H tall, 0.7-1.5 times as wide, radius 4 % of the
-  height; words 3 % of H, 0.6 em from the card.
+- Numbers: cuts 7, 6, 6, 5, 5, 4, 4, 4 f apart; cards 30-46 % of H tall, 0.7-1.5 times as wide, radius 4 % of the
+  height; words 6.2 % of H (weight 560), 0.45 em from the card.
 - Caution: one word each side; cuts only, never a slide or a fade.
 
 ### CardDrift
@@ -164,7 +164,8 @@ it, the colour floods segment by segment and a light runs round while a short wo
 <DotRing at={T.link} from={tipPoints} color="#2457F5" light="#7FD8FA" label="linked" />
 ```
 - Numbers: flights 12 f, started 0-4 f apart, dots 0.8 to 4 % of H; ring radius 36 % of H, turning 2 degrees a frame;
-  dashes 23-30 f; flood 30-33 f; the light once round in 20 f from 34 f; the word a letter a frame from 26 f.
+  dashes 23-30 f; flood 30-33 f; the light once round in 20 f from 34 f; the word (7.5 % of H)
+  a letter a frame from 26 f.
 - Caution: the dots should start from something on screen (`from`); one in a film.
 
 ### PillBurst
@@ -246,7 +247,7 @@ with frosted glass and swings close as a warm light blooms inside.
 <WireTetra at={T.open} />
 ```
 - Numbers: the turn 0-22 f, the split 22-30 f, the fourth vertex 30-40 f, faces at 40, 42, 44, 46 f, the swing 48-56 f
-  (22 to 110 % of H, log scale), the light from 50 f.
+  (22 to 72 % of H by default, log scale; `size`, above about 0.8 the corners leave the frame), the light from 50 f.
 - Caution: near-black ground only; an abstract opener, one in a film.
 
 Marks and lockups:

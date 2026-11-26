@@ -48,7 +48,7 @@ const TilePopDemo = on('#FFFFFF', false, <TilePop pics={PICS} at={0} count={26} 
 const DealtStackDemo = on('#FFFFFF', false, <DealtStack pics={PICS} at={2} before="Moments" after="kept" />);
 const BlobMergeDemo = on(CREAM, false, <BlobMerge at={2} color={NAVY} mark={<SplitDisc size={190} />} />);
 const LockupTypeDemo = on(CREAM, false, <LockupType at={0} name="Halden" mark={(p) => <SplitDisc size={118} p={p} />} markW={128} hold={16} build={10} color={NAVY} />);
-const CubeSplitDemo = on('#FFFFFF', false, <CubeSplit at={2} />);
+const CubeSplitDemo = on('#FFFFFF', false, <CubeSplit at={2} side={0.08} />);
 const SquareTunnelDemo = on('#F7F5F1', false, <SquareTunnel at={4} color="#F0541E" />);
 const PixelMarkDemo = on('#060607', true, <PixelMark at={2} />);
 /** An invented glyph for the tile: two stacked chevrons. */
