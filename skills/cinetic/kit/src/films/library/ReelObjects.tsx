@@ -6,9 +6,9 @@ import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { fonts } from '../../kit/fonts';
 import { AppIcon, Icon, softShadow } from '../../kit';
-import { ARCH_SVG, BlobMerge, DotWave, MarkCondense, OrbitRing, BlockPrint, CellStack, ConstructType, CubeSplit, CurlRing, DealtStack, DiagonalStream, DotRing, LockupType, MarkDolly, PillBurst, PixelIris, PixelMark, PixelatePortrait, PlateSqueeze, SquareTunnel, TilePop, TumbleLockup, WireTetra } from '../../kit/library';
+import { ARCH_SVG, BlobMerge, DotWave, MarkCondense, OrbitRing, SlotSwap, SpiralFan, CardDrift, BlockPrint, CellStack, ConstructType, CubeSplit, CurlRing, DealtStack, DiagonalStream, DotRing, LockupType, MarkDolly, PillBurst, PixelIris, PixelMark, PixelatePortrait, PlateSqueeze, SquareTunnel, TilePop, TumbleLockup, WireTetra } from '../../kit/library';
 import { Reel, reelDuration, type DemoProps, type Segment } from './reel';
-import { IMG } from './scenes';
+import { IMG, Pic } from './scenes';
 
 /** The corner label every segment here draws: the piece's number and name. */
 export const Label: React.FC<{ n: number; name: string; dark?: boolean }> = ({ n, name, dark }) => (
@@ -121,6 +121,50 @@ const OrbitCentre: React.FC = () => (
 const OrbitRingDemo = on('#DDE6F2', false, <OrbitRing at={2} centre={<OrbitCentre />} items={ORBIT_ICONS.map(([g, a, b]) => <AppIcon key={g} size={130} colors={[a, b]} glyph={<Icon name={g} size={60} color="#fff" />} />)} />);
 const WireTetraDemo = on('#030304', true, <WireTetra at={2} />);
 
+const FAN_ICONS = ['Box', 'Database', 'Globe', 'Cpu', 'Table', 'FileJson', 'Image', 'Layers'];
+const FanCard: React.FC<{ i: number }> = ({ i }) => {
+  const kind = i % 4;
+  const bg = kind === 0 ? '#EE5A2A' : kind === 1 ? '#17181C' : kind === 2 ? '#FFFFFF' : '#E9E6E1';
+  const ink = kind === 0 || kind === 1 ? '#FFFFFF' : '#17181C';
+  return (
+    <div style={{ width: '100%', height: '100%', background: bg, borderRadius: 6, boxShadow: '0 1px 2px rgba(0,0,0,0.12), 0 6px 18px rgba(0,0,0,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Icon name={FAN_ICONS[i % FAN_ICONS.length]} size={34} color={ink} />
+    </div>
+  );
+};
+const SpiralLine: React.FC = () => {
+  const f = useCurrentFrame();
+  return f >= 20 ? <div style={{ ...lineStyle, fontSize: 46, fontWeight: 540 }}>Every format, one call</div> : null;
+};
+const SpiralFanDemo = on('#F7F6F4', false, <><SpiralFan at={2} cards={Array.from({ length: 12 }, (_, i) => <FanCard key={i} i={i} />)} /><SpiralLine /></>);
+const SlotSwapDemo = on('#F4F4F2', false, <SlotSwap pics={PICS} at={2} before="Every" after="kept" />);
+
+const DriftCard: React.FC<{ i: number }> = ({ i }) => {
+  const w = [220, 170, 250, 190][i % 4];
+  const h = [150, 210, 170, 140][i % 4];
+  return (
+    <div style={{ width: w, height: h, borderRadius: 14, overflow: 'hidden', boxShadow: softShadow(3, '#FFFFFF') }}>
+      <Pic src={Object.values(IMG)[i % 6]} />
+    </div>
+  );
+};
+const DriftChip: React.FC<{ icon: string; label: string }> = ({ icon, label }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 20px', borderRadius: 999, background: '#17181C', color: '#fff', fontFamily: fonts.inter, fontSize: 26, fontWeight: 500 }}>
+    <Icon name={icon} size={26} color="#fff" />
+    {label}
+  </div>
+);
+const CardDriftDemo = on('#FFFFFF', false, (
+  <>
+    <CardDrift
+      at={2}
+      items={Array.from({ length: 10 }, (_, i) => <DriftCard key={i} i={i} />)}
+      pops={[<DriftChip key="a" icon="Sparkles" label="Brief" />, <DriftChip key="b" icon="Image" label="Moodboard" />, <DriftChip key="c" icon="Type" label="Copy" />, <DriftChip key="d" icon="Palette" label="Colours" />]}
+    />
+    <div style={{ ...lineStyle, fontSize: 52, fontWeight: 540 }}>Everything for the launch</div>
+  </>
+));
+
 // the pieces in the order the reel plays them
 export const SEGMENTS: Segment[] = [
   { name: 'TilePop', from: 0, dur: 60, render: TilePopDemo },
@@ -146,6 +190,9 @@ export const SEGMENTS: Segment[] = [
   { name: 'DotWave', from: 936, dur: 52, render: DotWaveDemo },
   { name: 'OrbitRing', from: 988, dur: 60, render: OrbitRingDemo },
   { name: 'WireTetra', from: 1048, dur: 76, render: WireTetraDemo },
+  { name: 'SpiralFan', from: 1124, dur: 44, render: SpiralFanDemo },
+  { name: 'SlotSwap', from: 1168, dur: 54, render: SlotSwapDemo },
+  { name: 'CardDrift', from: 1222, dur: 60, render: CardDriftDemo },
 ];
 
 export const reelObjectsDuration = reelDuration(SEGMENTS);

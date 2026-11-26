@@ -23,3 +23,6 @@ export { WireTetra } from './WireTetra';
 export { MarkCondense } from './MarkCondense';
 export { DotWave } from './DotWave';
 export { OrbitRing } from './OrbitRing';
+export { SpiralFan } from './SpiralFan';
+export { SlotSwap } from './SlotSwap';
+export { CardDrift } from './CardDrift';

@@ -21,7 +21,7 @@ by the checklist in [library.md](library.md#how-to-add-a-piece); the two tables 
 | [SquareTunnel](#squaretunnel) | build, join | 43 f | a square opens into a ring and new squares are born in its hole, every ring growing outward at one speed, until the last grows solid over the frame | out of a square already on screen (a tile, a cell, a button) into the ground of the next scene: depth, speed, going through |
 | [PixelMark](#pixelmark) | build, enter | 14 f | a mark of square cells assembles by trial, partial sets blinking on and off, then holds as hairline guides run out along its cell edges | the opening or closing mark of a technical product whose mark is drawn in cells |
 | [TumbleLockup](#tumblelockup) | build | 16 f | the app tile grows from a dot with a tilt and overshoot, its glyph popping in, while the letters of the name tumble in two frames apart, small, slanted and tinted, rising into place in ink | the lockup of a consumer app with a coloured tile; a quick, bright ending |
-| [DotRing](#dotring) | build | 34 f | scattered dots fly on arcs into a turning ring, stretch into dashes that close it, the ring floods with colour segment by segment and a light runs round it | a moment of connection: many sources becoming one, a sync, a link made |
+| [DotRing](#dotring) | build | 34 f | scattered dots fly on arcs into a turning ring, stretch into dashes that close it, the ring floods with colour segment by segment and a light runs round it | a moment of connection: many inputs becoming one, a sync, a link made |
 | [CurlRing](#curlring) | build, exit | 73 f | a row of picture tiles turns to colour, tips into a diagonal and curls into a ring tile after tile, the ring spinning and imploding into the centre | many things gathered into one before the product appears out of the centre |
 | [PillBurst](#pillburst) | enter, exit | 50 f | tool pills burst out from behind a line and settle round it tilted; on the next line they fall under gravity and land in a heap at the bottom | the problem beat: too many tools, tabs or apps, then all of them falling apart |
 | [CellStack](#cellstack) | build, loop | 30 f | square cells appear in a row on a white plate, rows join below as dots that grow, the plate becomes a square, then the rows light in turn like a loader | working, indexing or collecting under a line; a loader with character |
@@ -34,8 +34,11 @@ by the checklist in [library.md](library.md#how-to-add-a-piece); the two tables 
 | [ConstructType](#constructtype) | build | 24 f | two handle dots, a hairline between them, a box opening to the right in held steps, and the name typing into it, each letter pale then ink | the wordmark of a design, building or developer tool; the name set the way the product sets things |
 | [MarkCondense](#markcondense) | build | 30 f | a blueprint of the mark draws itself (a hairline tile, a construction circle, corner handles), then the real mark condenses inside out of a pale mottled blur and the blueprint fades | the app icon or mark arriving the way a design tool builds it; a reveal on a calm light ground |
 | [DotWave](#dotwave) | build, loop | 36 f | a glowing dot opens sideways into a row of fine bars that lives like a level meter, dim rows above and below, and can calm back to one quiet dotted line | a voice, a call, a signal: under or beside one line, out of a dot that was on screen |
-| [OrbitRing](#orbitring) | idle, loop | 60 f | tiles ride a flat ellipse round a centre object, large and sharp in front, small, soft and dimmer behind it | the apps or sources round one product or figure; a world held round the thing the film is about |
+| [OrbitRing](#orbitring) | idle, loop | 60 f | tiles ride a flat ellipse round a centre object, large and sharp in front, small, soft and dimmer behind it | the apps or services round one product or figure; a world held round the thing the film is about |
 | [WireTetra](#wiretetra) | build | 60 f | a hairline between two dots turns in space, splits into a triangle, lifts into a wire tetrahedron, fills face by face with frosted glass and swings close as a warm light blooms inside | an abstract opener: an idea taking form, a model, an engine, before the product |
+| [SpiralFan](#spiralfan) | build, enter | 20 f | a square shrinks and tips, and the cards under it fan out like a deck along a spiral arm while the whole cloud spins clockwise and opens wide round the centre | everything a product reaches (inputs, formats, integrations) bursting out of one thing, round a short line |
+| [SlotSwap](#slotswap) | emphasis | 45 f | between two words a picture card cuts to the next picture faster and faster, each a new size, the words hugging every card on the same frame | a line whose proof is many pictures (the work, the products, the people), told in one slot |
+| [CardDrift](#carddrift) | idle | 60 f | small cards float round a centred line at several depths, each drifting slowly outward at its own speed, while extra chips pop into the gaps one at a time | the world round a short line: everything a product gathers, a canvas of work, held while the line is read |
 
 <!-- /library:pieces -->
 
@@ -90,6 +93,26 @@ stay colour; the group creeps larger. `layout="corners"` puts the pieces round a
 - Numbers: a piece every 2-3 f; blocks for 2-6 f, then the photograph on one frame; about one in four stays a block;
   the group 100 to 106 % (expo out).
 - Caution: a print, never a fade or a slide; three or four pastel blocks.
+
+### SlotSwap
+Between two words a picture card cuts to the next picture faster and faster, each a new size and shape, and the words
+hug every card on the same frame; the last picture holds.
+```tsx
+<SlotSwap pics={work} at={T.proof} before="Every" after="kept" gaps={[7, 6, 6, 5, 5, 4, 4, 4]} />
+```
+- Numbers: cuts 7, 6, 6, 5, 5, 4, 4, 4 f apart; cards 18-30 % of H tall, 0.7-1.5 times as wide, radius 4 % of the
+  height; words 3 % of H, 0.6 em from the card.
+- Caution: one word each side; cuts only, never a slide or a fade.
+
+### CardDrift
+Small cards float round a centred line at several depths, each drifting slowly outward at its own speed (near ones
+larger and sharp, far ones small and soft), while chips pop into the gaps one at a time.
+```tsx
+<CardDrift at={T.world} items={cards} pops={[<Chip ... />, ...]} clear={{ w: 0.4, h: 0.24 }} />
+```
+- Numbers: a clear centre of 40 % of W by 24 % of H; depth gives 60 to 120 % scale, 3 px to 0 blur and 0.05 to 0.25 %
+  of W a frame of drift; the first set lands on 0-8 f; pops one every 6 f from 14 f (to 108 %, then 100 %, in 4 f).
+- Caution: every card is real content of the film; the line stays in the clear centre.
 
 ### CurlRing
 A row of picture tiles turns to colour left to right, tips into a rising diagonal and curls: the lead tile rises and
@@ -175,6 +198,17 @@ flat and front-on as a pixel mark, construction lines streaking out from it.
   straight down, one full spin, blur from the angular speed), land at 106 % settling by 58 f; a cube 5.2 % of W.
 - Caution: the mark must be made of cells on a grid; follow it with `LockupType`.
 
+### SpiralFan
+A square shrinks and tips; the cards under it fan out like a deck, first in a tight turning cluster, then along a
+spiral arm, the whole cloud spinning clockwise and opening wide round a clear centre.
+```tsx
+<SpiralFan at={T.burst} cards={tiles} count={32} color={ACCENT} />
+```
+- Numbers: the square 100 to 55 % and 12 degrees on 0-3 f; the fan 3-9 f; the spiral opens 8-19 f to 56 % of H (the
+  arm starting half way out); the cloud turns 130 degrees by 19 f, then 0.6 degrees a frame; 1.6 turns; cards 7.5 % of H,
+  80 to 110 % from the centre out.
+- Caution: 24-40 cards of one family; the centre is for one short line.
+
 ### OrbitRing
 Tiles (icons, cards, chips) ride a flat ellipse round a centre object: large and sharp as they pass in front left to
 right, small, soft and dimmer behind it.
@@ -183,7 +217,7 @@ right, small, soft and dimmer behind it.
 ```
 - Numbers: the ellipse 36 % of W wide (half) and 4 % of H tall; a turn in 150 f; tiles 112 % in front, 62 % behind, up
   to 4 px blur and 70 % strength at the back; tiles enter on the first 10 f, 1 f apart.
-- Caution: 5-9 tiles; the centre object carries the scene.
+- Caution: 5-9 tiles; the centre object carries the scene, and the front tiles pass over it: keep its text short.
 
 ### DotWave
 A glowing dot opens sideways into a row of fine bars that lives like a level meter, dim rows above and below;
@@ -191,7 +225,7 @@ A glowing dot opens sideways into a row of fine bars that lives like a level met
 ```tsx
 <DotWave at={T.voice} calmAt={40} color="#fff" />
 ```
-- Numbers: the row opens to 60 % of W in 14 f (expo out); bars on a 0.55 % of W pitch; spikes on twos up to 9 % of H,
+- Numbers: the row opens to 60 % of W in 14 f (expo out); bars on a 0.55 % of W pitch; spikes on twos up to 11 % of H,
   tapering to the edges; four dim rows at +-8 and +-16 % of H at 22 %; calming narrows to 30 % in 12 f.
 - Caution: one moving thing at a time; it is a signal, not decoration.
 
@@ -322,5 +356,8 @@ in one still (run it in a film project; `render --film library-objects --range a
 | DotWave | `library-objects` | 936-987 | `node scripts/frames.mjs library --strip DotWave` |
 | OrbitRing | `library-objects` | 988-1047 | `node scripts/frames.mjs library --strip OrbitRing` |
 | WireTetra | `library-objects` | 1048-1123 | `node scripts/frames.mjs library --strip WireTetra` |
+| SpiralFan | `library-objects` | 1124-1167 | `node scripts/frames.mjs library --strip SpiralFan` |
+| SlotSwap | `library-objects` | 1168-1221 | `node scripts/frames.mjs library --strip SlotSwap` |
+| CardDrift | `library-objects` | 1222-1281 | `node scripts/frames.mjs library --strip CardDrift` |
 
 <!-- /library:reel -->

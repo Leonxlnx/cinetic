@@ -2,7 +2,7 @@
 // symmetrically from the centre and lives like a level meter (a few bars spike and fall every frame), while dim rows of
 // the same bars fade in above and below; `calmAt` narrows it back to one quiet dotted line.
 // Numbers: the dot holds 2 f, the row opens to 60 % of W over 14 f (expo out), bars on a pitch of 0.55 % of W, 0.18 %
-// wide; spikes on twos up to 9 % of H, the edges tapering; four dim rows at +-8 and +-16 % of H at 22 % strength from
+// wide; spikes on twos up to 11 % of H, the edges tapering; four dim rows at +-8 and +-16 % of H at 22 % strength from
 // 0-6 f; a soft glow round the centre; `calmAt` narrows to 30 % over 12 f and the dim rows leave.
 // Caution: it is a voice or a signal; let it sit under or beside one line, never with a second moving thing.
 // Catalogue: ../catalog/object.ts; props and recipe: references/library-objects.md.
@@ -44,7 +44,7 @@ export const DotWave: React.FC<{
       const xx = cx + i * pitch;
       const edge = 1 - Math.abs(i) / Math.max(1, n);
       const r = rnd(seed + k * 31, i + 400, tick);
-      const spike = r > 0.9 ? (r - 0.9) * 10 : r > 0.7 ? (r - 0.7) * 1.2 : 0;
+      const spike = r > 0.88 ? (r - 0.88) * 8.3 : r > 0.66 ? (r - 0.66) * 1.4 : 0;
       const h = Math.max(bw * 1.6, (bw * 1.6 + spike * H * amp) * Math.pow(edge, 0.6) * (1 - calm * 0.9));
       out.push(<rect key={`${k}-${i}`} x={xx - bw / 2} y={yy - h / 2} width={bw} height={h} rx={bw / 2} fill={color} opacity={alpha} />);
     }
@@ -63,7 +63,7 @@ export const DotWave: React.FC<{
         </defs>
         <ellipse cx={cx} cy={cy} rx={Math.max(H * 0.05, half * 0.9)} ry={H * 0.07} fill={`url(#${id})`} />
         {dim > 0 && [-0.16, -0.08, 0.08, 0.16].map((o, k) => bars(cy + o * H, dim, k + 1, 0.05, (W * mix(calm, width, 0.3)) / 2))}
-        {bars(cy, 1, 0, 0.09)}
+        {bars(cy, 1, 0, 0.11)}
         {dot > 0 && <circle cx={cx} cy={cy} r={dot} fill={color} />}
       </svg>
     </AbsoluteFill>
