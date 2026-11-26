@@ -3,8 +3,8 @@
 // panels), so a turn is judged the way it would be used. No sound. A new turn: one segment appended to SEGMENTS.
 import React from 'react';
 import { AbsoluteFill, Sequence, useCurrentFrame } from 'remotion';
-import { BlockBurst, DiveInto, DotReveal, GlitchCut, GrowIris, PixelFilter, ShapeMatch, Shove, WhipGate, WindowOpen, dotRevealEnd } from '../../kit/library';
-import { Ground, Phone, fonts, softShadow, ease, mix, clamp, Icon, useTextLayout } from '../../kit';
+import { BlockBurst, ChipBloom, CollapsePill, CrossFall, DiveInto, DotIris, DotReveal, FaceDive, FrameCollapse, GlitchCut, GrowIris, Interleave, LensIris, PixelFilter, PixelStair, ShapeMatch, Shove, StampHop, StepTear, TileFlood, TiltLift, VelocityCut, WhipGate, WindowOpen, dotRevealEnd } from '../../kit/library';
+import { Ground, Phone, fonts, softShadow, ease, mix, clamp, Icon, useTextLayout, shade } from '../../kit';
 import { Reel, reelDuration, type DemoProps, type Segment } from './reel';
 import { Avatars, Board, CORAL, COBALT, Center, IMG, INK, Label, NIGHT, Notice, ORANGE, PAPER, Photo, Pic, Planner, Prompt, Rise, SKY, SUN, WHITE, gx, gy, say, shadowText } from './scenes';
 
@@ -396,6 +396,311 @@ const btn = (
   <div style={{ width: '100%', height: '100%', borderRadius: 46, background: COBALT, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: fonts.inter, fontSize: 34, fontWeight: 560 }}>Open report</div>
 );
 
+// ---- the second set of turns ----
+
+// the line keeps drifting left through the turn; the dot opens in the gap between its two words, fixed on screen
+const DI_STYLE = say(104, '#fff', 540);
+const DriftLine: React.FC<{ ink: string; text: string }> = ({ ink, text }) => {
+  const f = useCurrentFrame();
+  return <div style={{ position: 'absolute', left: 0, right: 0, top: 540 - 56, textAlign: 'center', ...DI_STYLE, color: ink, transform: `translateX(${-1.6 * f}px)` }}>{text}</div>;
+};
+const DotIrisDemo: React.FC = () => {
+  const T = 30;
+  const L = useTextLayout('Every morning', DI_STYLE);
+  // the gap between the words at frame T, on screen
+  const gx = L.words.length > 1 ? 960 - L.width / 2 + (L.words[0].x + L.words[0].width + L.words[1].x) / 2 - 1.6 * T : 960;
+  const from = (
+    <Ground color={NIGHT} light={false}>
+      <DriftLine ink="#fff" text="Every morning" />
+    </Ground>
+  );
+  const to = (
+    <Ground color={PAPER} light={false}>
+      <DriftLine ink={INK} text="Every morning" />
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 660, display: 'flex', justifyContent: 'center' }}>
+        <Rise at={T + 12} style={say(46, '#5D6470', 500)}>
+          a plan for the day, ready before you are
+        </Rise>
+      </div>
+    </Ground>
+  );
+  return <DotIris from={from} to={to} at={T} x={gx} y={540 - 6} />;
+};
+
+const ChipBloomDemo: React.FC = () => {
+  const T = 30;
+  const from = <Ground color={WHITE} light={false} />;
+  const to = (
+    <Photo src={IMG.waves} zoom={1} drift={0}>
+      <div style={{ position: 'absolute', left: 120, bottom: 150, textAlign: 'left' }}>
+        <Rise at={T + 12} style={say(110, '#fff', 560)}>
+          <span style={{ textShadow: shadowText }}>Every swell, logged</span>
+        </Rise>
+      </div>
+    </Photo>
+  );
+  return <ChipBloom from={from} to={to} at={T} before="we keep the sea" after="in one place" style={say(64, INK, 500)} chip={{ w: 200, h: 112, r: 26 }} shadow={softShadow(2, WHITE)} />;
+};
+
+// a hexagon face of an isometric block (pointy top), lit from above
+const hexPts = (cx: number, cy: number, r: number) => Array.from({ length: 6 }, (_, i) => { const a = ((-90 + 60 * i) * Math.PI) / 180; return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`; }).join(' ');
+// the two lower side faces of a hexagonal block, extruded down by half its radius, the left one lighter
+const hexSides = (cx: number, cy: number, r: number, c: string) => {
+  const p = (deg: number) => [cx + r * Math.cos((deg * Math.PI) / 180), cy + r * Math.sin((deg * Math.PI) / 180)] as const;
+  const q = (a: readonly [number, number], b: readonly [number, number]) => `${a[0]},${a[1]} ${b[0]},${b[1]} ${b[0]},${b[1] + r / 2} ${a[0]},${a[1] + r / 2}`;
+  return (
+    <>
+      <polygon points={q(p(30), p(90))} fill={shade(c, -0.3)} />
+      <polygon points={q(p(90), p(150))} fill={shade(c, -0.12)} />
+    </>
+  );
+};
+const FD = { x: 640, y: 430, r: 210 };
+const FaceDiveDemo: React.FC = () => {
+  const T = 30;
+  const from = (
+    <Ground color={NIGHT} light={false}>
+      <svg width={1920} height={1080} style={{ position: 'absolute', inset: 0 }}>
+        <defs>
+          <linearGradient id="fdA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFB49C" /><stop offset="1" stopColor={CORAL} /></linearGradient>
+          <linearGradient id="fdB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFE08A" /><stop offset="1" stopColor={SUN} /></linearGradient>
+        </defs>
+        {hexSides(1040, 640, 150, CORAL)}
+        <polygon points={hexPts(1040, 640, 150)} fill="url(#fdA)" />
+        {hexSides(1360, 420, 110, SUN)}
+        <polygon points={hexPts(1360, 420, 110)} fill="url(#fdB)" />
+      </svg>
+      {[['Routing', 1040, 640 + 250], ['Limits', 1360, 420 + 190], ['Sources', FD.x, FD.y + FD.r + 130]].map(([t, x, y]) => (
+        <div key={t as string} style={{ position: 'absolute', left: (x as number) - 200, width: 400, top: y as number, textAlign: 'center', ...say(30, '#C9CCD3', 500) }}>{t}</div>
+      ))}
+    </Ground>
+  );
+  const to = (
+    <Photo src={IMG.farms} zoom={1} drift={0}>
+      <div style={{ position: 'absolute', left: 120, bottom: 150, textAlign: 'left' }}>
+        <Rise at={T + 16} style={say(110, '#fff', 560)}>
+          <span style={{ textShadow: shadowText }}>Every source, one view</span>
+        </Rise>
+      </div>
+    </Photo>
+  );
+  return <FaceDive from={from} to={to} at={T} x={FD.x} y={FD.y} r={FD.r} preview={T} solid="#3E8C96" />;
+};
+
+const VelocityCutDemo: React.FC = () => {
+  const from = (
+    <Center>
+      <div style={say(110, INK, 560)}>Notes become plans</div>
+    </Center>
+  );
+  const to = (
+    <Center>
+      <Planner w={900} />
+    </Center>
+  );
+  return <VelocityCut from={from} to={to} at={30} dir="left" ground={WHITE} />;
+};
+
+const FrameCollapseDemo: React.FC = () => {
+  const from = (
+    <Photo src={IMG.delta} zoom={1.05} dim={0.42}>
+      <Center>
+        <div style={{ ...say(110, '#fff', 560), textShadow: shadowText }}>
+          The survey
+          <br />
+          stalls
+        </div>
+      </Center>
+    </Photo>
+  );
+  const to = (
+    <Ground color={WHITE} light={false}>
+      <Center>
+        <div style={say(120, INK, 560)}>Until today</div>
+      </Center>
+    </Ground>
+  );
+  return (
+    <>
+      <Sequence durationInFrames={20 + 31}>
+        <FrameCollapse from={from} to={<Ground color={COBALT} light={false} />} at={20} ground={COBALT} />
+      </Sequence>
+      <Sequence from={20 + 31}>{to}</Sequence>
+    </>
+  );
+};
+
+const LensIrisDemo: React.FC = () => {
+  const from = (
+    <Photo src={IMG.tide} zoom={1.06}>
+      <Center>
+        <div style={{ ...say(110, '#fff', 560), textShadow: shadowText }}>Low tide at 11:04</div>
+      </Center>
+    </Photo>
+  );
+  const to = (
+    <Ground color={NIGHT} light={false}>
+      <Center>
+        <Planner dark w={860} />
+      </Center>
+    </Ground>
+  );
+  return <LensIris from={from} to={to} at={34} color={NIGHT} rim={SKY} />;
+};
+
+const TiltLiftDemo: React.FC = () => {
+  const from = (
+    <Ground color={WHITE} light={false}>
+      <Center>
+        <div style={say(120, INK, 560)}>Your week, sorted</div>
+      </Center>
+    </Ground>
+  );
+  const card = (
+    <AbsoluteFill style={{ alignItems: 'center' }}>
+      <div style={{ marginTop: 210 }}>
+        <Planner w={1500} />
+      </div>
+    </AbsoluteFill>
+  );
+  return <TiltLift from={from} to={card} at={26} ground={COBALT} />;
+};
+
+const CrossFallDemo: React.FC = () => {
+  const from = (
+    <Center>
+      <div style={say(72, '#fff', 500)}>A new kind of planner</div>
+    </Center>
+  );
+  const to = (
+    <Center>
+      <div style={say(240, '#fff', 600)}>Tidewise</div>
+    </Center>
+  );
+  return <CrossFall from={from} to={to} at={30} ground={NIGHT} />;
+};
+
+const PixelStairDemo: React.FC = () => {
+  const from = (
+    <Photo src={IMG.shore} zoom={1.05}>
+      <Center>
+        <div style={{ ...say(96, '#fff', 540), textShadow: shadowText }}>Every tool you open</div>
+      </Center>
+    </Photo>
+  );
+  const to = (
+    <Ground color="#E7E5E0" light={false}>
+      <Center>
+        <Rise at={36} style={say(96, INK, 540)}>in one place</Rise>
+      </Center>
+    </Ground>
+  );
+  const board = <Board />;
+  const field = (
+    <Ground color={ORANGE} light={false}>
+      <Center>
+        <Rise at={44}>
+          <div style={{ width: 220, height: 220, borderRadius: 54, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="Waves" size={120} color={ORANGE} stroke={2.4} />
+          </div>
+        </Rise>
+      </Center>
+    </Ground>
+  );
+  return (
+    <>
+      <Sequence durationInFrames={70}>
+        <PixelStair from={from} to={to} at={22} tints={['#FFD27A', '#FFA48C', '#FFE9B8']} />
+      </Sequence>
+      <Sequence from={70}>
+        <PixelStair from={board} to={field} at={16} front="scatter" />
+      </Sequence>
+    </>
+  );
+};
+
+const TileFloodDemo: React.FC = () => {
+  const slab = (x: number, y: number, c: string, t: string) => (
+    <div key={t} style={{ position: 'absolute', left: x - 150, top: y - 110, width: 300, height: 220, borderRadius: 30, background: c, boxShadow: softShadow(4, '#9AA3B0'), display: 'flex', alignItems: 'flex-end', padding: 26, boxSizing: 'border-box', ...say(34, INK, 560) }}>{t}</div>
+  );
+  const front = (
+    <>
+      {slab(620, 640, SKY, 'Usage')}
+      {slab(960, 500, CORAL, 'Cost')}
+      {slab(1300, 360, SUN, 'Access')}
+    </>
+  );
+  const grid = (bg: string, line: string) => (
+    <Ground color={bg} light={false}>
+      <AbsoluteFill style={{ backgroundImage: `linear-gradient(${line} 1px, transparent 1px), linear-gradient(90deg, ${line} 1px, transparent 1px)`, backgroundSize: '80px 80px' }} />
+    </Ground>
+  );
+  return <TileFlood from={grid(WHITE, 'rgba(0,0,0,.05)')} to={grid(NIGHT, 'rgba(255,255,255,.05)')} front={front} at={20} />;
+};
+
+const InterleaveDemo: React.FC = () => {
+  const from = (
+    <Ground color={PAPER} light={false}>
+      <Center>
+        <div style={say(84, INK, 520)}>Thousands of field notes a day</div>
+      </Center>
+    </Ground>
+  );
+  return <Interleave from={from} to={<Board />} at={30} />;
+};
+
+const StampHopDemo: React.FC = () => {
+  const g = <Ground color={NIGHT} light={false} />;
+  return <StampHop from={g} to={g} at={30} text="They read it once" next="Now it stays" style={say(96, '#F2F3F5', 500)} color="#F2F3F5" />;
+};
+
+const CollapsePillDemo: React.FC = () => {
+  const rowA = { x: 960, y: 540, w: 1080, h: 128, r: 30, color: '#F2F3F5' };
+  const pillB = { x: 960, y: 820, w: 460, h: 72, r: 36, color: COBALT };
+  const other = (y: number, t: string, who: string) => (
+    <div style={{ position: 'absolute', left: 960 - 540, top: y - 64, width: 1080, height: 128, borderRadius: 30, background: 'rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 22, padding: '0 30px', boxSizing: 'border-box', ...say(32, '#C9CCD3', 500) }}>
+      <Avatars n={1} size={64} ring={NIGHT} />
+      <div style={{ textAlign: 'left' }}>
+        <div style={{ fontSize: 26, opacity: 0.6 }}>{who}</div>
+        {t}
+      </div>
+    </div>
+  );
+  const from = (
+    <Ground color={NIGHT} light={false}>
+      {other(380, 'Is the north beach walk still on for Thursday?', 'Jo')}
+      {other(700, 'Can we move it to the afternoon tide?', 'Ren')}
+    </Ground>
+  );
+  const row = (
+    <div style={{ width: rowA.w, height: rowA.h, display: 'flex', alignItems: 'center', gap: 22, padding: '0 30px', boxSizing: 'border-box', ...say(32, INK, 520) }}>
+      <Avatars n={2} size={64} ring="#F2F3F5" />
+      <div style={{ textAlign: 'left' }}>
+        <div style={{ fontSize: 26, opacity: 0.55 }}>Sam, 3 replies</div>
+        Can someone send the new times to everyone?
+      </div>
+    </div>
+  );
+  const pill = (
+    <div style={{ width: pillB.w, height: pillB.h, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, ...say(30, '#fff', 520) }}>
+      <Icon name="Send" size={30} color="#fff" />
+      Sending to 6 people
+    </div>
+  );
+  const to = (
+    <Ground color={NIGHT} light={false}>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 360, display: 'flex', justifyContent: 'center' }}>
+        <Rise at={42} style={say(96, '#fff', 560)}>New times, sent</Rise>
+      </div>
+    </Ground>
+  );
+  return <CollapsePill from={from} to={to} at={30} a={rowA} b={pillB} row={row} pill={pill} />;
+};
+
+const StepTearDemo: React.FC = () => (
+  <StepTear from={<Ground color={WHITE} light={false} />} to={<Photo src={IMG.waves} zoom={1.04} />} at={24} words={['Read', 'the', 'whole', 'tide']} style={say(84, '#B5482F', 560)} ink="#B5482F" inkTo="#fff" />
+);
+
 /** A demo and its name in the corner. */
 const named = (C: React.FC): React.FC<DemoProps> => ({ name }) => (
   <>
@@ -430,6 +735,20 @@ export const SEGMENTS: Segment[] = [
   { name: 'ShapeMatch', from: 661, dur: 80, render: named(MatchDemo) },
   { name: 'GlitchCut', from: 741, dur: 68, render: named(GlitchDemo) },
   { name: 'WindowOpen', from: 809, dur: 77, render: named(WindowOpenDemo) },
+  { name: 'DotIris', from: 886, dur: 70, render: named(DotIrisDemo) },
+  { name: 'ChipBloom', from: 956, dur: 76, render: named(ChipBloomDemo) },
+  { name: 'FaceDive', from: 1032, dur: 82, render: named(FaceDiveDemo) },
+  { name: 'VelocityCut', from: 1114, dur: 72, render: named(VelocityCutDemo) },
+  { name: 'FrameCollapse', from: 1186, dur: 81, render: named(FrameCollapseDemo) },
+  { name: 'LensIris', from: 1267, dur: 75, render: named(LensIrisDemo) },
+  { name: 'TiltLift', from: 1342, dur: 76, render: named(TiltLiftDemo) },
+  { name: 'CrossFall', from: 1418, dur: 72, render: named(CrossFallDemo) },
+  { name: 'PixelStair', from: 1490, dur: 136, render: named(PixelStairDemo) },
+  { name: 'TileFlood', from: 1626, dur: 74, render: named(TileFloodDemo) },
+  { name: 'Interleave', from: 1700, dur: 68, render: named(InterleaveDemo) },
+  { name: 'StampHop', from: 1768, dur: 62, render: named(StampHopDemo) },
+  { name: 'CollapsePill', from: 1830, dur: 69, render: named(CollapsePillDemo) },
+  { name: 'StepTear', from: 1899, dur: 70, render: named(StepTearDemo) },
 ];
 
 export const reelTurnsDuration = reelDuration(SEGMENTS);

@@ -31,6 +31,20 @@ it rises. Hard colour flips on a beat were tried and dropped: they read as a sud
 | [ShapeMatch](#shapematch) | join | 14 f | one shape detaches and travels to where the same shape sits in the next scene, changing size, radius and colour | a match cut on shape: an icon tile, a chip or a dot that is in both scenes |
 | [GlitchCut](#glitchcut) | join | 8 f | a few frames where the picture breaks and the next scene flickers through, one broken state a frame, cut hard | a hit in the music, once |
 | [WindowOpen](#windowopen) | join | 14 f | a window opens out of the button that was pressed, the next scene's window drawn whole inside the growing rectangle | a press that opens a window or panel: the commonest hand-built join, take this one |
+| [DotIris](#dotiris) | join | 9 f | a dot appears at one point (the gap between two words, a button) and opens by a constant ratio a frame into the next scene, playing inside it at its own scale | carries the line (drawn at the same place in both scenes) and the opening point; for a line or a button that opens onto a lighter or darker world, the line carried in both |
+| [ChipBloom](#chipbloom) | join | 7 f | a picture chip inside a sentence grows, pushing the words apart, then opens to the full frame in two frames: its picture is the next scene | carries the object: the chip's own picture becomes the frame; for a sentence that names the thing the next scene shows |
+| [FaceDive](#facedive) | join | 12 f | the camera dives through a polygon face (a hexagon cube face, a tile) that already holds the next scene; the face outruns its picture | carries the object: its face already holds the next scene; for a diagram of objects where one of them is the next subject |
+| [VelocityCut](#velocitycut) | join | 11 f | the outgoing content's speed doubles every frame, the cut lands on the fastest frame and the next content enters moving the same way and brakes | carries the motion: the next content enters at the speed the old one left; for two scenes on one ground: a line to the product, one step of a flow to the next |
+| [FrameCollapse](#framecollapse) | join, exit | 31 f | the whole frame becomes a panel on a flat ground: sides snap in, then top and bottom, then it shrinks to a small square while its line stays readable | carries the old frame itself, as a panel, onto a colour field; for closing a chapter: the problem shot shrinks away before the answer |
+| [LensIris](#lensiris) | join | 11 f | two large discs roll in and close over the old scene; the next scene opens in the lens-shaped gap between them with a lit rim | carries a shape (two closing discs) and their dark colour field, which is the next ground; for a dark, three-dimensional world, an eye or a lens metaphor |
+| [TiltLift](#tiltlift) | join, enter | 30 f | the old line lifts with a vertical smear while a big card tilted back rises from below, blurred; the next ground floods up behind it and the card settles flat | carries the upward motion, and a colour field flooding in behind the card; for a statement giving way to the product's first card |
+| [CrossFall](#crossfall) | join | 12 f | the old line dims and recedes in place while the next title falls in on top, huge and blurred, and settles sharp | carries the line's place: the title lands where the old line was being read; for a run of statements and a name on one dark ground |
+| [PixelStair](#pixelstair) | join | 26 f | the next scene advances in large square cells: a skyline on twos with hot cells on its edge, or a scatter of loose cells that accelerates | carries a colour field: the next ground arrives as the cells; for a picture or a board giving way to a flat ground, a digital product |
+| [TileFlood](#tileflood) | join | 30 f | isometric diamond tiles spawn from two corners and thicken into a checker until the next ground fills the frame, the objects on top throughout | carries a held layer: the objects stay while the ground floods behind them; for an isometric diagram whose ground changes while its objects stay |
+| [Interleave](#interleave) | join | 7 f | old and new alternate on single frames (the old scene as its own mosaic, the new one building) for seven frames, then the new scene holds | carries the old scene's own material (its texture frames), on the rhythm of the music; for a hit in the music between two scenes of one material |
+| [StampHop](#stamphop) | join | 7 f | a flat box hops one word a frame along the line; under it the line is replaced and the box hops on over the new words | carries the line's place and size: only the words change under the box; for a rhythmic swap of two short lines on the music |
+| [CollapsePill](#collapsepill) | join | 9 f | the chosen row blurs its content away into its own surface, then collapses (height far faster than width) into a small pill at its next place, which sharpens with its label | carries a shape: the row's box becomes the pill; for a request, comment or result that becomes the job that runs it (a status, a progress, a send) |
+| [StepTear](#steptear) | join | 16 f | the paper is torn away in held steps with a ragged pixel-stepped edge (a corner, the opposite corner, most, all), each step adding one word to the line in place | carries the line (one word a step, in place) and the next picture under the tear; for a statement built over a picture, an editorial or collage voice |
 
 <!-- /library:pieces -->
 
@@ -161,6 +175,182 @@ into horizontal streaks, the channels pulled apart, clean frames of either scene
   stretched 1.4-2.4x; channel split 10 px; grid cells 18 px; scan rows 14 px torn with a 60 px streak. `glitchCutEnd(at, steps, hold)`.
 - Caution: once a film at most, on a hit in the music; never as the default cut.
 
+### DotIris
+A dot appears at one point of the old frame (the gap between two words, a button, a sparkle) and opens into the next
+scene by the same ratio every frame, so it reads as a dot, then a disc, then the frame. The next scene plays inside it at
+its own scale (a window, not a zoom) and the old scene keeps moving under its edge. For a line or a button that opens onto
+a lighter or darker world; carry the line by drawing it at the same place in both scenes.
+```tsx
+<DotIris from={darkLine} to={lightLine} at={T.open} x={gapX} y={lineY} dur={9} r0={23} />
+```
+- Carries: the line (drawn at the same place in both scenes) and the opening point.
+- Numbers: 9 f from a 23 px dot (at a 1080 frame) to the corners; radius about x1.6 a frame (23, 46, 75, 115, 190, 294,
+  473, 808 px, then cover); a 1.5 px edge. `inner` below 1 adds a settle inside; `color` a thin ring that fades.
+- Caution: the point must be real (the gap from `useTextLayout`, the button's centre); `GrowIris` is the one for a button
+  that opens at its own size.
+
+### ChipBloom
+A picture chip set inside a sentence grows in place, the words riding its edges, then opens to the whole frame in two
+frames: its picture is the next scene. The piece sets the line itself; `from` is the ground behind it. For a sentence that
+names what the next scene shows (pair it with `InlineChip`, which opens the chip in the line).
+```tsx
+<ChipBloom from={<Ground color={WHITE} />} to={photoScene} at={T.bloom} before="we keep the sea" after="in one place" style={type} chip={{ w: 200, h: 112, r: 26 }} />
+```
+- Carries: the object: the chip's own picture becomes the frame.
+- Numbers: 5 f of growth to 1.75x on an ease-in (1.03, 1.12, 1.27, 1.48, 1.75), then 2 f to the full frame (log scale,
+  centre to the frame's centre, radius to 0); the picture inside always covers the chip.
+- Caution: the chip shows the next scene's own picture from the first frame (draw `to` still: no drift, no words until it
+  has landed).
+
+### FaceDive
+The camera dives through one face of an object (a hexagon cube face by default, any polygon) whose inside already holds
+the next scene. The face grows by a constant ratio a frame and drifts to the centre; the picture inside grows much less, so
+the face outruns it; the rest of the old scene pushes in at a third of the rate.
+```tsx
+<FaceDive from={diagram} to={nextScene} at={T.dive} x={640} y={430} r={210} sides={6} rot={-90} dur={12} preview={30} />
+```
+- Carries: the object: its face already holds the next scene.
+- Numbers: 12 f, about x1.12 a frame (0.3 to 1.15 of the width); the face's inner circle contains the corners on its last
+  frame; the scene inside 0.85 to 1. `preview` draws the face still before `at` (so the old scene need not draw it).
+- Caution: the face must be the subject, the one object the story goes into; for a card, a screen or a window use `DiveInto`.
+
+### VelocityCut
+A cut hidden in a velocity hand-off: the old content creeps, its speed doubles every frame, the cut lands on the fastest
+frame, and the next content enters already moving the same way and brakes. Neither leaves the frame; the eye follows the
+speed. For two scenes on one ground (a line to the product, one step of a flow to the next).
+```tsx
+<VelocityCut from={lineOnly} to={cardOnly} at={T.cut} dir="left" dur={5} travel={0.1} enter={0.08} land={6} ground={WHITE} />
+```
+- Carries: the motion: the next content enters at the speed the old one left.
+- Numbers: steps 6, 12, 24, 48, 96 px at 1920 (0.1 of the width in all); the next content 0.08 of the width back, closing
+  by 0.3 a frame (150, 45, 14 px), at rest in 6 f. `smear` adds a directional blur (0 as measured). `velocityCutEnd(at)`.
+- Caution: pass both scenes without their ground and give `ground`; the move shifts content, never the world.
+
+### FrameCollapse
+The whole frame becomes a panel on a flat ground: its sides snap in, its top and bottom follow two frames later, and it
+glides down to a small square while its content shrinks less, so its line stays readable; then the next scene cuts in.
+For closing a chapter (the problem shot shrinks away before the answer).
+```tsx
+<FrameCollapse from={problemShot} to={answerScene} at={T.close} ground={BRAND} dur={31} side={0.43} />
+```
+- Carries: the old frame itself, as a panel, onto a colour field.
+- Numbers: 31 f; width 1, 0.79, 0.64, 0.56, 0.50 ... 0.24 of the frame, height from f2 to 0.43; content to about
+  `side`^0.45 (0.68); square corners.
+- Caution: the ground is the film's own brand field, never a new colour; set the line short (two lines) so the collapsing
+  panel never crops it.
+
+### LensIris
+Two large discs roll in from the sides, frame the old scene, and close over it while they grow (the camera pushes in), so
+that shut they cover every corner; the next scene opens in a lens (the overlap of two circles) that widens sideways while
+already taller than the frame, a lit rim on its edge.
+```tsx
+<LensIris from={worldA} to={worldB} at={T.shut} color={NIGHT} rim={SKY} dur={6} open={5} gap={0.3} />
+```
+- Carries: a shape (two closing discs) and their dark colour field, which is the next ground.
+- Numbers: discs from 0.62 of the height in radius, rolling in over the 14 f before `at`, shut in 6 f on an ease-in; the
+  lens opens in 5 f, half-width 0.07, 0.3, 0.53, 0.77, 1 of its end (solved so the last frame covers the corners); lens
+  circles 1.8 of the height in radius.
+- Caution: `color` must be the next scene's ground (outside the lens the frame is that colour until it covers); for a
+  dark, three-dimensional world.
+
+### TiltLift
+A blur-lift into a tilted card: the old line lifts with a vertical smear (never a fade) while a large card tilted back in
+perspective rises from below, blurred; the next ground floods up from the bottom edge behind it; the card is sharp in four
+frames and settles flat. `to` is the card's layer (no ground), `ground` the next ground.
+```tsx
+<TiltLift from={statement} to={cardLayer} at={T.lift} ground={COBALT} dur={9} settle={21} tilt={28} rise={0.6} />
+```
+- Carries: the upward motion, and a colour field flooding in behind the card.
+- Numbers: 80 % of the rise in 2 f (expo out over 9 f); vertical smear 20 px to 0 by f4; tilt 28 deg to flat over 30 f
+  (quint out); the old scene lifts 0.04, 0.22, 0.5 of the height on its three frames; the flood steps up from the
+  bottom (a glow, a third, a half, all) with a soft top. `tiltLiftEnd(at)`.
+- Caution: the card must be most of the width; the ground a colour the film uses.
+
+### CrossFall
+A cross-over between two lines on one dark ground: the next title falls in on top of the old line, large, blurred and dim,
+settling sharp; the old line stays in place, smaller and dimmer, and is gone on frame 5, while the title is still soft.
+```tsx
+<CrossFall from={oldLine} to={title} at={T.title} ground={NIGHT} dur={12} hold={5} scale={1.5} blur={22} side={-0.06} />
+```
+- Carries: the line's place: the title lands where the old line was being read.
+- Numbers: new title 1.5x, 22 px blur, 30 % light to rest in 12 f (`1 - (1 - t)^2.2`: a third on its second frame),
+  drifting in from 6 % to the side; old line to 0.94x and 12 % over 3 f.
+- Caution: on a dark, flat ground (the dim start reads as depth there); the old line never rises or drifts.
+
+### PixelStair
+A stepped pixel wipe in large square cells. `front="skyline"`: the next scene advances as a skyline of blocks held on
+twos, the cells just ahead of its edge glowing in `tints`; `front="scatter"`: loose cells run ahead of an accelerating
+front, on ones.
+```tsx
+<PixelStair from={photoScene} to={greyField} at={T.wipe} tints={['#FFD27A', '#FFA48C', '#FFE9B8']} />
+<PixelStair from={board} to={brandField} at={T.wipe} front="scatter" />
+```
+- Carries: a colour field: the next ground arrives as the cells.
+- Numbers: skyline 26 f, cells 1/42 of the width, angle 35 deg from the top-left, half the frame by f10, a long tail;
+  scatter 26 f, cells 1/64, angle 14 deg, t^3.5 (a fifth of the frame at f17), a third of the threshold random.
+- Caution: tints are colours of the old picture (its lights), never a new accent; leave them out on a flat scene.
+
+### TileFlood
+Isometric diamond tiles spawn from two corners (the second a few frames later), multiply into a ragged checker and
+thicken until the next scene is the frame; the objects on `front` stay on top throughout.
+```tsx
+<TileFlood from={lightGrid} to={darkGrid} front={<Slabs />} at={T.flood} dur={30} tiles={12} corners={['bottom-left', 'top-right']} delays={[0, 0.15]} />
+```
+- Carries: a held layer: the objects stay while the ground floods behind them.
+- Numbers: tiles 1/12 of the width, 0.58 as tall (true isometric); each tile pops on its frame; a third of the threshold
+  random, so lone tiles land well ahead; the clock eases in (t^1.6).
+- Caution: keep the subject on `front`; a flood that carries nothing reads as a wipe.
+
+### Interleave
+Single-frame alternation: each frame shows one whole state, the old scene, the next scene (building itself) or a texture of
+the old scene (by default its own mosaic), for about seven frames; then the next scene holds. No blend, no fade, no white
+or inverted frame.
+```tsx
+<Interleave from={line} to={pile} at={T.hit} pattern={['alt', 'to', 'alt', 'to', 'alt', 'to', 'alt']} cell={18} />
+```
+- Carries: the old scene's own material (its texture frames), on the rhythm of the music.
+- Numbers: 7 f; the default texture is the old scene as an 18 px mosaic (pass `alt` for a lattice or a dot version);
+  a second form alternates `from` and `to` for 5 f. `interleaveEnd(at, steps)`.
+- Caution: once a film, on a hit in the music; the texture frame is the old scene's own material, never a flash.
+
+### StampHop
+A flat box hops along the line one word a frame, covering each word in turn; on the frame after the last word the new line
+is in place under it, and the box hops on over the new words and is gone. Every frame a whole state.
+```tsx
+<StampHop from={ground} to={ground} at={T.swap} text="They read it once" next="Now it stays" style={type} color="#F2F3F5" />
+```
+- Carries: the line's place and size: only the words change under the box.
+- Numbers: 1 f a word (`hold` for more); the box is the word plus 0.08 em a side, 0.98 em tall from 0.8 em above the
+  baseline. `stampHopEnd(at, words, nextWords)`.
+- Caution: lines of two to five words, the hops on the music's sixteenths.
+
+### CollapsePill
+A row (a comment, a list item, a result) becomes the pill of the job it started: its content blurs away into its own
+surface, the slab sinks a little and collapses, height far faster than width, to the pill's place and colour under a soft
+blur; the pill sharpens and its label arrives. `from` and `to` are the scenes without the row and the pill (the piece
+draws both, and keeps drawing the pill on `to`).
+```tsx
+<CollapsePill from={thread} to={sending} at={T.pick} a={{ x: 960, y: 540, w: 1080, h: 128, r: 30, color: '#F2F3F5' }} b={{ x: 960, y: 820, w: 460, h: 72, r: 36, color: BRAND }} row={<Row />} pill={<PillLabel />} />
+```
+- Carries: a shape: the row's box becomes the pill.
+- Numbers: 9 f; content gone in 3 f; a 1 f sink of 10 % of the row's height; the collapse in 3 f (height on expo out,
+  width on quad out); blur up to 10 px, peaking in the collapse, clear by f9; the colour blends under the blur; the
+  scene behind blurs and dims away over 5 f.
+- Caution: the pill must be what the row became (its job running, its result); its colour one the film already uses.
+
+### StepTear
+The paper is torn away in held steps (a corner, the opposite corner, most of it, all), each step showing more of the next
+picture under a ragged, pixel-stepped edge and adding one word to the line, which stays in place and changes ink once,
+on the last step.
+```tsx
+<StepTear from={<Ground color={WHITE} />} to={<Photo src={pic} />} at={T.tear} words={['Read', 'the', 'whole', 'tide']} style={type} ink="#B5482F" inkTo="#fff" hold={5} />
+```
+- Carries: the line (one word a step, in place) and the next picture under the tear.
+- Numbers: 4 steps of 5 f, no tween between them; levels 0.3, 0.55, 0.8, 1 of the farthest value; corners top-right,
+  bottom-left, bottom-right, 0.22 apart; the edge stepped on a grid of 1/160 of the width with a ragged noise of 0.1.
+  `stepTearEnd(at)`.
+- Caution: three or four short words that read on both grounds; one tear in a film.
+
 ## Helpers
 `PixelFilter`, `SmearFilter` (directional blur, edges duplicated) and `SplitFilter` (channel split) are the SVG filters
 the turns and effects use (`src/kit/library/_shared.tsx`); put one in the tree and point a layer's `filter: url(#id)`
@@ -185,5 +375,19 @@ one still (run it in a film project; `render --film library-turns --range a-b` f
 | ShapeMatch | `library-turns` | 661-740 | `node scripts/frames.mjs library --strip ShapeMatch` |
 | GlitchCut | `library-turns` | 741-808 | `node scripts/frames.mjs library --strip GlitchCut` |
 | WindowOpen | `library-turns` | 809-885 | `node scripts/frames.mjs library --strip WindowOpen` |
+| DotIris | `library-turns` | 886-955 | `node scripts/frames.mjs library --strip DotIris` |
+| ChipBloom | `library-turns` | 956-1031 | `node scripts/frames.mjs library --strip ChipBloom` |
+| FaceDive | `library-turns` | 1032-1113 | `node scripts/frames.mjs library --strip FaceDive` |
+| VelocityCut | `library-turns` | 1114-1185 | `node scripts/frames.mjs library --strip VelocityCut` |
+| FrameCollapse | `library-turns` | 1186-1266 | `node scripts/frames.mjs library --strip FrameCollapse` |
+| LensIris | `library-turns` | 1267-1341 | `node scripts/frames.mjs library --strip LensIris` |
+| TiltLift | `library-turns` | 1342-1417 | `node scripts/frames.mjs library --strip TiltLift` |
+| CrossFall | `library-turns` | 1418-1489 | `node scripts/frames.mjs library --strip CrossFall` |
+| PixelStair | `library-turns` | 1490-1625 | `node scripts/frames.mjs library --strip PixelStair` |
+| TileFlood | `library-turns` | 1626-1699 | `node scripts/frames.mjs library --strip TileFlood` |
+| Interleave | `library-turns` | 1700-1767 | `node scripts/frames.mjs library --strip Interleave` |
+| StampHop | `library-turns` | 1768-1829 | `node scripts/frames.mjs library --strip StampHop` |
+| CollapsePill | `library-turns` | 1830-1898 | `node scripts/frames.mjs library --strip CollapsePill` |
+| StepTear | `library-turns` | 1899-1968 | `node scripts/frames.mjs library --strip StepTear` |
 
 <!-- /library:reel -->
