@@ -58,7 +58,9 @@ Each `Design` carries `palette`, `accents` (the others the look allows), `ground
 `second` face and its one role, `case`), `radii`, `shadow` (softShadow levels for a card and a hero), `stroke`,
 `texture`, `spacing` (margin, gap, padding), `picture` (radius and the one grade every picture takes) and `moves` (the
 library pieces whose motion fits). `DesignFrame` draws a designed frame in any preset (a statement, a card, a picture
-and a mark placeholder); the reel shows every preset with it. Sizes in the presets were measured on full-resolution
+and a mark placeholder); the reel shows every preset with it. Its card text is never under `minText` (30 px at
+1080), whatever the look's own body and label sizes, so the card reads in the frame; `plate` backs the statement and
+the mark on a busy ground (a white paper label on Drafting's blocks and Sketchbook's cutting mat). Sizes in the presets were measured on full-resolution
 frames: a quiet statement is 4.5-6 % of the frame height, not the 2 % it looks like in a thumbnail.
 
 No preset carries a purple or a green, and none carries a faint gradient ground; looks that need one are not here.

@@ -34,10 +34,13 @@ const HairlineGridDemo: React.FC<DemoProps> = ({ n, name }) => (
 
 const TechGridDemo: React.FC<DemoProps> = ({ n, name }) => (
   <AbsoluteFill>
-    <TechGrid at={0} ring={{ at: 18, r: 0.42, sweep: 300 }} />
+    <TechGrid at={0} color="#4A4E57" tick="#F0F0F0" ring={{ at: 18, r: 0.42, sweep: 300, color: '#E3A04E' }} />
     <Center>
       <Rise at={30}>
-        <div style={{ ...say(72, '#F2F2F2', 500), fontFamily: fonts.geist }}>Built in the open</div>
+        <div style={{ ...say(96, '#F2F2F2', 500), fontFamily: fonts.geist }}>Built in the open</div>
+      </Rise>
+      <Rise at={38}>
+        <div style={{ ...say(36, 'rgba(242,242,242,0.62)', 450), fontFamily: fonts.geist, marginTop: 22 }}>1,204 contributors, every commit public</div>
       </Rise>
     </Center>
     <Label n={n} name={name} dark />
@@ -46,10 +49,11 @@ const TechGridDemo: React.FC<DemoProps> = ({ n, name }) => (
 
 const DotLatticeDemo: React.FC<DemoProps> = ({ n, name }) => (
   <AbsoluteFill>
-    <DotLattice fill={{ at: 0, dur: 24 }} hole={{ at: 30, w: 0.46, h: 0.16 }} />
+    {/* warm dots lit clearly (no grey haze), the hole cut close round a large line so it never reads as an empty box */}
+    <DotLattice color="#FFB25C" shape="round" base={0.26} lit={0.65} fill={{ at: 0, dur: 24 }} hole={{ at: 30, w: 0.4, h: 0.17 }} />
     <Center>
       <Rise at={36}>
-        <div style={say(64, '#FFFFFF', 500)}>Seconds later</div>
+        <div style={say(110, '#FFFFFF', 560)}>Seconds later</div>
       </Rise>
     </Center>
     <Label n={n} name={name} dark />
@@ -58,7 +62,7 @@ const DotLatticeDemo: React.FC<DemoProps> = ({ n, name }) => (
 
 const HalftoneFieldDemo: React.FC<DemoProps> = ({ n, name }) => (
   <AbsoluteFill>
-    <HalftoneField swaps={[24, 40, 52, 61, 68, 74, 79, 83]} />
+    <HalftoneField swaps={[24, 40, 56, 72]} />
     <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: '#FFFFFF', borderRadius: 18, padding: '14px 30px', ...say(48, '#1A1A1A', 420) }}>anyone can build it</div>
     </AbsoluteFill>
@@ -83,10 +87,10 @@ const PlanetRimDemo: React.FC<DemoProps> = ({ n, name }) => (
 
 const OrbitLinesDemo: React.FC<DemoProps> = ({ n, name }) => (
   <AbsoluteFill>
-    <OrbitLines at={2} />
+    <OrbitLines at={2} color="#BEB9AE" count={3} />
     <Center>
       <Rise at={10}>
-        <div style={say(48, '#1A1917', 420)}>And no time to read it all</div>
+        <div style={say(80, '#1A1917', 460)}>And no time to read it all</div>
       </Rise>
     </Center>
     <Label n={n} name={name} />
@@ -117,11 +121,11 @@ const PhotoPlateDemo: React.FC<DemoProps> = ({ n, name }) => {
           { kind: 'rect', x: 0.43, y: 0.5, w: 0.13, h: 0.3, at: 10 },
           { kind: 'circle', x: 0.57, y: 0.5, w: 0.15, h: 0.15 * (16 / 9), at: 16 },
         ]}
-        tint={{ at: 62, until: 76, color: '#C8321E', amount: 0.75 }}
+        tint={{ at: 54, until: 78, color: '#C8321E', amount: 0.5, fade: 10 }}
       />
       <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 160 }}>
         <Rise at={24}>
-          <div style={{ ...say(44, '#FFFFFF', 400), textShadow: '0 2px 24px rgba(0,0,0,0.25)' }}>{f < 62 || f >= 76 ? 'Ship from anywhere' : 'One step failed'}</div>
+          <div style={{ ...say(44, '#FFFFFF', 400), textShadow: '0 2px 24px rgba(0,0,0,0.25)' }}>{f < 56 || f >= 80 ? 'Ship from anywhere' : 'One step failed'}</div>
         </Rise>
       </AbsoluteFill>
       <Label n={n} name={name} dark />

@@ -37,7 +37,7 @@ const demo = (d: Design, statement: string, opts: { ground?: React.ReactNode; pi
 
 // the pieces in the order the reel plays them
 export const SEGMENTS: Segment[] = [
-  { name: 'Drafting', from: 0, dur: 75, render: demo(Drafting, 'Every turn, cached', { ground: <HairlineGrid at={-1} blocks={3} accent={Drafting.palette.accent} clear={[3, 2]} />, picture: 'farms' }) },
+  { name: 'Drafting', from: 0, dur: 75, render: demo(Drafting, 'Every turn, cached', { ground: <HairlineGrid at={-1} blocks={3} accent={Drafting.palette.accent} clear={[3, 2]} />, picture: 'farms', plate: '#FFFFFF' }) },
   { name: 'Blockprint', from: 75, dur: 75, render: demo(Blockprint, 'Set budgets once', { ground: <IsoFloor at={-24} field={Blockprint.palette.ground} />, picture: 'delta' }) },
   { name: 'Nightdesk', from: 150, dur: 75, render: demo(Nightdesk, 'Built in the open', { ground: <TechGrid at={-1} ring={{ at: 0, r: 0.42 }} />, picture: 'shore' }) },
   { name: 'Ember', from: 225, dur: 75, render: demo(Ember, 'Hear every accent', { ground: <PlanetRim at={0} top={0.86} />, picture: 'cloud' }) },
@@ -46,7 +46,7 @@ export const SEGMENTS: Segment[] = [
   { name: 'Cream', from: 450, dur: 75, render: demo(Cream, 'And no time to read it all', { ground: <OrbitLines at={-30} ground={Cream.palette.ground} />, picture: 'shore' }) },
   { name: 'Folio', from: 525, dur: 75, render: demo(Folio, 'Made for the shoot', { ground: <HairlineGrid at={-1} ground={Folio.palette.ground} color="#DEDEDA" cell={0.031} marks="none" />, picture: 'tide' }) },
   { name: 'Pixel', from: 600, dur: 75, render: demo(Pixel, 'Thousands of products ship', { ground: <DotLattice shape="round" pools={2} />, picture: 'farms' }) },
-  { name: 'Sketchbook', from: 675, dur: 75, render: demo(Sketchbook, 'Scaling by hand', { ground: <CuttingMat blinds={0.22} />, picture: 'delta' }) },
+  { name: 'Sketchbook', from: 675, dur: 75, render: demo(Sketchbook, 'Scaling by hand', { ground: <CuttingMat blinds={0.22} />, picture: 'delta', plate: '#FFFFFF', dark: true }) },
   { name: 'Cobalt', from: 750, dur: 75, render: demo(Cobalt, 'Paid In Minutes', { ground: <CobaltArcs at={-1} />, picture: 'waves' }) },
   { name: 'Frost', from: 825, dur: 75, render: demo(Frost, 'Ask anything about the trip', { ground: <PhotoPlate src={img('tide')} grade="saturate(0.9) brightness(0.8)" />, picture: 'shore', plate: 'rgba(12,14,18,0.72)' }) },
   { name: 'Tray', from: 900, dur: 75, render: demo(Tray, 'behind the product', { picture: 'farms' }) },

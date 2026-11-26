@@ -96,7 +96,8 @@ export const MarkPlaceholder: React.FC<{ d: Design; size: number; name?: string 
 
 /**
  * DesignFrame: one designed frame in a look, built in turn from `at`: the statement rises out of a mask (4 f), the card
- * arrives (12 f), the picture opens (18 f), the mark lands (26 f). `ground` is the look's ground piece (else its flat
+ * arrives (12 f), the picture opens from its middle half (18 f), the mark lands (26 f). The card's text is never under
+ * `minText` px (30 at 1080). `ground` is the look's ground piece (else its flat
  * ground). `align` puts the statement at the left margin or centred. Sizes from the frame (any size).
  */
 export const DesignFrame: React.FC<{
@@ -110,9 +111,11 @@ export const DesignFrame: React.FC<{
   body?: string;
   action?: string;
   mark?: string;
-  /** A plate behind the statement (a colour, e.g. a dark glass over a busy picture), for contrast. */
+  /** A plate behind the statement and the mark (a colour, e.g. a dark glass over a busy picture), for contrast. */
   plate?: string;
-}> = ({ design: d, plate, statement, ground, picture = 'img/waves-009.jpg', at = 0, align = 'left', heading = 'Weekly review', body = 'Three drafts are ready for you', action = 'Open drafts', mark }) => {
+  /** The smallest card text in px at 1080 (30: a card one can read in the frame; the look's own scale when larger). */
+  minText?: number;
+}> = ({ design: d, plate, statement, ground, picture = 'img/waves-009.jpg', at = 0, align = 'left', heading = 'Weekly review', body = 'Three drafts are ready for you', action = 'Open drafts', mark, minText = 30 }) => {
   const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
   const u = H / 1080;
@@ -125,7 +128,11 @@ export const DesignFrame: React.FC<{
   const s3 = prog(f, at + 18, 20, ease.out);
   const s4 = prog(f, at + 26, 14, ease.out);
   const shadow = d.shadow.card > 0 ? softShadow(d.shadow.card, p.ground) : 'none';
-  const cardW = 600 * u;
+  // the card's text at the look's own scale, but never under `minText` (its heading a step above the body)
+  const tBody = Math.max(d.type.scale.body, minText);
+  const tLabel = Math.max(d.type.scale.label, minText);
+  const tHead = Math.max(d.type.scale.heading, Math.round(tBody * 1.25));
+  const cardW = Math.max(600, tBody * 23) * u;
   const picW = 0.27 * W;
   const picH = 0.5 * H;
   const text = d.type.case === 'lower' ? statement.toLowerCase() : statement;
@@ -169,11 +176,11 @@ export const DesignFrame: React.FC<{
           fontFamily: d.type.font,
         }}
       >
-        <div style={{ fontSize: d.type.scale.heading * u, fontWeight: d.type.weights.heading, letterSpacing: '-0.01em' }}>{heading}</div>
-        <div style={{ fontSize: d.type.scale.body * u, fontWeight: d.type.weights.body, color: p.muted, marginTop: 10 * u }}>{body}</div>
+        <div style={{ fontSize: tHead * u, fontWeight: d.type.weights.heading, letterSpacing: '-0.01em' }}>{heading}</div>
+        <div style={{ fontSize: tBody * u, fontWeight: d.type.weights.body, color: p.muted, marginTop: 10 * u }}>{body}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 * u, marginTop: 26 * u }}>
-          <div style={{ padding: `${12 * u}px ${24 * u}px`, borderRadius: d.radii.small * u, background: p.accent, color: p.accentInk, fontSize: d.type.scale.label * u, fontWeight: 600 }}>{action}</div>
-          <div style={{ fontSize: d.type.scale.label * u, color: p.muted }}>2 min ago</div>
+          <div style={{ padding: `${12 * u}px ${24 * u}px`, borderRadius: d.radii.small * u, background: p.accent, color: p.accentInk, fontSize: tLabel * u, fontWeight: 600 }}>{action}</div>
+          <div style={{ fontSize: tLabel * u, color: p.muted }}>2 min ago</div>
         </div>
       </div>
       <div
@@ -185,14 +192,14 @@ export const DesignFrame: React.FC<{
           height: picH,
           borderRadius: (d.picture?.radius ?? d.radii.card) * u,
           overflow: 'hidden',
-          clipPath: `inset(${mix(s3, 50, 0)}% 0 ${mix(s3, 50, 0)}% 0 round ${(d.picture?.radius ?? d.radii.card) * u}px)`,
+          clipPath: `inset(${mix(s3, 24, 0)}% 0 ${mix(s3, 24, 0)}% 0 round ${(d.picture?.radius ?? d.radii.card) * u}px)`,
           boxShadow: d.shadow.hero > 0 && s3 > 0.99 ? softShadow(d.shadow.hero, p.ground) : undefined,
           outline: dark ? `1px solid ${p.line}` : undefined,
         }}
       >
         <Img src={staticFile(picture)} style={{ width: '100%', height: '100%', objectFit: 'cover', transform: `scale(${mix(s3, 1.12, 1.02)})`, filter: d.picture?.grade }} />
       </div>
-      <div style={{ position: 'absolute', right: m, bottom: 0.07 * H, opacity: s4, transform: `translateY(${mix(s4, 16 * u, 0)}px)` }}>
+      <div style={{ position: 'absolute', right: m, bottom: 0.07 * H, opacity: s4, transform: `translateY(${mix(s4, 16 * u, 0)}px)`, background: plate, padding: plate ? `${10 * u}px ${18 * u}px` : undefined, borderRadius: plate ? d.radii.card * u : undefined }}>
         <MarkPlaceholder d={d} size={46 * u} name={mark} />
       </div>
     </AbsoluteFill>

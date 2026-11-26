@@ -25,11 +25,11 @@ ground built from the film's own material. Never a faint gradient or a drifting 
 | [HairlineGrid](#hairlinegrid) | build, idle | 40 f | a white canvas ruled by 1 px hairlines that grow out of the centre crossing, tiny marks at the crossings, accent blocks hopping cell to cell by cuts | a clean product or developer brand whose one accent is a tool mark; paper grid for a serif look, graph grid under loud type |
 | [TechGrid](#techgrid) | build, idle | 48 f | black with dashed rules drawn from the centre, square ticks at the crossings (a few in one signal colour) and a thin ring that draws itself round the subject | a technical or event film at night: a word, a photo or a card framed by the drafting table |
 | [DotLattice](#dotlattice) | build, idle | 30 f | a fine lattice of ring, round or square dots on black, filled in a wave from a point, lit from inside by slow pools, with a hole that opens for the type | a screen-material film (LED, pixels): the ground under a line or a page, or the first beat built from dots |
-| [HalftoneField](#halftonefield) | idle, emphasis | 46 f | a light field of round halftone dots in two or three inks with black clusters; on each swap (a cut) the inks and the clusters change | behind a held line while the thing beside it swaps faster and faster (the field takes the colour of each) |
+| [HalftoneField](#halftonefield) | idle, emphasis | 46 f | a light field of round halftone dots in one flat ink with black clusters; on each swap the clusters change and the ink eases to the next one | behind a held line while the thing beside it changes in held steps (the field takes the colour of each) |
 | [PlanetRim](#planetrim) | enter, exit | 30 f | on black, a dark planet rises from the foot: a thin peach rim, a burnt band inside, warm light just above the rim; it sinks on an ease-in | under a product name or a claim on a black film, once (the opening title or the end card) |
 | [OrbitLines](#orbitlines) | enter, idle | 22 f | on a warm flat ground two hairline circles larger than the frame start as one, part, turn as a pair and keep turning slowly | under quiet statements on cream, so an empty ground never stands still |
 | [CobaltArcs](#cobaltarcs) | idle | 60 f | one flat saturated blue with faint concentric hairline arcs round a point under the frame, widening slowly outward | a brand-colour ground for glass cards and notices |
-| [PhotoPlate](#photoplate) | idle, emphasis | 60 f | a full-bleed photograph pushing in slowly, thin white outline shapes drawing onto it, a re-grade that cuts on an event | a photograph as the world: under glass panels, under words, with outlines that frame the subject |
+| [PhotoPlate](#photoplate) | idle, emphasis | 60 f | a full-bleed photograph pushing in slowly, thin white outline shapes drawing onto it, a re-grade that eases in on an event | a photograph as the world: under glass panels, under words, with outlines that frame the subject |
 | [CuttingMat](#cuttingmat) | idle | 60 f | a tabletop from above: a slate cutting mat with its grid, a strip of desk, window-blind shadows across it, tracking slowly | a collage or paper look: tiles, stickers and cards laid on a real-looking table |
 | [GhostWord](#ghostword) | idle | 30 f | a flat light ground with one giant word a few percent lighter than it, cropped by the frame and drifting sideways | the home ground of a long film whose brand word is the texture under small type |
 | [FourUp](#fourup) | loop | 120 f | the frame split into four panels, each playing its own scene on its own loop length and phase, so the four never cut together | a showreel tile or a social loop that shows a body of work at once |
@@ -76,12 +76,13 @@ Caution: the light is in the dots, never a haze over them.
 
 ### HalftoneField
 
-A light grey field (#E6E6E6) of round halftone dots 27 px apart at 1080, sized by a soft tone, in the inks of the
-current palette (two or three, running from top left to bottom right), with black clusters on about `coverage` of the
-field. On each frame in `swaps` the next palette and a new set of clusters cut in (one frame); swaps that accelerate
-(16, 12, 9, 7, 6, 5, 4 f) carry a held line while the thing beside it changes.
+A light grey field (#E6E6E6) of round halftone dots 27 px apart at 1080, sized by a soft tone, in the ink of the
+current palette (one flat ink by default; two or three run from top left to bottom right), with black clusters on about
+`coverage` of the field. On each frame in `swaps` a new set of clusters cuts in and the ink eases to the next palette
+over `blend` frames (6); swaps held 12 f or more carry a held line while the thing beside it changes.
 
-Caution: the line sits on a plain backing box, never on the dots.
+Caution: the line sits on a plain backing box, never on the dots; inks of one lightness, swaps 12 f or more apart (faster
+swaps, or a light ink after a dark one, strobe).
 
 ### PlanetRim
 
@@ -112,8 +113,8 @@ Caution: keep the blue flat; no lighter centre, no glow at the foot.
 
 A full-bleed photograph pushing in (scale 1.04, +0.006 a second), graded by `grade` (one CSS filter for every picture
 of the film). `shapes` draw 1.5 px white outlines onto it in 14 f each (a rectangle beside a circle, a pill, a ring:
-shares of the frame); `tint` multiplies a colour over it from `tint.at` to `tint.until` on one frame (a state: an
-error, a warning). The ground for glass panels (Frost) and editorial words (Gallery).
+shares of the frame); `tint` multiplies a colour over it from `tint.at` to `tint.until` (a state: an error, a
+warning), easing in and out over `tint.fade` frames (10, never under 8) at `amount` 0.45, so the light never jumps. The ground for glass panels (Frost) and editorial words (Gallery).
 
 Caution: a re-grade needs a reason on screen; the outlines frame the subject, never a word.
 
