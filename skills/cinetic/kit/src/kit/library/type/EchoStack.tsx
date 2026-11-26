@@ -1,10 +1,12 @@
-// EchoStack (type, emphasis / exit): one word repeated into a stack: rows of copies above and below and copies behind
-// it to the left and right, each nearer copy hiding the ones behind it, so only their ends show; small labels pop
-// around it; then the centre copy zooms in steps inside its own box until a fragment of one letter fills the frame.
-// Numbers: rows at a 0.7 em pitch; side copies show 27 %, 20 % and 10 % of the word's width on the centre, near and far
-// rows, sliding out over 3 f; the centre row and rows +-1 at once, rows +-2 and the near sides at 4 f, the far sides at
-// 6 f; labels in pairs every 2-4 f at 1 % of the frame's height; the zoom cuts to 1.7x, then 2.7x three frames later,
-// then a 14x fragment for its last frames.
+// EchoStack (type, emphasis / exit): one word repeated into a stack: whole copies in rows above and below and a whole
+// copy sliding out from behind it to the left and right, each echo dimmer than the word, so the stack reads as depth
+// and never as overprinted fragments; small labels pop beside it; then the centre copy zooms in steps inside its own
+// box until a fragment of one letter fills the frame.
+// Numbers: rows at a 1.0 em pitch (whole words, never cut through); the side copies of the centre row sit a word and
+// 0.3 em out, sliding out from behind it over 3 f; the centre row and rows +-1 at once, rows +-2 at 4 f; the echoes
+// recede in tone (the word full, its sides and the near rows 40 %, the far rows 18 % toward the ground); labels in pairs
+// every 3 f at 2.4 % of the frame's height, beside the upper and lower rows; the zoom cuts to 1.7x, then 2.7x three
+// frames later, then a 14x fragment for its last frames.
 // Caution: one short word (4-8 letters) in a heavy sans on a flat ground; give the ground colour (the copies hide each
 // other with it).
 // Catalogue: ../catalog/type.ts; props and recipe: references/library-type.md.
@@ -47,10 +49,10 @@ export const EchoStack: React.FC<{
   const capTop = L.baseline - size * 0.76;
   const band = size * 0.86;
   const zoom = zoomAt === undefined ? 0 : frame - zoomAt;
-  const copy = (dx: number, dy: number, key: string, slab = true) => (
+  const copy = (dx: number, dy: number, key: string, tone = 1, slab = true) => (
     <div key={key} style={{ position: 'absolute', left: cx - W / 2 + dx, top: cy - L.height / 2 + dy, width: W, height: L.height }}>
       {slab && <div style={{ position: 'absolute', left: -size * 0.02, right: -size * 0.02, top: capTop, height: band, background: ground }} />}
-      <span style={{ ...style, position: 'absolute', left: 0, top: 0, whiteSpace: 'pre', color }}>{text}</span>
+      <span style={{ ...style, position: 'absolute', left: 0, top: 0, whiteSpace: 'pre', color, opacity: tone }}>{text}</span>
     </div>
   );
   if (zoom >= 0 && zoomAt !== undefined) {
@@ -69,52 +71,56 @@ export const EchoStack: React.FC<{
     // the centre copy zooms inside its own box; the outer copies of its row stay as they were
     return (
       <>
-        {copy(-W * 0.27, 0, 'l')}
-        {copy(W * 0.27, 0, 'r')}
+        {copy(-(W + size * 0.3), 0, 'l', 0.4)}
+        {copy(W + size * 0.3, 0, 'r', 0.4)}
         <div style={{ position: 'absolute', left: cx - W / 2, top: cy - L.height / 2 + capTop - band * 0.06, width: W, height: band * 1.06, overflow: 'hidden', background: ground }}>
           <span style={{ ...style, position: 'absolute', left: 0, top: -(capTop - band * 0.06), whiteSpace: 'pre', color, transform: `scale(${s})`, transformOrigin: `${W / 2}px ${capTop + band / 2}px` }}>{text}</span>
         </div>
       </>
     );
   }
-  const pitch = size * 0.7;
+  const pitch = size;
   // back to front: the far rows, the near rows, the centre row; within a row the sides, then the middle
   const layers: React.ReactNode[] = [];
-  const row = (r: number, side: number, show: boolean, showSides: boolean) => {
+  const row = (r: number, side: number, show: boolean) => {
     if (!show) return;
     const dy = r * pitch;
-    if (showSides) {
-      layers.push(copy(-W * side, dy, `${r}l`));
-      layers.push(copy(W * side, dy, `${r}r`));
+    // the echoes recede in tone: the word full, its own sides and the near rows 40 %, the far rows 18 %
+    const tone = Math.abs(r) <= 1 ? 0.4 : 0.18;
+    if (side > 0) {
+      layers.push(copy(-side, dy, `${r}l`, tone));
+      layers.push(copy(side, dy, `${r}r`, tone));
     }
-    layers.push(copy(0, dy, `${r}c`));
+    layers.push(copy(0, dy, `${r}c`, r === 0 ? 1 : tone));
   };
-  // the side copies slide out from behind their row's middle copy over 3 frames
-  const out = (t: number) => Math.min(1, Math.max(0, (f - t + 1) / 3));
-  row(-2, 0.1 * out(6), f >= 4, f >= 6);
-  row(2, 0.1 * out(6), f >= 4, f >= 6);
-  row(-1, 0.2 * out(4), f >= 0, f >= 4);
-  row(1, 0.2 * out(4), f >= 0, f >= 4);
-  row(0, 0.27 * out(0), true, true);
-  // labels: pairs every 3 f, alternating around the stack
+  // the side copies slide out from behind the word over 3 frames (eased out), to a word and 0.3 em away
+  const out = (t: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, (f - t + 1) / 3)), 2);
+  row(-2, 0, f >= 4);
+  row(2, 0, f >= 4);
+  row(-1, 0, f >= 0);
+  row(1, 0, f >= 0);
+  row(0, (W + size * 0.3) * out(0), true);
+  // labels: pairs every 3 f, beside the upper and lower rows (never over a copy, never on the centre row), the left ones
+  // set flush right and the right ones flush left
   const t0 = labelsAt ?? at + 13;
   const spots = [
-    [0, -2.9],
-    [0, 2.9],
-    [-0.72, -1.4],
-    [0.72, -0.5],
-    [-0.74, -0.2],
-    [0.72, 0.5],
-    [-0.74, 0.9],
-    [0.7, 1.4],
-    [-0.62, -2],
-    [0.6, 2.2],
+    [-1, -1.5],
+    [1, -1.0],
+    [-1, -0.8],
+    [1, 0.8],
+    [-1, 1.0],
+    [1, 1.5],
+    [-1, 2.0],
+    [1, -2.0],
+    [-1, -2.0],
+    [1, 2.0],
   ];
+  const edge = W * 0.5 + size * 0.22;
   const ls = labels.map((t, i) => {
     if (frame < t0 + Math.floor(i / 2) * 3) return null;
     const [sx, sy] = spots[i % spots.length];
     return (
-      <div key={`lab${i}`} style={{ position: 'absolute', left: cx + sx * W, top: cy + sy * pitch, transform: 'translate(-50%, -50%)', fontFamily: font, fontWeight: 500, fontSize: Math.max(11, height * 0.012), color, opacity: 0.9, whiteSpace: 'pre' }}>
+      <div key={`lab${i}`} style={{ position: 'absolute', left: cx + sx * edge, top: cy + sy * pitch, transform: sx < 0 ? 'translate(-100%, -50%)' : 'translate(0, -50%)', fontFamily: font, fontWeight: 500, fontSize: Math.max(18, height * 0.024), color, opacity: 0.9, whiteSpace: 'pre' }}>
         {t}
       </div>
     );

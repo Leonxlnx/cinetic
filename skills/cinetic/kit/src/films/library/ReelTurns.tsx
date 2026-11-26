@@ -698,7 +698,7 @@ const CollapsePillDemo: React.FC = () => {
 };
 
 const StepTearDemo: React.FC = () => (
-  <StepTear from={<Ground color={WHITE} light={false} />} to={<Photo src={IMG.waves} zoom={1.04} />} at={24} words={['Read', 'the', 'whole', 'tide']} style={say(84, '#B5482F', 560)} ink="#B5482F" inkTo="#fff" />
+  <StepTear from={<Ground color={WHITE} light={false} />} to={<Photo src={IMG.waves} zoom={1.04} />} at={24} words={['Read', 'the', 'whole', 'tide']} style={say(84, '#B5482F', 560)} ink="#B5482F" inkTo="#10263A" y={250} />
 );
 
 /** A demo and its name in the corner. */

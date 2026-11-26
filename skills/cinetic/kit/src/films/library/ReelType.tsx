@@ -91,7 +91,7 @@ const PICS = ['img/hokianga-tide-out.jpg', 'img/waves-009.jpg', 'img/seaweed-far
 const tagDemo = (
   <>
     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: fonts.inter, fontWeight: 700, fontSize: 330, letterSpacing: '-0.05em', color: INK }}>Studio</div>
-    <TagSlap tags={[{ text: 'Launch films', at: 8, x: 0.42, y: 0.42, rot: -3 }, { text: 'Product demos', at: 26, x: 0.58, y: 0.55, rot: 2 }, { text: 'Weekly cuts', at: 42, x: 0.44, y: 0.68, rot: -2 }]} />
+    <TagSlap tags={[{ text: 'Launch films', at: 8, x: 0.33, y: 0.3, rot: -3 }, { text: 'Product demos', at: 26, x: 0.66, y: 0.71, rot: 2 }, { text: 'Weekly cuts', at: 42, x: 0.35, y: 0.76, rot: -2 }]} />
   </>
 );
 
@@ -130,7 +130,7 @@ const SEGS: Record<string, Seg> = {
     node: <ClipExit text="Your team in one view" at={22} objectAt={0} size={92} color={INK} w={150} h={150} node={<AppIcon size={150} colors={['#FF8A5C', '#F2552C']} glyph={<Icon name="LayoutGrid" size={70} color="#FFFFFF" />} />} />,
   },
   SplitWord: { ground: WHITE, node: <SplitWord text="Mapping" split={3} at={4} pictures={['img/hokianga-tide-out.jpg', 'img/seaweed-farms-in-south-korea.jpg']} swaps={[34]} size={210} color={INK} /> },
-  EchoStack: { ground: DARK, node: <EchoStack text="Growing" at={3} size={210} labels={['team of four', 'first hundred users', 'twelve cities', 'week nine', 'two offices', 'six new hires']} zoomAt={36} ground={DARK} /> },
+  EchoStack: { ground: DARK, node: <EchoStack text="Growing" at={3} size={180} labels={['team of four', 'first hundred users', 'twelve cities', 'week nine', 'two offices', 'six new hires']} zoomAt={36} ground={DARK} /> },
   TagSlap: { ground: WHITE, node: tagDemo },
   GatherLine: { ground: PAPER, node: <GatherLine text="Every note finds its place" at={0} gatherAt={26} size={84} color={INK} /> },
   CornerLine: { ground: PAPER, node: <CornerLine text="Plans that keep themselves" at={4} gap={9} size={92} color={INK} flash={EMBER} /> },

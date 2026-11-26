@@ -5,7 +5,8 @@
 // about 10 f); grey to ink in 4 f; a hue path steps one colour a frame (ink in 9 f); warm light sweeps the word right
 // to left in 6 f (sine in-out); the new word lands with 40 % of its space, which opens on the same glide (or
 // lands wide and closes).
-// Caution: one word every 6-12 f; faster than 4 f the tint never shows. Pass `fit` when the line could outgrow the frame.
+// Caution: one word every 6-12 f; faster than 4 f the tint never shows. Pass `fit` when the line could outgrow the
+// frame (it sizes the whole line once, before the first word).
 // Catalogue: ../catalog/type.ts; props and recipe: references/library-type.md.
 import React from 'react';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
@@ -25,7 +26,7 @@ export type InkLineMotion = { lead: number; tau: number; anticipate: number; spa
  * Where every word of a line that grows word by word sits at frame `f` (x of each word's left edge relative to the line's
  * centre, before `scale`), with the re-centre chained over the arrivals: each move starts from where the line was when
  * it began, `lead` of it on the arrival frame, then an exponential glide (`tau` frames). `left`/`right` bound the words
- * shown; `scale` shrinks the line past `maxWidth` px (0: never). Shared by the pieces that frame such a line.
+ * shown; `scale` sets the whole line smaller, from its first word, when the full line would pass `maxWidth` px (0: never). Shared by the pieces that frame such a line.
  */
 export const inkLineLayout = (f: number, L: TextLayout, T: number[], o: InkLineMotion) => {
   const n = T.length;
@@ -33,7 +34,10 @@ export const inkLineLayout = (f: number, L: TextLayout, T: number[], o: InkLineM
   // the space before word i, as the face sets it
   const sp = L.words.map((w, i) => (i === 0 ? 0 : w.x - (L.words[i - 1].x + L.words[i - 1].width)));
   const span = (k: number) => ws.slice(0, k).reduce((a, b) => a + b, 0) + sp.slice(1, k).reduce((a, b) => a + b, 0);
-  const fitOf = (k: number) => (o.maxWidth > 0 ? Math.min(1, o.maxWidth / Math.max(1, span(k))) : 1);
+  // the fit is decided once, from the whole line: when the full line would pass `maxWidth` it is set at that size from
+  // the first word, so the line never changes size while it grows
+  const full = o.maxWidth > 0 ? Math.min(1, o.maxWidth / Math.max(1, span(n))) : 1;
+  const fitOf = (_k: number) => full;
   // what is left of a move that starts at arrival t: 1 before it, a linear lead-in while anticipating, (1 - lead) on the
   // arrival frame, then the glide
   const rest = (ff: number, t: number) => {
@@ -81,7 +85,8 @@ export const inkLineLayout = (f: number, L: TextLayout, T: number[], o: InkLineM
  * tint until the next word lands. The line re-centres on every arrival with `lead` of the move on the arrival frame
  * and a glide after it; `anticipate` starts the slide a few frames early (the line makes room before the word comes).
  * `space` sets how the new word's space behaves: 'open' (lands at 40 % of its space, opens), 'close' (lands wide, closes) or
- * 'still'. `fit` shrinks the whole line on the same glide once it would pass that share of the frame's width.
+ * 'still'. `fit`: when the whole line would pass that share of the frame's width, it is set smaller from its first word
+ * (one size for the whole build, never a size jump per word); a line that fits is left at `size`.
  */
 export const InkLine: React.FC<{
   text: string;
@@ -110,7 +115,7 @@ export const InkLine: React.FC<{
   tau?: number;
   /** Frames the re-centre starts before the word lands (default 0). */
   anticipate?: number;
-  /** Widest the line may be, as a share of the frame's width; past it the line shrinks (default 0: never). */
+  /** Widest the line may be, as a share of the frame's width; a longer line is set smaller from the start (default 0: never). */
   fit?: number;
   /** From this frame the line is gone (a hard cut). */
   leaveAt?: number;
@@ -182,7 +187,8 @@ export const InkLine: React.FC<{
         const fin = accents[i] ?? color;
         Object.assign(base, {
           color: 'transparent',
-          backgroundImage: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${HEAT_PATH.map((h, j) => `${h} ${10 + j * 10}%`).join(', ')}, ${fin} 70%, ${fin} 100%)`,
+          // (from gold, never from a clear or cream stop: the word's first letter would vanish into a light ground)
+          backgroundImage: `linear-gradient(90deg, ${HEAT_PATH.slice(1).map((h, j) => `${h} ${j * 12}%`).join(', ')}, ${fin} 70%, ${fin} 100%)`,
           backgroundSize: '300% 100%',
           backgroundPosition: `${p * 100}% 0`,
           WebkitBackgroundClip: 'text',

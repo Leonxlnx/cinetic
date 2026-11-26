@@ -131,7 +131,7 @@ export const HostType: React.FC<{
         {/* the product's own chrome */}
         <div style={{ position: 'absolute', left: 64, top: 48, display: 'flex', alignItems: 'center', gap: 14, fontFamily: font, fontWeight: 600, fontSize: 30, color: H.titleInk ?? H.ink }}>
           <div style={{ width: 46, height: 46, borderRadius: 13, background: H.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name={H.glyph ?? 'Sparkles'} size={26} color={H.accentInk ?? '#FFFFFF'} />
+            <Icon name={H.glyph ?? 'Hexagon'} size={26} color={H.accentInk ?? '#FFFFFF'} />
           </div>
           {H.app}
         </div>

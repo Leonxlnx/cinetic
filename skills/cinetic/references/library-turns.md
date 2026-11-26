@@ -360,7 +360,8 @@ on the last step.
 - Numbers: 4 steps of 5 f, no tween between them; levels 0.3, 0.55, 0.8, 1 of the farthest value; corners top-right,
   bottom-left, bottom-right, 0.22 apart; the edge stepped on a grid of 1/160 of the width with a ragged noise of 0.1.
   `stepTearEnd(at)`.
-- Caution: three or four short words that read on both grounds; one tear in a film.
+- Caution: three or four short words that read on both grounds: set `y` over a calm, even part of the picture (sky, a
+  wall), never over spray or busy detail; one tear in a film.
 
 ## Helpers
 `PixelFilter`, `SmearFilter` (directional blur, edges duplicated) and `SplitFilter` (channel split) are the SVG filters

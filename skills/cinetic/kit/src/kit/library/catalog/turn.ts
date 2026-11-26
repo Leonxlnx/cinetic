@@ -277,7 +277,7 @@ export const TURN: LibraryEntry[] = [
     frames: 16,
     summary: 'the paper is torn away in held steps with a ragged pixel-stepped edge (a corner, the opposite corner, most, all), each step adding one word to the line in place',
     use: 'carries the line (one word a step, in place) and the next picture under the tear; for a statement built over a picture, an editorial or collage voice',
-    caution: 'three or four short words that read on both grounds; the ink changes once, on the last step; the edge is pixel-stepped, never a torn-paper fringe',
+    caution: 'three or four short words that read on both grounds: set y over a calm, even part of the picture (sky, a wall), never over spray or busy detail; the ink changes once, on the last step; the edge is pixel-stepped, never a torn-paper fringe',
     reel: { film: 'library-turns', from: 1899, to: 1968 },
   },
 ];

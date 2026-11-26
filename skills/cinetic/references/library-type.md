@@ -57,18 +57,18 @@ flash or an inverted frame; a label in uppercase mono; an eyebrow line over a st
 | [TypeHead](#typehead) | enter | 30 f | a line typed letter by letter whose newest letters (or the word being typed) are in an accent that cools to the ink, a coloured head running with the caret | a query, a name or a title being typed, outside or inside a product |
 | [CaretFollow](#caretfollow) | enter | 60 f | a prompt typed at a giant size after two caret blinks, centred while it fits; then the camera holds the caret in short smeared jumps so the start of the line leaves the frame | the one prompt or question a film is about, said big |
 | [InlineChip](#inlinechip) | emphasis | 30 f | a rounded picture opens inside a sentence from a sliver to its width, pushing the words apart; its picture swaps every few frames and it can grow | a sentence that names something worth seeing: the photos, the product, the people |
-| [EchoStack](#echostack) | emphasis, exit | 40 f | one word repeated into a stack of echoes, each nearer copy hiding the ones behind; labels pop around it; then the centre copy zooms by cuts until a letter fragment fills the frame | a word that means growth or quantity, said once and loud, leading into the next scene |
+| [EchoStack](#echostack) | emphasis, exit | 40 f | one word repeated into a stack of whole, dimmer echoes (rows above and below, a copy sliding out to each side); labels pop beside it; then the centre copy zooms by cuts until a letter fragment fills the frame | a word that means growth or quantity, said once and loud, leading into the next scene |
 | [TagSlap](#tagslap) | emphasis | 40 f | small tilted label tags slap across a big word one after another, each opening from its centre in three frames | attributes of one thing (what a studio makes, what a product does) laid on it |
 | [GatherLine](#gatherline) | enter | 30 f | the words or letters of a line sit scattered across the frame and drift, then gather into one set line on a single frame or by a short slide | a line that comes together: sorting, collecting, a scattered idea made one |
 | [LightStreak](#lightstreak) | enter, exit | 8 f | a caption born from a horizontal streak of light: streak lines, the word doubled and smeared sideways, then sharp; it dies back into the streak | a caption over footage or a dark scene that should feel broadcast or remembered |
 | [ClipExit](#clipexit) | exit, join | 8 f | an object slides across a held line and the letters are cut at its leading edge, so the line disappears behind it | a line that hands the frame to the product: its icon, a window, a card the story goes into |
 | [SplitWord](#splitword) | enter, emphasis | 12 f | a big word split around a picture: the halves slide out from behind it, inner letters tucked under its edges, while the picture smears and swaps | a word whose subject is a picture: places, people, work being shown |
 | [HingeWord](#hingeword) | enter, emphasis | 10 f | a word flips up from lying flat on its baseline, rising and darkening to ink; to swap, it heats along a colour path, tips back and the next one flips up | one word in a slot beside a picture or a device that changes two or three times |
-| [StepWhip](#stepwhip) | enter | 30 f | each word cuts on far right of its place and jumps left in halving steps on a 12 fps clock until it sits; the line never re-centres and its spacing breathes | a hand-made, stepped voice for a short line said in phrases |
+| [StepWhip](#stepwhip) | enter | 30 f | each word cuts on inside its own slot, shifted right and cropped, and jumps left in halving steps on a 12 fps clock until it sits; no word is drawn away from its place, the line never re-centres and its spacing breathes | a hand-made, stepped voice for a short line said in phrases |
 | [PartStack](#partstack) | emphasis | 24 f | two words of a held line part to open a slot and small pictures cut on into it one after another, overlapping in a loose cluster | a line about people, places or things that should be seen: the pictures arrive inside the sentence |
 | [SlideOff](#slideoff) | exit | 10 f | a held line slides off sideways, accelerating and smearing more as it goes, cut on the move; two lines can shear apart | an exit into a shot that starts moving the same way |
 | [EatSquares](#eatsquares) | exit, join | 18 f | a name is eaten from the left a glyph a frame while a row of solid squares grows in its place, each from a speck, until only the squares remain | a name that becomes a mark or a grid made of squares |
-| [OutlineFill](#outlinefill) | enter | 90 f | a title writes itself as a thin double contour glyph by glyph at a hand pace, then fills left to right, each glyph blooming in from a blur while its contour fades | a title or a name that should feel drawn before it is set |
+| [OutlineFill](#outlinefill) | enter | 90 f | a title writes itself as a thin double contour (drawn outside the letters, never the inner contours of the font) glyph by glyph at a hand pace, then fills left to right, each glyph blooming in from a blur while its contour fades | a title or a name that should feel drawn before it is set |
 | [WordTicker](#wordticker) | enter, build | 40 f | each new word slides in from the right and pushes the line left, the oldest words dropping off; now and then a glowing block flashes over a word | a sentence said fast as a running ticker, keeping only its last words |
 | [RandomFill](#randomfill) | enter | 10 f | a short line appears letter by letter in a shuffled order, the newest letters in a tint | a status or a label that comes up as if computed |
 | [LetterRewrite](#letterrewrite) | emphasis | 24 f | a word is rewritten in place: its letters go from the end one by one, then the new word rises in letter by letter, the line re-centring | one word becoming another (a state, a version, a name) |
@@ -395,7 +395,8 @@ new word lands with 40 % of its space, which opens (`space="open"`), or lands wi
 ```
 - Props: `text`, `at`, `gap` (9) or `times`, `size` (110), `color`, `accents` (`{ index: colour }`), `tint`, `settle`
   (4), `inkOn` (`age`, `next`), `enter` (`cut`, `smear`, `blur`, `rise`), `space`, `lead` (0.55), `tau` (2.6),
-  `anticipate` (0), `fit` (0: share of the width past which the line shrinks), `leaveAt`, `x`, `y`, `font`, `weight`
+  `anticipate` (0), `fit` (0: share of the width a longer line is set to, from its first word; never a size jump
+  per word), `leaveAt`, `x`, `y`, `font`, `weight`
   (500), `tracking`. `inkLineLayout` gives the words' places for anything that frames the line.
 - Numbers: 55 % of the re-centre on the arrival frame, then an exponential glide with a 2.6 f time constant (about
   10 f); grey to ink in 4 f; the hue path 9 steps, one a frame; the heat sweep 6 f, sine in-out. For a line that slides
@@ -473,15 +474,16 @@ streak, gone). Stepped like a tube settling.
 - Caution: on dark grounds and footage; on paper the streak reads as a smudge.
 
 ### StepWhip
-A stepped, hand-made entrance: each word cuts on far to the right of its place and jumps left in halving steps on a
-12 fps clock until it sits; the words keep fixed places (the line never re-centres) and the spacing breathes a little
-while it holds.
+A stepped, hand-made entrance: each word cuts on inside its own slot, its letters shifted right and cropped at the
+slot's edge, and jumps left in halving steps on a 12 fps clock until it sits; no word is ever drawn away from its place
+(so the line never starts spaced and closes), the line never re-centres, and the spacing breathes a little while it
+holds.
 ```tsx
 <StepWhip text="Your inbox is a little full" times={[T.a, T.a + 2, T.a + 4, T.b, T.b + 2, T.b + 4]} still={T.b + 30} />
 ```
 - Props: `text`, `at`, `gap` (2) or `times`, `breathe`, `still`, `size` (80), `color`, `leaveAt`, `x`, `y`, `font`,
   `weight`, `seed`.
-- Numbers: offsets 5.3, 2, 1, 0.5, 0.25, 0.12, 0 em, held 2 or 3 f each, a 0.08 em sideways smear on the second step
+- Numbers: offsets 0.72, 0.38, 0.19, 0.09, 0.05, 0.02, 0 of the word's own width, held 2 or 3 f each, a 0.08 em sideways smear on the second step
   only; the gaps move by up to 0.08 em every 2 f while holding.
 - Caution: one line of short words; never on a calm brand.
 
@@ -520,7 +522,9 @@ uneven hand pace; then they fill from left to right, each glyph blooming in from
 - Props: `text`, `at`, `fillAt` (default 12 f after the last glyph is drawn), `gapMin` (3), `gapMax` (9), `fillEvery`
   (2), `size` (220), `color` (the fill), `line` (the contour), `ground` (must be the flat ground behind it), `leaveAt`,
   `x`, `y`, `font`, `weight` (700), `seed`. `drawTimes` gives the frame each glyph starts.
-- Numbers: each glyph's contour draws in 4 f from its foot up; two lines 0.02 em thick, 0.03 em apart; the fill one
+- Numbers: each glyph's contour draws in 4 f from its foot up; two lines about 0.018 em thick, 0.022 em apart, both
+  outside the letter (strokes painted under a fill of the ground, so a variable font's overlapping inner contours
+  never show, and touching glyphs share one outline); the fill one
   glyph every 2 f, each 5 f from a 0.06 em blur, the contour fading over the same frames.
 - Caution: one per film, a title or a name in a heavy face; a ten-letter word takes 2-3 s to draw.
 
@@ -588,17 +592,20 @@ text cropped by the opening edges.
 - Caution: two or three tags, each a real attribute of what it sits on; sentence case, never uppercase mono.
 
 ### EchoStack
-One word repeated into a stack of echoes: rows above and below and copies behind it to the left and right, each nearer
-copy hiding the ones behind it, so only their ends show; small labels pop around it; then the centre copy zooms by cuts
-inside its own box until a fragment of one letter fills the frame (the way into the next scene).
+One word repeated into a stack of echoes: whole copies in rows above and below and a whole copy sliding out from behind
+it to each side, every echo dimmer than the word, so the stack reads as depth and never as overprinted fragments; small
+labels pop beside the upper and lower rows; then the centre copy zooms by cuts inside its own box until a fragment of
+one letter fills the frame (the way into the next scene).
 ```tsx
 <EchoStack text="Growing" at={T.grow} labels={['team of four', 'first hundred users']} zoomAt={T.grow + 33} ground={DARK} />
 ```
 - Props: `text`, `at`, `labels`, `labelsAt`, `zoomAt`, `size` (150), `color`, `ground` (must be the real ground),
   `leaveAt`, `x`, `y`, `font`, `weight` (600).
-- Numbers: rows at 0.7 em; side copies show 27 %, 20 % and 10 % of the word, sliding out over 3 f; layers at 0, +4, +6
-  f; labels in pairs every 3 f; the zoom 1.7x, then 2.7x 3 f later, then a 14x fragment from 5 f.
-- Caution: one short word in a heavy sans on a flat ground.
+- Numbers: rows at 1.0 em (whole words, never cut through); the side copies a word and 0.3 em out, sliding over 3 f;
+  rows +-2 at +4 f; tones: the word full, its sides and the near rows 40 %, the far rows 18 %; labels in pairs every
+  3 f at 2.4 % of the frame's height; the zoom 1.7x, then 2.7x 3 f later, then a 14x fragment from 5 f.
+- Caution: one short word in a heavy sans on a flat ground; at most six short labels; the zoom crops the word inside
+  its own box, so keep that beat to its few frames.
 
 ## Words and pictures
 
