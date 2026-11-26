@@ -833,7 +833,7 @@ const S32: React.FC<DemoProps> = ({ n, name }) => {
       <div style={{ position: 'absolute', right: 520, top: 170, padding: '18px 26px', borderRadius: 22, background: '#F0F1EC', fontFamily: L.font, fontSize: 32, color: L.ink, maxWidth: 760, lineHeight: 1.35 }}>Turn these notes into a brief for the next shoot</div>
       <div style={{ position: 'absolute', left: 340, top: 318, display: 'flex', alignItems: 'center', gap: 14, fontFamily: L.font, fontSize: 30, fontWeight: 600, color: L.ink }}>
         <div style={{ width: 46, height: 46, borderRadius: 14, background: L.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="Sparkle" size={26} color="#FFFFFF" stroke={2.2} />
+          <Icon name="PenLine" size={26} color="#FFFFFF" stroke={2.2} />
         </div>
         Assistant
         <span style={{ fontWeight: 450, color: L.muted }}>· drafting the brief</span>

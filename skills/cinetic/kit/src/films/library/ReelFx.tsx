@@ -402,7 +402,7 @@ const FrostDemo: React.FC = () => {
         </div>
         <div style={{ position: 'absolute', left: 0, right: 0, top: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 84, height: 84, borderRadius: 42, background: '#FFFFFF', boxShadow: '0 6px 20px rgba(40,70,110,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="Sparkles" size={40} color={COBALT} />
+            <Icon name="CalendarCheck" size={40} color={COBALT} />
           </div>
           <div style={{ ...say(26, '#4B5563', 520) }}>Planner</div>
         </div>

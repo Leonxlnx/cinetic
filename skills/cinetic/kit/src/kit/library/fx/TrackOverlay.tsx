@@ -93,8 +93,9 @@ export const TrackOverlay: React.FC<{
             style={{
               position: 'absolute',
               left: t.x - t.w / 2,
-              top: t.y - t.h / 2 - size * 1.5,
-              transformOrigin: `${t.w / 2}px ${t.h / 2 + size * 1.5}px`,
+              // neighbours' labels alternate above and below their boxes, so close targets never print over each other
+              top: i % 2 ? t.y + t.h / 2 + size * 0.4 : t.y - t.h / 2 - size * 1.5,
+              transformOrigin: i % 2 ? `${t.w / 2}px ${-t.h / 2 - size * 0.4}px` : `${t.w / 2}px ${t.h / 2 + size * 1.5}px`,
               transform: `rotate(${t.rot ?? 0}deg)`,
               fontFamily: fonts.inter,
               fontSize: size,

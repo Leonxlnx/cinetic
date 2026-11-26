@@ -159,7 +159,7 @@ const CardDriftDemo = on('#FFFFFF', false, (
     <CardDrift
       at={2}
       items={Array.from({ length: 10 }, (_, i) => <DriftCard key={i} i={i} />)}
-      pops={[<DriftChip key="a" icon="Sparkles" label="Brief" />, <DriftChip key="b" icon="Image" label="Moodboard" />, <DriftChip key="c" icon="Type" label="Copy" />, <DriftChip key="d" icon="Palette" label="Colours" />]}
+      pops={[<DriftChip key="a" icon="FileText" label="Brief" />, <DriftChip key="b" icon="Image" label="Moodboard" />, <DriftChip key="c" icon="Type" label="Copy" />, <DriftChip key="d" icon="Palette" label="Colours" />]}
     />
     <div style={{ ...lineStyle, fontSize: 52, fontWeight: 540 }}>Everything for the launch</div>
   </>

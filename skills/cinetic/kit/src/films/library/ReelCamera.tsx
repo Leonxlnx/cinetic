@@ -73,7 +73,7 @@ const Chip: React.FC<{ label: string; icon: string; tone: string }> = ({ label, 
 );
 
 const FIELD: DepthItem[] = [
-  { x: 0.5, y: 0.5, depth: 1, fixed: true, node: <div style={{ width: 170, height: 170, borderRadius: 48, background: '#16181C', boxShadow: `inset 0 1px 0 rgba(255,255,255,0.1), 0 0 0 1px rgba(255,255,255,0.06)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="Sparkles" size={80} color={SKY} /></div> },
+  { x: 0.5, y: 0.5, depth: 1, fixed: true, node: <div style={{ width: 170, height: 170, borderRadius: 48, background: '#16181C', boxShadow: `inset 0 1px 0 rgba(255,255,255,0.1), 0 0 0 1px rgba(255,255,255,0.06)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="Network" size={80} color={SKY} /></div> },
   { x: 0.25, y: 0.2, depth: 1.6, node: <Chip label="Sales" icon="TrendingUp" tone={ORANGE} /> },
   { x: 0.74, y: 0.26, depth: 0.9, node: <Chip label="Finance" icon="Landmark" tone={COBALT} /> },
   { x: 0.18, y: 0.62, depth: 1.1, node: <Chip label="Support" icon="LifeBuoy" tone={CORAL} /> },
@@ -121,7 +121,7 @@ const PullTiltDemo: React.FC<DemoProps> = ({ n, name }) => (
         <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: 1060, borderRadius: 34, background: '#FFFFFF', boxShadow: '0 2px 4px rgba(20,30,40,0.08), 0 40px 90px rgba(20,30,40,0.22)', fontFamily: fonts.inter, color: INK, padding: '30px 34px', boxSizing: 'border-box', textAlign: 'left' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 30, fontWeight: 560 }}>
-              <Icon name="Sparkles" size={30} color={COBALT} />
+              <Icon name="MessageSquare" size={30} color={COBALT} />
               Ask the workspace
             </div>
             <div style={{ fontSize: 34, color: '#7A808A', margin: '26px 0 70px' }}>Type a message, / for commands, @ to mention</div>

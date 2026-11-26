@@ -28,7 +28,7 @@ export const CurlRing: React.FC<{
   seed?: number;
   x?: number;
   y?: number;
-}> = ({ pics, at = 0, count = 6, dark = '#8F7FB0', light = '#F6D9D2', tile = 0.2, radius = 0.36, implode = true, speed = 1, seed = 2, x, y }) => {
+}> = ({ pics, at = 0, count = 6, dark = '#5E6B78', light = '#F6D9D2', tile = 0.2, radius = 0.36, implode = true, speed = 1, seed = 2, x, y }) => {
   const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
   const id = useUid('curlring');

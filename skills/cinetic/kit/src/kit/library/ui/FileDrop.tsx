@@ -86,7 +86,7 @@ const FileDropInner: React.FC<{
     <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, fontFamily: L.font }}>
       {/* greeting */}
       <div style={{ position: 'absolute', left: 0, right: 0, top: greetY, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: s * 0.6, fontSize: s * 1.55, fontWeight: 520, color: L.ink, letterSpacing: '-0.02em' }}>
-        {mark ?? <Icon name="Sparkle" size={s * 1.5} color={L.accent} stroke={2} />}
+        {mark ?? <Icon name="ScanSearch" size={s * 1.5} color={L.accent} stroke={2} />}
         {greeting}
       </div>
       {/* the composer */}
