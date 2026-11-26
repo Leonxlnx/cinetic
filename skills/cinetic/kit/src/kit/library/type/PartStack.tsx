@@ -1,8 +1,9 @@
 // PartStack (type, emphasis): two words of a held line part to open a slot and small pictures cut on into it one after
 // another, overlapping in a loose cluster between them (the people, places or things the line is about).
-// Numbers: the words part 2.2 em over 9 f (expo out, 70 % by the second frame), the left word moving 45 % of it; the
-// first picture 2 f after the part starts, then one every 2-3 f; tiles 0.78 x 0.92 em with a 0.04 em light edge, seeded
-// offsets within the slot, each newer tile on top; once full, the slot narrows by 0.2 em over 10 f.
+// Numbers: the words part 2.6 em over 9 f (expo out, 70 % by the second frame), the left word moving 45 % of it; the
+// first picture 2 f after the part starts, then one every 2-3 f; tiles 1 x 1.15 em, reaching above and below the words,
+// with a 0.04 em light edge, seeded offsets within the slot, each newer tile on top; once full, the slot narrows by
+// 0.2 em over 10 f.
 // Caution: real pictures of the subject (faces, products, places), four to seven of them; never icons or grey blanks.
 // Catalogue: ../catalog/type.ts; props and recipe: references/library-type.md.
 import React from 'react';
@@ -22,7 +23,7 @@ export const PartStack: React.FC<{
   at?: number;
   pictures: Array<string | React.ReactNode>;
   every?: number;
-  /** The slot's width in em (default 2.2). */
+  /** The slot's width in em (default 2.6). */
   gap?: number;
   size?: number;
   color?: string;
@@ -34,7 +35,7 @@ export const PartStack: React.FC<{
   font?: string;
   weight?: number;
   seed?: number;
-}> = ({ text, after, at = 0, pictures, every = 2.5, gap = 2.2, size = 90, color = '#F2F1EE', edge = 'rgba(255,255,255,0.85)', leaveAt, x, y, font = fonts.serif, weight = 400, seed = 3 }) => {
+}> = ({ text, after, at = 0, pictures, every = 2.5, gap = 2.6, size = 90, color = '#F2F1EE', edge = 'rgba(255,255,255,0.85)', leaveAt, x, y, font = fonts.serif, weight = 400, seed = 3 }) => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
   const style = { fontFamily: font, fontWeight: weight, fontSize: size, letterSpacing: '-0.01em', lineHeight: 1.2 } as const;
@@ -49,8 +50,8 @@ export const PartStack: React.FC<{
   const left = cx - L.width / 2;
   const top = cy - L.height / 2;
   const slotX = left + L.words[after].x + L.words[after].width + (L.words[after + 1].x - (L.words[after].x + L.words[after].width)) / 2 - open * 0.45;
-  const tw = size * 0.78;
-  const th = size * 0.92;
+  const tw = size * 1.0;
+  const th = size * 1.15;
   const midY = top + L.words[0].xMid;
   return (
     <>
@@ -63,7 +64,7 @@ export const PartStack: React.FC<{
         if (frame < at + 2 + Math.round(i * every)) return null;
         // a loose cluster: seeded places inside the slot, the first ones high and left, later ones lower and right
         const fx = (i % 3) / 2 - 0.5 + (hash(i, seed) - 0.5) * 0.35;
-        const fy = (Math.floor(i / 3) % 2) * 0.7 - 0.35 + (hash(i, seed + 5) - 0.5) * 0.3;
+        const fy = (Math.floor(i / 3) % 2) * 0.8 - 0.4 + (hash(i, seed + 5) - 0.5) * 0.3;
         const X = slotX + open / 2 + fx * Math.max(0, open - tw) * 0.9 - tw / 2;
         const Y = midY + fy * th - th / 2;
         return (

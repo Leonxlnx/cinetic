@@ -57,6 +57,12 @@ flash or an inverted frame; a label in uppercase mono; an eyebrow line over a st
 | [PartStack](#partstack) | emphasis | 24 f | two words of a held line part to open a slot and small pictures cut on into it one after another, overlapping in a loose cluster | a line about people, places or things that should be seen: the pictures arrive inside the sentence |
 | [SlideOff](#slideoff) | exit | 10 f | a held line slides off sideways, accelerating and smearing more as it goes, cut on the move; two lines can shear apart | an exit into a shot that starts moving the same way |
 | [EatSquares](#eatsquares) | exit, join | 18 f | a name is eaten from the left a glyph a frame while a row of solid squares grows in its place, each from a speck, until only the squares remain | a name that becomes a mark or a grid made of squares |
+| [OutlineFill](#outlinefill) | enter | 90 f | a title writes itself as a thin double contour glyph by glyph at a hand pace, then fills left to right, each glyph blooming in from a blur while its contour fades | a title or a name that should feel drawn before it is set |
+| [WordTicker](#wordticker) | enter, build | 40 f | each new word slides in from the right and pushes the line left, the oldest words dropping off; now and then a glowing block flashes over a word | a sentence said fast as a running ticker, keeping only its last words |
+| [RandomFill](#randomfill) | enter | 10 f | a short line appears letter by letter in a shuffled order, the newest letters in a tint | a status or a label that comes up as if computed |
+| [LetterRewrite](#letterrewrite) | emphasis | 24 f | a word is rewritten in place: its letters go from the end one by one, then the new word rises in letter by letter, the line re-centring | one word becoming another (a state, a version, a name) |
+| [TokenBlocks](#tokenblocks) | enter | 30 f | code grows as blocks becoming words: each token appears as a tinted box its own width, then its text cuts on inside and the box clears | code or a query being written by the product |
+| [GiantTruck](#gianttruck) | enter, join | 30 f | a cut to a giant line cropped by the frame, already moving: the camera trucks along it, fast and smeared at first, settling on its last word | a claim read as it passes, big, after a cut |
 
 <!-- /library:pieces -->
 
@@ -133,6 +139,18 @@ word by word, the line jumping to its new centre on each word.
 - Numbers: the giant scales 1 to 1.12 (expo out) while its centre rises from 0.38 to 0.15 of its own size below the
   frame's centre; the line's first word is 0.26 of the giant.
 - Caution: the giant word must be short (one word up to about 9 letters) or it reads as noise, not a word.
+
+### GiantTruck
+A cut to a giant line, cropped by the frame and already moving: the camera trucks along it right to left, fast and
+smeared at first, slowing until its last word sits in the frame.
+```tsx
+<GiantTruck text="Plan any trip" at={T.claim} />
+```
+- Props: `text`, `at`, `start` (0.15 of the width: the line's left edge on the cut), `v0` (0.1 of the width a frame),
+  `decay` (0.86 a frame), `drift` (0.022), `size` (62 % of the height), `color`, `leaveAt`, `y`, `font`, `weight` (600).
+- Numbers: cap height about 45 % of the frame; the speed falls from 10 % to about 2.5 % of the width a frame by 10 f; the
+  smear 0.12 of the speed in px, up to 2 % of the width.
+- Caution: three to six short words, one idea; hold on the last word.
 
 ## Type with a texture
 
@@ -456,7 +474,66 @@ while it holds.
   only; the gaps move by up to 0.08 em every 2 f while holding.
 - Caution: one line of short words; never on a calm brand.
 
+### WordTicker
+A sentence said as a running ticker: each new word comes in from the right and slides into place, pushing the words
+before it to the left; once more than a few words are on, the oldest drop off by cut. Now and then a glowing block
+flashes over a word for 2 frames, as if it were selected.
+```tsx
+<WordTicker text="Sorting every note by hand" times={[T.a, T.b, T.c, T.d, T.e]} keep={3} flashes={[{ at: T.d + 4, index: 3 }]} />
+```
+- Props: `text`, `at`, `gap` (8) or `times`, `keep` (3), `flashes` (`[{ at, index }]`), `flash` (colour), `size` (120),
+  `color`, `leaveAt`, `x`, `y`, `font`, `weight`.
+- Numbers: a word lands in 5 f from 0.45 of the width to the right (ease-out, 70 % in the first 2 f); the line
+  re-centres on the same curve; a flash is 2 f with a glow of 0.12 em.
+- Caution: short words on the beat; the flash at most twice in a line.
+
+### TokenBlocks
+Code (or a structured line) grows as blocks becoming words: each token first appears as a box of its colour at 35 %, the
+width of the token, then its text cuts on inside and the box clears.
+```tsx
+<TokenBlocks lines={[[{ text: 'const', color: KEYWORD }, { text: ' ' }, { text: 'route', color: NAME }]]} at={T.code} size={48} />
+```
+- Props: `lines` (rows of `{ text, color }` tokens; spaces are tokens too), `at`, `rate` (1.5 tokens a frame), `size`
+  (44), `color`, `lineHeight` (1.6), `x`, `y` (the top-left), `font` (the mono), `weight`, `seed`.
+- Numbers: a box holds 3-6 f before its text, then clears 2-4 f later (seeded); boxes rounded 0.08 em.
+- Caution: code, a query or structured lines; in prose the boxes read as redaction.
+
 ## Words with a treatment
+
+### OutlineFill
+A title that is drawn before it is set: its glyphs write themselves one after another as a thin double contour, at an
+uneven hand pace; then they fill from left to right, each glyph blooming in from a blur while its contour fades.
+```tsx
+<OutlineFill text="Field notes" at={T.title} size={240} color={ACCENT} ground={PAPER} />
+```
+- Props: `text`, `at`, `fillAt` (default 12 f after the last glyph is drawn), `gapMin` (3), `gapMax` (9), `fillEvery`
+  (2), `size` (220), `color` (the fill), `line` (the contour), `ground` (must be the flat ground behind it), `leaveAt`,
+  `x`, `y`, `font`, `weight` (700), `seed`. `drawTimes` gives the frame each glyph starts.
+- Numbers: each glyph's contour draws in 4 f from its foot up; two lines 0.02 em thick, 0.03 em apart; the fill one
+  glyph every 2 f, each 5 f from a 0.06 em blur, the contour fading over the same frames.
+- Caution: one per film, a title or a name in a heavy face; a ten-letter word takes 2-3 s to draw.
+
+### RandomFill
+A short line that comes up as if computed: its letters appear in a shuffled order across its whole length, two or three
+a frame, the newest ones in a tint for 2 frames.
+```tsx
+<RandomFill text="Syncing your calendars" at={T.status} size={70} />
+```
+- Props: `text`, `at`, `rate` (2.5 letters a frame), `hold` (2), `tint`, `size` (64), `color`, `leaveAt`, `x`, `y`,
+  `font`, `weight`, `seed`.
+- Numbers: a 20-letter status is whole in about 8 f; no letter moves.
+- Caution: up to about 30 letters; longer lines read as noise before they read as words.
+
+### LetterRewrite
+One word rewritten into the next in place: its letters go from the end, one every 2 frames, then the new word's letters
+rise in from just under the baseline one by one, the line re-centring on every letter.
+```tsx
+<LetterRewrite from="Draft" to="Final" at={T.swap} size={150} />
+```
+- Props: `from`, `to`, `at`, `out` (2), `per` (2.5), `keep` (letters of a common start that stay), `size` (120),
+  `color`, `toColor`, `leaveAt`, `x`, `y`, `font`, `weight`.
+- Numbers: each new letter rises 0.12 em over 4 f (ease-out); the line re-centres by cut.
+- Caution: short words where the change of word is the point; not for a sentence.
 
 ### ScrambleType
 A decode: wrong glyphs change every few frames and lock into the real letters one by one, one or two of the wrong ones
@@ -533,9 +610,10 @@ loose cluster: the people, places or things the line is about arrive inside the 
 <PartStack text="Every coast matters" after={0} at={T.part} pictures={['img/a.jpg', 'img/b.jpg', 'img/c.jpg']} />
 ```
 - Props: `text`, `after` (the word before the slot), `at`, `pictures` (files under `public/` or nodes), `every` (2.5),
-  `gap` (2.2 em), `size` (90), `color`, `edge`, `leaveAt`, `x`, `y`, `font` (the serif), `weight`, `seed`.
-- Numbers: the words part 2.2 em in 9 f (expo out), the left word taking 45 % of it; the first picture 2 f in, then one
-  every 2-3 f; tiles 0.78 x 0.92 em with a light edge; once full the slot narrows 0.2 em over 10 f.
+  `gap` (2.6 em), `size` (90), `color`, `edge`, `leaveAt`, `x`, `y`, `font` (the serif), `weight`, `seed`.
+- Numbers: the words part 2.6 em in 9 f (expo out), the left word taking 45 % of it; the first picture 2 f in, then one
+  every 2-3 f; tiles 1 x 1.15 em with a light edge, reaching above and below the words; once full the slot narrows
+  0.2 em over 10 f.
 - Caution: four to seven real pictures of the subject; never icons or grey blanks.
 
 ### SplitWord
@@ -621,5 +699,11 @@ one still (run it in a film project; `render --film library-type --range a-b` fo
 | PartStack | `library-type` | 2562-2611 | `node scripts/frames.mjs library --strip PartStack` |
 | SlideOff | `library-type` | 2612-2643 | `node scripts/frames.mjs library --strip SlideOff` |
 | EatSquares | `library-type` | 2644-2687 | `node scripts/frames.mjs library --strip EatSquares` |
+| OutlineFill | `library-type` | 2688-2787 | `node scripts/frames.mjs library --strip OutlineFill` |
+| WordTicker | `library-type` | 2788-2847 | `node scripts/frames.mjs library --strip WordTicker` |
+| RandomFill | `library-type` | 2848-2883 | `node scripts/frames.mjs library --strip RandomFill` |
+| LetterRewrite | `library-type` | 2884-2933 | `node scripts/frames.mjs library --strip LetterRewrite` |
+| TokenBlocks | `library-type` | 2934-2983 | `node scripts/frames.mjs library --strip TokenBlocks` |
+| GiantTruck | `library-type` | 2984-3033 | `node scripts/frames.mjs library --strip GiantTruck` |
 
 <!-- /library:reel -->

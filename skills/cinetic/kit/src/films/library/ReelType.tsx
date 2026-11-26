@@ -14,8 +14,10 @@ import {
   CutAway,
   GradientPass,
   InlineChip,
+  LetterRewrite,
   LightStreak,
   TypeHead,
+  WordTicker,
   BlockOut,
   BlurSweep,
   DotDive,
@@ -25,14 +27,17 @@ import {
   EchoStack,
   FaceCycle,
   GatherLine,
+  GiantTruck,
   HingeWord,
   HostType,
   HUE_PATH,
   InkLine,
   LightWord,
   MarkPhrase,
+  OutlineFill,
   PartStack,
   PushApart,
+  RandomFill,
   RiseLine,
   RollType,
   ScaleJump,
@@ -41,6 +46,7 @@ import {
   SplitWord,
   StepWhip,
   TagSlap,
+  TokenBlocks,
   TileWord,
   TrackedType,
   WeightLine,
@@ -98,7 +104,18 @@ const hingeDemo = (
   </>
 );
 
+const CODE = [
+  [{ text: 'const', color: '#E07A8B' }, { text: ' ' }, { text: 'route', color: '#7FB2F0' }, { text: ' = ' }, { text: 'plan', color: '#7FB2F0' }, { text: '(' }, { text: 'trip', color: '#E8E6E1' }, { text: ', { ' }, { text: 'days', color: '#E8E6E1' }, { text: ': ' }, { text: '3', color: '#E8C27A' }, { text: ' });' }],
+  [{ text: 'await', color: '#E07A8B' }, { text: ' ' }, { text: 'route', color: '#7FB2F0' }, { text: '.' }, { text: 'share', color: '#7FB2F0' }, { text: '(' }, { text: "'team'", color: '#E8C27A' }, { text: ');' }],
+];
+
 const SEGS: Record<string, Seg> = {
+  OutlineFill: { ground: PAPER, node: <OutlineFill text="Field notes" at={2} gapMin={3} gapMax={6} size={240} ground={PAPER} /> },
+  WordTicker: { ground: NIGHT, node: <WordTicker text="Sorting every note by hand" times={[4, 12, 20, 28, 38]} keep={3} flashes={[{ at: 32, index: 3 }]} /> },
+  RandomFill: { ground: NIGHT, node: <RandomFill text="Syncing your calendars" at={4} size={70} /> },
+  LetterRewrite: { ground: PAPER, node: <LetterRewrite from="Draft" to="Final" at={12} size={150} color={INK} /> },
+  TokenBlocks: { ground: '#15161A', node: <TokenBlocks lines={CODE} at={4} size={48} /> },
+  GiantTruck: { ground: WHITE, node: <GiantTruck text="Plan any trip" at={0} color={INK} /> },
   EatSquares: { ground: WHITE, node: <EatSquares text="Gridwork Studio" at={16} size={96} /> },
   SlideOff: { ground: PAPER, node: <SlideOff lines={['Plan less', 'ship more']} at={16} dur={14} dir="shear" size={150} color={INK} /> },
   PartStack: {
@@ -234,6 +251,12 @@ export const SEGMENTS: Segment[] = [
   { name: 'PartStack', from: 2562, dur: 50, render: shot(SEGS.PartStack) },
   { name: 'SlideOff', from: 2612, dur: 32, render: shot(SEGS.SlideOff) },
   { name: 'EatSquares', from: 2644, dur: 44, render: shot(SEGS.EatSquares) },
+  { name: 'OutlineFill', from: 2688, dur: 100, render: shot(SEGS.OutlineFill) },
+  { name: 'WordTicker', from: 2788, dur: 60, render: shot(SEGS.WordTicker) },
+  { name: 'RandomFill', from: 2848, dur: 36, render: shot(SEGS.RandomFill) },
+  { name: 'LetterRewrite', from: 2884, dur: 50, render: shot(SEGS.LetterRewrite) },
+  { name: 'TokenBlocks', from: 2934, dur: 50, render: shot(SEGS.TokenBlocks) },
+  { name: 'GiantTruck', from: 2984, dur: 50, render: shot(SEGS.GiantTruck) },
 ];
 
 export const reelTypeDuration = reelDuration(SEGMENTS);
