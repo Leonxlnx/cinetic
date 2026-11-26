@@ -87,7 +87,7 @@ gives the agent a director's method, a kit that looks premium by default, and a 
   that hold an object, typing bursts after a prefix.
 - `sfx.mjs fit` places a track so the film's main hit lands on a beat where the music lifts; tempos are measured from
   the file; `frames.mjs check` fails a bed that runs out before the film ends and measures vertical films vertically.
-- The motion library (`kit/src/kit/library/`): 57 finished pieces, measured and built to the bar, that a film takes
+- The motion library (`kit/src/kit/library/`): 178 finished pieces in nine categories (type 37, turns 23, effects 18, camera 9, interface 35, host screens 7, objects and marks 23, grounds 12, design presets 14), measured and built to the bar, that a film takes
   whole and adapts, in nine categories with a folder each: type (17 moves: rolls, tracking, words of tiles or dots, a
   dive into a letter, lines that land, clean exits), turns (9 joins that carry the subject and cover the frame), fx (6
   finishing layers), ui (18 product UI pieces and the parts they are built from), hosts (7 faithful host screens: a pull

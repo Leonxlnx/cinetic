@@ -157,7 +157,7 @@ Import everything from `src/kit` (`import { Words, Camera, ease, at } from '../.
 
 | Need | Use |
 |---|---|
-| library (first) | finished type moves, turns, effects, product UI, host screens: find one with `frames.mjs library --category turn --purpose join` (also `--subject`, `--mood`), see it with `library --strip <Name>`; a reel a category (`--film library-turns`, `library-fx`, ...): [library.md](references/library.md) |
+| library (first) | finished type moves, turns, effects, camera moves, product UI, host screens, objects and marks, grounds and design presets: find one with `frames.mjs library --category turn --purpose join` (also `--subject`, `--mood`), see it with `library --strip <Name>`; a reel a category (`--film library-turns`, `library-fx`, ...): [library.md](references/library.md) |
 | timing | `at(frame, start, dur, ease.out)` -> 0..1, `mix(p, a, b)`, `springAt(frame, fps, start, springs.card)`, `stagger(i)`, `accel()` for exits, `creep()` for holds, `keys()` for keyframes, `logScale()` for zooms |
 | curves | `ease.out` (arrive), `ease.soft` (heavy arrive), `ease.snap` (UI pop), `ease.inOut` / `ease.glide` (travel), `ease.in` (leave), `ease.back` (land with weight) |
 | type | `<Words text arrive="rise\|blur\|scale\|drop\|slide\|flip\|cut" by="word\|char\|line" born accent leaveAt times>`, `<Build words times>` (append with a re-centre jump), `<Swap items>`, `<SlotLine>`, `useGlyphBox()`, `<Typing>` (believable speed), `<Scramble>`, `<Odometer>` (sharp digits), `<Marker>`, `<Output>` (the result giant, then into the UI) |
