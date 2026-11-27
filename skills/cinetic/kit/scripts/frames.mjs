@@ -26,6 +26,16 @@
 //        while the film's source plays sound cues or music (the sound insert failed); --silent for a film meant silent.
 //        --format loop: no sound, ending or music lines; fails when the last frame does not match the first.
 //        --format sting: no pace gate on a film under 8 s; the ending may hold. Default launch.
+//        Every frame is also scanned for brief flat-black unpainted patches; those produce FIX lines.
+//   node scripts/frames.mjs motion <file.mp4> [--range a-b] [--out <image.png>] [--cuts f1,f2,...] [--json]
+//        every frame: cuts, pops, dead stops, hard starts, stepping, stillness and settling tails.
+//        Zero-based inclusive frame numbers, native timestamps and fps; no project needed. --cuts declares joins.
+//        Writes a 1600x500 PNG beside the video by default (<name>-motion.png); --json emits the full measurements.
+//        Stillness excludes the file's final 1.5 seconds; tail medians omit incomplete bursts.
+//        Good motion targets: median tail about 9.5 f at 30 fps, still share about 6.9 %,
+//        about 46.5 pop candidates/minute. These are typical measurements, not pass/fail limits.
+//        Tail median: complete bursts in four disjoint regions; cuts do not contribute to tail change.
+//        Pixel changes locate candidates for inspection; they cannot measure perceived speed or design intent.
 //   node scripts/frames.mjs strip out/film.mp4 --at 4.5 [--dur 2] [--fps 15] [--out out/strip.jpg]
 //        a dense contact strip of a moment of a rendered video (motion check: an entrance, a turn, a morph)
 //   node scripts/frames.mjs joins [--film main] [--at 120+14,245+8,390] [--pad 4] [--full] [--out out/joins]
@@ -49,7 +59,8 @@
 // CINETIC_BROWSER: a Chrome Headless Shell shared by every film project. CINETIC_TIMEOUT: milliseconds a frame may wait
 // for its assets (Remotion's --timeout, default 30000); raise it when footage frames time out under load.
 // Nothing here uploads anything.
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { deflateSync } from 'node:zlib';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -409,7 +420,375 @@ function lockupFrame() {
   return null;
 }
 
-function checkFilm(file, lockupS, format = 'launch', silentOk = false, lockupGiven = false) {
+/** Every decoded picture, without resampling time. Only small measurements survive the stream. */
+async function motionFrames(file, range) {
+  const pr = spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height,avg_frame_rate,r_frame_rate,duration,start_time,nb_frames', '-of', 'json', file], { encoding: 'utf8' });
+  if (pr.status !== 0) throw new Error(`cannot probe ${file}: ${pr.stderr || pr.error?.message}`);
+  const s = JSON.parse(pr.stdout).streams?.[0];
+  const rate = (v) => { const [a, b = 1] = String(v).split('/').map(Number); return a / b; };
+  const fps = rate(s?.avg_frame_rate) || rate(s?.r_frame_rate);
+  if (!s?.width || !s.height || !(fps > 0)) throw new Error(`no readable video stream: ${file}`);
+  const match = range === undefined ? null : /^(\d+)-(\d+)$/.exec(range);
+  if (range !== undefined && (!match || Number(match[2]) < Number(match[1]))) throw new Error('--range needs inclusive zero-based frames a-b');
+  const from = match ? Number(match[1]) : 0, to = match ? Number(match[2]) : Infinity;
+  const first = Math.max(0, from - 8), W = 160, H = Math.max(16, Math.round(W * s.height / s.width));
+  const size = W * H, sizes = new Uint32Array(256), cellSizes = new Uint32Array(64), ids = new Uint16Array(size), cells = new Uint8Array(size);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x, k = Math.floor(y * 16 / H) * 16 + Math.floor(x * 16 / W);
+    const c = Math.floor(y * 8 / H) * 8 + Math.floor(x * 8 / W);
+    ids[i] = k; cells[i] = c; sizes[k]++; cellSizes[c]++;
+  }
+  const frames = [], times = [];
+  let previous, pending = Buffer.alloc(0), logs = '', line = '';
+  const consume = (buf) => {
+    const sums = new Float64Array(256), sq = new Float64Array(256), black = new Uint32Array(256), changes = new Float64Array(64), tileChanges = new Float64Array(256);
+    let total = 0;
+    for (let i = 0; i < size; i++) {
+      const v = buf[i], k = ids[i]; sums[k] += v; sq[k] += v * v; if (v <= 6) black[k]++;
+      if (previous) { const d = Math.abs(v - previous[i]); total += d; changes[cells[i]] += d; tileChanges[k] += d; }
+    }
+    frames.push({ frame: first + frames.length, mean: previous ? total / size : null,
+      cells: previous ? Array.from(changes, (v, i) => v / cellSizes[i]) : null,
+      tiles: Array.from(sums, (v, i) => { const mean = v / sizes[i]; return { mean, black: black[i] / sizes[i], flat: mean <= 4 && sq[i] / sizes[i] - mean * mean <= 3 && black[i] / sizes[i] >= 0.98, change: previous ? tileChanges[i] / sizes[i] : null }; }) });
+    previous = Buffer.from(buf);
+  };
+  const trim = `trim=start_frame=${first}${Number.isFinite(to) ? `:end_frame=${to + 1}` : ''}`;
+  await new Promise((resolve, reject) => {
+    const child = spawn('ffmpeg', ['-hide_banner', '-nostats', '-loglevel', 'info', '-copyts', '-hwaccel', 'none', '-threads', '2', '-i', file, '-an', '-sn', '-dn', '-vf', `${trim},scale=${W}:${H}:flags=area,format=gray,showinfo`, '-filter_threads', '1', '-fps_mode', 'passthrough', '-threads', '1', '-f', 'rawvideo', '-pix_fmt', 'gray', '-'], { windowsHide: true });
+    child.stdout.on('data', (chunk) => {
+      pending = pending.length ? Buffer.concat([pending, chunk]) : chunk;
+      let i = 0; for (; i + size <= pending.length; i += size) consume(pending.subarray(i, i + size));
+      pending = Buffer.from(pending.subarray(i));
+    });
+    child.stderr.on('data', (chunk) => {
+      logs = (logs + chunk).slice(-6000); line += chunk;
+      const lines = line.split(/\r?\n/); line = lines.pop();
+      for (const l of lines) { const m = /\bn:\s*(\d+).*?pts_time:([\d.e+\-]+)/.exec(l); if (m) times[Number(m[1])] = Number(m[2]); }
+    });
+    child.on('error', reject);
+    child.on('close', (code) => code === 0 && !pending.length && frames.length ? resolve() : reject(new Error(`motion decode failed (${code}): ${logs}`)));
+  });
+  const start = Number(s.start_time) || 0;
+  frames.forEach((f, i) => { f.time = Number.isFinite(times[i]) ? times[i] - start : f.frame / fps; });
+  const duration = Number(s.duration) || (Number(s.nb_frames) / fps) || (frames.at(-1).time + 1 / fps);
+  return { file, fps, width: s.width, height: s.height, sampleWidth: W, sampleHeight: H, from, to: frames.at(-1).frame, duration, frames };
+}
+
+const motionQuantile = (a, p) => { if (!a.length) return null; const b = [...a].sort((x, y) => x - y), n = (b.length - 1) * p, i = Math.floor(n); return b[i] + (b[Math.ceil(n)] - b[i]) * (n - i); };
+const motionWhere = (e) => `frames ${e.from}${e.to !== e.from ? `-${e.to}` : ''} (${e.start.toFixed(3)}-${e.end.toFixed(3)} s)`;
+function motionGroups(mask, width = 8) {
+  const seen = new Set(), out = [];
+  for (let k = 0; k < mask.length; k++) if (mask[k] && !seen.has(k)) {
+    const group = [], todo = [k]; seen.add(k);
+    while (todo.length) {
+      const p = todo.pop(); group.push(p);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const x = p % width + dx, y = Math.floor(p / width) + dy, q = y * width + x;
+        if (x >= 0 && x < width && y >= 0 && q < mask.length && mask[q] && !seen.has(q)) { seen.add(q); todo.push(q); }
+      }
+    }
+    out.push(group);
+  }
+  return out;
+}
+function motionPosition(group, width = 8) {
+  const xs = group.map((k) => k % width), ys = group.map((k) => Math.floor(k / width));
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  return { position: `${['left', 'centre', 'right'][Math.min(2, Math.floor((x0 + x1 + 1) / (2 * width) * 3))]}, ${['top', 'middle', 'bottom'][Math.min(2, Math.floor((y0 + y1 + 1) / (2 * width) * 3))]}`, share: group.length / (width * width), box: [x0 / width, y0 / width, (x1 + 1) / width, (y1 + 1) / width] };
+}
+function motionEvent(data, a, b, extra = {}) {
+  return { from: data.frames[a].frame, to: data.frames[b].frame, start: data.frames[a].time, end: data.frames[b].time, ...extra };
+}
+
+/** Brief flat-black patches, including interrupted runs in the same damaged region. */
+function unpaintedRegions(data) {
+  const f = data.frames, byFrame = Array.from({ length: f.length }, () => new Set());
+  for (let k = 0; k < 256; k++) for (let i = 1; i < f.length - 1; i++) {
+    const dark = (t) => (f[t].tiles[k].black ?? (f[t].tiles[k].flat ? 1 : 0)) >= 0.35;
+    if (!dark(i) || dark(i - 1)) continue;
+    let j = i; while (j + 1 < f.length && dark(j + 1)) j++;
+    if (j - i < 12 && j + 1 < f.length && [i - 1, j + 1].every((t) => f[t].tiles[k].mean >= 12 && (f[t].tiles[k].black ?? 0) < 0.1) && f[i].tiles[k].change >= 10 && f[j + 1].tiles[k].change >= 10) {
+      for (let t = i; t <= j; t++) byFrame[t].add(k);
+    }
+    i = j;
+  }
+  const hits = [];
+  for (let i = 1; i < f.length - 1; i++) {
+    const all = [...byFrame[i]], blackShare = all.reduce((s, k) => s + (f[i].tiles[k].black ?? 1), 0) / 256;
+    if (blackShare < 0.045) continue;
+    const groups = motionGroups(Array.from({ length: 256 }, (_, k) => byFrame[i].has(k)), 16);
+    // Partial cells describe the edges; the interval must also contain a truly flat core.
+    const good = groups.filter((g) => g.length >= 2).flat();
+    if (good.reduce((s, k) => s + (f[i].tiles[k].black ?? 1), 0) / 256 < 0.045) continue;
+    const pos = motionPosition(good, 16), [x0, y0, x1, y1] = pos.box;
+    if ((x1 - x0) * (y1 - y0) > 0.85) continue;
+    hits.push({ i, good, ...pos });
+  }
+  const out = [];
+  for (let h = 0; h < hits.length; h++) {
+    const a = hits[h].i, group = new Set(hits[h].good); let b = a;
+    while (h + 1 < hits.length && hits[h + 1].i <= b + 2) { h++; b = hits[h].i; hits[h].good.forEach((k) => group.add(k)); }
+    const interval = hits.filter((x) => x.i >= a && x.i <= b);
+    const solid = interval.some((x) => x.good.some((k) => [[2, 3], [3, 2]].some(([w, h]) => k % 16 + w <= 16 && Math.floor(k / 16) + h <= 16 && Array.from({ length: w * h }, (_, j) => k + Math.floor(j / w) * 16 + j % w).every((p) => x.good.includes(p) && f[x.i].tiles[p].flat))));
+    if (!solid) continue;
+    const pos = motionPosition([...group], 16), [x0, y0, x1, y1] = pos.box;
+    const outside = Array.from({ length: 256 }, (_, k) => k).filter((k) => k % 16 < x0 * 16 - 1 || k % 16 > x1 * 16 || Math.floor(k / 16) < y0 * 16 - 1 || Math.floor(k / 16) > y1 * 16);
+    if (outside.length < 24) continue;
+    const calm = [a, b + 1].every((t) => outside.filter((k) => f[t].tiles[k].change > 12).length / outside.length < 0.2 && outside.reduce((s, k) => s + f[t].tiles[k].change, 0) / outside.length < 6);
+    if (calm) out.push(motionEvent(data, a, b, { ...pos, blackFrames: hits.filter((x) => x.i >= a && x.i <= b).map((x) => f[x.i].frame) }));
+  }
+  return out;
+}
+
+/** Pixel change is evidence to inspect, not optical velocity or a verdict on the choreography. */
+function measureMotion(data, declared = []) {
+  const f = data.frames, n = f.length;
+  const noise = motionQuantile(f.flatMap((x) => x.cells || []), 0.2) || 0;
+  const threshold = Math.max(0.35, Math.min(3, noise * 4 + 0.2));
+  const active = f.map((x) => x.cells ? x.cells.some((v) => v > threshold) : null);
+  const cuts = [], cutSet = new Set();
+  for (let i = 1; i < n; i++) {
+    const near = declared.some((v) => Math.abs(f[i].frame - v) <= 2);
+    const context = f.slice(Math.max(1, i - 3), Math.min(n, i + 4)).filter((_, k) => Math.max(1, i - 3) + k !== i).map((x) => x.mean);
+    const broad = f[i].cells.filter((v) => v > 12).length >= 45;
+    if ((near && f[i].mean > Math.max(1, threshold * 2)) || (broad && f[i].mean > 16 && f[i].mean > 2.5 * (motionQuantile(context, 0.5) || 0.1))) {
+      cuts.push(motionEvent(data, i, i, { declared: near })); cutSet.add(i);
+    }
+  }
+  for (const frame of declared) {
+    const i = f.findIndex((x) => x.frame === frame);
+    if (i >= 0 && !cutSet.has(i)) { cuts.push(motionEvent(data, i, i, { declared: true })); cutSet.add(i); }
+  }
+  cuts.sort((a, b) => a.from - b.from);
+  const atCut = (i) => [...cutSet].some((v) => Math.abs(v - i) <= 2);
+  const pops = [], deadStops = [], hardStarts = [], stepping = [], tails = [];
+  const addGroups = (list, mask, a, b, extra = {}, min = 2) => {
+    for (const group of motionGroups(mask)) if (group.length >= min) {
+      const pos = motionPosition(group);
+      const halo = Array.from({ length: 64 }, (_, k) => k).filter((k) => group.some((g) => Math.abs(g % 8 - k % 8) <= 1 && Math.abs(Math.floor(g / 8) - Math.floor(k / 8)) <= 1));
+      const value = (i) => halo.reduce((s, k) => s + f[i].cells[k], 0) / halo.length;
+      if (list === deadStops && Math.max(value(a), value(a + 1), value(a + 2)) > value(a - 1) * 0.25) continue;
+      if (list === hardStarts && (Math.max(...Array.from({ length: 6 }, (_, j) => value(a - j - 1))) > value(a) * 0.2 || value(a) < Math.max(...Array.from({ length: 5 }, (_, j) => value(a + j + 1))) * 0.95)) continue;
+      const prior = list.find((e) => (list === stepping || f[a].frame <= e.from + 2) && f[a].frame <= e.to + 2 && f[a].frame >= e.from && pos.box[0] <= e.box[2] && pos.box[2] >= e.box[0] && pos.box[1] <= e.box[3] && pos.box[3] >= e.box[1]);
+      if (prior) { if (f[b].frame > prior.to) { prior.to = f[b].frame; prior.end = f[b].time; } prior.members = [...new Set([...prior.members, ...group])]; Object.assign(prior, motionPosition(prior.members)); }
+      else list.push(motionEvent(data, a, b, { ...pos, members: group, ...extra }));
+    }
+  };
+  for (let i = 4; i < n - 3; i++) {
+    if (atCut(i)) continue;
+    for (let len = 1; len <= 3; len++) {
+      const end = i + len - 1; if (end + 3 >= n || atCut(end)) continue;
+      const mask = Array.from({ length: 64 }, (_, k) => {
+        const pre = Math.max(...f.slice(i - 3, i).map((x) => x.cells[k])), post = Math.max(...f.slice(end + 1, end + 4).map((x) => x.cells[k]));
+        const peak = Math.max(...f.slice(i, end + 1).map((x) => x.cells[k]));
+        return peak > Math.max(3, threshold * 5, pre * 5, post * 5) && f[i].cells[k] > peak * 0.35 && f[end].cells[k] > peak * 0.35 && (len < 3 || f[i + 1].cells[k] < peak * 0.25);
+      });
+      addGroups(pops, mask, i, end, { pattern: len === 3 ? 'two-frame flash / paired spike' : `${len}-frame change spike` });
+    }
+    if (i >= 5) addGroups(deadStops, Array.from({ length: 64 }, (_, k) => {
+      const prior = f.slice(i - 4, i).map((x) => x.cells[k]);
+      return prior.every((v) => v > threshold) && prior.at(-1) > Math.max(threshold * 3, Math.max(...prior) * 0.6) && f.slice(i, i + 3).every((x) => x.cells[k] <= threshold);
+    }), i, i);
+    if (i >= 7 && i + 5 < n) addGroups(hardStarts, Array.from({ length: 64 }, (_, k) => f.slice(i - 6, i).every((x) => x.cells[k] <= threshold) && f[i].cells[k] > Math.max(2, threshold * 4) && f[i].cells[k] >= Math.max(...f.slice(i + 1, i + 6).map((x) => x.cells[k])) * 0.95), i, i);
+  }
+  // Four disjoint spatial groups plus the whole picture: fewer grid-edge artefacts than single cells.
+  const regions = [Array.from({ length: 64 }, (_, k) => k), ...Array.from({ length: 4 }, (_, q) => Array.from({ length: 64 }, (_, k) => k).filter((k) => (k % 8 >= 4 ? 1 : 0) + (k >= 32 ? 2 : 0) === q))];
+  for (const group of regions) {
+    const values = f.map((x, i) => x.cells && !cutSet.has(i) ? group.reduce((s, k) => s + x.cells[k], 0) / group.length : 0);
+    for (let i = 1; i + 9 < n; i++) {
+      const v = values.slice(i, i + 10), hi = motionQuantile(v, 0.8), lo = motionQuantile(v, 0.2);
+      if (hi < 0.12 || hi > 12 || lo > hi * 0.3 || v.some((_, j) => atCut(i + j))) continue;
+      const bits = v.map((x) => x > hi * 0.5), flips = bits.slice(1).filter((x, j) => x !== bits[j]).length;
+      if (flips < 8) continue;
+      let j = i + 9;
+      while (j + 1 < n && !atCut(j + 1) && (values[j + 1] > hi * 0.5) !== (values[j] > hi * 0.5)) j++;
+      addGroups(stepping, Array.from({ length: 64 }, (_, k) => group.includes(k)), i, j, { pattern: lo <= threshold ? 'move/still alternating' : 'quantised high/low alternating' });
+      i = j;
+    }
+    // A calm boundary is three consecutive frames below the regional floor.
+    const floor = Math.max(0.12, threshold * 0.5);
+    for (let i = 1; i < n; i++) {
+      if (values[i] <= floor || (values[i - 1] > floor && !cutSet.has(i))) continue;
+      const a = i; let j = i;
+      while (j + 1 < n && !cutSet.has(j + 1) && !(values[j + 1] <= floor && values[j + 2] <= floor && values[j + 3] <= floor)) j++;
+      if (j - a >= 3) {
+        let peak = a; for (let k = a; k <= j; k++) if (values[k] >= values[peak]) peak = k;
+        const total = values.slice(a, j + 1).reduce((s, v) => s + v, 0), third = a + Math.floor((j - a + 1) * 2 / 3);
+        const complete = j + 3 < n && !cutSet.has(j + 1) && (a >= 4 && values.slice(a - 3, a).every((v) => v <= floor) || cutSet.has(a - 1));
+        tails.push(motionEvent(data, a, j, { ...motionPosition(group), peak: f[peak].frame, peakTime: f[peak].time, tailFrames: j + 1 - peak, lastThirdShare: total ? values.slice(third, j + 1).reduce((s, v) => s + v, 0) / total : 0, complete }));
+      }
+      i = j;
+    }
+  }
+  const stretches = [], excluded = [], eligible = f.map((x) => x.frame >= data.from && x.mean !== null && x.time < data.duration - 1.5);
+  for (let i = 1; i < n; i++) if (!active[i] && f[i].frame >= data.from) {
+    const a = i; while (i + 1 < n && !active[i + 1] && eligible[i + 1] === eligible[a]) i++;
+    if (i - a + 1 > 8) (eligible[a] ? stretches : excluded).push(motionEvent(data, a, i, { frames: i - a + 1 }));
+  }
+  const bodyCount = eligible.filter(Boolean).length, stillCount = eligible.filter((v, i) => v && !active[i]).length;
+  // Four disjoint regions give small subjects equal weight; whole-picture tails are shown separately.
+  const complete = tails.filter((x) => x.share === 0.25 && x.complete && x.from >= data.from);
+  const medianTail = motionQuantile(complete.map((x) => x.tailFrames), 0.5);
+  const visible = (list) => list.filter((x) => x.from >= data.from);
+  const report = { file: data.file, fps: data.fps, duration: data.duration, range: [data.from, data.to], thresholds: { noisePercentile: 0.2, noiseFloor: noise, movingCell: threshold, units: 'mean absolute grayscale change, 0-255' }, frames: f.filter((x) => x.frame >= data.from).map(({ tiles, ...x }) => x), cuts: visible(cuts), pops: visible(pops), deadStops: visible(deadStops), hardStarts: visible(hardStarts), stepping: visible(stepping), stillness: { stretches, longest: stretches.reduce((a, b) => !a || b.frames > a.frames ? b : a, null), stillFrames: stillCount, measuredFrames: bodyCount, share: bodyCount ? stillCount / bodyCount : 0, excludedFinalSeconds: 1.5, excludedStretches: excluded, excludedStillFrames: f.filter((x, i) => x.frame >= data.from && x.mean !== null && !eligible[i] && !active[i]).length }, tails: visible(tails), medianTail, shortTails: complete.filter((x) => x.tailFrames < 4).length, unpainted: unpaintedRegions(data) };
+  report.summaryLine = `motion: ${path.basename(data.file)} | pops ${report.pops.length}, dead stops ${report.deadStops.length}, hard starts ${report.hardStarts.length}, stepping ${report.stepping.length}, still ${(report.stillness.share * 100).toFixed(1)} %, median tail ${medianTail === null ? 'n/a' : medianTail.toFixed(1)} f`;
+  return report;
+}
+
+/** A readable, dependency-free RGB chart: every frame, with a separate lane for each kind of finding. */
+function motionChart(report, out) {
+  const W = 1600, H = 500, rgb = Buffer.alloc(W * H * 3);
+  const ink = [221, 229, 239], muted = [151, 166, 186], grid = [48, 59, 76];
+  for (let i = 0; i < rgb.length; i += 3) { rgb[i] = 19; rgb[i + 1] = 26; rgb[i + 2] = 38; }
+  const pixel = (x, y, c, alpha = 1) => {
+    x = Math.round(x); y = Math.round(y);
+    if (x < 0 || y < 0 || x >= W || y >= H) return;
+    const i = (y * W + x) * 3;
+    for (let k = 0; k < 3; k++) rgb[i + k] = Math.round(rgb[i + k] * (1 - alpha) + c[k] * alpha);
+  };
+  const rect = (x, y, w, h, c, alpha = 1) => {
+    for (let yy = Math.max(0, Math.floor(y)); yy < Math.min(H, Math.ceil(y + h)); yy++)
+      for (let xx = Math.max(0, Math.floor(x)); xx < Math.min(W, Math.ceil(x + w)); xx++) pixel(xx, yy, c, alpha);
+  };
+  const line = (x0, y0, x1, y1, c, thick = 1, alpha = 1) => {
+    const n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
+    for (let i = 0; i <= n; i++) rect(Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), thick, thick, c, alpha);
+  };
+  // Five by seven pixels, enlarged to keep labels sharp at the chart's native size.
+  const glyphs = {
+    ' ': '00000/00000/00000/00000/00000/00000/00000',
+    A:'01110/10001/10001/11111/10001/10001/10001',B:'11110/10001/10001/11110/10001/10001/11110',
+    C:'01111/10000/10000/10000/10000/10000/01111',D:'11110/10001/10001/10001/10001/10001/11110',
+    E:'11111/10000/10000/11110/10000/10000/11111',F:'11111/10000/10000/11110/10000/10000/10000',
+    G:'01111/10000/10000/10111/10001/10001/01111',H:'10001/10001/10001/11111/10001/10001/10001',
+    I:'11111/00100/00100/00100/00100/00100/11111',J:'00111/00010/00010/00010/00010/10010/01100',
+    K:'10001/10010/10100/11000/10100/10010/10001',L:'10000/10000/10000/10000/10000/10000/11111',
+    M:'10001/11011/10101/10101/10001/10001/10001',N:'10001/11001/10101/10011/10001/10001/10001',
+    O:'01110/10001/10001/10001/10001/10001/01110',P:'11110/10001/10001/11110/10000/10000/10000',
+    Q:'01110/10001/10001/10001/10101/10010/01101',R:'11110/10001/10001/11110/10100/10010/10001',
+    S:'01111/10000/10000/01110/00001/00001/11110',T:'11111/00100/00100/00100/00100/00100/00100',
+    U:'10001/10001/10001/10001/10001/10001/01110',V:'10001/10001/10001/10001/10001/01010/00100',
+    W:'10001/10001/10001/10101/10101/10101/01010',X:'10001/10001/01010/00100/01010/10001/10001',
+    Y:'10001/10001/01010/00100/00100/00100/00100',Z:'11111/00001/00010/00100/01000/10000/11111',
+    '0':'01110/10001/10011/10101/11001/10001/01110','1':'00100/01100/00100/00100/00100/00100/01110',
+    '2':'01110/10001/00001/00010/00100/01000/11111','3':'11110/00001/00001/01110/00001/00001/11110',
+    '4':'00010/00110/01010/10010/11111/00010/00010','5':'11111/10000/10000/11110/00001/00001/11110',
+    '6':'01110/10000/10000/11110/10001/10001/01110','7':'11111/00001/00010/00100/01000/01000/01000',
+    '8':'01110/10001/10001/01110/10001/10001/01110','9':'01110/10001/10001/01111/00001/00001/01110',
+    '.':'00000/00000/00000/00000/00000/00110/00110',',':'00000/00000/00000/00000/00110/00100/01000',
+    ':':'00000/00110/00110/00000/00110/00110/00000',';':'00000/00110/00110/00000/00110/00100/01000',
+    '-':'00000/00000/00000/11111/00000/00000/00000','_':'00000/00000/00000/00000/00000/00000/11111',
+    '/':'00001/00001/00010/00100/01000/10000/10000','%':'11001/11010/00010/00100/01000/01011/10011',
+    '(':'00010/00100/01000/01000/01000/00100/00010',')':'01000/00100/00010/00010/00010/00100/01000',
+    '+':'00000/00100/00100/11111/00100/00100/00000','=':'00000/00000/11111/00000/11111/00000/00000',
+    '|':'00100/00100/00100/00100/00100/00100/00100','?':'01110/10001/00001/00010/00100/00000/00100',
+  };
+  const text = (value, x, y, c = ink, scale = 2, maxWidth = W - x - 14) => {
+    let xx = x;
+    for (const ch of String(value).toUpperCase()) {
+      if (xx + 5 * scale > x + maxWidth) break;
+      const rows = (glyphs[ch] || glyphs['?']).split('/');
+      rows.forEach((row, j) => [...row].forEach((v, k) => { if (v === '1') rect(xx + k * scale, y + j * scale, scale, scale, c); }));
+      xx += 6 * scale;
+    }
+  };
+  const frames = report.frames;
+  if (!frames.length) throw new Error('motion chart needs at least one frame');
+  const first = frames[0].frame, last = frames.at(-1).frame;
+  const left = 150, right = 1570, top = 96, bottom = 300;
+  const x = (frame) => left + (frame - first) / Math.max(1, last - first) * (right - left);
+  const highest = frames.reduce((peak, f) => Math.max(peak, f.mean), 1);
+  const maxY = Math.log1p(highest) * 1.06;
+  const y = (mean) => bottom - Math.log1p(Math.max(0, mean)) / maxY * (bottom - top);
+  text(`MOTION / ${String(report.file).split(/[\\/]/).pop()}`, 22, 18);
+  text(`${Number(report.fps).toFixed(3)} FPS | FRAMES ${first}-${last} | CHANGE IN GREY LEVELS (0-255), LOG SCALE`, 22, 43, muted);
+  text(report.summaryLine || '', 22, 67, ink, 1);
+  let lastLabelY = Infinity;
+  for (const v of [0, 0.1, 0.3, 1, 3, 10, 30, 100, 255]) {
+    if (v > highest * 1.05 && v !== 0) continue;
+    const yy = y(v);
+    line(left, yy, right, yy, grid);
+    if (lastLabelY - yy >= 18) {
+      text(String(v), left - 12 - String(v).length * 12, yy - 6, muted);
+      lastLabelY = yy;
+    }
+  }
+  const fps = report.fps;
+  const startSecond = Math.ceil(first / fps), endSecond = Math.floor(last / fps);
+  const secondWidth = fps / Math.max(1, last - first) * (right - left);
+  const labelEvery = 1;
+  for (let s = startSecond; s <= endSecond; s++) {
+    const f = Math.round(s * fps), xx = x(f);
+    line(xx, bottom, xx, bottom + 7, muted);
+    if (s % labelEvery === 0) {
+      line(xx, top, xx, bottom, grid, 1, 0.6);
+      const label = String(f);
+      text(label, Math.min(right - label.length * 3, Math.max(left, xx - label.length * 3)), bottom + 13 + (secondWidth < 40 ? (s % 2) * 10 : 0), muted, 1);
+    }
+  }
+  text('FRAME', 22, bottom + 13, muted);
+  for (let i = 1; i < frames.length; i++) line(x(frames[i - 1].frame), y(frames[i - 1].mean), x(frames[i].frame), y(frames[i].mean), [226, 238, 250], 2);
+  if (frames.length === 1) rect(x(first), y(frames[0].mean), 3, 3, ink);
+  const lanes = [
+    ['CUT', report.cuts, [109, 164, 255]], ['POP', report.pops, [255, 105, 128]],
+    ['DEAD STOP', report.deadStops, [255, 172, 86]], ['HARD START', report.hardStarts, [207, 136, 244]],
+    ['STEPPING', report.stepping, [243, 215, 105]], ['STILL', report.stillness.stretches, [92, 198, 180]],
+  ];
+  lanes.forEach(([label, findings, colour], k) => {
+    const yy = 349 + k * 18;
+    text(label, 22, yy - 2, colour);
+    rect(left, yy, right - left, 9, grid, 0.35);
+    for (const finding of findings || []) {
+      const from = finding.from ?? finding.frame, to = finding.to ?? from;
+      if (!Number.isFinite(from) || to < first || from > last) continue;
+      const xx = x(Math.max(first, from)), end = x(Math.min(last, to));
+      rect(xx, yy, Math.max(3, end - xx + 1), 10, colour);
+      line(xx, top, xx, bottom, colour, 1, 0.23);
+    }
+  });
+  text('CURVE: EVERY FRAME | COLOURED LANES: FINDING FRAME OR STRETCH | TICKS: EVERY SECOND', 22, 476, muted);
+  // PNG uses a filter byte before each RGB scanline; CRC covers the chunk type and payload.
+  const crcTable = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? 0xedb88320 ^ (c >>> 1) : c >>> 1; crcTable[n] = c >>> 0; }
+  const chunk = (type, data) => {
+    const kind = Buffer.from(type), payload = Buffer.concat([kind, data]);
+    let crc = 0xffffffff;
+    for (const b of payload) crc = crcTable[(crc ^ b) & 255] ^ (crc >>> 8);
+    const head = Buffer.alloc(4), tail = Buffer.alloc(4);
+    head.writeUInt32BE(data.length); tail.writeUInt32BE((crc ^ 0xffffffff) >>> 0);
+    return Buffer.concat([head, payload, tail]);
+  };
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(H, 4); ihdr[8] = 8; ihdr[9] = 2;
+  const scan = Buffer.alloc((W * 3 + 1) * H);
+  for (let yy = 0; yy < H; yy++) rgb.copy(scan, yy * (W * 3 + 1) + 1, yy * W * 3, (yy + 1) * W * 3);
+  ensureDir(out);
+  fs.writeFileSync(out, Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(scan)), chunk('IEND', Buffer.alloc(0))]));
+}
+
+async function motionCommand() {
+  const file = args[1]; if (!file || file.startsWith('--')) throw new Error('motion needs a rendered video file');
+  const declared = opt('cuts', '').split(',').filter(Boolean).map((v) => { if (!/^\d+$/.test(v.trim())) throw new Error('--cuts needs comma-separated zero-based frame numbers'); return Number(v); });
+  const data = await motionFrames(file, opt('range')), report = measureMotion(data, declared);
+  const out = opt('out', path.join(path.dirname(file), `${path.parse(file).name}-motion.png`));
+  if (path.resolve(out) === path.resolve(file)) throw new Error('--out must not overwrite the video');
+  motionChart(report, out); report.chart = out;
+  if (has('json')) { console.log(JSON.stringify(report, null, 2)); return; }
+  console.log(`motion: ${file}, ${report.fps.toFixed(3)} fps, zero-based inclusive frames ${report.range.join('-')}; cell floor ${report.thresholds.movingCell.toFixed(3)} / 255`);
+  for (const [label, rows] of [['cuts', report.cuts], ['pops', report.pops], ['dead stops', report.deadStops], ['hard starts', report.hardStarts], ['stepping', report.stepping]]) {
+    console.log(`  ${label}: ${rows.length}`);
+    for (const e of rows) console.log(`    ${motionWhere(e)}${e.position ? `, ${e.position}, ${(e.share * 100).toFixed(1)} %` : ''}${e.pattern ? `, ${e.pattern}` : ''}${e.declared ? ', declared join' : ''}`);
+  }
+  console.log(`  stillness: ${(report.stillness.share * 100).toFixed(1)} % (${report.stillness.stillFrames}/${report.stillness.measuredFrames} measured transitions); longest ${report.stillness.longest ? motionWhere(report.stillness.longest) : 'none over 8 frames'}`);
+  for (const e of report.stillness.stretches) console.log(`    ${motionWhere(e)}, ${e.frames} f`);
+  console.log(`  final 1.5 s excluded: ${report.stillness.excludedStillFrames} still frames`);
+  for (const e of report.stillness.excludedStretches) console.log(`    ${motionWhere(e)}, ${e.frames} f`);
+  console.log(`  tails: median ${report.medianTail ?? 'n/a'} f; ${report.shortTails} under 4 f (complete bursts in four disjoint regions)`);
+  for (const e of report.tails) console.log(`    ${motionWhere(e)}, ${e.position} ${(e.share * 100).toFixed(0)} %, peak ${e.peak} (${e.peakTime.toFixed(3)} s), tail ${e.tailFrames} f, last third ${(e.lastThirdShare * 100).toFixed(1)} %${e.complete ? '' : ', boundary incomplete: excluded from median'}`);
+  console.log(`  chart: ${out}`);
+  console.log(report.summaryLine);
+}
+
+async function checkFilm(file, lockupS, format = 'launch', silentOk = false, lockupGiven = false) {
   const loop = format === 'loop';
   const sting = format === 'sting';
   // the film's own lockup frame (LOCKUP or T.lockup), when its source is here: the ending is measured from it, so a held
@@ -540,6 +919,9 @@ function checkFilm(file, lockupS, format = 'launch', silentOk = false, lockupGiv
   // a sting under 8 s builds and then holds the mark: no pace gate
   const noPace = sting && dur < 8;
   const fails = [];
+  const painted = unpaintedRegions(await motionFrames(file));
+  console.log(`  unpainted  ${painted.length} transient black regions (every frame)`);
+  for (const p of painted) fails.push(`unpainted: ${motionWhere(p)}, ${p.position}, flat-black patches in cells covering ${(p.share * 100).toFixed(1)} % of the frame${p.blackFrames.length < p.to - p.from + 1 ? ` (intermittent: ${p.blackFrames.join(', ')})` : ''}`);
   // coverage is no gate: it rises with clutter, and it did not tell a calm film from a crowded one
   if (share(crowded) > CROWD) fails.push(`crowded: sharp detail covers 35 %+ of the frame in ${pc(share(crowded))} of the samples (36 of 40 references stay under ${pc(CROWD)}) [at ${fmt(crowded)} s]: the eye has nowhere to land: keep one focal subject in each frame and set the rest behind it by scale or depth, or give it its own beat; over a photograph or footage, lay a scrim or a dim under the card, never a blur on the picture (the payoff picture stays sharp)`);
   // holds that are read (a statement, a result) are fine; past a quarter the frames are named, past 40 % it fails
@@ -695,6 +1077,8 @@ if (cmd === 'sheet') {
   if (opt('from')) props.from = Number(opt('from'));
   if (opt('to')) props.to = Number(opt('to'));
   sheet(props, opt('out', opt('frames') ? `out/${film}-moment.png` : `out/${film}-sheet.png`), has('half') ? 0.5 : 1, has('safe'));
+} else if (cmd === 'motion') {
+  await motionCommand();
 } else if (cmd === 'library') {
   library();
 } else if (cmd === 'still') {
@@ -768,7 +1152,7 @@ if (cmd === 'sheet') {
   const format = opt('format', 'launch');
   if (!['launch', 'loop', 'sting'].includes(format)) throw new Error('--format is launch, loop or sting');
   // a loop has no lockup: its body runs to the last frame
-  checkFilm(args[1] && !args[1].startsWith('--') ? args[1] : `out/${film}-preview.mp4`, Number(opt('lockup', format === 'loop' ? '0' : '2')), format, has('silent'), opt('lockup') !== undefined);
+  await checkFilm(args[1] && !args[1].startsWith('--') ? args[1] : `out/${film}-preview.mp4`, Number(opt('lockup', format === 'loop' ? '0' : '2')), format, has('silent'), opt('lockup') !== undefined);
 } else if (cmd === 'joins') {
   // every join at real size, the whole move: one render call (one browser); the Joins composition draws one row of six
   // frames on each of its frames, and the rows of a join are stacked into one image
