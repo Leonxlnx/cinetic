@@ -11,7 +11,7 @@ import React from 'react';
 import { useVideoConfig } from 'remotion';
 import { at, clamp, ease, mix } from '../../motion';
 import { mixColor, useTextWidth } from '../../type';
-import { type Look, useUiFrame, withPace } from './_shared';
+import { type Look, surfaceStyle, useUiFrame, withPace } from './_shared';
 
 export type SkeletonLine = { text: string; /** Relative size (1 = body). */ scale?: number; weight?: number; /** Indent in text sizes. */ indent?: number; /** A bullet dot before it. */ bullet?: boolean; /** Space above, in text sizes. */ gap?: number };
 
@@ -27,11 +27,16 @@ const SkeletonSweepInner: React.FC<{
   y?: number;
   w?: number;
   size?: number;
+  /**
+   * A card behind the block (true: the look's surface; a string: that colour), padded one text size: it opens with the
+   * first bar and grows down with the rows, so it never stands empty. Your own plate instead: start `at` on its first frame.
+   */
+  plate?: boolean | string;
   speed?: number;
-}> = ({ L, lines, at: start, sweepAt, ghost = '#F2A7C3', band = '#F0A24A', x: xIn, y: yIn, w: wIn, size: sizeIn, speed = 1 }) => {
+}> = ({ L, lines, at: start, sweepAt, ghost = '#F2A7C3', band = '#F0A24A', x: xIn, y: yIn, w: wIn, size: sizeIn, plate, speed = 1 }) => {
   const { width: W, height: H } = useVideoConfig();
   const frame = start + (useUiFrame() - start) * speed;
-  const s = sizeIn ?? H * 0.026;
+  const s = sizeIn ?? Math.min(W, H) * 0.026;
   const w = wIn ?? s * 30;
   const x0 = (xIn ?? W / 2) - w / 2;
   const widths = lines.map((l) => useTextWidth(l.text, { fontFamily: L.font, fontSize: s * (l.scale ?? 1), fontWeight: l.weight ?? 450, letterSpacing: '-0.006em' }));
@@ -48,7 +53,16 @@ const SkeletonSweepInner: React.FC<{
   const bandP = at(frame, sw, 14, ease.inOut);
   const sweeping = frame >= sw;
   const bandX = mix(bandP, -0.08, 1.08) * w;
+  // the plate grows down with the cascade: the first row's height on the first frame, the whole block a frame after the last row
+  const pad = s;
+  const rowsIn = clamp((frame - start + 1) / Math.max(1, lines.length));
+  const firstH = tops[0] + s * (lines[0]?.scale ?? 1) * 1.35;
+  const plateH = mix(ease.out(rowsIn), firstH, blockH) + pad * 2;
   return (
+    <>
+    {plate && frame >= start && (
+      <div style={{ ...surfaceStyle(L, 3, s * 0.7), ...(typeof plate === 'string' ? { background: plate } : {}), position: 'absolute', left: x0 - pad, top: y0 - pad, width: w + pad * 2, height: plateH }} />
+    )}
     <div style={{ position: 'absolute', left: x0, top: y0, width: w, height: blockH, fontFamily: L.font }}>
       {lines.map((l, i) => {
         const t0 = start + i;
@@ -78,6 +92,7 @@ const SkeletonSweepInner: React.FC<{
       {/* the band */}
       {sweeping && bandP < 1 && <div style={{ position: 'absolute', left: bandX - w * 0.03, top: -s * 0.4, width: w * 0.06, height: blockH + s * 0.8, background: `linear-gradient(90deg, transparent, ${band}, transparent)`, opacity: 0.55, filter: `blur(${s * 0.35}px)` }} />}
     </div>
+    </>
   );
 };
 

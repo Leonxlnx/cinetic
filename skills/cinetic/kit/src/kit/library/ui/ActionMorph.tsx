@@ -32,9 +32,11 @@ const ActionMorphInner: React.FC<{
   w?: number;
   trackW?: number;
   size?: number;
+  /** Print the progress after the working label ("Creating link 76%"; default true); false: the label alone, for work with no measurable progress. */
+  percent?: boolean;
   /** Playback speed: 1 is the measured timing, 2 twice as fast. */
   speed?: number;
-}> = ({ L, label, working, doneLabel, at: start, pressAt = 20, hoverAt, dur = 46, x: xIn, y: yIn, w = 380, trackW = 760, size = 36 , speed = 1 }) => {
+}> = ({ L, label, working, doneLabel, at: start, pressAt = 20, hoverAt, dur = 46, x: xIn, y: yIn, w = 380, trackW = 760, size = 36, percent = true, speed = 1 }) => {
   // the frame's centre by default, in a composition of any size
   const { width: frameW, height: frameH } = useVideoConfig();
   const x = xIn ?? frameW / 2;
@@ -59,7 +61,7 @@ const ActionMorphInner: React.FC<{
   const enter = springAt(frame, 30, start - 12, springs.ui);
   const hv = (hoverAt !== undefined ? at(frame, start + hoverAt, 4, ease.out) : 0) * (1 - widen);
   const pct = Math.round(prog * 100);
-  const lab = widen < 0.5 ? label : `${working} ${pct}%`;
+  const lab = widen < 0.5 ? label : percent ? `${working} ${pct}%` : working;
   const labOp = widen < 0.5 ? 1 - widen * 2 : clamp(widen * 2 - 1) * (1 - clamp(shut * 3));
   const labelStyle: React.CSSProperties = { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: L.font, fontSize: size, fontWeight: 600, letterSpacing: '-0.01em', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', opacity: labOp };
   const fillW = width * fillFrac;

@@ -108,3 +108,35 @@ export const WeightLine: React.FC<{
     </div>
   );
 };
+
+/**
+ * The box of a WeightLine's block (centre x/y, w, h in px, r 0) at `frame` (default the current one), for a turn that
+ * grows out of it (GrowIris, WindowOpen). Pass the same props as the line; `index` defaults to `block.index`. The box
+ * is the block's full size from the moment its word lands (the wipe aside), and follows the line's re-centring.
+ */
+export const useWeightLineBlock = (
+  p: { text: string; at?: number; gap?: number; times?: number[]; size?: number; recentre?: number; block?: LineBlock; x?: number; y?: number; font?: string; weight?: number },
+  index?: number,
+  frame?: number,
+) => {
+  const now = useCurrentFrame();
+  const { width, height } = useVideoConfig();
+  const size = p.size ?? 120;
+  const style = { fontFamily: p.font ?? fonts.inter, fontWeight: p.weight ?? 600, fontSize: size, letterSpacing: '-0.025em', lineHeight: 1.2 } as const;
+  const L = useTextLayout(p.text, style);
+  const i = index ?? p.block?.index ?? 0;
+  const g = L.words[i];
+  if (!L.ready || !g) return { ready: false, x: 0, y: 0, w: 0, h: 0, r: 0 };
+  const cx = p.x ?? width / 2;
+  const cy = p.y ?? height / 2;
+  const words = p.text.split(/\s+/).filter(Boolean);
+  const T = wordTimes(words.length, p.at ?? 0, p.gap ?? 9, p.times);
+  const left = growLeft(L, cx, T, frame ?? now, p.recentre ?? 9);
+  const top = cy - L.height / 2;
+  const pad = size * 0.16;
+  const X = left + g.x - (L.words[0]?.x ?? 0);
+  const bTop = top + g.baseline - size * 0.88;
+  const w = g.width + pad * 2;
+  const h = size * 1.14;
+  return { ready: true, x: X - pad + w / 2, y: bTop + h / 2, w, h, r: 0 };
+};

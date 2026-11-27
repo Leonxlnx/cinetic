@@ -44,7 +44,7 @@ export const CrossFall: React.FC<
   // the title sharpens over most of the move (1 - (1 - t)^2.2: a third on its second frame), not in two frames
   const p = 1 - Math.pow(1 - t01(frame, start, D), 2.2);
   const o = ease.out(t01(frame, start, Math.max(1, Hd - 2)));
-  const u = H / 1080;
+  const u = Math.min(W, H) / 1080;
   const b = blur * u * (1 - p);
   return (
     <AbsoluteFill style={{ background: ground }}>

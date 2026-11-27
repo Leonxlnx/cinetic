@@ -31,7 +31,7 @@ export const ConstructType: React.FC<{
 }> = ({ name, at = 0, size, ink = '#141519', pale = '#C9CBD0', line = 'rgba(20,21,25,0.35)', handle = '#141519', per = 1.3, style, x, y }) => {
   const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
-  const ts = size ?? H * 0.075;
+  const ts = size ?? Math.min(W, H) * 0.075;
   const type: React.CSSProperties = { fontFamily: fonts.inter, fontSize: ts, fontWeight: 500, letterSpacing: '-0.02em', lineHeight: 1.15, whiteSpace: 'pre', ...style };
   const L = useTextLayout(name, type);
   if (f < at || !L.ready) return null;

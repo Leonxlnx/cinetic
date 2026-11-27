@@ -14,7 +14,8 @@ import { bez, InkWords, inkWordsEnd, type Look, MarkSlot, type NoticeData, surfa
  * A banner that grows out of its icon: a dark pill with only the glyph arrives blurred, widens to the right in 4
  * frames (0.15, 0.3, 0.62, 0.9, 1 of its width) as it sharpens, a badge pops on the glyph, the title then the body
  * type in word by word (fresh words born in the accent), the time fades in, the banner rises 56 px (expo-out) and a
- * sheen crosses it once. Centre at (x, y).
+ * sheen crosses it once. Centre at (x, y). `leaveAt`: it leaves whole to `leaveTo` (default right) on an ease-in over
+ * 10 f, clear of the frame on its last one; never fading.
  */
 const BannerPopInner: React.FC<{
   L: Look;
@@ -26,14 +27,19 @@ const BannerPopInner: React.FC<{
   size?: number;
   badge?: string;
   sheenAt?: number;
+  /** Frame it starts to leave (none: it stays). */
+  leaveAt?: number;
+  /** Where it leaves to: off the frame's left or right edge (default), or up off its top. */
+  leaveTo?: 'left' | 'right' | 'up';
   /** Playback speed: 1 is the measured timing, 2 twice as fast. */
   speed?: number;
-}> = ({ L, n, at: start, x: xIn, y: yIn, w = 1100, size = 34, badge = '#FF453A', sheenAt = 44 , speed = 1 }) => {
+}> = ({ L, n, at: start, x: xIn, y: yIn, w = 1100, size = 34, badge = '#FF453A', sheenAt = 44, leaveAt, leaveTo = 'right', speed = 1 }) => {
   // the frame's centre by default, in a composition of any size
   const { width: frameW, height: frameH } = useVideoConfig();
   const x = xIn ?? frameW / 2;
   const y = yIn ?? frameH / 2;
-  const frame = start + (useUiFrame() - start) * speed;
+  const raw = useUiFrame();
+  const frame = start + (raw - start) * speed;
   const t = frame - start;
   if (t < 0) return null;
   const pad = size * 0.62;
@@ -49,8 +55,15 @@ const BannerPopInner: React.FC<{
   const bodyAt = inkWordsEnd(n.title, titleAt, 2) - 2;
   const timeP = at(frame, start + 10, 8, ease.out);
   const sh = at(frame, start + sheenAt, 10, ease.inOut);
+  // the exit: whole, on an ease-in, the far edge clear of the frame on the last of its 10 frames
+  const lv = leaveAt === undefined ? 0 : at(raw, leaveAt, Math.max(2, Math.round(10 / speed)), ease.in);
+  if (lv >= 1) return null;
+  const left0 = x - w / 2;
+  const top0 = y - h / 2 + rise;
+  const lx = leaveTo === 'left' ? -(left0 + cw + 40) * lv : leaveTo === 'right' ? (frameW - left0 + 40) * lv : 0;
+  const ly = leaveTo === 'up' ? -(top0 + h + 40) * lv : 0;
   return (
-    <div style={{ position: 'absolute', left: x - w / 2, top: y - h / 2 + rise, width: cw, height: h, filter: blur > 0.05 ? `blur(${blur}px)` : undefined }}>
+    <div style={{ position: 'absolute', left: left0 + lx, top: top0 + ly, width: cw, height: h, filter: blur > 0.05 ? `blur(${blur}px)` : undefined }}>
       <div style={{ ...surfaceStyle(L, 4, h / 2), position: 'absolute', inset: 0, overflow: 'hidden' }}>
         {sh > 0 && sh < 1 && (
           <div style={{ position: 'absolute', top: 0, bottom: 0, left: mix(sh, -260, cw + 60), width: 220, background: `linear-gradient(100deg, transparent, rgba(255,255,255,${L.dark ? 0.1 : 0.5}), transparent)` }} />

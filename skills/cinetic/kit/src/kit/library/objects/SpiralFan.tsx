@@ -2,8 +2,8 @@
 // turning cluster, then along a spiral arm, the whole cloud spinning clockwise and growing until the cards ride a wide
 // spiral round the centre, where a line can sit.
 // Numbers: the square shrinks 100 to 55 % and turns 12 degrees on 0-3 f; the cards fan on 3-9 f (a tight cluster), the
-// spiral opens on 8-19 f (radius to 46 % of H, expo out) and keeps growing 0.3 % a frame; the cloud turns 130 degrees
-// by 19 f, then 0.6 degrees a frame; 1.6 turns of the arm; cards 7.5 % of H, from 80 % at the centre to 110 % outside,
+// spiral opens on 8-19 f (radius to 46 % of the short side, expo out) and keeps growing 0.3 % a frame; the cloud turns 130 degrees
+// by 19 f, then 0.6 degrees a frame; 1.6 turns of the arm; cards 7.5 % of the short side, from 80 % at the centre to 110 % outside,
 // each along the arm with a seeded tilt.
 // Caution: give it 24-40 cards of one family (tiles, covers, icons); the centre stays empty for one short line.
 // Catalogue: ../catalog/object.ts; props and recipe: references/library-objects.md.
@@ -19,7 +19,7 @@ export const SpiralFan: React.FC<{
   count?: number;
   /** The square the cards come from. */
   color?: string;
-  /** Card side as a share of H. */
+  /** Card side as a share of the short side. */
   card?: number;
   seed?: number;
   x?: number;
@@ -31,7 +31,7 @@ export const SpiralFan: React.FC<{
   const t = f - at;
   const cx = x ?? W / 2;
   const cy = y ?? H / 2;
-  const c = card * H;
+  const c = card * Math.min(W, H);
   if (t < 3) {
     const p = ease.out(clamp(t / 3));
     const s = c * 1.8 * mix(p, 1, 0.55);
@@ -43,7 +43,7 @@ export const SpiralFan: React.FC<{
   }
   const fan = ease.out(clamp((t - 3) / 6));
   const open = ease.out(clamp((t - 8) / 11));
-  const R = (mix(open, 0.07, 0.56) + Math.max(0, t - 19) * 0.003) * H;
+  const R = (mix(open, 0.07, 0.56) + Math.max(0, t - 19) * 0.003) * Math.min(W, H);
   const spin = (ease.out(clamp((t - 3) / 16)) * 130 + Math.max(0, t - 19) * 0.6) * (Math.PI / 180);
   const turns = mix(open, 0.35, 1.6);
   const items: React.ReactNode[] = [];

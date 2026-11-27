@@ -22,7 +22,7 @@ export const PlateSqueeze: React.FC<{
   /** The mark on the field (drawn at its plate size; scaled up by `markScale` while the field is full). */
   mark?: React.ReactNode;
   markScale?: number;
-  /** The plate's side as a share of H, and its corner radius as a share of its side. */
+  /** The plate's side as a share of the short side, and its corner radius as a share of its side. */
   plate?: number;
   radius?: number;
   /** Where the plate ends (its centre), default the frame's centre. */
@@ -35,7 +35,7 @@ export const PlateSqueeze: React.FC<{
   const cx = x ?? W / 2;
   const cy = y ?? H / 2;
   const t = f - at;
-  const s = plate * H;
+  const s = plate * Math.min(W, H);
   const box = (tt: number) => {
     const pw = tt < 0 ? 0 : keys(tt, PW, (v) => v);
     const ph = tt < 0 ? 0 : keys(tt, PH, (v) => v);

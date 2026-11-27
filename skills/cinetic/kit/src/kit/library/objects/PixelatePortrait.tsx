@@ -29,7 +29,7 @@ export const PixelatePortrait: React.FC<{
   shape?: string;
   color?: string;
   ground?: string;
-  /** The mark's height as a share of H. */
+  /** The mark's height as a share of the short side. */
   size?: number;
   x?: number;
   y?: number;
@@ -50,7 +50,7 @@ export const PixelatePortrait: React.FC<{
   }
   const n = t < 5 ? 10 : t < 7 ? 16 : t < 8 ? 26 : 36;
   const grey = t >= 5 && t < 8;
-  const side = size * H;
+  const side = size * Math.min(W, H);
   const c = side / n;
   const cx = x ?? W / 2;
   const cy = y ?? H / 2;

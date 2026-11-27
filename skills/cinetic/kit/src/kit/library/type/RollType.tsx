@@ -19,7 +19,11 @@ import { absCentre, typeTimes } from './_shared';
 export const RollType: React.FC<{
   text: string;
   at?: number;
-  /** The starting values of the rolling tail, as many characters as roll ("2" rolls the last digit from 2). */
+  /**
+   * The starting values of the rolling tail, as many characters as roll ("2" rolls the last digit from 2). A longer
+   * `from` rolls that many tail characters, each on its own, 2 frames after the one before ("5:48" from "42": the 4
+   * holds, the 2 rolls to 8); a digit equal to its target holds still, so pass only the digits that change.
+   */
   from?: string;
   /** Frames per typed character, on average (default 1.6). */
   per?: number;
@@ -33,7 +37,7 @@ export const RollType: React.FC<{
   whole?: boolean;
   size?: number;
   color?: string;
-  /** Neighbour digits' strength (0 hides them). */
+  /** Neighbour digits' strength (0 hides them); they sit 1.08 em above and below the line, so lines stacked closer need 0. */
   ghosts?: number;
   caret?: boolean;
   x?: number;
@@ -50,7 +54,7 @@ export const RollType: React.FC<{
   const times = typeTimes(head.join(''), at, per, seed);
   const typedEnd = (times[times.length - 1] ?? at) + Math.round(per * 1.4);
   // as measured: no caret while it types; a low dash appears after the rolling digits on their last, slow step and stays
-  const span0 = (() => { const a = Number(from[0]); const b = Number(chars[chars.length - nRoll]); return Number.isNaN(a) || Number.isNaN(b) ? 1 : (b - a + 10) % 10 || 10; })();
+  const span0 = (() => { const a = Number(from[0]); const b = Number(chars[chars.length - nRoll]); return Number.isNaN(a) || Number.isNaN(b) ? 1 : (b - a + 10) % 10; })();
   const slowAt = typedEnd + Math.max(0, span0 - 1) + 1;
   const caretOn = caret && frame >= slowAt;
   const caretEl = (
@@ -71,7 +75,9 @@ export const RollType: React.FC<{
         const b = Number(ch);
         const isDigit = !Number.isNaN(a) && !Number.isNaN(b);
         if (!isDigit) return <span key={`r${k}`} style={{ visibility: frame >= s ? 'visible' : 'hidden' }}>{ch}</span>;
-        const span = (b - a + 10) % 10 || 10;
+        const span = (b - a + 10) % 10;
+        // a digit already at its value holds still (no full turn)
+        if (span === 0) return <span key={`r${k}`} style={{ visibility: frame >= s ? 'visible' : 'hidden' }}>{ch}</span>;
         // fast first, a long slowing over the last digit: the counter finds its value
         // one whole digit per frame at first (crisp steps, never a smear), then the last step slows over four frames
         const steps = Math.max(0, span - 1);

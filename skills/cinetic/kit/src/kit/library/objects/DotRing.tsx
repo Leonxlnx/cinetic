@@ -1,9 +1,9 @@
 // DotRing (object, build): scattered dots fly on arcs to their places on a ring, growing as they fly; the ring turns
 // slowly, the dots stretch into dashes, the dashes lengthen until the ring closes, the ring floods with colour segment
 // by segment, and a light runs round it while a short label types in its middle.
-// Numbers: flights 12 f each, started 0-4 f apart, the dots from 0.8 % to 4 % of H; ring radius 36 % of H, turning 2
-// degrees a frame; dashes from 23 f, closed at 30 f (the stroke 4 to 5 % of H); a pale tint at 29 f, the colour
-// floods segment by segment 30-33 f; the light runs once round in 20 f from 34 f; the label (7.5 % of H, a word that
+// Numbers: flights 12 f each, started 0-4 f apart, the dots from 0.8 % to 4 % of the short side; ring radius 36 % of the short side, turning 2
+// degrees a frame; dashes from 23 f, closed at 30 f (the stroke 4 to 5 % of the short side); a pale tint at 29 f, the colour
+// floods segment by segment 30-33 f; the light runs once round in 20 f from 34 f; the label (7.5 % of the short side, a word that
 // fills the ring's middle) types a letter a frame from 26 f.
 // Caution: the scattered dots should come from something on screen (the tips of lines, points of a map); the ring is a
 // moment of connection, one in a film.
@@ -35,7 +35,7 @@ export const DotRing: React.FC<{
   /** A short word that types inside the ring. */
   label?: string;
   labelColor?: string;
-  /** Ring radius as a share of H. */
+  /** Ring radius as a share of the short side. */
   radius?: number;
   seed?: number;
   x?: number;
@@ -47,11 +47,11 @@ export const DotRing: React.FC<{
   const t = f - at;
   const cx = x ?? W / 2;
   const cy = y ?? H / 2;
-  const R = radius * H;
+  const R = radius * Math.min(W, H);
   const rot = (t * 2 * Math.PI) / 180 - Math.PI / 2;
   const slot = (i: number) => rot + (i / count) * Math.PI * 2;
   const close = ease.inOut(clamp((t - 23) / 7));
-  const stroke = mix(close, 0.04, 0.05) * H;
+  const stroke = mix(close, 0.04, 0.05) * Math.min(W, H);
   const tint = t >= 29 ? 1 : 0;
   const els: React.ReactNode[] = [];
   if (disc && t >= 25) els.push(<circle key="disc" cx={cx} cy={cy} r={R} fill={disc} opacity={clamp((t - 24) / 2)} />);
@@ -74,7 +74,7 @@ export const DotRing: React.FC<{
         const qy = my + ny * side;
         const px = (1 - p) * (1 - p) * st.x + 2 * (1 - p) * p * qx + p * p * ex;
         const py = (1 - p) * (1 - p) * st.y + 2 * (1 - p) * p * qy + p * p * ey;
-        const d = mix(p, 0.008, 0.04) * H;
+        const d = mix(p, 0.008, 0.04) * Math.min(W, H);
         els.push(<circle key={i} cx={px} cy={py} r={d / 2} fill={dot} />);
       } else {
         // dashes: centred on the slot, growing to fill the gap
@@ -101,7 +101,7 @@ export const DotRing: React.FC<{
         {els}
       </svg>
       {typed && (
-        <div style={{ position: 'absolute', left: cx, top: cy, transform: 'translate(-50%, -50%)', fontFamily: fonts.inter, fontSize: H * 0.075, fontWeight: 560, color: labelColor, letterSpacing: '-0.03em', whiteSpace: 'pre' }}>
+        <div style={{ position: 'absolute', left: cx, top: cy, transform: 'translate(-50%, -50%)', fontFamily: fonts.inter, fontSize: Math.min(W, H) * 0.075, fontWeight: 560, color: labelColor, letterSpacing: '-0.03em', whiteSpace: 'pre' }}>
           <span>{typed}</span>
           <span style={{ visibility: 'hidden' }}>{label!.slice(typed.length)}</span>
         </div>

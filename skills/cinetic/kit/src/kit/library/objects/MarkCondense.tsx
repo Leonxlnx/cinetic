@@ -15,7 +15,7 @@ export const MarkCondense: React.FC<{
   /** The mark, drawn centred in a `size` box. */
   mark: React.ReactNode;
   at?: number;
-  /** The box's side in px (default 30 % of H). */
+  /** The box's side in px (default 30 % of the short side). */
   size?: number;
   /** The blueprint's colour. */
   line?: string;
@@ -29,7 +29,7 @@ export const MarkCondense: React.FC<{
   const id = useUid('markcondense');
   if (f < at) return null;
   const t = f - at;
-  const s = size ?? H * 0.3;
+  const s = size ?? Math.min(W, H) * 0.3;
   const cx = x ?? W / 2;
   const cy = y ?? H / 2;
   const draw = ease.out(clamp(t / 6));

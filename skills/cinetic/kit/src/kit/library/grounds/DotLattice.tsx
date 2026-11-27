@@ -2,7 +2,7 @@
 // slow pools that drift, filled in a wave from a point, with a hole that opens for the type.
 // The hole is rounded and soft: inside it no dots, past its edge the dots grow back to full size over 0.7 of its half
 // size, so the type sits in a clearing of the lattice, never on a black box.
-// Numbers: pitch 12 px at 1080, dots 0.6 of the pitch, unlit at 9 % white, pools 0.35 of the height lifting dots to
+// Numbers: pitch 12 px at 1080, dots 0.6 of the pitch, unlit at 9 % white, pools 0.35 of the short side lifting dots to
 // 55 %, drifting about 0.04 of the width a second; the fill front crosses the frame in about 24 f, each dot pops in 4 f.
 // Caution: the light is in the dots, never a haze over them; keep the pools slow and the type off the brightest pool.
 // Catalogue: ../catalog/ground.ts; props and recipe: references/library-grounds.md.
@@ -23,7 +23,7 @@ export const DotLattice: React.FC<{
   ground?: string;
   /** The dots' colour (lit). */
   color?: string;
-  /** Dot pitch as a share of the frame height (0.011 = 12 px at 1080). */
+  /** Dot pitch as a share of the frame's short side (0.011 = 12 px at 1080). */
   pitch?: number;
   /** Dot size as a share of the pitch. */
   size?: number;
@@ -41,18 +41,18 @@ export const DotLattice: React.FC<{
 }> = ({ ground = '#050507', color = '#FFFFFF', pitch = 0.011, size = 0.6, shape = 'ring', base = 0.12, pools = 2, lit = 0.55, fill, hole, speed = 1, seed = 2 }) => {
   const f = useCurrentFrame();
   const { width: W, height: H, fps } = useVideoConfig();
-  const u = unit(H);
+  const u = unit(Math.min(W, H));
   const draw = (g: CanvasRenderingContext2D) => {
     g.fillStyle = ground;
     g.fillRect(0, 0, W, H);
     const rgb = parseColor(color) ?? [255, 255, 255];
-    const p = Math.max(4, pitch * H);
+    const p = Math.max(4, pitch * Math.min(W, H));
     const r = (p * size) / 2;
     const t = (f / fps) * speed;
     const P = Array.from({ length: pools }, (_, i) => ({
       x: W * (0.5 + 0.38 * Math.sin(t * 0.21 + rand(seed + i) * 6.28)),
       y: H * (0.5 + 0.34 * Math.cos(t * 0.17 + rand(seed + i * 5) * 6.28)),
-      r: 0.35 * H * (0.8 + 0.4 * rand(seed + i * 9)),
+      r: 0.35 * Math.min(W, H) * (0.8 + 0.4 * rand(seed + i * 9)),
     }));
     const fx = (fill?.x ?? 0.5) * W;
     const fy = (fill?.y ?? 0.5) * H;

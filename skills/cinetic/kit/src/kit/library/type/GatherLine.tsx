@@ -55,7 +55,7 @@ export const GatherLine: React.FC<{
   const cy = y ?? height / 2;
   const left0 = cx - L.width / 2;
   const top0 = cy - L.height / 2;
-  const u = height / 1080;
+  const u = Math.min(width, height) / 1080;
   const f = frame - at;
   const g = mode === 'snap' ? (frame >= gatherAt ? 1 : 0) : clamp((frame - gatherAt + 1) / dur) ** 2.2;
   // scattered places: each piece in its own cell of a grid over the spread box (cells taken in a seeded order, a small

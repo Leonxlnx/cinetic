@@ -58,7 +58,7 @@ export const CornerLine: React.FC<{
   const yBot = cy - L.height / 2 + g.baseline + size * 0.06;
   const px = size * 0.35;
   const py = size * 0.25;
-  const u = height / 1080;
+  const u = Math.min(width, height) / 1080;
   const mc = markColor ?? color;
   const fc = flash ?? mc;
   const age = frame - T[0];

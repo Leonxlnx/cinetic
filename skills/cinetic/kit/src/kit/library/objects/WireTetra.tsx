@@ -3,7 +3,7 @@
 // fade to pure hairlines; its faces fill one at a time with frosted glass, it swings close to the lens, and a warm light
 // (white core, amber edge) blooms inside one face with a faint spectrum along an edge.
 // Numbers: the segment turns 120 degrees on 0-22 f; the split 22-30 f; the fourth vertex 30-40 f (dots gone by 36 f);
-// faces fill 40, 42, 44, 46 f; the swing 48-56 f from 22 % to 72 % of H (log scale, in-out; `size`: above about 0.8
+// faces fill 40, 42, 44, 46 f; the swing 48-56 f from 22 % to 72 % of the short side (log scale, in-out; `size`: above about 0.8
 // the corners leave the frame); the light from 50 f; then a slow turn (0.6 degrees a frame); hairlines 1.2 px at 55 %
 // white.
 // Caution: on a near-black ground only; it is an abstract opener (an idea taking form), one in a film.
@@ -34,7 +34,7 @@ export const WireTetra: React.FC<{
   glass?: string;
   core?: string;
   warm?: string;
-  /** Final size as a share of H. */
+  /** Final size as a share of the short side. */
   size?: number;
   x?: number;
   y?: number;
@@ -54,7 +54,7 @@ export const WireTetra: React.FC<{
   const cen: V3 = [0, 0, 0];
   for (let i = 0; i < used; i++) for (let k = 0; k < 3; k++) cen[k] += pts[i][k] / used;
   const swing = ease.inOut(clamp((t - 48) / 8));
-  const scale = logScale(0.11, size / 2.2, swing) * H * mix(clamp(t / 22), 0.8, 1);
+  const scale = logScale(0.11, size / 2.2, swing) * Math.min(W, H) * mix(clamp(t / 22), 0.8, 1);
   const yaw = (t < 22 ? mix(ease.inOut(t / 22), -0.6, 1.5) : 1.5 + (t - 22) * 0.035 + swing * 0.5) + Math.max(0, t - 56) * 0.0105;
   const pitch = 0.35 + split * 0.25 - swing * 0.2;
   const roll = -0.35 + lift * 0.3;
@@ -116,7 +116,7 @@ export const WireTetra: React.FC<{
         {edges.map(([i, j]) => (
           <line key={`${i}-${j}`} x1={proj[i].x} y1={proj[i].y} x2={proj[j].x} y2={proj[j].y} stroke={line} strokeWidth={1.2} />
         ))}
-        {dots > 0 && proj.slice(0, used).map((p, i) => <circle key={`d${i}`} cx={p.x} cy={p.y} r={Math.max(2.5, H * 0.004)} fill="#FFFFFF" opacity={dots} />)}
+        {dots > 0 && proj.slice(0, used).map((p, i) => <circle key={`d${i}`} cx={p.x} cy={p.y} r={Math.max(2.5, Math.min(W, H) * 0.004)} fill="#FFFFFF" opacity={dots} />)}
       </svg>
     </AbsoluteFill>
   );

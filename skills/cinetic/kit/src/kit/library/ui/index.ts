@@ -6,7 +6,7 @@ export type { PointerKey } from './Pointer';
 export { pileTimes, NoticePile } from './NoticePile';
 export { CardFan } from './CardFan';
 export { BannerPop } from './BannerPop';
-export { RowExpand } from './RowExpand';
+export { RowExpand, rowExpandGeometry } from './RowExpand';
 export type { MailData } from './RowExpand';
 export { PickList } from './PickList';
 export type { PersonRow } from './PickList';

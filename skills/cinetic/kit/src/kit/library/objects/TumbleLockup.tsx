@@ -21,7 +21,7 @@ export const TumbleLockup: React.FC<{
   /** The tile's colour (letters are born in it). */
   color?: string;
   ink?: string;
-  /** Text size in px (default 10 % of H); the tile is 1.25 times it. */
+  /** Text size in px (default 10 % of the short side); the tile is 1.25 times it. */
   size?: number;
   /** Frames between letters (2 measured). */
   gap?: number;
@@ -31,7 +31,7 @@ export const TumbleLockup: React.FC<{
 }> = ({ name, glyph, at = 0, color = '#F24A2E', ink = '#1B1416', size, gap = 2, style, x, y }) => {
   const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
-  const ts = size ?? H * 0.1;
+  const ts = size ?? Math.min(W, H) * 0.1;
   const type: React.CSSProperties = { fontFamily: fonts.inter, fontSize: ts, fontWeight: 620, letterSpacing: '-0.03em', lineHeight: 1.1, whiteSpace: 'pre', ...style };
   const L = useTextLayout(name, type);
   if (f < at || !L.ready) return null;

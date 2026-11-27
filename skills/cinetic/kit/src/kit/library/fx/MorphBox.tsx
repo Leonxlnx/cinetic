@@ -11,13 +11,28 @@ import { mixLab } from '../../world';
 import { t01 } from '../_shared';
 import type { TurnBox } from '../turns/_shared';
 
-export type MorphStage = { at: number; box: TurnBox; color: string; content?: React.ReactNode; dur?: number; curve?: Ease };
+export type MorphStage = {
+  at: number;
+  box: TurnBox;
+  color: string;
+  content?: React.ReactNode;
+  dur?: number;
+  curve?: Ease;
+  /**
+   * Content laid out where the stage ends (true) instead of riding the box's top-left corner: the growing box opens onto
+   * it like a window, so a frame-sized destination stays still while the box reaches it.
+   */
+  pinned?: boolean;
+};
 
 /**
  * MorphBox: one rounded shape that becomes the next (a pill, a card, a window) with no pop: position, size, radius and
  * colour interpolate together, and each stage's colour and content wipe in left to right behind a soft lead edge while
  * the old content clears in the first frames. Content is laid out at the stage's own size, top-left anchored.
  * Measured: 8-14 f per stage on a soft out curve; the colour wipe trails the size by ~2 f; old content gone in ~3 f.
+ * The clock counts a stage's `at` as its first step: on frame `at` the box has already moved 1/dur of the way, and it
+ * lands on `at + dur - 1`. `wipe={false}`: no colour wipe and no mask, the colour blends and the new content shows at
+ * once inside the box. A stage with no content grows as a plain slab of its colour: give the last stage its screen.
  */
 export const MorphBox: React.FC<{ stages: MorphStage[]; shadow?: string; wipe?: boolean }> = ({ stages, shadow, wipe = true }) => {
   const frame = useCurrentFrame();
@@ -44,7 +59,19 @@ export const MorphBox: React.FC<{ stages: MorphStage[]; shadow?: string; wipe?: 
       {prev && wipe && q >= 1 && <div style={{ position: 'absolute', inset: 0, background: cur.color }} />}
       {prev?.content && t < 0.35 && <div style={{ position: 'absolute', left: 0, top: 0, width: A.w, height: A.h, opacity: 1 - clamp(t / 0.25) }}>{prev.content}</div>}
       {cur.content && (
-        <div style={{ position: 'absolute', left: 0, top: 0, width: B.w, height: B.h, WebkitMaskImage: q < 1 ? wipeMask : undefined, maskImage: q < 1 ? wipeMask : undefined }}>{cur.content}</div>
+        <div
+          style={{
+            position: 'absolute',
+            left: cur.pinned ? B.x - B.w / 2 - (x - w / 2) : 0,
+            top: cur.pinned ? B.y - B.h / 2 - (y - h / 2) : 0,
+            width: B.w,
+            height: B.h,
+            WebkitMaskImage: wipe && q < 1 ? wipeMask : undefined,
+            maskImage: wipe && q < 1 ? wipeMask : undefined,
+          }}
+        >
+          {cur.content}
+        </div>
       )}
     </div>
   );

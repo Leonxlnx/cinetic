@@ -33,7 +33,7 @@ export const SliceShift: React.FC<{
   });
   const cuts = [0, ...ys.sort((a, b) => a - b), H];
   const slip = ease.inOut(clamp((frame - at - 10) / dur));
-  const lw = Math.max(1, H / 1080);
+  const lw = Math.max(1, Math.min(W, H) / 1080);
   return (
     <AbsoluteFill style={{ overflow: 'hidden' }}>
       {cuts.slice(0, -1).map((y0, i) => {

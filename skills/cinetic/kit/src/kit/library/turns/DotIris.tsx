@@ -43,7 +43,7 @@ export const DotIris: React.FC<
   const x = xIn ?? W / 2;
   const y = yIn ?? H / 2;
   const R = cover(x, y, W, H) + soft + 2;
-  const a = Math.max(1, (r0 * H) / 1080);
+  const a = Math.max(1, (r0 * Math.min(W, H)) / 1080);
   const k = frame - start;
   // constant ratio a frame: a on the first frame, R on the last
   const p = D > 1 ? k / (D - 1) : 1;
@@ -58,7 +58,7 @@ export const DotIris: React.FC<
         <AbsoluteFill style={{ transformOrigin: `${x}px ${y}px`, transform: s !== 1 ? `scale(${s})` : undefined }}>{to}</AbsoluteFill>
       </AbsoluteFill>
       {color && r < R * 0.7 && (
-        <div style={{ position: 'absolute', left: x - r, top: y - r, width: r * 2, height: r * 2, borderRadius: '50%', boxShadow: `0 0 0 ${Math.max(1, (2 * H) / 1080)}px ${color}`, opacity: 1 - p }} />
+        <div style={{ position: 'absolute', left: x - r, top: y - r, width: r * 2, height: r * 2, borderRadius: '50%', boxShadow: `0 0 0 ${Math.max(1, (2 * Math.min(W, H)) / 1080)}px ${color}`, opacity: 1 - p }} />
       )}
     </AbsoluteFill>
   );

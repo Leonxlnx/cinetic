@@ -118,7 +118,7 @@ export const DesignFrame: React.FC<{
 }> = ({ design: d, plate, statement, ground, picture = 'img/waves-009.jpg', at = 0, align = 'left', heading = 'Weekly review', body = 'Three drafts are ready for you', action = 'Open drafts', mark, minText = 30 }) => {
   const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
-  const u = H / 1080;
+  const u = Math.min(W, H) / 1080;
   const p = d.palette;
   const sp = d.spacing ?? { margin: 120, gap: 40, pad: 36 };
   const m = sp.margin * u;
@@ -144,7 +144,7 @@ export const DesignFrame: React.FC<{
           style={{
             transform: `translateY(${mix(s1, 105, 0)}%)`,
             fontFamily: d.type.font,
-            fontSize: statementSize(d, statement, H),
+            fontSize: statementSize(d, statement, Math.min(W, H)),
             display: plate ? 'inline-block' : undefined,
             background: plate,
             padding: plate ? '0.18em 0.42em 0.24em' : undefined,

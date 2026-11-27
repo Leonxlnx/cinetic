@@ -31,13 +31,13 @@ export const Cursor3D: React.FC<{
   exitAt?: number;
   ground?: string;
 }> = ({ keys, clicks = [], size: sizeIn, color = '#9AA2F5', side, at: atIn, exitAt, ground = '#3A3F8F' }) => {
-  const { height: H } = useVideoConfig();
+  const { width: W, height: H } = useVideoConfig();
   const frame = useUiFrame();
   const id = useUid('c3d');
   const start = atIn ?? keys[0].f;
   if (frame < start) return null;
   if (exitAt !== undefined && frame > exitAt + 12) return null;
-  const size = sizeIn ?? H * 0.055;
+  const size = sizeIn ?? Math.min(W, H) * 0.055;
   const wall = side ?? mixColor(color, '#1E2280', 0.45);
   const k = pointerAt(frame, keys);
   const v = Math.hypot(k.vx, k.vy);

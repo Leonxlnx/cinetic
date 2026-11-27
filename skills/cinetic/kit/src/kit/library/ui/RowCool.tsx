@@ -33,7 +33,7 @@ const RowCoolInner: React.FC<{
 }> = ({ L, rows, at: start, title = 'Working', gaps = [10, 8, 12, 10, 9, 8], x: xIn, y: yIn, w: wIn, size: sizeIn, card = false, speed = 1 }) => {
   const { width: W, height: H } = useVideoConfig();
   const frame = start + (useUiFrame() - start) * speed;
-  const s = sizeIn ?? H * 0.03;
+  const s = sizeIn ?? Math.min(W, H) * 0.03;
   const x = xIn ?? W / 2;
   const y = yIn ?? H / 2;
   const w = wIn ?? s * 22;

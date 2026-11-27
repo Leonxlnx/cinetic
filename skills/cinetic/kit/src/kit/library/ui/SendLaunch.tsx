@@ -37,7 +37,7 @@ const SendLaunchInner: React.FC<{
   const frame = press + (useUiFrame() - press) * speed;
   const idA = useUid('slA');
   const idW = useUid('slW');
-  const s = sizeIn ?? H * 0.026;
+  const s = sizeIn ?? Math.min(W, H) * 0.026;
   const w = wIn ?? Math.min(W * 0.7, s * 34);
   const cut = press + 8;
   const winW = winWIn ?? W * 0.62;
@@ -80,7 +80,7 @@ const SendLaunchInner: React.FC<{
   const sparkX = W * 0.23;
   const sparkY = H * 0.7;
   const fallS = at(frame, cut + 5, 10, ease.in);
-  const sq = H * 0.024;
+  const sq = Math.min(W, H) * 0.024;
   const inP = at(frame, cut + 3, 13, ease.out);
   const inPrev = at(frame - 1, cut + 3, 13, ease.out);
   const vx = (inP - inPrev) * W * 0.45;

@@ -34,7 +34,7 @@ const DotCaretInner: React.FC<{
   const x = xIn ?? W / 2;
   const y = yIn ?? H / 2;
   const frame = start + (useUiFrame() - start) * speed;
-  const h = sizeIn ?? H * 0.072;
+  const h = sizeIn ?? Math.min(W, H) * 0.072;
   const dot = color ?? L.ink;
   const land = start + dropAt + 3;
   const drop = at(frame, start + dropAt, 3, ease.in);
@@ -50,7 +50,7 @@ const DotCaretInner: React.FC<{
   const total = h + gap + fw + gap + h;
   const left = -total / 2;
   const fieldX = left + h + gap; // the field's left edge, relative to the centre
-  const ds = H * 0.016;
+  const ds = Math.min(W, H) * 0.016;
   // the caret's spot: the start of the field's text
   const caretX = fieldX + h * 0.62;
   const typed = typingTimes(text, start + typeAt, fps, 15, 5);
@@ -64,7 +64,7 @@ const DotCaretInner: React.FC<{
     </div>
   );
   // before the landing the dot hovers above the field's text start, sinking a little
-  const hoverY = -h * 1.25 + clamp((frame - start) / Math.max(1, dropAt)) * H * 0.004;
+  const hoverY = -h * 1.25 + clamp((frame - start) / Math.max(1, dropAt)) * Math.min(W, H) * 0.004;
   const dy = mix(drop, hoverY, 0);
   return (
     <div style={{ position: 'absolute', left: x, top: y, width: 0, height: 0, transform: `scale(${mix(push, 1, pushTo)})`, fontFamily: L.font }}>

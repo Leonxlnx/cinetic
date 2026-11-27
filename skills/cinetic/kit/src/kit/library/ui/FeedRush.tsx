@@ -61,7 +61,7 @@ const FeedRushInner: React.FC<{
   const x = xIn ?? W / 2;
   const y = yIn ?? H / 2;
   const frame = start + (useUiFrame() - start) * speed;
-  const s = sizeIn ?? H * 0.026;
+  const s = sizeIn ?? Math.min(W, H) * 0.026;
   const w = wIn ?? Math.min(W * 0.62, s * 40);
   const id = useUid('feed');
   const rowH = s * 5.3;

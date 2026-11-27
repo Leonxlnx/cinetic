@@ -34,8 +34,8 @@ export const CollapsePill: React.FC<
   }
 > = ({ from, to, at: start, speed = 1, a, b, row, pill, dur = 9, blur = 10, shadow }) => {
   const frame = useCurrentFrame();
-  const { height: H } = useVideoConfig();
-  const u = H / 1080;
+  const { width: W, height: H } = useVideoConfig();
+  const u = Math.min(W, H) / 1080;
   const D = sp(dur, speed);
   const k = frame - start;
   const drawPill = (bx: TurnBox & { color: string }, content: React.ReactNode, labelOp: number, bl: number, col: string) => (

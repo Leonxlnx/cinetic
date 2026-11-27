@@ -119,7 +119,7 @@ export const EchoStack: React.FC<{
     if (frame < t0 + Math.floor(i / 2) * 3) return null;
     const [sx, sy] = spots[i % spots.length];
     return (
-      <div key={`lab${i}`} style={{ position: 'absolute', left: cx + sx * edge, top: cy + sy * pitch, transform: sx < 0 ? 'translate(-100%, -50%)' : 'translate(0, -50%)', fontFamily: font, fontWeight: 500, fontSize: Math.max(18, height * 0.024), color, opacity: 0.9, whiteSpace: 'pre' }}>
+      <div key={`lab${i}`} style={{ position: 'absolute', left: cx + sx * edge, top: cy + sy * pitch, transform: sx < 0 ? 'translate(-100%, -50%)' : 'translate(0, -50%)', fontFamily: font, fontWeight: 500, fontSize: Math.max(18, Math.min(width, height) * 0.024), color, opacity: 0.9, whiteSpace: 'pre' }}>
         {t}
       </div>
     );

@@ -1,6 +1,6 @@
 // CaretCam (camera, emphasis): a prompt typed in a small bar, then a cut into the bar around the caret so the words type
 // at giant size while the camera follows the caret, jumping on at each new word; a snap back to the wide view at the end.
-// Numbers: a char every 1-3 f (2 on average); cut in with no tween; the macro text 30 % of the frame height (x-height 16 %); the camera
+// Numbers: a char every 1-3 f (2 on average); cut in with no tween; the macro text 30 % of the frame's short side (x-height 16 %); the camera
 // holds through a word and catches the caret at each word start in 3 f (65 %, 90 %, 100 %), putting it at 40 % of the
 // width; the way out passes one frame at about 2.2x.
 // Caution: one prompt a film; the macro needs a short prompt of plain words (25-60 characters), never a whole paragraph.
@@ -40,9 +40,9 @@ export const CaretCam: React.FC<{
   inAt?: number;
   /** The snap back to the wide view (default 4 f before the last character). */
   outAt?: number;
-  /** Text size in the macro, px (default 30 % of the frame height: an x-height of about 16 %). */
+  /** Text size in the macro, px (default 30 % of the frame's short side: an x-height of about 16 %). */
   size?: number;
-  /** Text size in the wide bar, px (default 1.6 % of the frame height). */
+  /** Text size in the wide bar, px (default 1.6 % of the frame's short side). */
   wideSize?: number;
   /** Bar width in the wide view, px (default 42 % of the frame width). */
   w?: number;
@@ -62,8 +62,8 @@ export const CaretCam: React.FC<{
 }> = ({ text, at, rate = 2, inAt, outAt, size, wideSize, w, x, y, anchor = 0.4, color = 'rgba(255,255,255,0.62)', ink = '#121317', accent = '#121317', seed = 7, children }) => {
   const frame = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
-  const S = size ?? Math.round(H * 0.3);
-  const s = wideSize ?? Math.round(H * 0.016);
+  const S = size ?? Math.round(Math.min(W, H) * 0.3);
+  const s = wideSize ?? Math.round(Math.min(W, H) * 0.016);
   const bw = w ?? Math.round(W * 0.42);
   const bh = Math.round(s * 2.6);
   const cx = x ?? W / 2;
@@ -125,7 +125,7 @@ export const CaretCam: React.FC<{
     <AbsoluteFill style={{ overflow: 'hidden' }}>
       {/* the scene seen past the bar's rim, close and out of focus, sliding with the camera */}
       <AbsoluteFill style={{ transform: `translateX(${-off * 0.25}px) scale(3)`, transformOrigin: `${cx}px ${cy}px`, filter: 'blur(12px)' }}>{children}</AbsoluteFill>
-      <div style={{ position: 'absolute', left: -W, right: -W, top, height: bot - top, background: color, backdropFilter: 'blur(24px)', borderTop: `${Math.max(2, H * 0.004)}px solid rgba(255,255,255,0.75)`, borderBottom: `${Math.max(2, H * 0.004)}px solid rgba(255,255,255,0.45)` }} />
+      <div style={{ position: 'absolute', left: -W, right: -W, top, height: bot - top, background: color, backdropFilter: 'blur(24px)', borderTop: `${Math.max(2, Math.min(W, H) * 0.004)}px solid rgba(255,255,255,0.75)`, borderBottom: `${Math.max(2, Math.min(W, H) * 0.004)}px solid rgba(255,255,255,0.45)` }} />
       <div style={{ position: 'absolute', left, top: (top + bot) / 2 - S * 0.62, height: S * 1.24, display: 'flex', alignItems: 'center', ...style, color: ink }}>
         {typed}
         {caret(S * 1.05, Math.max(2, S * 0.045))}

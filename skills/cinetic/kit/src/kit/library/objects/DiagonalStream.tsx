@@ -1,7 +1,7 @@
 // DiagonalStream (object, idle / emphasis): two bands of rounded picture cards run along one diagonal, one above-left
 // and one below-right of a centred word, at a steady speed (in opposite directions, or both one way), the cards near
 // the frame's edge softened by a little blur, each card turned a few degrees.
-// Numbers: the diagonal 35 degrees; bands 26 % of H either side of the centre; cards 21 % of H square, radius 12 %,
+// Numbers: the diagonal 35 degrees; bands 26 % of the short side either side of the centre; cards 21 % of the short side square, radius 12 %,
 // overlapping 30 %; speed 0.5 % of W a frame (measured 0.3-1.5 %); cards within 15 % of the frame's edge blur up to
 // 4 px; turns of +-4 degrees; `develop`: each card runs its first 18 % in the two-tone map, then turns true colour;
 // `toCentre`: cards fade as they near the centre (streams flowing into a hub).
@@ -20,9 +20,9 @@ export const DiagonalStream: React.FC<{
   angle?: number;
   /** 'opposite': the bands run against each other; 'same': both run up the diagonal. */
   flow?: 'opposite' | 'same';
-  /** Card side as a share of H. */
+  /** Card side as a share of the short side. */
   card?: number;
-  /** Distance of each band from the centre as a share of H. */
+  /** Distance of each band from the centre as a share of the short side. */
   offset?: number;
   /** Speed as a share of W a frame. */
   speed?: number;
@@ -40,7 +40,7 @@ export const DiagonalStream: React.FC<{
   const a = (-angle * Math.PI) / 180;
   const u = { x: Math.cos(a), y: Math.sin(a) };
   const nrm = { x: -u.y, y: u.x };
-  const s = card * H;
+  const s = card * Math.min(W, H);
   const pitch = s * 0.7;
   const L = Math.hypot(W, H) + s * 2;
   const n = Math.ceil(L / pitch);
@@ -48,8 +48,8 @@ export const DiagonalStream: React.FC<{
   const cards: React.ReactNode[] = [];
   [-1, 1].forEach((b, bi) => {
     const dir = flow === 'same' ? 1 : b;
-    const ox = W / 2 + nrm.x * b * offset * H;
-    const oy = H / 2 + nrm.y * b * offset * H;
+    const ox = W / 2 + nrm.x * b * offset * Math.min(W, H);
+    const oy = H / 2 + nrm.y * b * offset * Math.min(W, H);
     for (let j = 0; j < n; j++) {
       const travel = speed * W * t * dir;
       const sPos = (((j * pitch + travel + bi * pitch * 0.5) % len) + len) % len - len / 2;

@@ -36,7 +36,7 @@ export const TiltLift: React.FC<
   const D = sp(dur, speed);
   const S = sp(settle, speed);
   if (frame < start) return <AbsoluteFill>{from}</AbsoluteFill>;
-  const u = H / 1080;
+  const u = Math.min(W, H) / 1080;
   const k = frame - start;
   const all = D + S;
   const rot = tilt * (1 - ease.soft(t01(frame, start, all)));

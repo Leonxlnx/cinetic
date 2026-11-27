@@ -28,7 +28,7 @@ export const OrbitLines: React.FC<{
 }> = ({ at = 0, ground = '#F3F2EE', color = '#D9D7D2', r = 0.32, sep = 0.7, turn = 60, drift = 0.15, count = 2 }) => {
   const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
-  const u = unit(H);
+  const u = unit(Math.min(W, H));
   const fade = prog(f, at, 2, ease.linear);
   const part = prog(f, at + 1, 7, ease.out);
   const t = prog(f, at + 9, 11, ease.out);

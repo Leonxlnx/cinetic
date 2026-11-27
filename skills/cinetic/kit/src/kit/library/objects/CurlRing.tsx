@@ -2,7 +2,7 @@
 // up into a rising diagonal, and curls: the lead tile rises and turns left over the top and the others follow its path
 // one after another, so the row bends into a ring; the ring spins, slows, speeds up again and implodes into the centre.
 // Numbers: colour left to right on 0-15 f (2.5 f a tile); the tilt to 50 degrees on 16-24 f (about the row's middle); the curl 24-40 f (the
-// spacing opening to the ring's); ring radius 36 % of H; a quarter turn by 60 f, then the radius falls to 6 % and the
+// spacing opening to the ring's); ring radius 36 % of the short side; a quarter turn by 60 f, then the radius falls to 6 % and the
 // tiles to 60 % on 60-73 f while it spins a half turn faster (ease-in). Tiles stay upright the whole way.
 // Caution: give it 5-8 tiles; the implosion should hand over to something that grows out of the centre.
 // Catalogue: ../catalog/object.ts; props and recipe: references/library-objects.md.
@@ -19,7 +19,7 @@ export const CurlRing: React.FC<{
   /** The pale map tiles start in. */
   dark?: string;
   light?: string;
-  /** Tile side as a share of H. */
+  /** Tile side as a share of the short side. */
   tile?: number;
   radius?: number;
   /** Whether the ring implodes at the end (73 f). */
@@ -36,8 +36,8 @@ export const CurlRing: React.FC<{
   const t = (f - at) * speed;
   const cx = x ?? W / 2;
   const cy = y ?? H / 2;
-  const s = tile * H;
-  const R = radius * H;
+  const s = tile * Math.min(W, H);
+  const R = radius * Math.min(W, H);
   const d0 = s * 1.18;
   const D = (2 * Math.PI * R) / count;
   const a = (50 * Math.PI) / 180;
@@ -52,7 +52,7 @@ export const CurlRing: React.FC<{
   const spin1 = ease.out(clamp((t - 40) / 20)) * (Math.PI / 2);
   const imp = implode ? ease.in(clamp((t - 60) / 13)) : 0;
   const spin2 = imp * Math.PI;
-  const rNow = mix(imp, R, 0.06 * H);
+  const rNow = mix(imp, R, 0.06 * Math.min(W, H));
   const scale = mix(imp, 1, 0.6);
   const pos: Array<[number, number]> = [];
   for (let i = 0; i < count; i++) {

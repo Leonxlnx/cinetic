@@ -52,7 +52,7 @@ const HubPillInner: React.FC<{
   const x = xIn ?? W / 2;
   const y = yIn ?? H / 2;
   const frame = start + (useUiFrame() - start) * speed;
-  const size = sizeIn ?? H * 0.048;
+  const size = sizeIn ?? Math.min(W, H) * 0.048;
   const style: React.CSSProperties = { fontFamily: L.font, fontSize: size, fontWeight: 520, letterSpacing: '-0.01em' };
   // the frame each word joins
   const T: number[] = [];
@@ -70,8 +70,8 @@ const HubPillInner: React.FC<{
   const born = springAt(frame, 30, start, springs.pop);
   const fly = flyAt !== undefined ? at(frame, start + flyAt, 12, ease.in) : 0;
   const stroke = Math.max(2, size * 0.075);
-  const tileS = H * 0.11;
-  const dotS = H * 0.016;
+  const tileS = Math.min(W, H) * 0.11;
+  const dotS = Math.min(W, H) * 0.016;
   return (
     <>
       {/* tiles */}

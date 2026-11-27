@@ -33,7 +33,7 @@ const ChipRollInner: React.FC<{
   const x = xIn ?? W / 2;
   const y = yIn ?? H / 2;
   const frame = start + (useUiFrame() - start) * speed;
-  const size = sizeIn ?? H * 0.06;
+  const size = sizeIn ?? Math.min(W, H) * 0.06;
   const style: React.CSSProperties = { fontFamily: L.font, fontSize: size, fontWeight: 500, letterSpacing: '-0.02em' };
   const chipStyle: React.CSSProperties = { ...style, fontSize: size * 0.82 };
   const bw = useTextWidth(before + ' ', style);

@@ -8,7 +8,7 @@ export { BarStack } from './BarStack';
 export { BlurSweep } from './BlurSweep';
 export { HostType } from './HostType';
 export type { Host } from './HostType';
-export { WeightLine } from './WeightLine';
+export { WeightLine, useWeightLineBlock } from './WeightLine';
 export type { LineBlock } from './WeightLine';
 export { RiseLine } from './RiseLine';
 export { MarkPhrase } from './MarkPhrase';

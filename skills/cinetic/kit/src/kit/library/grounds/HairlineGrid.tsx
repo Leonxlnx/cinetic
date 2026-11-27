@@ -65,7 +65,7 @@ export const HairlineGrid: React.FC<{
 }> = ({ at = 0, dur = 16, ground = '#FFFFFF', color = '#E5E5E5', cell = 0.13, dash = 0, marks = 'diamond', markColor, drift = [0, 0], blocks = 0, accent = '#2A4BF2', step = 6, clear = [2, 1], seed = 1 }) => {
   const f = useCurrentFrame();
   const { width: W, height: H, fps } = useVideoConfig();
-  const u = unit(H);
+  const u = unit(Math.min(W, H));
   const c = cell * H;
   const ox = (drift[0] * c * f) / fps;
   const oy = (drift[1] * c * f) / fps;

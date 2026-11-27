@@ -29,9 +29,9 @@ export const StickyType: React.FC<{
   /** The connector's bend, as a share of its length (0 = straight). */
   bow?: number;
 }> = ({ L, text, at: start, x, y, to, color, ink, line, size: sizeIn, bow = 0 }) => {
-  const { height: H } = useVideoConfig();
+  const { width: W, height: H } = useVideoConfig();
   const frame = useUiFrame();
-  const size = sizeIn ?? H * 0.03;
+  const size = sizeIn ?? Math.min(W, H) * 0.03;
   const style: React.CSSProperties = { fontFamily: L.font, fontSize: size, fontWeight: 560, letterSpacing: '-0.01em' };
   const shownAt = (f: number) => clamp(Math.floor((f - (start + 3) + 1) * 1.3), 0, text.length);
   const n = shownAt(frame);

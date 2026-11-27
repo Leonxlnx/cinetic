@@ -28,7 +28,7 @@ export const Interleave: React.FC<
   }
 > = ({ from, to, at: start, speed = 1, pattern = ['alt', 'to', 'alt', 'to', 'alt', 'to', 'alt'], alt, cell = 18 }) => {
   const frame = useCurrentFrame();
-  const { height: H } = useVideoConfig();
+  const { width: W, height: H } = useVideoConfig();
   const uid = useUid('il');
   const hold = sp(1, speed);
   if (frame < start) return <AbsoluteFill>{from}</AbsoluteFill>;
@@ -38,7 +38,7 @@ export const Interleave: React.FC<
   if (s === 'from') return <AbsoluteFill>{from}</AbsoluteFill>;
   if (s === 'to') return <AbsoluteFill>{to}</AbsoluteFill>;
   if (alt) return <AbsoluteFill>{alt}</AbsoluteFill>;
-  const step = Math.max(4, Math.round((cell * H) / 1080));
+  const step = Math.max(4, Math.round((cell * Math.min(W, H)) / 1080));
   const fid = `${uid}f${frame}`;
   return (
     <AbsoluteFill>

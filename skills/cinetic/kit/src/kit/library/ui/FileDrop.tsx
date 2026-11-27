@@ -52,7 +52,7 @@ const FileDropInner: React.FC<{
 }> = ({ L, at: start, file, greeting = 'What are we making today?', landAt = 15, dropAt = 26, w: wIn, size: sizeIn, mark, speed = 1 }) => {
   const { width: W, height: H } = useVideoConfig();
   const frame = start + (useUiFrame() - start) * speed;
-  const s = sizeIn ?? H * 0.024;
+  const s = sizeIn ?? Math.min(W, H) * 0.024;
   const w = wIn ?? Math.min(W * 0.62, s * 34);
   const grow = at(frame, start + dropAt + 8, 4, ease.out);
   const bh0 = s * 4.2;
@@ -61,7 +61,7 @@ const FileDropInner: React.FC<{
   const bBottom = H * 0.55 + bh0 / 2;
   const by = bBottom - bh;
   const slot = { x: bx + s * 1.3, y: by + s * 0.9 };
-  const fh = H * 0.08;
+  const fh = Math.min(W, H) * 0.08;
   const fw = fh * 0.78;
   // the pointer's path: in from the lower right, an arc, a settle over the slot, away after the drop
   const keys: PointerKey[] = [

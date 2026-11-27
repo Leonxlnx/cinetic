@@ -22,7 +22,7 @@ export const PixelMark: React.FC<{
   color?: string;
   /** Hairline guide colour (false: none). */
   guides?: string | false;
-  /** A cell's side in px (default 5.5 % of H). */
+  /** A cell's side in px (default 5.5 % of the short side). */
   cell?: number;
   /** Frame (from `at`) the mark steps down in size; none by default. */
   shrinkAt?: number;
@@ -34,7 +34,7 @@ export const PixelMark: React.FC<{
   const { width: W, height: H } = useVideoConfig();
   if (f < at) return null;
   const t = f - at;
-  const c = cell ?? H * 0.055;
+  const c = cell ?? Math.min(W, H) * 0.055;
   const cols = Math.max(...cells.map((q) => q[0])) + 1;
   const rows = Math.max(...cells.map((q) => q[1])) + 1;
   const steps = [2, 4, 7, 9, 11, 12];

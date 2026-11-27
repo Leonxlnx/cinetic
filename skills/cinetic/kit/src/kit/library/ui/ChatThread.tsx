@@ -95,7 +95,8 @@ const ChatBubble: React.FC<{
  * soft front (a ghost in the accent, then the ink). A sent message is typed into the composer at a believable pace, the
  * send disc lights and presses, and the text travels out of the field into its bubble at the right, its fill rising to
  * the accent on the way; "Read" and the time settle under the last. The thread rises to make room (10 f ease-out).
- * Optionally starts as a macro on the first message and pulls back (`macro` = the start zoom, 22 f, log-space).
+ * Optionally starts as a macro on the first message and pulls back (`macro` = the start zoom, 22 f, log-space), or
+ * pushes in on the composer while a message is typed (`push`: from 1 to `to` over `dur` frames, ease in-out, log-space).
  */
 const ChatThreadInner: React.FC<{
   L: Look;
@@ -112,11 +113,13 @@ const ChatThreadInner: React.FC<{
   h?: number;
   size?: number;
   macro?: number;
+  /** A push in on the composer: from `at` (relative to the piece's `at`) the view scales from 1 to `to` over `dur` (24) frames; `back` (relative) eases it back to 1 over the same length. */
+  push?: { at: number; to: number; dur?: number; back?: number };
   cps?: number;
   /** The messaging app's real logo, shown small beside the header's icons. */
   mark?: React.ReactNode;
   speed?: number;
-}> = ({ L, msgs, at: start, person = 'Rosa Diaz', personColor = '#C8692E', status = 'Active now', day = 'Today 9:41', read = 'Read 9:42', x: xIn, y: yIn, w = 1180, h = 940, size = 36, macro = 1, cps = 15, mark, speed = 1 }) => {
+}> = ({ L, msgs, at: start, person = 'Rosa Diaz', personColor = '#C8692E', status = 'Active now', day = 'Today 9:41', read = 'Read 9:42', x: xIn, y: yIn, w = 1180, h = 940, size = 36, macro = 1, push, cps = 15, mark, speed = 1 }) => {
   // the frame's centre by default, in a composition of any size
   const { width: frameW, height: frameH } = useVideoConfig();
   const x = xIn ?? frameW / 2;
@@ -171,6 +174,8 @@ const ChatThreadInner: React.FC<{
   const firstTop = bottom - bh - s * 0.2;
   const zoom = macro !== 1 ? logScale(macro, 1, at(frame, start + firstNew.f + 10, 22, bez(0.5, 0, 0.1, 1))) : 1;
   void firstTop;
+  const pd = push ? Math.max(1, push.dur ?? 24) : 1;
+  const pz = push ? logScale(1, push.to, at(frame, start + push.at, pd, ease.inOut) * (1 - (push.back !== undefined ? at(frame, start + push.back, pd, ease.inOut) : 0))) : 1;
   const ct = compText as { text: string; times: number[]; end: number; sendAt: number } | null;
   const compShown = ct ? ct.times.filter((k) => frame >= k).length : 0;
   const sendPress = ct ? pressOf(frame, [ct.sendAt - 3]) : 0;
@@ -181,47 +186,49 @@ const ChatThreadInner: React.FC<{
   );
   return (
     <Paced start={start} speed={speed}>
-      <div style={{ position: 'absolute', inset: 0, transformOrigin: `${left + pad + s * 6}px ${bottom - bh / 2}px`, transform: `scale(${zoom})` }}>
-        <div style={{ ...surfaceStyle(L, 5, s * 1.1), position: 'absolute', left, top, width: w, height: h, overflow: 'hidden', opacity: clamp(enter * 2), fontFamily: L.font }}>
-          {/* header */}
-          <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: headH, borderBottom: `1px solid ${L.line}`, display: 'flex', alignItems: 'center', gap: s * 0.6, padding: `0 ${pad}px`, boxSizing: 'border-box' }}>
-            <Icon name="ChevronLeft" size={s * 1.1} color={L.accent} stroke={2.4} />
-            <div style={{ position: 'relative' }}>
-              <Face name={person} color={personColor} size={s * 1.9} />
-              <Presence L={L} color="#2FA86B" size={s * 1.9} />
+      <div style={{ position: 'absolute', inset: 0, transformOrigin: `${x}px ${fieldY}px`, transform: pz !== 1 ? `scale(${pz})` : undefined }}>
+        <div style={{ position: 'absolute', inset: 0, transformOrigin: `${left + pad + s * 6}px ${bottom - bh / 2}px`, transform: `scale(${zoom})` }}>
+          <div style={{ ...surfaceStyle(L, 5, s * 1.1), position: 'absolute', left, top, width: w, height: h, overflow: 'hidden', opacity: clamp(enter * 2), fontFamily: L.font }}>
+            {/* header */}
+            <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: headH, borderBottom: `1px solid ${L.line}`, display: 'flex', alignItems: 'center', gap: s * 0.6, padding: `0 ${pad}px`, boxSizing: 'border-box' }}>
+              <Icon name="ChevronLeft" size={s * 1.1} color={L.accent} stroke={2.4} />
+              <div style={{ position: 'relative' }}>
+                <Face name={person} color={personColor} size={s * 1.9} />
+                <Presence L={L} color="#2FA86B" size={s * 1.9} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: s * 0.95, fontWeight: 620, color: L.ink, whiteSpace: 'nowrap' }}>{person}</div>
+                <div style={{ fontSize: s * 0.74, color: L.muted, whiteSpace: 'nowrap', marginTop: s * 0.05 }}>{status}</div>
+              </div>
+              {iconBtn('Phone')}
+              {iconBtn('Video')}
+              {mark ? <div style={{ marginLeft: s * 0.3, display: 'flex' }}>{mark}</div> : iconBtn('Info')}
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: s * 0.95, fontWeight: 620, color: L.ink, whiteSpace: 'nowrap' }}>{person}</div>
-              <div style={{ fontSize: s * 0.74, color: L.muted, whiteSpace: 'nowrap', marginTop: s * 0.05 }}>{status}</div>
-            </div>
-            {iconBtn('Phone')}
-            {iconBtn('Video')}
-            {mark ? <div style={{ marginLeft: s * 0.3, display: 'flex' }}>{mark}</div> : iconBtn('Info')}
-          </div>
-          {/* composer */}
-          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: compH, borderTop: `1px solid ${L.line}`, display: 'flex', alignItems: 'center', gap: s * 0.5, padding: `0 ${pad}px`, boxSizing: 'border-box' }}>
-            <div style={{ width: s * 1.7, height: s * 1.7, borderRadius: s, background: L.fill, display: 'flex', alignItems: 'center', justifyContent: 'center', color: L.muted, flexShrink: 0 }}>
-              <Icon name="Plus" size={s * 0.85} stroke={2.2} />
-            </div>
-            <div style={{ flex: 1, height: s * 2.1, borderRadius: s * 1.05, border: `1.5px solid ${L.line}`, display: 'flex', alignItems: 'center', padding: `0 ${s * 0.3}px 0 ${s * 0.8}px`, boxSizing: 'border-box', fontSize: s * 0.95, whiteSpace: 'nowrap', overflow: 'hidden' }}>
-              <span style={{ flex: 1 }}>
-                {ct && compShown > 0 ? <InkTyped text={ct.text} times={ct.times} color={L.ink} born={L.accent} /> : <span style={{ color: L.faint }}>Message</span>}
-                {ct && <Caret color={L.accent} height={s * 1.1} typing={frame < ct.end + 2} since={ct.end} />}
-              </span>
-              <div style={{ width: s * 1.6, height: s * 1.6, borderRadius: s, background: ct && compShown > 0 ? mixColor(L.accent, '#FFFFFF', sendPress * 0.15) : 'transparent', color: ct && compShown > 0 ? L.accentInk : L.faint, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `scale(${1 - sendPress * 0.1})`, flexShrink: 0 }}>
-                <Icon name="ArrowUp" size={s * 0.85} stroke={2.4} />
+            {/* composer */}
+            <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: compH, borderTop: `1px solid ${L.line}`, display: 'flex', alignItems: 'center', gap: s * 0.5, padding: `0 ${pad}px`, boxSizing: 'border-box' }}>
+              <div style={{ width: s * 1.7, height: s * 1.7, borderRadius: s, background: L.fill, display: 'flex', alignItems: 'center', justifyContent: 'center', color: L.muted, flexShrink: 0 }}>
+                <Icon name="Plus" size={s * 0.85} stroke={2.2} />
+              </div>
+              <div style={{ flex: 1, height: s * 2.1, borderRadius: s * 1.05, border: `1.5px solid ${L.line}`, display: 'flex', alignItems: 'center', padding: `0 ${s * 0.3}px 0 ${s * 0.8}px`, boxSizing: 'border-box', fontSize: s * 0.95, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                <span style={{ flex: 1 }}>
+                  {ct && compShown > 0 ? <InkTyped text={ct.text} times={ct.times} color={L.ink} born={L.accent} /> : <span style={{ color: L.faint }}>Message</span>}
+                  {ct && <Caret color={L.accent} height={s * 1.1} typing={frame < ct.end + 2} since={ct.end} />}
+                </span>
+                <div style={{ width: s * 1.6, height: s * 1.6, borderRadius: s, background: ct && compShown > 0 ? mixColor(L.accent, '#FFFFFF', sendPress * 0.15) : 'transparent', color: ct && compShown > 0 ? L.accentInk : L.faint, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `scale(${1 - sendPress * 0.1})`, flexShrink: 0 }}>
+                  <Icon name="ArrowUp" size={s * 0.85} stroke={2.4} />
+                </div>
               </div>
             </div>
-          </div>
-          <div style={{ position: 'absolute', left: 0, right: 0, top: headH, bottom: 0, overflow: 'hidden', WebkitMaskImage: `linear-gradient(to bottom, transparent 0, #000 ${s * 1.4}px)` }}>
-            <div style={{ position: 'absolute', left: -left, top: -top - headH, width: frameW, height: frameH }}>
-              <div style={{ position: 'absolute', left: left + pad, right: frameW - left - w + pad, top: dividerY, height: s * 1.2, display: 'flex', alignItems: 'center', gap: s * 0.6, fontSize: s * 0.74, color: L.faint, whiteSpace: 'nowrap' }}>
-                <div style={{ flex: 1, height: 1, background: L.line }} />
-                {day}
-                <div style={{ flex: 1, height: 1, background: L.line }} />
+            <div style={{ position: 'absolute', left: 0, right: 0, top: headH, bottom: 0, overflow: 'hidden', WebkitMaskImage: `linear-gradient(to bottom, transparent 0, #000 ${s * 1.4}px)` }}>
+              <div style={{ position: 'absolute', left: -left, top: -top - headH, width: frameW, height: frameH }}>
+                <div style={{ position: 'absolute', left: left + pad, right: frameW - left - w + pad, top: dividerY, height: s * 1.2, display: 'flex', alignItems: 'center', gap: s * 0.6, fontSize: s * 0.74, color: L.faint, whiteSpace: 'nowrap' }}>
+                  <div style={{ flex: 1, height: 1, background: L.line }} />
+                  {day}
+                  <div style={{ flex: 1, height: 1, background: L.line }} />
+                </div>
+                {nodes}
+                {readP > 0 && <div style={{ position: 'absolute', left, width: w - pad, top: bottom - readH + s * 0.25, textAlign: 'right', fontSize: s * 0.74, color: L.faint, opacity: readP, whiteSpace: 'nowrap' }}>{read}</div>}
               </div>
-              {nodes}
-              {readP > 0 && <div style={{ position: 'absolute', left, width: w - pad, top: bottom - readH + s * 0.25, textAlign: 'right', fontSize: s * 0.74, color: L.faint, opacity: readP, whiteSpace: 'nowrap' }}>{read}</div>}
             </div>
           </div>
         </div>

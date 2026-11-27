@@ -30,13 +30,13 @@ const HandleGatherInner: React.FC<{
   const x = xIn ?? W / 2;
   const y = yIn ?? H / 2;
   const frame = start + (useUiFrame() - start) * speed;
-  const size = sizeIn ?? H * 0.05;
+  const size = sizeIn ?? Math.min(W, H) * 0.05;
   const c = color ?? L.accent;
   const style: React.CSSProperties = { fontFamily: L.font, fontSize: size, fontWeight: 540, letterSpacing: '-0.015em' };
   const tw = useTextWidth(text, style);
   const bw = tw + size * 0.7;
   const bh = size * 1.5;
-  const hs = Math.max(7, H * 0.009);
+  const hs = Math.max(7, Math.min(W, H) * 0.009);
   const corners = [
     [x - bw / 2, y - bh / 2],
     [x + bw / 2, y - bh / 2],

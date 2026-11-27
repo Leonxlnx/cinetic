@@ -42,7 +42,9 @@
 //        the piece's frames from its reel as one still (16 frames, 4x4)
 //
 // GL: set CINETIC_GL=swangle to render on the CPU (software GL) when the GPU is unstable; otherwise Remotion's default.
-// Concurrency: CINETIC_CONCURRENCY (default 2). CINETIC_BROWSER: a Chrome Headless Shell shared by every film project.
+// Concurrency: CINETIC_CONCURRENCY (default 2; set 1 when the machine offers one thread: "concurrency 2 > 1 core").
+// CINETIC_BROWSER: a Chrome Headless Shell shared by every film project. CINETIC_TIMEOUT: milliseconds a frame may wait
+// for its assets (Remotion's --timeout, default 30000); raise it when footage frames time out under load.
 // Nothing here uploads anything.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -63,6 +65,8 @@ const gl = process.env.CINETIC_GL ? [`--gl=${process.env.CINETIC_GL}`] : [];
 const conc = [`--concurrency=${process.env.CINETIC_CONCURRENCY || 2}`];
 // CINETIC_BROWSER: a Chrome Headless Shell to share between film projects (otherwise Remotion downloads ~300 MB into each)
 const browser = process.env.CINETIC_BROWSER ? [`--browser-executable=${process.env.CINETIC_BROWSER}`] : [];
+// CINETIC_TIMEOUT: Remotion's per-frame wait for assets (a footage frame under a loaded CPU), in ms
+const timeout = /^\d+$/.test(process.env.CINETIC_TIMEOUT ?? '') ? [`--timeout=${process.env.CINETIC_TIMEOUT}`] : [];
 
 // resolved on first use: check, strip, join and mux need only ffmpeg, not Remotion
 let cliPath;
@@ -81,7 +85,7 @@ const run = (bin, a) => {
   const r = spawnSync(bin, a, { stdio: 'inherit', shell: false });
   if (r.status !== 0) process.exit(r.status ?? 1);
 };
-const remotion = (a) => run(process.execPath, [cli(), ...a, ...browser]);
+const remotion = (a) => run(process.execPath, [cli(), ...a, ...browser, ...timeout]);
 const ensureDir = (p) => fs.mkdirSync(path.dirname(path.resolve(p)), { recursive: true });
 
 /** Start time (s) of the first video stream: an encoder delay or edit list shifts it from 0. */

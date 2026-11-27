@@ -31,7 +31,7 @@ export const PillBurst: React.FC<{
   surface?: string;
   ink?: string;
   ground?: string;
-  /** Pill text size in px (default 3 % of H). */
+  /** Pill text size in px (default 3 % of the short side). */
   size?: number;
   seed?: number;
   x?: number;
@@ -43,7 +43,7 @@ export const PillBurst: React.FC<{
   const t = f - at;
   const cx = x ?? W / 2;
   const cy = y ?? H / 2;
-  const ts = size ?? H * 0.03;
+  const ts = size ?? Math.min(W, H) * 0.03;
   const ph = ts * 2.1;
   // the heap: each pill lands in its own lane across the bottom (in the order of its place left to right), alternate
   // lanes a little higher, so pills that started close never land on top of each other
@@ -78,7 +78,7 @@ export const PillBurst: React.FC<{
               R = rot + turn * 0.3 * (q / land);
             } else {
               const after = q - land;
-              const bounce = after < 3 ? Math.sin((after / 3) * Math.PI) * H * 0.025 : 0;
+              const bounce = after < 3 ? Math.sin((after / 3) * Math.PI) * Math.min(W, H) * 0.025 : 0;
               Y = floor - bounce;
               R = mix(ease.out(clamp(after / 4)), rot + turn * 0.3, rot + turn);
             }

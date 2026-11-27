@@ -1,7 +1,7 @@
 // RingBurst (fx, emphasis): on a press, a ring of halftone dots grows out of the button and thins as it goes: the dots are
 // largest on the ring's crest and shrink to nothing either side of it; optionally the scene behind dims a little for the
 // moment of the press and lifts again. No flash, no white frame.
-// Numbers: 16 f on an expo-out from the button's radius to 30-40 % of the frame height; the band 18 % of the height wide at
+// Numbers: 16 f on an expo-out from the button's radius to 30-40 % of the frame's short side; the band 18 % of the short side wide at
 // the start, 6 % at the end; dots on a 1.5 % pitch, up to 0.42 of the pitch on the crest; the dim 0-35 % over 6 f, back
 // over 10 f.
 // Caution: once, on the press that matters; the button itself answers too (it dips), the ring only spreads it.
@@ -22,7 +22,7 @@ export const RingBurst: React.FC<{
   from?: number;
   to?: number;
   color?: string;
-  /** Dot pitch in px (default 1.5 % of the frame height). */
+  /** Dot pitch in px (default 1.5 % of the frame's short side). */
   pitch?: number;
   dim?: number;
 }> = ({ at, dur = 16, x, y, from = 40, to, color = '#F07A2E', pitch, dim = 0 }) => {
@@ -30,13 +30,13 @@ export const RingBurst: React.FC<{
   const { width: W, height: H } = useVideoConfig();
   const cx = x ?? W / 2;
   const cy = y ?? H / 2;
-  const R1 = to ?? H * 0.36;
-  const pz = pitch ?? Math.max(6, Math.round(H * 0.015));
+  const R1 = to ?? Math.min(W, H) * 0.36;
+  const pz = pitch ?? Math.max(6, Math.round(Math.min(W, H) * 0.015));
   const t = clamp((frame - at) / dur);
   const live = frame >= at && t < 1;
   const p = ease.out(t);
   const r = from + (R1 - from) * p;
-  const band = H * (0.18 - 0.12 * p);
+  const band = Math.min(W, H) * (0.18 - 0.12 * p);
   const fade = 1 - ease.in(t);
   const dimA = dim * (frame < at ? 0 : frame < at + 6 ? (frame - at + 1) / 6 : 1 - clamp((frame - at - 6) / 10));
   const dots: React.ReactNode[] = [];

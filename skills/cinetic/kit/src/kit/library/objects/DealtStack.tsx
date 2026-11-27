@@ -62,7 +62,7 @@ export const DealtStack: React.FC<{
   // the stack's footprint: the cards' spread plus the turn, for the words to hug
   const spread = (n - 1) * step.x;
   const halfW = ((cw + spread) / 2) * grow + cw * 0.06;
-  const ts = size ?? H * 0.06;
+  const ts = size ?? Math.min(W, H) * 0.06;
   const word: React.CSSProperties = { position: 'absolute', top: cy, transform: 'translateY(-50%)', fontFamily: fonts.inter, fontSize: ts, fontWeight: 560, color: ink, letterSpacing: '-0.03em', whiteSpace: 'nowrap' };
   const cards: React.ReactNode[] = [];
   for (let k = 0; k < n; k++) {

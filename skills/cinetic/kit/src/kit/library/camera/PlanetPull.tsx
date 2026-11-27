@@ -80,7 +80,7 @@ export const PlanetPull: React.FC<{
     const lon = k * step;
     poly(Array.from({ length: n + 1 }, (_, i) => pt(lon, lat0 - span * 1.6 + (i / n) * (span * 1.6 + 6))));
   }
-  const rimW = Math.max(2, H * 0.006);
+  const rimW = Math.max(2, Math.min(W, H) * 0.006);
   return (
     <AbsoluteFill style={{ background: sky, overflow: 'hidden' }}>
       {children && <AbsoluteFill>{children}</AbsoluteFill>}
@@ -92,7 +92,7 @@ export const PlanetPull: React.FC<{
         </defs>
         <circle cx={cx} cy={cy} r={R} fill={body} />
         {lines.map((d, i) => (
-          <path key={i} d={d} fill="none" stroke={line} strokeWidth={Math.max(1, H / 900)} />
+          <path key={i} d={d} fill="none" stroke={line} strokeWidth={Math.max(1, Math.min(W, H) / 900)} />
         ))}
         <circle cx={cx} cy={cy} r={R - rimW} fill="none" stroke={rim} strokeWidth={rimW * 3} filter="url(#planetRimGlow)" opacity={clamp(p * 3)} />
         <circle cx={cx} cy={cy} r={R - rimW / 2} fill="none" stroke={rim} strokeWidth={rimW} opacity={clamp(p * 3)} />

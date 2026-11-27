@@ -2,7 +2,7 @@
 // past the corners; inside it the next scene (a wordmark on its ground) is already there and settles from soft and large
 // to sharp; outside it the old scene stays until the ring has passed.
 // Numbers: 8 f in all; the ring's outer radius 6, 25, 55, 75, 95, 112, 130, 150 % of H, its inner edge 0, 8, 33, 55, 75, 92,
-// 110, 130 % (so it is thick early and thins); pixels 2.8 % of H, 85 % opaque, seeded tones; the ring soft (6 px blur) on
+// 110, 130 % (so it is thick early and thins); pixels 2.8 % of the short side, 85 % opaque, seeded tones; the ring soft (6 px blur) on
 // its first 3 f; the scene inside from 120 % and 8 px of blur to 100 % and sharp by 5 f.
 // Caution: the pixel tones should be the next scene's own (its ground, its accent, a near black), never new colours.
 // Catalogue: ../catalog/object.ts; props and recipe: references/library-objects.md.
@@ -20,7 +20,7 @@ export const PixelIris: React.FC<{
   at: number;
   /** The pixel tones. */
   colors?: string[];
-  /** Pixel side as a share of H. */
+  /** Pixel side as a share of the short side. */
   pixel?: number;
   seed?: number;
   x?: number;
@@ -37,9 +37,9 @@ export const PixelIris: React.FC<{
   const k = far / (Math.hypot(W / 2, H / 2) || 1);
   const ro = keys(t, OUT, ease.linear) * H * k;
   const ri = keys(t, IN, ease.linear) * H * k;
-  if (ri >= far + pixel * H * 2) return <AbsoluteFill>{to}</AbsoluteFill>;
+  if (ri >= far + pixel * Math.min(W, H) * 2) return <AbsoluteFill>{to}</AbsoluteFill>;
   const p = ease.out(clamp(t / 5));
-  const c = pixel * H;
+  const c = pixel * Math.min(W, H);
   const rects: React.ReactNode[] = [];
   const i0 = Math.floor((cx - ro) / c);
   const i1 = Math.ceil((cx + ro) / c);

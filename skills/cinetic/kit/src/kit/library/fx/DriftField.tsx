@@ -1,7 +1,7 @@
 // DriftField (fx, build, idle): small particles pop on one by one at seeded spots, glow and drift slowly, gathering into a
 // loose cloud on a dark ground; or (`shape="dash"`) short hairline dashes that blink on, live a few frames and slide,
 // like construction lines or data passing.
-// Numbers: a new dot every 2-3 f; dots 0.45-1.2 % of the frame height, popping from nothing past 1.15x to 1x in 4 f;
+// Numbers: a new dot every 2-3 f; dots 0.45-1.2 % of the frame's short side, popping from nothing past 1.15x to 1x in 4 f;
 // drift 0.2-0.6 px a frame; dashes 2-4 % of the width, 1 px, living 4-8 f.
 // Caution: a texture for a quiet beat (a night ground, a pause before the line); keep it out of the type's box (`avoid`)
 // and never use it as confetti on a hit.
@@ -57,7 +57,7 @@ export const DriftField: React.FC<{
           const len = W * (0.02 + 0.02 * p.k);
           return <div key={i} style={{ position: 'absolute', left: p.x * W + dx * 4, top: p.y * H, width: len, height: Math.max(1, H / 1080), background: color, opacity: 0.8 }} />;
         }
-        const d = (H * p.s) / 100 * pop;
+        const d = (Math.min(W, H) * p.s) / 100 * pop;
         return (
           <div
             key={i}

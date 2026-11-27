@@ -2,7 +2,7 @@
 // its head, a zigzag growth line, a tick; each draws in a few frames, holds, and retracts from its tail in order. Two
 // looks: `light` (a glowing stroke, a white core in a coloured halo, for dark grounds) and `marker` (a flat dry stroke).
 // Numbers: a loop 4-6 f (1.1 turns, its radius wandering 8 %), an arrow 6-8 f with the head on its last 2 f, a zigzag
-// 10-14 f, ticks 2-4 f; drawn on twos; strokes 0.5 % of the frame height; retract in 5-6 f.
+// 10-14 f, ticks 2-4 f; drawn on twos; strokes 0.5 % of the frame's short side; retract in 5-6 f.
 // Caution: annotate one thing at a time and let the type carry the meaning; three or more marks at once is a doodle.
 // Catalogue: ../catalog/fx.ts; props and recipe: references/library-fx.md.
 import React from 'react';
@@ -79,7 +79,7 @@ export const PenMarks: React.FC<{
   marks: PenMark[];
   look?: 'light' | 'marker';
   color?: string;
-  /** Stroke width in px (default 0.5 % of the frame height). */
+  /** Stroke width in px (default 0.5 % of the frame's short side). */
   width?: number;
   n?: number;
   seed?: number;
@@ -87,7 +87,7 @@ export const PenMarks: React.FC<{
   const frame0 = useCurrentFrame();
   const frame = n > 1 ? onTwos(frame0, n) : frame0;
   const { width: W, height: H } = useVideoConfig();
-  const sw = width ?? Math.max(2, H * 0.005);
+  const sw = width ?? Math.max(2, Math.min(W, H) * 0.005);
   const core = look === 'light' ? '#FFFFFF' : color;
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>

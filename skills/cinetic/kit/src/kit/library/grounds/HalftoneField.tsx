@@ -1,7 +1,7 @@
 // HalftoneField (ground, idle / emphasis): a light field of round halftone dots whose colours run across the frame
 // from one ink to the next, broken by clusters of black dots; on each swap (a cut) the dots take the next palette and
 // the clusters change shape.
-// Numbers: ground #E6E6E6, pitch 2.5 % of the height (27 px at 1080), dots 0.55-0.92 of the pitch by tone, black
+// Numbers: ground #E6E6E6, pitch 2.5 % of the short side (27 px at 1080), dots 0.55-0.92 of the pitch by tone, black
 // clusters on 15-40 % of the field; each palette holds 12 f or more; on a swap the clusters change on the frame and the ink
 // eases to the next one over `blend` frames (6), so the field never strobes and never jumps in brightness.
 // Caution: one flat ink a palette by default, the inks of one lightness; the type sits on a plain backing box, never on
@@ -42,13 +42,13 @@ export const HalftoneField: React.FC<{
   const draw = (g: CanvasRenderingContext2D) => {
     g.fillStyle = ground;
     g.fillRect(0, 0, W, H);
-    const p = pitch * H;
+    const p = pitch * Math.min(W, H);
     const s = seed + k * 17;
     const drift = (f - (swaps.filter((x) => f >= x).pop() ?? 0)) * 0.6;
     const blobs = Array.from({ length: 5 }, (_, i) => ({
       x: W * rand(s + i * 3) + drift,
       y: H * rand(s + i * 5),
-      r: H * (0.1 + 0.12 * rand(s + i * 7)),
+      r: Math.min(W, H) * (0.1 + 0.12 * rand(s + i * 7)),
     }));
     const cols = Math.ceil(W / p) + 1;
     const rows = Math.ceil(H / p) + 1;

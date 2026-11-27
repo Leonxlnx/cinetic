@@ -1,7 +1,7 @@
 // StepScan (fx, loop): a small grid of square cells with one strong row stepping down it by cuts: the row it left drops to
 // a mid tint, the rest stay pale; after the last row the whole grid goes pale for a beat and the scan restarts at the top.
 // A machine reading, line by line.
-// Numbers: a 4 x 4 grid, cells 4.5 % of the frame height, gaps 0.75 of a cell; holds 6, 4, 1, 4 f a row and 1 f all pale
+// Numbers: a 4 x 4 grid, cells 4.5 % of the frame's short side, gaps 0.75 of a cell; holds 6, 4, 1, 4 f a row and 1 f all pale
 // (uneven, so it reads as work, not a metronome); tints 100 % strong, 45 % the row just left, 18 % pale; on each restart
 // the other rows fall from 45 % to pale over 3 f.
 // Caution: a small, technical loop beside a line that says what is being read; never full screen, never more than one.
@@ -19,7 +19,7 @@ export const StepScan: React.FC<{
   until?: number;
   cols?: number;
   rows?: number;
-  /** Cell size in px (default 4.5 % of the frame height). */
+  /** Cell size in px (default 4.5 % of the frame's short side). */
   cell?: number;
   /** Gap as a share of a cell. */
   gap?: number;
@@ -31,8 +31,8 @@ export const StepScan: React.FC<{
   style?: React.CSSProperties;
 }> = ({ at, until, cols = 4, rows = 4, cell, gap = 0.75, color = '#E8492B', holds = [6, 4, 1, 4, 1], axis = 'row', radius = 0.08, style }) => {
   const frame = useCurrentFrame();
-  const { height: H } = useVideoConfig();
-  const c = cell ?? Math.round(H * 0.045);
+  const { width: W, height: H } = useVideoConfig();
+  const c = cell ?? Math.round(Math.min(W, H) * 0.045);
   const g = c * gap;
   const lines = axis === 'row' ? rows : cols;
   const seq = Array.from({ length: lines + 1 }, (_, i) => holds[i % holds.length]);

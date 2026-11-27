@@ -3,7 +3,8 @@
 // Numbers: letters at 1, 2, 3, 5, 6, 8 f after the slide starts (about 1.4 f a letter, uneven like a hand on keys),
 // each letter's share of the re-centring glides in 5 f on expo out; the gap between mark and name 0.32 of the text size;
 // `per={0}` puts the whole name on one frame and slides the lockup to centre in 10 f. The mark may build while it holds:
-// pass a function `(p) => node` and it receives 0..1 over `build` frames from `at`.
+// pass a function `(p) => node` and it receives 0..1 over `build` frames from `at`, already one step in on frame `at`
+// (never a bare p = 0 frame: the mark's tile and glyph should both draw from p, so nothing stands empty).
 // Caution: the letters keep the name's final spacing from their first frame (never wide letters that close up).
 // Catalogue: ../catalog/object.ts; props and recipe: references/library-objects.md.
 import React from 'react';
@@ -20,7 +21,7 @@ export const LockupType: React.FC<{
   at?: number;
   /** Frames the mark holds alone before the name starts (the slide starts here). */
   hold?: number;
-  /** Frames of the mark's own build (when `mark` is a function). */
+  /** Frames of the mark's own build (when `mark` is a function): p is 1/build on frame `at` and 1 on `at + build - 1`. */
   build?: number;
   /** Mean frames a letter (0: the whole name on one frame). */
   per?: number;
@@ -36,7 +37,7 @@ export const LockupType: React.FC<{
 }> = ({ name, mark, markW, at = 0, hold = 18, build = 12, per = 1.4, times, size, color = '#16233A', style, gap = 0.32, x, y }) => {
   const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
-  const ts = size ?? H * 0.07;
+  const ts = size ?? Math.min(W, H) * 0.07;
   const type: React.CSSProperties = { fontFamily: fonts.inter, fontSize: ts, fontWeight: 560, letterSpacing: '-0.025em', lineHeight: 1.1, color, whiteSpace: 'pre', ...style };
   const L = useTextLayout(name, type);
   if (f < at) return null;
@@ -59,7 +60,7 @@ export const LockupType: React.FC<{
     wSmooth += share * ease.out(clamp((t - ti + 1) / glide));
   }
   const left = cx - wSmooth / 2;
-  const markNode = typeof mark === 'function' ? mark(ease.out(clamp((f - at) / Math.max(1, build)))) : mark;
+  const markNode = typeof mark === 'function' ? mark(ease.out(clamp((f - at + 1) / Math.max(1, build)))) : mark;
   return (
     <AbsoluteFill>
       <div style={{ position: 'absolute', left, top: cy, width: markW, transform: 'translateY(-50%)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>{markNode}</div>

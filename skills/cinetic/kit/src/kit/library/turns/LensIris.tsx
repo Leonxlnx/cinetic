@@ -80,7 +80,7 @@ export const LensIris: React.FC<
       <AbsoluteFill style={{ clipPath: `path('${path}')` }}>{to}</AbsoluteFill>
       {rim && p < 1 && (
         <svg width={W} height={H} style={{ position: 'absolute', inset: 0, opacity: 1 - p * 0.8 }}>
-          <path d={path} fill="none" stroke={rim} strokeWidth={Math.max(2, (3 * H) / 1080)} style={{ filter: `drop-shadow(0 0 ${(10 * H) / 1080}px ${rim})` }} />
+          <path d={path} fill="none" stroke={rim} strokeWidth={Math.max(2, (3 * Math.min(W, H)) / 1080)} style={{ filter: `drop-shadow(0 0 ${(10 * Math.min(W, H)) / 1080}px ${rim})` }} />
         </svg>
       )}
     </AbsoluteFill>

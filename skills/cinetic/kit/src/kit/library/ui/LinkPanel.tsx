@@ -44,11 +44,11 @@ const LinkPanelInner: React.FC<{
 }> = ({ L, sources, totals, at: start, title = 'Tracked links', sub, mark, srcX = 0.15, panelX = 0.66, panelW = 0.46, size: sizeIn, speed = 1 }) => {
   const { width: W, height: H } = useVideoConfig();
   const frame = start + (useUiFrame() - start) * speed;
-  const s = sizeIn ?? H * 0.021;
+  const s = sizeIn ?? Math.min(W, H) * 0.021;
   const n = sources.length;
   const cardW = W * 0.15;
-  const cardH = H * 0.15;
-  const gapY = H * 0.035;
+  const cardH = Math.min(W, H) * 0.15;
+  const gapY = Math.min(W, H) * 0.035;
   const colH = n * cardH + (n - 1) * gapY;
   const col0 = H / 2 - colH / 2;
   const cy = (i: number) => col0 + i * (cardH + gapY) + cardH / 2;
@@ -68,8 +68,8 @@ const LinkPanelInner: React.FC<{
   const rowMidH = rowH - s * 0.3;
   const entryY = (i: number) => py0 + panelDy + rowTop(i) + rowMidH / 2;
   const endX = px0 + s * 0.6;
-  const r = H * 0.012;
-  const lw = Math.max(1.5, H * 0.0014);
+  const r = Math.min(W, H) * 0.012;
+  const lw = Math.max(1.5, Math.min(W, H) * 0.0014);
   // the path of source i: right to the trunk, along it to its row's height, right into the panel
   const pts = (i: number): Array<[number, number]> => [
     [sx + cardW / 2, cy(i)],

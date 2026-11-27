@@ -59,18 +59,20 @@ export const Pointer: React.FC<{
   start?: number;
   /** The common name for `start`. */
   at?: number;
-  /** Frame it leaves (accelerating down-right, 12 frames). */
+  /** Frame it starts to leave: it slides down-right on an ease-in and fades, gone after `exitDur` frames. */
   exitAt?: number;
+  /** Frames the exit takes (default 14): end it before the next scene arrives, or set `exitAt` that much earlier. */
+  exitDur?: number;
   color?: string;
   outline?: string;
   ring?: string | false;
   hand?: boolean;
   bow?: number;
-}> = ({ keys, clicks = [], size = 64, start: startIn, at: atIn, exitAt, color = '#111216', outline = '#FFFFFF', ring = '#8FB0FF', hand = false, bow = 0.14 }) => {
+}> = ({ keys, clicks = [], size = 64, start: startIn, at: atIn, exitAt, color = '#111216', outline = '#FFFFFF', ring = '#8FB0FF', hand = false, bow = 0.14, exitDur = 14 }) => {
   const start = startIn ?? atIn ?? keys[0].f;
   const frame = useUiFrame();
   if (frame < start) return null;
-  if (exitAt !== undefined && frame > exitAt + 14) return null;
+  if (exitAt !== undefined && frame > exitAt + exitDur) return null;
   const k = pointerAt(frame, keys, bow);
   const v = Math.hypot(k.vx, k.vy);
   const rest = clamp(1 - v / 3);
@@ -79,7 +81,7 @@ export const Pointer: React.FC<{
   const lean = clamp(k.vx / 40, -1, 1) * 7;
   const press = pressOf(frame, clicks);
   const appear = at(frame, start, 6, ease.out);
-  const out = exitAt !== undefined ? at(frame, exitAt, 14, ease.in) : 0;
+  const out = exitAt !== undefined ? at(frame, exitAt, Math.max(1, exitDur), ease.in) : 0;
   const lift = Math.min(1, v / 25);
   const s = size / 24;
   const rings = ring

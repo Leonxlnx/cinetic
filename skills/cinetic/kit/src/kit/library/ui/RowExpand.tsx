@@ -22,7 +22,38 @@ export type MailData = {
   unread?: boolean;
   tag?: { label: string; color: string };
   attach?: boolean;
+  /** A logo or icon drawn in the avatar's place (a company's mark, an app's tile), centred in its circle's box. */
+  mark?: React.ReactNode;
 };
+
+/**
+ * Where RowExpand draws things, in frame px, for a pointer or a turn of your own: `row` the closed row `index`, `card` the
+ * opened message, `reply` the centre of its first action button (the built-in pointer's last key). Pass the same `x`, `y`,
+ * `w`, `h`, `size` as the piece; boxes are centre x/y, w, h.
+ */
+export const rowExpandGeometry = (p: { index: number; x?: number; y?: number; w?: number; h?: number; size?: number }, frameW: number, frameH: number) => {
+  const s = p.size ?? 27;
+  const w = p.w ?? 1600;
+  const h = p.h ?? 920;
+  const left = (p.x ?? frameW / 2) - w / 2;
+  const top = (p.y ?? frameH / 2) - h / 2;
+  const bar = paneBar(s);
+  const sideW = s * 10.5;
+  const cw = w - sideW;
+  const ch = h - bar;
+  const lh = s * 3.6;
+  const rowH = s * 5.2;
+  const gap = s * 0.6;
+  const cx = left + sideW + cw / 2;
+  return {
+    row: { x: cx, y: top + bar + lh + p.index * rowH + rowH / 2, w: cw - gap * 2, h: rowH },
+    card: { x: cx, y: top + bar + ch / 2, w: cw - gap * 2, h: ch - gap * 2 },
+    reply: { x: left + sideW + gap + s * 1.5 + s * 3.4, y: top + bar + gap + (ch - gap * 2) - s * 1.2 - s * 1.2 },
+  };
+};
+
+const Avatar: React.FC<{ m: MailData; size: number }> = ({ m, size }) =>
+  m.mark ? <div style={{ width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{m.mark}</div> : <Face name={m.from} color={m.color} size={size} />;
 
 /**
  * An inbox row that opens in place into its message. An app pane (title bar, folder sidebar, a list header with a count
@@ -157,7 +188,7 @@ const RowExpandInner: React.FC<{
       {i > 0 && i !== index + 1 && <div style={{ position: 'absolute', left: textX, right: s * 1.1, top: 0, height: 1, background: L.line }} />}
       {m.unread && <div style={{ position: 'absolute', left: s * 0.62, top: rp + s * 0.48, width: s * 0.42, height: s * 0.42, borderRadius: s, background: L.accent }} />}
       <div style={{ position: 'absolute', left: padL, top: rp }}>
-        <Face name={m.from} color={m.color} size={s * 2.1} />
+        <Avatar m={m} size={s * 2.1} />
       </div>
       <div style={{ position: 'absolute', left: textX, right: s * 1.1, top: rp, display: 'flex', alignItems: 'center', height: line }}>
         <div style={{ flex: 1, fontSize: s, fontWeight: m.unread ? 650 : 560, color: L.ink, whiteSpace: 'nowrap' }}>{m.from}</div>
@@ -168,8 +199,7 @@ const RowExpandInner: React.FC<{
     </div>
   );
 
-  const replyX = left + sideW + gap + s * 1.5 + s * 3.4;
-  const footY = top + bar + gap + (ch - gap * 2) - s * 1.2 - s * 1.2;
+  const { x: replyX, y: footY } = rowExpandGeometry({ index, x, y, w, h, size: s }, frameW, frameH).reply;
   const rowCx = left + sideW + cw * 0.42;
   const rowCy = top + bar + lh + index * rowH + rowH * 0.5;
   const hoverReply = at(frame, P + 46, 4, ease.out) * ds;
@@ -223,7 +253,7 @@ const RowExpandInner: React.FC<{
             >
               {r.unread && <div style={{ position: 'absolute', left: s * 0.62, top: rp + s * 0.48, width: s * 0.42, height: s * 0.42, borderRadius: s, background: L.accent, opacity: 1 - read, transform: `scale(${1 - read * 0.5})` }} />}
               <div style={{ position: 'absolute', left: avX, top: avY }}>
-                <Face name={r.from} color={r.color} size={avS} />
+                <Avatar m={r} size={avS} />
               </div>
               <div style={{ position: 'absolute', left: nameX, right: rightPad, top: nameY, height: line, display: 'flex', alignItems: 'center' }}>
                 <div style={{ flex: 1, fontSize: s, fontWeight: r.unread ? 650 : 560, whiteSpace: 'nowrap' }}>{r.from}</div>

@@ -49,7 +49,7 @@ const GhostFillInner: React.FC<{
   const x = xIn ?? W / 2;
   const y = yIn ?? H / 2;
   const frame = start + (useUiFrame() - start) * speed;
-  const s = tileIn ?? H * 0.062;
+  const s = tileIn ?? Math.min(W, H) * 0.062;
   const p = s * pitch;
   const ghost = mixColor(L.ground, L.dark ? '#FFFFFF' : '#000000', L.dark ? 0.06 : 0.04);
   // a scattered order, seeded

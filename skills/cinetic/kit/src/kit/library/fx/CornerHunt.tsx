@@ -1,6 +1,6 @@
 // CornerHunt (fx, idle): a viewfinder hunting round a phrase: tiny solid squares at the corners of an invisible box, 1-4
 // of them on each frame, the box jumping between three sizes, never tweened, like a selection that cannot settle.
-// Numbers: squares 2.2 % of the frame height (about half the phrase's type size); a new state
+// Numbers: squares 2.2 % of the frame's short side (about half the phrase's type size); a new state
 // every 2 f (on twos); three boxes round a phrase 18 % of the frame wide: tight (1.4x
 // its width, 3.8x its height), wide (4.1x by 5.1x) and middle (2.6x by 5.1x); 1-4 corners lit, seeded.
 // Caution: a technical, nervous texture for one phrase while it holds; it stops (or settles on all four) when the phrase
@@ -35,7 +35,7 @@ export const CornerHunt: React.FC<{
   if (frame < at) return null;
   const cx = x ?? W / 2;
   const cy = y ?? H / 2;
-  const s = size ?? Math.max(6, Math.round(H * 0.022));
+  const s = size ?? Math.max(6, Math.round(Math.min(W, H) * 0.022));
   const done = until !== undefined && frame >= until;
   if (done && !settle) return null;
   const k = onTwos(frame - at, Math.max(1, n));
