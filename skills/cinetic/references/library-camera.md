@@ -143,7 +143,7 @@ A dark grid floor that filled the frame pulls back into the top of a gridded pla
 lines bend into meridians and parallels, and the lit rim sinks to a low horizon a card can rise over (`children` draw over
 the sky, behind the planet).
 ```tsx
-<PlanetPull at={T.world} dur={18} sky="linear-gradient(100deg, #E2403B, #F3713F 55%, #FFD2A6)" rim="#7C8CFF"><Card /></PlanetPull>
+<PlanetPull at={T.world} dur={18} sky="linear-gradient(100deg, #E2403B, #F3713F 55%, #FFD2A6)" rim="#FFC48E"><Card /></PlanetPull>
 ```
 - Numbers: 18 f on a quadratic ease-out (the corners open in 3 f); the rim from above the frame to 37 % of the height
   (`horizon`); the radius from 7x the

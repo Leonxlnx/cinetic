@@ -1,5 +1,7 @@
 // DotLattice (ground, build / idle): a fine lattice of dots (round, ring or square LEDs) on black, lit from inside by
 // slow pools that drift, filled in a wave from a point, with a hole that opens for the type.
+// The hole is rounded and soft: inside it no dots, past its edge the dots grow back to full size over 0.7 of its half
+// size, so the type sits in a clearing of the lattice, never on a black box.
 // Numbers: pitch 12 px at 1080, dots 0.6 of the pitch, unlit at 9 % white, pools 0.35 of the height lifting dots to
 // 55 %, drifting about 0.04 of the width a second; the fill front crosses the frame in about 24 f, each dot pops in 4 f.
 // Caution: the light is in the dots, never a haze over them; keep the pools slow and the type off the brightest pool.
@@ -9,6 +11,9 @@ import { useCurrentFrame, useVideoConfig } from 'remotion';
 import { at as prog, clamp, ease, rand } from '../../motion';
 import { parseColor } from '../../world';
 import { FrameCanvas, unit } from './_shared';
+
+/** How far past the hole's edge the dots grow back to full size, as a share of the hole's half size. */
+const HOLE_FEATHER = 0.7;
 
 /**
  * DotLattice: a dot screen as a ground. `fill` brings the dots in as a wave from (x, y) (shares of the frame);
@@ -65,12 +70,19 @@ export const DotLattice: React.FC<{
       for (let i = 0; i < cols; i++) {
         const x = offX + i * p;
         const y = offY + j * p;
-        if (hole && Math.abs(x - W / 2) < hw && Math.abs(y - H / 2) < hh) continue;
         let s = 1;
+        if (hole && hp > 0) {
+          // a rounded hole (a superellipse) whose dots shrink toward the type instead of a hard-edged box
+          const dn = ((Math.abs(x - W / 2) / hw) ** 3 + (Math.abs(y - H / 2) / hh) ** 3) ** (1 / 3);
+          if (dn < 1) continue;
+          const m = clamp((dn - 1) / HOLE_FEATHER);
+          s = m * m * (3 - 2 * m);
+          if (s < 0.08) continue;
+        }
         if (fill) {
           const d = Math.hypot(x - fx, y - fy) / reach;
           const born = fill.at + d * fdur + rand(i * 7.1 + j * 13.3 + seed) * 4;
-          s = ease.out(clamp((f - born) / 4));
+          s *= ease.out(clamp((f - born) / 4));
           if (s <= 0) continue;
         }
         let a = base;

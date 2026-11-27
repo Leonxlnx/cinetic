@@ -24,16 +24,16 @@ ground built from the film's own material. Never a faint gradient or a drifting 
 |---|---|---|---|---|
 | [HairlineGrid](#hairlinegrid) | build, idle | 40 f | a white canvas ruled by 1 px hairlines that grow out of the centre crossing, tiny marks at the crossings, accent blocks hopping cell to cell by cuts | a clean product or developer brand whose one accent is a tool mark; paper grid for a serif look, graph grid under loud type |
 | [TechGrid](#techgrid) | build, idle | 48 f | black with dashed rules drawn from the centre, square ticks at the crossings (a few in one signal colour) and a thin ring that draws itself round the subject | a technical or event film at night: a word, a photo or a card framed by the drafting table |
-| [DotLattice](#dotlattice) | build, idle | 30 f | a fine lattice of ring, round or square dots on black, filled in a wave from a point, lit from inside by slow pools, with a hole that opens for the type | a screen-material film (LED, pixels): the ground under a line or a page, or the first beat built from dots |
+| [DotLattice](#dotlattice) | build, idle | 30 f | a fine lattice of ring, round or square dots on black, filled in a wave from a point, lit from inside by slow pools, with a soft rounded clearing for the type, the dots shrinking toward it | a screen-material film (LED, pixels): the ground under a line or a page, or the first beat built from dots |
 | [HalftoneField](#halftonefield) | idle, emphasis | 46 f | a light field of round halftone dots in one flat ink with black clusters; on each swap the clusters change and the ink eases to the next one | behind a held line while the thing beside it changes in held steps (the field takes the colour of each) |
 | [PlanetRim](#planetrim) | enter, exit | 30 f | on black, a dark planet rises from the foot: a thin peach rim, a burnt band inside, warm light just above the rim; it sinks on an ease-in | under a product name or a claim on a black film, once (the opening title or the end card) |
 | [OrbitLines](#orbitlines) | enter, idle | 22 f | on a warm flat ground two hairline circles larger than the frame start as one, part, turn as a pair and keep turning slowly | under quiet statements on cream, so an empty ground never stands still |
-| [CobaltArcs](#cobaltarcs) | idle | 60 f | one flat saturated blue with faint concentric hairline arcs round a point under the frame, widening slowly outward | a brand-colour ground for glass cards and notices |
+| [CobaltArcs](#cobaltarcs) | idle | 60 f | one flat saturated blue with quiet concentric hairline arcs round a point under the frame, widening slowly outward | a brand-colour ground for glass cards and notices |
 | [PhotoPlate](#photoplate) | idle, emphasis | 60 f | a full-bleed photograph pushing in slowly, thin white outline shapes drawing onto it, a re-grade that eases in on an event | a photograph as the world: under glass panels, under words, with outlines that frame the subject |
 | [CuttingMat](#cuttingmat) | idle | 60 f | a tabletop from above: a slate cutting mat with its grid, a strip of desk, window-blind shadows across it, tracking slowly | a collage or paper look: tiles, stickers and cards laid on a real-looking table |
 | [GhostWord](#ghostword) | idle | 30 f | a flat light ground with one giant word a few percent lighter than it, cropped by the frame and drifting sideways | the home ground of a long film whose brand word is the texture under small type |
 | [FourUp](#fourup) | loop | 120 f | the frame split into four panels, each playing its own scene on its own loop length and phase, so the four never cut together | a showreel tile or a social loop that shows a body of work at once |
-| [IsoFloor](#isofloor) | build | 24 f | a flat poster field ruled a shade darker that tilts from facing the lens into an isometric floor, with flat tiles lying on it | a section of a poster-colour film where blocks, slabs and tags stand on the ground |
+| [IsoFloor](#isofloor) | build | 24 f | a flat poster field ruled a shade darker that tilts from facing the lens into an isometric floor, with tiles lying on it or raised into blocks | a section of a poster-colour film where blocks, slabs and tags stand on the ground |
 
 <!-- /library:pieces -->
 
@@ -73,8 +73,9 @@ Caution: one signal colour, under 3 % of the frame; labels beside it tiny and in
 
 A dot screen as a ground: ring, round or square dots 12 px apart at 1080 (`pitch` 0.011), 0.6 of the pitch, unlit at
 9 % of `color`; `pools` lit areas (0.35 of the height) lift the dots to `lit` and wander slowly; `fill` brings the
-dots in as a wave from a point (the front crosses in `dur` 24 f, each dot pops in 4 f); `hole` clears a box at the
-centre for the line (shares of the frame, opens in 10 f).
+dots in as a wave from a point (the front crosses in `dur` 24 f, each dot pops in 4 f); `hole` clears a rounded
+clearing at the centre for the line (shares of the frame, opens in 10 f): no dots inside it, and past its edge the dots
+grow back to full size over 0.7 of its half size, so the line sits in the lattice, never on a black box.
 
 ```tsx
 <DotLattice color="#FFB25C" shape="round" base={0.26} lit={0.65} fill={{ at: 0, dur: 24 }} hole={{ at: 30, w: 0.4, h: 0.17 }} />
@@ -123,7 +124,7 @@ Caution: faint and mostly off-frame; the line of type is the subject.
 
 ### CobaltArcs
 
-One flat saturated blue (#2140D9) with concentric hairline arcs (white at 10 %, 0.12 of the height apart) round a
+One flat saturated blue (#2140D9) with concentric hairline arcs (2 px white at 22 %, 0.12 of the height apart) round a
 point 0.25 of the height under the foot, widening 0.0016 of the height a frame; on `at` they draw out from the centre
 over about 20 f. Glass cards on it: white at 14 %, a 1 px white rim at 25 %, `softShadow(5, ground)`.
 
@@ -188,10 +189,11 @@ Caution: one panel carries the words; spread the phases so no two cuts fall with
 A flat poster field ruled by a grid 12 % darker (cells 1/6 of the height) that tilts into an isometric floor (55
 degrees back, -22 round, scale 1 to 0.9) over 12 f in-out (about 60 % of it in the middle 4 f), through a long lens so
 it reads nearly orthographic; `flatAt` tilts it
-back; `tiles` lie flat on it (cells from the centre crossing), `pan` slides it; drawn as a projected SVG, so it renders fast.
+back; `tiles` lie on it (cells from the centre crossing; `lift` in cells raises one into a block with sides a shade darker),
+`pan` slides it; drawn as a projected SVG, so it renders fast.
 
 ```tsx
-<IsoFloor at={14} field="#FF6B1A" tiles={[{ x: -2, y: -2, color: '#0B0B0C' }, { x: 0, y: -2, color: '#FFFFFF' }, { x: 1, y: 0, color: '#0B0B0C' }]} />
+<IsoFloor at={14} field="#FF6B1A" tiles={[{ x: -2, y: -2, color: '#0B0B0C' }, { x: 0, y: -2, color: '#FFFFFF', lift: 0.8 }, { x: 1, y: 0, w: 2, color: '#0B0B0C' }]} />
 ```
 
 Caution: change the field by a cut or a flood, never a fade; depth from the faces of what stands on it, no shadows.

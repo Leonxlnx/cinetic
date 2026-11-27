@@ -139,7 +139,7 @@ const ChromaDemo: React.FC = () => {
         if (f < t) return null;
         const p = ease.out(clamp((f - t + 1) / 6));
         return (
-          <ChromaHit key={src} at={t} px={14}>
+          <ChromaHit key={src} at={t} px={22} frames={3}>
             <Center>
               <div style={{ width: 620, height: 760, borderRadius: 34, background: '#fff', padding: 22, boxSizing: 'border-box', boxShadow: softShadow(4, PAPER), transform: `translateX(${dx}px) rotate(${rot}deg) scale(${mix(p, 1.22, 1)})` }}>
                 <div style={{ width: '100%', height: 600, borderRadius: 20, overflow: 'hidden' }}>
@@ -317,7 +317,7 @@ const PenDemo: React.FC = () => {
 
 /** A product tour seen through one lens: a desk photograph and a panel bent as one screen, relaxing from a stronger bulge. */
 const LensDemo: React.FC = () => (
-  <LensBulge amount={0.16} at={4} from={0.2} dur={14} chroma={2.5} vignette={0.36} grid={4}>
+  <LensBulge amount={0.16} at={4} from={0.2} dur={14} chroma={2.5} vignette={0.24} grid={4}>
     <Photo src={IMG.farms} zoom={1.02}>
       <Center>
         <Prompt w={980} text="Count the rows that need harvest" dark />
@@ -330,12 +330,12 @@ const LensDemo: React.FC = () => (
 const GlowBarsDemo: React.FC = () => (
   <GlowBars at={6} dur={34} color="#FF9A3C" rim="#D23A2A" ground="#0A0A0C" leanDur={120}>
     <Center>
-      <div style={{ width: 760, padding: '34px 38px', borderRadius: 30, background: 'rgba(20,21,24,0.92)', boxShadow: '0 30px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08)', fontFamily: fonts.inter, color: '#F3F4F6', textAlign: 'left' }}>
-        <div style={{ fontSize: 40, fontWeight: 600, letterSpacing: '-0.02em' }}>Export the cut</div>
-        <div style={{ fontSize: 26, opacity: 0.55, marginTop: 8 }}>4K, 24 fps, 1 min 12 s</div>
-        <div style={{ display: 'flex', gap: 14, marginTop: 30 }}>
+      <div style={{ width: 1040, padding: '52px 56px', borderRadius: 40, background: 'rgba(20,21,24,0.92)', boxShadow: '0 30px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08)', fontFamily: fonts.inter, color: '#F3F4F6', textAlign: 'left' }}>
+        <div style={{ fontSize: 64, fontWeight: 600, letterSpacing: '-0.025em' }}>Export the cut</div>
+        <div style={{ fontSize: 38, opacity: 0.6, marginTop: 10 }}>4K, 24 fps, 1 min 12 s</div>
+        <div style={{ display: 'flex', gap: 18, marginTop: 40 }}>
           {['MP4', 'ProRes', 'Stills'].map((t, i) => (
-            <div key={t} style={{ padding: '14px 24px', borderRadius: 16, background: i === 0 ? '#F3F4F6' : 'rgba(255,255,255,0.08)', color: i === 0 ? INK : '#F3F4F6', fontSize: 26, fontWeight: 560 }}>{t}</div>
+            <div key={t} style={{ padding: '18px 34px', borderRadius: 20, background: i === 0 ? '#F3F4F6' : 'rgba(255,255,255,0.1)', color: i === 0 ? INK : '#F3F4F6', fontSize: 36, fontWeight: 560 }}>{t}</div>
           ))}
         </div>
       </div>
@@ -346,7 +346,7 @@ const GlowBarsDemo: React.FC = () => (
 /** A bold line on white; a blurred blob slides in under it and the words over it turn white. */
 const BlobKnockDemo: React.FC = () => (
   <AbsoluteFill style={{ background: '#FBFBFC' }}>
-    <BlobKnock text="From draft to shipped" at={12} dur={10} from={0.84} to={0.56} color="#2747D9" size={120} />
+    <BlobKnock text="From draft to shipped" at={12} dur={10} from={0.84} to={0.53} color="#2747D9" ink="#141519" size={120} />
   </AbsoluteFill>
 );
 
@@ -413,17 +413,22 @@ const FrostDemo: React.FC = () => {
   );
 };
 
-/** A night ground: small blue lights pop on one by one and drift into a loose cloud, a line arriving under them. */
+/** A night ground: requests arrive as small blue lights all round a live figure and drift in a loose cloud, short dashes
+ * passing between them; the figure says what the lights are. */
 const DriftDemo: React.FC = () => {
   return (
-    <AbsoluteFill style={{ background: '#06080F' }}>
-      <DriftField at={4} count={64} rate={1.1} area={[0.06, 0.1, 0.88, 0.62]} avoid={[0.22, 0.6, 0.56, 0.18]} color="#4A6BFF" vx={0.25} vy={-0.15} />
-      <DriftField at={10} count={36} rate={1.6} area={[0.1, 0.14, 0.8, 0.56]} shape="dash" color="#9FB2FF" seed={23} />
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 740, display: 'flex', justifyContent: 'center' }}>
-        <Rise at={40}>
-          <div style={{ ...say(72, '#F2F4FF', 520) }}>Every request finds its way</div>
+    <AbsoluteFill style={{ background: '#05070D' }}>
+      <DriftField at={2} count={110} rate={0.5} area={[0.03, 0.05, 0.94, 0.9]} avoid={[0.25, 0.3, 0.5, 0.42]} color="#5B7BFF" glow={1.3} vx={0.22} vy={-0.12} />
+      <DriftField at={8} count={34} rate={1.4} area={[0.04, 0.08, 0.6, 0.84]} avoid={[0.25, 0.3, 0.5, 0.42]} shape="dash" color="#A9BBFF" seed={23} />
+      <DriftField at={14} count={14} rate={3} area={[0.06, 0.1, 0.88, 0.8]} avoid={[0.22, 0.26, 0.56, 0.5]} color="#DCE3FF" glow={1.6} vx={0.35} vy={-0.2} seed={41} />
+      <Center>
+        <Rise at={24}>
+          <div style={{ padding: '44px 64px', borderRadius: 36, background: 'rgba(14,17,28,0.88)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 30px 80px rgba(0,0,0,0.6)', textAlign: 'center' }}>
+            <div style={{ ...say(132, '#F2F4FF', 600), letterSpacing: '-0.04em' }}>2,418</div>
+            <div style={{ ...say(40, '#9AA6C8', 480), marginTop: 6 }}>requests a minute, each one routed</div>
+          </div>
         </Rise>
-      </div>
+      </Center>
     </AbsoluteFill>
   );
 };

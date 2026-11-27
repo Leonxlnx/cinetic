@@ -1,7 +1,9 @@
 // LensBulge (fx, idle, enter): the whole scene seen through one lens: a barrel (fisheye) bulge that swells the centre and
 // bends straight lines near the edges, the edges darker, a hair of colour fringe at the rim, and optionally the fine pixel
 // grid of a screen being filmed. Different materials under it read as one screen.
-// Numbers: `amount` 0.12-0.2 (the centre near 1x, the edge midpoints pulled in 8-14 %, the corners dark); fringe 1-3 px
+// The lens is scaled to fill the frame: the centre swells by 1 + amount and the corners stay on the scene's corners, so
+// no ground ever shows past the scene.
+// Numbers: `amount` 0.12-0.2 (the centre swollen 12-20 %, the edge midpoints bowed out); fringe 1-3 px
 // at the rim; vignette 25-40 %; a pixel grid of 3-4 px at 6-10 %. On an entrance it starts at 1.5x the amount and relaxes in
 // 10-14 f.
 // Caution: the amount is capped at 0.2 (LENS_MAX: above it the shift steps visibly); one lens for a whole section, never
@@ -19,9 +21,8 @@ export const LENS_MAX = 0.2;
 
 /**
  * The barrel displacement map for amount `a` as a PNG data URL (red: x, green: y; 128 is no shift) and the px shift its
- * full range is. Only shifts that still land inside the scene are encoded at full precision; larger ones (the corners,
- * which fall outside the scene anyway) are clamped to the edge of the range, which still lands outside. So the range,
- * and the step between two levels, stays small: about 1.2 px at the cap.
+ * full range is. The lens is scaled to fill: every shift lands inside the scene, and the range, and the step between two
+ * levels, stays small (well under a pixel at the cap).
  */
 const useBarrelMap = (W: number, H: number, a: number) => {
   const key = Math.round(a * 200) / 200;
@@ -34,10 +35,11 @@ const useBarrelMap = (W: number, H: number, a: number) => {
     const g = c.getContext('2d');
     if (!g) return { url: '', range: 1 };
     const img = g.createImageData(mw, mh);
-    // a point at normalised radius r samples the scene at (1 + a r^2) times its distance from the centre: the centre stays
-    // near 1x, the edges bow and the corners fall outside the scene (they show the ground)
+    // a point at normalised radius r samples the scene at (1 + a r^2) / (1 + a) times its distance from the centre: the
+    // centre swells by 1 + a, the edges bow and the corners land exactly on the scene's corners, so the lens never shows
+    // anything past the scene (no dark corners); the largest shift is 2 / (3 sqrt 3) of the half diagonal times a / (1 + a)
     const half = Math.hypot(W / 2, H / 2);
-    const dmax = (Math.max(W, H) / 2) * (key / (1 + key)) * 1.04;
+    const dmax = half * (2 / (3 * Math.sqrt(3))) * (key / (1 + key)) * 1.04;
     const range = 2 * dmax;
     const lim = (v: number) => Math.max(-dmax, Math.min(dmax, v));
     for (let j = 0; j < mh; j++) {
@@ -45,8 +47,8 @@ const useBarrelMap = (W: number, H: number, a: number) => {
         const px = ((i + 0.5) / mw) * W - W / 2;
         const py = ((j + 0.5) / mh) * H - H / 2;
         const r2 = (px * px + py * py) / (half * half);
-        const dx = lim(key * px * r2);
-        const dy = lim(key * py * r2);
+        const dx = lim((key * px * (r2 - 1)) / (1 + key));
+        const dy = lim((key * py * (r2 - 1)) / (1 + key));
         const k = (j * mw + i) * 4;
         img.data[k] = Math.round(127.5 + (dx / range) * 255);
         img.data[k + 1] = Math.round(127.5 + (dy / range) * 255);

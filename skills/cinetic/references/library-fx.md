@@ -37,7 +37,7 @@ moment that matters, and never as a way to hide a cut: a flash of light, a scree
 | [PenMarks](#penmarks) | emphasis | 7 f | a pen over the frame: a hand loop round a point, a ring, a curved arrow with its head, a zigzag, a tick, drawn on twos as glowing light or a dry marker, retracting in order | pointing at the one thing in the frame the line is about |
 | [LensBulge](#lensbulge) | idle, enter | 14 f | the whole scene through one barrel lens: the centre swelled, the edges bent and darker, a hair of colour fringe, optionally the pixel grid of a filmed screen | a section whose shots should read as one screen being filmed (a fisheye over devices, a monitor finish) |
 | [GlowBars](#glowbars) | enter, idle | 34 f | a strong coloured glow rises from a corner of a dark ground seen through reeded glass: narrow soft columns that lean slowly while the glow drifts | the ground for one held thing (a dialog, a field, a wordmark) on dark |
-| [BlobKnock](#blobknock) | emphasis | 10 f | a soft-edged blob in the colour of the line slides in under a bold line and settles; the letters inside its edge turn white | the line that names the change, set bold and large on a light ground |
+| [BlobKnock](#blobknock) | emphasis | 10 f | a soft-edged blob slides in under a bold line and settles; as it settles the whole line turns white at once, no letter split between two colours | the line that names the change, set bold and large on a light ground |
 | [CornerHunt](#cornerhunt) | idle | 45 f | a viewfinder hunting round a phrase: tiny squares at the corners of an invisible box, 1-4 lit each frame, the box jumping between three sizes, never tweened | a phrase about finding, framing or selecting, while it holds |
 | [StepScan](#stepscan) | loop | 16 f | a small grid of square cells with one strong row stepping down it by cuts, the row it left at a mid tint, the rest pale; an all-pale beat, then it restarts | a machine reading line by line, beside the line that says what it reads |
 | [FrostEdge](#frostedge) | idle, exit | 40 f | a frosted band at the top of a scrolling column: what slides into it goes soft and pale, as if under frosted glass; or a whole surface clearing from frosted | a chat or a feed scrolling away under its header without a hard cut-off edge |
@@ -179,9 +179,11 @@ The whole scene through one barrel lens: the centre swelled, straight lines bend
 hair of colour fringe at the rim, optionally the fine pixel grid of a filmed screen. Different materials under it read
 as one screen.
 ```tsx
-<LensBulge amount={0.16} at={T.open} from={0.2} dur={14} chroma={2.5} vignette={0.36} grid={4}>{scene}</LensBulge>
+<LensBulge amount={0.16} at={T.open} from={0.2} dur={14} chroma={2.5} vignette={0.24} grid={4}>{scene}</LensBulge>
 ```
-- Numbers: `amount` 0.12-0.2 (the centre near 1x, the edges bowed in 8-14 %, the corners dark); on an entrance from
+- Scaled to fill: the centre swells by 1 + `amount` and the corners stay on the scene's corners, so nothing past the
+  scene (no dark corner) ever shows.
+- Numbers: `amount` 0.12-0.2 (the centre swollen 12-20 %, the edges bowed out); on an entrance from
   1.5x the amount, relaxing in 10-14 f; fringe 1-3 px; vignette 25-40 %; grid 3-4 px at 8 %.
 - Caution: the amount is capped at 0.2 (`LENS_MAX`): the 8-bit displacement map would shift in visible steps above it.
   One lens for a whole section, never on and off between shots; keep type out of the outer fifth.
@@ -198,16 +200,18 @@ slowly from upright toward the diagonal while the glow drifts. A ground for one 
   busy UI.
 
 ### BlobKnock
-A soft-edged blob in the line's own colour slides in under a bold line and settles; inside its edge the letters turn
-white, so the words read through the colour.
+A soft-edged blob slides in under a bold line and settles; as it settles the whole line turns white at once, so the
+words read through the colour and no letter is ever split between two colours.
 ```tsx
-<BlobKnock text="From draft to shipped" at={T.line} dur={10} from={0.84} to={0.56} color="#2747D9" size={120} />
+<BlobKnock text="From draft to shipped" at={T.line} dur={10} from={0.84} to={0.53} color="#2747D9" ink="#141519" size={120} />
 ```
-- Numbers: two lobes, 30 % of the frame wide and 24 % high in all, centred a little under the line, the edge softened
-  0.8 % of the height and the letters turning exactly on it (a wider blur leaves letters on a matching tone, and the
-  word breaks up); 30 % of the width in 10 f
-  on an expo-out, then 1 px a frame of drift.
-- Caution: one bold line, 6 % of the frame height or more; the blob is the line's colour, never a second hue.
+- Numbers: two lobes sized from the line's box (the main one 8 % wider than the line each side, 0.55 / 0.7 of the type
+  size above and below; a smaller one trailing high on the right), the edge softened 0.8 % of the height; from `from`
+  to `to` in 10 f on an expo-out, then 1 px a frame of drift; the line turns from `ink` to `knock` as one piece between
+  75 % and 95 % of the travel.
+- Caution: one bold line, 6 % of the frame height or more; `ink` the blob's colour or a dark ink (a dark ink stays
+  readable while the blob slides in), never a second hue; keep `to` within a few % of the line's centre so the
+  settled blob covers it.
 
 ### CornerHunt
 A viewfinder hunting round a phrase: tiny squares at the corners of an invisible box, 1-4 of them lit each frame, the box

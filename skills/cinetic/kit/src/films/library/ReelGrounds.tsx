@@ -22,7 +22,8 @@ const img = (k: keyof typeof IMG) => `img/${IMG[k]}`;
 
 const HairlineGridDemo: React.FC<DemoProps> = ({ n, name }) => (
   <AbsoluteFill>
-    <HairlineGrid at={0} blocks={5} accent="#2A4BF2" clear={[2, 1]} />
+    {/* the clear box spans the whole plate (4 cells each side), so no block ever hops under it */}
+    <HairlineGrid at={0} blocks={5} accent="#2A4BF2" clear={[4, 1]} />
     <Center>
       <Rise at={20} style={{ background: '#FFFFFF', padding: '64px 120px', boxShadow: '0 0 0 1px #E5E5E5' }}>
         <div style={say(56, '#0E0E0E', 450)}>In every format you need</div>
@@ -102,8 +103,8 @@ const CobaltArcsDemo: React.FC<DemoProps> = ({ n, name }) => (
     <CobaltArcs at={0} />
     <Center>
       <Rise at={14} style={{ padding: '44px 64px', borderRadius: 22, background: 'rgba(255,255,255,0.14)', boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.25), ${softShadow(5, '#2140D9')}`, backdropFilter: 'blur(18px)' }}>
-        <div style={say(30, 'rgba(255,255,255,0.72)', 450)}>New payment</div>
-        <div style={{ ...say(64, '#FFFFFF', 500), marginTop: 10 }}>Your store is live</div>
+        <div style={say(76, '#FFFFFF', 500)}>Your store is live</div>
+        <div style={{ ...say(36, 'rgba(255,255,255,0.78)', 450), marginTop: 14 }}>The first payment came in at 9:41</div>
       </Rise>
     </Center>
     <Label n={n} name={name} dark />
@@ -150,7 +151,7 @@ const GhostWordDemo: React.FC<DemoProps> = ({ n, name }) => (
     <GhostWord text="harbour" at={0} />
     <Center>
       <Rise at={16}>
-        <div style={say(40, '#1E201E', 500)}>Made for teams that ship</div>
+        <div style={say(84, '#1E201E', 500)}>Made for teams that ship</div>
       </Rise>
     </Center>
     <Label n={n} name={name} />
@@ -172,7 +173,12 @@ const FourUpDemo: React.FC<DemoProps> = ({ n, name }) => (
           </Center>
         </AbsoluteFill>,
         <AbsoluteFill key="b">
-          <DotLattice fill={{ at: 0, dur: 20 }} pools={1} />
+          <DotLattice fill={{ at: 0, dur: 20 }} pools={1} base={0.2} hole={{ at: 16, w: 0.62, h: 0.22 }} />
+          <Center>
+            <Rise at={20}>
+              <div style={say(110, '#FFFFFF', 500)}>Seconds later</div>
+            </Rise>
+          </Center>
         </AbsoluteFill>,
         <AbsoluteFill key="c">
           <PhotoPlate src={img('tide')} />
@@ -203,9 +209,10 @@ const IsoFloorDemo: React.FC<DemoProps> = ({ n, name }) => (
       field="#FF6B1A"
       tiles={[
         { x: -2, y: -2, color: '#0B0B0C' },
-        { x: 0, y: -2, color: '#FFFFFF' },
-        { x: 1, y: 0, color: '#0B0B0C' },
-        { x: -2, y: 1, color: '#F1EEE6' },
+        { x: 0, y: -2, color: '#FFFFFF', lift: 0.8 },
+        { x: 1, y: 0, w: 2, color: '#0B0B0C' },
+        { x: -2, y: 1, color: '#F1EEE6', lift: 0.5 },
+        { x: 2, y: 2, color: '#FFFFFF', lift: 1.2 },
       ]}
     />
     <AbsoluteFill style={{ padding: '110px 120px' }}>

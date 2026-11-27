@@ -1,6 +1,7 @@
-// CobaltArcs (ground, idle): one saturated blue, flat, with faint concentric hairline arcs round a point below the
+// CobaltArcs (ground, idle): one saturated blue, flat, with quiet concentric hairline arcs round a point below the
 // frame that widen slowly outward, so a brand-colour ground has structure and a pulse without a gradient.
-// Numbers: ground #2140D9; arcs 1.5 px white at 10 %, 0.12 of the height apart, centred 0.25 of the height under the
+// Numbers: ground #2140D9; arcs 2 px white at 22 % (fainter and they vanish short of full screen), 0.12 of the
+// height apart, centred 0.25 of the height under the
 // foot; they widen 0.0016 of the height a frame; on `at` they draw from the centre out over 20 f.
 // Caution: keep the blue flat (no lighter centre, no glow); glass cards on it need a 1 px white rim at 25 %.
 // Catalogue: ../catalog/ground.ts; props and recipe: references/library-grounds.md.
@@ -21,7 +22,7 @@ export const CobaltArcs: React.FC<{
   speed?: number;
   x?: number;
   y?: number;
-}> = ({ at = 0, ground = '#2140D9', color = '#FFFFFF', amount = 0.1, gap = 0.12, speed = 0.0016, x = 0.5, y = 1.25 }) => {
+}> = ({ at = 0, ground = '#2140D9', color = '#FFFFFF', amount = 0.22, gap = 0.12, speed = 0.0016, x = 0.5, y = 1.25 }) => {
   const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
   const cx = x * W;
@@ -30,7 +31,7 @@ export const CobaltArcs: React.FC<{
   const shift = ((f * speed * H) % g + g) % g;
   const far = Math.hypot(Math.max(cx, W - cx), Math.max(cy, Math.abs(cy))) + g;
   const n = Math.ceil(far / g) + 1;
-  const sw = Math.max(1, 1.5 * (H / 1080));
+  const sw = Math.max(1, 2 * (H / 1080));
   return (
     <AbsoluteFill style={{ background: ground, overflow: 'hidden' }}>
       <svg width={W} height={H} style={{ position: 'absolute', inset: 0 }}>

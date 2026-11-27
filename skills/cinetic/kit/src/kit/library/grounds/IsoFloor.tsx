@@ -4,15 +4,16 @@
 // round takes 12 f (in-out, about 60 % of it in the middle 4 f), scale 1 to 0.9; a long lens (perspective 6000 px at
 // 1080) so it reads nearly orthographic.
 // Caution: one field colour a section; change the field by a cut or a flood, never by fading; no shadows on the
-// floor, depth comes from the faces of what stands on it.
+// floor, depth comes from the faces of what stands on it (a tile's `lift` raises it into a block with darker sides).
 // Catalogue: ../catalog/ground.ts; props and recipe: references/library-grounds.md.
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { at as prog, ease } from '../../motion';
 import { shade } from '../../world';
 
-/** A tile lying on the floor: its cell (x, y from the centre crossing), size in cells and colour. */
-export type FloorTile = { x: number; y: number; w?: number; h?: number; color: string };
+/** A tile lying on the floor: its cell (x, y from the centre crossing), size in cells and colour; `lift` (in cells)
+ * raises it into a block whose sides are drawn a shade darker, so it stands on the floor once the floor tilts. */
+export type FloorTile = { x: number; y: number; w?: number; h?: number; color: string; lift?: number };
 
 /**
  * IsoFloor: `field` colour; tilts to isometric from `at` over `dur` (and back from `flatAt`); `tiles` lie flat on the
@@ -46,16 +47,19 @@ export const IsoFloor: React.FC<{
   const px = (pan[0] * c * f) / fps;
   const py = (pan[1] * c * f) / fps;
   // plane point (x, y) about the centre -> screen (CSS order: scale, rotateZ, rotateX, perspective)
-  const proj = (x: number, y: number) => {
+  // `up` lifts the point off the plane along its normal (towards the lens when the floor faces it)
+  const proj3 = (x: number, y: number, up: number) => {
     const X = (x + px) * s;
     const Y = (y + py) * s;
+    const U = up * s;
     const xr = X * Math.cos(az) - Y * Math.sin(az);
     const yr = X * Math.sin(az) + Y * Math.cos(az);
-    const y2 = yr * Math.cos(ax);
-    const z = yr * Math.sin(ax);
+    const y2 = yr * Math.cos(ax) - U * Math.sin(ax);
+    const z = yr * Math.sin(ax) + U * Math.cos(ax);
     const k = P / (P - z);
-    return [W / 2 + xr * k, H / 2 + y2 * k];
+    return { p: [W / 2 + xr * k, H / 2 + y2 * k], z };
   };
+  const proj = (x: number, y: number) => proj3(x, y, 0).p;
   const reach = Math.ceil((Math.max(W, H) * 2.2) / c);
   const L = reach * c;
   const lw = Math.max(1, u);
@@ -76,8 +80,25 @@ export const IsoFloor: React.FC<{
           const y0 = tl.y * c;
           const x1 = x0 + (tl.w ?? 1) * c;
           const y1 = y0 + (tl.h ?? 1) * c;
-          const pts = [proj(x0, y0), proj(x1, y0), proj(x1, y1), proj(x0, y1)].map((p) => p.join(',')).join(' ');
-          return <polygon key={i} points={pts} fill={tl.color} />;
+          const lift = (tl.lift ?? 0) * c;
+          const corners: Array<[number, number]> = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+          const top = corners.map(([x, y]) => proj3(x, y, lift).p.join(',')).join(' ');
+          if (lift <= 0) return <polygon key={i} points={top} fill={tl.color} />;
+          // the four sides, far ones first, each a shade darker than the top (the two facing the light less so)
+          const sides = corners.map((a, j) => {
+            const b = corners[(j + 1) % 4];
+            const q = [proj3(a[0], a[1], 0), proj3(b[0], b[1], 0), proj3(b[0], b[1], lift), proj3(a[0], a[1], lift)];
+            return { pts: q.map((v) => v.p.join(',')).join(' '), z: q.reduce((m, v) => m + v.z, 0) / 4, tone: shade(tl.color, j % 2 ? -0.3 : -0.16) };
+          });
+          sides.sort((m, n) => m.z - n.z);
+          return (
+            <g key={i}>
+              {sides.map((sd, j) => (
+                <polygon key={j} points={sd.pts} fill={sd.tone} />
+              ))}
+              <polygon points={top} fill={tl.color} />
+            </g>
+          );
         })}
       </svg>
     </AbsoluteFill>

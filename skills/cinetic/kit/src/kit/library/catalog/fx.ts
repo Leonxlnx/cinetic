@@ -145,7 +145,7 @@ export const FX: LibraryEntry[] = [
     frames: 14,
     summary: 'the whole scene through one barrel lens: the centre swelled, the edges bent and darker, a hair of colour fringe, optionally the pixel grid of a filmed screen',
     use: 'a section whose shots should read as one screen being filmed (a fisheye over devices, a monitor finish)',
-    caution: 'the lens effect is capped at 0.2 (stronger steps visibly), so it is gentler than a real fisheye; the bent edges pull the ground into the corners (black by default): use it as a filmed-screen look, never on a frame that must read edge to edge; its entrance was not compared on a render; one lens for a whole section, never on and off; type out of the outer fifth',
+    caution: 'the lens effect is capped at 0.2 (stronger steps visibly), so it is gentler than a real fisheye; scaled to fill, so the corners stay on the scene corners and no ground shows; its entrance was not compared on a render; one lens for a whole section, never on and off; type out of the outer fifth',
     reel: { film: 'library-fx', from: 820, to: 869 },
   },
   {
@@ -167,9 +167,9 @@ export const FX: LibraryEntry[] = [
     subject: ['line'],
     mood: ['bold', 'playful'],
     frames: 10,
-    summary: 'a soft-edged blob in the colour of the line slides in under a bold line and settles; the letters inside its edge turn white',
+    summary: 'a soft-edged blob slides in under a bold line and settles; as it settles the whole line turns white at once, no letter split between two colours',
     use: 'the line that names the change, set bold and large on a light ground',
-    caution: 'one line, bold, 6 % of the frame height or more; the blob in the colour of the line; a letter right on the blob edge is half and half, so keep the blob wider than the words it carries',
+    caution: 'one line, bold, 6 % of the frame height or more; the blob in the colour of the line, the line in that colour or a dark ink (a dark ink stays readable while the blob slides in); keep `to` within a few % of the line centre so the settled blob covers it',
     reel: { film: 'library-fx', from: 960, to: 1009 },
   },
   {

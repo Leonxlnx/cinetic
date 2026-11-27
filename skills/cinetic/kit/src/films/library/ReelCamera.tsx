@@ -34,12 +34,12 @@ const FeedCard: React.FC<{ img: string; title: string; meta: string; w: number }
     <div style={{ height: w * 0.56 }}>
       <Pic src={img} />
     </div>
-    <div style={{ padding: '22px 26px', display: 'flex', alignItems: 'center', gap: 16 }}>
+    <div style={{ padding: `${Math.round(w * 0.045)}px ${Math.round(w * 0.05)}px`, display: 'flex', alignItems: 'center', gap: 16 }}>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 30, fontWeight: 600, letterSpacing: '-0.015em' }}>{title}</div>
-        <div style={{ fontSize: 22, opacity: 0.55, marginTop: 4 }}>{meta}</div>
+        <div style={{ fontSize: Math.round(w * 0.068), fontWeight: 600, letterSpacing: '-0.015em' }}>{title}</div>
+        <div style={{ fontSize: Math.round(w * 0.05), opacity: 0.6, marginTop: 6 }}>{meta}</div>
       </div>
-      <Avatars n={3} size={40} />
+      {w >= 600 && <Avatars n={3} size={Math.round(w * 0.072)} />}
     </div>
   </div>
 );
@@ -50,11 +50,11 @@ const PullRevealDemo: React.FC<DemoProps> = ({ n, name }) => (
       <PullReveal at={18} from={2.5} fy={500}>
         <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 44 }}>
           <div style={{ opacity: 0.9, transform: 'translateY(60px)' }}>
-            <FeedCard img={IMG.tide} title="Low tide walk" meta="12 min, 2.4 km" w={440} />
+            <FeedCard img={IMG.tide} title="Low tide walk" meta="12 min, 2.4 km" w={500} />
           </div>
-          <FeedCard img={IMG.waves} title="North beach, now" meta="2.1 m swell, 1,204 watching" w={560} />
+          <FeedCard img={IMG.waves} title="North beach, now" meta="2.1 m swell, 1,204 watching" w={660} />
           <div style={{ opacity: 0.9, transform: 'translateY(-50px)' }}>
-            <FeedCard img={IMG.farms} title="Kelp rows from above" meta="Photo set, 18 frames" w={440} />
+            <FeedCard img={IMG.farms} title="Kelp rows from above" meta="Photo set, 18 frames" w={500} />
           </div>
         </AbsoluteFill>
       </PullReveal>
@@ -102,9 +102,9 @@ const FloorTiltDemo: React.FC<DemoProps> = ({ n, name }) => {
       <FloorTilt at={14} dur={13} ground="#E6E1D6" grid={180} ink="rgba(30,24,10,0.35)" to={{ tilt: 54, turn: -24, zoom: 0.9, y: 70 }}>
         <div style={{ position: 'absolute', left: 560, top: 470, fontFamily: fonts.inter, fontSize: 120, fontWeight: 540, letterSpacing: '-0.03em', color: '#17140C', whiteSpace: 'pre' }}>Every order</div>
         {land > 0 && (
-          <div style={{ position: 'absolute', left: 560, top: 300 - (1 - land) * 60, width: 420, height: 150, borderRadius: 10, background: '#FFFBF0', opacity: land, boxShadow: '0 10px 0 rgba(30,24,10,0.18)', fontFamily: fonts.inter, fontSize: 30, fontWeight: 600, color: '#17140C', padding: '20px 26px', boxSizing: 'border-box' }}>
+          <div style={{ position: 'absolute', left: 560, top: 250 - (1 - land) * 60, width: 600, height: 200, borderRadius: 14, background: '#FFFBF0', opacity: land, boxShadow: '0 12px 0 rgba(30,24,10,0.18)', fontFamily: fonts.inter, fontSize: 52, fontWeight: 600, color: '#17140C', padding: '28px 36px', boxSizing: 'border-box' }}>
             Order 4120
-            <div style={{ fontSize: 24, fontWeight: 450, opacity: 0.6, marginTop: 6 }}>Packed, leaves at 14:00</div>
+            <div style={{ fontSize: 38, fontWeight: 450, opacity: 0.65, marginTop: 8 }}>Packed, leaves at 14:00</div>
           </div>
         )}
       </FloorTilt>
@@ -119,17 +119,17 @@ const PullTiltDemo: React.FC<DemoProps> = ({ n, name }) => (
     <AbsoluteFill style={{ background: '#C9D3DC' }}>
       <PullTilt at={16} dur={11} from={2.2} fx={640} fy={420}>
         <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 1060, borderRadius: 34, background: '#FFFFFF', boxShadow: '0 2px 4px rgba(20,30,40,0.08), 0 40px 90px rgba(20,30,40,0.22)', fontFamily: fonts.inter, color: INK, padding: '30px 34px', boxSizing: 'border-box', textAlign: 'left' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 30, fontWeight: 560 }}>
-              <Icon name="MessageSquare" size={30} color={COBALT} />
+          <div style={{ width: 1240, borderRadius: 40, background: '#FFFFFF', boxShadow: '0 2px 4px rgba(20,30,40,0.08), 0 40px 90px rgba(20,30,40,0.22)', fontFamily: fonts.inter, color: INK, padding: '40px 46px', boxSizing: 'border-box', textAlign: 'left' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 48, fontWeight: 580 }}>
+              <Icon name="MessageSquare" size={46} color={COBALT} />
               Ask the workspace
             </div>
-            <div style={{ fontSize: 34, color: '#7A808A', margin: '26px 0 70px' }}>Type a message, / for commands, @ to mention</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 18, fontSize: 24, color: '#4B515C' }}>
-              <Icon name="Paperclip" size={26} color="#4B515C" />
-              <div style={{ padding: '8px 16px', borderRadius: 12, background: '#EEF0F3' }}>Agent</div>
+            <div style={{ fontSize: 42, color: '#7A808A', margin: '30px 0 64px' }}>Type a message, / for commands</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 22, fontSize: 34, color: '#4B515C' }}>
+              <Icon name="Paperclip" size={36} color="#4B515C" />
+              <div style={{ padding: '10px 22px', borderRadius: 14, background: '#EEF0F3' }}>Agent</div>
               <div style={{ flex: 1 }} />
-              <div style={{ padding: '12px 24px', borderRadius: 14, background: INK, color: '#fff', fontWeight: 560 }}>Send</div>
+              <div style={{ padding: '14px 32px', borderRadius: 16, background: INK, color: '#fff', fontWeight: 560 }}>Send</div>
             </div>
           </div>
         </AbsoluteFill>
@@ -185,7 +185,7 @@ const ExposureDemo: React.FC<DemoProps> = ({ n, name }) => (
   <>
     <ExposureRamp at={18} dur={32}>
       {(e) => (
-        <Camera keys={[{ f: 0, x: -260, zoom: 1.08, rx: 16, ry: -10 }, { f: 90, x: 260, zoom: 1.0, rx: 12, ry: -6, curve: ease.linear }]} perspective={2400}>
+        <Camera keys={[{ f: 0, x: -120, zoom: 1.0, rx: 16, ry: -10 }, { f: 90, x: 120, zoom: 0.94, rx: 12, ry: -6, curve: ease.linear }]} perspective={2400}>
           <div style={{ position: 'absolute', left: 120, top: 380, width: 1680, height: 320, borderRadius: 60, background: e.surface, boxShadow: `inset 0 2px 0 ${e.line}, 0 40px 80px rgba(0,0,0,${e.shadow})` }} />
           {DOCK.map(([icon, tone], i) => (
             <div key={icon} style={{ position: 'absolute', left: 190 + i * 228, top: 440, width: 200, height: 200, borderRadius: 52, background: tone, boxShadow: `0 18px 40px rgba(0,0,0,${e.shadow * 0.8}), 0 0 60px ${tone}55`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -278,11 +278,11 @@ const PlanetDemo: React.FC<DemoProps> = ({ n, name }) => {
   const rise = Math.min(1, Math.max(0, (f - 30) / 12));
   return (
     <>
-      <PlanetPull at={10} dur={18} sky="linear-gradient(100deg, #E2403B 0%, #F3713F 55%, #FFD2A6 100%)" rim="#7C8CFF">
+      <PlanetPull at={10} dur={18} sky="linear-gradient(100deg, #E2403B 0%, #F3713F 55%, #FFD2A6 100%)" rim="#FFC48E">
         {rise > 0 && (
-          <div style={{ position: 'absolute', left: 760, top: 380 - rise * 120, width: 400, height: 150, borderRadius: 26, background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(10px)', boxShadow: '0 20px 50px rgba(120,20,20,0.25)', padding: '26px 30px', boxSizing: 'border-box', fontFamily: fonts.inter, color: INK, textAlign: 'left' }}>
-            <div style={{ fontSize: 30, fontWeight: 600 }}>Orbit 2</div>
-            <div style={{ fontSize: 22, opacity: 0.6, marginTop: 6 }}>Launches Thursday, 09:00</div>
+          <div style={{ position: 'absolute', left: 650, top: 330 - rise * 120, width: 620, height: 210, borderRadius: 34, background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(10px)', boxShadow: '0 20px 50px rgba(120,20,20,0.25)', padding: '34px 42px', boxSizing: 'border-box', fontFamily: fonts.inter, color: INK, textAlign: 'left' }}>
+            <div style={{ fontSize: 58, fontWeight: 600, letterSpacing: '-0.02em' }}>Orbit 2</div>
+            <div style={{ fontSize: 36, opacity: 0.65, marginTop: 8 }}>Launches Thursday, 09:00</div>
           </div>
         )}
       </PlanetPull>

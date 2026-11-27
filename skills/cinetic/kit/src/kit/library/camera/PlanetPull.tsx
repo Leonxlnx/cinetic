@@ -29,7 +29,7 @@ export const PlanetPull: React.FC<{
   /** The latitude that sits on the rim at the top (deg): the grid near the rim reads as the floor that was pulled from. */
   rimLat?: number;
   children?: React.ReactNode;
-}> = ({ at, dur = 18, body = '#0B0A1E', line = 'rgba(140,150,255,0.45)', rim = '#6C7BFF', sky = 'linear-gradient(100deg, #E0346E 0%, #F25A5A 55%, #FFC9A0 100%)', horizon = 0.37, step = 4, rimLat = 12, children }) => {
+}> = ({ at, dur = 18, body = '#120C0D', line = 'rgba(255,186,150,0.42)', rim = '#FFC48E', sky = 'linear-gradient(100deg, #E0346E 0%, #F25A5A 55%, #FFC9A0 100%)', horizon = 0.37, step = 4, rimLat = 12, children }) => {
   const frame = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
   // a quadratic ease-out: the corners open over the first 3 f, then the rim sinks, slowing, to the horizon
