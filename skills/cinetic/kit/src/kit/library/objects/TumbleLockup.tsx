@@ -1,9 +1,10 @@
-// TumbleLockup (logo, build): the app tile grows out of a dot with a tilt and a small overshoot, its glyph popping in
-// last; the name's letters tumble in one after another to its right, each born small, slanted, in the tile's colour and
-// low to the right, rising into place as it turns to ink.
-// Numbers: the tile from a dot to 122 % in 6 f and back to 100 % by 10 f, its turn 15, -8, 0 degrees; the glyph pops at
-// 7-9 f (0 to 110 to 100 %); letters 2 f apart from 1 f, each lands in 4 f (scale 50 to 100 %, slant 14 to 0 degrees,
-// from 0.3 em right and 0.25 em low, colour from the tile's to the ink); the whole lockup 16 f.
+// TumbleLockup (logo, build): the app tile grows out of a dot with a tilt and a small overshoot, its glyph on it from
+// the first frame; the name's letters tumble in one after another to its right, each born small, slanted and low to the
+// right, in the ink, rising into place.
+// Numbers: the tile from a dot to 122 % in 6 f and back to 100 % by 10 f, its turn 15, -8, 0 degrees; the glyph rides
+// the tile from frame 0 (80 to 106 to 100 % of it by 10 f); letters 2 f apart from 1 f, each lands in 4 f (scale 50 to
+// 100 %, slant 14 to 0 degrees, from 0.3 em right and 0.25 em low; `born` gives them a colour to turn from); the whole
+// lockup 16 f.
 // Caution: a bold, playful opener for a consumer brand; the letters stay set at the name's spacing (they move, the
 // spacing never closes up).
 // Catalogue: ../catalog/object.ts; props and recipe: references/library-objects.md.
@@ -18,7 +19,7 @@ export const TumbleLockup: React.FC<{
   /** The tile's glyph (drawn centred on the tile, in white by default). */
   glyph?: React.ReactNode;
   at?: number;
-  /** The tile's colour (letters are born in it). */
+  /** The tile's colour. */
   color?: string;
   ink?: string;
   /** Text size in px (default 10 % of the short side); the tile is 1.25 times it. */
@@ -28,7 +29,9 @@ export const TumbleLockup: React.FC<{
   style?: React.CSSProperties;
   x?: number;
   y?: number;
-}> = ({ name, glyph, at = 0, color = '#F24A2E', ink = '#1B1416', size, gap = 2, style, x, y }) => {
+  /** The colour the letters are born in (default the ink: they never land in the tile's colour and change). */
+  born?: string;
+}> = ({ name, glyph, at = 0, color = '#F24A2E', ink = '#1B1416', size, gap = 2, style, x, y, born }) => {
   const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
   const ts = size ?? Math.min(W, H) * 0.1;
@@ -44,7 +47,8 @@ export const TumbleLockup: React.FC<{
   const left = cx - total / 2;
   const tScale = keys(t, [[0, 0.1], [6, 1.22], [10, 1]], ease.out);
   const tRot = keys(t, [[0, 15], [4, -8], [10, 0]], ease.inOut);
-  const gp = keys(t, [[6, 0], [8, 1.1], [10, 1]], ease.out);
+  // the glyph rides on the tile from its first frame (a tile never tumbles blank) and settles with a small pop of its own
+  const gp = keys(t, [[0, 0.8], [6, 1.06], [10, 1]], ease.out);
   const chars = Array.from(name);
   return (
     <AbsoluteFill>
@@ -64,7 +68,7 @@ export const TumbleLockup: React.FC<{
               position: 'absolute',
               left: left + tile + sep + g.x,
               top: cy - L.height / 2,
-              color: mixColor(color, ink, clamp((t - b) / 4)),
+              color: born ? mixColor(born, ink, clamp((t - b) / 4)) : ink,
               transformOrigin: '30% 80%',
               transform: `translate(${mix(p, ts * 0.3, 0)}px, ${mix(p, ts * 0.25, 0)}px) scale(${mix(p, 0.5, 1)}) skewX(${mix(p, -14, 0)}deg)`,
             }}

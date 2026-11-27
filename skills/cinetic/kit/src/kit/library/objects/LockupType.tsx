@@ -1,7 +1,8 @@
 // LockupType (logo, build): the mark holds alone at the centre, then slides left as the name appears beside it a letter
-// at a time, each letter cut on at full strength; the lockup re-centres with every letter, so it ends centred.
-// Numbers: letters at 1, 2, 3, 5, 6, 8 f after the slide starts (about 1.4 f a letter, uneven like a hand on keys),
-// each letter's share of the re-centring glides in 5 f on expo out; the gap between mark and name 0.32 of the text size;
+// at a time, each letter cut on at full strength; the lockup ends centred.
+// Numbers: the mark glides to its final place once, in 12 f on expo out from the end of the hold; letters at 1, 2, 3,
+// 5, 6, 8 f after half the glide (about 1.4 f a letter, uneven like a hand on keys), beside a mark nearly at rest (`recentre="letter"`: each
+// letter's share of the re-centring glides in 5 f, the mark stepping with every letter); the gap between mark and name 0.32 of the text size;
 // `per={0}` puts the whole name on one frame and slides the lockup to centre in 10 f. The mark may build while it holds:
 // pass a function `(p) => node` and it receives 0..1 over `build` frames from `at`, already one step in on frame `at`
 // (never a bare p = 0 frame: the mark's tile and glyph should both draw from p, so nothing stands empty).
@@ -34,7 +35,15 @@ export const LockupType: React.FC<{
   gap?: number;
   x?: number;
   y?: number;
-}> = ({ name, mark, markW, at = 0, hold = 18, build = 12, per = 1.4, times, size, color = '#16233A', style, gap = 0.32, x, y }) => {
+  /**
+   * How the lockup re-centres: 'once' (default) the mark slides to its final place in one glide of `glide` frames and
+   * the letters type beside it from half-way through, nothing moving again after it; 'letter' (the earlier default) every letter pushes the
+   * group by its own width, so the mark steps left with each one.
+   */
+  recentre?: 'once' | 'letter';
+  /** Frames of the one glide (default 12; 10 with `per={0}`). */
+  glide?: number;
+}> = ({ name, mark, markW, at = 0, hold = 18, build = 12, per = 1.4, times, size, color = '#16233A', style, gap = 0.32, x, y, recentre = 'once', glide: glideIn }) => {
   const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
   const ts = size ?? Math.min(W, H) * 0.07;
@@ -52,13 +61,19 @@ export const LockupType: React.FC<{
   const edge = (i: number) => (L.chars[i] ? L.chars[i].x + L.chars[i].width : 0);
   let shown = -1;
   let wSmooth = markW;
-  const glide = per === 0 ? 10 : 5;
+  const once = recentre === 'once' || per === 0;
+  const glide = glideIn ?? (per === 0 ? 10 : once ? 12 : 5);
+  // with one glide the mark has nearly arrived (about 85 %) before the first letter, so the name types beside a mark at rest
+  const delay = once && per !== 0 ? Math.round(glide / 2) : 0;
   for (let i = 0; i < chars.length; i++) {
-    const ti = tOf(i);
+    const ti = tOf(i) + delay;
     if (t >= ti) shown = i;
+    if (once) continue;
     const share = (i === 0 ? g : 0) + edge(i) - (i > 0 ? edge(i - 1) : 0);
     wSmooth += share * ease.out(clamp((t - ti + 1) / glide));
   }
+  // one glide from the mark alone at the centre to the whole lockup centred, from the end of the hold
+  if (once && chars.length) wSmooth += (g + edge(chars.length - 1)) * ease.out(clamp((t + 1) / glide));
   const left = cx - wSmooth / 2;
   const markNode = typeof mark === 'function' ? mark(ease.out(clamp((f - at + 1) / Math.max(1, build)))) : mark;
   return (

@@ -26,11 +26,11 @@ by the checklist in [library.md](library.md#how-to-add-a-piece); the two tables 
 | [TilePop](#tilepop) | enter, build | 48 f | photo tiles pop on one a frame, scattered, then gather into a rising ribbon; each is born two-tone and cuts to true colour | many pictures at once: a community, a catalogue, the people a product serves, at the opening of a film |
 | [DealtStack](#dealtstack) | build, emphasis | 25 f | photo cards dealt one on another in the gap of a line, each breaking through in square blocks, the stack fanning up and pushing the words apart | a line about variety or volume (every idea, all your moments) where the pictures are the proof |
 | [BlobMerge](#blobmerge) | build | 32 f | two round blobs drift together, merge with a liquid neck, split smaller, merge into a pill and shrink to a dot that snaps into the mark | the opening of a lockup for a brand whose mark is round or soft; two things becoming one |
-| [LockupType](#lockuptype) | build | 26 f | the mark holds, then slides left as the name appears beside it a letter about every frame and a half, the lockup re-centring with each letter | the lockup after a mark has been built or carried in; the default end card |
+| [LockupType](#lockuptype) | build | 26 f | the mark holds, then slides left in one glide as the name appears beside it a letter about every frame and a half, the lockup ending centred | the lockup after a mark has been built or carried in; the default end card |
 | [CubeSplit](#cubesplit) | build | 58 f | an isometric cube splits into four, the four swing into a ring of eight blocks, and the ring tips over and lands flat as a pixel mark | a mark made of square cells; a product about building blocks, data or infrastructure |
 | [SquareTunnel](#squaretunnel) | build, join | 43 f | a square opens into a ring and new squares are born in its hole, every ring growing outward at one speed, until the last grows solid over the frame | out of a square already on screen (a tile, a cell, a button) into the ground of the next scene: depth, speed, going through |
 | [PixelMark](#pixelmark) | build, enter | 14 f | a mark of square cells assembles by trial, partial sets blinking on and off, then holds as hairline guides run out along its cell edges | the opening or closing mark of a technical product whose mark is drawn in cells |
-| [TumbleLockup](#tumblelockup) | build | 16 f | the app tile grows from a dot with a tilt and overshoot, its glyph popping in, while the letters of the name tumble in two frames apart, small, slanted and tinted, rising into place in ink | the lockup of a consumer app with a coloured tile; a quick, bright ending |
+| [TumbleLockup](#tumblelockup) | build | 16 f | the app tile grows from a dot with a tilt and overshoot, its glyph on it from the first frame, while the letters of the name tumble in two frames apart, small and slanted, rising into place in ink | the lockup of a consumer app with a coloured tile; a quick, bright ending |
 | [DotRing](#dotring) | build | 34 f | scattered dots fly on arcs into a turning ring, stretch into dashes that close it, the ring floods with colour segment by segment and a light runs round it | a moment of connection: many inputs becoming one, a sync, a link made |
 | [CurlRing](#curlring) | build, exit | 73 f | a row of picture tiles turns to colour, tips into a diagonal and curls into a ring tile after tile, the ring spinning and imploding into the centre | many things gathered into one before the product appears out of the centre |
 | [PillBurst](#pillburst) | enter, exit | 50 f | tool pills burst out from behind a line and settle round it tilted; on the next line they fall under gravity and land in a heap at the bottom | the problem beat: too many tools, tabs or apps, then all of them falling apart |
@@ -236,9 +236,11 @@ A glowing dot opens sideways into a row of fine bars that lives like a level met
 ```tsx
 <DotWave at={T.voice} calmAt={40} color="#fff" />
 ```
-- Numbers: the row opens to 60 % of W in 14 f (expo out); bars on a 0.55 % of W pitch; spikes on twos up to 11 % of the
-  short side, tapering to the edges; four dim rows at +-8 and +-16 % of the short side at 22 %; calming narrows to 30 %
-  in 12 f. In a 1080 x 1920 frame the meter keeps its 16:9 height; `width` is still a share of W.
+- Numbers: the row opens to 60 % of W in 14 f (expo out); bars on a pitch of 0.98 % of the short side, 0.32 % wide
+  (0.55 % and 0.18 % of W in 16:9); spikes on twos up to 11 % of the short side (`amp`), tapering to the edges; four dim
+  rows at +-8 and +-16 % of the short side at 22 %; calming narrows to 30 % in 12 f. In a 1080 x 1920 frame the meter
+  keeps its 16:9 bars and height; `width` is still a share of W. For a lower meter pass `amp`, never a scaleY on it
+  (squashed, its bars blur into a smudge).
 - Caution: one moving thing at a time; it is a signal, not decoration.
 
 ### WireTetra
@@ -264,25 +266,29 @@ along its cell edges. `shrinkAt` steps it down.
 - Caution: cells only, one flat ground; `DotWord` spells words.
 
 ### TumbleLockup
-The app tile grows out of a dot with a tilt and an overshoot, its glyph popping in, while the name's letters tumble in
-two frames apart, small, slanted and tinted, rising into place in ink.
+The app tile grows out of a dot with a tilt and an overshoot, its glyph on it from the first frame, while the name's
+letters tumble in two frames apart, small and slanted, rising into place in ink.
 ```tsx
 <TumbleLockup at={T.lockup} name="Tandem" glyph={<Glyph />} color={BRAND} ink="#1B1416" />
 ```
-- Numbers: the tile to 108 % in 6 f, 100 % by 10 f, turning 15, -8, 0 degrees; the glyph 7-9 f; letters from 1 f, 2 f
-  apart, each 4 f (50 to 100 %, slant 14 degrees, from 0.3 em right and 0.25 em low, tile colour to ink).
+- Numbers: the tile to 122 % in 6 f, 100 % by 10 f, turning 15, -8, 0 degrees; the glyph rides the tile from frame 0
+  (80, 106, 100 % of it by 10 f: the tile never tumbles blank); letters from 1 f, 2 f apart, each 4 f (50 to 100 %,
+  slant 14 degrees, from 0.3 em right and 0.25 em low), in the ink from their first frame; `born` gives them a colour
+  to turn from (never the accent: a letter that lands in it and turns reads as a colour jump).
 - `size` defaults to 10 % of the frame's short side (108 px in 16:9 and in a 1080 x 1920 frame); the tile is 1.25 times it.
 - Caution: the letters move but the name's spacing never closes up.
 
 ### LockupType
-The mark holds, then slides left as the name appears beside it a letter about every frame and a half, the lockup
-re-centring with each letter. The mark may build while it holds (`mark` as a function of 0..1).
+The mark holds, then slides left in one glide as the name appears beside it a letter about every frame and a half, the
+lockup ending centred. The mark may build while it holds (`mark` as a function of 0..1).
 ```tsx
 <LockupType at={T.lockup} name="Halden" mark={(p) => <Mark p={p} />} markW={128} hold={16} />
 <LockupType ... per={0} />   // the name on one frame, the lockup sliding to centre in 10 f
 ```
-- Numbers: letters at 1, 2, 3, 5, 6, 8 f after the hold, then 1.4 f apart; each letter's share of the re-centring
-  glides in 5 f (expo out); gap 0.32 of the text size.
+- Numbers: the mark glides to its final place once, in 12 f (expo out, `glide`) from the end of the hold; the letters
+  at 1, 2, 3, 5, 6, 8 f after half the glide, then 1.4 f apart, typing beside a mark nearly at rest; nothing moves after
+  it; gap 0.32 of the text size. `recentre="letter"` is the older form (letters from the end of the hold, each letter's
+  share gliding in 5 f, the mark stepping left with every letter).
 - A function mark receives `p` one step in on frame `at` (1/build, then 1 on `at + build - 1`): draw its tile and glyph
   together from `p`, so its first frame is never an empty plate or a stub.
 - Caution: letters cut on at the name's final spacing; never wide letters closing, never a fade.

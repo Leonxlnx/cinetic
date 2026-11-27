@@ -13,7 +13,7 @@ export const UI: LibraryEntry[] = [
     frames: 90,
     summary: 'one notice lands alone and is held, then more, faster and faster, in a pile with depth; it can fold back',
     use: 'the "it keeps coming" beat: orders, messages or sign-ups arriving faster and faster',
-    caution: 'hold the first one 30-45 f; keep every item\'s text real and different',
+    caution: 'hold the first one 30-45 f; keep every item\'s text real and different; each one behind shows its whole text (or only a rim with stack lips), never half a line',
     reel: { film: 'library-ui', from: 0, to: 169 },
   },
   {
@@ -109,7 +109,7 @@ export const UI: LibraryEntry[] = [
     frames: 100,
     summary: 'a button becomes its own progress bar and closes into a check, the done label sliding out beside it',
     use: 'the one action of a scene: publish, send, deploy',
-    caution: 'put it at the foot of a real card and drive it with a Pointer click on at + pressAt',
+    caution: 'put it at the foot of a real card and drive it with a Pointer click on at + pressAt; the fill is the accent over a pale track of it, so it reads on a light accent too',
     reel: { film: 'library-ui', from: 956, to: 1105 },
   },
   {
@@ -121,7 +121,7 @@ export const UI: LibraryEntry[] = [
     frames: 40,
     summary: 'a pointer that looks right: arcing, decelerating travel, a lifting shadow, a squash press and a soft ring',
     use: 'any press, drag or hover in a product scene',
-    caution: 'the target must answer the press; keep it 56-80 px tall',
+    caution: 'the target must answer the press; keep it 56-80 px tall; on a phone or tablet use touch (a soft contact dot), never the arrow or the hand',
     reel: { film: 'library-ui', from: 994, to: 1062, shownIn: 'ActionMorph' },
   },
   {
@@ -145,7 +145,7 @@ export const UI: LibraryEntry[] = [
     frames: 180,
     summary: 'a chat in its window: typing dots widen into messages, a reply typed and sent from the composer, Read settles',
     use: 'a conversation between two people',
-    caution: 'one line per message; three to six messages',
+    caution: 'one line per message; three to six messages; the window fits the thread (h is a most, fit false keeps it)',
     reel: { film: 'library-ui', from: 1296, to: 1495 },
   },
   {
@@ -421,7 +421,7 @@ export const UI: LibraryEntry[] = [
     frames: 34,
     summary: 'tinted skeleton bars cascade in a row a frame, then a warm band sweeps across and turns them into the real text behind it',
     use: 'an answer or a document being written in one go',
-    caution: 'the bars take the text\'s measured shape; never leave bars as content',
+    caution: 'the bars take the text\'s measured shape; never leave bars as content; a loading state, not a way to set a claim (a lone bar on a plate reads as an empty slab)',
     reel: { film: 'library-ui', from: 3136, to: 3185 },
   },
 ];

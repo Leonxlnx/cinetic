@@ -157,8 +157,12 @@ The commonest join a film builds by hand; take this one.
 - `box`: the button exactly as drawn in the old scene. `win`: the window exactly as drawn in the next scene (omit it to
   open to the full frame). `face`: the button's own label and fill at `box` size, fading out in the first fifth (3 f) and
   growing 15 % at most. `windowOpenEnd(at, opts)` is its last frame.
-- Numbers: 14 f on cubic-bezier(0.32, 0, 0.12, 1) (a short lift out of the button, then a long settle); the content is
-  scaled by the larger of the two ratios (cover), centred on the rectangle.
+- `carry`: opening to the full frame, the old scene rides with the window (scaled to 1.6 about the button by the last
+  frame, the button kept under the window's centre), so it leaves the frame with the growing window instead of standing
+  round it; 1 holds it still (the default when `win` is given).
+- Numbers: 14 f on cubic-bezier(0.32, 0, 0.12, 1) (a short lift out of the button, then a long settle); the rectangle
+  takes the window's shape in the first 45 % (a wide button does not crop the window's long side for long, never
+  narrower than the button); the content is scaled by the larger of the two ratios (cover), centred on the rectangle.
 - Caution: the scene around the window must be the same in both scenes (one desk, one ground), and whatever the old
   scene has around the button (its card) lies wholly inside `win`, or a sliver of it stays beside the window until the
   last frame; otherwise open to the full frame. Lay the window's content out at its final size: it is scaled, never

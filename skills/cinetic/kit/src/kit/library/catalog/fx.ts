@@ -121,7 +121,7 @@ export const FX: LibraryEntry[] = [
     frames: 26,
     summary: 'light passing through letters: a soft bright band clipped to the glyphs crosses a huge word once, a fainter highlight a letter behind',
     use: 'the payoff word or name set huge, the moment it is complete',
-    caution: 'once, on large type only; on small type it reads as a flicker',
+    caution: 'once, on large type only; on small type it reads as a flicker; on dark ink over a light ground it is a soft lift (strength 0.4 by default), never a band to white',
     reel: { film: 'library-fx', from: 686, to: 735 },
   },
   {

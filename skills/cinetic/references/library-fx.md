@@ -166,8 +166,12 @@ lifting nearly to white, a fainter highlight a letter behind.
 <GlyphSheen text="Tidal" at={T.name} dur={26} size={560} fill="linear-gradient(180deg, #0F3440, #2C7F8F 70%, #8FD3DA)" />
 ```
 - Numbers: 24-28 f for a four- or five-letter word (about 6 f a letter), close to linear; the band 22 % of the word, the
-  echo at 40 % strength 12 % behind; `fill` a colour or a gradient that stays the word's own fill.
-- Caution: once, on the payoff word set large; on small type it reads as a flicker.
+  echo at 40 % strength 12 % behind, both bell-shaped (no crest line); `fill` a colour or a gradient that stays the
+  word's own fill.
+- `strength` (0..1): the light's peak. Default 0.95, but 0.4 with a band 1.5 times as wide on a dark word (a near-black
+  ink fill): a band lifting dark ink to white on a light ground cuts the glyph in two and reads as a broken digit.
+- Caution: once, on the payoff word set large; on small type it reads as a flicker. Made for a coloured or light word on
+  a dark ground; on dark ink over a light ground it is a soft lift at most.
 
 ### PenMarks
 A narrator's pen over the frame: a hand loop round a point, a ring, a curved arrow with its head, a zigzag growth line, a

@@ -2,10 +2,12 @@
 // widening from the left; then a warm band sweeps across left to right, warming the bars ahead of it and turning
 // them into the real text behind it.
 // Numbers: a row a frame from +0, each bar widening 0.2 to 1 of its text's width in 3 f; the sweep starts `sweepAt`
-// (rows + 8 f) and crosses the block in 14 f (ease-in-out); bars within 0.3 of the block's width ahead of the band
-// warm towards its colour; the band is 0.06 of the block wide, soft; the text behind it lands in the ink.
+// (rows + 8 f; rows + 1 f for one or two lines) and crosses the block in 14 f (ease-in-out); bars within 0.3 of the
+// block's width ahead of the band warm towards its colour; the band is 0.06 of the block wide, soft; the text behind it
+// lands in the ink.
 // Caution: the bars have the shape of the text that replaces them (measured); a heading, a few lines, a list; never
-// grey bars left standing as content.
+// grey bars left standing as content. It is a loading state for a drafted answer, not a way to set a claim: a lone bar
+// on a plate reads as an empty slab; set a claim with a type piece.
 // Catalogue: ../catalog/ui.ts; props and recipe: references/library-ui.md.
 import React from 'react';
 import { useVideoConfig } from 'remotion';
@@ -49,7 +51,8 @@ const SkeletonSweepInner: React.FC<{
   });
   const blockH = yy;
   const y0 = (yIn ?? H / 2) - blockH / 2;
-  const sw = start + (sweepAt ?? lines.length + 8);
+  // one or two lines (a claim, a reply): the band follows the bars at once, so a lone bar never holds on its own
+  const sw = start + (sweepAt ?? (lines.length <= 2 ? lines.length + 1 : lines.length + 8));
   const bandP = at(frame, sw, 14, ease.inOut);
   const sweeping = frame >= sw;
   const bandX = mix(bandP, -0.08, 1.08) * w;

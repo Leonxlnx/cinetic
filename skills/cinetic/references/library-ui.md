@@ -124,6 +124,12 @@ lean into fast horizontal travel, a 2 px idle drift at rest, a squash press and 
 - Exit: from `exitAt` it slides down-right (520, 380 px) on an ease-in and fades, gone after `exitDur` frames (14). It
   is still on screen for most of that: set `exitAt` `exitDur` frames before the next scene arrives, or shorten
   `exitDur` (`exitAt={T.tap} exitDur={8}`).
+- `touch`: a finger on a touch screen instead of the arrow: a soft round contact dot `size` across, translucent so the
+  label under it still reads, centred on the point (`keys` give its centre). It shows faintly while it travels (the
+  finger above the glass), settles as it lands, deepens and shrinks 14 % as it presses, the ring blooms from it, and on
+  `exitAt` it lifts (grows a little and fades where it is). `<Pointer touch keys={...} clicks={[T.tap]} size={84} />`
+- Which form: the arrow for a desktop app or a web page under a mouse; `hand` only for a link under a mouse; `touch` on
+  any phone or tablet screen (an arrow or a hand on a phone reads as fake and covers the label it taps).
 - Caution: the target must answer the press (a hover fill before it, a dip, a state change); keep it 56-80 px tall.
 
 ### Caret, InkTyped, InkWords
@@ -142,8 +148,11 @@ folds back into one with two lips. For "it keeps coming" (orders, messages, sign
 ```
 - Numbers: the first lands by shrinking 1.30 to 1.0 over 12 f with blur 28 to 0; each later one rises 120 px into the
   front slot along 59, 76, 87, 93, 96, 98, 100 % (6 f) from scale 0.95 and 6 px blur; older ones step back a slot:
-  scale 1, 0.943, 0.894, 0.849, 0.807, blur 0, 1.2, 2, 2.8, 5, dimmer, 0.8 of a notice lower so each title line stays
-  whole. Gaps after the first: hold, 18, 11, 8, 6, 5, 4, 4, 3. Collapse: back to front, 2 f apart, 9 f ease-in each.
+  scale 1, 0.943, 0.894, 0.849, 0.807, blur 0, 1.2, 2, 2.8, 5, dimmer, and lower by a step that shows each one's whole
+  text (title and body) below the one in front, only its top padding under it. Gaps after the first: hold, 18, 11, 8,
+  6, 5, 4, 4, 3. Collapse: back to front, 2 f apart, 9 f ease-in each.
+- `stack="lips"`: a tight pile instead, each one behind showing only a rim of its card, no text. `pitch` sets the step
+  in px (never so that a text line is half hidden).
 - Caution: hold the first one 30-45 f; keep every item's text real and different.
 
 ### CardFan
@@ -281,19 +290,23 @@ the field into its bubble at the right; "Read" settles under the last. Messages 
 - `push={{ at, to, dur, back }}` pushes in on the composer while someone types: from `at` (relative to the piece's
   `at`) the view scales 1 to `to` over `dur` (24) frames, ease in-out in log-space, and eases back from `back`.
   `<ChatThread ... push={{ at: 60, to: 1.3, back: 96 }} />`
-- Caution: one line per message; three to six messages. The window keeps its `h`: with three or four messages set `h`
-  lower (about `size * (9 + 2.7 * messages)`) so the thread does not sit under an empty two thirds.
+- `fit` (default true): the window is never taller than the whole thread needs (header, day line, every message,
+  "Read", composer), so `h` is a most and three or four messages get a short window, not an empty third over them;
+  `fit={false}` keeps exactly `h`.
+- Caution: one line per message; three to six messages.
 
 ### ActionMorph
-A button that becomes its own progress bar and closes into a check, always fully lit: the pointer's arrival darkens the
-whole pill (`hoverAt`), the press dips it, it widens into a bar with a lighter sweep running inside and the live status
-in white, then it contracts into a disc, a check draws and the done label slides out beside it.
+A button that becomes its own progress bar and closes into a check: the pointer's arrival darkens the whole pill
+(`hoverAt`), the press dips it, it widens into a bar whose colour eases to a pale track of the same hue (a deep one on a
+dark look) while the fill, the accent at full strength, grows from the left, the live status in two inks cut at the
+fill's edge; then it contracts into a disc, a check draws and the done label slides out beside it. The progress reads
+on any accent, a light yellow too.
 ```tsx
 <ActionMorph L={lookLight('#2B5BFF', '#E9EBEF')} label="Publish" working="Publishing" doneLabel="Live on field.studio" at={T.publish} pressAt={64} hoverAt={55} dur={44} size={40} w={400} trackW={1100} />
 ```
 - Numbers: hover 4 f, the pill 10 % darker; dip 4 % over 3 f; widen 14 f (`cubic-bezier(0.3, 0, 0.1, 1)`); progress
   `dur` frames with small holds; contract 12 f; check 7 f; done label 14 f.
-- `percent={false}` prints the working label alone ("Creating link"), for work with no measurable progress.
+- The working label stands alone ("Creating link"); `percent` adds the running figure ("Creating link 76%"), only when the number is the point.
 - Caution: put it at the foot of a real card (what is being published) and drive it with a `Pointer` click on
   `at + pressAt`.
 
@@ -463,12 +476,13 @@ across, warming the bars ahead of it and turning them into the text behind it.
 ```tsx
 <SkeletonSweep L={lookLight('#E07A2E', '#FFFFFF')} at={T.answer} lines={[{ text: 'Brief: spring campaign', scale: 1.3, weight: 640 }, { text: '...', bullet: true }]} />
 ```
-- Numbers: a row a frame, each widening 0.2 to 1 in 3 f; the sweep at rows + 8 f, 14 f ease-in-out; bars warm within
-  0.3 of the block ahead of the band.
+- Numbers: a row a frame, each widening 0.2 to 1 in 3 f; the sweep at rows + 8 f (rows + 1 f for one or two lines, so
+  a lone bar never holds), 14 f ease-in-out; bars warm within 0.3 of the block ahead of the band.
 - `plate` (true: the look's surface; or a colour): a card behind the block, padded one text size, that opens with the
   first bar and grows down with the rows, never standing empty. With a plate of your own (a notice's box), start `at`
   on its first frame, not when it has finished growing.
-- Caution: never leave the bars standing as content.
+- Caution: never leave the bars standing as content. It is a loading state for a drafted answer, not a way to set a
+  claim: a single bar on a plate reads as an empty slab with a loading bar; set a claim with a type piece.
 
 ## Scenes and joins
 

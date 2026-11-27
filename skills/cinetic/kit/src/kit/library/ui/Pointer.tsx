@@ -2,7 +2,8 @@
 // and a soft ring.
 // Numbers: arcs with bow 0.14 (at most 120 px) on cubic-bezier(0.3, 0.05, 0.12, 1); press 3 f to 0.84, back over 7 f;
 // ring 20 f.
-// Caution: the target must answer the press; keep it 56-80 px tall.
+// Caution: the target must answer the press; keep it 56-80 px tall. On a phone or tablet use `touch` (a soft contact
+// dot), never the arrow or the `hand` cursor.
 // Catalogue: ../catalog/ui.ts; props and recipe: references/library-ui.md.
 import React from 'react';
 import { at, clamp, ease, type Ease, mix } from '../../motion';
@@ -66,14 +67,22 @@ export const Pointer: React.FC<{
   color?: string;
   outline?: string;
   ring?: string | false;
+  /** A desktop hand cursor (a link under a mouse). Never on a phone screen: use `touch`. */
   hand?: boolean;
+  /**
+   * A finger on a touch screen: a soft round contact dot (`size` across), translucent so the label under it still reads,
+   * centred on the point. It shows faintly while it travels (the finger above the glass), settles as it lands, darkens
+   * and shrinks as it presses, and the ring blooms from it. Use it on a phone or tablet; the arrow for a desktop app.
+   */
+  touch?: boolean;
   bow?: number;
-}> = ({ keys, clicks = [], size = 64, start: startIn, at: atIn, exitAt, color = '#111216', outline = '#FFFFFF', ring = '#8FB0FF', hand = false, bow = 0.14, exitDur = 14 }) => {
+}> = ({ keys, clicks = [], size = 64, start: startIn, at: atIn, exitAt, color = '#111216', outline = '#FFFFFF', ring = '#8FB0FF', hand = false, touch = false, bow = 0.14, exitDur = 14 }) => {
   const start = startIn ?? atIn ?? keys[0].f;
   const frame = useUiFrame();
   if (frame < start) return null;
   if (exitAt !== undefined && frame > exitAt + exitDur) return null;
   const k = pointerAt(frame, keys, bow);
+  if (touch) return <TouchDot frame={frame} k={k} clicks={clicks} size={size} start={start} exitAt={exitAt} exitDur={exitDur} color={color} outline={outline} ring={ring} />;
   const v = Math.hypot(k.vx, k.vy);
   const rest = clamp(1 - v / 3);
   const x = k.x + Math.sin(frame / 13) * 1.6 * rest;
@@ -137,6 +146,62 @@ export const Pointer: React.FC<{
           </defs>
           <path d={path} fill={`url(#ptr${color.replace(/[^a-zA-Z0-9]/g, "")})`} stroke={outline} strokeWidth={1.7} strokeLinejoin="round" paintOrder="stroke" />
         </svg>
+      </div>
+    </>
+  );
+};
+
+/** The touch form: a soft contact dot that lands, presses and lifts (see `touch`). */
+const TouchDot: React.FC<{
+  frame: number;
+  k: { x: number; y: number; vx: number; vy: number };
+  clicks: number[];
+  size: number;
+  start: number;
+  exitAt?: number;
+  exitDur: number;
+  color: string;
+  outline: string;
+  ring: string | false;
+}> = ({ frame, k, clicks, size, start, exitAt, exitDur, color, outline, ring }) => {
+  const v = Math.hypot(k.vx, k.vy);
+  // above the glass while it travels, on it at rest: faint and a little larger in flight
+  const air = Math.min(1, v / 18);
+  const press = pressOf(frame, clicks);
+  const appear = at(frame, start, 6, ease.out);
+  // the finger lifts off: it grows a little and fades, where it is
+  const out = exitAt !== undefined ? at(frame, exitAt, Math.max(1, exitDur), ease.out) : 0;
+  const d = size * (1 + air * 0.12 + out * 0.15) * (1 - press * 0.14) * mix(appear, 1.2, 1);
+  const o = appear * (1 - out) * mix(air, 1, 0.45);
+  const rings = ring
+    ? clicks
+        .filter((c) => frame >= c && frame < c + 22)
+        .map((c) => {
+          const q = at(frame, c, 20, ease.out);
+          const r = mix(q, size * 0.5, size * 1.3);
+          return <div key={c} style={{ position: 'absolute', left: k.x - r, top: k.y - r, width: r * 2, height: r * 2, borderRadius: r, border: `${mix(q, size * 0.08, size * 0.02)}px solid ${ring}`, opacity: (1 - q) * 0.6, pointerEvents: 'none' }} />;
+        })
+    : null;
+  return (
+    <>
+      {rings}
+      <div
+        style={{
+          position: 'absolute',
+          left: k.x - d / 2,
+          top: k.y - d / 2,
+          width: d,
+          height: d,
+          borderRadius: d,
+          opacity: o,
+          zIndex: 200,
+          pointerEvents: 'none',
+        }}
+      >
+        {/* the contact: a translucent disc, deeper while pressed, with a soft shadow under it */}
+        <div style={{ position: 'absolute', inset: 0, borderRadius: d, background: mixColor(color, '#FFFFFF', 0.25), opacity: mix(press, 0.3, 0.46), boxShadow: `0 ${size * 0.05}px ${size * 0.22}px rgba(0,0,0,${0.5 * (1 - air)})` }} />
+        {/* a fine light rim, so it reads on a dark screen too */}
+        <div style={{ position: 'absolute', inset: 0, borderRadius: d, boxShadow: `inset 0 0 0 ${Math.max(1.5, size * 0.03)}px ${outline}`, opacity: 0.85 }} />
       </div>
     </>
   );

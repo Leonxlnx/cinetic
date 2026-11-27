@@ -20,7 +20,8 @@ export const pileTimes = (n: number, hold = 40) => {
 /**
  * A notification pile that builds. The first notice lands alone by shrinking (1.30 to 1.0, blur 28 to 0, 12 f) and is
  * held; each later one rises 120 px into the front slot (scale 0.95, 6 px blur, 6 f) while the older ones step back a
- * slot: smaller (1, 0.943, 0.894, 0.849, 0.807), lower, dimmer and softer, the fifth fading out. The arrivals come
+ * slot: smaller (1, 0.943, 0.894, 0.849, 0.807), lower, dimmer and softer, the fifth fading out. Each one behind shows
+ * its whole text below the one in front (`stack="lips"`: only a rim of its card, no text); never half a line. The arrivals come
  * faster and faster (`times`, default `pileTimes`). From `collapseAt` (relative) the pile folds back behind the front
  * notice into one, leaving two lips under it. Centre at (x, y): the front notice's centre.
  */
@@ -36,11 +37,16 @@ const NoticePileInner: React.FC<{
   y?: number;
   w?: number;
   size?: number;
-  /** px between slots at full size (default 0.36 of the notice's height). */
+  /** px between slots at full size (overrides `stack`). */
   pitch?: number;
+  /**
+   * What each notice behind shows below the one in front: 'lines' (default) its whole text, title and body, only its top
+   * padding under the front one; 'lips' only a rim of its card, no text (a tight pile).
+   */
+  stack?: 'lines' | 'lips';
   /** Playback speed: 1 is the measured timing, 2 twice as fast. */
   speed?: number;
-}> = ({ L, items, at: start, times, hold = 40, collapseAt, x: xIn, y = 420, w = 860, size = 32 , speed = 1 }) => {
+}> = ({ L, items, at: start, times, hold = 40, collapseAt, x: xIn, y = 420, w = 860, size = 32, pitch, stack = 'lines', speed = 1 }) => {
   // the frame's centre by default, in a composition of any size
   const { width: frameW } = useVideoConfig();
   const x = xIn ?? frameW / 2;
@@ -50,8 +56,10 @@ const NoticePileInner: React.FC<{
   const n0 = items[0];
   const textH = (n0?.app ? size * 1.2 : 0) + size * 1.25 + (n0?.body ? size * 1.36 : 0);
   const h = size * 0.85 * 2 + Math.max(size * 2.35, textH);
-  const step = h * 0.8;
   const SC = [1, 0.943, 0.894, 0.849, 0.807, 0.77];
+  // the slot step: a notice behind must show either its whole text (its title's top clear of the one in front, which is
+  // larger by up to 1/0.943) or no text at all (a rim under the bottom padding); never half a line
+  const step = pitch ?? (stack === 'lips' ? size * 0.62 + h * 0.06 : h * 1.065 - size * 0.62);
   const BL = [0, 1.2, 2, 2.8, 5, 8];
   const DIM = [0, 0.06, 0.13, 0.2, 0.3, 0.4];
   const col = collapseAt !== undefined ? start + collapseAt : Infinity;

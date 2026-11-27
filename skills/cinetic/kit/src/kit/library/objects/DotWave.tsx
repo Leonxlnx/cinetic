@@ -1,8 +1,9 @@
 // DotWave (object, build / loop): a glowing dot opens sideways into a row of fine vertical bars that widens
 // symmetrically from the centre and lives like a level meter (a few bars spike and fall every frame), while dim rows of
 // the same bars fade in above and below; `calmAt` narrows it back to one quiet dotted line.
-// Numbers: the dot holds 2 f, the row opens to 60 % of W over 14 f (expo out), bars on a pitch of 0.55 % of W, 0.18 %
-// wide; spikes on twos up to 11 % of the short side, the edges tapering; four dim rows at +-8 and +-16 % of it at 22 % strength from
+// Numbers: the dot holds 2 f, the row opens to 60 % of W over 14 f (expo out), bars on a pitch of 0.98 % of the short
+// side, 0.32 % wide (0.55 % and 0.18 % of W in 16:9); spikes on twos up to 11 % of the short side (`amp`), the edges
+// tapering; four dim rows at +-8 and +-16 % of it at 22 % strength from
 // 0-6 f; a soft glow round the centre; `calmAt` narrows to 30 % over 12 f and the dim rows leave.
 // Caution: it is a voice or a signal; let it sit under or beside one line, never with a second moving thing.
 // Catalogue: ../catalog/object.ts; props and recipe: references/library-objects.md.
@@ -23,7 +24,9 @@ export const DotWave: React.FC<{
   seed?: number;
   x?: number;
   y?: number;
-}> = ({ at = 0, color = '#FFFFFF', calmAt, width = 0.6, rows = true, seed = 5, x, y }) => {
+  /** Spike height, as a share of the short side (default 0.11): lower it instead of squashing the piece with a transform. */
+  amp?: number;
+}> = ({ at = 0, color = '#FFFFFF', calmAt, width = 0.6, rows = true, seed = 5, x, y, amp = 0.11 }) => {
   const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
   const id = useUid('dotwave');
@@ -36,8 +39,10 @@ export const DotWave: React.FC<{
   const calm = calmAt !== undefined ? ease.inOut(clamp((t - calmAt) / 12)) : 0;
   const open = ease.out(clamp((t - 2) / 14));
   const half = (W * mix(calm, width, 0.3) * open) / 2;
-  const pitch = W * 0.0055;
-  const bw = Math.max(1.5, W * 0.0018);
+  // bar pitch and width from the short side too (the same as before in 16:9): in a vertical frame the bars stay bars,
+  // not hairlines that blur into a smudge
+  const pitch = S * 0.0098;
+  const bw = Math.max(2, S * 0.0032);
   const tick = Math.floor(t / 2);
   const bars = (yy: number, alpha: number, k: number, amp: number, hw = half) => {
     const n = Math.floor(hw / pitch);
@@ -65,7 +70,7 @@ export const DotWave: React.FC<{
         </defs>
         <ellipse cx={cx} cy={cy} rx={Math.max(S * 0.05, half * 0.9)} ry={S * 0.07} fill={`url(#${id})`} />
         {dim > 0 && [-0.16, -0.08, 0.08, 0.16].map((o, k) => bars(cy + o * S, dim, k + 1, 0.05, (W * mix(calm, width, 0.3)) / 2))}
-        {bars(cy, 1, 0, 0.11)}
+        {bars(cy, 1, 0, amp)}
         {dot > 0 && <circle cx={cx} cy={cy} r={dot} fill={color} />}
       </svg>
     </AbsoluteFill>

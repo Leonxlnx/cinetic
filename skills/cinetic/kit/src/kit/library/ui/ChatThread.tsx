@@ -2,7 +2,8 @@
 // composer, Read settles.
 // Numbers: dots bubble 7 f, bounce on a 20 f cycle; widen 9 f; washes 10 f; typing 15 characters a second; sent text
 // travels 14 f.
-// Caution: one line per message; three to six messages.
+// Caution: one line per message; three to six messages. The window fits the thread (`h` is a most; `fit={false}`
+// keeps it exactly `h`).
 // Catalogue: ../catalog/ui.ts; props and recipe: references/library-ui.md.
 import React from 'react';
 import { useVideoConfig } from 'remotion';
@@ -118,8 +119,13 @@ const ChatThreadInner: React.FC<{
   cps?: number;
   /** The messaging app's real logo, shown small beside the header's icons. */
   mark?: React.ReactNode;
+  /**
+   * The window is never taller than the whole thread needs (header, day, every message, "Read", composer): `h` is then a
+   * most, and a short thread gets a short window, not a third of it empty (default true). false: exactly `h`.
+   */
+  fit?: boolean;
   speed?: number;
-}> = ({ L, msgs, at: start, person = 'Rosa Diaz', personColor = '#C8692E', status = 'Active now', day = 'Today 9:41', read = 'Read 9:42', x: xIn, y: yIn, w = 1180, h = 940, size = 36, macro = 1, push, cps = 15, mark, speed = 1 }) => {
+}> = ({ L, msgs, at: start, person = 'Rosa Diaz', personColor = '#C8692E', status = 'Active now', day = 'Today 9:41', read = 'Read 9:42', x: xIn, y: yIn, w = 1180, h: hIn = 940, size = 36, macro = 1, push, cps = 15, mark, fit = true, speed = 1 }) => {
   // the frame's centre by default, in a composition of any size
   const { width: frameW, height: frameH } = useVideoConfig();
   const x = xIn ?? frameW / 2;
@@ -127,13 +133,16 @@ const ChatThreadInner: React.FC<{
   const frame = start + (useUiFrame() - start) * speed;
   const { fps } = useVideoConfig();
   const s = size;
-  const left = x - w / 2;
-  const top = y - h / 2;
   const headH = s * 3.4;
   const compH = s * 3.4;
   const pad = s * 1.0;
   const bh = s * 2.3;
   const gap = s * 0.42;
+  // the whole thread at its end: the faded top edge (1.4 s), the day line (1.6 s above the first bubble), the bubbles, "Read"
+  const needH = headH + compH + pad * 0.6 + s * 3.3 + msgs.length * (bh + gap) + (msgs[msgs.length - 1]?.me ? s * 1.3 : 0);
+  const h = fit ? Math.min(hIn, needH) : hIn;
+  const left = x - w / 2;
+  const top = y - h / 2;
   const enter = springAt(frame, 30, start - 12, springs.ui);
   // the sent messages' typing in the composer
   const typed = msgs.map((m) => {

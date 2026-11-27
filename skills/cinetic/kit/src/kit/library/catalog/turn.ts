@@ -109,7 +109,7 @@ export const TURN: LibraryEntry[] = [
     frames: 14,
     summary: 'a window opens out of the button that was pressed, the next scene\'s window drawn whole inside the growing rectangle',
     use: 'carries the press: the pressed button grows into the window or panel it opens; the commonest hand-built join, take this one',
-    caution: 'what surrounds the button must lie wholly inside the window, or a sliver stays beside it',
+    caution: 'what surrounds the button must lie wholly inside the window, or a sliver stays beside it; opening to the full frame the old scene is carried out with it (carry)',
     reel: { film: 'library-turns', from: 809, to: 885 },
   },
   {
