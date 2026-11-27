@@ -147,7 +147,7 @@ const SEGS: Record<string, Seg> = {
   FaceCycle: { ground: PAPER, node: <FaceCycle text="Every draft finds its reader" at={0} gap={4} size={72} color={INK} accent={COBALT} flip={{ index: 1, at: 44 }} /> },
   WeightLine: {
     ground: PAPER,
-    node: <WeightLine text="Every invoice sent tonight" times={[4, 13, 13, 24]} size={130} color={INK} born={EMBER} block={{ index: 3, color: INK, ink: WHITE, at: 40 }} />,
+    node: <WeightLine text="Every invoice sent tonight" times={[4, 13, 13, 24]} size={130} color={INK} born={EMBER} block={{ index: 3, color: INK, ink: WHITE, at: 40 }} leaveAt={88} />,
   },
   BarStack: { ground: WHITE, node: <BarStack lines={['plan', 'your', 'launch']} at={0} size={270} leaveAt={66} /> },
   ScaleJump: { ground: PAPER, node: <ScaleJump text="Shipping every week" at={2} times={[28, 38]} size={150} color={INK} /> },

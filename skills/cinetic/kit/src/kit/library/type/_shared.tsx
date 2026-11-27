@@ -3,7 +3,7 @@
 // drawn in a hard pixel face (PixelText).
 import React from 'react';
 import { continueRender, delayRender } from 'remotion';
-import { ease, at as prog } from '../../motion';
+import { settle } from '../../motion';
 import type { TextLayout } from '../../type';
 
 export const absCentre = (x: number, y: number): React.CSSProperties => ({ position: 'absolute', left: x, top: y, transform: 'translate(-50%, -50%)' });
@@ -23,11 +23,15 @@ const spanOf = (L: TextLayout, n: number) => {
   return b.x + b.width - a.x;
 };
 
-/** The left edge of a line that grows word by word and re-centres: each arrival adds its own short ease-out move. */
+/**
+ * The left edge of a line that grows word by word and re-centres: each arrival adds its own move, a critically damped
+ * glide from rest (half-way at a third of `recentre`, settled by about `recentre` + 3 frames, an exponential tail); a
+ * glide still running when the next word lands carries its speed on. `recentre` 0: a jump, as a cut.
+ */
 export const growLeft = (L: TextLayout, cx: number, times: number[], f: number, recentre: number) => {
   let w = spanOf(L, 1) / 2;
   for (let i = 1; i < times.length; i++) {
-    const p = recentre <= 0 ? (f >= times[i] ? 1 : 0) : prog(f, times[i], recentre, ease.out);
+    const p = recentre <= 0 ? (f >= times[i] ? 1 : 0) : settle(f, times[i], recentre / 3);
     w += ((spanOf(L, i + 1) - spanOf(L, i)) / 2) * p;
   }
   return cx - w;

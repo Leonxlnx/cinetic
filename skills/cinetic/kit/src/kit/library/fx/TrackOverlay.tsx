@@ -9,14 +9,24 @@ import { fonts } from '../../fonts';
 import { ease } from '../../motion';
 import { t01 } from '../_shared';
 
-export type Tracked = { x: number; y: number; w: number; h: number; rot?: number };
+export type Tracked = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  rot?: number;
+  /** What the target is: shown in a small pill on the box's top-left corner (or before the coordinates with `labels`). */
+  name?: string;
+};
 
 /**
  * TrackOverlay: the look of motion tracking laid over a moving object: a thin box round each target (it turns with it),
  * a dot at its centre, the live coordinates above it (they count every frame), dashed arcs that draw between the
  * targets and sweep past them with arrowheads, and optional guide lines to the frame edges. Cut on, not faded.
  * Measured: 1.5 px boxes, a 10 px dot, 22-26 px labels 12 px above the box; arcs 1.5 px dashed 10/8, drawn over ~10 f.
- * `track(frame)` returns the targets on that frame (in px), so the overlay follows whatever moves.
+ * `track(frame)` returns the targets on that frame (in px), so the overlay follows whatever moves. A target with a `name`
+ * carries it in a pill that sits on its box's top-left corner and moves with it (with `labels`, the name leads the
+ * coordinates instead): never hand-draw name tags beside the overlay, they drift off the items.
  */
 export const TrackOverlay: React.FC<{
   at: number;
@@ -31,7 +41,10 @@ export const TrackOverlay: React.FC<{
   corners?: boolean;
   size?: number;
   leaveAt?: number;
-}> = ({ at: start, track, color = '#FF3B4E', dot = '#FFB020', line = 'rgba(255,255,255,0.75)', labels = true, arcs = true, guides = false, corners = false, size = 24, leaveAt }) => {
+  /** The name pill's fill and ink (targets with a `name`, when `labels` is off). */
+  pill?: string;
+  pillInk?: string;
+}> = ({ at: start, track, color = '#FF3B4E', dot = '#FFB020', line = 'rgba(255,255,255,0.75)', labels = true, arcs = true, guides = false, corners = false, size = 24, leaveAt, pill = 'rgba(255,255,255,0.94)', pillInk = '#14161A' }) => {
   const frame = useCurrentFrame();
   if (frame < start || (leaveAt !== undefined && frame >= leaveAt)) return null;
   const T = track(frame);
@@ -92,11 +105,11 @@ export const TrackOverlay: React.FC<{
             key={`l${i}`}
             style={{
               position: 'absolute',
-              left: t.x - t.w / 2,
+              left: 0,
+              top: 0,
               // neighbours' labels alternate above and below their boxes, so close targets never print over each other
-              top: i % 2 ? t.y + t.h / 2 + size * 0.4 : t.y - t.h / 2 - size * 1.5,
               transformOrigin: i % 2 ? `${t.w / 2}px ${-t.h / 2 - size * 0.4}px` : `${t.w / 2}px ${t.h / 2 + size * 1.5}px`,
-              transform: `rotate(${t.rot ?? 0}deg)`,
+              transform: `translate(${t.x - t.w / 2}px, ${i % 2 ? t.y + t.h / 2 + size * 0.4 : t.y - t.h / 2 - size * 1.5}px) rotate(${t.rot ?? 0}deg)`,
               fontFamily: fonts.inter,
               fontSize: size,
               fontWeight: 500,
@@ -106,9 +119,41 @@ export const TrackOverlay: React.FC<{
               letterSpacing: '0.01em',
             }}
           >
-            x: {Math.round(t.x)}&nbsp;&nbsp;y: {Math.round(t.y)}
+            {t.name ? `${t.name}\u00a0\u00a0` : ''}x: {Math.round(t.x)}&nbsp;&nbsp;y: {Math.round(t.y)}
           </div>
         ))}
+      {!labels &&
+        T.map((t, i) =>
+          t.name ? (
+            <div
+              key={`n${i}`}
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                // the pill's left end on the box's left edge, its middle on the box's top edge: it reads as the box's tag
+                transformOrigin: `${t.w / 2}px ${t.h / 2 + size * 0.75}px`,
+                transform: `translate(${t.x - t.w / 2}px, ${t.y - t.h / 2 - size * 0.75}px) rotate(${t.rot ?? 0}deg)`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: size * 0.32,
+                height: size * 1.5,
+                padding: `0 ${size * 0.55}px 0 ${size * 0.42}px`,
+                borderRadius: size * 0.75,
+                background: pill,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.14)',
+                fontFamily: fonts.inter,
+                fontSize: size,
+                fontWeight: 560,
+                color: pillInk,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span style={{ width: size * 0.36, height: size * 0.36, borderRadius: size, background: dot, flexShrink: 0 }} />
+              {t.name}
+            </div>
+          ) : null,
+        )}
     </AbsoluteFill>
   );
 };

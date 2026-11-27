@@ -1,7 +1,8 @@
 // WeightLine (type, enter / emphasis): words land one or two at a time with weight: big, blurred and warm, dropping
 // to size while the line re-centres.
 // Numbers: the size falls 2.0 to 1.0 over 8 f with 18 px of blur; the colour cools over 10 f; joining words start at
-// 1.18x; the block wipes in 8 f.
+// 1.18x; the block wipes in 8 f; the exit rolls the line up out of its own line box in the 8 f before `leaveAt`
+// (exponential in: from rest, gone at full speed; no fade).
 // Caution: two words per beat at most; a block on more than one word per film stops meaning anything.
 // Catalogue: ../catalog/type.ts; props and recipe: references/library-type.md.
 import React from 'react';
@@ -52,13 +53,15 @@ export const WeightLine: React.FC<{
   /** Frames of the line's re-centre per arrival (default 9). */
   recentre?: number;
   block?: LineBlock;
-  /** From this frame the line is gone (a hard cut on the beat). */
+  /** From this frame the line is gone: it rolls up out of its line box over the `leave` frames before it. */
   leaveAt?: number;
+  /** Frames of the roll out before `leaveAt` (default 8; 0: a hard cut on the beat). */
+  leave?: number;
   x?: number;
   y?: number;
   font?: string;
   weight?: number;
-}> = ({ text, at = 0, gap = 9, times, size = 120, color = '#141414', born, land = 2, blur = 18, dur = 8, recentre = 9, block, leaveAt, x, y, font = fonts.inter, weight = 600 }) => {
+}> = ({ text, at = 0, gap = 9, times, size = 120, color = '#141414', born, land = 2, blur = 18, dur = 8, recentre = 9, block, leaveAt, leave = 8, x, y, font = fonts.inter, weight = 600 }) => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
   const style = { fontFamily: font, fontWeight: weight, fontSize: size, letterSpacing: '-0.025em', lineHeight: 1.2 } as const;
@@ -71,8 +74,12 @@ export const WeightLine: React.FC<{
   const left = growLeft(L, cx, T, frame, recentre);
   const top = cy - L.height / 2;
   const w0 = L.words[0]?.x ?? 0;
+  // the exit: the line rolls up inside its own line box (a mask from the box's top to well below it), no fade
+  const out = leaveAt === undefined || leave <= 0 ? 0 : ease.expoIn(clamp((frame - (leaveAt - leave)) / leave));
+  const boxTop = top - size * 0.12;
   return (
-    <div style={{ position: 'absolute', inset: 0 }}>
+    <div style={{ position: 'absolute', inset: 0, clipPath: out > 0 ? `inset(${boxTop}px -10% 0 -10%)` : undefined }}>
+    <div style={{ position: 'absolute', inset: 0, transform: out > 0 ? `translateY(${-out * (L.height + size * 0.3)}px)` : undefined }}>
       {words.map((wd, i) => {
         if (frame < T[i]) return null;
         const g = L.words[i];
@@ -105,6 +112,7 @@ export const WeightLine: React.FC<{
           </React.Fragment>
         );
       })}
+    </div>
     </div>
   );
 };

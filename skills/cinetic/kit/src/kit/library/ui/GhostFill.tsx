@@ -1,13 +1,15 @@
 // GhostFill (ui, build): a field of ghost slots (a shade darker than the ground) round a central mark takes its
 // colours one app tile at a time, in a scattered order, the interval shrinking, until the set is full; label pills
 // may pop beside a few tiles.
-// Numbers: each tile from a pale tint to full colour in 6 f (scale 0.94 to 1); intervals 6, 5, 5, 4, 4, 3, 3, 2, 2,
+// Numbers: each tile from a pale tint to full colour, critically damped (half-way in 2.5 f, settled by about 10 f; scale
+// 0.94 to 1); the field keeps a slow push and drift from the first fill (`idle`); intervals 6, 5, 5, 4, 4, 3, 3, 2, 2,
 // 2, 1 f (the last repeats); ghosts 4 % darker than the ground, radius 28 %, fading out towards the field's edge.
 // Caution: real tools in the filled tiles (a `mark`, or a glyph with one colour pair each); 12-20 filled of 50-70 slots.
 // Catalogue: ../catalog/ui.ts; props and recipe: references/library-ui.md.
 import React from 'react';
 import { useVideoConfig } from 'remotion';
-import { at, clamp, ease, mix, rand } from '../../motion';
+import { at, clamp, ease, mix, rand, settle } from '../../motion';
+import { holdIdle } from '../_shared';
 import { mixColor } from '../../type';
 import { Glyph, type Look, Pill, useUiFrame, withPace } from './_shared';
 
@@ -44,7 +46,9 @@ const GhostFillInner: React.FC<{
   y?: number;
   seed?: number;
   speed?: number;
-}> = ({ L, items, at: start, center, cols = 4, rows = 3, tile: tileIn, pitch = 1.42, gaps = GAPS, labels = [], x: xIn, y: yIn, seed = 7, speed = 1 }) => {
+  /** A slow push and drift on the field while it fills and after (default true). */
+  idle?: boolean;
+}> = ({ L, items, at: start, center, cols = 4, rows = 3, tile: tileIn, pitch = 1.42, gaps = GAPS, labels = [], x: xIn, y: yIn, seed = 7, speed = 1, idle = true }) => {
   const { width: W, height: H } = useVideoConfig();
   const x = xIn ?? W / 2;
   const y = yIn ?? H / 2;
@@ -66,7 +70,7 @@ const GhostFillInner: React.FC<{
   // the field fades towards an ellipse round the centre
   const fade = (c: number, r: number) => clamp(1.25 - Math.hypot(c / (cols + 0.6), r / (rows + 0.6)) * 1.05);
   return (
-    <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, pointerEvents: 'none' }}>
+    <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, pointerEvents: 'none', transformOrigin: `${x}px ${y}px`, transform: idle ? holdIdle(frame, start, { drift: 5, push: 0.008, roll: 0, seed: seed + 2 }).transform : undefined }}>
       {slots.map(({ c, r }) => {
         const k = `${c},${r}`;
         const cx = x + c * p;
@@ -89,7 +93,7 @@ const GhostFillInner: React.FC<{
           ) : null;
         }
         const it = items[i];
-        const q = at(frame, T[i], 6, ease.out);
+        const q = settle(frame, T[i] - 1, 2.5);
         return (
           <div key={k} style={{ position: 'absolute', left: cx - s / 2, top: cy - s / 2, width: s, height: s }}>
             {ghostTile}

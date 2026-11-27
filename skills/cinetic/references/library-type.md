@@ -89,12 +89,13 @@ that should feel said, word by word, on the music's beats.
   block={{ index: 3, color: INK, ink: '#fff', at: T.c + 16 }} />
 ```
 - Props: `text`, `at`, `gap` (9) or `times` (words that share a frame land together), `size`, `color`, `born`, `land`
-  (2), `blur` (18), `dur` (8), `recentre` (9), `block` `{ index, color, ink, at, dur }`, `leaveAt` (a hard cut), `x`, `y`,
+  (2), `blur` (18), `dur` (8), `recentre` (9), `block` `{ index, color, ink, at, dur }`, `leaveAt` (gone from this frame), `leave` (8: the roll out before it; 0 a cut), `x`, `y`,
   `font`, `weight` (600).
 - Numbers: the size decays like a fall-off, about 2.0, 1.65, 1.43, 1.3, 1.17, 1.09, 1.04, 1.0 over 8 frames; blur 18 px
   to 0 over the same frames; the colour cools over the next 10 frames; joining words start at 1.18x, pinned at their left
   edge; the block wipes from the left in 8 frames (expo out) and the word turns to the block's ink exactly where it has
-  passed.
+  passed; each re-centre glides from rest (critically damped, half-way at a third of `recentre`); with `leaveAt` the
+  line rolls up out of its line box in the `leave` frames before it (default 8, exponential in, no fade; 0: a cut).
 - `useWeightLineBlock(props, index?, frame?)` returns the block's box (centre `x`, `y`, `w`, `h`, `r` 0) for the same
   props as the line, so a turn grows out of it without copying its numbers:
   `const box = useWeightLineBlock(line); <GrowIris x={box.x} y={box.y} ... />` (the block is `size * 1.14` tall, its top
@@ -108,13 +109,14 @@ the line re-centring), `leaveAt` closes the mask: the words sink back behind the
 ```tsx
 <RiseLine text="Made for designers" at={T.line} swap={{ at: T.swap, index: 2, word: 'founders' }} swapColor={ACCENT} leaveAt={T.out} size={130} />
 ```
-- Props: `text`, `at`, `gap` (3), `dur` (14), `swap` `{ at, index, word }`, `swapColor`, `leaveAt`, `maxWidth`, `size`,
+- Props: `text`, `at`, `gap` (3), `dur` (14), `swap` `{ at, index, word }`, `swapColor`, `born`, `leaveAt`, `maxWidth`, `size`,
   `color`, `x`, `y`, `font`, `weight` (550).
 - `maxWidth` (px) wraps the statement onto centred lines one line box apart, the words rising in reading order across
   them: one placement for a statement in a 1080-wide frame, not one RiseLine a line.
   `<RiseLine text="Your route, in photos" maxWidth={900} size={118} at={T.route} />`
-- Numbers: rise 14 f expo out; the swap roll 12 f in-out with the re-centre 12 f in-out from 2 f later; the sink 9 f
-  expo in, 1 f between words.
+- Numbers: rise 14 f on a true exponential (rate 3: a soft landing); the swap roll 12 f in-out with the re-centre 12 f
+  in-out from 2 f later, placed by transform; the sink 9 f exponential in, 1 f between words; `born` colours each word
+  as it rises and cools it to `color` over 10 f from half-way through its rise.
 - Caution: the mask is the line box (line height 1.25): keep other things clear of the line's own box or they get cut.
 
 ### MarkPhrase
@@ -153,9 +155,11 @@ word by word, the line jumping to its new centre on each word.
 <ScaleJump text="Shipping every week" at={T.jump} times={[T.every, T.week]} size={150} />
 ```
 - Props: `text` (the first word jumps), `at`, `big` (3.9), `mid` (1.7), `hold` (9), `midFor` (2), `times`, `recentre`
-  (0: a jump; give 5 for a short glide), `size`, `color`, `x`, `y`, `font`, `weight` (600).
-- Numbers: the giant scales 1 to 1.12 (expo out) while its centre rises from 0.38 to 0.15 of its own size below the
-  frame's centre; the line's first word is 0.26 of the giant.
+  (9: a glide from rest; 0: a jump), `idle` (true), `size`, `color`, `x`, `y`, `font`, `weight` (600).
+- Numbers: the giant scales 1 to 1.12 on an exponential push still moving on the cut (half-life 4 f) while its centre
+  rises from 0.38 to 0.15 of its own size below the frame's centre; the line's first word is 0.26 of the giant; the line
+  glides to each new centre from rest (`recentre`, default 9 f; 0: a jump) and the finished line keeps a slow idle
+  (`idle`, drift 4 px, push 0.5 % a second).
 - Caution: the giant word must be short (one word up to about 9 letters) or it reads as noise, not a word.
 
 ### GiantTruck
@@ -385,9 +389,10 @@ icon moves over it); from below, a window rises over a heading and cuts it at it
 ```
 - Props: `text`, `at`, `dur` (2 frames a word sideways, 6 from below), `from` (`left`, `right`, `below`), `node`, `w`,
   `h`, `meet` (0.5), `rest` (from below: where the object stops), `objectAt`, `size`, `color`, `x`, `y`, `font`,
-  `weight`.
-- Numbers: linear sideways, as if pushed; the object starts a quarter em clear of the line's first letter (show it from
-  the start with `objectAt`); from below 6 f ease-in.
+  `weight`, `idle` (true).
+- Numbers: sideways a critically damped push from rest that lands on its last frame (half-way at 30 % of the time);
+  the object starts a quarter em clear of the line's first letter (show it from the start with `objectAt`); from below
+  6 f ease-in; the object then keeps a slow idle (`idle`).
 - Caution: the object must be what the film shows next; a plain shape crossing the line reads as a wipe.
 
 ## Voice lines and captions
@@ -437,9 +442,11 @@ never crowds its neighbours), the accent of the finished line (`serif` makes tha
 <FaceCycle text="Every draft finds its reader" at={T.cap} gap={4} size={72} accent={ACCENT} flip={{ index: 1, at: T.cap + 40 }} />
 ```
 - Props: `text`, `at`, `gap` (4) or `times`, `size` (64), `color`, `accent`, `holds` (`[2, 4]` frames in the pixel face
-  and the italic), `align` (`center`, `left`), `flip` `{ index, at }`, `serif`, `leaveAt`, `x`, `y`, `font`, `weight`.
+  and the italic), `align` (`center`, `left`), `flip` `{ index, at }`, `serif`, `leaveAt`, `x`, `y`, `font`, `weight`, `glide`
+  (4), `idle` (true).
 - Numbers: a word every 3-4 f; 2 f pixel (the sans in a heavier weight rasterised to cells of 0.085 em), 4 f bold italic
-  (weight 650), then the sans; all by cut.
+  (weight 650), then the sans; all by cut. A centred line glides to its new centre (`glide`, half-life 4 f; 0: by cut);
+  the finished line keeps a slow idle (`idle`).
 - Caution: a caption device for small and middle sizes; the faces change by cut, never blend, and the italic appears
   as a passing state (the line's voice stays the sans).
 
@@ -464,10 +471,11 @@ so the start of the line leaves the frame.
 <CaretFollow text="Plan a dinner for twelve on Friday" at={T.prompt} accentFrom={5} accent={ACCENT} />
 ```
 - Props: `text`, `at`, `cps` (11), `blinks` (2), `fill` (0.95), `edge` (0.6), `follow` (0.6), `accentFrom`, `accent`,
-  `size` (52 % of the height), `color`, `caretColor`, `leaveAt`, `y`, `font`, `weight` (350), `seed`.
+  `size` (52 % of the height), `color`, `caretColor`, `leaveAt`, `y`, `font`, `weight` (350), `seed`, `glide` (2).
 - Numbers: blinks on 10 f, off 6 f; the caret half the frame's height (cap height 38 %); a letter every 2-4 f; centred
   until 95 % of the width, then the caret held at 60 %, the camera closing 60 % of its gap a frame (about 0.15 of the
-  width over 2 f) with a smear of 6 % of its speed in px.
+  width over 2 f) with a smear of 6 % of its speed in px; while centred the line glides to each letter's centre
+  (`glide`, half-life 2 f; 0: re-set on each letter).
 - Caution: one per film; keep the prompt under about 40 characters.
 
 ### LightStreak
@@ -506,8 +514,9 @@ flashes over a word for 2 frames, as if it were selected.
 ```
 - Props: `text`, `at`, `gap` (8) or `times`, `keep` (3), `flashes` (`[{ at, index }]`), `flash` (colour), `size` (120),
   `color`, `leaveAt`, `x`, `y`, `font`, `weight`.
-- Numbers: a word lands in 5 f from 0.45 of the width to the right (ease-out, 70 % in the first 2 f); the line
-  re-centres on the same curve; a flash is 2 f with a glow of 0.12 em.
+- Numbers: a word lands from 0.45 of the width to the right on an exponential arrival (half-life 1 f: 75 % in the
+  first 2 f, 97 % by f5, a tail through the beat); the line re-centres on the same curve, each arrival adding its share
+  so nothing snaps when the next word lands; a flash is 2 f with a glow of 0.12 em.
 - Caution: short words on the beat; the flash at most twice in a line.
 
 ### TokenBlocks

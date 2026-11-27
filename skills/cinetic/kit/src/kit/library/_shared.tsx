@@ -2,7 +2,7 @@
 // and lands ON frame a + d - 1, and the SVG filters the pieces use (PixelFilter mosaic, SmearFilter directional blur,
 // SplitFilter channel split): put one in the tree and point a layer's `filter: url(#id)` at it.
 import React from 'react';
-import { clamp } from '../motion';
+import { clamp, live, settle, type LiveOptions } from '../motion';
 
 export const useUid = (p: string) => p + React.useId().replace(/[^a-zA-Z0-9]/g, '');
 
@@ -55,4 +55,21 @@ export const SplitFilter: React.FC<{ id: string; d: number; angle?: number }> = 
       </filter>
     </svg>
   );
+};
+
+/**
+ * The idle of a piece's hold: `live` (a slow drift, push and roll) that starts on `start` from zero offset and zero
+ * speed (eased in over `ramp` half-life frames), so a landing hands over to it without a jump. Use its `transform` on
+ * the held thing; the pieces switch it off with their `idle={false}` prop.
+ */
+export const holdIdle = (frame: number, start: number, o: LiveOptions & { ramp?: number } = {}) => {
+  if (frame <= start) return { x: 0, y: 0, scale: 1, rotate: 0, transform: 'translate3d(0px, 0px, 0) scale(1) rotate(0deg)' };
+  const a = live(frame, { ...o, start });
+  const b = live(start, { ...o, start });
+  const r = settle(frame, start, o.ramp ?? 10);
+  const x = (a.x - b.x) * r;
+  const y = (a.y - b.y) * r;
+  const scale = 1 + (a.scale / b.scale - 1) * r;
+  const rotate = (a.rotate - b.rotate) * r;
+  return { x, y, scale, rotate, transform: `translate3d(${x}px, ${y}px, 0) scale(${scale}) rotate(${rotate}deg)` };
 };

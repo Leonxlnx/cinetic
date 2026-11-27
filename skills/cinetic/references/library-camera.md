@@ -52,7 +52,9 @@ at about 2.2x to the wide view, where the typing finishes.
 <CaretCam text="Draft a launch plan for the spring range" at={T.type} inAt={T.type + 20} color="rgba(255,255,255,0.58)" ink="#141519" accent="#2F5BFF"><Scene /></CaretCam>
 ```
 - Numbers: a character every 1-3 f (2 on average, seeded); the cut in about 20 f after the first character; macro text
-  30 % of the frame height; each catch 3 f (65 %, 90 %, 100 %) to 40 % of the width; the way out one frame at 2.2x.
+  30 % of the frame height; at each word start the camera re-aims to put the caret at 40 % of the width, a critically
+  damped glide (`glide`, half-life 3 f; 0: the measured catch in 3 f, 65 %, 90 %, 100 %, then a hold); the way out one
+  frame at 2.2x.
 - Caution: one a film, 25-60 characters of plain words. For a prompt typed giant on its own (no bar), use `CaretFollow`
   in the type library.
 

@@ -115,8 +115,12 @@ object that the window outruns, so there is depth; after landing the scene keeps
 <DiveInto from={deskScene} to={pictureScene} at={T.dive} box={{ x: 960, y: 640, w: 560, h: 340, r: 26 }} dur={20} plate={1.6} carry={0.03} blur={8} />
 ```
 - Numbers: 20 f, cubic-bezier(0.4, 0, 0.75, 0.35) in log scale; the plate starts `plate` times the window and grows less;
-  blur on the outer scene up to 8 px in the last third; after landing the scene grows 3 % more over 18 f (expo out) and
-  stays there.
+  blur on the outer scene up to 8 px in the last third; after landing the scene grows 3 % more on an exponential tail
+  (half-life `settle / 4`) and stays there. Window and plate are placed by transform.
+- `soften` (default 36 px on screen): the scene round the window goes out of focus from 8 % to 58 % of the dive. The
+  zoom slices the neighbours (the other cards of a list, the other cells of a grid) at the frame edge and stretches
+  their rims into bands across the frame; softened they read as depth. `soften={0}` keeps them sharp (a lone object on
+  a plain ground).
 - Caution: words in the next scene should arrive after the landing, not ride in through the window. Draw the object's
   preview as the plate will show it (the next scene at `plate * w / 1920`, centred on the window, no drift), or the
   picture jumps on the first frame of the dive.
@@ -205,15 +209,18 @@ a lighter or darker world; carry the line by drawing it at the same place in bot
   that opens at its own size.
 
 ### ChipBloom
-A picture chip set inside a sentence grows in place, the words riding its edges, then opens to the whole frame in two
-frames: its picture is the next scene. The piece sets the line itself; `from` is the ground behind it. For a sentence that
+A picture chip set inside a sentence grows in place, the words riding its edges, then opens to the whole frame on one
+continuous curve and covers the words: its picture is the next scene. `above` and `below` set a line over and under the
+chip's line (`lineStyle`), pushed apart as the chip grows: a fuller hook in a vertical frame. The piece sets the line itself; `from` is the ground behind it. For a sentence that
 names what the next scene shows (pair it with `InlineChip`, which opens the chip in the line).
 ```tsx
 <ChipBloom from={<Ground color={WHITE} />} to={photoScene} at={T.bloom} before="we keep the sea" after="in one place" style={type} chip={{ w: 200, h: 112, r: 26 }} />
 ```
 - Carries: the object: the chip's own picture becomes the frame.
-- Numbers: 5 f of growth to 1.75x on an ease-in (1.03, 1.12, 1.27, 1.48, 1.75), then 2 f to the full frame (log scale,
-  centre to the frame's centre, radius to 0); the picture inside always covers the chip.
+- Numbers: `dur` 6 f of growth to `grow` (1.75x) from rest, then `open` 8 f to the full frame, both in log scale on one
+  `chain` (the speed carries through; a soft landing; centre to the frame's centre, radius to 0); the picture inside
+  always covers the chip. The grown line stays inside 88 % of the frame width: in a narrow frame the chip grows less in
+  width and up to 1.6x more in height. While it opens the words stay where they are and the chip covers them.
 - Caution: the chip shows the next scene's own picture from the first frame (draw `to` still: no drift, no words until it
   has landed).
 

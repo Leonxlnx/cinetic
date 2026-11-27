@@ -49,7 +49,7 @@ export const TURN: LibraryEntry[] = [
     frames: 20,
     summary: 'the camera dives into a card, a window or a picture, exponentially, and its inside is the next scene',
     use: 'carries the object: the camera goes into the card, window or picture on screen and its inside is the next scene',
-    caution: 'words in the next scene arrive after the landing; draw the preview as the plate will show it',
+    caution: 'words in the next scene arrive after the landing; draw the preview as the plate will show it; neighbours go soft as it dives (soften)',
     reel: { film: 'library-turns', from: 417, to: 510 },
   },
   {
@@ -133,7 +133,7 @@ export const TURN: LibraryEntry[] = [
     frames: 7,
     summary: 'a picture chip inside a sentence grows, pushing the words apart, then opens to the full frame in two frames: its picture is the next scene',
     use: 'carries the object: the chip\'s own picture becomes the frame; for a sentence that names the thing the next scene shows',
-    caution: 'the chip must show the next scene\'s own picture from the start',
+    caution: 'the chip must show the next scene\'s own picture from the start; in a vertical frame add above and below lines',
     reel: { film: 'library-turns', from: 956, to: 1031 },
   },
   {

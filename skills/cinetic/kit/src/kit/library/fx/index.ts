@@ -6,7 +6,7 @@ export { TrackOverlay } from './TrackOverlay';
 export type { Tracked } from './TrackOverlay';
 export { DotScreen } from './DotScreen';
 export { ChromaHit } from './ChromaHit';
-export { MorphBox } from './MorphBox';
+export { MorphBox, morphBoxAt } from './MorphBox';
 export type { MorphStage } from './MorphBox';
 export { GradeResolve, GRADES } from './GradeResolve';
 export { Stepped } from './Stepped';

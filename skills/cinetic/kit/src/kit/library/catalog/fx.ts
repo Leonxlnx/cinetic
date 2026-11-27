@@ -11,7 +11,7 @@ export const FX: LibraryEntry[] = [
     subject: ['card', 'button'],
     mood: ['calm', 'bold'],
     frames: 12,
-    summary: 'a band of light crosses a surface once, a soft glow with a thin hot line at its leading edge, clipped to the box',
+    summary: 'a sheen crosses a surface once, a soft bell of light with no hard rim (a hot leading line only with edge), clipped to the box',
     use: 'a card, a button or a glass panel at the moment it matters',
     caution: 'once per surface; a sweep on everything is wallpaper',
     reel: { film: 'library-fx', from: 0, to: 65 },
@@ -37,7 +37,7 @@ export const FX: LibraryEntry[] = [
     frames: 60,
     summary: 'motion tracking over a moving object: turning boxes, centre dots, live coordinates and dashed arcs between targets',
     use: 'an analytic, technical layer over something that moves',
-    caution: 'the target must move; tracking a still object looks like a template',
+    caution: 'the target must move; tracking a still object looks like a template; give targets a name, never hand-draw tags beside it',
     reel: { film: 'library-fx', from: 130, to: 209 },
   },
   {
@@ -73,7 +73,7 @@ export const FX: LibraryEntry[] = [
     frames: 14,
     summary: 'one rounded shape becomes the next (a pill, a card, a window), each stage\'s content wiping in behind a soft edge',
     use: 'carries the object: one surface that changes shape keeps the eye; for thinking becoming an answer, a pill becoming a card becoming a window',
-    caution: 'keep the stages in one surface colour; lay each stage\'s content out at that stage\'s size',
+    caution: 'keep the stages in one surface colour; lay each stage\'s content out at that stage\'s size; morphBoxAt gives the box on any frame',
     reel: { film: 'library-fx', from: 366, to: 465 },
   },
   {

@@ -331,8 +331,9 @@ leaving a step of itself behind for a few frames.
 ```tsx
 <PlateSqueeze at={T.squeeze} color={BRAND} mark={<Mark size={70} />} plate={0.124} />
 ```
-- Numbers: sides only for 6 f (98, 96, 90, 84, 76, 66 % of W), then all four, the plate at its size on 10 f; the echo
-  on 6-9 f; the mark from 1.8x to 1x with the width.
+- Numbers: sides only for 6 f (98, 96, 90, 84, 76, 66 % of W), then all four, on one continuous curve (keys joined by
+  `chain`: the speed builds, peaks near f7 and lands on a tail, 99 % by f11, at rest on f15); the echo on 6-9 f; the
+  mark from 1.8x to 1x with the width.
 - Caution: the field is the whole ground in one flat colour.
 
 ### PixelIris

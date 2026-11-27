@@ -25,7 +25,7 @@ export const UI: LibraryEntry[] = [
     frames: 80,
     summary: 'a card lands by shrinking and fans its siblings out from behind it, holds, folds them back and leaves upward',
     use: 'the "it is connected to the rest" beat: one card shown among its siblings',
-    caution: 'short titles on the cards behind; their bodies stay hidden',
+    caution: 'short titles on the cards behind; their bodies stay hidden; turn={0} keeps the group square',
     reel: { film: 'library-ui', from: 170, to: 281 },
   },
   {
@@ -37,7 +37,7 @@ export const UI: LibraryEntry[] = [
     frames: 54,
     summary: 'a banner grows out of its icon, a badge pops, title and body arrive by word, a sheen crosses it once',
     use: 'one notification that matters',
-    caution: 'one line of body; for more, open it (RowExpand)',
+    caution: 'one line of body; for more, open it (RowExpand); words arrive clean unless born is set',
     reel: { film: 'library-ui', from: 282, to: 365 },
   },
   {
@@ -97,7 +97,7 @@ export const UI: LibraryEntry[] = [
     frames: 80,
     summary: 'rows join a card one by one with a spinner that closes to a check as the next arrives, the cadence accelerating',
     use: 'an agent or a setup working through its steps',
-    caution: 'leave 10 f after doneAt before cutting',
+    caution: 'leave 10 f after doneAt before cutting; pass the real mark of the app or an icon, or the title stands alone',
     reel: { film: 'library-ui', from: 856, to: 955 },
   },
   {

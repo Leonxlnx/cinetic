@@ -2,11 +2,12 @@
 // cadence accelerating.
 // Numbers: gaps 12, 11, 10, 8, 6, 5, 4, 3, 3 f; a row rises 20 px in 4 f; the tick draws in 5 f; scroll one row in 6
 // f.
+// The card grows with its rows (it never opens as a half-empty slab); a row reads the done word once its check is drawn.
 // Caution: leave 10 f after doneAt before cutting.
 // Catalogue: ../catalog/ui.ts; props and recipe: references/library-ui.md.
 import React from 'react';
 import { useVideoConfig } from 'remotion';
-import { at, clamp, ease, mix, springAt, springs } from '../../motion';
+import { at, clamp, ease, mix, settle, springAt, springs } from '../../motion';
 import { mixColor } from '../../type';
 import { CheckDisc, type Look, MarkSlot, surfaceStyle, useUiFrame, withPace } from './_shared';
 
@@ -32,10 +33,17 @@ const TaskRunInner: React.FC<{
   size?: number;
   /** A header line over the list, with a live "n of N" count at its right. */
   title?: string;
-  /** The app's real logo beside the title. */
+  /** The app's real logo beside the title. Without it (and without `icon`) the title stands alone. */
   mark?: React.ReactNode;
+  /** A glyph tile in the look's accent beside the title when there is no real logo (an icon name, e.g. "ListChecks"). */
+  icon?: string;
+  /**
+   * The card grows with its rows, from its top edge (true, default), each row adding its height on a soft curve; false:
+   * the card takes the height of `show` rows from its first frame (the old behaviour).
+   */
+  grow?: boolean;
   speed?: number;
-}> = ({ L, tasks, at: start, gaps = [12, 11, 10, 8, 6, 5, 4, 3, 3], working = 'Working', done = 'Done', doneAt, x: xIn, y: yIn, w = 980, show = 6, size = 32, title, mark, speed = 1 }) => {
+}> = ({ L, tasks, at: start, gaps = [12, 11, 10, 8, 6, 5, 4, 3, 3], working = 'Working', done = 'Done', doneAt, x: xIn, y: yIn, w = 980, show = 6, size = 32, title, mark, icon, grow = true, speed = 1 }) => {
   // the frame's centre by default, in a composition of any size
   const { width: frameW, height: frameH } = useVideoConfig();
   const x = xIn ?? frameW / 2;
@@ -48,18 +56,25 @@ const TaskRunInner: React.FC<{
   const pad = size * 0.8;
   const headH = title ? size * 2.6 : 0;
   const H = show * rowH + pad * 2 + headH;
+  // grown height: one row's height for each row that has arrived (up to `show`), each from rest with a soft tail
+  let rowsIn = 0;
+  for (let i = 0; i < Math.min(show, tasks.length); i++) rowsIn += settle(frame, T[i] - 1, 3);
+  const Hn = grow ? rowsIn * rowH + pad * 2 + headH : H;
+  // the check is drawn from the close's first frame (its clock starts 3 f early, so no bare dot stands where the spinner
+  // was); the done word and the ink follow from the next frame
+  const doneRead = (c: number) => at(frame, c + 1, 4, ease.inOut);
   let doneN = 0;
   for (let i = 0; i < tasks.length; i++) if (frame >= close(i)) doneN++;
   let scroll = 0;
   for (let i = show; i < tasks.length; i++) scroll += at(frame, T[i], 6, ease.out);
   const enter = springAt(frame, 30, start - 10, springs.ui);
   return (
-    <div style={{ position: 'absolute', left: x - w / 2, top: y - H / 2, width: w, height: H, opacity: clamp(enter * 2), transform: `translateY(${mix(enter, 30, 0)}px)` }}>
+    <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: Hn, opacity: clamp(enter * 2), transform: `translate(${x - w / 2}px, ${y - H / 2 + mix(enter, 30, 0)}px)` }}>
       <div style={{ ...surfaceStyle(L, 3, size * 1.1), position: 'absolute', inset: 0 }} />
       {title && (
         <div style={{ position: 'absolute', left: pad * 1.25, right: pad * 1.25, top: pad, height: headH - pad * 0.4, display: 'flex', alignItems: 'center', fontFamily: L.font, borderBottom: `1px solid ${L.line}` }}>
-          <MarkSlot mark={mark} icon="Store" colors={['#5B86FF', '#2350E6']} size={size * 1.4} />
-          <div style={{ flex: 1, fontSize: size * 1.05, fontWeight: 620, color: L.ink, letterSpacing: '-0.012em', marginLeft: size * 0.55 }}>{title}</div>
+          {(mark || icon) && <MarkSlot mark={mark} icon={icon} colors={[L.accent, mixColor(L.accent, '#000000', 0.2)]} size={size * 1.4} />}
+          <div style={{ flex: 1, fontSize: size * 1.05, fontWeight: 620, color: L.ink, letterSpacing: '-0.012em', marginLeft: mark || icon ? size * 0.55 : 0 }}>{title}</div>
           <div style={{ fontSize: size * 0.92, color: L.muted, fontVariantNumeric: 'tabular-nums' }}>
             {doneN} of {tasks.length}
           </div>
@@ -71,13 +86,16 @@ const TaskRunInner: React.FC<{
           const p = at(frame, T[i], 4, ease.out);
           const c = close(i);
           const isDone = frame >= c;
-          const q = at(frame, c, 3, ease.out);
+          const q = doneRead(c);
           return (
-            <div key={i} style={{ position: 'absolute', left: 0, right: 0, top: (i - scroll) * rowH + mix(p, 20, 0), height: rowH, display: 'flex', alignItems: 'center', gap: size * 0.6, fontFamily: L.font, fontSize: size, opacity: p }}>
+            <div key={i} style={{ position: 'absolute', left: 0, right: 0, top: 0, transform: `translateY(${(i - scroll) * rowH + mix(p, 20, 0)}px)`, height: rowH, display: 'flex', alignItems: 'center', gap: size * 0.6, fontFamily: L.font, fontSize: size, opacity: p }}>
               <div style={{ width: size * 1.1, height: size * 1.1, flexShrink: 0, position: 'relative' }}>
-                {!isDone ? <StepSpinner size={size * 1.1} color={L.accent} track={L.line} since={T[i]} /> : <CheckDisc size={size * 1.1} color={L.accent} at={c} />}
+                {!isDone ? <StepSpinner size={size * 1.1} color={L.accent} track={L.line} since={T[i]} /> : <CheckDisc size={size * 1.1} color={L.accent} at={c - 3} />}
               </div>
-              <div style={{ width: size * 6.2, color: isDone ? L.faint : L.muted, flexShrink: 0, whiteSpace: 'nowrap' }}>{isDone ? done : `${working}…`}</div>
+              <div style={{ width: size * 6.2, flexShrink: 0, whiteSpace: 'nowrap', position: 'relative', height: size * 1.3 }}>
+                <div style={{ position: 'absolute', inset: 0, color: L.muted, opacity: 1 - q }}>{`${working}…`}</div>
+                {q > 0 && <div style={{ position: 'absolute', inset: 0, color: L.faint, opacity: q }}>{done}</div>}
+              </div>
               <div style={{ flex: 1, color: mixColor(L.muted, L.ink, isDone ? q : 0.55), fontWeight: isDone ? 600 : 500, whiteSpace: 'nowrap' }}>{task}</div>
             </div>
           );

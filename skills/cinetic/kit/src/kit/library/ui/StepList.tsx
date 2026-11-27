@@ -1,21 +1,30 @@
 // StepList (ui, build / emphasis): a stepped list carousel: the active label big beside an icon tile, neighbours
 // fading by distance, steps accelerating.
-// Numbers: each step one pitch (1.25 of the size) in 2 f; neighbours at 55, 28, 10 % with up to 1.4 px blur.
+// Numbers: each step one pitch (1.25 of the size), an exponential arrival with a half-life of 1.1 f (70 % in 2 f, the
+// tail runs on into the hold); neighbours at 55, 28, 10 % (blended by distance) with up to 1.4 px blur.
 // Caution: 8 items or more, short labels; under 4 f a step the labels stop being readable.
 // Catalogue: ../catalog/ui.ts; props and recipe: references/library-ui.md.
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import { Icon } from '../../icons';
-import { at, clamp, mix, springAt, springs } from '../../motion';
+import { approach, clamp, mix, springAt, springs } from '../../motion';
 import { mixColor } from '../../type';
-import { bez, type Look, surfaceStyle, useUiFrame, withPace } from './_shared';
+import { type Look, surfaceStyle, useUiFrame, withPace } from './_shared';
 
 /**
  * A stepped list carousel: an icon tile with four accent ticks at its corners beside a list whose active item is big in
- * the ink while its neighbours fade by distance. On each step the list moves one pitch in 2 f
- * (cubic-bezier(0.2, 0.9, 0.3, 1)) and the tile's icon swaps by cut on the same frame; holds between steps
+ * the ink while its neighbours fade by distance. On each step the list moves one pitch, most of it in 2 f, on an
+ * exponential arrival whose tail runs on through the hold (no dead stop), and the tile's icon swaps by cut on the same
+ * frame; holds between steps
  * (`every`, default 5 f, may be a list so the steps accelerate).
  */
+// opacity by distance from the active row, blended between the levels so a step never pops a row's opacity
+const FADE = [1, 0.55, 0.28, 0.1, 0];
+const fadeAt = (ad: number) => {
+  const i = Math.min(3, Math.floor(ad));
+  return mix(Math.min(1, ad - i), FADE[i], FADE[i + 1]);
+};
+
 const StepListInner: React.FC<{
   L: Look;
   items: Array<{ label: string; icon: string }>;
@@ -41,7 +50,8 @@ const StepListInner: React.FC<{
     stepsAt.push(acc);
   }
   let pos = 0;
-  for (const s of stepsAt) pos += at(t, s, 2, bez(0.2, 0.9, 0.3, 1));
+  // each step: an exponential arrival from the step frame (half-life 1.1 f), its tail running on into the hold
+  for (const s of stepsAt) pos += approach(t, s - 1, 1.1);
   const active = Math.min(items.length - 1, stepsAt.filter((s) => t >= s).length);
   const pitch = size * 1.25;
   const tile = size * 2.6;
@@ -63,9 +73,9 @@ const StepListInner: React.FC<{
         {items.map((it, i) => {
           const d = i - pos;
           const ad = Math.abs(d);
-          if (ad > 3.2) return null;
+          if (ad >= 4) return null;
           return (
-            <div key={i} style={{ position: 'absolute', left: 0, top: d * pitch - size * 0.62, fontSize: size, fontWeight: 560, letterSpacing: '-0.02em', color: mixColor(L.ink, L.faint, clamp(ad)), opacity: [1, 0.55, 0.28, 0.1][Math.min(3, Math.round(ad))] ?? 0, filter: ad > 0.5 ? `blur(${mix(clamp(ad - 0.5), 0, 1.4)}px)` : undefined }}>
+            <div key={i} style={{ position: 'absolute', left: 0, top: 0, transform: `translateY(${d * pitch - size * 0.62}px)`, fontSize: size, fontWeight: 560, letterSpacing: '-0.02em', color: mixColor(L.ink, L.faint, clamp(ad)), opacity: fadeAt(ad), filter: ad > 0.5 ? `blur(${mix(clamp(ad - 0.5), 0, 1.4)}px)` : undefined }}>
               {it.label}
             </div>
           );

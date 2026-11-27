@@ -1,7 +1,7 @@
 // LinkPanel (ui, build): sources stand in a column, the panel rises with its rows waiting; a bracket connector joins
 // each source to its row, light pulses run along them, each row lights in the accent as its first pulse arrives, its
 // figures land and it settles to the surface; the totals row counts up in steps.
-// Numbers: sources drop in 4 f with blur; the panel rises from +2 f; each connector comes in whole (node to row, a
+// Numbers: sources drop in with blur on an exponential arrival (half-life 2 f: half-way in 2 f, a soft tail); the panel rises from +2 f; each connector comes in whole (node to row, a
 // port at each end) over 6 f, 2 f apart, from +8 f, and follows the panel while it settles: no end ever hangs in the
 // air; pulses run source to row in 12 f (linear), 3 f apart, every 24 f, from +10 f; rows light as their first pulse
 // arrives (+22 f, 3 f apart), lit 6 f, settling over 10 f; totals step every 3 f; lines 0.14 % of the frame height.
@@ -10,7 +10,7 @@
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import { Icon } from '../../icons';
-import { at, clamp, ease, mix, springAt, springs } from '../../motion';
+import { approach, at, clamp, ease, mix, springAt, springs } from '../../motion';
 import { mixColor } from '../../type';
 import { type Look, MarkSlot, Pill, surfaceStyle, useUiFrame, withPace } from './_shared';
 
@@ -105,9 +105,10 @@ const LinkPanelInner: React.FC<{
     <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, fontFamily: L.font }}>
       {/* sources */}
       {sources.map((src, i) => {
-        const q = at(frame, start + i * 1, 4, ease.out);
+        // each source enters already moving (from above, blurred) and lands on an exponential tail
+        const q = approach(frame, start + i * 1 - 1, 2);
         return (
-          <div key={`s${i}`} style={{ ...surfaceStyle(L, 3, cardH * 0.1), position: 'absolute', left: sx - cardW / 2, top: cy(i) - cardH / 2 - mix(q, H * 0.08, 0), width: cardW, height: cardH, overflow: 'hidden', opacity: clamp(q * 2), filter: q < 1 ? `blur(${mix(q, 8, 0)}px)` : undefined }}>
+          <div key={`s${i}`} style={{ ...surfaceStyle(L, 3, cardH * 0.1), position: 'absolute', left: 0, top: 0, transform: `translate(${sx - cardW / 2}px, ${cy(i) - cardH / 2 - mix(q, H * 0.08, 0)}px)`, width: cardW, height: cardH, overflow: 'hidden', opacity: clamp(q * 2), filter: q < 0.97 ? `blur(${mix(q, 8, 0)}px)` : undefined }}>
             <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: cardH * 0.64, background: mixColor(L.surface, src.color ?? L.accent, 0.5), overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {src.thumb ?? <Icon name={src.icon ?? 'Play'} size={cardH * 0.26} color="#FFFFFF" stroke={2.2} />}
             </div>

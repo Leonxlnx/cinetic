@@ -161,21 +161,24 @@ is connected to the rest".
 ```tsx
 <CardFan at={T.fan} w={1000} h={204} lift={0.46} cards={[<Notice ... />, <Notice ... />, <Notice ... />]} fanAt={26} foldAt={72} exitAt={86} />
 ```
-- Numbers: landing as NoticePile's first, gliding 340 px in from the left along `cubic-bezier(0, -0.21, 0.158, 1.007)`;
-  each card behind slides out 8 f, 4 f apart, up `lift` of the card's height and left 0.07 of its width, the group
-  turning 1.5 degrees; fold 9 f ease-in; exit up, each step 1.5x the last (12 f), with a vertical smear.
+- Numbers: landing as NoticePile's first, gliding 340 px in from the left on an exponential tail (half-life 3.5 f), out
+  of a focus blur of `blur` px (12) that halves every 2.5 f (sharp in about 8 f, never a smear); each card behind slides
+  out 8 f, 4 f apart, up `lift` of the card's height and left 0.07 of its width, the group turning `turn` degrees (1.5;
+  0 keeps it square to the frame); fold 9 f ease-in; exit up, each step 1.5x the last (12 f), with a vertical smear.
 - Caution: short titles on the cards behind; their bodies stay hidden.
 
 ### BannerPop
 A banner grows out of its icon: a blurred pill with only the glyph (or `n.mark`) widens to the right in 4 f as it
-sharpens, a badge pops, the title and body arrive by word, the banner rises 56 px and a sheen crosses it once.
+sharpens, a badge pops, the title and body arrive by word (each word rises 0.3 em into place in its own ink: no blur
+and no colour smear; `born="#hex"` brings back words born in a colour that de-blur), the banner rises 56 px and a
+sheen crosses it once. Placed by transform.
 ```tsx
 <BannerPop L={lookDark('#5B86FF', '#111216')} at={T.banner} n={{ title: 'Assistant', body: 'Want me to test a lower price this week?', time: 'now', icon: 'Tag' }} w={1340} size={42} />
 ```
 - Numbers: width 0.15, 0.3, 0.62, 0.9, 1 on frames 0-4, blur 8 to 0; badge at +3 f; words every 2 f from +4 f; rise
-  56 px over 16 f expo-out; sheen at `sheenAt` (44 f), 10 f.
-- `leaveAt` and `leaveTo` (`'right'`, `'left'`, `'up'`): it leaves whole on an ease-in over 10 f, clear of the frame on
-  the last, never fading. Sideways when a line sits above it: `<BannerPop ... leaveAt={T.cue + 50} leaveTo="left" />`.
+  56 px on an exponential tail (half-life 4 f); sheen at `sheenAt` (44 f), 10 f.
+- `leaveAt` and `leaveTo` (`'right'`, `'left'`, `'up'`): it leaves whole, accelerating over 14 f (each step 1.3x the
+  last), fully clear of the frame on its last drawn frame, never fading and never removed mid-flight. Sideways when a line sits above it: `<BannerPop ... leaveAt={T.cue + 50} leaveTo="left" />`.
 - `badge` defaults to notification red: set it in an invented palette.
 - Caution: one line of body; for more, open it (RowExpand).
 
@@ -234,19 +237,22 @@ big in the ink and its neighbours fade by distance. Steps accelerate. For "every
 ```tsx
 <StepList L={lookLight('#E8572A', '#F4F4F2')} items={[{ label: 'Video', icon: 'Video' }, ...]} at={T.formats} every={[10, 8, 7, 6, 5, 5, 4, 4, 4]} size={84} />
 ```
-- Numbers: each step one pitch (1.25 of the size) in 2 f along `cubic-bezier(0.2, 0.9, 0.3, 1)`; the icon swaps by cut;
-  neighbours at 55, 28, 10 % with up to 1.4 px blur.
+- Numbers: each step one pitch (1.25 of the size) on an exponential arrival (half-life 1.1 f: 70 % in 2 f, the tail
+  running on through the hold); the icon swaps by cut; neighbours at 55, 28, 10 %, blended by distance, with up to
+  1.4 px blur.
 - Caution: 8 items or more, short labels; under 4 f a step the labels stop being readable.
 
 ### TaskRun
 Rows join a card one by one with a stepping spinner; when the next arrives the previous closes (spinner to a check that
 pops, the label to the done word, the title to the ink); the cadence accelerates, the card scrolls once full, the header
-(with `mark`) counts "n of N".
+(with `mark`, or a glyph tile in the accent with `icon`; with neither the title stands alone) counts "n of N". The card
+grows with its rows from its top edge (`grow`, default true), so it never opens as a half-empty slab.
 ```tsx
 <TaskRun L={lookDark('#4F7BFF', '#0B0C10')} at={T.build} title="Setting up your store" working="Setting up" done="Created" doneAt={78} tasks={tasks} w={1180} size={38} />
 ```
-- Numbers: gaps 12, 11, 10, 8, 6, 5, 4, 3, 3; a row fades and rises 20 px in 4 f; the check springs 0.6 to 1, its tick
-  draws in 5 f; scroll one row in 6 f.
+- Numbers: gaps 12, 11, 10, 8, 6, 5, 4, 3, 3; a row fades and rises 20 px in 4 f while the card grows a row height on a
+  settle (half-life 3 f); a closing row shows its check already drawing on its first frame (no bare dot), then the done
+  word and the ink cross in over 4 f; scroll one row in 6 f.
 - Caution: leave 10 f after `doneAt` before cutting.
 
 ### CalendarWave
@@ -355,7 +361,8 @@ place".
 ```tsx
 <GhostFill L={lookLight('#2B5BFF', '#F7F5F0')} at={T.suite} items={[{ c: 0, r: -2, icon: 'Music', colors: [...] }, ...]} cols={5} rows={3} center={<Mark />} labels={[{ item: 2, text: 'Beat sync', f: 52 }]} />
 ```
-- Numbers: a tile from a pale tint to full colour in 6 f (scale 0.94 to 1); intervals 6, 5, 5, 4, 4, 3, 3, 2, 2, 2, 1 f;
+- Numbers: a tile from a pale tint to full colour, critically damped (half-way in 2.5 f, settled by about 10 f; scale
+  0.94 to 1); the field keeps a slow push and drift from `at` (`idle`, 0.8 % a second); intervals 6, 5, 5, 4, 4, 3, 3, 2, 2, 2, 1 f;
   ghosts 4 % darker than the ground, radius 28 %; tiles 6.2 % of the frame height, pitch 1.42 of a tile.
 - Caution: 12-20 filled of 50-70 slots; real tools (`mark`) or distinct glyphs with one colour pair each.
 
@@ -367,7 +374,7 @@ For "everything flows into one place".
 ```tsx
 <LinkPanel L={lookDark('#3D8BFF', '#08090C')} at={T.links} sources={[{ title, thumb, chip: '1,204 clicks', row: { label, meta, value } }, ...]} totals={[{ label: 'Revenue', from: 3330, step: 37, steps: 9, prefix: '$' }, ...]} />
 ```
-- Numbers: sources drop in 4 f with blur; each connector comes in whole, node to row with a port at each end, over
+- Numbers: sources drop in with blur on an exponential arrival (half-life 2 f); each connector comes in whole, node to row with a port at each end, over
   6 f, 2 f apart, from +8 f, following the panel as it settles (no end ever in mid-air); pulses 12 f source to row,
   3 f apart, every 24 f, from +10 f; rows light at +22 f, 3 f apart, lit 6 f then settle over 10 f; totals step every
   3 f.
@@ -465,8 +472,9 @@ line of detail); each verb lands in its icon's colour and cools to the ink, and 
 ```tsx
 <RowCool L={lookLight('#2B5BFF', '#EEF0F3')} at={T.work} card rows={[{ icon: 'Search', color: '#2B6BE8', verb: 'Searching', detail: '42 shots across three shoot days' }, ...]} />
 ```
-- Numbers: arrivals every 10, 8, 12, 10, 9, 8 f; a row fades in 3 f; the verb holds its colour 3 f and cools over 9 f;
-  the block stays centred, so it rises half a row per arrival; the shimmer crosses in 24 f.
+- Numbers: arrivals every 10, 8, 12, 10, 9, 8 f; a row fades in over 8 f (exponential out); the verb holds its colour
+  3 f and cools over 9 f; the block stays centred, so it glides up half a row per arrival (critically damped from rest,
+  half-way in 3 f); on its `card` the new row is revealed by the card's growing edge; the shimmer crosses in 24 f.
 - Caution: one colour per kind of step, four to seven rows. Put it on its own `card` (it grows with the log): a fixed
   card drawn round it sits empty while the first rows arrive.
 

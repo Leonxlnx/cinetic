@@ -24,7 +24,7 @@ moment that matters, and never as a way to hide a cut: a flash of light, a scree
 
 | Piece | Does | About | Looks like | Reach for it for |
 |---|---|---|---|---|
-| [LightSweep](#lightsweep) | emphasis | 12 f | a band of light crosses a surface once, a soft glow with a thin hot line at its leading edge, clipped to the box | a card, a button or a glass panel at the moment it matters |
+| [LightSweep](#lightsweep) | emphasis | 12 f | a sheen crosses a surface once, a soft bell of light with no hard rim (a hot leading line only with edge), clipped to the box | a card, a button or a glass panel at the moment it matters |
 | [Bloom](#bloom) | emphasis, idle | 17 f | light that spills in its own colour: a blurred copy added on top, swelling once on a hit | a bright thing on a dark ground that should glow, or pulse once |
 | [TrackOverlay](#trackoverlay) | idle, emphasis | 60 f | motion tracking over a moving object: turning boxes, centre dots, live coordinates and dashed arcs between targets | an analytic, technical layer over something that moves |
 | [DotScreen](#dotscreen) | idle, join | 30 f | the content seen through a grid of round dots, an LED board or a coarse halftone; animate the dot size to turn | a big word or a picture as an LED board; a turn between two through the same grid |
@@ -51,12 +51,13 @@ moment that matters, and never as a way to hide a cut: a flash of light, a scree
 ## The effects
 
 ### LightSweep
-A band of light crosses a surface once: a broad soft glow with a thin hot line at its leading edge, clipped to the
-surface's rounded box. On a card, a button, a glass panel.
+A sheen crosses a surface once: a broad soft glow whose light falls off as a bell on both sides (no hard rim, no pale
+stripe), clipped to the surface's rounded box. On a card, a button, a glass panel. `edge` adds a thin hot line at its
+leading edge (a metallic glint).
 ```tsx
-<LightSweep at={T.sweep} dur={12} w={1000} h={150} radius={36} angle={18} color="#FFFFFF" strength={0.75} width={0.35}><Prompt /></LightSweep>
+<LightSweep at={T.sweep} dur={12} w={1000} h={150} radius={36} angle={18} color="#FFFFFF" strength={0.75} width={0.5}><Prompt /></LightSweep>
 ```
-- Numbers: 10-14 f on expo in-out, the band 35 % of the surface, tilted 18 deg; `blend` screen (on a white surface use a
+- Numbers: 10-14 f on expo in-out, the band 50 % of the surface (a gaussian profile), tilted 18 deg; `blend` screen (on a white surface use a
   tinted `color` and `blend="multiply"`).
 - Caution: once per surface; a sweep on everything is wallpaper.
 
@@ -73,8 +74,12 @@ once on a hit.
 Motion tracking laid over a moving object: a thin box round each target that turns with it, a dot at its centre, the live
 coordinates above it (they count every frame), dashed arcs that draw between the targets and sweep past them with an
 arrowhead; optional guide lines to the frame edges or corner brackets instead of boxes.
+A target may carry a `name`: with `labels={false}` it shows in a small pill (`pill`, `pillInk`) on the box's top-left
+corner and moves and turns with it; with `labels` the name leads the coordinates. Never hand-draw name tags beside the
+overlay: they miss the items as soon as anything moves.
 ```tsx
 <TrackOverlay at={T.track} track={(f) => glyphs.map((g) => ({ x: g.x(f), y: g.y(f), w: g.w, h: g.h, rot: g.rot(f) }))} color="#FF3B4E" dot="#FFB020" corners={false} guides={false} size={24} />
+<TrackOverlay at={T.scan} corners arcs={false} labels={false} color="#FFFFFF" dot={ACCENT} track={(f) => items.map((it) => ({ ...boxOf(it, f), name: it.name }))} />
 ```
 - Numbers: 1.8 px boxes, a 10 px dot, labels 24 px set 1.5 lines above the box, arcs 1.6 px dashed 10/8 drawing in over
   10 f; it cuts on.
@@ -113,11 +118,17 @@ content clears in the first frames.
   { at: 64, box: { x: 960, y: 560, w: 1240, h: 500, r: 28 }, color: '#FFFFFF', content: <Window />, dur: 14 },
 ]} />
 ```
-- Numbers: 10-14 f per stage on a quint out; the wipe starts 8 % into the stage and is done at 70 % (expo in-out), so no
+- Numbers: 10-14 f per stage from rest with an exponential tail (`ease.expoInOut`; a stage's `curve` overrides it); the
+  box is placed by transform; the wipe starts 8 % into the stage and is done at 70 % (expo in-out), so no
   soft band lingers on the far edge; old content gone in a quarter of the stage.
 - Clock: a stage counts its `at` as its first step, so on frame `at` the box has already moved 1/dur and it lands on
   `at + dur - 1`; start a carried layer of your own with the same +1.
-- `wipe={false}`: no colour wipe and no mask, the colour blends and the new content shows at once inside the box.
+- `wipe={false}`: no colour wipe and no mask, the colour blends and the contents dissolve in turn with the box's move
+  (the old one gone by 30 % of it, the new one in from 20 % to 55 %), so the two never print over each other and the
+  box never stands empty while it has barely moved. Content taller than the box (a card folding back into a banner)
+  dissolves at the box's moving bottom edge, never cut mid-row.
+- `morphBoxAt(stages, frame)` gives `{ k, t, p, x, y, w, h, r }`, the box on any frame: size a layer of your own, a
+  shadow or a neighbour with it.
   A stage's `pinned: true` lays its content where the stage ends instead of on the box's top-left corner, so a
   frame-sized destination stays still while the box grows onto it like a window. A stage with no content grows as a
   plain slab: give the last stage its screen.
@@ -280,8 +291,9 @@ on top; from `outAt` the arrival goes and the scene sharpens again.
 ```tsx
 <BackdropFocus at={T.done} outAt={T.done + 46} front={<Toast />}><PricingView /></BackdropFocus>
 ```
-- Numbers: 10 f on an ease-out: the scene to 1.03x, 8 px of blur, 30 % dim; the arrival from 0.94x, 2 f later, over 8 f;
-  the way back 8 f.
+- Numbers: critically damped from rest (half-way at 0.3 of `dur`, 10 f): the scene to 1.03x, 8 px of blur, 30 % dim,
+  then a slow push while it waits (`push`, 0.6 % a second; 0 holds it still); the arrival from 0.94x, 2 f later, over
+  8 f; the way back 8 f.
 - Caution: one arrival at a time; keep the scene recognisable through the blur.
 
 ### SliceShift

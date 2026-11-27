@@ -1,14 +1,14 @@
 // CaretCam (camera, emphasis): a prompt typed in a small bar, then a cut into the bar around the caret so the words type
 // at giant size while the camera follows the caret, jumping on at each new word; a snap back to the wide view at the end.
 // Numbers: a char every 1-3 f (2 on average); cut in with no tween; the macro text 30 % of the frame's short side (x-height 16 %); the camera
-// holds through a word and catches the caret at each word start in 3 f (65 %, 90 %, 100 %), putting it at 40 % of the
-// width; the way out passes one frame at about 2.2x.
+// re-aims at each word start, putting the caret at 40 % of the width: a critically damped glide (half-life 3 f, from rest,
+// a glide still running carries into the next; `glide={0}`: the measured catch in 3 f, 65 %, 90 %, 100 %, then a hold); the way out passes one frame at about 2.2x.
 // Caution: one prompt a film; the macro needs a short prompt of plain words (25-60 characters), never a whole paragraph.
 // Catalogue: ../catalog/camera.ts; props and recipe: references/library-camera.md.
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { fonts } from '../../fonts';
-import { rand } from '../../motion';
+import { follow, rand } from '../../motion';
 import { useTextLayout } from '../../type';
 
 /** The frame each character of `text` appears on, from `at`, a character every 1-3 frames (`rate` on average), seeded. */
@@ -58,8 +58,10 @@ export const CaretCam: React.FC<{
   /** The send button. */
   accent?: string;
   seed?: number;
+  /** Half-life in frames of the camera's glide to each word start (default 3; 0: the measured 3 f catch, then a hold). */
+  glide?: number;
   children?: React.ReactNode;
-}> = ({ text, at, rate = 2, inAt, outAt, size, wideSize, w, x, y, anchor = 0.4, color = 'rgba(255,255,255,0.62)', ink = '#121317', accent = '#121317', seed = 7, children }) => {
+}> = ({ text, at, rate = 2, inAt, outAt, size, wideSize, w, x, y, anchor = 0.4, color = 'rgba(255,255,255,0.62)', ink = '#121317', accent = '#121317', seed = 7, glide = 3, children }) => {
   const frame = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
   const S = size ?? Math.round(Math.min(W, H) * 0.3);
@@ -87,7 +89,7 @@ export const CaretCam: React.FC<{
   const steps = [0.65, 0.9, 1];
   const d = frame - starts[k];
   const p = k === 0 ? 1 : d < steps.length ? steps[d] : 1;
-  const off = k === 0 ? tgt(0) : tgt(k - 1) + (tgt(k) - tgt(k - 1)) * p;
+  const off = glide > 0 ? follow(frame, starts.map((t, i) => [t, tgt(i)] as const), glide) : k === 0 ? tgt(0) : tgt(k - 1) + (tgt(k) - tgt(k - 1)) * p;
   const left = W * anchor - off;
 
   const caret = (h: number, wpx: number) => <span style={{ display: 'inline-block', width: wpx, height: h, background: ink, marginLeft: wpx * 0.6, verticalAlign: 'middle', transform: `translateY(${-h * 0.06}px)` }} />;
@@ -126,7 +128,7 @@ export const CaretCam: React.FC<{
       {/* the scene seen past the bar's rim, close and out of focus, sliding with the camera */}
       <AbsoluteFill style={{ transform: `translateX(${-off * 0.25}px) scale(3)`, transformOrigin: `${cx}px ${cy}px`, filter: 'blur(12px)' }}>{children}</AbsoluteFill>
       <div style={{ position: 'absolute', left: -W, right: -W, top, height: bot - top, background: color, backdropFilter: 'blur(24px)', borderTop: `${Math.max(2, Math.min(W, H) * 0.004)}px solid rgba(255,255,255,0.75)`, borderBottom: `${Math.max(2, Math.min(W, H) * 0.004)}px solid rgba(255,255,255,0.45)` }} />
-      <div style={{ position: 'absolute', left, top: (top + bot) / 2 - S * 0.62, height: S * 1.24, display: 'flex', alignItems: 'center', ...style, color: ink }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${left}px, ${(top + bot) / 2 - S * 0.62}px)`, height: S * 1.24, display: 'flex', alignItems: 'center', ...style, color: ink }}>
         {typed}
         {caret(S * 1.05, Math.max(2, S * 0.045))}
       </div>
