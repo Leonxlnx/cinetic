@@ -1,7 +1,7 @@
 // FaceDive (turn, join): the camera dives into one face of an object (a hexagon cube face, a tile, a badge) whose
 // inside already shows the next scene; the face outruns the picture inside it until its outline passes the frame.
 // Numbers: 12 f; the face grows by a constant ratio a frame (about x1.12, 0.3 to 1.15 of the width) and drifts to the
-// centre; the scene inside goes 0.85 to 1; the rest of the old scene pushes in a third as fast.
+// centre; the scene inside goes 0.85 to 1 (never less than the part of the frame the face spans); the rest of the old scene pushes in a third as fast.
 // Caution: draw the same face, with the same preview, in the old scene (or use `preview`); the face must be the subject;
 // give it its solid (`solid`) so it reads as an object, not a cut-out.
 // Catalogue: ../catalog/turn.ts; props and recipe: references/library-turns.md.
@@ -61,7 +61,11 @@ export const FaceDive: React.FC<
   const cx = mix(m, x, W / 2);
   const cy = mix(m, y, H / 2);
   const zoom = Math.pow(R / r, push);
-  const ps = mix(p, plate, 1);
+  // the picture inside grows slower than the face, but never so slow that the face shows past its edge inside the
+  // frame (that read as dark wedges in the corners for a frame or two): it covers the part of the frame the face spans
+  const spanX = Math.max(cx - Math.max(0, cx - R), Math.min(W, cx + R) - cx) / (W / 2);
+  const spanY = Math.max(cy - Math.max(0, cy - R), Math.min(H, cy + R) - cy) / (H / 2);
+  const ps = Math.max(mix(p, plate, 1), spanX, spanY);
   const pts = polygon(cx, cy, R, n, rot);
   const clip = `polygon(${pts.map(([a, b]) => `${a.toFixed(1)}px ${b.toFixed(1)}px`).join(', ')})`;
   // the solid's side faces: each lower edge of the face extruded straight down, the left-facing one lighter

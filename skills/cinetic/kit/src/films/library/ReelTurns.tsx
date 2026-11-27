@@ -418,7 +418,7 @@ const DotIrisDemo: React.FC = () => {
     <Ground color={PAPER} light={false}>
       <DriftLine ink={INK} text="Every morning" />
       <div style={{ position: 'absolute', left: 0, right: 0, top: 660, display: 'flex', justifyContent: 'center' }}>
-        <Rise at={T + 12} style={say(46, '#5D6470', 500)}>
+        <Rise at={T + 12} style={say(58, '#4A505B', 500)}>
           a plan for the day, ready before you are
         </Rise>
       </div>
@@ -456,6 +456,12 @@ const hexSides = (cx: number, cy: number, r: number, c: string) => {
   );
 };
 const FD = { x: 640, y: 430, r: 210 };
+// the dived face's own label: there while the face waits, gone over the dive's first three frames (it belongs to the
+// old scene, so it never rides along the face's edge)
+const FaceLabel: React.FC<{ at: number }> = ({ at }) => {
+  const f = useCurrentFrame();
+  return <div style={{ position: 'absolute', left: FD.x - 200, width: 400, top: FD.y + FD.r + 130, textAlign: 'center', ...say(38, '#D5D8DE', 500), opacity: 1 - clamp((f - at) / 3) }}>Sources</div>;
+};
 const FaceDiveDemo: React.FC = () => {
   const T = 30;
   const from = (
@@ -470,9 +476,10 @@ const FaceDiveDemo: React.FC = () => {
         {hexSides(1360, 420, 110, SUN)}
         <polygon points={hexPts(1360, 420, 110)} fill="url(#fdB)" />
       </svg>
-      {[['Routing', 1040, 640 + 250], ['Limits', 1360, 420 + 190], ['Sources', FD.x, FD.y + FD.r + 130]].map(([t, x, y]) => (
-        <div key={t as string} style={{ position: 'absolute', left: (x as number) - 200, width: 400, top: y as number, textAlign: 'center', ...say(30, '#C9CCD3', 500) }}>{t}</div>
+      {[['Routing', 1040, 640 + 250], ['Limits', 1360, 420 + 190]].map(([t, x, y]) => (
+        <div key={t as string} style={{ position: 'absolute', left: (x as number) - 200, width: 400, top: y as number, textAlign: 'center', ...say(38, '#D5D8DE', 500) }}>{t}</div>
       ))}
+      <FaceLabel at={T} />
     </Ground>
   );
   const to = (
@@ -495,7 +502,9 @@ const VelocityCutDemo: React.FC = () => {
   );
   const to = (
     <Center>
-      <Planner w={900} />
+      <div style={{ transform: 'scale(1.4)' }}>
+        <Planner w={900} />
+      </div>
     </Center>
   );
   return <VelocityCut from={from} to={to} at={30} dir="left" ground={WHITE} />;
@@ -520,14 +529,8 @@ const FrameCollapseDemo: React.FC = () => {
       </Center>
     </Ground>
   );
-  return (
-    <>
-      <Sequence durationInFrames={20 + 31}>
-        <FrameCollapse from={from} to={<Ground color={COBALT} light={false} />} at={20} ground={COBALT} />
-      </Sequence>
-      <Sequence from={20 + 31}>{to}</Sequence>
-    </>
-  );
+  // the panel collapses onto the white the next line is set on, so the ground is the next scene's own, not a new colour
+  return <FrameCollapse from={from} to={to} at={20} ground={WHITE} />;
 };
 
 const LensIrisDemo: React.FC = () => {
@@ -558,8 +561,8 @@ const TiltLiftDemo: React.FC = () => {
   );
   const card = (
     <AbsoluteFill style={{ alignItems: 'center' }}>
-      <div style={{ marginTop: 210 }}>
-        <Planner w={1500} />
+      <div style={{ marginTop: 190, transform: 'scale(1.45)', transformOrigin: '50% 0' }}>
+        <Planner w={1000} />
       </div>
     </AbsoluteFill>
   );
@@ -620,14 +623,19 @@ const PixelStairDemo: React.FC = () => {
 };
 
 const TileFloodDemo: React.FC = () => {
-  const slab = (x: number, y: number, c: string, t: string) => (
-    <div key={t} style={{ position: 'absolute', left: x - 150, top: y - 110, width: 300, height: 220, borderRadius: 30, background: c, boxShadow: softShadow(4, '#9AA3B0'), display: 'flex', alignItems: 'flex-end', padding: 26, boxSizing: 'border-box', ...say(34, INK, 560) }}>{t}</div>
+  // three photo cards with their captions: the things the flood carries into the night view
+  const slab = (x: number, y: number, src: string, t: string) => (
+    <div key={t} style={{ position: 'absolute', left: x - 190, top: y - 135, width: 380, height: 270, borderRadius: 30, overflow: 'hidden', boxShadow: softShadow(4, '#9AA3B0') }}>
+      <Pic src={src} />
+      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 120, background: 'linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.55))' }} />
+      <div style={{ position: 'absolute', left: 28, bottom: 22, ...say(40, '#fff', 560) }}>{t}</div>
+    </div>
   );
   const front = (
     <>
-      {slab(620, 640, SKY, 'Usage')}
-      {slab(960, 500, CORAL, 'Cost')}
-      {slab(1300, 360, SUN, 'Access')}
+      {slab(600, 650, IMG.tide, 'Low tide')}
+      {slab(960, 500, IMG.waves, 'Swell')}
+      {slab(1320, 350, IMG.farms, 'Kelp rows')}
     </>
   );
   const grid = (bg: string, line: string) => (
@@ -655,35 +663,35 @@ const StampHopDemo: React.FC = () => {
 };
 
 const CollapsePillDemo: React.FC = () => {
-  const rowA = { x: 960, y: 540, w: 1080, h: 128, r: 30, color: '#F2F3F5' };
-  const pillB = { x: 960, y: 820, w: 460, h: 72, r: 36, color: COBALT };
+  const rowA = { x: 960, y: 540, w: 1280, h: 150, r: 34, color: '#F2F3F5' };
+  const pillB = { x: 960, y: 820, w: 540, h: 84, r: 42, color: COBALT };
   const other = (y: number, t: string, who: string) => (
-    <div style={{ position: 'absolute', left: 960 - 540, top: y - 64, width: 1080, height: 128, borderRadius: 30, background: 'rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 22, padding: '0 30px', boxSizing: 'border-box', ...say(32, '#C9CCD3', 500) }}>
-      <Avatars n={1} size={64} ring={NIGHT} />
+    <div style={{ position: 'absolute', left: 960 - 640, top: y - 75, width: 1280, height: 150, borderRadius: 34, background: 'rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 24, padding: '0 34px', boxSizing: 'border-box', ...say(40, '#C9CCD3', 500) }}>
+      <Avatars n={1} size={72} ring={NIGHT} />
       <div style={{ textAlign: 'left' }}>
-        <div style={{ fontSize: 26, opacity: 0.6 }}>{who}</div>
+        <div style={{ fontSize: 30, opacity: 0.6 }}>{who}</div>
         {t}
       </div>
     </div>
   );
   const from = (
     <Ground color={NIGHT} light={false}>
-      {other(380, 'Is the north beach walk still on for Thursday?', 'Jo')}
-      {other(700, 'Can we move it to the afternoon tide?', 'Ren')}
+      {other(355, 'Is the north beach walk still on for Thursday?', 'Jo')}
+      {other(725, 'Can we move it to the afternoon tide?', 'Ren')}
     </Ground>
   );
   const row = (
-    <div style={{ width: rowA.w, height: rowA.h, display: 'flex', alignItems: 'center', gap: 22, padding: '0 30px', boxSizing: 'border-box', ...say(32, INK, 520) }}>
-      <Avatars n={2} size={64} ring="#F2F3F5" />
+    <div style={{ width: rowA.w, height: rowA.h, display: 'flex', alignItems: 'center', gap: 24, padding: '0 34px', boxSizing: 'border-box', ...say(40, INK, 520) }}>
+      <Avatars n={2} size={72} ring="#F2F3F5" />
       <div style={{ textAlign: 'left' }}>
-        <div style={{ fontSize: 26, opacity: 0.55 }}>Sam, 3 replies</div>
+        <div style={{ fontSize: 30, opacity: 0.55 }}>Sam, 3 replies</div>
         Can someone send the new times to everyone?
       </div>
     </div>
   );
   const pill = (
-    <div style={{ width: pillB.w, height: pillB.h, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, ...say(30, '#fff', 520) }}>
-      <Icon name="Send" size={30} color="#fff" />
+    <div style={{ width: pillB.w, height: pillB.h, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, ...say(36, '#fff', 520) }}>
+      <Icon name="Send" size={34} color="#fff" />
       Sending to 6 people
     </div>
   );

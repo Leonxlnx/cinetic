@@ -1,6 +1,7 @@
 // GatherLine (type, enter): the words (or letters) of a line sit scattered across the frame and drift slowly, then
 // gather into one set line: on a single frame (a cut, the sizes and the face already exact) or by a short ease-in slide.
-// Numbers: scattered over 50 % x 32 % of the frame round the line's place; drift 3-5 px a frame at 1080 p for 15-20 f;
+// Numbers: scattered over 50 % x 32 % of the frame round the line's place, each piece in its own cell of a grid (never
+// on another); drift 3-5 px a frame at 1080 p for 15-20 f along one shared current;
 // the gather a one-frame snap, or an ease-in slide over 4 f; scattered pieces may take a colour and change it every 3 f
 // until they land.
 // Caution: the scattered pieces must already be the line's size and face, or the snap reads as a jump in size.
@@ -57,14 +58,29 @@ export const GatherLine: React.FC<{
   const u = height / 1080;
   const f = frame - at;
   const g = mode === 'snap' ? (frame >= gatherAt ? 1 : 0) : clamp((frame - gatherAt + 1) / dur) ** 2.2;
+  // scattered places: each piece in its own cell of a grid over the spread box (cells taken in a seeded order, a small
+  // seeded offset inside), so no two pieces ever sit on each other
+  const n = pieces.length;
+  const bw = spread[0] * width;
+  const bh = spread[1] * height;
+  const widest = Math.max(1, ...pieces.map((p) => p.box.width));
+  // as many columns as the box's shape asks for, but never narrower than 1.3 x the widest piece, and two rows at least
+  let cols = Math.max(1, Math.min(Math.ceil(Math.sqrt((n * bw) / bh)), Math.floor(bw / (widest * 1.3))));
+  if (n >= 3 && cols >= n) cols = Math.ceil(n / 2);
+  const rows = Math.max(1, Math.ceil(n / cols));
+  const cells = Array.from({ length: cols * rows }, (_, k) => k).sort((a, b) => hash(a, seed + 13) - hash(b, seed + 13));
+  // one slow current for all of them (each a little off it), so they drift together and never run into each other
+  const current = hash(0, seed + 7) * Math.PI * 2;
   return (
     <>
       {pieces.map((p, i) => {
-        // scattered place: a seeded spot in the spread box, avoiding a pile in the middle, plus the drift so far
-        const sx = (hash(i, seed) - 0.5) * spread[0] * width;
-        const sy = (hash(i, seed + 3) - 0.5) * spread[1] * height;
-        const ang = hash(i, seed + 7) * Math.PI * 2;
-        const v = drift * u * (0.75 + hash(i, seed + 9) * 0.5);
+        const cell = cells[i];
+        const cw = bw / cols;
+        const ch = bh / rows;
+        const sx = -bw / 2 + ((cell % cols) + 0.5 + (hash(i, seed) - 0.5) * 0.3) * cw;
+        const sy = -bh / 2 + (Math.floor(cell / cols) + 0.5 + (hash(i, seed + 3) - 0.5) * 0.3) * ch;
+        const ang = current + (hash(i, seed + 7) - 0.5) * 0.5;
+        const v = drift * u * (0.85 + hash(i, seed + 9) * 0.3);
         const fx = Math.min(f, gatherAt - at);
         const scX = cx + sx + Math.cos(ang) * v * fx - p.box.width / 2;
         const scY = cy + sy + Math.sin(ang) * v * fx - L.height / 2;

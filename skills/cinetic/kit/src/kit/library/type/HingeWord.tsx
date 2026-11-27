@@ -1,9 +1,9 @@
 // HingeWord (type, enter / emphasis): a word arrives hinged on its baseline, flipping up from lying flat to face the
-// camera while it rises a little and darkens from grey to ink; to swap, the word heats along a colour path, tips back
-// and rises out while the next word flips up in its place.
+// camera while it rises a little and darkens from grey to ink; to swap, the word fades back toward the grey it came
+// from (or heats along a colour path when one is given), tips back and rises out while the next word flips up.
 // Numbers: rotateX 70 to 0 degrees about the baseline over 7 f (expo out), rising 0.35 em, grey to ink over the same
-// frames; the heat 9 f before the swap through five steps (dark to warm); the old word tips back to -60 degrees and
-// rises 0.3 em over 3 f, gone as the new one is half up.
+// frames; 9 f before the swap five steps back toward the grey (or along a given heat path, dark to warm); the old
+// word tips back to -60 degrees and rises 0.3 em over 3 f, gone as the new one is half up.
 // Caution: one word in a slot (beside a picture, a device, a tile); not for a whole line.
 // Catalogue: ../catalog/type.ts; props and recipe: references/library-type.md.
 import React from 'react';
@@ -17,9 +17,10 @@ export const HEAT_GOLD = ['#1A1305', '#4A3A0E', '#7F611C', '#BC8545', '#E3A07A']
 export const HEAT_ROSE = ['#170A10', '#45202F', '#773452', '#B2587C', '#DA7FA6'];
 
 /**
- * HingeWord: one slot whose words flip up on their `times`; each word before the next heats along `heat` (a list of
- * colour paths, used in turn) over its last 9 frames, then tips back and rises out as the next one flips up. `align`
- * sets which edge of the slot stays fixed (a word beside a picture keeps its inner edge).
+ * HingeWord: one slot whose words flip up on their `times`; each word before the next steps back toward `grey` over its
+ * last 9 frames (or, given `heat`, along those colour paths in turn: only when the colour means something), then
+ * tips back and rises out as the next one flips up. `align` sets which edge of the slot stays fixed
+ * (a word beside a picture keeps its inner edge).
  */
 export const HingeWord: React.FC<{
   words: string[];
@@ -35,7 +36,7 @@ export const HingeWord: React.FC<{
   y?: number;
   font?: string;
   weight?: number;
-}> = ({ words, times, heat = [HEAT_GOLD, HEAT_ROSE], size = 72, color = '#0A0A0A', grey = '#8A8A8A', align = 'left', leaveAt, x, y, font = fonts.inter, weight = 500 }) => {
+}> = ({ words, times, heat, size = 72, color = '#0A0A0A', grey = '#8A8A8A', align = 'left', leaveAt, x, y, font = fonts.inter, weight = 500 }) => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
   const style = { fontFamily: font, fontWeight: weight, fontSize: size, letterSpacing: '-0.015em', lineHeight: 1.2 } as const;
@@ -46,6 +47,8 @@ export const HingeWord: React.FC<{
   const base = L.baseline;
   const k = times.filter((t) => frame >= t).length - 1;
   const expo = (t: number) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
+  // the default path: the ink stepping back toward the grey it arrived from (no colour without a reason)
+  const paths = heat?.length ? heat : [[0.2, 0.4, 0.6, 0.8, 1].map((k) => mixColor(color, grey, k * 0.85))];
   const draw = (i: number, key: string) => {
     const age = frame - times[i];
     const nextAt = times[i + 1];
@@ -58,7 +61,7 @@ export const HingeWord: React.FC<{
       const q = clamp((frame - nextAt + 1) / 3);
       rot = -60 * q;
       dy = -0.3 * size * q;
-      const path = heat[i % heat.length];
+      const path = paths[i % paths.length];
       c = path[path.length - 1];
       o = 1 - q;
       if (q >= 1) return null;
@@ -68,7 +71,7 @@ export const HingeWord: React.FC<{
       dy = 0.35 * size * (1 - p);
       c = mixColor(grey, color, p);
       if (nextAt !== undefined && frame >= nextAt - 9) {
-        const path = heat[i % heat.length];
+        const path = paths[i % paths.length];
         c = path[Math.min(path.length - 1, Math.floor((frame - (nextAt - 9)) / 2))];
       }
     }

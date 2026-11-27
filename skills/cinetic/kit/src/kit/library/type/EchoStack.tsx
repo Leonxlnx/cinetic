@@ -5,8 +5,9 @@
 // Numbers: rows at a 1.0 em pitch (whole words, never cut through); the side copies of the centre row sit a word and
 // 0.3 em out, sliding out from behind it over 3 f; the centre row and rows +-1 at once, rows +-2 at 4 f; the echoes
 // recede in tone (the word full, its sides and the near rows 40 %, the far rows 18 % toward the ground); labels in pairs
-// every 3 f at 2.4 % of the frame's height, beside the upper and lower rows; the zoom cuts to 1.7x, then 2.7x three
-// frames later, then a 14x fragment for its last frames.
+// every 3 f at 2.4 % of the frame's height, beside the upper and lower rows; the zoom clears the echoes and cuts the
+// whole word to 1.7x, then 2.7x three frames later (held to 90 % of the frame's width, never cropped), then a 14x
+// fragment for its last frames.
 // Caution: one short word (4-8 letters) in a heavy sans on a flat ground; give the ground colour (the copies hide each
 // other with it).
 // Catalogue: ../catalog/type.ts; props and recipe: references/library-type.md.
@@ -18,8 +19,8 @@ import { useTextLayout } from '../../type';
 /**
  * EchoStack: from `at` the word stands with its rows above and below and its side copies sliding out; at `at + 4` the
  * outer rows and the near rows' sides, at `at + 6` the outer sides: a stack of echoes, the nearer copy always on top with a slab of `ground` behind its
- * letters. `labels` pop around the stack in pairs from `labelsAt`. From `zoomAt` the rest goes and the centre copy
- * zooms inside its own box by cuts (1.7x, then 2.7x), and on `zoomAt + 5` a single letter fragment fills the frame.
+ * letters. `labels` pop around the stack in pairs from `labelsAt`. From `zoomAt` the rest goes and the word, whole,
+ * steps closer by cuts (1.7x, then 2.7x, within 90 % of the frame's width), and on `zoomAt + 5` a single letter fragment fills the frame.
  */
 export const EchoStack: React.FC<{
   text: string;
@@ -67,16 +68,14 @@ export const EchoStack: React.FC<{
         </div>
       );
     }
-    const s = zoom < 3 ? 1.7 : 2.7;
-    // the centre copy zooms inside its own box; the outer copies of its row stay as they were
+    // the echoes go and the word alone steps closer by cuts, always whole (never cropped): 1.7x, then 2.7x, each held
+    // to 90 % of the frame's width
+    const fit = (width * 0.9) / W;
+    const s = Math.min(zoom < 3 ? 1.7 : 2.7, fit);
     return (
-      <>
-        {copy(-(W + size * 0.3), 0, 'l', 0.4)}
-        {copy(W + size * 0.3, 0, 'r', 0.4)}
-        <div style={{ position: 'absolute', left: cx - W / 2, top: cy - L.height / 2 + capTop - band * 0.06, width: W, height: band * 1.06, overflow: 'hidden', background: ground }}>
-          <span style={{ ...style, position: 'absolute', left: 0, top: -(capTop - band * 0.06), whiteSpace: 'pre', color, transform: `scale(${s})`, transformOrigin: `${W / 2}px ${capTop + band / 2}px` }}>{text}</span>
-        </div>
-      </>
+      <div style={{ position: 'absolute', inset: 0, background: ground }}>
+        <span style={{ ...style, position: 'absolute', left: cx - W / 2, top: cy - L.height / 2, whiteSpace: 'pre', color, transform: `scale(${s})`, transformOrigin: `${W / 2}px ${capTop + band / 2}px` }}>{text}</span>
+      </div>
     );
   }
   const pitch = size;

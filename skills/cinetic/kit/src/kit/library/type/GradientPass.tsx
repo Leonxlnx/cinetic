@@ -1,7 +1,7 @@
 // GradientPass (type, enter / emphasis): a gradient clipped to the glyphs passes along a line: letters appear at a soft
 // leading edge in its first colour, run through the colours and settle to the ink behind a second, slower front.
 // Numbers: reveal front 1.4 letters a frame (2.5 for a quick title) with a soft edge 3 letters wide; the ink front
-// starts about 18 f later at 0.8 letters a frame, easing out at the end; stops peach, pink, sky, blue, then ink; the
+// starts about 18 f later at 0.8 letters a frame, easing out at the end; stops amber, orange, ember, brick, then ink; the
 // line slides in 0.4 em from the right as it is revealed (optional).
 // Caution: one per film, on a closing line or a title; it needs a calm ground (paper, ink, a quiet photo) to read.
 // Catalogue: ../catalog/type.ts; props and recipe: references/library-type.md.
@@ -11,8 +11,8 @@ import { fonts } from '../../fonts';
 import { clamp } from '../../motion';
 import { useTextLayout } from '../../type';
 
-/** The default passing colours (warm to cool), first to last. */
-export const PASS_STOPS = ['#F6C7A5', '#EFA1C2', '#A9C6F2', '#6F8CEC'];
+/** The default passing colours, first to last: a saturated heat from amber to brick (never pastel, never a pink-blue wash). */
+export const PASS_STOPS = ['#FFB45C', '#FF8A3D', '#F2552C', '#B8341C'];
 
 /**
  * GradientPass: from `at` a soft front reveals the line left to right (`speed` letters a frame), the letters behind it

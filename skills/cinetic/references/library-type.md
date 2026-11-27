@@ -50,20 +50,20 @@ flash or an inverted frame; a label in uppercase mono; an eyebrow line over a st
 | [PushApart](#pushapart) | exit, join | 28 f | the gap in a short line prises open while a dot grows in it, then a cut to the object whole, the halves sliding off | a line that gives way to the product's icon, character or device |
 | [InkLine](#inkline) | enter, build | 45 f | a centred line built word by word: each word cuts on in a tint (grey, a hue path, warm light) and inks while the line re-centres, most of the move on the arrival frame | the voice-over line: a statement said word by word on the voice or the beat |
 | [ScrambleType](#scrambletype) | enter, emphasis | 20 f | wrong glyphs change every few frames and lock into the word letter by letter, optionally inside corner brackets that roll it to the next word | a word that is computed, decoded or chosen: a status, a label, a step name |
-| [FaceCycle](#facecycle) | enter, emphasis | 30 f | each new word of a caption arrives in a pixel face, cuts to an italic serif, then lands in the sans; one word may flip back to the serif | a caption with a playful maker voice beside pictures or products |
+| [FaceCycle](#facecycle) | enter, emphasis | 30 f | each new word of a caption arrives in a pixel face, cuts to a bold italic, then lands in the sans; one word may flip back to the italic | a caption with a playful maker voice beside pictures or products |
 | [CornerLine](#cornerline) | enter, build | 40 f | a line built word by word inside four small corner marks that jump outward as it widens; the marks arrive as doubled dashes that collapse to squares | one framed statement: a tagline, a definition, the line the film is about |
 | [CutAway](#cutaway) | exit | 4 f | a held line loses whole words by cut from its end (re-centring) or from its start (the rest in place), a step every frame or two | a line taken apart so the next phrase can take its spot |
-| [GradientPass](#gradientpass) | enter, emphasis | 60 f | a colour gradient clipped to the glyphs passes along the line: letters appear at a soft front in warm colours, run to cool and settle to the ink behind a slower front | a closing line or a title that should feel lit as it is said |
+| [GradientPass](#gradientpass) | enter, emphasis | 60 f | a colour gradient clipped to the glyphs passes along the line: letters appear at a soft front in amber, run through orange to brick and settle to the ink behind a slower front | a closing line or a title that should feel lit as it is said |
 | [TypeHead](#typehead) | enter | 30 f | a line typed letter by letter whose newest letters (or the word being typed) are in an accent that cools to the ink, a coloured head running with the caret | a query, a name or a title being typed, outside or inside a product |
 | [CaretFollow](#caretfollow) | enter | 60 f | a prompt typed at a giant size after two caret blinks, centred while it fits; then the camera holds the caret in short smeared jumps so the start of the line leaves the frame | the one prompt or question a film is about, said big |
 | [InlineChip](#inlinechip) | emphasis | 30 f | a rounded picture opens inside a sentence from a sliver to its width, pushing the words apart; its picture swaps every few frames and it can grow | a sentence that names something worth seeing: the photos, the product, the people |
-| [EchoStack](#echostack) | emphasis, exit | 40 f | one word repeated into a stack of whole, dimmer echoes (rows above and below, a copy sliding out to each side); labels pop beside it; then the centre copy zooms by cuts until a letter fragment fills the frame | a word that means growth or quantity, said once and loud, leading into the next scene |
+| [EchoStack](#echostack) | emphasis, exit | 40 f | one word repeated into a stack of whole, dimmer echoes (rows above and below, a copy sliding out to each side); labels pop beside it; then the echoes clear and the whole word steps closer by cuts until a letter fragment fills the frame | a word that means growth or quantity, said once and loud, leading into the next scene |
 | [TagSlap](#tagslap) | emphasis | 40 f | small tilted label tags slap across a big word one after another, each opening from its centre in three frames | attributes of one thing (what a studio makes, what a product does) laid on it |
 | [GatherLine](#gatherline) | enter | 30 f | the words or letters of a line sit scattered across the frame and drift, then gather into one set line on a single frame or by a short slide | a line that comes together: sorting, collecting, a scattered idea made one |
 | [LightStreak](#lightstreak) | enter, exit | 8 f | a caption born from a horizontal streak of light: streak lines, the word doubled and smeared sideways, then sharp; it dies back into the streak | a caption over footage or a dark scene that should feel broadcast or remembered |
 | [ClipExit](#clipexit) | exit, join | 8 f | an object slides across a held line and the letters are cut at its leading edge, so the line disappears behind it | a line that hands the frame to the product: its icon, a window, a card the story goes into |
 | [SplitWord](#splitword) | enter, emphasis | 12 f | a big word split around a picture: the halves slide out from behind it, inner letters tucked under its edges, while the picture smears and swaps | a word whose subject is a picture: places, people, work being shown |
-| [HingeWord](#hingeword) | enter, emphasis | 10 f | a word flips up from lying flat on its baseline, rising and darkening to ink; to swap, it heats along a colour path, tips back and the next one flips up | one word in a slot beside a picture or a device that changes two or three times |
+| [HingeWord](#hingeword) | enter, emphasis | 10 f | a word flips up from lying flat on its baseline, rising and darkening to ink; to swap, it steps back toward grey, tips back and the next one flips up | one word in a slot beside a picture or a device that changes two or three times |
 | [StepWhip](#stepwhip) | enter | 30 f | each word cuts on inside its own slot, shifted right and cropped, and jumps left in halving steps on a 12 fps clock until it sits; no word is drawn away from its place, the line never re-centres and its spacing breathes | a hand-made, stepped voice for a short line said in phrases |
 | [PartStack](#partstack) | emphasis | 24 f | two words of a held line part to open a slot and small pictures cut on into it one after another, overlapping in a loose cluster | a line about people, places or things that should be seen: the pictures arrive inside the sentence |
 | [SlideOff](#slideoff) | exit | 10 f | a held line slides off sideways, accelerating and smearing more as it goes, cut on the move; two lines can shear apart | an exit into a shot that starts moving the same way |
@@ -420,17 +420,17 @@ mark is a doubled dash in a flash colour that drops to one bar, then settles to 
 - Caution: structure for one framed line at a time; never frame every line of a film.
 
 ### FaceCycle
-A caption that tries on faces: each new word arrives in a pixel face in the accent, cuts to an italic serif in the
-accent, then lands in the sans and the ink. `flip` turns one word back to the italic serif later, the accent of the
-finished line.
+A caption that tries on faces: each new word arrives in a pixel face in the accent, cuts to the sans in a bold italic
+in the accent, then lands in the sans and the ink. `flip` turns one word back to the italic later (in the line's weight, so it
+never crowds its neighbours), the accent of the finished line (`serif` makes that middle face an italic serif, only for a brand whose voice is a serif).
 ```tsx
 <FaceCycle text="Every draft finds its reader" at={T.cap} gap={4} size={72} accent={ACCENT} flip={{ index: 1, at: T.cap + 40 }} />
 ```
 - Props: `text`, `at`, `gap` (4) or `times`, `size` (64), `color`, `accent`, `holds` (`[2, 4]` frames in the pixel face
-  and the serif), `align` (`center`, `left`), `flip` `{ index, at }`, `leaveAt`, `x`, `y`, `font`, `weight`.
-- Numbers: a word every 3-4 f; 2 f pixel (the sans in a heavier weight rasterised to cells of 0.085 em), 4 f italic serif, then the sans; all
-  by cut.
-- Caution: a caption device for small and middle sizes; the faces change by cut, never blend, and the serif appears
+  and the italic), `align` (`center`, `left`), `flip` `{ index, at }`, `serif`, `leaveAt`, `x`, `y`, `font`, `weight`.
+- Numbers: a word every 3-4 f; 2 f pixel (the sans in a heavier weight rasterised to cells of 0.085 em), 4 f bold italic
+  (weight 650), then the sans; all by cut.
+- Caution: a caption device for small and middle sizes; the faces change by cut, never blend, and the italic appears
   as a passing state (the line's voice stays the sans).
 
 ### TypeHead
@@ -575,10 +575,11 @@ the fronts recolour it (a coloured title swept to white).
 <GradientPass text="Keep every idea without losing the thread" at={T.close} size={78} />
 ```
 - Props: `text`, `at`, `speed` (1.4 letters a frame), `inkAfter` (18; -1 keeps the colours), `inkSpeed` (0.8), `stops`
-  (`PASS_STOPS`: peach, pink, sky, blue), `soft` (3 letters), `slide` (0.4 em), `from`, `size` (96), `color`,
+  (`PASS_STOPS`: amber, orange, ember, brick), `soft` (3 letters), `slide` (0.4 em), `from`, `size` (96), `color`,
   `leaveAt`, `x`, `y`, `font`, `weight`.
 - Numbers: a 40-letter line is revealed in about 28 f and inked by about 70 f; the ink front eases out at the end.
-- Caution: one per film, on a closing line or a title; it needs a calm ground to read.
+- Caution: one per film, on a closing line or a title; it needs a calm ground to read; keep the stops saturated (a
+  pastel pink-to-blue wash reads cheap).
 
 ### TagSlap
 Small tilted label tags slap across a big word one after another, each opening from its centre in three frames with its
@@ -594,8 +595,8 @@ text cropped by the opening edges.
 ### EchoStack
 One word repeated into a stack of echoes: whole copies in rows above and below and a whole copy sliding out from behind
 it to each side, every echo dimmer than the word, so the stack reads as depth and never as overprinted fragments; small
-labels pop beside the upper and lower rows; then the centre copy zooms by cuts inside its own box until a fragment of
-one letter fills the frame (the way into the next scene).
+labels pop beside the upper and lower rows; then the echoes clear and the word, always whole, steps closer by cuts
+until a fragment of one letter fills the frame (the way into the next scene).
 ```tsx
 <EchoStack text="Growing" at={T.grow} labels={['team of four', 'first hundred users']} zoomAt={T.grow + 33} ground={DARK} />
 ```
@@ -603,9 +604,9 @@ one letter fills the frame (the way into the next scene).
   `leaveAt`, `x`, `y`, `font`, `weight` (600).
 - Numbers: rows at 1.0 em (whole words, never cut through); the side copies a word and 0.3 em out, sliding over 3 f;
   rows +-2 at +4 f; tones: the word full, its sides and the near rows 40 %, the far rows 18 %; labels in pairs every
-  3 f at 2.4 % of the frame's height; the zoom 1.7x, then 2.7x 3 f later, then a 14x fragment from 5 f.
-- Caution: one short word in a heavy sans on a flat ground; at most six short labels; the zoom crops the word inside
-  its own box, so keep that beat to its few frames.
+  3 f at 2.4 % of the frame's height; the zoom 1.7x, then 2.7x 3 f later (each held to 90 % of the frame's width, the word never cropped), then a 14x
+  fragment from 5 f.
+- Caution: one short word in a heavy sans on a flat ground; at most six short labels.
 
 ## Words and pictures
 
@@ -618,7 +619,8 @@ the line stays centred; its picture changes every few frames and it can grow lat
 - Props: `text`, `after` (the word before the chip), `at`, `open` (4), `w` (1.4 em), `h` (0.8 em), `pictures` (files
   under `public/` or nodes), `every` (11) or `times`, `grow` `{ at, dur, w, h }`, `words` (a frame per word), `size`,
   `color`, `chip`, `leaveAt`, `x`, `y`, `font`, `weight`.
-- Numbers: opens in 4 f ease-out from 0.08 em; radius 22 % of its height; swaps by cut.
+- Numbers: opens in 4 f ease-out from 0.08 em; radius 22 % of its height; swaps by cut. For a picture that reads as
+  one, set it about 2 x 1 em (the reel: `w={2.1} h={1.0}`, growing to 3.4 x 1.7 em); the default is a small inline mark.
 - Caution: the chip shows what the sentence names, never a decoration; one chip a line.
 
 ### PartStack
@@ -628,10 +630,10 @@ loose cluster: the people, places or things the line is about arrive inside the 
 <PartStack text="Every coast matters" after={0} at={T.part} pictures={['img/a.jpg', 'img/b.jpg', 'img/c.jpg']} />
 ```
 - Props: `text`, `after` (the word before the slot), `at`, `pictures` (files under `public/` or nodes), `every` (2.5),
-  `gap` (2.6 em), `size` (90), `color`, `edge`, `leaveAt`, `x`, `y`, `font` (the serif), `weight`, `seed`.
+  `gap` (2.6 em), `size` (90), `color`, `edge`, `leaveAt`, `x`, `y`, `font` (the sans), `weight` (500), `seed`.
 - Numbers: the words part 2.6 em in 9 f (expo out), the left word taking 45 % of it; the first picture 2 f in, then one
-  every 2-3 f; tiles 1 x 1.15 em with a light edge, reaching above and below the words; once full the slot narrows
-  0.2 em over 10 f.
+  every 2-3 f; tiles 1 x 1.15 em with a light edge, reaching above and below the words, the cluster centred in the slot
+  0.15 em clear of each word; once full the slot narrows 0.2 em over 10 f.
 - Caution: four to seven real pictures of the subject; never icons or grey blanks.
 
 ### SplitWord
@@ -649,13 +651,14 @@ from behind it instead).
 
 ### HingeWord
 A word in a slot that arrives hinged on its baseline, flipping up from lying flat while it rises a little and darkens
-from grey to ink; to swap, it heats along a colour path, tips back and rises out while the next word flips up.
+from grey to ink; to swap, it steps back toward the grey it came from, tips back and rises out while the next word
+flips up. `heat` gives that step a colour path instead, only when the colour means something.
 ```tsx
 <HingeWord words={['Coastlines', 'Harbours', 'Islands']} times={[T.a, T.b, T.c]} x={940} size={84} />
 ```
-- Props: `words`, `times`, `heat` (paths used in turn: `HEAT_GOLD`, `HEAT_ROSE`), `size` (72), `color`, `grey`, `align`
+- Props: `words`, `times`, `heat` (none: back toward `grey`; or paths used in turn, such as `HEAT_GOLD`, `HEAT_ROSE`), `size` (72), `color`, `grey`, `align`
   (`left`), `leaveAt`, `x`, `y`, `font`, `weight`.
-- Numbers: 70 to 0 degrees over 7 f (expo out), rising 0.35 em; the heat 9 f, a step every 2 f; out over 3 f to -60
+- Numbers: 70 to 0 degrees over 7 f (expo out), rising 0.35 em; the step back 9 f, five steps, one every 2 f; out over 3 f to -60
   degrees.
 - Caution: one word in a slot, not a whole line.
 
@@ -668,7 +671,8 @@ single frame, or by a short ease-in slide.
 - Props: `text`, `at`, `gatherAt`, `by` (`word`, `letter`), `mode` (`snap`, `slide`), `dur` (4), `spread` (`[0.5,
   0.32]`), `drift` (4 px a frame at 1080 p), `colors` (scattered pieces shuffle colours every 3 f), `size`, `color`,
   `leaveAt`, `x`, `y`, `font`, `weight`, `seed`.
-- Numbers: drift 3-5 px a frame for 15-25 f; the snap is one frame; the slide 4 f ease-in.
+- Numbers: each piece in its own cell of a grid over the spread (never on another), drifting 3-5 px a frame along one
+  shared current for 15-25 f; the snap is one frame; the slide 4 f ease-in.
 - Caution: the scattered pieces are already the line's size and face, or the snap reads as a jump.
 
 ## In the reel

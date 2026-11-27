@@ -145,7 +145,7 @@ export const TURN: LibraryEntry[] = [
     frames: 12,
     summary: 'the camera dives through a polygon face (a hexagon cube face, a tile) that already holds the next scene; the face outruns its picture',
     use: 'carries the object: its face already holds the next scene; for a diagram of objects where one of them is the next subject',
-    caution: 'draw nothing over the face; it must be the subject, not a decoration; it is flatter than planned and the inside does not turn; its shaded side faces were added after the last render check',
+    caution: 'draw nothing over the face; it must be the subject, not a decoration; it is flatter than planned and the inside does not turn',
     reel: { film: 'library-turns', from: 1032, to: 1113 },
   },
   {
