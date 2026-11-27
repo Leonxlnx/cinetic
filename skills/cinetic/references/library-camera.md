@@ -65,6 +65,10 @@ in the next, blurred on that frame, then a slow drift on back.
 - Numbers: 2.4-2.5x to 1x in 4 f, the progress 10 %, 92 %, 97 %, 100 %; blur up to 14 px on the fast frame; then 3 %
   further back over 60 f; a 2 % creep in before the pull.
 - Caution: the close view must already be legible: lay the scene out at its final size and start close on it.
+- Choosing `from`: the default 2.4 frames a card about 40 % of the frame's width with its neighbours' edges outside.
+  For one card alone in the close view, `from` = the frame's width / the card's width, a little more to push its rounded
+  corners out: a card a quarter of a 1920 frame wide needs 4 (at 2.4 the neighbours' text is cut on both sides); a
+  270 x 480 pin card in a 1080 x 1920 frame, 4.6. Check the first frame of the pull: nothing cut but the card's edges.
 
 ### DepthField
 Things at different depths (chips, labels, cards) that the camera moves through: they arrive large from outside the

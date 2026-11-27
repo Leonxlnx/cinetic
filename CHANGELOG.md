@@ -88,6 +88,9 @@ gives the agent a director's method, a kit that looks premium by default, and a 
 - `sfx.mjs fit` places a track so the film's main hit lands on a beat where the music lifts; tempos are measured from
   the file; `frames.mjs check` fails a bed that runs out before the film ends and measures vertical films vertically.
 - The motion library (`kit/src/kit/library/`): 192 finished pieces in nine categories (type 43, turns 23, effects 21, camera 11, interface 35, host screens 7, objects and marks 26, grounds 12, design presets 14), measured and built to the bar, that a film takes
+- The library in vertical frames: sizes of 51 pieces now come from the short side of the frame (16:9 output is unchanged), so a meter, a lockup or a ring no longer doubles in a 1080 x 1920 film; `library.md` has "In a vertical frame" and `type.md` sizes for a 1080-wide line.
+- Props found by small test films: `RiseLine` wraps (`maxWidth`), `BannerPop` leaves (`leaveAt`, `leaveTo`), `Pointer` has `exitDur`, `ActionMorph` can hide its percentage (`percent`), `SkeletonSweep` draws its own growing `plate`, `ChatThread` pushes in (`push`), `RowExpand` rows take a `mark`; `useWeightLineBlock` and `rowExpandGeometry` return the boxes a turn or a pointer aims at; `RollType` holds a digit that does not change; `MorphBox` shows its content unmasked with `wipe={false}`.
+- `frames.mjs library --show <Name>` prints a piece's props from its types; `scripts/library-props.mjs --check` (in CI) fails on a usage line in the docs naming a prop the piece does not have; `CINETIC_TIMEOUT` raises the footage-frame timeout.
   whole and adapts, in nine categories with a folder each: type (17 moves: rolls, tracking, words of tiles or dots, a
   dive into a letter, lines that land, clean exits), turns (9 joins that carry the subject and cover the frame), fx (6
   finishing layers), ui (18 product UI pieces and the parts they are built from), hosts (7 faithful host screens: a pull

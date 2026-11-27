@@ -115,6 +115,12 @@ content clears in the first frames.
 ```
 - Numbers: 10-14 f per stage on a quint out; the wipe starts 8 % into the stage and is done at 70 % (expo in-out), so no
   soft band lingers on the far edge; old content gone in a quarter of the stage.
+- Clock: a stage counts its `at` as its first step, so on frame `at` the box has already moved 1/dur and it lands on
+  `at + dur - 1`; start a carried layer of your own with the same +1.
+- `wipe={false}`: no colour wipe and no mask, the colour blends and the new content shows at once inside the box.
+  A stage's `pinned: true` lays its content where the stage ends instead of on the box's top-left corner, so a
+  frame-sized destination stays still while the box grows onto it like a window. A stage with no content grows as a
+  plain slab: give the last stage its screen.
 - Caution: lay each stage's content out at that stage's size; content wider than its box is cut. Keep the stages in one
   surface colour (grey thinking pill, then white): a stage that turns the accent colour reads as a sudden colour change.
 

@@ -131,8 +131,8 @@ overlap, overprint, empty slab, one-frame pop and clipped digit; no fix row is c
 sheet with the rubric in [taste.md](references/taste.md) (20 points); at 17 or more go to step 9.
 
 **9. Polish (required).** The first cut is never the film. Run at least two passes of the
-[polish loop](references/taste.md#5-the-polish-loop): watch strips of every beat and the join images, write ten or more
-concrete fixes in `BEATS.md`, do each and re-check it; tick at least eight of the ten effort marks (idle life, local
+[polish loop](references/taste.md#5-the-polish-loop): watch strips of every beat and the join images, write up to ten
+real fixes in `BEATS.md` (never invented to fill a count), do each and re-check it; tick at least eight of the ten effort marks (idle life, local
 reactions, specific content, a texture family, photographs, variation, sound on picture, a surprise, optics, bespoke
 joins).
 

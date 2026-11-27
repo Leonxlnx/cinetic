@@ -95,6 +95,10 @@ that should feel said, word by word, on the music's beats.
   to 0 over the same frames; the colour cools over the next 10 frames; joining words start at 1.18x, pinned at their left
   edge; the block wipes from the left in 8 frames (expo out) and the word turns to the block's ink exactly where it has
   passed.
+- `useWeightLineBlock(props, index?, frame?)` returns the block's box (centre `x`, `y`, `w`, `h`, `r` 0) for the same
+  props as the line, so a turn grows out of it without copying its numbers:
+  `const box = useWeightLineBlock(line); <GrowIris x={box.x} y={box.y} ... />` (the block is `size * 1.14` tall, its top
+  `0.88 size` above the baseline, padded `0.16 size` each side).
 - Caution: two words per beat at most; a block on more than one word per film stops meaning anything.
 
 ### RiseLine
@@ -104,8 +108,11 @@ the line re-centring), `leaveAt` closes the mask: the words sink back behind the
 ```tsx
 <RiseLine text="Made for designers" at={T.line} swap={{ at: T.swap, index: 2, word: 'founders' }} swapColor={ACCENT} leaveAt={T.out} size={130} />
 ```
-- Props: `text`, `at`, `gap` (3), `dur` (14), `swap` `{ at, index, word }`, `swapColor`, `leaveAt`, `size`, `color`, `x`,
-  `y`, `font`, `weight` (550).
+- Props: `text`, `at`, `gap` (3), `dur` (14), `swap` `{ at, index, word }`, `swapColor`, `leaveAt`, `maxWidth`, `size`,
+  `color`, `x`, `y`, `font`, `weight` (550).
+- `maxWidth` (px) wraps the statement onto centred lines one line box apart, the words rising in reading order across
+  them: one placement for a statement in a 1080-wide frame, not one RiseLine a line.
+  `<RiseLine text="Your route, in photos" maxWidth={900} size={118} at={T.route} />`
 - Numbers: rise 14 f expo out; the swap roll 12 f in-out with the re-centre 12 f in-out from 2 f later; the sink 9 f
   expo in, 1 f between words.
 - Caution: the mask is the line box (line height 1.25): keep other things clear of the line's own box or they get cut.
@@ -177,6 +184,9 @@ on its value as a cut with a 2-frame settle while a low dash appears after it. A
   `rollDur` (frames of the last, slowing step, 5), `whole` (true: whole digits on every frame; false: the old last step
   that travels through fractions of a digit), `size`, `color`, `ghosts` (0.42), `caret`, `x`, `y`, `font`, `weight`,
   `seed`.
+- A longer `from` rolls that many tail characters, each on its own, 2 f after the one before; a digit equal to its
+  target holds still. Pass only the digits that change: for "5:48" from "5:42", `from="2"` rolls the 8 alone.
+- `ghosts` sit 1.08 em above and below the line: with lines stacked closer (a vertical layout, a widget), `ghosts={0}`.
 - Numbers: typing gaps of 0.45 to 1.75 of `per`, 1.8x after a space; the roll starts about 2 f after the last typed
   character; neighbours sit 1.08 em above and below.
 - Caution: never blur the digits, never hold a frame with a digit half-rolled (`whole={false}` only for a roll that

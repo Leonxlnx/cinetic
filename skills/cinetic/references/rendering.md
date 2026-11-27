@@ -45,7 +45,14 @@ ending is measured from the film's `LOCKUP` or `T.lockup` frame when it has one 
 - **Half size while iterating**, the full-size final once, when the sheet passes the rubric.
 - **Unstable GPU** (driver resets, blue screens, a laptop iGPU): render on the CPU with `CINETIC_GL=swangle`. It is slower and
   safe. If the user tells you their machine has such a rule or a wrapper for heavy jobs, use it for every render.
-- **Concurrency:** `CINETIC_CONCURRENCY` (default 2). Higher is faster and hotter; keep 1-2 on laptops.
+- **Concurrency:** `CINETIC_CONCURRENCY` (default 2). Higher is faster and hotter; keep 1-2 on laptops. A render that
+  fails at once with "concurrency 2 > 1 core" runs on a machine (or a wrapper) that offers one thread: set it to 1.
+- **A failed job is retried, not fixed.** A browser start that times out ("Timed out ... connect to the browser") or a
+  footage frame that misses its wait under load is the machine, not the film: run the same job again without changing
+  code. When footage frames keep timing out, raise the wait with `CINETIC_TIMEOUT` (milliseconds, default 30000).
+- **Batch frames into one job.** Each job pays the start-up (a bundle and a browser, a minute or more on a shared
+  queue): one `sheet --frames a,b,c,...` (or one `sheet --film library-<category> --frames ...` for library pieces)
+  shows many moments for the cost of one, where seven separate `--strip` or `still` jobs cost seven waits.
 - **Long finals** (or a machine that limits how long one job may run): render the picture in silent parts, the sound once,
   and mux them:
   ```

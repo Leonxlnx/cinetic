@@ -276,9 +276,10 @@ each cut** (every cut except the one into the ending).
 A film is not finished after the first cut. After it scores 17 or more, run at least two polish passes:
 1. Render a preview and make strips of consecutive frames (`frames.mjs strip <video> --at <s>`) of every beat, and the
    join images of every join (`frames.mjs joins`, below), not only the 36-frame sheet.
-2. Write a list of ten or more concrete fixes in `BEATS.md` (`frame | what is wrong | the fix | re-checked on`): a pill
+2. Write a list of up to ten concrete fixes in `BEATS.md` (`frame | what is wrong | the fix | re-checked on`): a pill
    without padding, a press its target does not answer, a join whose frame is not covered, a hold with nothing to read,
-   a repeated move, a sound too loud. "Re-checked on" names the image the fix was closed on (for a join, its join image:
+   a repeated move, a sound too loud. List only faults you can point to on a frame: a short film may have six, and a
+   fix invented to reach a count makes a new fault. "Re-checked on" names the image the fix was closed on (for a join, its join image:
    `out/joins/main-join-245.png`).
 3. Do every fix, re-render, and re-check each one on its strip or join image; tick it off.
 4. Run the pass again with a fresh list. Two passes is the minimum; stop when a pass finds fewer than five real faults.

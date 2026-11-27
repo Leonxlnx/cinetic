@@ -42,6 +42,20 @@ A resting line (the size a normal statement settles at) is sized by how many wor
 - Vertical and square frames keep the same rules with lines wrapped to 2-3 words, each line at most 85 % of the frame's
   width, and the spectacle fitted to the width so no key word is cut off.
 
+**Sizes for a 1080-wide frame** (vertical 1080 x 1920, or square). The 16:9 sizes by word count do not fit: 160 px for
+two words is already about 1100 px wide. A line of Inter at weight 500-650 is about 0.52 em a character, so a line of
+`n` characters at size `s` is about `0.52 * n * s` px; keep it under 920 px (85 % of 1080).
+
+| What | Size | Lines |
+|---|---|---|
+| 1-2 short words (up to about 12 characters) | 110-150 px | one |
+| a statement of 3-5 words | 96-124 px | two or three lines of 1-2 words, line height 1.05-1.15 (`RiseLine maxWidth`) |
+| the spectacle word | fitted: about `920 / (0.52 * characters)` px, 200-420 px | one |
+| the wordmark on the end card | 96-120 px text (`TumbleLockup` and `LockupType` default to 10 % and 7 % of 1080) | one |
+| UI text after the camera's zoom | 30-40 px | |
+
+The 64 px floor for a statement word holds; a line that needs to go under it holds too many words.
+
 ## 3. One spectacle size in a film
 
 - Once a film, one word or a 2-3 word phrase goes giant: 280-700 px (cap height 15-50 % of the frame's height). It is the

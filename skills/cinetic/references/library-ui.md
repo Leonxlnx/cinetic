@@ -121,6 +121,9 @@ lean into fast horizontal travel, a 2 px idle drift at rest, a squash press and 
   target (`cubic-bezier(0.3, 0.05, 0.12, 1)`). `pointerAt(frame, keys)` gives its position, for a thing it carries.
 - Numbers: press in 3 f to 0.84, springs back over 7 f with a small overshoot; the ring grows from 0.25 to 1.5 of its
   size in 20 f, fading, 1 to 5 px blur. `pressOf(frame, clicks)` gives the press (0-1) for the target to answer with.
+- Exit: from `exitAt` it slides down-right (520, 380 px) on an ease-in and fades, gone after `exitDur` frames (14). It
+  is still on screen for most of that: set `exitAt` `exitDur` frames before the next scene arrives, or shorten
+  `exitDur` (`exitAt={T.tap} exitDur={8}`).
 - Caution: the target must answer the press (a hover fill before it, a dip, a state change); keep it 56-80 px tall.
 
 ### Caret, InkTyped, InkWords
@@ -162,6 +165,9 @@ sharpens, a badge pops, the title and body arrive by word, the banner rises 56 p
 ```
 - Numbers: width 0.15, 0.3, 0.62, 0.9, 1 on frames 0-4, blur 8 to 0; badge at +3 f; words every 2 f from +4 f; rise
   56 px over 16 f expo-out; sheen at `sheenAt` (44 f), 10 f.
+- `leaveAt` and `leaveTo` (`'right'`, `'left'`, `'up'`): it leaves whole on an ease-in over 10 f, clear of the frame on
+  the last, never fading. Sideways when a line sits above it: `<BannerPop ... leaveAt={T.cue + 50} leaveTo="left" />`.
+- `badge` defaults to notification red: set it in an invented palette.
 - Caution: one line of body; for more, open it (RowExpand).
 
 ## Lists and grids
@@ -175,8 +181,12 @@ The pointer moves on to Reply and hovers it. `closeAt` folds it back.
 ```tsx
 <RowExpand L={lookLight('#2B5BFF', '#E9EBEF')} rows={mail} index={1} at={T.inbox} openAt={46} closeAt={124} toLine="to me · Tuesday 14 May" detail={[<Para />, <LineItems />, <Attachment />]} w={1680} h={900} size={31} mark={<Brand ... />} />
 ```
-- Rows: `{ from, color, time, subject, preview, unread, tag: { label, color }, attach }`; 4 rows at size 31 in a 900 px
-  pane.
+- Rows: `{ from, color, time, subject, preview, unread, tag: { label, color }, attach, mark }`; 4 rows at size 31 in a 900 px
+  pane. `mark` draws a logo or icon in the avatar's place (a company's mark, an app tile), in the row and in the opened
+  header.
+- `rowExpandGeometry({ index, x, y, w, h, size }, frameW, frameH)` returns the closed `row` box, the opened `card` box
+  and the `reply` button's centre in frame px, for a pointer or a turn of your own (`pointer={false}` hides the built-in
+  one): `const g = rowExpandGeometry({ index: 1, w: 1680, h: 900, size: 31 }, 1920, 1080);`
 - Numbers: hover fill 4 f from 12 f before the open; press 2 f before; open 20 f along `cubic-bezier(0.3, 0, 0.1, 1)`
   (position, size, radius 0.5 to 0.95 of the size, shadow level 1 to 6); subject grows 1.45x; detail blocks rise 18 px,
   3 f apart, from +10 f; pointer on Reply at +48 f; close 18 f.
@@ -268,7 +278,11 @@ the field into its bubble at the right; "Read" settles under the last. Messages 
 - Numbers: dots bubble unfolds 7 f (blur 7 to 0), dots bounce on a 20 f cycle; widening into the message 9 f; ghost and
   ink washes 10 f each from +2 f and +6 f; composer typing at 15 characters a second, ending 10 f before the send; the
   sent text travels 14 f; the thread rises 10 f per message; macro pull-back 22 f in log-space.
-- Caution: one line per message; three to six messages.
+- `push={{ at, to, dur, back }}` pushes in on the composer while someone types: from `at` (relative to the piece's
+  `at`) the view scales 1 to `to` over `dur` (24) frames, ease in-out in log-space, and eases back from `back`.
+  `<ChatThread ... push={{ at: 60, to: 1.3, back: 96 }} />`
+- Caution: one line per message; three to six messages. The window keeps its `h`: with three or four messages set `h`
+  lower (about `size * (9 + 2.7 * messages)`) so the thread does not sit under an empty two thirds.
 
 ### ActionMorph
 A button that becomes its own progress bar and closes into a check, always fully lit: the pointer's arrival darkens the
@@ -279,6 +293,7 @@ in white, then it contracts into a disc, a check draws and the done label slides
 ```
 - Numbers: hover 4 f, the pill 10 % darker; dip 4 % over 3 f; widen 14 f (`cubic-bezier(0.3, 0, 0.1, 1)`); progress
   `dur` frames with small holds; contract 12 f; check 7 f; done label 14 f.
+- `percent={false}` prints the working label alone ("Creating link"), for work with no measurable progress.
 - Caution: put it at the foot of a real card (what is being published) and drive it with a `Pointer` click on
   `at + pressAt`.
 
@@ -450,6 +465,9 @@ across, warming the bars ahead of it and turning them into the text behind it.
 ```
 - Numbers: a row a frame, each widening 0.2 to 1 in 3 f; the sweep at rows + 8 f, 14 f ease-in-out; bars warm within
   0.3 of the block ahead of the band.
+- `plate` (true: the look's surface; or a colour): a card behind the block, padded one text size, that opens with the
+  first bar and grows down with the rows, never standing empty. With a plate of your own (a notice's box), start `at`
+  on its first frame, not when it has finished growing.
 - Caution: never leave the bars standing as content.
 
 ## Scenes and joins

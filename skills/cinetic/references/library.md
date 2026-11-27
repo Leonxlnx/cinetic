@@ -42,7 +42,9 @@ node scripts/frames.mjs library --category type --purpose exit    # a line that 
 
 `library --show DiveInto` prints one piece in full: when to reach for it, its caution, its import line, its props
 (required and optional, read from the types, so a prop name is never a guess), its file, its section and its reel
-frames. `library --strip DiveInto` renders its frames from its reel as one still (16 frames).
+frames. `library --strip DiveInto` renders its frames from its reel as one still (16 frames). To look at several
+pieces, one job is cheaper than many: `sheet --film library-<category> --frames a,b,c,...` with frames from each piece's
+reel range (`library --show` prints it) renders them all in one still, where every `--strip` is a job of its own.
 
 ## How to use it
 
@@ -65,6 +67,26 @@ frames. `library --strip DiveInto` renders its frames from its reel as one still
    ([film-grammar.md](film-grammar.md#the-join-test)), the polish loop ([taste.md](taste.md#5-the-polish-loop)).
 
 Import from the kit like everything else (`import { DiveInto, RowExpand, TrackedType } from '../../kit';`).
+
+## In a vertical frame
+
+A piece takes its size from the frame's short side (`Math.min(width, height)`, the height in 16:9), and its position
+from its own axis, so it keeps its 16:9 size in a 1080 x 1920 film: type sizes, strokes, radii, tiles, cards, meters
+and grid pitches (DotWave's meter, TumbleLockup's and LockupType's default text, every UI piece's default `size`,
+the turns' blur and stroke units, the grounds' pitch). Pieces that keep a share of each axis on purpose (a box given
+as shares of the frame: DealtStack's card, BentoFly's and FloodAway's boxes; a ground that bleeds, GhostWord,
+PlanetRim) want their props set for the tall frame.
+
+- Type: the [sizes for a 1080-wide frame](type.md); a statement wraps in one piece with `RiseLine maxWidth` (one
+  placement, not one RiseLine a line).
+- Stacked lines sit close in a vertical layout: RollType's faint neighbour digits (1.08 em above and below) print over
+  them; set `ghosts={0}`. A banner that must leave goes sideways (`BannerPop leaveTo`), not up through the line above.
+- PullReveal's default `from` 2.4 is tuned for a card about 40 % of a 16:9 frame wide. Choose it from the card: the
+  close view fills the frame with the card when `from` is the frame's width over the card's width, a little more to push
+  its rounded corners out (a board card a quarter of a 1920 frame: 4; a 270 px pin card in a 1080-wide frame: 4.6);
+  less leaves the neighbours' text cut at both edges ([PullReveal](library-camera.md#pullreveal)).
+- Positions given as shares (`x`, `y` defaults at the centre) stay on their own axis: place a piece by px in a tall
+  frame when it must sit in a band.
 
 ## Naming rules
 
@@ -90,8 +112,8 @@ Import from the kit like everything else (`import { DiveInto, RowExpand, Tracked
 Start from what the beat must do, not from a reel. Find the job below, then the cell: each names a few pieces and how
 they differ; `library --show <Name>` gives the rest, `library --strip <Name>` shows it. Two pieces from one cell in one
 film is usually one too many. A caution says how sure a piece is ("checked on stills only", "compared once only",
-"checked at half size only"): strip such a piece at full size in place before you rely on it. No piece has yet been
-checked in a vertical frame; strip it in the film's own format.
+"checked at half size only"): strip such a piece at full size in place before you rely on it. In a vertical film see
+[In a vertical frame](#in-a-vertical-frame) and strip the piece in the film's own format.
 
 ### Opening a film
 

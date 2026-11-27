@@ -236,8 +236,9 @@ A glowing dot opens sideways into a row of fine bars that lives like a level met
 ```tsx
 <DotWave at={T.voice} calmAt={40} color="#fff" />
 ```
-- Numbers: the row opens to 60 % of W in 14 f (expo out); bars on a 0.55 % of W pitch; spikes on twos up to 11 % of H,
-  tapering to the edges; four dim rows at +-8 and +-16 % of H at 22 %; calming narrows to 30 % in 12 f.
+- Numbers: the row opens to 60 % of W in 14 f (expo out); bars on a 0.55 % of W pitch; spikes on twos up to 11 % of the
+  short side, tapering to the edges; four dim rows at +-8 and +-16 % of the short side at 22 %; calming narrows to 30 %
+  in 12 f. In a 1080 x 1920 frame the meter keeps its 16:9 height; `width` is still a share of W.
 - Caution: one moving thing at a time; it is a signal, not decoration.
 
 ### WireTetra
@@ -270,6 +271,7 @@ two frames apart, small, slanted and tinted, rising into place in ink.
 ```
 - Numbers: the tile to 108 % in 6 f, 100 % by 10 f, turning 15, -8, 0 degrees; the glyph 7-9 f; letters from 1 f, 2 f
   apart, each 4 f (50 to 100 %, slant 14 degrees, from 0.3 em right and 0.25 em low, tile colour to ink).
+- `size` defaults to 10 % of the frame's short side (108 px in 16:9 and in a 1080 x 1920 frame); the tile is 1.25 times it.
 - Caution: the letters move but the name's spacing never closes up.
 
 ### LockupType
@@ -281,6 +283,8 @@ re-centring with each letter. The mark may build while it holds (`mark` as a fun
 ```
 - Numbers: letters at 1, 2, 3, 5, 6, 8 f after the hold, then 1.4 f apart; each letter's share of the re-centring
   glides in 5 f (expo out); gap 0.32 of the text size.
+- A function mark receives `p` one step in on frame `at` (1/build, then 1 on `at + build - 1`): draw its tile and glyph
+  together from `p`, so its first frame is never an empty plate or a stub.
 - Caution: letters cut on at the name's final spacing; never wide letters closing, never a fade.
 
 ### ConstructType
