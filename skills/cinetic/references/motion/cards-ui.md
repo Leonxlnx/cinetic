@@ -36,8 +36,9 @@ Kit (`ui.tsx`): `Theme` (`lightUI`, `darkUI`), `useArrive`, `Card`, `Window`, `B
 6. **One radius family, soft shadows from one light.** Radii from one scale (e.g. 14 / 22 / 34 / pill); shadows layered
    and soft (`softShadow`), all falling the same way, or none on flat worlds; glass only when there is something behind
    it to blur, once a shot (`effects.md`). White or frosted cards on a coloured ground are fine.
-7. **Show the work.** Processing is a working state that says what it is doing ("Reading 3,412 comments", a percentage,
-   plan lines, skeletons resolved by a band) and resolves in one decisive pass; typing runs at a believable speed to the
+7. **Show the work.** Processing is a working state that says what it is doing ("Reading 3,412 comments", plan lines,
+   skeletons resolved by a band; a percentage only when the number is the point, such as an upload the story waits on:
+   set `ActionMorph`'s `percent` to match) and resolves in one decisive pass; typing runs at a believable speed to the
    end (`text.md` 4.1), with a prefix already typed when time is short.
 8. **Pixel-real where it matters.** The region the beat is about is at full detail, filled with plausible named data
    (real-sounding people, companies and prices, different in every row, never "John Doe"). Dense UI and code are shown
@@ -288,6 +289,8 @@ mass, intention and a personality.
   shadow far below-right (+160, +165 px) that **converges** toward it as it lands (+90/+110, +25/+50, +16/+40): the landing is
   sold by the shadow. Over a text field it may switch to an I-beam (tilted +15 deg on its first frame, upright 3 f later).
 - It can pass *behind* a giant word for a few frames: it lives in the same space as the type.
+- **On a phone it is a touch, never a desktop cursor:** a soft fingertip disc (or a ripple) that presses and lifts, set
+  beside or below the label it taps so the label stays readable; never an arrow or a mouse hand on a phone screen.
 
 ```tsx
 <Cursor start={226} size={44} clicks={[262]} keys={[

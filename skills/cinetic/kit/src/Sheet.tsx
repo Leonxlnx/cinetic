@@ -53,53 +53,62 @@ export const Sheet: React.FC<{ film?: string; from?: number; to?: number; frames
 };
 
 /**
- * Every join at real size, one join a frame: frame i of this composition shows join i of `joins` as the frames J - pad ..
- * J + pad of the film, each `cell` px wide, three to a row, the frame number on each cell and the join frame outlined.
- * `node scripts/frames.mjs joins` renders it as one image a join (one browser, one render call).
+ * Every join at real size, one row of a join a frame: frame i of this composition draws `rows[i]`, up to `cols` frames of
+ * the film side by side, each `cell` px wide, a band above them naming the join and the move, the frame number on each
+ * cell, the move's first frame outlined thick and its other frames thin. `node scripts/frames.mjs joins` renders every
+ * row in one browser and stacks a join's rows into one image (the whole move, from two frames before it to four after).
  */
-export type JoinsProps = { film?: string; joins?: number[]; pad?: number; cell?: number };
+export type JoinRow = { frames: number[]; start: number; end: number; title: string };
+export type JoinsProps = { film?: string; rows?: JoinRow[]; cols?: number; cell?: number; joins?: number[]; pad?: number };
 const joinsGrid = (props: JoinsProps) => {
   const F = FILMS[props.film ?? Object.keys(FILMS)[0]];
   if (!F) throw new Error(`No film "${props.film}" in src/films.ts (films: ${Object.keys(FILMS).join(', ')})`);
   const FW = F.width ?? 1920;
   const FH = F.height ?? 1080;
-  const cell = props.cell ?? 960;
-  const n = 2 * (props.pad ?? 4) + 1;
-  const cols = Math.min(3, n);
-  const rows = Math.ceil(n / cols);
+  const cell = props.cell ?? (FW >= FH ? 960 : 540);
+  const cols = props.cols ?? 6;
   const ch = Math.round((cell * FH) / FW);
-  return { F, FW, FH, cell, ch, n, cols, rows };
+  const band = Math.max(32, Math.round((cols * cell) / 120));
+  // the old form (joins + pad): the frames J - pad .. J + pad of each join, one row a join
+  const pad = props.pad ?? 4;
+  const rows: JoinRow[] = props.rows ?? (props.joins ?? [0]).map((j) => ({ frames: Array.from({ length: 2 * pad + 1 }, (_, k) => j - pad + k), start: j, end: j, title: `join ${j}` }));
+  return { F, FW, FH, cell, cols, ch, band, rows };
 };
 export const joinsMetadata = ({ props }: { props: JoinsProps }) => {
   const g = joinsGrid(props);
   const even = (v: number) => Math.ceil(v / 2) * 2;
-  // as long as the film (a Sequence inside it is cut by the composition's length); frames.mjs renders frames 0 .. n-1
-  return { durationInFrames: Math.max((props.joins ?? [0]).length, g.F.duration), fps: g.F.fps, width: even(g.cols * g.cell), height: even(g.rows * g.ch) };
+  // as long as the film (a Sequence inside it is cut by the composition's length); frames.mjs renders frames 0 .. rows-1
+  const cols = Math.max(1, ...g.rows.map((r) => Math.min(g.cols, r.frames.length)));
+  return { durationInFrames: Math.max(g.rows.length, g.F.duration), fps: g.F.fps, width: even(cols * g.cell), height: even(g.band + g.ch) };
 };
 export const Joins: React.FC<JoinsProps> = (props) => {
   const i = useCurrentFrame();
-  const { F, FW, cell, ch, n, cols } = joinsGrid(props);
-  const list = props.joins ?? [0];
-  const j = list[Math.min(i, list.length - 1)];
-  const pad = (n - 1) / 2;
+  const { F, FW, FH, cell, ch, band, rows } = joinsGrid(props);
+  const row = rows[Math.min(i, rows.length - 1)];
   const s = cell / FW;
-  const label = Math.round(cell / 40);
+  const label = Math.max(16, Math.round(Math.max(cell, ch) / 40));
+  const single = row.start === row.end;
   return (
     <AbsoluteFill style={{ background: '#111' }}>
-      {Array.from({ length: n }, (_, k) => j - pad + k).map((fr, k) => {
+      <div style={{ position: 'absolute', left: 0, top: 0, right: 0, height: band, display: 'flex', alignItems: 'center', padding: '0 14px', font: `600 ${Math.round(band * 0.56)}px monospace`, color: '#ff0', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+        {row.title}
+      </div>
+      {row.frames.map((fr, k) => {
         const f = Math.max(0, Math.min(F.duration - 1, fr));
+        const inMove = fr >= row.start && fr <= row.end;
+        const tag = f !== fr ? ' (film edge)' : single ? (fr === row.start ? ' · join' : '') : fr === row.start ? ' · move starts' : fr === row.end ? ' · move ends' : inMove ? '' : fr < row.start ? ' · before' : ' · after';
         return (
-          <div key={k} style={{ position: 'absolute', left: (k % cols) * cell, top: Math.floor(k / cols) * ch, width: cell, height: ch, overflow: 'hidden' }}>
-            <div style={{ width: FW, height: F.height ?? 1080, transform: `scale(${s})`, transformOrigin: '0 0', position: 'relative' }}>
+          <div key={k} style={{ position: 'absolute', left: k * cell, top: band, width: cell, height: ch, overflow: 'hidden' }}>
+            <div style={{ width: FW, height: FH, transform: `scale(${s})`, transformOrigin: '0 0', position: 'relative' }}>
               <Freeze frame={f}>
                 <FilmSize F={F}>
                   <F.component />
                 </FilmSize>
               </Freeze>
             </div>
-            <div style={{ position: 'absolute', inset: 0, boxShadow: fr === j ? `inset 0 0 0 ${Math.max(3, label / 5)}px #ff0` : 'inset 0 0 0 1px #000' }} />
-            <div style={{ position: 'absolute', left: 8, top: 6, font: `600 ${label}px monospace`, color: '#ff0', background: 'rgba(0,0,0,.66)', padding: '2px 8px' }}>
-              {f} · {(f / F.fps).toFixed(2)}s{fr === j ? ' · join' : f !== fr ? ' (film edge)' : ''}
+            <div style={{ position: 'absolute', inset: 0, boxShadow: fr === row.start ? `inset 0 0 0 ${Math.max(3, label / 5)}px #ff0` : inMove && !single ? 'inset 0 0 0 2px #ff0' : 'inset 0 0 0 1px #000' }} />
+            <div style={{ position: 'absolute', left: 8, top: 6, font: `600 ${label}px monospace`, color: inMove ? '#ff0' : '#ccc', background: 'rgba(0,0,0,.66)', padding: '2px 8px' }}>
+              {f} · {(f / F.fps).toFixed(2)}s{tag}
             </div>
           </div>
         );

@@ -12,9 +12,10 @@ const T = {
   end: 90,
 } as const;
 
-// The first frame of the next scene at every join: `frames.mjs joins` exports each one at real size (frames J-4 .. J+4).
+// Every join as the first frame of its move and how long the move runs (`{ at: T.turn, len: 14 }`): `frames.mjs joins`
+// exports every frame of it at real size, from 2 frames before to 4 after. A bare frame gives only the 9 round it.
 // Name the lockup's first frame in T as `lockup` (or export LOCKUP): `frames.mjs check` measures the ending from it.
-export const JOINS: number[] = [];
+export const JOINS: ({ at: number; len: number } | number)[] = [];
 
 const Open: React.FC = () => {
   const f = useCurrentFrame();

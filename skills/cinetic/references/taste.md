@@ -232,6 +232,13 @@ touching motion.** Run `node scripts/frames.mjs check` on the preview first: it 
 crowding; its `air` and coverage figures are information, not targets (a rich frame is not a crowded one). Look points come first because a film can pass every
 film point and still look generated.
 
+**Score on the right evidence.** The sheet samples too rarely to see a join or a crop: points 3 (clean crops) and 13
+(joins) are scored only on the whole-move join images (`frames.mjs joins`, every join given as `{ at, len }`) and on
+full-size stills of every interface state (`still --frame N --full`), never on the sheet. **A bug caps the score:** a
+film with one blocking bug open (text cut by the frame, a mask or its own box; an overprint; an empty slab or a plate
+without its text; a one-frame pop; the old scene left round the new one; a clipped digit) scores 14 at most and does not
+ship, whatever its points add up to.
+
 A film can pass every point and still be forgettable. Before the final, answer three questions in one line each: which
 frame is the poster (a crafted image, not a centred line); what is the film's one material or picture; where is its
 contrast of scale; what is the story in one sentence. If an answer is missing, the film is not ready, whatever it scores.
@@ -240,7 +247,7 @@ contrast of scale; what is the story in one sentence. If an answer is missing, t
 |---|---|---|
 | 1 | **One focal subject** | in 80 % or more of the frames one element is clearly the subject (the brightest, most contrasted thing) and everything else supports it |
 | 2 | **Rich, not plain** | most frames carry specific content that means something (a photograph, the product's detailed surface, texture, depth, reacting secondary elements); a statement alone on an empty ground only for a line that must land; a resting statement and the focal component sit 8 % or more from every edge |
-| 3 | **Clean crops** | the frame cuts only a lone giant word, or one component on one side in close-up; no resting line or key word is cut; never two sides at once |
+| 3 | **Clean crops** | on the full-size stills and join images, not the sheet: the frame cuts only a lone giant word, or one component on one side in close-up; no resting line or key word is cut; never two sides at once |
 | 4 | **Readable or absent** | no blurred, ghosted or faded text behind or around statements; no walls of unreadable rows or code; dense UI shown at a readable crop while an action happens in it |
 | 5 | **Clean grounds** | a flat clean colour, a real picture or a bold designed scene; no faint gradient, no soft bloom as a ground, no grain on flat grounds, no vignette corners, no dimmed UI as a ground, no banding |
 | 6 | **Light and material** | one light direction; soft layered shadows and contact shadows; depth of field on shapes only; 3D soft-lit and rounded; glow and glass at most once a shot, on the accent; motion blur on fast moves |
@@ -250,7 +257,7 @@ contrast of scale; what is the story in one sentence. If an answer is missing, t
 | 10 | **Type** | statements sized by word count, no word under 64 px, 7:1 against what is behind it, sentence case, centred or deliberately placed; no kicker over a heading, a figure or UI; needed labels a third of their line and 40 px or more |
 | 11 | **A story, one world** | `BEATS.md` opens with the five-line story and the concept line; the one-sentence test passes ("until", "then", "so"); the payoff is visible and an opening image returns changed; every thumbnail could only belong to this film |
 | 12 | **A first frame with an idea** | frame 0 is the concept's subject already moving (the product, the primitive, the first words, the mark); when the concept shows the product, it or its artefact is on screen by 5 s |
-| 13 | **Joins** | the join test in `BEATS.md` passes: every join carries the subject (a sixth of the frame or more) or is an allowed hard cut on a beat; the frame is covered at every switch; every change of ground, mode or accent has a story reason |
+| 13 | **Joins** | on the whole-move join images, every cell clean; the join test in `BEATS.md` passes: every join carries the subject (a sixth of the frame or more) or is an allowed hard cut on a beat; the frame is covered at every switch; every change of ground, mode or accent has a story reason |
 | 14 | **Holds are read** | no hold with nothing to read before the ending; every hold has idle life; every action shows before, during and after |
 | 15 | **Restrained vocabulary** | against the Devices block: at most 2 text arrival styles, 1 overshoot family, no flash, no shake; no move more than twice; at most 1 flood, and at most two of flood, relay, wall and a mark gathered from a wall |
 | 16 | **Pace** | at most about a third of the half-seconds before the ending are nearly still, each one read (`check` pace); mean beat 1.4-2.2 s; one thing first, then more, then many; a viewer can say what happened in every beat |
@@ -275,7 +282,9 @@ each cut** (every cut except the one into the ending).
 
 A film is not finished after the first cut. After it scores 17 or more, run at least two polish passes:
 1. Render a preview and make strips of consecutive frames (`frames.mjs strip <video> --at <s>`) of every beat, and the
-   join images of every join (`frames.mjs joins`, below), not only the 36-frame sheet.
+   join images of every join (`frames.mjs joins`, below), not only the 36-frame sheet. Step through the first twelve
+   frames of every plate, card and window as it arrives (`sheet --frames N,N+1,...,N+11`, or its join image): no plate
+   without its text, no window half empty, no card that lands blank and fills later.
 2. Write a list of up to ten concrete fixes in `BEATS.md` (`frame | what is wrong | the fix | re-checked on`): a pill
    without padding, a press its target does not answer, a join whose frame is not covered, a hold with nothing to read,
    a repeated move, a sound too loud. List only faults you can point to on a frame: a short film may have six, and a
@@ -283,17 +292,21 @@ A film is not finished after the first cut. After it scores 17 or more, run at l
    `out/joins/main-join-245.png`).
 3. Do every fix, re-render, and re-check each one on its strip or join image; tick it off.
 4. Run the pass again with a fresh list. Two passes is the minimum; stop when a pass finds fewer than five real faults.
+   Each pass lists the bugs it found by frame (`f618-623 overprint at the dive; f782-786 claim outside the plate`),
+   never as a count ("3 bugs fixed").
 
 **Joins are judged at real size, every frame.** A small strip hides what breaks a join, and a fix made on one frame
 often breaks the frames beside it (a third of the fixes in one tested polish pass made a new fault at a join). So every
-join is exported with `node scripts/frames.mjs joins` (frames J-4 .. J+4, 960 px each; the film exports `JOINS` beside
-`T`) before the final and again after every fix that touches it, and every cell is looked at for: anything cut by the
+join is exported with `node scripts/frames.mjs joins` (the whole move, from 2 frames before its first to 4 after its
+last, 960 px each; the film exports `JOINS` beside `T`, each `{ at, len }`: the frame where anything of the join starts
+to move and how long it runs until the new scene has landed) before the final and again after every fix that touches it, and every cell is looked at for: anything cut by the
 frame or its container, overlapping or overprinted text, an empty slab, a one-frame pop or flip of ground, a camera
-snap, misaligned parts, a thing leaving before the cut. A fix is closed only when its join image is clean. Clean means: every frame of the join is looked at, one by one with no frame skipped (the nine consecutive frames `joins` exports; `--pad 8` for a long move); nothing of the old scene is left on screen once the new one has landed; nothing pops in a frame late; no cell is waved through as an intended smear unless it is motion blur on the one thing that is moving. A move that
+snap, misaligned parts, a thing leaving before the cut. A fix is closed only when its join image is clean. Clean means: every frame of the join is looked at, one by one with no frame skipped (every frame `joins` exports; a join given as a bare frame shows only nine round it,
+and a fault before or after them is not on the image); nothing of the old scene is left on screen once the new one has landed; nothing pops in a frame late; no cell is waved through as an intended smear unless it is motion blur on the one thing that is moving. A move that
 cannot be made clean is replaced by a simpler one: a hard cut on the beat beats a broken transition.
 
-**Bugs are blockers.** Before the final, render a full-size still of every beat with type or UI
-(`frames.mjs still --frame N --full`), the join image of every join and a strip of every reflow or layout change, and fix every cut
+**Bugs are blockers.** Before the final, render a full-size still of every beat with type and of every interface state
+(each state a screen, card or window passes through: `frames.mjs still --frame N --full`), the join image of every join and a strip of every reflow or layout change, and fix every cut
 text (by the frame, a mask or its own box), overlap, overprint, empty slab, one-frame pop and clipped digit. Each one
 blocks the final, whatever the rubric says. A row of the fix table is closed only by a fix or a redesign of the beat,
 re-checked on its frame: never "accepted", "noted", "minor" or "later".

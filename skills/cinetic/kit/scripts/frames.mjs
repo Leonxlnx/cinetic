@@ -28,10 +28,13 @@
 //        --format sting: no pace gate on a film under 8 s; the ending may hold. Default launch.
 //   node scripts/frames.mjs strip out/film.mp4 --at 4.5 [--dur 2] [--fps 15] [--out out/strip.jpg]
 //        a dense contact strip of a moment of a rendered video (motion check: an entrance, a turn, a morph)
-//   node scripts/frames.mjs joins [--film main] [--at 120,245,390] [--pad 4] [--full] [--out out/joins]
-//        every join at real size: for each join frame J the frames J-4 .. J+4, each 960 px wide (--full: 1920), tiled
-//        into one image a join (out/joins/<film>-join-<J>.png), the frame number on each cell, the join frame outlined.
-//        Without --at it reads the film's exported JOINS (frame numbers, beside T). One browser, one render call.
+//   node scripts/frames.mjs joins [--film main] [--at 120+14,245+8,390] [--pad 4] [--full] [--out out/joins]
+//        every join at real size, the whole move: for a join given as its move's first frame and length (120+14, or
+//        { at: 120, len: 14 } in JOINS) every frame from 2 before the move to 4 after it, in rows of six 960 px cells
+//        (--full: rows of three at 1920; a vertical film 540 / 1080), one image a join (out/joins/<film>-join-<at>.png),
+//        the frame number on each cell, the move outlined. A move over 36 f is sampled evenly (the image says so). A bare
+//        frame (390) still gives the 9 frames round it (--pad sets how many); the command lists the joins given that way.
+//        Without --at it reads the film's exported JOINS (beside T). One browser, one render call.
 //        Look at every cell before the final and after every fix that touches the join.
 //   node scripts/frames.mjs library [--category turn] [--purpose join] [--subject card] [--mood calm] [--json]
 //        the motion library's pieces that match (src/kit/library/catalog/), one line each: name, category, purpose,
@@ -379,6 +382,24 @@ function filmConst(name, texts = filmTexts(), env = {}, depth = 0) {
 /** Frame numbers out of a value (a number, or arrays of them, nested). */
 const frameList = (v) => [v].flat(Infinity).map(Number).filter(Number.isFinite).map(Math.round);
 
+/**
+ * One join, from JOINS or --at: a bare frame (`245`: the nine frames round it, the old form), or the move's first frame
+ * and its length (`{ at: 245, len: 14 }`, `{ at: 245, to: 258 }`, `"245+14"` on the command line). null when unreadable.
+ */
+function joinSpec(v) {
+  const n = (x) => (Number.isFinite(Number(x)) && String(x).trim() !== '' ? Math.round(Number(x)) : null);
+  if (v && typeof v === 'object') {
+    const at = n(v.at ?? v.from);
+    if (at === null) return null;
+    const len = v.len != null ? n(v.len) : v.to != null && n(v.to) !== null ? n(v.to) - at + 1 : null;
+    return { at, len: len !== null && len > 0 ? len : null };
+  }
+  const m = /^\s*(-?\d+)\s*\+\s*(\d+)\s*$/.exec(String(v));
+  if (m) return { at: Number(m[1]), len: Math.max(1, Number(m[2])) };
+  const at = n(v);
+  return at === null ? null : { at, len: null };
+}
+
 /** The film's lockup frame: an exported LOCKUP, else T.lockup; null when it has neither (or they cannot be read). */
 function lockupFrame() {
   const texts = filmTexts();
@@ -520,7 +541,7 @@ function checkFilm(file, lockupS, format = 'launch', silentOk = false, lockupGiv
   const noPace = sting && dur < 8;
   const fails = [];
   // coverage is no gate: it rises with clutter, and it did not tell a calm film from a crowded one
-  if (share(crowded) > CROWD) fails.push(`crowded: sharp detail covers 35 %+ of the frame in ${pc(share(crowded))} of the samples (36 of 40 references stay under ${pc(CROWD)}) [at ${fmt(crowded)} s]: the eye has nowhere to land: keep one focal subject in each frame and set the rest behind it by scale, focus or depth, or give it its own beat`);
+  if (share(crowded) > CROWD) fails.push(`crowded: sharp detail covers 35 %+ of the frame in ${pc(share(crowded))} of the samples (36 of 40 references stay under ${pc(CROWD)}) [at ${fmt(crowded)} s]: the eye has nowhere to land: keep one focal subject in each frame and set the rest behind it by scale or depth, or give it its own beat; over a photograph or footage, lay a scrim or a dim under the card, never a blur on the picture (the payoff picture stays sharp)`);
   // holds that are read (a statement, a result) are fine; past a quarter the frames are named, past 40 % it fails
   const stillShare = slow.length / Math.max(1, pace.length);
   if (!noPace && stillShare > Number(process.env.CINETIC_CHECK_STILL || 0.4)) fails.push('pace: more than 40 % of the half-seconds hold still. A hold that is read (a statement, a result) is fine; a hold with nothing to read is not: between holds something visible changes every half second (a word, a block, a crop, a value)');
@@ -545,6 +566,23 @@ function checkFilm(file, lockupS, format = 'launch', silentOk = false, lockupGiv
   // LOOK lines name the frames; the share at which they speak is where 3 in 4 references stay (a small subject alone on calm
   // ground is NOT flagged: 28 of 40 references hold one)
   if (busy.length && share(busy) > BUSY) console.log(`  LOOK       3+ separate things with 20 %+ of the frame in detail at ${fmt(busy)} s (${pc(share(busy))} of samples; 3 in 4 references stay under ${pc(BUSY)}): make sure one of them is the focal subject the eye goes to first and the rest support it`);
+  // cut on 2+ sides, in stretches: a resting interface line cut by the frame for longer than a move is a fault to look at
+  // (a camera ride passes in under a second); named whatever the share, never failed on the measure alone
+  const cutRuns = [];
+  for (let i = 0, s = -1; i <= air.length; i++) {
+    const on = i < air.length && air[i].cut >= 2 && (i === 0 || air[i].t - air[i - 1].t <= 0.51);
+    if (on && s < 0) s = i;
+    if (!on && s >= 0) {
+      const from = air[s].t, to = air[i - 1].t + 0.5;
+      if (to - from > 1) {
+        const still = pace.filter((x) => x.t >= from && x.t < to);
+        const rest = still.length && still.reduce((a, x) => a + x.d, 0) / still.length < 0.03;
+        cutRuns.push(`${from.toFixed(1)}-${to.toFixed(1)} s${rest ? ' (at rest)' : ''}`);
+      }
+      s = on ? i : -1;
+    }
+  }
+  if (cutRuns.length) console.log(`  LOOK       cut on 2+ sides for over 1 s at ${cutRuns.slice(0, 10).join(', ')}${cutRuns.length > 10 ? ' ...' : ''}: an interface line or resting statement cut by the frame for longer than a move is a FIX (look at a full-size still of each stretch; a lone giant word or one component off one side is fine)`);
   if (cut.length && share(cut) > CUT) console.log(`  LOOK       the frame edge cuts detail on 2+ sides at ${fmt(cut)} s (${pc(share(cut))} of samples; 3 in 4 references stay under ${pc(CUT)}): crop only a lone giant word, or one component off one side`);
   console.log(fails.length ? `  FIX: ${fails.join('\n  FIX: ')}` : '  pass');
   if (!fails.length) console.log('  (passing is necessary, not sufficient: check cannot see a hold with nothing to read, a join that carries a token instead of the subject, a repeated layout, a second full demo, faint or blurred text used as texture, or a weak idea; score the sheet with the rubric)');
@@ -732,36 +770,71 @@ if (cmd === 'sheet') {
   // a loop has no lockup: its body runs to the last frame
   checkFilm(args[1] && !args[1].startsWith('--') ? args[1] : `out/${film}-preview.mp4`, Number(opt('lockup', format === 'loop' ? '0' : '2')), format, has('silent'), opt('lockup') !== undefined);
 } else if (cmd === 'joins') {
-  // every join at real size: one render call (one browser); the Joins composition draws join i on its frame i
-  let joins;
-  if (opt('at')) joins = frameList(opt('at').split(','));
+  // every join at real size, the whole move: one render call (one browser); the Joins composition draws one row of six
+  // frames on each of its frames, and the rows of a join are stacked into one image
+  let raw;
+  if (opt('at')) raw = opt('at').split(',');
   else {
-    try { joins = frameList(filmConst('JOINS')); } catch (e) {
-      console.error(`joins: no --at and the film's JOINS could not be read (${e.message}). Export the join frames beside T (export const JOINS = [T.turn, T.dive, ...], plain numbers or T's fields) or pass --at 120,245,390`);
+    try { raw = [filmConst('JOINS')].flat(Infinity); } catch (e) {
+      console.error(`joins: no --at and the film's JOINS could not be read (${e.message}). Export the joins beside T (export const JOINS = [{ at: T.turn, len: 14 }, T.cut, ...]: the move's first frame and its length, or a bare frame) or pass --at 120+14,245,390+20`);
       process.exit(1);
     }
   }
-  joins = [...new Set(joins)].filter((j) => j >= 0).sort((a, b) => a - b);
-  if (!joins.length) { console.error('joins: no join frames (JOINS is empty and no --at)'); process.exit(1); }
+  const specs = [];
+  for (const v of raw) {
+    const s = joinSpec(v);
+    if (s && s.at >= 0 && !specs.some((x) => x.at === s.at && x.len === s.len)) specs.push(s);
+  }
+  specs.sort((x, y) => x.at - y.at);
+  if (!specs.length) { console.error('joins: no joins (JOINS is empty and no --at)'); process.exit(1); }
   const pad = Math.max(1, Math.min(6, Number(opt('pad', '4'))));
-  const cell = has('full') ? 1920 : 960;
+  const { width: FW, height: FH } = filmEntry();
+  const full = has('full');
+  const cols = full ? 3 : 6;
+  const cell = (FW >= FH ? 960 : 540) * (full ? 2 : 1);
+  const MAX = 36; // frames of a move shown one by one; a longer move is sampled evenly
+  const rows = [], plan = [];
+  for (const sp of specs) {
+    let frames, start, end, title;
+    if (sp.len === null) {
+      start = end = sp.at;
+      frames = Array.from({ length: 2 * pad + 1 }, (_, k) => sp.at - pad + k);
+      title = `join ${sp.at} (no length given): frames ${sp.at - pad}-${sp.at + pad} round it, not the whole move`;
+    } else {
+      start = sp.at;
+      end = sp.at + sp.len - 1;
+      const move = sp.len <= MAX ? Array.from({ length: sp.len }, (_, k) => start + k) : Array.from({ length: MAX }, (_, k) => Math.round(start + ((sp.len - 1) * k) / (MAX - 1)));
+      frames = [start - 2, start - 1, ...move, end + 1, end + 2, end + 3, end + 4];
+      title = `join ${start}: move ${start}-${end} (${sp.len} f)${sp.len > MAX ? `, SAMPLED: ${MAX} of its ${sp.len} frames, every ${((sp.len - 1) / (MAX - 1)).toFixed(1)}th; split it (--at ${start}+${MAX},${start + MAX}+${sp.len - MAX}) to see every frame` : ', every frame'}; 2 before, 4 after`;
+    }
+    const n = Math.ceil(frames.length / cols);
+    plan.push({ sp, first: rows.length, n });
+    for (let r = 0; r < n; r++) rows.push({ frames: frames.slice(r * cols, (r + 1) * cols), start, end, title: `${title}${n > 1 ? `  [row ${r + 1}/${n}]` : ''}` });
+  }
   const dir = opt('out', 'out/joins');
   const seq = path.join(dir, `_frames_${process.pid}`); // no dot: Remotion reads a dot as an extension
   fs.mkdirSync(seq, { recursive: true });
-  const props = { film, joins, pad, cell };
-  remotion(['render', 'src/index.ts', 'Joins', seq, '--sequence', '--image-format=png', `--frames=0-${joins.length - 1}`, `--props=${JSON.stringify(props)}`, ...gl, ...conc, '--log=error']);
-  const files = fs.readdirSync(seq).filter((f) => /\.png$/i.test(f)).sort((a, b) => Number(a.match(/(\d+)\D*$/)?.[1] ?? 0) - Number(b.match(/(\d+)\D*$/)?.[1] ?? 0));
+  const props = { film, rows, cols, cell };
+  remotion(['render', 'src/index.ts', 'Joins', seq, '--sequence', '--image-format=png', `--frames=0-${rows.length - 1}`, `--props=${JSON.stringify(props)}`, ...gl, ...conc, '--log=error']);
+  const files = fs.readdirSync(seq).filter((f) => /\.png$/i.test(f)).sort((a, b) => Number(a.match(/(\d+)\D*$/)?.[1] ?? 0) - Number(b.match(/(\d+)\D*$/)?.[1] ?? 0)).map((f) => path.join(seq, f));
   const outs = [];
-  files.forEach((f, i) => {
-    if (i >= joins.length) return;
-    const to = path.join(dir, `${film}-join-${joins[i]}.png`);
+  for (const { sp, first, n } of plan) {
+    const parts = files.slice(first, first + n);
+    if (parts.length < n) continue;
+    const to = path.join(dir, `${film}-join-${sp.at}.png`);
     fs.rmSync(to, { force: true });
-    fs.renameSync(path.join(seq, f), to);
+    if (n === 1) fs.renameSync(parts[0], to);
+    else run('ffmpeg', ['-v', 'error', '-y', ...parts.flatMap((p) => ['-i', p]), '-filter_complex', `vstack=inputs=${n}`, '-frames:v', '1', '-update', '1', to]);
     outs.push(to);
-  });
+  }
   fs.rmSync(seq, { recursive: true, force: true });
   for (const o of outs) console.log(`join: ${o}`);
-  console.log(`${outs.length} join image${outs.length === 1 ? '' : 's'} (frames J-${pad} .. J+${pad}, ${cell} px cells). Look at every cell: anything cut by the frame or its box, overlapping or overprinted text, an empty slab, a one-frame pop or flip of ground, a camera snap, misaligned parts, a thing leaving before the cut.`);
+  const bare = specs.filter((s) => s.len === null).map((s) => s.at);
+  const long = specs.filter((s) => s.len > MAX).map((s) => `${s.at}+${s.len}`);
+  console.log(`${outs.length} join image${outs.length === 1 ? '' : 's'} (rows of ${cols}, ${cell} px cells): each move from 2 frames before its first to 4 after its last.`);
+  if (bare.length) console.log(`  given without a length: ${bare.join(', ')}: only the ${2 * pad + 1} frames round each (a fault before or after them is not on the image). Give each move's first frame and length: JOINS = [{ at: ${bare[0]}, len: 14 }, ...] or --at ${bare[0]}+14`);
+  if (long.length) console.log(`  sampled, not every frame (longer than ${MAX} f): ${long.join(', ')}; split a long move into parts to see every frame`);
+  console.log('  Look at every cell, one by one: anything cut by the frame or its box, overlapping or overprinted text, an empty slab or a plate without its text, a one-frame pop or flip of ground, the old scene left round the new one, a camera snap, misaligned parts, a thing leaving before the cut.');
 } else if (cmd === 'strip') {
   const src = args[1];
   const at = opt('at', '0');

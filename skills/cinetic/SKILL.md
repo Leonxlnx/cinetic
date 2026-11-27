@@ -120,15 +120,17 @@ What each command shows: [rendering.md](references/rendering.md#the-loop).
 - `node scripts/frames.mjs still --frame N --full` for any beat with UI text or a label: read the words.
 - `node scripts/frames.mjs render` (half-size preview), then `node scripts/frames.mjs strip out/main-preview.mp4 --at 4.2`
   to judge motion and actions on consecutive frames.
-- `node scripts/frames.mjs joins` exports every join (the film's `JOINS`) at real size, frames J-4 .. J+4: before the
-  final and after every fix that touches a join, look at every cell; a fix is closed only on a clean join image.
+- `node scripts/frames.mjs joins` exports every join (the film's `JOINS`, each `{ at, len }`: the move's first frame
+  and its length) at real size, every frame of the move: before the final and after every fix that touches a join,
+  look at every cell; a fix is closed only on a clean join image.
 - `node scripts/frames.mjs check out/main-preview.mp4` measures pace, holds, empty frames, crowding and the ending and
   prints what to fix (`--format loop` or `--format sting` for those formats); its `air` figures are information.
 Write the [join test](references/film-grammar.md#the-join-test) into `BEATS.md` and fix every join that fails. Bugs
 block the final: a full-size still of every beat with type or UI and the join image of every join; fix every cut text,
 overlap, overprint, empty slab, one-frame pop and clipped digit; no fix row is closed as "accepted"
-([polish loop](references/taste.md#5-the-polish-loop)). Score the
-sheet with the rubric in [taste.md](references/taste.md) (20 points); at 17 or more go to step 9.
+([polish loop](references/taste.md#5-the-polish-loop)). Score with the rubric in
+[taste.md](references/taste.md) (20 points; crops and joins only on the join images and full-size stills, never the
+sheet; one open bug caps the film at 14); at 17 or more go to step 9.
 
 **9. Polish (required).** The first cut is never the film. Run at least two passes of the
 [polish loop](references/taste.md#5-the-polish-loop): watch strips of every beat and the join images, write up to ten
@@ -213,13 +215,13 @@ Each rule's detail and numbers live in the linked section; read it when the rule
   action happens in it ([type.md](references/type.md#7-centred-one-line-at-a-time), [cards-ui.md](references/motion/cards-ui.md#house-rules)).
 - **The frame cuts only on purpose:** a lone giant word (280 px or more) or one component in close-up; never a resting
   line, never two sides, never the key figure ([type.md](references/type.md#7-centred-one-line-at-a-time)).
-- **UI premium and detailed,** flat or tilted 12° or less, in its app context, the region that matters pixel-real
-  ([cards-ui.md](references/motion/cards-ui.md#house-rules), [library-ui.md](references/library-ui.md)).
+- **UI premium and detailed,** flat or tilted 12° or less, in its app context, the region that matters pixel-real; on a
+  phone a touch, never a cursor ([cards-ui.md](references/motion/cards-ui.md#house-rules), [library-ui.md](references/library-ui.md)).
 - **Light, material and depth:** two planes moving at different rates in every beat, one light direction, soft rounded
   3D, one texture family; the product sits on a surface in light and the opening's place returns
   ([depth](references/worlds.md#depth-and-the-world-all-worlds)).
 - **Clean grounds:** a flat clean colour, a real picture or a bold designed scene; no vignette, no grain on a flat
-  ground, never dimmed UI as a ground ([palette rules](references/worlds.md#palette-rules-all-worlds) 8).
+  ground, never dimmed UI as a ground; a picture under UI gets a scrim, never a blur ([palette rules](references/worlds.md#palette-rules-all-worlds) 8).
 - **Clean type:** no eyebrows or kickers, no uppercase mono labels, no ALL CAPS or Title Case, no 800-900 weights,
   serif rarely ([type.md](references/type.md#11-no-eyebrows-no-kickers)).
 - **Real marks only;** the product's own mark has an idea, never two or three primitive rectangles

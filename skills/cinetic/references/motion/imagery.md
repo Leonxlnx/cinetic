@@ -34,6 +34,9 @@ Kit: Remotion's `Img`, `OffthreadVideo`, `staticFile`; `Camera`, `At` (camera); 
 7. **One texture family.** A film may carry one material across its pictures and joins (grain on photographs, halftone,
    dither, a lens, tracking marks, paper), used as transition material at least twice; never on a flat colour ground,
    never several families in one film.
+8. **The payoff picture stays sharp.** Footage or a photograph under a card or a claim gets a scrim (a 20-40 % ink
+   or ground-colour layer, or a soft dark band under the card) or a dim of the picture, never a blur; the picture the
+   film ends on is sharp. Blur on a picture is for a fast move or a short rack focus, never a held state.
 
 ---
 

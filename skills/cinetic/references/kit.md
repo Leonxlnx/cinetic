@@ -385,9 +385,11 @@ scripts/logos.mjs         search | get | list | check | verify   scripts/new-fil
 ```
 
 **What the film exports for the scripts** (beside `T`, in `src/films/main/Film.tsx`):
-- `export const JOINS = [T.turn, T.dive, T.press + 6];` the first frame of the next scene at every join.
-  `frames.mjs joins` reads it when no `--at` is given (plain numbers, or fields of a `T` made of plain numbers and
-  arithmetic; a value from an imported helper such as a beat grid cannot be read: write the number, or pass `--at`).
+- `export const JOINS = [{ at: T.turn, len: 14 }, { at: T.dive, len: 20 }];` every join as its move's first frame and
+  its length (or `{ at, to }`). `frames.mjs joins` reads it when no `--at` is given (`--at 120+14,245+20`) and exports
+  every frame from 2 before the move to 4 after it; a bare number still means the nine frames round it, and the command
+  lists those joins. Plain numbers, or fields of a `T` made of plain numbers and arithmetic; a value from an imported
+  helper such as a beat grid cannot be read: write the number, or pass `--at`.
 - The lockup's first frame: `lockup` in `T` (`T.lockup`), or `export const LOCKUP = 1210;` (LOCKUP wins when both are
   there). `frames.mjs check` measures "the ending holds still" from that frame on, so a held payoff picture before the
   claim counts as a hold (judged by the pace lines), not as the ending; without either, the ending is the still stretch

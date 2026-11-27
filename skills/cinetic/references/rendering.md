@@ -12,7 +12,7 @@ Treat the user's machine with care.
 | one frame, full size | `node scripts/frames.mjs still --frame 240 --full` | seconds |
 | motion preview | `node scripts/frames.mjs render` (half size) | ~0.2-0.4 s per frame on a laptop CPU |
 | motion check | `node scripts/frames.mjs strip out/main-preview.mp4 --at 7.5 --dur 2` | seconds |
-| every join at real size | `node scripts/frames.mjs joins` (the film's `JOINS`, or `--at 120,245`; `--full` for 1920 px cells) | one render call: ~30 s with bundling for a few joins |
+| every join at real size | `node scripts/frames.mjs joins` (the film's `JOINS`, or `--at 120+14,245+20`; `--full` for 1920 px cells) | one render call: ~1-3 min with bundling for a few joins (every frame of each move) |
 | final | `node scripts/frames.mjs final` (picture + sound + loudness in one pass) | ~0.5-2.5 s per frame on software GL (textures, blurs and photos are the slow ones) |
 
 Read every sheet and strip you make (they are images): that is how you see the film. Judge motion from strips of a rendered
@@ -21,13 +21,19 @@ preview, not from single frames.
   `--frames` zooms in on one moment (a turn, a morph). The sheet shows composition and rhythm, not small type: for any
   beat with UI text or a label, also render `still --frame N` at full size and read the words.
 - `strip` shows a moment of the preview at 15 frames a second, so you can judge motion, not just layout.
-- `joins` renders, for each join frame J, the frames J-4 .. J+4 at 960 px (one image a join, frame numbers on the
-  cells, the join frame outlined) from the source in one browser: what a strip is too small to show (a sliver left by a
-  turn, a one-frame pop, overprinted text). Look at every cell before the final and after every fix that touches a join.
+- `joins` renders, for each join given as its move's first frame and length (`{ at, len }` in `JOINS`, `120+14` with
+  `--at`), every frame from 2 before the move to 4 after it at 960 px, in rows of six (one image a join, frame numbers on
+  the cells, the move outlined; over 36 f the move is sampled and the image says so) from the source in one browser:
+  what a strip is too small to show (a sliver left by a turn, a one-frame pop, overprinted text, a claim spilling out of
+  a shrinking plate). A bare frame gives the nine frames round it and is listed as given without a length. Look at
+  every cell before the final and after every fix that touches a join.
 - `check` measures the preview (how crowded the frames are, change every half second, empty frames, ending length) and
   prints what to fix. Its `air` line says how much of the frame is sharp detail, how often three or more things share a
   frame and how often the frame cuts on two sides: information, never a target (a rich frame is not a crowded one; a film
-  fails as crowded only when detail covers 35 % or more of the frame in over a quarter of its samples). The coverage
+  fails as crowded only when detail covers 35 % or more of the frame in over a quarter of its samples; over a
+  photograph or footage the fix is a scrim or a dim under the card, never a blur on the picture). A LOOK line names
+  every stretch over 1 s cut on 2+ sides: a resting interface line cut that long is a FIX to look at on a full-size
+  still, though the measure alone fails nothing. The coverage
   figure is information too. Still half-seconds are named past a quarter (each hold must have something to read) and
   fail past 40 %. `--format loop` drops the sound, ending and music lines and fails when the last
   frame does not match the first; `--format sting` has no pace gate under 8 s and lets the ending hold. Its `library`

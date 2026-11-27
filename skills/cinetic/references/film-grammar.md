@@ -298,7 +298,8 @@ turns ([library-turns.md](library-turns.md)) and adapt them; build by hand what 
 | **Hard cut on the beat** | Right on the story's turn, the second turn and the cut into the mark; elsewhere only on a music event (a kick, a drop, a stop) or a new act in a tour that opens mid-action, and there the join carries the subject wherever it can. Never two in a row. |
 
 Never: a ground colour change around a small object; the ground changing first and the object after it; a flood or iris
-that ends before it covers the frame; a light or dark switch without a story reason; a screen flash to hide a cut.
+that ends before it covers the frame; a window that opens to the full frame with anything of the old scene left round
+its edge (it replaces the old scene: by its last frame no title bar, sidebar or plate of the old one shows); a light or dark switch without a story reason; a screen flash to hide a cut.
 
 A card whose text drops out while new text rises in, the card staying put, is a token join (the eye sees the same box):
 once a film at most. The second time, change the object: a notification arrives, a reply lands, another surface takes
@@ -316,15 +317,19 @@ A required step before the final: list every join in `BEATS.md` as
 4. Every change of ground, colour mode or accent has its story reason written next to it (a new place, a time of day,
    the turn).
 5. Two joins of the same class in a row are fine; three in a row is a pattern: vary the third.
-6. Every join is exported at real size with `node scripts/frames.mjs joins` (frames J-4 .. J+4, 960 px each, one image a
-   join; `--full` for 1920 px cells) before the final and after every fix that touches it, and every cell is clean:
+6. Every join is exported at real size with `node scripts/frames.mjs joins` (the whole move, from 2 frames before its
+   first to 4 after its last, 960 px cells in rows of six, one image a join; `--full` for 1920 px cells) before the
+   final and after every fix that touches it, and every cell is clean:
    nothing cut by the frame or its container, no overlapping or overprinted text, no empty slab, no one-frame pop or
    flip of ground, no camera snap, no misaligned parts, nothing leaving before the cut. A join that cannot be made clean
    becomes a simpler one: a hard cut on the beat beats a broken transition.
 
-The film exports its join frames beside `T`, so the command needs no list: `export const JOINS = [T.turn, T.dive,
-T.press + 6];` (the first frame of the next scene at each join; plain numbers or fields of a `T` made of plain numbers,
-arithmetic allowed). `--at 120,245` overrides it.
+The film exports its joins beside `T`, so the command needs no list: `export const JOINS = [{ at: T.turn, len: 14 },
+{ at: T.dive, len: 20 }];` (each move's first frame, where anything of the join starts to move, and how many frames it
+runs until the new scene has landed; plain numbers or fields of a `T` made of plain numbers, arithmetic allowed).
+`--at 120+14,245+20` overrides it. A bare frame (`T.cut`) gives only the nine frames round it, and the command lists
+it: faults sit before and after a join's planned frame, so give every move its length. A move over 36 f is sampled
+evenly and the image says so: split it to see every frame.
 
 ---
 
@@ -408,7 +413,7 @@ Every action shows before, during and after, so the viewer can tell what happene
   on an arc; the camera may push toward the target.
 - **During (1-3 f contact, then 10-30 f of work):** one frame where the target visibly flips state (the button's colour,
   the toggle, the check), then a working state that says what it does in words or a counter ("Reading 3,412
-  comments", a percentage, plan lines).
+  comments", plan lines; a percentage only when the number is the point).
 - **After (20-45 f):** the result appears where the action happened, large enough to read (UI text 30 px or more), held
   until it is read, then it becomes the next scene's object. A press is answered by its target.
 - **Scrolls and lists** have a reader (a counter or a marker that says what the scroll is) and a stop with a reason (it
