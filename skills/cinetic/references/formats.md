@@ -7,7 +7,7 @@ length, sections and ending. Set the format in `BRIEF.md` first; it decides whic
 What never changes with the format: a story the viewer can follow (even a sting has a want and a payoff in one
 image), one focal subject in a rich frame, readable or absent text, clean grounds, the palette rules, joins that carry
 the subject, no cross-fades, no hold with nothing to read before the end, legibility sizes and contrast, real marks,
-licensed pictures and sound, no generated images, and the never list ([taste.md](taste.md#never)).
+pictures only when they pass the bar (never stock wallpaper), licensed sound, no generated images, and the never list ([taste.md](taste.md#never)).
 
 | Format | Length | Concepts that fit | Ending |
 |---|---|---|---|
@@ -86,7 +86,7 @@ For people who already use the product. The beat table is in [film-grammar.md](f
 
 A rebrand, a company or a recruiting film.
 - **Length:** 25-50 s; 3-6 lines of belief.
-- **Sections:** a line over a picture > the identity in the world (signage, print, screens built in code, licensed
+- **Sections:** a line over a picture > the identity in the world (signage, print, screens built in code, the brand's own
   photographs in one grade, or a lit 3D world) > the product at most once > the belief completed > a quiet end card of
   3-4 s, still creeping.
 - **Different:** fewer, longer shots (beats of 1.5-3 s); the subtle, unexpected choice beats the busy one; no spectacle

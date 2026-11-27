@@ -27,6 +27,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [4.4 Designed silences](film-grammar.md#44-designed-silences)
   - [4.5 Cut on motion](film-grammar.md#45-cut-on-motion)
   - [4.6 Holds that are read](film-grammar.md#46-holds-that-are-read)
+  - [Stay in motion](film-grammar.md#stay-in-motion)
 - [Action and escalation](film-grammar.md#action-and-escalation)
   - [Clarity of action](film-grammar.md#clarity-of-action)
   - [Escalation: one, then more, then many](film-grammar.md#escalation-one-then-more-then-many)
@@ -38,7 +39,10 @@ Find a move by what it does, then open its section. File order: plan, look, soun
   - [D. Hero relay (brand or agent film, 35-45 s, very few cuts)](film-grammar.md#d-hero-relay-brand-or-agent-film-35-45-s-very-few-cuts)
   - [Update film](film-grammar.md#update-film)
 - [Compositions](film-grammar.md#compositions)
+  - [One thing at a time](film-grammar.md#one-thing-at-a-time)
+  - [The tags](film-grammar.md#the-tags)
 - [Devices](film-grammar.md#devices)
+  - [Strong moves often](film-grammar.md#strong-moves-often)
   - [Type treatment](film-grammar.md#type-treatment)
   - [Openings](film-grammar.md#openings)
   - [Ground changes](film-grammar.md#ground-changes)
@@ -93,6 +97,8 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 - [3. Fixes for the most common failures](taste.md#3-fixes-for-the-most-common-failures)
 - [4. The contact-sheet rubric (20 points)](taste.md#4-the-contact-sheet-rubric-20-points)
 - [5. The polish loop](taste.md#5-the-polish-loop)
+  - [The motion pass](taste.md#the-motion-pass)
+  - [Bug passes](taste.md#bug-passes)
 
 ## [type.md](type.md): Type: how a film sets its words
 
@@ -195,6 +201,7 @@ Find a move by what it does, then open its section. File order: plan, look, soun
 ## [motion/entrances.md](motion/entrances.md): Big entrances
 
 - [House rules](motion/entrances.md#house-rules)
+- [Smooth motion](motion/entrances.md#smooth-motion)
 - [1. Hero objects](motion/entrances.md#1-hero-objects)
   - [1.1 Lens wake (focus-pull rise)](motion/entrances.md#11-lens-wake-focus-pull-rise)
   - [1.2 Z-fly from the foreground](motion/entrances.md#12-z-fly-from-the-foreground)

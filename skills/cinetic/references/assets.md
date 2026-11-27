@@ -67,8 +67,9 @@ and data only, never for labels ([type.md](type.md)).
 Never generated images. In order of preference:
 1. The user's screenshots, product photos, team photos, customer footage.
 2. Code: UI, type, geometry and light carry most launch films.
-3. When the product's input is human (someone speaking, writing, cooking, paying), one licensed clip or photo of a real
-   person doing it makes the film human: `node scripts/assets.mjs recipe "<the input>"` finds clips for 40 common inputs
+3. When the product's input is human (someone speaking, writing, cooking, paying), a licensed clip or photo of a real
+   person doing it may make the film human, but only one that passes the picture bar ([imagery.md](motion/imagery.md)):
+   no picture beats a stock wallpaper, and a weak one is left out. `node scripts/assets.mjs recipe "<the input>"` finds clips for 40 common inputs
    (`assets.mjs search` and `get` for anything else; with Python, numpy and opencv it also screens thumbnails for people
    and text; without them it says so and still works). Keyless open collections are thin for everyday subjects (food,
    interiors): if nothing fits, build the subject in code (words on shelves, objects as type) rather than force a poor
@@ -85,9 +86,10 @@ Never generated images. In order of preference:
 **Pictures are the film's world, not decoration.** Choose them before the beats are written, from what the story needs:
 the same people and the same place through the whole film, one shoot where you can (a collection's photographer often
 has a series of one family or one studio). Check every picture's people against the cast: never a different adult or
-child standing in for a named character, never a second kitchen for the first. A photograph that is the world gets at
-least one full-frame beat in each act; prints inside UI (an avatar, an attachment) come in addition, never instead. The
-opening's real place (a desk, a room) returns in the payoff ([depth](worlds.md#depth-and-the-world-all-worlds)). Credit
+child standing in for a named character, never a second kitchen for the first. A film uses a photograph only when it
+passes the picture bar; when one does and is the world, it gets its own full-frame beats, never as a wallpaper under a
+white card or plate (a card or a lockup plate over a photograph is never right). Prints inside UI (an avatar, an
+attachment) are the product's content. Credit
 every one in `CREDITS.md` (page, author, licence), and write a statement over a busy picture by the
 [recipe in type.md](type.md#over-a-busy-photograph).
 

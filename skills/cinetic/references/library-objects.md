@@ -285,7 +285,7 @@ lockup ending centred. The mark may build while it holds (`mark` as a function o
 <LockupType at={T.lockup} name="Halden" mark={(p) => <Mark p={p} />} markW={128} hold={16} />
 <LockupType ... per={0} />   // the name on one frame, the lockup sliding to centre in 10 f
 ```
-- Numbers: the mark glides to its final place once, in 12 f (expo out, `glide`) from the end of the hold; the letters
+- Numbers: the mark glides to its final place once, in 12 f (`glide`; from rest, critically damped, a long tail) from the end of the hold; the letters
   at 1, 2, 3, 5, 6, 8 f after half the glide, then 1.4 f apart, typing beside a mark nearly at rest; nothing moves after
   it; gap 0.32 of the text size. `recentre="letter"` is the older form (letters from the end of the hold, each letter's
   share gliding in 5 f, the mark stepping left with every letter).

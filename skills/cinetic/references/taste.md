@@ -211,7 +211,7 @@ change of colour with no reason.
 | no story | write the five lines (`film-grammar.md` story) and rebuild the beats from them |
 | a plain or empty frame | design the world: the product's detailed surface, a lit object, depth in layers, a designed move; never a stock photograph or a card added to fill it |
 | a dense screen, too much at once | one component, large, built in steps; a number or claim in its own shot |
-| a move that jerks, stops dead or pops | rebuild it on exponential curves with a long tail (the smooth motion section of the motion references); re-measure with `frames.mjs motion` |
+| a move that jerks, stops dead or pops | rebuild it on exponential curves with a long tail ([Smooth motion](motion/entrances.md#smooth-motion)); re-measure with `frames.mjs motion` |
 | generic UI | start from the library's UI ([library-ui.md](library-ui.md)); real names, states, small icons, even padding, its app context |
 | no focal subject | pick the one thing to read; set the rest behind it by scale, focus or depth, or give it its own beat |
 | text behind or around a statement | delete it; the line sits on a flat ground, a calm area of a picture, or beside its object |
@@ -305,7 +305,7 @@ be smooth and satisfying, and that takes rework.
 3. For each, write in `BEATS.md` (`frame | move | what is not smooth | the change | re-checked on`): a corner between
    two moves, a landing with no tail, a start from rest with a jerk, a linear ramp, a value stepping in pixels, a still
    stretch, a join where A stops before B starts, a move too fast to follow. Rebuild it on exponential curves (the
-   smooth motion section of the motion references), re-render, re-measure.
+   [Smooth motion](motion/entrances.md#smooth-motion) section), re-render, re-measure.
 4. Two passes is the minimum, and a pass that finds nothing is not a reason to stop: look again at the three moves that
    carry the film and make each one better (a longer tail, a better hand-off, a cleaner curve). Never stop at "it
    passes"; stop when every join and entrance is one you would show on its own.

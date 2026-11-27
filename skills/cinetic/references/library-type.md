@@ -404,13 +404,13 @@ new word lands with 40 % of its space, which opens (`space="open"`), or lands wi
 <InkLine text="Notes that write themselves" at={T.n} tint="heat" space="close" />
 ```
 - Props: `text`, `at`, `gap` (9) or `times`, `size` (110), `color`, `accents` (`{ index: colour }`), `tint`, `settle`
-  (4), `inkOn` (`age`, `next`), `enter` (`cut`, `smear`, `blur`, `rise`), `space`, `lead` (0.55), `tau` (2.6),
+  (4), `inkOn` (`age`, `next`), `enter` (`cut`, `smear`, `blur`, `rise`), `space`, `lead` (0), `tau` (2),
   `anticipate` (0), `fit` (0: share of the width a longer line is set to, from its first word; never a size jump
   per word), `leaveAt`, `x`, `y`, `font`, `weight`
   (500), `tracking`. `inkLineLayout` gives the words' places for anything that frames the line.
-- Numbers: 55 % of the re-centre on the arrival frame, then an exponential glide with a 2.6 f time constant (about
-  10 f); grey to ink in 4 f; the hue path 9 steps, one a frame; the heat sweep 6 f, sine in-out. For a line that slides
-  before the word comes, `anticipate={2} lead={0.39} tau={4.5}`; for a word that shoves in from the right, `enter="smear"`.
+- Numbers: the re-centre glides from rest, critically damped with a 2 f time constant (9 % on the arrival frame, half
+  by frame 3, settled by frame 10, a long tail); `lead` puts a share on the arrival frame (0.3 or more reads as a jump); grey to ink in 4 f; the hue path 9 steps, one a frame; the heat sweep 6 f, sine in-out. For a line that slides
+  before the word comes, `anticipate={2} tau={3.5}`; for a word that shoves in from the right, `enter="smear"`.
 - Caution: one word every 6-12 frames; faster than 4 frames the tint never shows. Pass `fit` when the line could outgrow
   the frame.
 

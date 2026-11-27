@@ -36,8 +36,8 @@ signature devices as its own and repeats it; the others may appear once each (`f
 6. **Dark grounds are never pure black** while content is visible (#08090C-#141414 or a deep tone of the accent), and
    flat: the light belongs to the objects in the scene, not to a soft bloom on the ground.
 7. Real third-party logos keep their own colours (or their sanctioned mono version) inside the world's UI.
-8. **Clean grounds.** A ground is a flat clean colour (`<Ground>` is flat by default), a real picture (a licensed
-   photograph or footage plate), or a bold designed scene (a lit 3D stage, a full brand field, the product's own
+8. **Clean grounds.** A ground is a flat clean colour (`<Ground>` is flat by default), a real picture that passes the
+   picture bar ([imagery.md](motion/imagery.md); never a stock wallpaper), or a bold designed scene (a lit 3D stage, a full brand field, the product's own
    surface). Never a faint gradient field, never a dark ground with a soft bloom, no vignette, no dark corners, no
    visible grain on a flat ground; the film's one texture family (grain on photographs, halftone, dither, a lens) lives
    on pictures and in joins ([effects](motion/effects.md)). `<Ground light>` is opt-in, for a 3D stage whose object needs
@@ -51,18 +51,18 @@ layered (`softShadow`: several shadows with offsets and blurs doubling, each fai
 objects sit in that light with a contact shadow, or on a clean flat rule in flat worlds. 3D is soft-lit, rounded and matte
 or frosted (`softStudio` for `GLView`, `Box` with `bevel` and `material`), never flat unlit boxes or chrome lit by hard
 strips. Glow and glass at most once a shot, and only on the accent, and light that is timed. Depth of field blurs shapes
-(`Defocus`: cards, icons, photographs, objects), never text. Depth comes from layers of real things (a photograph behind
-the UI, the product's surfaces, secondary elements that react), one light direction, soft layered shadows, depth of
+(`Defocus`: cards, icons, photographs, objects), never text. Depth comes from layers of real things (the product's
+surfaces, a picture the film really needs, secondary elements that react), one light direction, soft layered shadows, depth of
 field on shapes and scale jumps (a giant word cut to a small one, a dive). Every beat has two planes moving at different
 rates; the second is a picture, a layer of the product or a reacting element.
-White or frosted cards on a coloured ground are fine.
+A card is there only when it is real interface the story needs; never a white card or plate over a photograph.
 
 ### Depth and the world (all worlds)
 
 One flat ground for half a film reads as cheap, however clean it is. A product's world has depth: a surface it sits on
 (a desk, a table, a shelf, the device), light from one direction with soft layered shadows on the objects, a material
-(paper, matte plastic, glass, wood), and the opening's real place (a desk, a room, a photograph) returning between the
-UI moments, at least every 8-10 s, and in the payoff. Depth comes from objects, light on objects and pictures, never
+(paper, matte plastic, glass, wood), and the opening's real place (a desk, a room: built in code, or a picture that passes the bar) returning
+between the UI moments and in the payoff. Depth comes from objects, light on objects and pictures, never
 from a gradient behind them: the ban on faint gradient grounds stands. Decorative concentric arcs, diagonal hairlines
 and stray rules laid over a ground as "texture" read as filler; a line is structure or it is gone.
 
@@ -176,8 +176,9 @@ ends; card flip swap for stationery.
 ## 4. Soft air
 
 **Fits:** personal assistants, consumer AI, calm productivity, wellbeing; products that should feel light and kind.
-**Ground:** licensed daylight photographs (sky, rooms, people at ease) graded pale, with the UI over them, and a flat
-pale ground (#F4F6F8) between them; never a blurred-blob sky field.
+**Ground:** a flat pale ground (#F4F6F8) and soft daylight built in code (light falling across the frame, the product's
+own surfaces); a daylight photograph only when it passes the picture bar, never with a card or UI plate laid over it;
+never a blurred-blob sky field.
 **Palette:** sky, white, charcoal ink #2B2F33, **one accent that is born light and deepens** (e.g. a clear blue #2F7BF6
 born at #A9CBFB, or a rose #E8576F born at #F6B5C0), one cool secondary (a pale sky blue) used sparingly.
 **Type:** one soft neo-grotesk for everything (`inter` 450-500 statements, 400 UI) in the ink, centred; accent words
@@ -369,15 +370,15 @@ scale-out finale; a hard music stop and silent end card.
 
 ## 11. Photo plates
 
-**Fits:** consumer, travel, food, health and place products; manifesto and brand films; any brief with real photographs
-and no footage.
-**Ground:** licensed stills as full-bleed plates, all through one gradient-map grade (`Photo grade`), each slowly
+**Fits:** consumer, travel, food, health and place products; manifesto and brand films; only a brief that brings its own
+strong photographs (the user's or the product's), never fetched stock.
+**Ground:** those stills as full-bleed plates, all through one gradient-map grade (`Photo grade`), each slowly
 pushing (0.2-0.6 % a frame); clean white or a deep tone of the accent as the base between them.
 **Palette:** the grade's two or three tones plus one accent for the line's key word; the pictures carry the colour.
-**Type:** one sans, centred on a calm area of the plate or on a clean band across it, never over detail; or in a thin
-pill or ring over the picture.
-**Materials:** pictures masked into rounded shapes (pills, circles, squircles) beside flat colour shapes; one glass bar
-blurring the plate under it when UI appears.
+**Type:** one sans, centred on a calm area of the plate or on a clean band across it, never over detail; never on a
+pill, plate or card laid over the picture.
+**Materials:** pictures masked into rounded shapes (pills, circles, squircles) beside flat colour shapes; UI on the clean
+base between the plates, never over them.
 **Signature devices:** an organic iris (a cloud or scallop mask) opening from a glyph onto a plate; letters as windows;
 a duotone that develops to true colour; a slow push carried across a hard cut.
 **Avoid:** pictures from different shoots and grades; type over faces or busy detail; stock as wallpaper.
@@ -436,12 +437,11 @@ converge into the mark; `CornerMarks` framing a line.
 ## Looks inside a world
 
 A world sets the rules; a look is one way to make it. Pick one look for a film, from its world or from this list:
-- licensed photographs of the hero's world (a desk at dusk, a kitchen at 4 am, a ward corridor) with the product's UI
-  over them;
-- a sky or cloud plate as the ground, with a glass bar blurring it;
+- the hero's world (a desk at dusk, a kitchen at 4 am, a ward corridor) built in code or from the user's own photographs,
+  the product's UI beside or inside it, never a card over a photograph;
 - a clay or plush hero in soft key light and shallow focus;
 - glossy app tiles standing on a frosted shelf, shallow focus, cool grey ground;
-- graded editorial photographs of people at work, the line in a thin pill over them;
+- graded photographs of people at work that pass the picture bar, the line on a clean band of the picture;
 - a flat deep navy with glossy outlined pills and a lit 3D object as the only light;
 - cool white falling into a saturated brand colour, white glass cards on it;
 - hairline construction: thin circles and guides as structure behind a short line;

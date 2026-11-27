@@ -20,10 +20,11 @@ push, turn)`, `camAt`. From motion: `creep`, `logScale`, `keys`, `accel`, `ease`
 
 ## House rules
 
-1. **Never dead still for more than ~0.6 s.** Every hold creeps (0.5-1 % scale over 20-30 f, or 0.5-2 px/f drift). Only the
-   lockup may freeze, after its own creep.
+1. **Never dead still for more than ~0.3 s (10 f).** Every hold carries an idle: `live` (a sub-pixel drift and a 0.6 %/s
+   push), a creep (0.5-1 % scale over 20-30 f) or a drift of 0.5-2 px/f. Only the lockup may freeze, after its own creep
+   ([Smooth motion](entrances.md#smooth-motion)).
 2. **Pull back to establish; push in to leave.** Slow pull-backs (to 0.74-0.90 over 1-2 s) on establishing holds;
-   accelerating push-ins (x1.46-1.74, quad-in) *into* transitions.
+   accelerating push-ins (x1.46-1.74, `ease.expoIn` in log space) *into* transitions.
 3. **Zoom in log space.** Every zoom over ~1.5x uses `logScale` (the `Camera` does it for you). Linear zooms rush at the
    start and crawl at the end.
 4. **The camera has mass.** It brakes without bounce (at most 0.6-0.7 % overshoot on a pull-out); whips are asymmetric.
@@ -54,6 +55,9 @@ of 0.5-2 px/f, or a slow push of 3-5 % over the whole shot.
 **When:** every hold. A hold that is a still frame reads as a broken render.
 
 ```tsx
+const idle = live(frame, { start: 0, seed: 2 });          // drift + 0.6 %/s push + roll, every frame sub-pixel smooth
+<div style={{ transform: idle.transform }}>{scene}</div>
+// or by hand:
 const s = 1 + 0.008 * creep(frame, 0, 20) + 0.0004 * Math.max(0, frame - 20);
 // or the kit's living drift added to a key:
 const d = drift(frame, 120, 0.035, 0.6);

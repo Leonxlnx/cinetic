@@ -145,7 +145,7 @@ const shape = mix(at(frame, 58, 2, ease.linear), 50, 22);
 
 ### 3.1 Status rows push
 **What:** a block of status rows ("Reading 41 files", "Drafting outline") grows from the bottom; each new row **pushes the
-block up in a 3-frame expo step**: 44, 4, 1 px (90 % in frame 1). The newest word of a typing status is tinted for 1-2 f.
+block up from rest over 6-8 f** (`settle`, half-life 2-3 f): smooth, never a one-frame jump. The newest word of a typing status is tinted for 1-2 f.
 Rows every 20 f for a calm process; after completion, the header takes the accent and the rows vanish top-down, one every 2 f.
 
 ### 3.2 Spinner to check

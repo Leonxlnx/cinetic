@@ -35,11 +35,11 @@ Hold every film to all nine.
    watching, large, travels or becomes B, never "A stops, cut, B starts"; a hard cut lands only on a musical event with
    both sides moving. Never a token carried, a cross-fade or an empty frame ([joins](references/film-grammar.md#joins)).
 5. **Always in motion, smooth.** Nothing on screen is ever fully still and nothing stops dead: every landing has a long
-   tail, every hold a slow idle (`creep`, `drift`, a breath). Curves are exponential: an entrance arrives fast and
+   tail, every hold a slow idle (`live`, `drift`). Curves are exponential: an entrance arrives fast and
    settles long, a move from rest eases in and out, a zoom moves by a constant ratio (`logScale`), two moves in a row
    meet without a corner. No linear ramp, no stepped position, no one-frame pop, no overshoot on data; still frames
    for over ~0.3 s are a bug. Motion is judged on every frame, never on a sheet
-   ([smooth motion](references/film-grammar.md#stay-in-motion)).
+   ([smooth motion](references/motion/entrances.md#smooth-motion)).
 6. **Type is an event, set clean.** One sans voice (`fonts.inter` unless the brand has its own), sentence case, weight
    430-550, sized by word count (84-100 px for 5-6 words, 110-150 px for 3-4, 160-240 px for 1-2, one spectacle size of
    280-700 px a film, optional when UI or photographs lead). 2-6 words at once, one line on screen at a time, over its

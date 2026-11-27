@@ -3,8 +3,8 @@
 Effects are where generated films drown: glow on everything, a gradient behind everything, grain on white, blur on every
 move, particles in every gap. Premium work uses **effects with a job**: optics (motion blur on fast moves, focus that
 directs the eye, depth by layers moving at different rates), one texture family that is the film's material, and light
-that is timed and shaped. Richness comes from real pictures, real product detail and that one material, never from
-haze. All numbers at 30 fps, 1920x1080.
+that is timed and shaped. Richness comes from real product detail, that one material and pictures only when they are
+good (the product's or the user's own), never from haze or stock. All numbers at 30 fps, 1920x1080.
 
 Kit (`world.tsx`): `Glow`, `Sheen`, `Grain`, `Defocus`, `softShadow`, `GridLines`; motion helpers `landBlur`, `speedOf`.
 The library's effects ([library-fx.md](../library-fx.md): `LightSweep`, `Bloom`, `TrackOverlay`, `DotScreen`,
@@ -13,7 +13,7 @@ never shakes. `Field` and `Aura` are not grounds (no faint gradient grounds).
 
 Across every world: one light direction for the whole film; glow and glass at most once a shot, only with a meaning (the
 accent, a real light source); blur on shapes and on fast frames, never on words a viewer should read; no vignette, no
-muddy noise on a flat ground. A ground is a flat clean colour, a real picture or a bold designed scene: never a pale
+muddy noise on a flat ground. A ground is a flat clean colour, a picture that passes the bar or a bold designed scene: never a pale
 gradient field and never a dark ground with a soft bloom.
 
 ## Effect budget by world

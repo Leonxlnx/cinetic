@@ -4,7 +4,7 @@ An entrance answers one question for the viewer: **where did this come from?** F
 front, from the camera's side of the glass, from a dot, from the previous shot's motion. "From nowhere, fading up" is the
 wrong answer, and it is the default answer of template films. All numbers at 30 fps, 1920x1080.
 
-Kit: `at, mix, ease, springAt, springs, logScale, landBlur, keys, clamp` from motion; `useArrive, Card, Toast, Button,
+Kit: `at, mix, ease, settle, approach, chain, live, logMix, springAt, springs, logScale, landBlur, clamp` from motion; `useArrive, Card, Toast, Button,
 Chip` from ui; `Camera, At` from camera; `Glow` from world; `Brand, BrandTile` from icons. For product UI start from the
 library's finished arrivals ([library-ui.md](../library-ui.md): `PhoneDrop`, `BannerPop`, `CardFan`, `NoticePile`) and
 for words from [library-type.md](../library-type.md); build by hand only what the library lacks.
@@ -28,6 +28,61 @@ for words from [library-type.md](../library-type.md); build by hand only what th
    transient on the landing frame, not the start.
 9. **Weight without shake.** A landing never shakes the screen, not even a little: weight comes from the brake, a 2 f
    squash, a contact shadow that tightens, and what is under it reacting (a 2-4 px dip). No flash on arrival either.
+
+## Smooth motion
+
+A film hangs together and stays in motion, and every move runs on a curve the eye can ride. What reads as laggy,
+angular or buggy is almost always one of five faults: a move that stops dead, a move that jerks from rest to full
+speed, a move that steps in whole pixels, a held frame that goes dead, a one-frame pop. Exponential and logarithmic
+curves avoid all five; the kit's helpers ([kit.md, Motion core](../kit.md#1-motion-core)) are built on them.
+
+| The move | The curve | In the kit |
+|---|---|---|
+| An arrival that is already moving (from off frame, out of a cut, out of blur) | exponential out: the same share of the distance left, every frame | `ease.expoOut`, or `approach(f, start, halfLife)`: half-life 3-4 f for small UI, 4-7 f for a card or a word, 8-14 f for the camera |
+| A move from rest (a card slides over, a reframe, a panel grows) | critically damped: zero speed at the start, an exponential tail, no overshoot | `settle(f, start, halfLife)`, or `ease.expoInOut` over a fixed length |
+| Several moves that are one gesture (over, then up, then into place) | the speed carries through every key | `chain(f, [[f0, v0], [f1, v1], ...])`, never `keys` (it stops on each key) |
+| A target that changes while the move runs (a pointer, a camera re-aiming) | each new target a settle on top of the last | `follow(f, [[f0, v0], [f1, v1], ...], halfLife)` |
+| An exit | exponential in, at full speed on the cut or hand-off | `ease.expoIn`, `accel` |
+| A zoom, a scale, anything that multiplies | log space: the same ratio every frame | `logMix(p, from, to)`; `Camera` zooms in log space already |
+| A hold | a slow drift, push or breath | `live(f)` on the held thing or its group, or a camera `drift` |
+
+Rules:
+1. **Every landing has a tail, and the tail is soft.** In well-made films a settling move keeps 84-90 % of its speed
+   from one frame to the next (a half-life of 4-7 f) and runs 12-20 f from its peak to rest; a tail under 4 f reads as
+   a dead stop. Landings that brake harder (75 % a frame, a half-life of 2.5 f: `ease.out` over 12-20 f) read as angular.
+   So: `approach` with a half-life of 4-7 f; `ease.out` only over 30 f or more (it still lands visibly in the first
+   10-12 f); `ease.expoOut` over 36-60 f, or `expo(4)` over 24-30 f.
+2. **Never start a visible thing at full speed from rest.** `approach` and `expoOut` begin at their fastest: use them
+   only when the thing enters moving (off frame, through a cut, under blur). Something already on screen starts with
+   `settle` or `expoInOut`.
+3. **Never stop dead.** A move ends on a tail, or hands its speed to the next move (`chain`, `carry`), or leaves the
+   frame. Nothing travels at speed on one frame and stands still on the next.
+4. **Never hold dead.** Every hold carries `live` (about 0.3-1 % of the frame a second: the defaults) or rides a camera
+   drift; stillness ends the film, nowhere else. Well-made films have about 7 % of their frames fully still; more than
+   10 still frames in a row before the ending is a fault.
+5. **Move with transforms.** `left`, `top`, `margin`, `width` and a changing `fontSize` snap to whole pixels, so a
+   slow move stands still on half its frames and jumps on the others (measured: a 20 px move over 60 frames held still
+   on 15-38 of 58 frames placed by `left`, on none placed by `translate`). Place by `transform: translate(...)`, size by
+   `scale`, draw text once at its largest size and scale it down. `Math.round` belongs on counts and labels, never on
+   an animated position.
+6. **Linear only for colour, clocks and real rates.** Never for a position, scale, rotation or blur.
+
+```tsx
+const f = useCurrentFrame();
+const p = settle(f, T.card, 7);                            // from rest, tail, no overshoot
+const x = chain(f, [[T.card, 0], [T.card + 14, 420], [T.card + 40, 480]]); // one gesture, no stop on the key
+const idle = live(f, { start: T.card + 40, seed: 3 });    // the hold never dies
+<div style={{ transform: `translate(${x + idle.x}px, ${mix(p, 60, 0) + idle.y}px) scale(${logMix(p, 0.9, 1) * idle.scale})` }} />
+```
+
+**Read the curve.** `node scripts/frames.mjs motion out/film-preview.mp4` draws how much the picture changes every
+frame and marks the faults. Good motion reads as rolling hills: rises that start soft, long tails into a low floor
+that never sits on zero for long. Faults look like their names: a vertical wall (a hard start), a cliff to zero (a
+dead stop), a needle (a pop), a flat line on zero (a dead hold), a saw-tooth (stepping). Typical well-made films:
+about 7 % of frames still, a median tail of about 9-10 f at 30 fps, settles that keep 84-90 % of their speed a frame
+(a slope that falls gently, not a cliff), no stepping; pops and dead stops are candidates
+to look at, not a score. The chart does not see curve quality: for each strong move also read its consecutive frames
+(`frames.mjs strip out/film.mp4 --at <s> --fps 30`).
 
 ---
 
@@ -231,7 +286,7 @@ their state changing ~6 f later (an Add pill flips to Added: colour swap + label
 confident placement. Pair each with a tick.
 
 ### 3.4 Status rows push
-New rows arrive at the bottom of a block and **push the block up in a 3-frame expo step**: 44, 4, 1 px (90 % in frame 1).
+New rows arrive at the bottom of a block and **push the block up from rest over 6-8 f** (`settle`, half-life 2-3 f): smooth, never a one-frame jump.
 Rows every 20 f for a calm process, accelerating for a montage (see `cards-ui.md`).
 
 ### 3.5 Pop with overshoot (budgeted)

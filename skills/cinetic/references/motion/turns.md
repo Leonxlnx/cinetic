@@ -48,8 +48,8 @@ a row are fine; vary the third.
 
 **Ground, colour mode and accent change only when the story changes place or state** (a new act, a time of day, the
 turn), and then the whole frame changes at once under one clean turn; never an object that suddenly turns the accent
-colour. A film may stay on one ground. A ground is a flat clean colour, a real picture or a bold designed scene, never a
-faint gradient or a dark field with a soft bloom.
+colour. A film may stay on one ground. A ground is a flat clean colour, a picture that passes the bar (never stock wallpaper) or a
+bold designed scene, never a faint gradient or a dark field with a soft bloom.
 
 | What the viewer watches at the end of A | First choice | Second choice | Never |
 |---|---|---|---|

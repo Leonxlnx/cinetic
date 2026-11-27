@@ -42,6 +42,7 @@ current frame itself; you pass **start frames** taken from the film's timeline o
 | `ease.in` | expo in `(0.7, 0, 0.84, 0)`: leaving, ends at full speed |
 | `ease.back` | `(0.34, 1.36, 0.64, 1)`: ~6 % overshoot for things that land with weight |
 | `ease.linear` | colour, clocks and real rates only |
+| `ease.expoOut` / `expoIn` / `expoInOut` | true exponential curves (a constant share of the distance left, each frame): long tails, no dead stop; `expo(k)` makes one with your rate (6 default, 8 sharper, 4 softer) |
 | `at(frame, start, dur, curve = ease.out)` | progress 0..1 of a move, clamped |
 | `mix(p, from, to)` | map progress to a value (not clamped, so springs may overshoot) |
 | `springAt(frame, fps, start, config)` | spring progress from `start`; configs in `springs.ui / card / pop / heavy` |
@@ -52,7 +53,13 @@ current frame itself; you pass **start frames** taken from the film's timeline o
 | `landBlur(frame, start, px = 6, frames = 4)` | blur that clears as a shot arrives already moving |
 | `carry(frame, cutAt, v, dur)` | offset for a shot that enters at the outgoing shot's speed `v` and settles to 0 |
 | `logScale(from, to, p)` | exponential zoom (equal visual speed at every scale): use for every zoom over 1.5x |
-| `keys(frame, [[f, v], ...], curve)` | keyframed value |
+| `logMix(p, from, to)` | log-space mix for scale and zoom: the same ratio every frame |
+| `approach(frame, start, halfLife = 6)` | 0..1, half the remaining distance every `halfLife` frames: an arrival already moving, never a dead stop |
+| `settle(frame, start, halfLife = 8)` | 0..1 critically damped from rest: zero speed at the start, half-way at `halfLife`, no overshoot, exponential tail |
+| `follow(frame, [[f, v], ...], halfLife = 8)` | a value that chases targets set on frames; a new target bends the path without a jump in speed (cursor, re-aiming camera) |
+| `chain(frame, [[f, v], ...])` | keyframes as one gesture: speed carries through each key (no corner, no stop), at rest at both ends, never overshoots |
+| `live(frame, { drift = 5, push = 0.006, breath = 0, roll = 0.12, start, seed, fps })` | the idle for a hold: slow sub-pixel drift, a log-space push (0.6 % a second) and roll; `.transform` or `{ x, y, scale, rotate }` |
+| `keys(frame, [[f, v], ...], curve)` | keyframed value: separate moves, each from rest to rest (use `chain` for one gesture) |
 | `onTwos(frame, n = 2)` | stepped clock for digital things (pixels, glyphs, stop-motion) |
 | `rand(seed)` | deterministic 0..1 |
 | `sec(s, fps)`, `clamp(v)` | helpers |
@@ -64,6 +71,11 @@ const p = at(f, T.card, 18, ease.out);            // arrive
 const q = accel(f, T.cardOut - 10, 10);           // leave at speed
 const style = { transform: `translateY(${mix(p, 80, 0) - q * 900}px) scale(${mix(p, 0.94, 1)})`, filter: `blur(${mix(p, 8, 0) + q * 20}px)` };
 ```
+
+Move with `transform`, never with `left`/`top`/`margin`/`width` or a changing `fontSize`: layout values snap to whole
+pixels, so a slow move steps (a 20 px move over 60 frames stands still on half its frames). Measure a render with
+`node scripts/frames.mjs motion out/film.mp4`; the rules are in [motion/entrances.md, Smooth
+motion](motion/entrances.md#smooth-motion).
 
 ## 2. Type
 
@@ -367,9 +379,10 @@ sizes, weights and tracking: [type.md](type.md). To add a face,
 src/films/main/Film.tsx   the film (timeline T + sections)      src/films.ts    registers films (id, component, duration, fps, size)
 src/kit/                  the kit                                src/Sheet.tsx   the 36-frame storyboard composition
 src/sfx.ts                fetched sounds (generated)             public/         sfx/, music/, logos/, images (never commit audio)
-scripts/frames.mjs        sheet | still | render | final | audio | mux | strip | joins | check | library   (mux without audio joins muted
-                          parts silent; joins: every join at real size, frames J-4 .. J+4; check --format launch | loop | sting,
-                          --silent)
+scripts/frames.mjs        sheet | still | render | final | audio | mux | strip | joins | check | motion | library   (mux without audio
+                          joins muted parts silent; joins: every join at real size, frames J-4 .. J+4; check --format launch |
+                          loop | sting, --silent; motion <file.mp4> [--range a-b] [--cuts f,..] [--json]: every frame's change as a
+                          chart with pops, dead stops, hard starts, stepping, still stretches and tails)
 src/kit/library/          the motion library: a folder a category (type, turns, fx, camera, ui, hosts, objects, grounds,
                           designs), one file a piece; catalog/<category>.ts lists each category's pieces (frames.mjs
                           library [--category --purpose --subject --mood] | --show <Name> | --strip <Name>)

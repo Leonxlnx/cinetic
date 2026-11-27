@@ -53,11 +53,12 @@ const blockScale = 1 - 0.0035 * Math.min(frame, 40) - 0.0006 * Math.max(0, frame
 **Avoid:** per-letter staggers; giving line 1 the same rise as line 2 (line 1 cuts, line 2 rises: that contrast is the move).
 
 ### 1.2 Lead-heavy re-centre (append mode)
-**What:** a centred line grows one word at a time; on the frame a word is appended, the **whole line jumps toward its new
-centre**, with ~60-70 % of the travel in frame 1.
-**When:** any word-by-word build of a centred statement. This single number decides whether captions feel on time.
-**Numbers:** per-frame fractions of the move: 0, 0.60, 0.80, 0.90, 0.95, 0.975, 0.99, 1.0 (8 f); sub-frame curve
-`cubic-bezier(0.08, 1.01, 0.22, 0.94)`. The new word cuts on in its final place relative to the line on the same frame.
+**What:** a centred line grows one word at a time; on the frame a word is appended, the **whole line glides to its new
+centre**: it starts from rest (it was on screen, so no jerk), is half-way by frame 3 and settles on a long tail.
+**When:** any word-by-word build of a centred statement. This curve decides whether captions feel on time and smooth.
+**Numbers:** per-frame fractions of the move: 0, 0.12, 0.35, 0.55, 0.71, 0.82, 0.90, 0.95, 0.98, 1.0 (9 f: a critically
+damped settle, `settle` in the kit; `<Build>` does it). The new word cuts on in its final place relative to the line on the
+same frame. A jump that covers most of the move in one frame reads as the typing jump: never.
 For a swap of the last word: 3-4 f of 3-8 px creep toward the coming move while the old word heats out, then swap.
 Variant **pre-centre**: shift the line to its new centre 3-6 f *before* the word lands (`cubic-bezier(0.33,0.36,0.24,0.94)`
 per step), so the gap is waiting. Holding the last word back ~14 f is the punch.
@@ -66,7 +67,7 @@ Variant **drawer append**: never re-centre; the left edge eases left as the line
 ```tsx
 // widths from @remotion/layout-utils measureText; starts = frames each word appears
 const shown = starts.filter((s) => frame >= s).length;
-const lead = (k: number) => [0, 0.6, 0.8, 0.9, 0.95, 0.975, 0.99, 1][Math.min(7, Math.max(0, k))];
+const lead = (k: number) => [0, 0.12, 0.35, 0.55, 0.71, 0.82, 0.9, 0.95, 0.98, 1][Math.min(9, Math.max(0, k))];
 let x = -widthOf(1) / 2;
 for (let i = 2; i <= shown; i++) x = mix(lead(frame - starts[i - 1]), x, -widthOf(i) / 2);
 <div style={{ transform: `translateX(${x}px)`, whiteSpace: 'pre' }}>{words.slice(0, shown).join(' ')}</div>
@@ -466,7 +467,7 @@ beside them 4-6 f later. A kick on the cut, nothing on the small frame.
 ## 9. Words, objects and seams
 
 ### 9.1 Object born between words
-A two-word line; the second word cuts on and the pair re-centres in one frame; at +10 f a small circle (d 16 px) appears in
+A two-word line; the second word cuts on and the pair re-centres (the 1.2 settle); at +10 f a small circle (d 16 px) appears in
 the gap and grows on an accelerating curve (16 -> 107 px over 13 f) **pushing the words apart** (gap x4). Then cut 5x onto
 the circle (see `turns.md`).
 
@@ -497,8 +498,8 @@ that shrinks to rest in ~5 f.
 ### 9.7 Picture inside the sentence
 **What:** two words part to open a slot in the line; a photo, a mark or a small UI card cuts into it and reads as a word;
 then the slot grows and the picture becomes the next shot.
-**Numbers:** the gap opens to ~110 x 60 px (about one cap height tall) as the words move apart on `ease.out` over 8 f (70 % in
-the first 2 f); the picture cuts on in the slot at full size in 1 f and holds 10-20 f while the line is read; then the slot
+**Numbers:** the gap opens to ~110 x 60 px (about one cap height tall) as the words move apart from rest over 8 f (`settle`, half-life
+3 f); the picture cuts on in the slot at full size in 1 f and holds 10-20 f while the line is read; then the slot
 grows 1.6x in 5 f on `ease.in` and hard-cuts to the same picture full frame, already pushing in; the words leave on the cut.
 `<Build>` holds a node in a slot (`{ slot, node }`), so the line re-centres around it.
 **Sells it:** the picture sits in the line at type height, between the words, not above them.
@@ -552,7 +553,7 @@ while it rises, never a plain fade longer than 4 f.
 
 ## Not in the kit yet (build these by hand from the recipes above)
 
-- **Append build re-centre styles:** `<Build>` re-centres with the lead-heavy jump; the `pre`, `drawer` and `none` styles
+- **Append build re-centre styles:** `<Build>` re-centres with the 1.2 settle; the `pre`, `drawer` and `none` styles
   described above are still built by hand.
 - **Explicit unit timing.** `Words` needs `starts?: number[]` (beat-locked builds, held-back last word) instead of only `gap`.
 - **New `Words` arrivals:** `'hot'` (oversized + blurred, exponential settle: 1.2/2.1), `'stair'` (per-word start offsets, 1.4), `'ramp'` (gradient

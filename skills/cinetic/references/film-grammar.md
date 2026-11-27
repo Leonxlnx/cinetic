@@ -120,7 +120,7 @@ standing in for one.
     generators, creative tools.
 13. **Map and dive.** Three parts of a platform as objects on a map; the camera dives into each and snaps back; at the
     end they connect and frame the name (section 3.3). Platforms with three pillars, 40-70 s.
-14. **Manifesto with pictures.** A few lines of belief over licensed photographs in one grade, the identity applied to
+14. **Manifesto with pictures.** A few lines of belief over the brand's own photographs in one grade (never stock), the identity applied to
     real surfaces, the product barely shown, a long quiet end card. Rebrands, company and recruiting films.
 15. **Four clocks.** A gutterless grid of 2-4 cells, each looping one small action on its own length, cells handing
     pictures to each other; no start and no end. Landing-page heroes, social loops.
@@ -415,8 +415,8 @@ A film that stops reads as a slideshow, and a move that starts or ends with a je
 - **Every exit is the next entrance.** A scene does not stop and then cut: its last move hands its speed and its
   subject to the next scene ([joins](#joins)).
 - **Judge motion on every frame,** never on a sheet: strips of consecutive frames, the join images and
-  `frames.mjs motion` (pops, dead stops, hard starts from rest, stepping, stillness). The curves and helpers are in the
-  smooth motion section of the motion references.
+  `frames.mjs motion` (pops, dead stops, hard starts from rest, stepping, stillness). The curves and helpers are in
+  [motion/entrances.md, Smooth motion](motion/entrances.md#smooth-motion).
 
 **A result is held until it is read** (0.7-1.5 s, longer for a line by its reading time) with idle life, then it becomes
 the next object. What may not happen is a hold with nothing to read: an empty field waiting, a finished state that says

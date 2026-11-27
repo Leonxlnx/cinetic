@@ -5,7 +5,8 @@ first. A film follows the rules below. Sizes are font sizes in px for a 1920x108
 faces are in `src/kit/fonts.ts`; the arrival moves are in [motion/text.md](motion/text.md).
 
 Readability comes mostly from isolation, not from raw size: one short line at a time, in high contrast against what is
-behind it (a flat ground, a calm area of a picture, a plate), centred or set beside the object it answers. The library's
+behind it (a flat ground, or a calm area of a picture the film really needs; never a plate over a photograph), centred
+or set beside the object it answers. The library's
 type moves ([library-type.md](library-type.md)) come first; [motion/text.md](motion/text.md) has the rest.
 
 ## 1. One sans voice
@@ -62,7 +63,7 @@ The 64 px floor for a statement word holds; a line that needs to go under it hol
   largest type in the film and names the benefit or the product (or its object), never the problem or the input: the
   hours saved, not the pile of mail; the amount that arrives, not the amount sent. A viewer reads the biggest word as the
   brand.
-- The giant word is optional in a film led by product UI or photographs: there the scale contrast can come from a macro
+- The giant word is optional in a film led by product UI or by the product's own pictures: there the scale contrast can come from a macro
   of the UI or a full-frame picture instead, and the statements keep their sizes by word count. When a film has one, it
   follows this section.
 - It may crop at the frame edge (never inside a box) as long as the word still reads.
@@ -86,7 +87,7 @@ type weight and size, pace, colour, picture and sound, so each one can be checke
 |---|---|
 | bold | statements 600-700, two or more lines over 250 px, words allowed to fill the frame (one lone giant word may crop); short holds, hard cuts on the beat; a strong accent on a tenth of the frame; a bed with a clear pulse |
 | mostly words, words-led | type leads at least half the beats; the type library is the default (`check` flags a words-led brief that imports no type piece); statements at 160 px or more, never mid-weight on an empty ground; a picture or object enters the line, not beside it |
-| warm | warm off-white or a warm photograph's light, 450-520 weight, softer arrivals, a sparse bed with no hit on every beat |
+| warm | warm off-white or a warm, lit ground, 450-520 weight, softer arrivals, a sparse bed with no hit on every beat |
 | quiet, calm | fewer beats, longer read holds with idle life, one accent, a sparse bed, effects at the low end |
 | playful | a library playful-letters move once, a bounce up to 0.3, a brighter accent, a lighter bed |
 | make people feel it | a person seen (a face, a hand, a reaction), not only objects: the film's own person in the payoff, seen earlier in the film |
@@ -108,8 +109,8 @@ Write it as `bold -> 650 weight, "Tomorrow" at 420 px and the claim at 280 px, c
 ## 7. Centred, one line at a time
 
 - By default a line sits at the frame's centre: x 960, its optical centre at y 520-540 (a hair above the middle).
-- It is the only line on screen. Behind it: a flat ground, a calm area of a photograph or of the product's surface, or
-  a plate over a busy picture; its contrast against what is behind it is 7:1 or more. A statement alone on an empty
+- It is the only line on screen. Behind it: a flat ground, a calm area of the product's surface or of a
+  picture the film needs (never a plate laid over a photograph); its contrast against what is behind it is 7:1 or more. A statement alone on an empty
   ground is for a line that must land (the claim at the end), never the turn and not the default beat: most lines sit over their picture or
   beside their object. A brand accent that cannot reach that against the neutrals (a mid blue, an orange) never carries a statement as
   its ground or its colour: use it for shapes, the accent word's underline or glow, and a lighter tint of it for text on
@@ -127,12 +128,13 @@ Write it as `bold -> 650 weight, "Tomorrow" at 420 px and the claim at 280 px, c
 
 ### Over a busy photograph
 
-A statement over a busy picture (a room, a crowd, a street) sits on one of two things, never on the busy part:
-- **a solid plate:** a flat panel of the ground colour or white behind the line (radius from the UI's family, padding
-  0.4 of the size top and bottom, 0.6 at the sides), opaque, or
+A statement never sits on the busy part of a picture, and never on a white or coloured plate laid over it (a plate over a
+photograph reads as sloppy). Two answers:
 - **a clean band of the picture:** frame or crop the photograph so the line lands on a calm area (a wall, the sky, a
-  table top) that is calm under every letter for the line's whole time on screen.
-Either way the line reaches 7:1 against what is directly behind it. Never dim, darken, blur or tint the whole picture
+  table top) that is calm under every letter for the line's whole time on screen, or
+- **move the line to the ground:** the picture leaves or shrinks into the frame and the statement takes the clean
+  ground; or drop the picture (a film needs no photograph that is not the product's or the user's own).
+The line reaches 7:1 against what is directly behind it. Never dim, darken, blur or tint the whole picture
 to make room for words: the picture is the world, and a dimmed world reads as a slide.
 
 ## 8. Few words, built
@@ -273,7 +275,8 @@ const voice = { fontFamily: fonts.inter, color: INK };
   digit clipped mid-roll.
 - A turn or a claim told by a headline alone on an empty frame, or by the text inside one card swapped while the card
   stays ([turns are shown](film-grammar.md#story)).
-- A statement over a busy photograph with no plate or clean band, or the whole picture dimmed or blurred behind it.
+- A statement over a busy photograph with no clean band, on a plate over the picture, or the whole picture dimmed or
+  blurred behind it.
 - The same treatment in every film: one flat accent word, the born tint on every statement.
 - Gradient fills on every headline, decorative glows (anything beyond the accent word's own soft light), outlines, drop
   shadows, letters bouncing one by one.
