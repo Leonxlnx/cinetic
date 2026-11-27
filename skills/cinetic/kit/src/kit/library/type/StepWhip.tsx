@@ -76,7 +76,7 @@ export const StepWhip: React.FC<{
         // the slot: the word's own box (a little wider for overhanging glyphs), cropping the letters while they step in
         return (
           <div key={i} style={{ position: 'absolute', left: L.words[i].x + b - pad, top: 0, width: ww + pad * 2, height: L.height, overflow: 'hidden' }}>
-            <span style={{ ...style, position: 'absolute', left: pad + share * ww, top: 0, whiteSpace: 'pre', color, filter: smear ? `url(#${id})` : undefined }}>
+            <span style={{ ...style, position: 'absolute', transform: `translate(${pad + share * ww}px, ${0}px)`, left: 0, top: 0, whiteSpace: 'pre', color, filter: smear ? `url(#${id})` : undefined }}>
               {w}
             </span>
           </div>

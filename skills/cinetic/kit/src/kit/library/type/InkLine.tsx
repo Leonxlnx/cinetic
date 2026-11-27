@@ -1,8 +1,8 @@
 // InkLine (type, enter / build): a centred line built word by word; each word cuts on in a tint (grey, an accent, a
 // path of hues or warm light) and inks a few frames later while the whole line re-centres, most of the travel on the
-// frame the word lands.
-// Numbers: 55 % of the re-centre on the arrival frame, the rest an exponential glide (time constant 2.6 f, done in
-// about 10 f); grey to ink in 4 f; a hue path steps one colour a frame (ink in 9 f); warm light sweeps the word right
+// frame the word lands, smoothly: the line starts from rest and glides.
+// Numbers: the re-centre is a critically damped glide from rest (time constant 2 f: 9 % on the arrival frame, half by
+// frame 3, 95 % by frame 9, an exponential tail; `lead` adds a share on the arrival frame for a harder beat); grey to ink in 4 f; a hue path steps one colour a frame (ink in 9 f); warm light sweeps the word right
 // to left in 6 f (sine in-out); the new word lands with 40 % of its space, which opens on the same glide (or
 // lands wide and closes).
 // Caution: one word every 6-12 f; faster than 4 f the tint never shows. Pass `fit` when the line could outgrow the
@@ -44,7 +44,12 @@ export const inkLineLayout = (f: number, L: TextLayout, T: number[], o: InkLineM
     const d = ff - t;
     if (d < -o.anticipate) return 1;
     if (d < 0) return 1 - (o.lead * (d + o.anticipate + 1)) / (o.anticipate + 1);
-    return (1 - o.lead) * Math.exp(-d / o.tau);
+    // the glide leaves at the speed the lead-in had (from rest when there is no lead: critically damped, no jerk) and
+    // lands on a long exponential tail
+    const x = d / Math.max(0.1, o.tau);
+    const v0 = o.lead / (o.anticipate + 1);
+    const c = clamp(1 - (v0 * o.tau) / Math.max(0.01, 1 - o.lead));
+    return (1 - o.lead) * (1 + c * x) * Math.exp(-x);
   };
   const starts: Array<readonly [number, number]> = [];
   const chain = (ff: number, upto: number): readonly [number, number] => {
@@ -82,8 +87,8 @@ export const inkLineLayout = (f: number, L: TextLayout, T: number[], o: InkLineM
  * InkLine: the voice-over line. Words join a centred line one at a time; each lands in `tint` and becomes the ink:
  * a single colour blends to the ink over `settle` frames (a grey, the accent), an array of colours is walked one a
  * frame (a hue path), and 'heat' prints the word in warm light that sweeps from right to left. `inkOn="next"` holds the
- * tint until the next word lands. The line re-centres on every arrival with `lead` of the move on the arrival frame
- * and a glide after it; `anticipate` starts the slide a few frames early (the line makes room before the word comes).
+ * tint until the next word lands. The line re-centres on every arrival, gliding from rest (`lead`: a share on the
+ * arrival frame); `anticipate` starts the slide a few frames early (the line makes room before the word comes).
  * `space` sets how the new word's space behaves: 'open' (lands at 40 % of its space, opens), 'close' (lands wide, closes) or
  * 'still'. `fit`: when the whole line would pass that share of the frame's width, it is set smaller from its first word
  * (one size for the whole build, never a size jump per word); a line that fits is left at `size`.
@@ -109,9 +114,9 @@ export const InkLine: React.FC<{
   /** 'cut' (default), 'smear' (slides in from the right on one smeared frame), 'blur' (sharpens over 5 f), 'rise'. */
   enter?: 'cut' | 'smear' | 'blur' | 'rise';
   space?: 'open' | 'close' | 'still';
-  /** Share of each re-centre done on the arrival frame (default 0.55). */
+  /** Share of each re-centre done on the arrival frame (default 0: the line glides from rest; 0.3 or more reads as a jump). */
   lead?: number;
-  /** Time constant of the glide after it, in frames (default 2.6). */
+  /** Time constant of the glide after it, in frames (default 2: half-way by frame 3, settled by frame 10). */
   tau?: number;
   /** Frames the re-centre starts before the word lands (default 0). */
   anticipate?: number;
@@ -138,8 +143,8 @@ export const InkLine: React.FC<{
   inkOn = 'age',
   enter = 'cut',
   space = 'open',
-  lead = 0.55,
-  tau = 2.6,
+  lead = 0,
+  tau = 2,
   anticipate = 0,
   fit = 0,
   leaveAt,
@@ -179,7 +184,8 @@ export const InkLine: React.FC<{
     const xx = xs[i];
     if (i < shown) {
       const age = frame - T[i];
-      const base: React.CSSProperties = { ...style, position: 'absolute', left: xx, top: 0, whiteSpace: 'pre', color: colourOf(i) };
+      // placed by transform: a left that changes every frame snaps to whole pixels and steps
+      const base: React.CSSProperties = { ...style, position: 'absolute', left: 0, top: 0, transform: `translateX(${xx}px)`, whiteSpace: 'pre', color: colourOf(i) };
       if (tint === 'heat' && age < 12) {
         // the word printed in warm light: a gradient clipped to the glyphs, its dark end sweeping in from the right
         const q = clamp(age / 6);
@@ -198,12 +204,12 @@ export const InkLine: React.FC<{
       if (enter === 'smear' && age < 2) {
         // the arrival frame: the word slides in from the right, drawn as a horizontal smear of copies
         const d = (age === 0 ? 0.6 : 0.14) * size;
-        for (let g = 0; g < 6; g++) out.push(<span key={`${i}-${g}`} style={{ ...base, left: xx + (d * g) / 5, opacity: 0.3 }}>{words[i]}</span>);
+        for (let g = 0; g < 6; g++) out.push(<span key={`${i}-${g}`} style={{ ...base, transform: `translateX(${xx + (d * g) / 5}px)`, opacity: 0.3 }}>{words[i]}</span>);
       } else if (enter === 'blur' && age < 5) {
         out.push(<span key={i} style={{ ...base, filter: `blur(${(1 - age / 5) * 0.1 * size}px)` }}>{words[i]}</span>);
       } else if (enter === 'rise' && age < 6) {
         const q = 1 - Math.pow(1 - clamp((age + 1) / 6), 3);
-        out.push(<span key={i} style={{ ...base, transform: `translateY(${(1 - q) * 0.2}em)` }}>{words[i]}</span>);
+        out.push(<span key={i} style={{ ...base, transform: `translateX(${xx}px) translateY(${(1 - q) * 0.2}em)` }}>{words[i]}</span>);
       } else out.push(<span key={i} style={base}>{words[i]}</span>);
     }
   }

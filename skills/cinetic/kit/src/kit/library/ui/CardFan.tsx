@@ -49,7 +49,7 @@ const CardFanInner: React.FC<{
   const exitY = -up * 900;
   const smear = up * 22;
   return (
-    <div style={{ position: 'absolute', left: x - w / 2 + glide, top: y - h / 2 + exitY, width: w, height: h, perspective: 1800 }}>
+    <div style={{ position: 'absolute', transform: `translate(${x - w / 2 + glide}px, ${y - h / 2 + exitY}px)`, left: 0, top: 0, width: w, height: h, perspective: 1800 }}>
       <div style={{ position: 'absolute', inset: 0, transform: `rotate(${-tilt * 1.5}deg) scale(${land})`, filter: landBlur + smear > 0.1 ? `blur(${landBlur + smear * 0.4}px)` : undefined }}>
         {cards
           .map((c, i) => {

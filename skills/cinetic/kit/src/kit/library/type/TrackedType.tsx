@@ -114,7 +114,7 @@ export const TrackedType: React.FC<{
         const bh = q.g.height * 0.78;
         const slices = isGlitch ? [0, 1, 2].map((s) => (hash(s + n * 3, frame) - 0.5) * size * 0.16) : null;
         return (
-          <div key={q.i} style={{ position: 'absolute', left: q.lx, top: q.ly, transform: `translate(-50%, -50%) rotate(${q.ang}deg) scale(${q.sc})` }}>
+          <div key={q.i} style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${q.lx}px, ${q.ly}px) translate(-50%, -50%) rotate(${q.ang}deg) scale(${q.sc})` }}>
             <div style={{ position: 'relative', width: q.g.width, height: q.g.height }}>
               {(slices ?? [0]).map((off, s) => (
                 <span

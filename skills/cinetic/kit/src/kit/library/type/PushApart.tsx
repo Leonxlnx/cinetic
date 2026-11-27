@@ -73,7 +73,7 @@ export const PushApart: React.FC<{
     blur = 9;
   }
   const word = (txt: string, L0: typeof LL, left0: number, sign: number, off: number) => (
-    <span style={{ ...style, position: 'absolute', left: cx + (left0 - cx) * zoom + sign * off, top: cy - (L0.height * zoom) / 2, transformOrigin: '0 0', transform: `scale(${zoom})`, color, whiteSpace: 'pre', filter: blur ? `blur(${blur}px)` : undefined }}>
+    <span style={{ ...style, position: 'absolute', left: 0, top: 0, transformOrigin: '0 0', transform: `translate(${cx + (left0 - cx) * zoom + sign * off}px, ${cy - (L0.height * zoom) / 2}px) scale(${zoom})`, color, whiteSpace: 'pre', filter: blur ? `blur(${blur}px)` : undefined }}>
       {txt}
     </span>
   );
@@ -82,7 +82,7 @@ export const PushApart: React.FC<{
       {word(left, LL, lx, -1, offL)}
       {word(right, LR, lx + LL.width + space, 1, offR)}
       {objPx > 1 && (
-        <div style={{ position: 'absolute', left: objX - objPx / 2, top: cy - objPx / 2, width: objPx, height: objPx }}>
+        <div style={{ position: 'absolute', transform: `translate(${objX - objPx / 2}px, ${cy - objPx / 2}px)`, left: 0, top: 0, width: objPx, height: objPx }}>
           <div style={{ width: objSize, height: objSize, transformOrigin: '0 0', transform: `scale(${objPx / objSize})` }}>{node}</div>
         </div>
       )}

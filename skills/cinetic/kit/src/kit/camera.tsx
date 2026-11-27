@@ -112,10 +112,11 @@ export const At: React.FC<{
   <div
     style={{
       position: 'absolute',
-      left: x,
-      top: y,
+      left: 0,
+      top: 0,
       transformStyle: 'preserve-3d',
-      transform: `${anchor === 'center' ? 'translate(-50%, -50%) ' : ''}translateZ(${z}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${scale})`,
+      // the point as a transform, never left/top: layout px snap to whole pixels, so a slow move would step
+      transform: `translate(${x}px, ${y}px) ${anchor === 'center' ? 'translate(-50%, -50%) ' : ''}translateZ(${z}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${scale})`,
       ...style,
     }}
   >

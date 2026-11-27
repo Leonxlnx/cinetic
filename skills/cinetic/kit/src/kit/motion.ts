@@ -11,6 +11,15 @@ export type Ease = (t: number) => number;
 
 const bz = (a: number, b: number, c: number, d: number): Ease => Easing.bezier(a, b, c, d);
 
+/**
+ * A true exponential arrival with rate `k`, scaled to end exactly on 1: every frame covers the same share of the distance
+ * still to go, so the move slows forever and never stops dead. k 6: the last tenth of the distance takes the last ~62 %
+ * of the time; k 8 is sharper, k 4 softer. The speed keeps e^(-k/dur) a frame: aim for 0.84-0.9 (k 6 over 36-60 f, k 4
+ * over 24-30 f); shorter reads as an angular landing. `expo(6)` is `ease.expoOut`.
+ */
+export const expo = (k = 6): Ease => (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : (1 - Math.exp(-k * t)) / (1 - Math.exp(-k)));
+const expoOut = expo(6);
+
 /** The house curves. Names say the feel; numbers are cubic-beziers you can paste into CSS or After Effects. */
 export const ease = {
   /** Expo out: the default arrival. Half-way at ~10 % of the time. cubic-bezier(0.16, 1, 0.3, 1). */
@@ -29,10 +38,136 @@ export const ease = {
   back: bz(0.34, 1.36, 0.64, 1),
   /** Only for colour fades, real rates and clocks. Never for a position, scale, rotation or blur. */
   linear: (t: number) => t,
+  /**
+   * True exponential out (k 6, see `expo`): a constant share of the remaining distance a frame, a long tail, no dead
+   * stop. The arrival for anything that enters already moving (from off frame, out of a cut, under blur).
+   */
+  expoOut: expoOut,
+  /** True exponential in: the mirror of expoOut. Starts from rest with a slow first stretch, ends at full speed. Exits. */
+  expoIn: (t: number) => 1 - expoOut(1 - t),
+  /** True exponential in-out: from rest to rest, both halves exponential. A move inside a shot from A to B. */
+  expoInOut: (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t < 0.5 ? (1 - expoOut(1 - 2 * t)) / 2 : 0.5 + expoOut(2 * t - 1) / 2),
 } as const;
 
 /** Exponential zoom progress: equal visual speed at every scale (log space). Use for every zoom over ~1.5x. */
 export const logScale = (from: number, to: number, p: number) => from * Math.pow(to / from, p);
+
+/**
+ * Log-space mix for anything multiplicative (scale, zoom, a size seen at a distance): `logMix(p, 1, 4)` grows by the same
+ * ratio every frame at constant p speed, so a zoom reads as one even speed instead of rushing at the start and crawling
+ * at the end. Values must be above 0 (a 0 is taken as 0.001).
+ */
+export const logMix = (p: number, from: number, to: number) => {
+  const a = Math.max(1e-3, from);
+  const b = Math.max(1e-3, to);
+  return a * Math.pow(b / a, p);
+};
+
+/**
+ * Exponential approach: progress 0..1 that covers half the remaining distance every `halfLife` frames from `start`.
+ * It begins at full speed (for an arrival that is already moving) and never quite stops: after 4 half-lives it is at
+ * 94 %, after 7 at 99 %. Half-life 3-4 f for small UI, 4-7 f for a card or a word (the speed then keeps 84-90 % a frame,
+ * the soft tail of well-made motion), 8-14 f for the camera.
+ */
+export const approach = (frame: number, start: number, halfLife = 6) =>
+  frame <= start ? 0 : 1 - Math.pow(0.5, (frame - start) / Math.max(0.001, halfLife));
+
+// (1 + x) e^-x = 0.5 at x = 1.6783: the critically damped curve's half-way point in units of 1/omega
+const CRIT_HALF = 1.6783469900166608;
+
+/**
+ * Critically damped settle from rest: progress 0..1 from `start`, half-way after `halfLife` frames, no overshoot,
+ * starts with zero speed and eases out on an exponential tail. The move from rest: a card that slides over, a camera
+ * that reframes. 99 % at about 4 half-lives.
+ */
+export const settle = (frame: number, start: number, halfLife = 8) => {
+  if (frame <= start) return 0;
+  const x = ((frame - start) * CRIT_HALF) / Math.max(0.001, halfLife);
+  return 1 - (1 + x) * Math.exp(-x);
+};
+
+/**
+ * A value that follows targets set on frames, `[[frame, value], ...]` (the first is where it starts): each change of
+ * target is a critically damped settle, added on top of the ones before, so a new target taken mid-move bends the path
+ * with no jump in speed. A cursor, a camera that keeps re-aiming, a counter's bar.
+ */
+export const follow = (frame: number, targets: ReadonlyArray<readonly [number, number]>, halfLife = 8) => {
+  if (!targets.length) return 0;
+  let v = targets[0][1];
+  for (let i = 1; i < targets.length; i++) v += (targets[i][1] - targets[i - 1][1]) * settle(frame, targets[i][0], halfLife);
+  return v;
+};
+
+/**
+ * Keyframes joined into one move: `chain(frame, [[0, 0], [20, 300], [50, 360]])`. Where one move hands to the next the
+ * speed carries through (no corner, no stop on a key); the chain starts and ends at rest. Monotone (never overshoots
+ * a key). Use instead of `keys` when the keys are one gesture, not separate moves.
+ */
+export const chain = (frame: number, kf: ReadonlyArray<readonly [number, number]>) => {
+  const n = kf.length;
+  if (!n) return 0;
+  if (frame <= kf[0][0]) return kf[0][1];
+  if (frame >= kf[n - 1][0]) return kf[n - 1][1];
+  // slopes of each segment, then a tangent at each key (Fritsch-Carlson: monotone, 0 at the ends and at a turn)
+  const d = kf.slice(0, -1).map(([f0, v0], i) => (kf[i + 1][1] - v0) / Math.max(1e-6, kf[i + 1][0] - f0));
+  const m = kf.map((_, i) => {
+    if (i === 0 || i === n - 1) return 0;
+    const a = d[i - 1];
+    const b = d[i];
+    if (a * b <= 0) return 0;
+    const ha = kf[i][0] - kf[i - 1][0];
+    const hb = kf[i + 1][0] - kf[i][0];
+    // weighted harmonic mean: stays inside both slopes, so the curve never overshoots a key
+    return (3 * (ha + hb)) / ((2 * hb + ha) / a + (hb + 2 * ha) / b);
+  });
+  let i = 0;
+  while (i < n - 2 && frame > kf[i + 1][0]) i++;
+  const [f0, v0] = kf[i];
+  const [f1, v1] = kf[i + 1];
+  const h = Math.max(1e-6, f1 - f0);
+  const t = (frame - f0) / h;
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return (2 * t3 - 3 * t2 + 1) * v0 + (t3 - 2 * t2 + t) * h * m[i] + (-2 * t3 + 3 * t2) * v1 + (t3 - t2) * h * m[i + 1];
+};
+
+/** Options of `live`: every amplitude may be 0. */
+export type LiveOptions = {
+  /** Frames a second (default 30). */
+  fps?: number;
+  /** Drift: px of slow wander on x and y (default 5). */
+  drift?: number;
+  /** Push: growth of scale a second, in log space (default 0.006 = 0.6 % a second; negative pulls back). */
+  push?: number;
+  /** Breath: a slow scale swell, as a share (default 0: off; 0.004 is a calm breath). */
+  breath?: number;
+  /** Degrees of slow roll (default 0.12). */
+  roll?: number;
+  /** Frame the hold starts (the push counts from here; default 0). */
+  start?: number;
+  /** Seed: two pieces with different seeds never drift in step. */
+  seed?: number;
+};
+
+/**
+ * The idle for a hold: a slow drift, a push and an optional breath, so no held frame is ever dead still. Smooth at every
+ * frame (sums of slow sines, periods of 5-11 s), sub-pixel by design. Put the transform on the held thing or its group:
+ * `<div style={{ transform: live(frame).transform }}>`. Typical well-made holds keep moving at 0.3-1 % of the frame a
+ * second; the defaults sit there.
+ */
+export const live = (frame: number, o: LiveOptions = {}) => {
+  const { fps = 30, drift = 5, push = 0.006, breath = 0, roll = 0.12, start = 0, seed = 1 } = o;
+  const s = frame / fps;
+  const ph = rand(seed) * Math.PI * 2;
+  const ph2 = rand(seed + 7) * Math.PI * 2;
+  const w = (period: number, p: number) => Math.sin((2 * Math.PI * s) / period + p);
+  const x = drift * (0.7 * w(9.3, ph) + 0.3 * w(5.1, ph2));
+  const y = drift * 0.6 * (0.7 * w(10.7, ph2) + 0.3 * w(6.3, ph));
+  const held = Math.max(0, (frame - start) / fps);
+  const scale = Math.exp(push * held) * (1 + breath * w(7.7, ph));
+  const rotate = roll * w(11.3, ph + 1);
+  return { x, y, scale, rotate, transform: `translate3d(${x}px, ${y}px, 0) scale(${scale}) rotate(${rotate}deg)` };
+};
 
 /** Springs, by weight. Pass to `springAt` or Remotion's `spring({config})`. */
 export const springs = {

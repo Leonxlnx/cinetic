@@ -686,10 +686,11 @@ export const DepthStack: React.FC<{
             key={i}
             style={{
               position: 'absolute',
-              left: x,
-              top: y - lerp(lift, slot) + mix(a, rise, 0),
+              left: 0,
+              top: 0,
               zIndex: 1000 - Math.round(slot * 10),
-              transform: `translate(-50%, -50%) scale(${lerp(scale, slot) * mix(a, 0.95, 1)})`,
+              // placed by transform: an animated left/top snaps to whole pixels and steps
+              transform: `translate(${x}px, ${y - lerp(lift, slot) + mix(a, rise, 0)}px) translate(-50%, -50%) scale(${lerp(scale, slot) * mix(a, 0.95, 1)})`,
               // sharp: only the arrival's own short blur, never a blurred or dimmed older item
               filter: sharp ? (a < 1 ? `blur(${mix(a, 6, 0)}px)` : undefined) : `blur(${lerp(blur, slot) + mix(a, 6, 0)}px) brightness(${lerp(dim, slot)})`,
               opacity: mix(a, 0.6, 1) * Math.min(1, n - 0.5 - slot),

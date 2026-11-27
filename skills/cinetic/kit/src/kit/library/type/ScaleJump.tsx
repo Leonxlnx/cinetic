@@ -53,7 +53,7 @@ export const ScaleJump: React.FC<{
     // as measured: it starts low, cropped by the bottom edge, and rises as it grows
     const dy = giant ? mix(p, size * big * 0.38, size * big * 0.15) : 0;
     return (
-      <div style={{ position: 'absolute', left: cx, top: cy + dy, transform: `translate(-50%, -50%) scale(${s})`, ...style, color, whiteSpace: 'pre' }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${cx}px, ${cy + dy}px) translate(-50%, -50%) scale(${s})`, ...style, color, whiteSpace: 'pre' }}>
         {words[0]}
       </div>
     );
@@ -65,7 +65,7 @@ export const ScaleJump: React.FC<{
     <div style={{ position: 'absolute', inset: 0 }}>
       {words.map((wd, i) =>
         frame >= T[i] ? (
-          <span key={i} style={{ ...style, position: 'absolute', left: left + L.words[i].x - w0, top: cy - L.height / 2, color, whiteSpace: 'pre' }}>
+          <span key={i} style={{ ...style, position: 'absolute', transform: `translate(${left + L.words[i].x - w0}px, ${cy - L.height / 2}px)`, left: 0, top: 0, color, whiteSpace: 'pre' }}>
             {wd}
           </span>
         ) : null,

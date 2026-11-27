@@ -69,7 +69,7 @@ export const DiagonalStream: React.FC<{
       const crop = cropOf(Math.abs(k + lap * 7), seed);
       cards.push(
         <PicTile key={k} src={pics[(((k + lap) % pics.length) + pics.length) % pics.length]} w={s} h={s} r={s * 0.12} tone={tone} filterId={id} pos={crop.pos} zoom={crop.zoom}
-          style={{ left: px - s / 2, top: py - s / 2, transform: `rotate(${(rnd(seed, k, 9) - 0.5) * 8}deg)`, filter: blur > 0.3 ? `blur(${blur.toFixed(1)}px)` : undefined, opacity: op, zIndex: bi * 1000 + j }} />,
+          style={{ left: 0, top: 0, transform: `translate(${px - s / 2}px, ${py - s / 2}px) rotate(${(rnd(seed, k, 9) - 0.5) * 8}deg)`, filter: blur > 0.3 ? `blur(${blur.toFixed(1)}px)` : undefined, opacity: op, zIndex: bi * 1000 + j }} />,
       );
     }
   });

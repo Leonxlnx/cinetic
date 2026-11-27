@@ -62,7 +62,7 @@ export const PartStack: React.FC<{
   return (
     <>
       {words.map((w, i) => (
-        <span key={i} style={{ ...style, position: 'absolute', left: left + L.words[i].x + (i <= after ? -open * 0.45 : open * 0.55), top, whiteSpace: 'pre', color }}>
+        <span key={i} style={{ ...style, position: 'absolute', transform: `translateX(${left + L.words[i].x + (i <= after ? -open * 0.45 : open * 0.55)}px)`, left: 0, top, whiteSpace: 'pre', color }}>
           {w}
         </span>
       ))}

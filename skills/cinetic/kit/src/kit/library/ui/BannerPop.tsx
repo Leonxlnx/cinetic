@@ -66,10 +66,10 @@ const BannerPopInner: React.FC<{
     <div style={{ position: 'absolute', left: left0 + lx, top: top0 + ly, width: cw, height: h, filter: blur > 0.05 ? `blur(${blur}px)` : undefined }}>
       <div style={{ ...surfaceStyle(L, 4, h / 2), position: 'absolute', inset: 0, overflow: 'hidden' }}>
         {sh > 0 && sh < 1 && (
-          <div style={{ position: 'absolute', top: 0, bottom: 0, left: mix(sh, -260, cw + 60), width: 220, background: `linear-gradient(100deg, transparent, rgba(255,255,255,${L.dark ? 0.1 : 0.5}), transparent)` }} />
+          <div style={{ position: 'absolute', top: 0, bottom: 0, transform: `translateX(${mix(sh, -260, cw + 60)}px)`, left: 0, width: 220, background: `linear-gradient(100deg, transparent, rgba(255,255,255,${L.dark ? 0.1 : 0.5}), transparent)` }} />
         )}
       </div>
-      <div style={{ position: 'absolute', left: pad - (1 - clamp(t / 4)) * 10, top: pad }}>
+      <div style={{ position: 'absolute', transform: `translate(${pad - (1 - clamp(t / 4)) * 10}px, ${pad}px)`, left: 0, top: 0 }}>
         <MarkSlot mark={n.mark} icon={n.icon} letter={n.letter} colors={n.colors} size={g} />
         <div style={{ position: 'absolute', right: -size * 0.22, top: -size * 0.22, width: size * 0.72, height: size * 0.72, borderRadius: size, background: badge, border: `${size * 0.1}px solid ${L.surface}`, transform: `scale(${bp})` }} />
       </div>

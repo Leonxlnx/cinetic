@@ -88,7 +88,7 @@ const HubPillInner: React.FC<{
         const sc = mix(pop, 0.6, 1) * mix(fly, 1, 1.35);
         if (fly >= 1) return null;
         return (
-          <div key={i} style={{ position: 'absolute', left: x + fx - tileS / 2, top: y + fy - tileS / 2, width: tileS, height: tileS, transform: `scale(${sc})`, opacity: clamp(pop * 1.6), filter: fly > 0.6 ? `blur(${(fly - 0.6) * 14}px)` : undefined }}>
+          <div key={i} style={{ position: 'absolute', left: 0, top: 0, width: tileS, height: tileS, transform: `translate(${x + fx - tileS / 2}px, ${y + fy - tileS / 2}px) scale(${sc})`, opacity: clamp(pop * 1.6), filter: fly > 0.6 ? `blur(${(fly - 0.6) * 14}px)` : undefined }}>
             <div style={{ position: 'absolute', inset: 0, borderRadius: tileS * 0.22, background: L.surface, border: `${Math.max(1.5, tileS * 0.017)}px solid ${L.dark ? 'rgba(255,255,255,0.14)' : '#DADADA'}`, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: L.dark ? '0 6px 18px rgba(0,0,0,0.35)' : '0 1px 1px rgba(17,19,24,0.04), 0 6px 16px rgba(17,19,24,0.05)' }}>
               {t.mark ?? <Icon name={t.icon ?? 'Box'} size={tileS * 0.48} color={t.dot} stroke={2.1} />}
             </div>

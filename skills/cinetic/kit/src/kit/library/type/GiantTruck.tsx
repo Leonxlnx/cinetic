@@ -51,7 +51,7 @@ export const GiantTruck: React.FC<{
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
       <WideSmear id={id} x={smear} />
-      <div style={{ ...style, position: 'absolute', left: start * width - t, top: (y ?? height / 2) - L.height / 2, whiteSpace: 'pre', color, filter: smear > 0.5 ? `url(#${id})` : undefined }}>{text}</div>
+      <div style={{ ...style, position: 'absolute', transform: `translate(${start * width - t}px, ${(y ?? height / 2) - L.height / 2}px)`, left: 0, top: 0, whiteSpace: 'pre', color, filter: smear > 0.5 ? `url(#${id})` : undefined }}>{text}</div>
     </div>
   );
 };

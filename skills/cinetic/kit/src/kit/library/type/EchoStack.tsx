@@ -51,7 +51,7 @@ export const EchoStack: React.FC<{
   const band = size * 0.86;
   const zoom = zoomAt === undefined ? 0 : frame - zoomAt;
   const copy = (dx: number, dy: number, key: string, tone = 1, slab = true) => (
-    <div key={key} style={{ position: 'absolute', left: cx - W / 2 + dx, top: cy - L.height / 2 + dy, width: W, height: L.height }}>
+    <div key={key} style={{ position: 'absolute', transform: `translate(${cx - W / 2 + dx}px, ${cy - L.height / 2 + dy}px)`, left: 0, top: 0, width: W, height: L.height }}>
       {slab && <div style={{ position: 'absolute', left: -size * 0.02, right: -size * 0.02, top: capTop, height: band, background: ground }} />}
       <span style={{ ...style, position: 'absolute', left: 0, top: 0, whiteSpace: 'pre', color, opacity: tone }}>{text}</span>
     </div>

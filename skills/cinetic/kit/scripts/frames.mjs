@@ -27,6 +27,8 @@
 //        --format loop: no sound, ending or music lines; fails when the last frame does not match the first.
 //        --format sting: no pace gate on a film under 8 s; the ending may hold. Default launch.
 //        Every frame is also scanned for brief flat-black unpainted patches; those produce FIX lines.
+//        Every frame's motion is summed up (pops, dead stops, hard starts, stepping, tail; as information) and dead
+//        holds fail: a stretch of more than 15 still frames before the last 1.5 s, or over 15 % of frames fully still.
 //   node scripts/frames.mjs motion <file.mp4> [--range a-b] [--out <image.png>] [--cuts f1,f2,...] [--json]
 //        every frame: cuts, pops, dead stops, hard starts, stepping, stillness and settling tails.
 //        Zero-based inclusive frame numbers, native timestamps and fps; no project needed. --cuts declares joins.
@@ -919,15 +921,27 @@ async function checkFilm(file, lockupS, format = 'launch', silentOk = false, loc
   // a sting under 8 s builds and then holds the mark: no pace gate
   const noPace = sting && dur < 8;
   const fails = [];
-  const painted = unpaintedRegions(await motionFrames(file));
+  const mdata = await motionFrames(file);
+  const painted = unpaintedRegions(mdata);
   console.log(`  unpainted  ${painted.length} transient black regions (every frame)`);
+  // every frame's motion (frames.mjs motion): information lines, and one gate on dead stillness. Well-made films hold
+  // fully still on about 7 % of their frames, in stretches of at most about half a second; ours failed at 20-28 %.
+  const mrep = measureMotion(mdata, []);
+  const mstill = mrep.stillness;
+  console.log(`  motion     ${mrep.pops.length} pops, ${mrep.deadStops.length} dead stops, ${mrep.hardStarts.length} hard starts, ${mrep.stepping.length} stepping, median tail ${mrep.medianTail === null ? 'n/a' : `${mrep.medianTail.toFixed(1)} f`} (good motion: tail about 9-10 f, no stepping; pops and stops are frames to look at: frames.mjs motion draws them)`);
+  console.log(`  stillness  ${(mstill.share * 100).toFixed(1)} % of frames fully still before the last 1.5 s (good motion: about 7 %); longest ${mstill.longest ? `${mstill.longest.frames} f at ${motionWhere(mstill.longest)}` : 'none over 8 f'}`);
+  const deadHolds = mstill.stretches.filter((e) => e.frames > Number(process.env.CINETIC_CHECK_STILL_RUN || 15));
+  const stillLimit = Number(process.env.CINETIC_CHECK_STILL_SHARE || 0.15);
+  if (!noPace && (deadHolds.length || mstill.share > stillLimit))
+    fails.push(`dead holds: ${deadHolds.length ? `nothing moves for ${deadHolds.map((e) => `${e.frames} f at ${e.from}`).join(', ')}` : ''}${deadHolds.length && mstill.share > stillLimit ? '; ' : ''}${mstill.share > stillLimit ? `${(mstill.share * 100).toFixed(0)} % of frames fully still (well-made films about 7 %)` : ''}: every hold keeps a slow idle (live, a camera drift) and a scene hands its motion to the next; only the ending may freeze`);
+  else if (!noPace && mstill.stretches.length) console.log(`  LOOK       still stretches of 9-15 f at ${mstill.stretches.map((e) => e.from).join(', ')}: give each hold an idle (live)`);
   for (const p of painted) fails.push(`unpainted: ${motionWhere(p)}, ${p.position}, flat-black patches in cells covering ${(p.share * 100).toFixed(1)} % of the frame${p.blackFrames.length < p.to - p.from + 1 ? ` (intermittent: ${p.blackFrames.join(', ')})` : ''}`);
   // coverage is no gate: it rises with clutter, and it did not tell a calm film from a crowded one
-  if (share(crowded) > CROWD) fails.push(`crowded: sharp detail covers 35 %+ of the frame in ${pc(share(crowded))} of the samples (36 of 40 references stay under ${pc(CROWD)}) [at ${fmt(crowded)} s]: the eye has nowhere to land: keep one focal subject in each frame and set the rest behind it by scale or depth, or give it its own beat; over a photograph or footage, lay a scrim or a dim under the card, never a blur on the picture (the payoff picture stays sharp)`);
+  if (share(crowded) > CROWD) fails.push(`crowded: sharp detail covers 35 %+ of the frame in ${pc(share(crowded))} of the samples (36 of 40 references stay under ${pc(CROWD)}) [at ${fmt(crowded)} s]: the eye has nowhere to land: keep one focal subject in each frame and set the rest behind it by scale or depth, or give it its own beat; show one component, larger, in steps; over a photograph or footage, move the text to the ground or drop the picture, never a blur, dim or card on it`);
   // holds that are read (a statement, a result) are fine; past a quarter the frames are named, past 40 % it fails
   const stillShare = slow.length / Math.max(1, pace.length);
-  if (!noPace && stillShare > Number(process.env.CINETIC_CHECK_STILL || 0.4)) fails.push('pace: more than 40 % of the half-seconds hold still. A hold that is read (a statement, a result) is fine; a hold with nothing to read is not: between holds something visible changes every half second (a word, a block, a crop, a value)');
-  else if (!noPace && stillShare > Number(process.env.CINETIC_CHECK_STILL_LOOK || 0.25)) console.log(`  LOOK       ${pc(stillShare)} of the half-seconds hold still [from ${fmt(slow)} s]: each hold must have something to read (a statement, a result held until read), never a wait`);
+  // the dead-hold gate above replaces the old 40 % gate on still half-seconds; the share stays as a LOOK line
+  if (!noPace && stillShare > Number(process.env.CINETIC_CHECK_STILL_LOOK || 0.25)) console.log(`  LOOK       ${pc(stillShare)} of the half-seconds hold still [from ${fmt(slow)} s]: each hold must have something to read (a statement, a result held until read), never a wait`);
   // limits set generously (2.5 s still, 3.5 s sparse): this catches a true freeze or a long stretch of small things, not a slow
   // creep over a finished state (pixels still change there): judge that by eye with the rubric
   if (!noPace && stillRun.s > 2.5) fails.push(`a ${stillRun.s.toFixed(1)} s stretch from ${stillRun.at.toFixed(1)} s where almost nothing changes`);

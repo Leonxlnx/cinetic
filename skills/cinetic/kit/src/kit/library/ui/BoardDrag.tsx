@@ -154,7 +154,7 @@ const BoardDragInner: React.FC<{
       let dy = 0;
       if (c === fc && i > fi) dy -= pitch * closeGap;
       if (c === tc && i >= ti) dy += pitch * openGap;
-      nodes.push(card(cd, { left: cx0, top: cardsTop + i * pitch + dy }, 1));
+      nodes.push(card(cd, { left: 0, top: 0, transform: `translate(${cx0}px, ${cardsTop + i * pitch + dy}px)` }, 1));
     });
     if (c === tc) {
       const ph = openGap * (1 - settle);

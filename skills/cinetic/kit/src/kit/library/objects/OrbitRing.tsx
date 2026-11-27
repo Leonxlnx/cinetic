@@ -44,9 +44,10 @@ export const OrbitRing: React.FC<{
           key={i}
           style={{
             position: 'absolute',
-            left: cx + Math.cos(a) * rx * W,
-            top: cy + Math.sin(a) * ry * H,
-            transform: `translate(-50%, -50%) scale(${s.toFixed(4)})`,
+            left: 0,
+            top: 0,
+            // placed by transform: an orbit in left/top steps in whole pixels
+            transform: `translate(${cx + Math.cos(a) * rx * W}px, ${cy + Math.sin(a) * ry * H}px) translate(-50%, -50%) scale(${s.toFixed(4)})`,
             filter: depth < 0.6 ? `blur(${((0.6 - depth) * 6.6).toFixed(2)}px)` : undefined,
             opacity: mix(depth, 0.7, 1) * enter,
             zIndex: depth < 0.5 ? Math.round(depth * 90) : 110 + Math.round(depth * 100),

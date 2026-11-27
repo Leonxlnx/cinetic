@@ -539,7 +539,7 @@ export type BuildSwap = { at: number; index: number; word: BuildWord };
 export const Build: React.FC<{
   words: BuildWord[];
   times: number[];
-  /** Frames the re-centre takes (most of it in the first 2). */
+  /** Frames the re-centre takes (from rest, half of it by frame 3 of 9, a long tail). */
   dur?: number;
   style?: React.CSSProperties;
   /** Per-word styles (accent a word). */
@@ -601,10 +601,12 @@ export const Build: React.FC<{
   };
   const shown = times.filter((t) => frame >= t).length;
   const k = shown - 1;
+  // the line is on screen, so it starts its re-centre from rest (critically damped: no jerk on the word's frame) and
+  // settles on an exponential tail: 0, .12, .35, .55, .71, .82, .90, .95, .98, 1 over the default 9 f
   const lead = (t: number) => {
     const q = clamp(t);
-    const kk = 7;
-    return (1 - Math.exp(-kk * q)) / (1 - Math.exp(-kk));
+    const x = q * 5.37;
+    return (1 - (1 + x) * Math.exp(-x)) / (1 - 6.37 * Math.exp(-5.37));
   };
   const varsNow = variants(frame);
   // the latest swap of a word already on screen, when it is later than the latest arrival
@@ -904,17 +906,20 @@ export const Output: React.FC<{
   // size in log space, so the shrink reads as one move; a slow creep while it holds
   const size = from.size * Math.pow(to.size / from.size, p) * (1 + 0.035 * clamp((frame - start) / hold) * (1 - p));
   const color = born ? mixColor(born, (style?.color as string) ?? '#000000', at(frame, start, 12, ease.inOut)) : undefined;
+  // drawn once at the larger size and scaled by a transform: a font size or a left/top that changes every frame snaps
+  // to whole pixels and steps; a transform moves and scales smoothly
+  const big = Math.max(from.size, to.size) * 1.035;
   return (
     <div
       style={{
         position: 'absolute',
-        left: mix(p, from.x, to.x),
-        top: mix(p, from.y, to.y),
-        transform: 'translate(-50%, -50%)',
+        left: 0,
+        top: 0,
+        transform: `translate(${mix(p, from.x, to.x)}px, ${mix(p, from.y, to.y)}px) translate(-50%, -50%) scale(${size / big})`,
         whiteSpace: 'nowrap',
         lineHeight: 1,
         ...style,
-        fontSize: size,
+        fontSize: big,
         color: color ?? style?.color,
       }}
     >

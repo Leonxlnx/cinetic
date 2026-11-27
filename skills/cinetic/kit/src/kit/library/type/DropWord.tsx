@@ -187,7 +187,7 @@ export const DropWord: React.FC<{
           rot = (frame - leaveAt) * 14;
         }
         return (
-          <div key={j} style={{ position: 'absolute', left: X, top: Y, transform: `translate(-50%, -50%) scale(${pop}) rotate(${rot}deg)`, zIndex: onTop ? 3 : 1 }}>
+          <div key={j} style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${X}px, ${Y}px) translate(-50%, -50%) scale(${pop}) rotate(${rot}deg)`, zIndex: onTop ? 3 : 1 }}>
             {c.node ?? <DefaultActor color={c.color ?? '#2F7CF6'} shape={c.shape ?? 'round'} size={sz} blink={(t + j * 11) % 53 < 3} look={frame > landed ? Math.sign(cx - X) : 0} />}
           </div>
         );

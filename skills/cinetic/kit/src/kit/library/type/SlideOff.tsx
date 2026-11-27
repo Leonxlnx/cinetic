@@ -53,7 +53,7 @@ export const SlideOff: React.FC<{
         const sgn = dir === 'right' ? 1 : dir === 'left' ? -1 : i === 0 ? -1 : 1;
         const top = cy - (lh * Ls.length) / 2 + i * lh + (lh - L.height) / 2;
         return (
-          <div key={i} style={{ ...style, position: 'absolute', left: cx - L.width / 2 + sgn * q * travel, top, whiteSpace: 'pre', color, filter: smear > 0.5 ? `url(#${id})` : undefined }}>
+          <div key={i} style={{ ...style, position: 'absolute', transform: `translateX(${cx - L.width / 2 + sgn * q * travel}px)`, left: 0, top, whiteSpace: 'pre', color, filter: smear > 0.5 ? `url(#${id})` : undefined }}>
             {lines[i]}
           </div>
         );

@@ -52,7 +52,7 @@ export const Cursor3D: React.FC<{
   const shX = size * 0.11 * mix(press, 1, 0.5) * (1 + (1 - rest) * 0.6);
   const shY = size * 0.2 * mix(press, 1, 0.5) * (1 + (1 - rest) * 0.6);
   return (
-    <div style={{ position: 'absolute', left: k.x + out * size * 6, top: k.y + out * size * 5, width: 0, height: 0, opacity: appear * (1 - out), zIndex: 220, pointerEvents: 'none' }}>
+    <div style={{ position: 'absolute', transform: `translate(${k.x + out * size * 6}px, ${k.y + out * size * 5}px)`, left: 0, top: 0, width: 0, height: 0, opacity: appear * (1 - out), zIndex: 220, pointerEvents: 'none' }}>
       <svg width={size * 2} height={size * 2} viewBox="-20 -20 200 200" style={{ position: 'absolute', left: -size * 0.2, top: -size * 0.2, overflow: 'visible', transform: `rotate(${tilt}deg) scale(${sc})`, transformOrigin: `${size * 0.2}px ${size * 0.2}px` }}>
         <defs>
           <linearGradient id={`${id}t`} x1="0" y1="0" x2="0.7" y2="1">

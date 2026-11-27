@@ -92,7 +92,7 @@ export const CurlRing: React.FC<{
     const sz = s * scale;
     const X = px + cx - mx;
     const Y = py + cy - my;
-    return <PicTile key={i} src={pics[i % pics.length]} w={sz} h={sz} r={sz * 0.1} tone={tone} filterId={id} pos={crop.pos} zoom={crop.zoom} style={{ left: X - sz / 2, top: Y - sz / 2, zIndex: i }} />;
+    return <PicTile key={i} src={pics[i % pics.length]} w={sz} h={sz} r={sz * 0.1} tone={tone} filterId={id} pos={crop.pos} zoom={crop.zoom} style={{ left: 0, top: 0, transform: `translate(${X - sz / 2}px, ${Y - sz / 2}px)`, zIndex: i }} />;
   });
   return (
     <AbsoluteFill>

@@ -870,9 +870,10 @@ export const Relay: React.FC<{
         <div
           style={{
             position: 'absolute',
-            left: mix(p, enter.from.x, anchor.x),
-            top: mix(p, enter.from.y, anchor.y) - Math.sin(Math.PI * p) * lift * 1.5,
-            transform: `translate(-50%, -50%) scale(${mix(p, enter.from.scale ?? 1, 1.05 * grow)})`,
+            left: 0,
+            top: 0,
+            // placed by transform: an animated left/top snaps to whole pixels and steps
+            transform: `translate(${mix(p, enter.from.x, anchor.x)}px, ${mix(p, enter.from.y, anchor.y) - Math.sin(Math.PI * p) * lift * 1.5}px) translate(-50%, -50%) scale(${mix(p, enter.from.scale ?? 1, 1.05 * grow)})`,
             filter: `drop-shadow(0 ${mix(p, 6, 30)}px ${mix(p, 10, 34)}px rgba(0,0,0,${mix(p, 0.12, 0.3)}))`,
           }}
         >

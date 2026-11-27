@@ -68,7 +68,7 @@ export const FloodAway: React.FC<{
         const w = c.w * W;
         const h = c.h * H;
         return (
-          <div key={i} style={{ position: 'absolute', left: c.x * W - w / 2 + ox, top: c.y * H - h / 2 + oy, width: w, height: h, transform: `rotate(${c.rot ?? 0}deg) rotateY(${(dx >= 0 ? 1 : -1) * go * 80}deg) scale(${sink})`, filter: blur > 0.3 ? `blur(${blur}px)` : undefined }}>
+          <div key={i} style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, transform: `translate(${c.x * W - w / 2 + ox}px, ${c.y * H - h / 2 + oy}px) rotate(${c.rot ?? 0}deg) rotateY(${(dx >= 0 ? 1 : -1) * go * 80}deg) scale(${sink})`, filter: blur > 0.3 ? `blur(${blur}px)` : undefined }}>
             <div style={{ position: 'absolute', inset: 0 }}>{c.node}</div>
             <div style={{ position: 'absolute', inset: 0, borderRadius: h * radius, overflow: 'hidden', background: `linear-gradient(172deg, ${mixColor(color, '#FFFFFF', 0.12)}, ${color} 48%, ${mixColor(color, '#000000', 0.14)})`, boxShadow: `inset 0 1px 0 ${mixColor(color, '#FFFFFF', 0.45)}`, opacity: fl * 0.94 }} />
           </div>
