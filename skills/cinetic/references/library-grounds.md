@@ -63,6 +63,10 @@ Black (#050506) with dashed 6/6 rules on cells 0.22 of the height, drawn out of 
 crossings (one in `signalEvery` in the `signal` colour) and an optional `ring` (1 px, radius 0.45 of the height) that
 draws to `sweep` degrees over 30 f. Frame a word, a corner-ticked photo or a terminal card on it.
 
+```tsx
+<TechGrid at={0} color="#4A4E57" tick="#F0F0F0" ring={{ at: 18, r: 0.42, sweep: 300, color: '#E3A04E' }} />
+```
+
 Caution: one signal colour, under 3 % of the frame; labels beside it tiny and in sentence case.
 
 ### DotLattice
@@ -72,6 +76,10 @@ A dot screen as a ground: ring, round or square dots 12 px apart at 1080 (`pitch
 dots in as a wave from a point (the front crosses in `dur` 24 f, each dot pops in 4 f); `hole` clears a box at the
 centre for the line (shares of the frame, opens in 10 f).
 
+```tsx
+<DotLattice color="#FFB25C" shape="round" base={0.26} lit={0.65} fill={{ at: 0, dur: 24 }} hole={{ at: 30, w: 0.4, h: 0.17 }} />
+```
+
 Caution: the light is in the dots, never a haze over them.
 
 ### HalftoneField
@@ -80,6 +88,10 @@ A light grey field (#E6E6E6) of round halftone dots 27 px apart at 1080, sized b
 current palette (one flat ink by default; two or three run from top left to bottom right), with black clusters on about
 `coverage` of the field. On each frame in `swaps` a new set of clusters cuts in and the ink eases to the next palette
 over `blend` frames (6); swaps held 12 f or more carry a held line while the thing beside it changes.
+
+```tsx
+<HalftoneField swaps={[24, 40, 56, 72]} />
+```
 
 Caution: the line sits on a plain backing box, never on the dots; inks of one lightness, swaps 12 f or more apart (faster
 swaps, or a light ink after a dark one, strobe).
@@ -92,12 +104,20 @@ above the rim, fading out about 0.2 of the height up, builds from 4 f over 20 f;
 of an opening title; a burnt band peaks 0.11 of the height inside the rim; `sinkAt` sends it
 down in 11 f (ease-in). `fromX` raises it from a corner.
 
+```tsx
+<PlanetRim at={6} top={0.62} sinkAt={84} />
+```
+
 Caution: one planet a film, under the name or the claim; never a glow on its own.
 
 ### OrbitLines
 
 Two 1 px circles (#D9D7D2 on cream, radius 0.32 of the width) fade in as one over 2 f, part vertically to 0.7 of the
 height apart in 7 f (expo out), turn as a pair 60 degrees over 11 f (expo out) and keep turning 0.15 degree a frame. The ground under quiet statements on cream.
+
+```tsx
+<OrbitLines at={2} color="#BEB9AE" count={3} />
+```
 
 Caution: faint and mostly off-frame; the line of type is the subject.
 
@@ -106,6 +126,10 @@ Caution: faint and mostly off-frame; the line of type is the subject.
 One flat saturated blue (#2140D9) with concentric hairline arcs (white at 10 %, 0.12 of the height apart) round a
 point 0.25 of the height under the foot, widening 0.0016 of the height a frame; on `at` they draw out from the centre
 over about 20 f. Glass cards on it: white at 14 %, a 1 px white rim at 25 %, `softShadow(5, ground)`.
+
+```tsx
+<CobaltArcs at={0} />
+```
 
 Caution: keep the blue flat; no lighter centre, no glow at the foot.
 
@@ -116,6 +140,10 @@ of the film). `shapes` draw 1.5 px white outlines onto it in 14 f each (a rectan
 shares of the frame); `tint` multiplies a colour over it from `tint.at` to `tint.until` (a state: an error, a
 warning), easing in and out over `tint.fade` frames (10, never under 8) at `amount` 0.45, so the light never jumps. The ground for glass panels (Frost) and editorial words (Gallery).
 
+```tsx
+<PhotoPlate src={photo} at={0} shapes={[{ kind: 'rect', x: 0.43, y: 0.5, w: 0.13, h: 0.3, at: 10 }, { kind: 'circle', x: 0.57, y: 0.5, w: 0.15, h: 0.27, at: 16 }]} tint={{ at: 54, until: 78, color: '#C8321E', amount: 0.5, fade: 10 }} />
+```
+
 Caution: a re-grade needs a reason on screen; the outlines frame the subject, never a word.
 
 ### CuttingMat
@@ -125,6 +153,10 @@ turned 3 degrees, a strip of warm desk at one edge, window-blind shadows across 
 `blinds` 0.32, edges soft), the whole table tracking 0.6 % of the height a second. Lay tiles, stickers and cards on it
 with a short contact shadow from the same window.
 
+```tsx
+<CuttingMat />
+```
+
 Caution: keep words off the shadow bands.
 
 ### GhostWord
@@ -132,6 +164,10 @@ Caution: keep words off the shadow bands.
 A flat light ground with one giant word (`size` 1.15 of the height, the serif italic by default) a few percent lighter
 than the ground, cropped by the frame, drifting 0.5 px a frame, softened by 2 px. The home ground of a long film with
 small type in front.
+
+```tsx
+<GhostWord text="harbour" at={0} />
+```
 
 Caution: if the ghost can be read before the line in front, it is too strong.
 
@@ -141,6 +177,10 @@ Four half-size panels, each a full-frame scene of yours, on its own loop length 
 (`phases`), butted (`gutter` 0) or with 4 px gutters and 8 px corners. The offsets keep the four from ever cutting
 together.
 
+```tsx
+<FourUp loops={[96, 120, 84, 108]} phases={[0, 31, 57, 14]} panels={[<PanelA key="a" />, <PanelB key="b" />, <PanelC key="c" />, <PanelD key="d" />]} />
+```
+
 Caution: one panel carries the words; spread the phases so no two cuts fall within 6 f.
 
 ### IsoFloor
@@ -149,6 +189,10 @@ A flat poster field ruled by a grid 12 % darker (cells 1/6 of the height) that t
 degrees back, -22 round, scale 1 to 0.9) over 12 f in-out (about 60 % of it in the middle 4 f), through a long lens so
 it reads nearly orthographic; `flatAt` tilts it
 back; `tiles` lie flat on it (cells from the centre crossing), `pan` slides it; drawn as a projected SVG, so it renders fast.
+
+```tsx
+<IsoFloor at={14} field="#FF6B1A" tiles={[{ x: -2, y: -2, color: '#0B0B0C' }, { x: 0, y: -2, color: '#FFFFFF' }, { x: 1, y: 0, color: '#0B0B0C' }]} />
+```
 
 Caution: change the field by a cut or a flood, never a fade; depth from the faces of what stands on it, no shadows.
 

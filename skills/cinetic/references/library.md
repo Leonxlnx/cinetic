@@ -40,8 +40,9 @@ node scripts/frames.mjs library --subject card --purpose enter    # a card that 
 node scripts/frames.mjs library --category type --purpose exit    # a line that leaves cleanly
 ```
 
-`library --show DiveInto` prints one piece in full: when to reach for it, its caution, its import line, its file, its
-section and its reel frames. `library --strip DiveInto` renders its frames from its reel as one still (16 frames).
+`library --show DiveInto` prints one piece in full: when to reach for it, its caution, its import line, its props
+(required and optional, read from the types, so a prop name is never a guess), its file, its section and its reel
+frames. `library --strip DiveInto` renders its frames from its reel as one still (16 frames).
 
 ## How to use it
 
@@ -289,7 +290,8 @@ The checklist:
       nothing of the old scene left once the new one has landed, nothing a frame late; and its strip clean
       (`library --strip <Name>`).
 - [ ] **`node scripts/library-docs.mjs`** writes its section file's tables; add its hand-written section there (props,
-      numbers, caution); `library-docs.mjs --check` (the catalogue, the exports, the segments and the docs agree) and
+      numbers, caution, one usage line in a `tsx` block); `library-docs.mjs --check` (the catalogue, the exports, the
+      segments and the docs agree), `library-props.mjs --check` (every prop a usage line names exists) and
       `npx tsc --noEmit` pass.
 
 A new subject, purpose or mood value is the one change outside these files: add it to the type in

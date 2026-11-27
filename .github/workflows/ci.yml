@@ -235,6 +235,10 @@ jobs:
         working-directory: skills/cinetic/kit
         run: node scripts/library-docs.mjs --check
 
+      - name: Motion library usage lines (every prop a doc names exists on the piece)
+        working-directory: skills/cinetic/kit
+        run: node scripts/library-props.mjs --check
+
       - name: Catalogues parse (sound effects, music shortlist, logo brands)
         run: |
           node -e "

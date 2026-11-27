@@ -91,5 +91,5 @@ if (!args.includes('--no-install')) {
   const r = spawnSync(npm, ['install', '--no-audit', '--no-fund'], { cwd: out, stdio: 'inherit', shell: process.platform === 'win32' });
   if (r.status !== 0) process.exit(r.status ?? 1);
 }
-console.log('first: find in the library (node scripts/frames.mjs library [--category turn] [--purpose join]; --strip <Name> shows one piece; render --film library-turns, library-type, library-fx, library-ui or library-hosts to see a reel move)');
+console.log('first: find in the library (node scripts/frames.mjs library [--category turn] [--purpose join]; --show <Name> gives its props, --strip <Name> its frames; render --film library-<type|turns|fx|camera|ui|hosts|objects|grounds|designs> to see a reel move)');
 console.log('next: BRIEF.md, BEATS.md (one row per beat, tagged by composition), then src/films/main/Film.tsx and: node scripts/frames.mjs sheet');

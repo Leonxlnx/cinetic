@@ -378,6 +378,8 @@ src/films/library/        the motion library's reels, one a category (--film lib
                           library-designs), each a list of segments
 scripts/library-docs.mjs  writes the library's section tables from the catalogue; --check: docs, exports, catalogue and
                           reel segments agree
+scripts/library-props.mjs --props <Name>: a piece's props from its types (frames.mjs library --show prints them);
+                          --check: every prop a usage line in the library's docs names exists on the piece
 scripts/sfx.mjs           roles | list | get | pick | shortlist | music | analyze | fit | credits   (music/analyze/fit decode audio: light, seconds)
 scripts/logos.mjs         search | get | list | check | verify   scripts/new-film.mjs  start a project
 ```

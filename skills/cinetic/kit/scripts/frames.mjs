@@ -619,6 +619,13 @@ function library() {
     console.log(`  use       ${e.use}`);
     if (e.caution) console.log(`  caution   ${e.caution}`);
     console.log(`  import    import { ${e.name} } from '../../kit';`);
+    // its props, read from the types (a few seconds); silent when TypeScript is not installed
+    const propsTool = new URL('./library-props.mjs', import.meta.url);
+    if (fs.existsSync(propsTool)) {
+      const r = spawnSync(process.execPath, [propsTool.pathname.replace(/^\/([A-Za-z]:)/, '$1'), '--props', e.name], { encoding: 'utf8' });
+      const rows = r.status === 0 ? r.stdout.split(/\r?\n/).slice(1).filter((l) => l.trim()) : [];
+      for (const l of rows) console.log(`  ${l.trim().replace(/^(required|optional)\s+/, (m, k) => (k === 'required' ? 'props     required: ' : '          optional: '))}`);
+    }
     console.log(`  file      src/kit/library/${where.folder}/${e.name}.tsx`);
     console.log(`  docs      references/${where.doc}, the section on ${e.name} (its props, numbers and a usage line)`);
     console.log(`  reel      --film ${e.reel.film}, frames ${e.reel.from}-${e.reel.to}${e.reel.shownIn ? ` (inside ${e.reel.shownIn}'s segment)` : ''}`);
