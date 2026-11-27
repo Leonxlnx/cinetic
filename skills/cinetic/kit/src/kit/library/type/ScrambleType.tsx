@@ -110,6 +110,7 @@ export const ScrambleType: React.FC<{
   seed = 7,
 }) => {
   const frame = useCurrentFrame();
+  const uid = React.useId().replace(/[^a-zA-Z0-9]/g, '');
   const { width, height } = useVideoConfig();
   const sizes = [size, ...swaps.map((s) => s.size ?? size)];
   const texts = [text, ...swaps.map((s) => s.text)];
@@ -150,7 +151,7 @@ export const ScrambleType: React.FC<{
   const boxW = wNow + pad * 2;
   const boxH = sNow * 0.8 + pad * 2;
   const word = (s: string, wrong: boolean[] | null, sz: number, dy: number, blur: number, key: string) => (
-    <div key={key} style={{ position: 'absolute', left: '50%', top: '50%', transform: `translate(-50%, -50%) translateY(${dy + sz * 0.05}px)`, ...st(sz), whiteSpace: 'pre', color, textShadow: glow && wrong && scrambling ? `0 0 ${sz * 0.25}px ${color}88, 0 0 ${sz * 0.6}px ${color}40` : undefined, filter: blur > 0.3 ? `url(#scramble-v${Math.round(blur)})` : undefined }}>
+    <div key={key} style={{ position: 'absolute', left: '50%', top: '50%', transform: `translate(-50%, -50%) translateY(${dy + sz * 0.05}px)`, ...st(sz), whiteSpace: 'pre', color, textShadow: glow && wrong && scrambling ? `0 0 ${sz * 0.25}px ${color}88, 0 0 ${sz * 0.6}px ${color}40` : undefined, filter: blur > 0.3 ? `url(#scramble${uid}v${Math.round(blur)})` : undefined }}>
       {wrong
         ? Array.from(s).map((c, i) => {
             // one or two wrong glyphs take the accent, chosen per state
@@ -169,7 +170,7 @@ export const ScrambleType: React.FC<{
     <div style={{ position: 'absolute', left: cx - boxW / 2, top: cy - boxH / 2, width: boxW, height: boxH, opacity: dim }}>
       <svg width="0" height="0" style={{ position: 'absolute' }}>
         {[2, 4, 6, 8].map((b) => (
-          <filter key={b} id={`scramble-v${b}`} x="-10%" y="-50%" width="120%" height="200%">
+          <filter key={b} id={`scramble${uid}v${b}`} x="-10%" y="-50%" width="120%" height="200%">
             <feGaussianBlur stdDeviation={`0 ${b}`} />
           </filter>
         ))}

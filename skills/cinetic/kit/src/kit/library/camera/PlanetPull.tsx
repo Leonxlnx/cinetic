@@ -31,6 +31,7 @@ export const PlanetPull: React.FC<{
   children?: React.ReactNode;
 }> = ({ at, dur = 18, body = '#120C0D', line = 'rgba(255,186,150,0.42)', rim = '#FFC48E', sky = 'linear-gradient(100deg, #E0346E 0%, #F25A5A 55%, #FFC9A0 100%)', horizon = 0.37, step = 4, rimLat = 12, children }) => {
   const frame = useCurrentFrame();
+  const uid = React.useId().replace(/[^a-zA-Z0-9]/g, '');
   const { width: W, height: H } = useVideoConfig();
   // a quadratic ease-out: the corners open over the first 3 f, then the rim sinks, slowing, to the horizon
   const t = clamp((frame - at) / dur);
@@ -86,7 +87,7 @@ export const PlanetPull: React.FC<{
       {children && <AbsoluteFill>{children}</AbsoluteFill>}
       <svg width={W} height={H} style={{ position: 'absolute', inset: 0 }}>
         <defs>
-          <filter id="planetRimGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <filter id={`planetRim${uid}`} x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur stdDeviation={rimW * 2.2} />
           </filter>
         </defs>
@@ -94,7 +95,7 @@ export const PlanetPull: React.FC<{
         {lines.map((d, i) => (
           <path key={i} d={d} fill="none" stroke={line} strokeWidth={Math.max(1, Math.min(W, H) / 900)} />
         ))}
-        <circle cx={cx} cy={cy} r={R - rimW} fill="none" stroke={rim} strokeWidth={rimW * 3} filter="url(#planetRimGlow)" opacity={clamp(p * 3)} />
+        <circle cx={cx} cy={cy} r={R - rimW} fill="none" stroke={rim} strokeWidth={rimW * 3} filter={`url(#planetRim${uid})`} opacity={clamp(p * 3)} />
         <circle cx={cx} cy={cy} r={R - rimW / 2} fill="none" stroke={rim} strokeWidth={rimW} opacity={clamp(p * 3)} />
       </svg>
     </AbsoluteFill>

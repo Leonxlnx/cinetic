@@ -128,7 +128,7 @@ What each command shows: [rendering.md](references/rendering.md#the-loop).
   to judge motion and actions on consecutive frames.
 - `node scripts/frames.mjs joins` exports every join (the film's `JOINS`, each `{ at, len }`: the move's first frame
   and its length) at real size, every frame of the move: before the final and after every fix that touches a join,
-  look at every cell; a fix is closed only on a clean join image.
+  look at every cell; a fix is closed only on a clean join image (`--file out/main.mp4`: cut from the final).
 - `node scripts/frames.mjs motion out/main-preview.mp4` measures every frame for pops, dead stops, hard starts,
   stepping and stillness; `check out/main-preview.mp4` measures pace, holds, empty frames, crowding and the ending and
   prints what to fix (`--format loop` or `--format sting` for those formats); its `air` figures are information.

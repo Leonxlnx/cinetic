@@ -57,8 +57,14 @@ A landing-page hero that plays forever beside the page's own headline.
 - **Sections:** the hook in frame 0 (a word or the object, already moving, readable muted) > 2-4 beats of one idea > a
   tease of the thing (withhold the full product: a glimpse, a silhouette, a number) > the name and a date or the CTA.
 - **Different:** captions on, since most watch muted; stacked compositions; lines of 2-3 words; subject and type out of
-  the top 12 % and the bottom 20 %; cuts on the beat; the last frame loops cleanly into the first (platforms replay). One
-  concept from its list, never a launch film squeezed into a tall frame.
+  the top 12 % and the bottom 20 %; cuts on the beat. One concept from its list, never a launch film squeezed into a
+  tall frame.
+- **Ending:** the teaser's job is the name and the date or CTA, so it ends on them, held for their reading time; it does
+  not have to loop into its first frame (platforms replay it, and the hook in frame 0 restarts it well enough). A
+  seamless last-to-first frame is the [Loop](#loop) format's rule, not this one's.
+- **Under the 15 s cap:** every line still gets its reading time (words / 3 + 0.5 s); when the claim, the spectacle and
+  the captions do not fit, the words give way (fewer captions, 2-3 words each, the claim cut to its noun and verb),
+  never the holds, and never the spectacle's own seconds.
 
 ## Feature update
 

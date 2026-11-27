@@ -147,8 +147,8 @@ when the user asks for it. Specs for every format except the launch film are in 
 | Format | Length | Beats | Typical use |
 |---|---|---|---|
 | Logo sting | 3-7 s | 4-6 stages | a mark reveal, the head of a longer video |
-| Loop | 4-10 s | one cycle a cell | a landing-page hero |
-| Update, vertical teaser | 8-20 s | 5-12 | "version N is out", social, "coming soon" |
+| Loop | 4-12 s | one cycle a cell | a landing-page hero |
+| Update (8-20 s), vertical teaser (8-15 s) | 8-20 s | 5-12 | "version N is out", social, "coming soon" |
 | Feature film | 20-30 s | 12-20 | one feature with its own small story |
 | Launch film | 30-45 s (up to 60 s) | 15-35 | a new product or a major version |
 | Brand film | 25-50 s | 15-30 | a rebrand, a company or recruiting film |

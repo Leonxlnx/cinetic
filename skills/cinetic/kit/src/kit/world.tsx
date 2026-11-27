@@ -71,14 +71,15 @@ const shadeHex = (hex: string, toward: string, p: number) => {
 export const Dither: React.FC<{ amount?: number }> = ({ amount = 1 }) => {
   const frame = useCurrentFrame();
   const seed = frame % 48;
+  const uid = React.useId().replace(/[^a-zA-Z0-9]/g, '');
   return (
     <AbsoluteFill style={{ pointerEvents: 'none', mixBlendMode: 'overlay', opacity: 0.07 * amount }}>
       <svg width="100%" height="100%">
-        <filter id={`dither${seed}`} x="0" y="0" width="100%" height="100%">
+        <filter id={`dither${uid}s${seed}`} x="0" y="0" width="100%" height="100%">
           <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="1" seed={seed} stitchTiles="stitch" />
           <feColorMatrix type="saturate" values="0" />
         </filter>
-        <rect width="100%" height="100%" filter={`url(#dither${seed})`} />
+        <rect width="100%" height="100%" filter={`url(#dither${uid}s${seed})`} />
       </svg>
     </AbsoluteFill>
   );
@@ -487,15 +488,16 @@ export const Grain: React.FC<{ amount?: number; blend?: React.CSSProperties['mix
   }, [frame, force, ground, off]);
   // still: a fixed fibre (paper, card stock); otherwise film grain that moves every frame
   const seed = still ? 3 : frame % 8;
+  const uid = React.useId().replace(/[^a-zA-Z0-9]/g, '');
   return (
     <AbsoluteFill ref={ref} style={{ pointerEvents: 'none', mixBlendMode: blend, opacity: amount * 6, display: off ? 'none' : undefined }}>
       {!off && (
         <svg width="100%" height="100%">
-          <filter id={`grain${seed}`}>
+          <filter id={`grain${uid}s${seed}`}>
             <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed={seed} stitchTiles="stitch" />
             <feColorMatrix type="saturate" values="0" />
           </filter>
-          <rect width="100%" height="100%" filter={`url(#grain${seed})`} />
+          <rect width="100%" height="100%" filter={`url(#grain${uid}s${seed})`} />
         </svg>
       )}
     </AbsoluteFill>
@@ -797,19 +799,22 @@ export const GlassPanel: React.FC<{ w?: number; h?: number; radius?: number; tin
 );
 
 /** Paper: a still fibre texture over a flat ground colour (editorial worlds). Put it under the content. */
-export const Paper: React.FC<{ color?: string; fibre?: number }> = ({ color, fibre = 0.05 }) => (
-  <AbsoluteFill data-ground-lum={color ? luminance(color).toFixed(3) : undefined} style={{ background: color }}>
-    <AbsoluteFill style={{ mixBlendMode: 'multiply', opacity: fibre * 8 }}>
-      <svg width="100%" height="100%">
-        <filter id="paper-fibre">
-          <feTurbulence type="fractalNoise" baseFrequency="0.9 0.35" numOctaves="3" seed="7" stitchTiles="stitch" />
-          <feColorMatrix type="matrix" values="0 0 0 0 0.45  0 0 0 0 0.42  0 0 0 0 0.38  0 0 0 0.9 0" />
-        </filter>
-        <rect width="100%" height="100%" filter="url(#paper-fibre)" />
-      </svg>
+export const Paper: React.FC<{ color?: string; fibre?: number }> = ({ color, fibre = 0.05 }) => {
+  const id = `paper${React.useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  return (
+    <AbsoluteFill data-ground-lum={color ? luminance(color).toFixed(3) : undefined} style={{ background: color }}>
+      <AbsoluteFill style={{ mixBlendMode: 'multiply', opacity: fibre * 8 }}>
+        <svg width="100%" height="100%">
+          <filter id={id}>
+            <feTurbulence type="fractalNoise" baseFrequency="0.9 0.35" numOctaves="3" seed="7" stitchTiles="stitch" />
+            <feColorMatrix type="matrix" values="0 0 0 0 0.45  0 0 0 0 0.42  0 0 0 0 0.38  0 0 0 0.9 0" />
+          </filter>
+          <rect width="100%" height="100%" filter={`url(#${id})`} />
+        </svg>
+      </AbsoluteFill>
     </AbsoluteFill>
-  </AbsoluteFill>
-);
+  );
+};
 
 /**
  * A hand-drawn stroke: an SVG path that draws itself from `start` over `dur` frames, with a slight wobble so it reads as

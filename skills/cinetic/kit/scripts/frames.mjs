@@ -40,7 +40,7 @@
 //        Pixel changes locate candidates for inspection; they cannot measure perceived speed or design intent.
 //   node scripts/frames.mjs strip out/film.mp4 --at 4.5 [--dur 2] [--fps 15] [--out out/strip.jpg]
 //        a dense contact strip of a moment of a rendered video (motion check: an entrance, a turn, a morph)
-//   node scripts/frames.mjs joins [--film main] [--at 120+14,245+8,390] [--pad 4] [--full] [--out out/joins]
+//   node scripts/frames.mjs joins [--film main] [--at 120+14,245+8,390] [--pad 4] [--full] [--file out/main.mp4] [--out out/joins]
 //        every join at real size, the whole move: for a join given as its move's first frame and length (120+14, or
 //        { at: 120, len: 14 } in JOINS) every frame from 2 before the move to 4 after it, in rows of six 960 px cells
 //        (--full: rows of three at 1920; a vertical film 540 / 1080), one image a join (out/joins/<film>-join-<at>.png),
@@ -48,9 +48,12 @@
 //        frame (390) still gives the 9 frames round it (--pad sets how many); the command lists the joins given that way.
 //        Without --at it reads the film's exported JOINS (beside T). One browser, one render call.
 //        Look at every cell before the final and after every fix that touches the join.
-//   node scripts/frames.mjs library [--category turn] [--purpose join] [--subject card] [--mood calm] [--json]
+//        --file out/main.mp4: the same images cut from the rendered file (decoded frame numbers), so a fix is checked
+//        on the final: out/joins/main-final-join-<at>.png. ffmpeg only, no browser.
+//   node scripts/frames.mjs library [words] [--category turn] [--purpose join] [--subject card] [--mood calm] [--json]
 //        the motion library's pieces that match (src/kit/library/catalog/), one line each: name, category, purpose,
-//        frames, what it looks like. A filter takes one value or several joined by commas (any of them matches).
+//        frames, what it looks like. A filter takes one value or several joined by commas (any of them matches). Words
+//        search name, summary, use, subject, purpose and mood (every word must match; none: the nearest subjects).
 //   node scripts/frames.mjs library --show DiveInto
 //        one piece in full: when to use it, its caution, its import line, its file and the command for its strip
 //   node scripts/frames.mjs library --strip DiveInto [--out out/library/DiveInto.png]
@@ -67,6 +70,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { CATEGORIES, loadLibrary } from './library-catalog.mjs';
+import { staleKitWarning } from './kit-version.mjs';
 
 const require = createRequire(path.join(process.cwd(), 'package.json'));
 const args = process.argv.slice(2);
@@ -170,11 +174,18 @@ const EMPTY_FILL = Number(process.env.CINETIC_CHECK_EMPTY || 0.006);
 const CROWD = Number(process.env.CINETIC_CHECK_CROWD || 0.27); // FAIL: share of samples with 35 %+ of the frame in sharp detail
 const BUSY = Number(process.env.CINETIC_CHECK_BUSY || 0.25); // LOOK: share of samples with 3+ separate things and 20 %+ detail
 const CUT = Number(process.env.CINETIC_CHECK_CUT || 0.25); // LOOK: share of samples where the frame edge cuts detail on 2+ sides
+// a picture under the interface: one connected textured region (a photograph, footage) of this share of the frame or more
+// is a picture, and its own texture is not crowding (CINETIC_CHECK_PICTURE=0 counts it as before)
+const PICTURE = Number(process.env.CINETIC_CHECK_PICTURE ?? 0.4);
 
 /**
  * Air: 2 samples a second, grey, the long side 640 px, cut into 20-px cells (60 px of a 1080p frame). A cell is detail when
  * 4 %+ of its pixels sit on a hard edge. Per sample: the share of the frame in detail, the number of separate things (8-connected
  * detail of 1 %+ of the frame) and the number of frame sides where 15 %+ of the border is detail.
+ * A cell is textured when fewer than a third of its pixels are flat (gradient under 3): a photograph or footage, never a
+ * flat ground, a card or type on a card. When one connected textured region covers PICTURE of the frame or more, the
+ * sample has a picture under it, and `crowd` (what the crowded line counts) is the detail of the cells that are NOT
+ * textured: the layer above the picture (cards, plates, type on a ground), not the petals of the picture itself.
  */
 function airSamples(file, vw, vh) {
   const L = 640, C = 20;
@@ -183,17 +194,19 @@ function airSamples(file, vw, vh) {
   const buf = spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-an', '-vf', `fps=2,scale=${W}:${H}:flags=area,format=gray`, '-f', 'rawvideo', '-'], { maxBuffer: 1 << 30 }).stdout;
   const FS = W * H, n = Math.floor(buf.length / FS);
   const cw = Math.floor(W / C), ch = Math.floor(H / C), N = cw * ch;
-  const cnt = new Uint16Array(N), lab = new Int32Array(N);
+  const cnt = new Uint16Array(N), flat = new Uint16Array(N), lab = new Int32Array(N);
   const out = [];
   for (let f = 0; f < n; f++) {
     const o = f * FS;
     cnt.fill(0);
+    flat.fill(0);
     for (let y = 0; y < ch * C; y++) {
       const up = y > 0 ? W : 0, dn = y < H - 1 ? W : 0, row = Math.floor(y / C) * cw;
       for (let x = 0; x < cw * C; x++) {
         const i = o + y * W + x;
         const g = Math.abs(buf[i + (x < W - 1 ? 1 : 0)] - buf[i - (x > 0 ? 1 : 0)]) / 2 + Math.abs(buf[i + dn] - buf[i - up]) / 2;
         if (g > 40) cnt[row + Math.floor(x / C)]++;
+        else if (g < 3) flat[row + Math.floor(x / C)]++;
       }
     }
     const det = Array.from(cnt, (c) => c >= 0.04 * C * C);
@@ -216,11 +229,29 @@ function airSamples(file, vw, vh) {
       }
       if (a / N >= 0.01) things++;
     }
+    // the picture: the largest 4-connected region of textured cells
+    const tex = Array.from(flat, (c) => c < (C * C) / 3);
+    const seen = new Uint8Array(N);
+    let pic = 0, picLab = null;
+    for (let s = 0; s < N; s++) {
+      if (!tex[s] || seen[s]) continue;
+      const reg = [s];
+      seen[s] = 1;
+      for (let r = 0; r < reg.length; r++) {
+        const k = reg[r], x = k % cw;
+        for (const q of [k - cw, k + cw, x > 0 ? k - 1 : -1, x < cw - 1 ? k + 1 : -1]) if (q >= 0 && q < N && tex[q] && !seen[q]) { seen[q] = 1; reg.push(q); }
+      }
+      if (reg.length > pic) { pic = reg.length; picLab = reg; }
+    }
+    const isPic = PICTURE > 0 && pic / N >= PICTURE;
+    const inPic = new Uint8Array(N);
+    if (isPic) for (const k of picLab) inPic[k] = 1;
+    const crowd = det.filter((d, k) => d && !inPic[k]).length / N;
     const side = (cells) => cells.filter((k) => det[k]).length / cells.length >= 0.15;
     const top = [], bot = [], lef = [], rig = [];
     for (let x = 0; x < cw; x++) { top.push(x); bot.push((ch - 1) * cw + x); }
     for (let y = 0; y < ch; y++) { lef.push(y * cw); rig.push(y * cw + cw - 1); }
-    out.push({ t: f / 2, detail: det.filter(Boolean).length / N, things, cut: [top, bot, lef, rig].filter(side).length });
+    out.push({ t: f / 2, detail: det.filter(Boolean).length / N, crowd: isPic ? crowd : det.filter(Boolean).length / N, picture: isPic, things, cut: [top, bot, lef, rig].filter(side).length });
   }
   return out;
 }
@@ -637,6 +668,129 @@ function measureMotion(data, declared = []) {
   return report;
 }
 
+// Five by seven pixels, enlarged to keep labels sharp (the motion chart, joins from a file).
+const GLYPHS = {
+  ' ': '00000/00000/00000/00000/00000/00000/00000',
+  A:'01110/10001/10001/11111/10001/10001/10001',B:'11110/10001/10001/11110/10001/10001/11110',
+  C:'01111/10000/10000/10000/10000/10000/01111',D:'11110/10001/10001/10001/10001/10001/11110',
+  E:'11111/10000/10000/11110/10000/10000/11111',F:'11111/10000/10000/11110/10000/10000/10000',
+  G:'01111/10000/10000/10111/10001/10001/01111',H:'10001/10001/10001/11111/10001/10001/10001',
+  I:'11111/00100/00100/00100/00100/00100/11111',J:'00111/00010/00010/00010/00010/10010/01100',
+  K:'10001/10010/10100/11000/10100/10010/10001',L:'10000/10000/10000/10000/10000/10000/11111',
+  M:'10001/11011/10101/10101/10001/10001/10001',N:'10001/11001/10101/10011/10001/10001/10001',
+  O:'01110/10001/10001/10001/10001/10001/01110',P:'11110/10001/10001/11110/10000/10000/10000',
+  Q:'01110/10001/10001/10001/10101/10010/01101',R:'11110/10001/10001/11110/10100/10010/10001',
+  S:'01111/10000/10000/01110/00001/00001/11110',T:'11111/00100/00100/00100/00100/00100/00100',
+  U:'10001/10001/10001/10001/10001/10001/01110',V:'10001/10001/10001/10001/10001/01010/00100',
+  W:'10001/10001/10001/10101/10101/10101/01010',X:'10001/10001/01010/00100/01010/10001/10001',
+  Y:'10001/10001/01010/00100/00100/00100/00100',Z:'11111/00001/00010/00100/01000/10000/11111',
+  '0':'01110/10001/10011/10101/11001/10001/01110','1':'00100/01100/00100/00100/00100/00100/01110',
+  '2':'01110/10001/00001/00010/00100/01000/11111','3':'11110/00001/00001/01110/00001/00001/11110',
+  '4':'00010/00110/01010/10010/11111/00010/00010','5':'11111/10000/10000/11110/00001/00001/11110',
+  '6':'01110/10000/10000/11110/10001/10001/01110','7':'11111/00001/00010/00100/01000/01000/01000',
+  '8':'01110/10001/10001/01110/10001/10001/01110','9':'01110/10001/10001/01111/00001/00001/01110',
+  '.':'00000/00000/00000/00000/00000/00110/00110',',':'00000/00000/00000/00000/00110/00100/01000',
+  ':':'00000/00110/00110/00000/00110/00110/00000',';':'00000/00110/00110/00000/00110/00100/01000',
+  '-':'00000/00000/00000/11111/00000/00000/00000','_':'00000/00000/00000/00000/00000/00000/11111',
+  '/':'00001/00001/00010/00100/01000/10000/10000','%':'11001/11010/00010/00100/01000/01011/10011',
+  '(':'00010/00100/01000/01000/01000/00100/00010',')':'01000/00100/00010/00010/00010/00100/01000',
+  '+':'00000/00100/00100/11111/00100/00100/00000','=':'00000/00000/11111/00000/11111/00000/00000',
+  '|':'00100/00100/00100/00100/00100/00100/00100','[':'01110/01000/01000/01000/01000/01000/01110',']':'01110/00010/00010/00010/00010/00010/01110','?':'01110/10001/00001/00010/00100/00000/00100',
+};
+/** An RGB buffer (W x H x 3) as a PNG file, dependency free. */
+function writePng(out, W, H, rgb) {
+  // PNG uses a filter byte before each RGB scanline; CRC covers the chunk type and payload.
+  const crcTable = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? 0xedb88320 ^ (c >>> 1) : c >>> 1; crcTable[n] = c >>> 0; }
+  const chunk = (type, data) => {
+    const kind = Buffer.from(type), payload = Buffer.concat([kind, data]);
+    let crc = 0xffffffff;
+    for (const b of payload) crc = crcTable[(crc ^ b) & 255] ^ (crc >>> 8);
+    const head = Buffer.alloc(4), tail = Buffer.alloc(4);
+    head.writeUInt32BE(data.length); tail.writeUInt32BE((crc ^ 0xffffffff) >>> 0);
+    return Buffer.concat([head, payload, tail]);
+  };
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(H, 4); ihdr[8] = 8; ihdr[9] = 2;
+  const scan = Buffer.alloc((W * 3 + 1) * H);
+  for (let yy = 0; yy < H; yy++) rgb.copy(scan, yy * (W * 3 + 1) + 1, yy * W * 3, (yy + 1) * W * 3);
+  ensureDir(out);
+  fs.writeFileSync(out, Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(scan)), chunk('IEND', Buffer.alloc(0))]));
+}
+
+/**
+ * joins --file: the same join images cut from a RENDERED file (the final), so a polish fix is checked on what ships.
+ * Every frame named by the rows is decoded in one ffmpeg pass (zero-based decoded frame numbers), scaled to the cell and
+ * laid out as the Joins composition does: a band naming the join, the frame number on each cell, the move outlined.
+ */
+function joinsFromFile(file, rows, plan, cols, cellW, dir, base) {
+  const pr = spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-count_packets', '-show_entries', 'stream=width,height,avg_frame_rate,r_frame_rate,nb_read_packets', '-of', 'json', file], { encoding: 'utf8' });
+  const st = pr.status === 0 ? JSON.parse(pr.stdout).streams?.[0] : null;
+  if (!st?.width) { console.error(`joins: cannot read a video stream from ${file}`); process.exit(1); }
+  const rate = (v) => { const [a, b = 1] = String(v).split('/').map(Number); return a / b; };
+  const fps = rate(st.avg_frame_rate) || rate(st.r_frame_rate) || 30;
+  const total = Number(st.nb_read_packets) || Infinity;
+  const cw = cellW % 2 ? cellW + 1 : cellW;
+  const ch = Math.round((cw * st.height) / st.width / 2) * 2;
+  const clampF = (f) => Math.max(0, Math.min(total - 1, f));
+  const want = [...new Set(rows.flatMap((r) => r.frames.map(clampF)))].sort((a, b) => a - b);
+  const pics = new Map();
+  const size = cw * ch * 3;
+  // select keeps the named frames in order, scaled to the cell (a long list goes in parts to keep the expression short)
+  for (let i = 0; i < want.length; i += 120) {
+    const part = want.slice(i, i + 120);
+    const r = spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-vf', `select='${part.map((f) => `eq(n\\,${f})`).join('+')}',scale=${cw}:${ch}:flags=lanczos`, '-fps_mode', 'passthrough', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], { maxBuffer: 2 ** 31 - 1 });
+    const got = r.stdout ? Math.floor(r.stdout.length / size) : 0;
+    if (r.status !== 0 && !got) { console.error(`joins: ffmpeg could not decode ${file}: ${String(r.stderr || r.error?.message).trim()}`); process.exit(1); }
+    for (let k = 0; k < Math.min(got, part.length); k++) pics.set(part[k], r.stdout.subarray(k * size, (k + 1) * size));
+  }
+  const band = Math.max(32, Math.round((cols * cw) / 120));
+  const label = Math.max(16, Math.round(Math.max(cw, ch) / 40));
+  const outs = [];
+  for (const { sp, first, n } of plan) {
+    const rs = rows.slice(first, first + n);
+    const W = Math.min(cols, Math.max(...rs.map((r) => r.frames.length))) * cw;
+    const H = n * (band + ch);
+    const rgb = Buffer.alloc(W * H * 3, 17);
+    const rect = (x, y, w, h, c) => {
+      for (let yy = Math.max(0, y); yy < Math.min(H, y + h); yy++) for (let xx = Math.max(0, x); xx < Math.min(W, x + w); xx++) { const o = (yy * W + xx) * 3; rgb[o] = c[0]; rgb[o + 1] = c[1]; rgb[o + 2] = c[2]; }
+    };
+    const box = (x, y, w, h, t, c) => { rect(x, y, w, t, c); rect(x, y + h - t, w, t, c); rect(x, y, t, h, c); rect(x + w - t, y, t, h, c); };
+    const text = (value, x, y, px, c, maxW) => {
+      const sc = Math.max(1, Math.round(px / 8));
+      const len = Math.min(String(value).length, Math.floor(maxW / (6 * sc)));
+      rect(x - sc * 2, y - sc * 2, len * 6 * sc + sc * 3, 7 * sc + sc * 4, [0, 0, 0]);
+      let xx = x;
+      for (const chr of String(value).toUpperCase().slice(0, len)) {
+        (GLYPHS[chr] || GLYPHS['?']).split('/').forEach((row, j) => [...row].forEach((v, k) => { if (v === '1') rect(xx + k * sc, y + j * sc, sc, sc, c); }));
+        xx += 6 * sc;
+      }
+    };
+    const yellow = [255, 255, 0], grey = [204, 204, 204];
+    rs.forEach((row, r) => {
+      const top = r * (band + ch);
+      const bs = Math.max(1, Math.round((band * 0.5) / 8));
+      text(`${row.title} | from ${path.basename(file)}`, 14, top + Math.round((band - 7 * bs) / 2), band * 0.5, yellow, W - 28);
+      const single = row.start === row.end;
+      row.frames.forEach((fr, k) => {
+        const f = clampF(fr);
+        const x0 = k * cw, y0 = top + band;
+        const pic = pics.get(f);
+        if (pic) for (let y = 0; y < ch; y++) pic.copy(rgb, ((y0 + y) * W + x0) * 3, y * cw * 3, (y + 1) * cw * 3);
+        const inMove = fr >= row.start && fr <= row.end;
+        const tag = !pic ? ' (not in the file)' : f !== fr ? ' (film edge)' : single ? (fr === row.start ? ' - join' : '') : fr === row.start ? ' - move starts' : fr === row.end ? ' - move ends' : inMove ? '' : fr < row.start ? ' - before' : ' - after';
+        if (fr === row.start) box(x0, y0, cw, ch, Math.max(3, Math.round(label / 5)), yellow);
+        else if (inMove && !single) box(x0, y0, cw, ch, 2, yellow);
+        else box(x0, y0, cw, ch, 1, [0, 0, 0]);
+        text(`${f} | ${(f / fps).toFixed(2)}s${tag}`, x0 + 10, y0 + 10, label, inMove ? yellow : grey, cw - 20);
+      });
+    });
+    const to = path.join(dir, `${base}-join-${sp.at}.png`);
+    writePng(to, W, H, rgb);
+    outs.push(to);
+  }
+  return { outs, cell: cw };
+}
+
 /** A readable, dependency-free RGB chart: every frame, with a separate lane for each kind of finding. */
 function motionChart(report, out) {
   const W = 1600, H = 500, rgb = Buffer.alloc(W * H * 3);
@@ -656,40 +810,12 @@ function motionChart(report, out) {
     const n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
     for (let i = 0; i <= n; i++) rect(Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), thick, thick, c, alpha);
   };
-  // Five by seven pixels, enlarged to keep labels sharp at the chart's native size.
-  const glyphs = {
-    ' ': '00000/00000/00000/00000/00000/00000/00000',
-    A:'01110/10001/10001/11111/10001/10001/10001',B:'11110/10001/10001/11110/10001/10001/11110',
-    C:'01111/10000/10000/10000/10000/10000/01111',D:'11110/10001/10001/10001/10001/10001/11110',
-    E:'11111/10000/10000/11110/10000/10000/11111',F:'11111/10000/10000/11110/10000/10000/10000',
-    G:'01111/10000/10000/10111/10001/10001/01111',H:'10001/10001/10001/11111/10001/10001/10001',
-    I:'11111/00100/00100/00100/00100/00100/11111',J:'00111/00010/00010/00010/00010/10010/01100',
-    K:'10001/10010/10100/11000/10100/10010/10001',L:'10000/10000/10000/10000/10000/10000/11111',
-    M:'10001/11011/10101/10101/10001/10001/10001',N:'10001/11001/10101/10011/10001/10001/10001',
-    O:'01110/10001/10001/10001/10001/10001/01110',P:'11110/10001/10001/11110/10000/10000/10000',
-    Q:'01110/10001/10001/10001/10101/10010/01101',R:'11110/10001/10001/11110/10100/10010/10001',
-    S:'01111/10000/10000/01110/00001/00001/11110',T:'11111/00100/00100/00100/00100/00100/00100',
-    U:'10001/10001/10001/10001/10001/10001/01110',V:'10001/10001/10001/10001/10001/01010/00100',
-    W:'10001/10001/10001/10101/10101/10101/01010',X:'10001/10001/01010/00100/01010/10001/10001',
-    Y:'10001/10001/01010/00100/00100/00100/00100',Z:'11111/00001/00010/00100/01000/10000/11111',
-    '0':'01110/10001/10011/10101/11001/10001/01110','1':'00100/01100/00100/00100/00100/00100/01110',
-    '2':'01110/10001/00001/00010/00100/01000/11111','3':'11110/00001/00001/01110/00001/00001/11110',
-    '4':'00010/00110/01010/10010/11111/00010/00010','5':'11111/10000/10000/11110/00001/00001/11110',
-    '6':'01110/10000/10000/11110/10001/10001/01110','7':'11111/00001/00010/00100/01000/01000/01000',
-    '8':'01110/10001/10001/01110/10001/10001/01110','9':'01110/10001/10001/01111/00001/00001/01110',
-    '.':'00000/00000/00000/00000/00000/00110/00110',',':'00000/00000/00000/00000/00110/00100/01000',
-    ':':'00000/00110/00110/00000/00110/00110/00000',';':'00000/00110/00110/00000/00110/00100/01000',
-    '-':'00000/00000/00000/11111/00000/00000/00000','_':'00000/00000/00000/00000/00000/00000/11111',
-    '/':'00001/00001/00010/00100/01000/10000/10000','%':'11001/11010/00010/00100/01000/01011/10011',
-    '(':'00010/00100/01000/01000/01000/00100/00010',')':'01000/00100/00010/00010/00010/00100/01000',
-    '+':'00000/00100/00100/11111/00100/00100/00000','=':'00000/00000/11111/00000/11111/00000/00000',
-    '|':'00100/00100/00100/00100/00100/00100/00100','?':'01110/10001/00001/00010/00100/00000/00100',
-  };
+
   const text = (value, x, y, c = ink, scale = 2, maxWidth = W - x - 14) => {
     let xx = x;
     for (const ch of String(value).toUpperCase()) {
       if (xx + 5 * scale > x + maxWidth) break;
-      const rows = (glyphs[ch] || glyphs['?']).split('/');
+      const rows = (GLYPHS[ch] || GLYPHS['?']).split('/');
       rows.forEach((row, j) => [...row].forEach((v, k) => { if (v === '1') rect(xx + k * scale, y + j * scale, scale, scale, c); }));
       xx += 6 * scale;
     }
@@ -749,22 +875,7 @@ function motionChart(report, out) {
     }
   });
   text('CURVE: EVERY FRAME | COLOURED LANES: FINDING FRAME OR STRETCH | TICKS: EVERY SECOND', 22, 476, muted);
-  // PNG uses a filter byte before each RGB scanline; CRC covers the chunk type and payload.
-  const crcTable = new Uint32Array(256);
-  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? 0xedb88320 ^ (c >>> 1) : c >>> 1; crcTable[n] = c >>> 0; }
-  const chunk = (type, data) => {
-    const kind = Buffer.from(type), payload = Buffer.concat([kind, data]);
-    let crc = 0xffffffff;
-    for (const b of payload) crc = crcTable[(crc ^ b) & 255] ^ (crc >>> 8);
-    const head = Buffer.alloc(4), tail = Buffer.alloc(4);
-    head.writeUInt32BE(data.length); tail.writeUInt32BE((crc ^ 0xffffffff) >>> 0);
-    return Buffer.concat([head, payload, tail]);
-  };
-  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(H, 4); ihdr[8] = 8; ihdr[9] = 2;
-  const scan = Buffer.alloc((W * 3 + 1) * H);
-  for (let yy = 0; yy < H; yy++) rgb.copy(scan, yy * (W * 3 + 1) + 1, yy * W * 3, (yy + 1) * W * 3);
-  ensureDir(out);
-  fs.writeFileSync(out, Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(scan)), chunk('IEND', Buffer.alloc(0))]));
+  writePng(out, W, H, rgb);
 }
 
 async function motionCommand() {
@@ -873,13 +984,19 @@ async function checkFilm(file, lockupS, format = 'launch', silentOk = false, loc
   const air = airSamples(file, vw, vh).filter((x) => x.t >= 0.5 && x.t <= dur - lockupS);
   const share = (list) => list.length / Math.max(1, air.length);
   const pc = (v) => `${(v * 100).toFixed(0)} %`;
-  const crowded = air.filter((x) => x.detail >= 0.35);
+  const crowded = air.filter((x) => x.crowd >= 0.35);
+  // samples whose detail is mostly one picture under the interface: crowded by the old count, not by the layer above it
+  const spared = air.filter((x) => x.picture && x.detail >= 0.35 && x.crowd < 0.35);
   const busy = air.filter((x) => x.detail >= 0.2 && x.things >= 3);
   const cut = air.filter((x) => x.cut >= 2);
   const detailMed = air.length ? air.map((x) => x.detail).sort((a, b) => a - b)[Math.floor(air.length / 2)] : 0;
   console.log(`check: ${file} (${dur.toFixed(1)} s)`);
+  // a project scaffolded from an older kit: information only, never a failure
+  const stale = staleKitWarning();
+  if (stale) console.log(`  WARN       ${stale}`);
   // information, not a target: a rich frame (a picture, a detailed UI, texture) is right when the eye knows where to look
   console.log(`  air        sharp detail (type, UI, hard edges) covers ${pc(detailMed)} of the frame at the median; 3+ separate things in ${pc(share(air.filter((x) => x.things >= 3)))} of samples; cut on 2+ sides in ${pc(share(cut))}  (information, not a target: richness is not crowding)`);
+  if (spared.length) console.log(`  picture    one full-bleed picture or footage under the interface in ${pc(share(air.filter((x) => x.picture)))} of samples; its own texture is not counted as crowding (${spared.length} sample${spared.length === 1 ? '' : 's'} at ${fmt(spared)} s would count by the picture's detail alone): keep the picture sharp, and judge the layer above it`);
   console.log(`  coverage   mean subject width ${(avgW * 100).toFixed(0)} % of the frame; ${sparse.length} of ${body.length} samples under 45 %  (information, not a target: references 44-100 %, median 75 %)`);
   console.log(`  pace       ${slow.length} of ${pace.length} half-seconds with almost nothing changing${slow.length ? `  [from ${fmt(slow)} s]` : ''}`);
   console.log(`  stretches  longest sparse run ${sparseRun.s.toFixed(1)} s${sparseRun.s ? ` (from ${sparseRun.at.toFixed(1)} s)` : ''}; longest still stretch ${stillRun.s.toFixed(1)} s${stillRun.s ? ` (from ${stillRun.at.toFixed(1)} s)` : ''}`);
@@ -937,7 +1054,7 @@ async function checkFilm(file, lockupS, format = 'launch', silentOk = false, loc
   else if (!noPace && mstill.stretches.length) console.log(`  LOOK       still stretches of 9-15 f at ${mstill.stretches.map((e) => e.from).join(', ')}: give each hold an idle (live)`);
   for (const p of painted) fails.push(`unpainted: ${motionWhere(p)}, ${p.position}, flat-black patches in cells covering ${(p.share * 100).toFixed(1)} % of the frame${p.blackFrames.length < p.to - p.from + 1 ? ` (intermittent: ${p.blackFrames.join(', ')})` : ''}`);
   // coverage is no gate: it rises with clutter, and it did not tell a calm film from a crowded one
-  if (share(crowded) > CROWD) fails.push(`crowded: sharp detail covers 35 %+ of the frame in ${pc(share(crowded))} of the samples (36 of 40 references stay under ${pc(CROWD)}) [at ${fmt(crowded)} s]: the eye has nowhere to land: keep one focal subject in each frame and set the rest behind it by scale or depth, or give it its own beat; show one component, larger, in steps; over a photograph or footage, move the text to the ground or drop the picture, never a blur, dim or card on it`);
+  if (share(crowded) > CROWD) fails.push(`crowded: sharp detail covers 35 %+ of the frame in ${pc(share(crowded))} of the samples (36 of 40 references stay under ${pc(CROWD)}) [at ${fmt(crowded)} s]: the eye has nowhere to land: keep one focal subject in each frame and set the rest behind it by scale or depth, or give it its own beat; show one component, larger, in steps; over a photograph or footage, move the text to the ground or drop the picture, never a blur, dim or card on it (the texture of one full-bleed picture is not counted here: what crowds is the layer above it)`);
   // holds that are read (a statement, a result) are fine; past a quarter the frames are named, past 40 % it fails
   const stillShare = slow.length / Math.max(1, pace.length);
   // the dead-hold gate above replaces the old 40 % gate on still half-seconds; the share stays as a LOOK line
@@ -1071,17 +1188,51 @@ function library() {
     return;
   }
   const filters = ['category', 'purpose', 'subject', 'mood'].map((k) => [k, opt(k)]).filter(([, v]) => v);
-  const matches = lib.filter((e) => filters.every(([k, v]) => v.split(',').some((x) => [e[k]].flat().includes(x.trim()))));
+  // free text (`library route`, `library card grow`): every word must appear in the piece's name, summary, use, subject,
+  // purpose or mood (case insensitive); the words are what is left after the flags and their values
+  const valued = new Set(['category', 'purpose', 'subject', 'mood', 'show', 'strip', 'out', 'film']);
+  const words = [];
+  for (let i = 1; i < args.length; i++) {
+    if (args[i].startsWith('--')) {
+      if (valued.has(args[i].slice(2)) && i + 1 < args.length && !args[i + 1].startsWith('--')) i++;
+      continue;
+    }
+    words.push(...args[i].toLowerCase().split(/[\s,]+/).filter(Boolean));
+  }
+  const text = (e) => [e.name, e.summary, e.use, e.subject, e.purpose, e.mood].flat().filter(Boolean).join(' ').toLowerCase();
+  const matches = lib.filter((e) => filters.every(([k, v]) => v.split(',').some((x) => [e[k]].flat().includes(x.trim()))) && words.every((w) => text(e).includes(w)));
   if (has('json')) return console.log(JSON.stringify(matches, null, 2));
+  const asked = [...filters.map(([k, v]) => `${k} ${v}`), ...(words.length ? [`"${words.join(' ')}"`] : [])];
   if (!matches.length) {
-    const vals = (k) => [...new Set(lib.flatMap((e) => [e[k]].flat()))].sort().join(', ');
-    console.log(`no piece matches. categories: ${vals('category')}; purposes: ${vals('purpose')}; subjects: ${vals('subject')}; moods: ${vals('mood')}`);
+    const vals = (k) => [...new Set(lib.flatMap((e) => [e[k]].flat()))].sort();
+    if (words.length) {
+      // the subjects (and purposes) nearest the words: contained either way, else the smallest edit distance
+      const dist = (a, b) => {
+        const d = Array.from({ length: b.length + 1 }, (_, j) => j);
+        for (let i = 1; i <= a.length; i++) {
+          let prev = d[0];
+          d[0] = i;
+          for (let j = 1; j <= b.length; j++) {
+            const t = d[j];
+            d[j] = Math.min(d[j] + 1, d[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+            prev = t;
+          }
+        }
+        return d[b.length];
+      };
+      const score = (v) => Math.min(...words.map((w) => (v.includes(w) || w.includes(v) ? 0 : dist(w, v) / Math.max(w.length, v.length))));
+      const near = [...vals('subject'), ...vals('purpose')].filter((v, i, a) => a.indexOf(v) === i).map((v) => [v, score(v)]).sort((a, b) => a[1] - b[1]).slice(0, 6).map(([v]) => v);
+      console.log(`no piece matches ${asked.join(', ')} (every word must appear in a piece's name, summary, use, subject, purpose or mood).`);
+      console.log(`nearest subjects and purposes: ${near.join(', ')}  (try: library --subject ${near[0]}, or fewer words)`);
+      return;
+    }
+    console.log(`no piece matches. categories: ${vals('category').join(', ')}; purposes: ${vals('purpose').join(', ')}; subjects: ${vals('subject').join(', ')}; moods: ${vals('mood').join(', ')}`);
     return;
   }
   const w = Math.max(...matches.map((e) => e.name.length));
   const pw = Math.max(...matches.map((e) => e.purpose.join(',').length));
   for (const e of matches) console.log(`${e.name.padEnd(w)}  ${e.category.padEnd(6)}  ${e.purpose.join(',').padEnd(pw)}  ${String(e.frames).padStart(3)} f  ${e.summary}`);
-  console.log(`${matches.length} of ${lib.length} pieces${filters.length ? ` (${filters.map(([k, v]) => `${k} ${v}`).join(', ')})` : ''}. One in full: library --show <Name>; its frames: library --strip <Name>`);
+  console.log(`${matches.length} of ${lib.length} pieces${asked.length ? ` match ${asked.join(', ')}` : ''}. One in full: library --show <Name>; its frames: library --strip <Name>`);
 }
 
 if (cmd === 'sheet') {
@@ -1186,7 +1337,11 @@ if (cmd === 'sheet') {
   specs.sort((x, y) => x.at - y.at);
   if (!specs.length) { console.error('joins: no joins (JOINS is empty and no --at)'); process.exit(1); }
   const pad = Math.max(1, Math.min(6, Number(opt('pad', '4'))));
-  const { width: FW, height: FH } = filmEntry();
+  // --file out/main.mp4: cut the join images from the rendered file (the final), not from the composition
+  const fromFile = opt('file');
+  if (fromFile && !fs.existsSync(fromFile)) { console.error(`joins: no file ${fromFile}`); process.exit(1); }
+  const probeSize = (f) => spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', f], { encoding: 'utf8' }).stdout.trim().split(',').map(Number);
+  const { width: FW, height: FH } = fromFile ? (([w, h]) => ({ width: w, height: h }))(probeSize(fromFile)) : filmEntry();
   const full = has('full');
   const cols = full ? 3 : 6;
   const cell = (FW >= FH ? 960 : 540) * (full ? 2 : 1);
@@ -1210,6 +1365,15 @@ if (cmd === 'sheet') {
     for (let r = 0; r < n; r++) rows.push({ frames: frames.slice(r * cols, (r + 1) * cols), start, end, title: `${title}${n > 1 ? `  [row ${r + 1}/${n}]` : ''}` });
   }
   const dir = opt('out', 'out/joins');
+  if (fromFile) {
+    const base = `${path.basename(fromFile).replace(/\.[^.]+$/, '')}-final`;
+    const { outs, cell: cw } = joinsFromFile(fromFile, rows, plan, cols, cell, dir, base);
+    for (const o of outs) console.log(`join: ${o}`);
+    console.log(`${outs.length} join image${outs.length === 1 ? '' : 's'} cut from ${fromFile} (rows of ${cols}, ${cw} px cells, decoded frame numbers): each move from 2 frames before its first to 4 after its last. A polish row closes only on these images of the final.`);
+    const bare = specs.filter((s) => s.len === null).map((s) => s.at);
+    if (bare.length) console.log(`  given without a length: ${bare.join(', ')}: only the ${2 * pad + 1} frames round each. Give each move's first frame and length (--at ${bare[0]}+14)`);
+    process.exit(0);
+  }
   const seq = path.join(dir, `_frames_${process.pid}`); // no dot: Remotion reads a dot as an extension
   fs.mkdirSync(seq, { recursive: true });
   const props = { film, rows, cols, cell };

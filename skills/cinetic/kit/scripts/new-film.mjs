@@ -11,6 +11,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { stampKit } from './kit-version.mjs';
 
 const kit = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -85,7 +86,9 @@ const name = (() => {
 const pkg = JSON.parse(fs.readFileSync(path.join(out, 'package.json'), 'utf8'));
 pkg.name = name.toLowerCase().replace(/[^a-z0-9-]+/g, '-') + '-film';
 fs.writeFileSync(path.join(out, 'package.json'), JSON.stringify(pkg, null, 2) + '\n');
-console.log(`film project: ${out}`);
+// the kit's version, so `frames.mjs check` can say when the skill's kit has moved on since this copy
+const kv = stampKit(kit, out);
+console.log(`film project: ${out} (kit ${kv.version}, ${kv.date})`);
 if (!args.includes('--no-install')) {
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   const r = spawnSync(npm, ['install', '--no-audit', '--no-fund'], { cwd: out, stdio: 'inherit', shell: process.platform === 'win32' });

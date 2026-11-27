@@ -1,7 +1,7 @@
 // A contact sheet in ONE still render: the film frozen at 36 frames in a 6x6 grid (cols: 4 gives 16 bigger cells).
 // The fastest way to see a whole film: `node scripts/frames.mjs sheet [--film main] [--grid 6]`.
 import React from 'react';
-import { AbsoluteFill, Freeze, Sequence, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, continueRender, delayRender, Freeze, Sequence, useCurrentFrame } from 'remotion';
 import { FILMS } from './films';
 
 /**
@@ -13,6 +13,78 @@ const FilmSize: React.FC<{ F: (typeof FILMS)[string]; children: React.ReactNode 
     {children}
   </Sequence>
 );
+
+/**
+ * One cell's own ids. A sheet draws the film many times in one page, so every id the film gives (an SVG gradient, mask,
+ * clip path, filter, marker; a React useId) repeats in every cell, and the browser resolves `url(#id)` and `href="#id"` to
+ * the FIRST element with that id: every later cell would draw the first cell's gradient, mask or clip. After each render
+ * this renames every id inside the cell to `<id>--c<cell>` and points the cell's references at the renamed ones (in
+ * attributes, inline styles and <style> text), and keeps doing it while the cell's content changes, so each cell draws
+ * exactly what a full-size still of its frame draws. Nothing in a film's code has to change.
+ */
+const URL_REF = /url\(\s*(['"]?)#([^'")\s]+)\1\s*\)/g;
+const scopeIds = (root: HTMLElement, suffix: string, known: Set<string>) => {
+  const tail = `--${suffix}`;
+  const all = root.querySelectorAll<Element>('[id]');
+  for (const el of Array.from(all)) {
+    const id = el.getAttribute('id') ?? '';
+    if (!id || id.endsWith(tail)) continue;
+    known.add(id);
+    el.setAttribute('id', id + tail);
+  }
+  if (!known.size) return;
+  const fix = (v: string) => v.replace(URL_REF, (m, q: string, id: string) => (known.has(id) ? `url(${q}#${id}${tail}${q})` : m));
+  for (const el of Array.from(root.querySelectorAll<Element>('*'))) {
+    for (const a of Array.from(el.attributes)) {
+      const v = a.value;
+      if ((a.name === 'href' || a.name === 'xlink:href') && v.startsWith('#') && known.has(v.slice(1))) {
+        el.setAttributeNS(a.namespaceURI, a.name, v + tail);
+      } else if (v.includes('url(')) {
+        const w = fix(v);
+        if (w !== v) el.setAttributeNS(a.namespaceURI, a.name, w);
+      }
+    }
+    if (el.tagName.toLowerCase() === 'style' && el.textContent?.includes('url(')) {
+      const t = el.textContent;
+      const w = fix(t);
+      if (w !== t) el.textContent = w;
+    }
+  }
+};
+const Scoped: React.FC<{ cell: string; children: React.ReactNode }> = ({ cell, children }) => {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const known = React.useRef(new Set<string>());
+  React.useLayoutEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    const run = () => scopeIds(root, cell, known.current);
+    run();
+    // a piece that measures itself and renders again, or a picture that mounts late, brings ids and references back
+    const mo = new MutationObserver(run);
+    mo.observe(root, { subtree: true, childList: true, attributes: true, characterData: true });
+    const handle = delayRender(`sheet cell ${cell}: scoping ids`);
+    let done = false;
+    const release = () => {
+      if (done) return;
+      done = true;
+      continueRender(handle);
+    };
+    const raf = requestAnimationFrame(() => {
+      run();
+      release();
+    });
+    return () => {
+      mo.disconnect();
+      cancelAnimationFrame(raf);
+      release();
+    };
+  }, [cell]);
+  return (
+    <div ref={ref} style={{ display: 'contents' }}>
+      {children}
+    </div>
+  );
+};
 
 export const Sheet: React.FC<{ film?: string; from?: number; to?: number; frames?: number[]; cols?: number }> = ({ film, from = 0, to, frames, cols = 6 }) => {
   const F = FILMS[film ?? Object.keys(FILMS)[0]];
@@ -37,11 +109,13 @@ export const Sheet: React.FC<{ film?: string; from?: number; to?: number; frames
       {list.map((fr, i) => (
         <div key={i} style={{ position: 'absolute', left: (i % gc) * w, top: Math.floor(i / gc) * h, width: w, height: h, overflow: 'hidden', outline: '1px solid #000' }}>
           <div style={{ width: FW, height: FH, transform: `scale(${best.s})`, transformOrigin: '0 0', position: 'relative' }}>
-            <Freeze frame={fr}>
-              <FilmSize F={F}>
-                <F.component />
-              </FilmSize>
-            </Freeze>
+            <Scoped cell={`c${i}`}>
+              <Freeze frame={fr}>
+                <FilmSize F={F}>
+                  <F.component />
+                </FilmSize>
+              </Freeze>
+            </Scoped>
           </div>
           <div style={{ position: 'absolute', left: 6, top: 4, font: `600 ${cols > 4 ? 12 : 15}px monospace`, color: '#ff0', background: 'rgba(0,0,0,.6)', padding: '1px 5px' }}>
             {fr} · {(fr / 30).toFixed(2)}s
@@ -100,11 +174,13 @@ export const Joins: React.FC<JoinsProps> = (props) => {
         return (
           <div key={k} style={{ position: 'absolute', left: k * cell, top: band, width: cell, height: ch, overflow: 'hidden' }}>
             <div style={{ width: FW, height: FH, transform: `scale(${s})`, transformOrigin: '0 0', position: 'relative' }}>
-              <Freeze frame={f}>
-                <FilmSize F={F}>
-                  <F.component />
-                </FilmSize>
-              </Freeze>
+              <Scoped cell={`c${k}`}>
+                <Freeze frame={f}>
+                  <FilmSize F={F}>
+                    <F.component />
+                  </FilmSize>
+                </Freeze>
+              </Scoped>
             </div>
             <div style={{ position: 'absolute', inset: 0, boxShadow: fr === row.start ? `inset 0 0 0 ${Math.max(3, label / 5)}px #ff0` : inMove && !single ? 'inset 0 0 0 2px #ff0' : 'inset 0 0 0 1px #000' }} />
             <div style={{ position: 'absolute', left: 8, top: 6, font: `600 ${label}px monospace`, color: inMove ? '#ff0' : '#ccc', background: 'rgba(0,0,0,.66)', padding: '2px 8px' }}>

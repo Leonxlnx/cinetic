@@ -147,7 +147,9 @@ Hard rules from review; each is a tell on sight. The file named after each owns 
 33. **A turn told, not shown.** The turn or the second turn as a headline on an empty frame; the same card's text
     swapped again and again as the join; a step that happens nowhere real.
 34. **Bugs left in.** Text cut by the frame or a mask, an overlap or overprint, an empty slab during a reflow, a
-    one-frame pop, a digit half-rolled on a held frame, a fix row closed as "accepted".
+    one-frame pop, a digit half-rolled on a held frame, a fix row closed as "accepted"; an interface line or card at
+    rest, cut by the frame on two sides for more than a second (`check`'s "cut on 2+ sides" names the seconds: each is
+    a bug to fix, not information).
 
 ### Overused now
 
@@ -321,7 +323,9 @@ After it scores 17 or more, run at least two polish passes:
    without padding, a press its target does not answer, a join whose frame is not covered, a hold with nothing to read,
    a repeated move, a sound too loud. List only faults you can point to on a frame: a short film may have six, and a
    fix invented to reach a count makes a new fault. "Re-checked on" names the image the fix was closed on (for a join, its join image:
-   `out/joins/main-join-245.png`).
+   `out/joins/main-join-245.png`). A row closes only on an image exported from the FINAL render: `frames.mjs joins
+   --file out/main.mp4` (`out/joins/main-final-join-245.png`) or `strip out/main.mp4 --at <s>`, never only on the
+   composition's image, which is what the code meant and not what the encode shipped.
 3. Do every fix, re-render, and re-check each one on its strip or join image; tick it off.
 4. Run the pass again with a fresh list. Two passes is the minimum; stop when a pass finds fewer than five real faults.
    Each pass lists the bugs it found by frame (`f618-623 overprint at the dive; f782-786 claim outside the plate`),

@@ -173,7 +173,6 @@ export const squirclePath = (s: number, n = 5, steps = 160) => {
   return `M${pts.join('L')}Z`;
 };
 
-let iconSeq = 0;
 /**
  * An app icon: a squircle tile (a true superellipse) with a two-stop gradient (`colors`: top, bottom, blended in OKLab),
  * a soft top highlight, a 1 px lit rim inside the top edge and a darker one below, a soft drop shadow tinted to the
@@ -190,8 +189,8 @@ export const AppIcon: React.FC<{
   rim?: boolean;
   style?: React.CSSProperties;
 }> = ({ size = 160, colors = ['#4A4D57', '#1C1D22'], glyph, gloss = 0.6, depth = 1, rim = true, style }) => {
-  const [idRef] = React.useState(() => `aico${++iconSeq}`);
-  const id = idRef;
+  // unique in the page (two icons, a sheet's cells): React's id, letters and digits only
+  const id = `aico${React.useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const c0 = colors[0];
   const c1 = colors[1] ?? colors[0];
   const mid = mixLab(c0, c1, 0.5);

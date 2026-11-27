@@ -98,7 +98,9 @@ film) and the product's own object: composite the product's label, tape or scree
 lacks it. Never another brand's packaging, sticker or mark in the picture, never a person cut off at the neck by the
 crop unless the crop is the idea (an anonymous torso is a stock photo, not a payoff). Check every picture at full size
 (`frames.mjs still --frame N --full`) for marks, labels and text that are not the film's, and crop, retouch or replace
-the picture when one shows.
+the picture when one shows. Every picture shows what its words claim: a dish after the steps contains what the steps
+named, a room shown as "after" has the change in it; a picture that contradicts its caption is replaced, not captioned
+around.
 
 ## 5. Sound effects
 

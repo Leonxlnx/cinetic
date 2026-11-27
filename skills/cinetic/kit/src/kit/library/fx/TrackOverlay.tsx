@@ -46,6 +46,7 @@ export const TrackOverlay: React.FC<{
   pillInk?: string;
 }> = ({ at: start, track, color = '#FF3B4E', dot = '#FFB020', line = 'rgba(255,255,255,0.75)', labels = true, arcs = true, guides = false, corners = false, size = 24, leaveAt, pill = 'rgba(255,255,255,0.94)', pillInk = '#14161A' }) => {
   const frame = useCurrentFrame();
+  const uid = React.useId().replace(/[^a-zA-Z0-9]/g, '');
   if (frame < start || (leaveAt !== undefined && frame >= leaveAt)) return null;
   const T = track(frame);
   const draw = ease.out(t01(frame, start, 10));
@@ -67,11 +68,11 @@ export const TrackOverlay: React.FC<{
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
       <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
         <defs>
-          <marker id={`trk-arrow-${start}`} markerWidth="12" markerHeight="12" refX="6" refY="6" orient="auto">
+          <marker id={`trk${uid}a${start}`} markerWidth="12" markerHeight="12" refX="6" refY="6" orient="auto">
             <path d="M1 1L7 6L1 11" fill="none" stroke={line} strokeWidth="1.6" />
           </marker>
         </defs>
-        {arcPath && <path d={arcPath} fill="none" stroke={line} strokeWidth={1.6} strokeDasharray="10 8" pathLength={1000} style={{ strokeDashoffset: 0 }} markerEnd={`url(#trk-arrow-${start})`} opacity={draw} />}
+        {arcPath && <path d={arcPath} fill="none" stroke={line} strokeWidth={1.6} strokeDasharray="10 8" pathLength={1000} style={{ strokeDashoffset: 0 }} markerEnd={`url(#trk${uid}a${start})`} opacity={draw} />}
         {guides &&
           T.map((t, i) => (
             <g key={`g${i}`} stroke={color} strokeWidth={1} opacity={0.35}>

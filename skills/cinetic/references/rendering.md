@@ -13,9 +13,17 @@ Treat the user's machine with care.
 | motion preview | `node scripts/frames.mjs render` (half size) | ~0.2-0.4 s per frame on a laptop CPU |
 | motion check | `node scripts/frames.mjs strip out/main-preview.mp4 --at 7.5 --dur 2` | seconds |
 | every join at real size | `node scripts/frames.mjs joins` (the film's `JOINS`, or `--at 120+14,245+20`; `--full` for 1920 px cells) | one render call: ~1-3 min with bundling for a few joins (every frame of each move) |
+| every join, from the final | `node scripts/frames.mjs joins --file out/main.mp4` (same joins, cut from the rendered file: what ships) | ffmpeg only, seconds to a minute |
 | final | `node scripts/frames.mjs final` (picture + sound + loudness in one pass) | ~0.5-2.5 s per frame on software GL (textures, blurs and photos are the slow ones) |
 
-Read every sheet and strip you make (they are images): that is how you see the film. Judge motion from strips of a rendered
+Read every sheet and strip you make (they are images): that is how you see the film. A sheet of many frames is a
+preview: small cells hide small faults, so a full-size still (`still --frame N --full`) or a join image is the proof of a
+frame. Each cell of a sheet or join image keeps its own SVG ids (gradients, masks, clips, filters), so a cell draws
+what a still of that frame draws; if a cell and a still ever differ, the still is right.
+
+A project remembers the kit it was made from (`cinetic-kit.json`, written by `new-film.mjs`). When the skill's kit has
+changed since, `check` prints a WARN line (never a failure): copy the skill's `src/kit`, `src/Sheet.tsx` and `scripts`
+over the project's to take the fixes, or scaffold a new project. Judge motion from strips of a rendered
 preview, not from single frames.
 - `sheet` renders the whole film as 36 frozen frames in one still; `--safe` outlines the 8 % margin in every cell.
   `--frames` zooms in on one moment (a turn, a morph). The sheet shows composition and rhythm, not small type: for any
@@ -30,8 +38,9 @@ preview, not from single frames.
 - `check` measures the preview (how crowded the frames are, change every half second, empty frames, ending length) and
   prints what to fix. Its `air` line says how much of the frame is sharp detail, how often three or more things share a
   frame and how often the frame cuts on two sides: information, never a target (a rich frame is not a crowded one; a film
-  fails as crowded only when detail covers 35 % or more of the frame in over a quarter of its samples; over a
-  photograph or footage the fix is a scrim or a dim under the card, never a blur on the picture). A LOOK line names
+  fails as crowded only when detail covers 35 % or more of the frame in over a quarter of its samples; the texture of
+  one full-bleed photograph or footage is not counted, only the layer above it (a `picture` line says where), so the
+  payoff picture stays sharp: never blur it to pass, move the text to the ground or drop what crowds it). A LOOK line names
   every stretch over 1 s cut on 2+ sides: a resting interface line cut that long is a FIX to look at on a full-size
   still, though the measure alone fails nothing. The coverage
   figure is information too. Still half-seconds are named past a quarter (each hold must have something to read) and
