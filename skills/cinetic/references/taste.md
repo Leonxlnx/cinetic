@@ -9,7 +9,8 @@ than one accent, off-hue tints, coloured punctuation), the generic AI-app look (
 with grey text, a glowing orb, a sparkle for "AI", glass on everything), and a serif font picked at random.
 
 The other failure is the opposite of clutter: a film that is clean, calm and plain, with no story, generic UI and empty
-frames, reads as cheap. Richness, depth, detail and craft matter more than restraint; clean composition stays.
+frames, reads as cheap. Craft, depth, designed motion and detail inside the one thing on screen matter more than
+restraint; clean composition stays, and richness never means more information at once.
 
 ## Never
 
@@ -36,6 +37,11 @@ Hard rules from review; each is a tell on sight. The file named after each owns 
   whole frame at once ([joins](film-grammar.md#joins)).
 - No bell, chime, glass, coin or jingle sound, no harsh or exaggerated effect, and no effect on the ending: music only
   ([sound-design.md](sound-design.md)).
+- No stock photograph as wallpaper, no picture that fails the bar, no card or plate over a photograph, no lockup on a
+  plate ([imagery](motion/imagery.md#house-rules), [cards-ui](motion/cards-ui.md#house-rules)).
+- No motion that stops dead, starts with a jerk or steps in whole pixels; no frame still for over ~0.3 s; no screen
+  full of small information at once ([stay in motion](film-grammar.md#stay-in-motion),
+  [one thing](film-grammar.md#one-thing-at-a-time)).
 - Other products only as their real, current, full-colour marks or faithful rebuilds of their real screens; never a
   one-colour silhouette of a colour mark, never a rough mock of a product people know ([assets.md](assets.md)).
 
@@ -46,9 +52,9 @@ Hard rules from review; each is a tell on sight. The file named after each owns 
 ### Look
 1. **No focal subject.** A heading, a list, a blurred layer, cropped UI, a chip and a label in one frame with nothing
    leading; three things competing for the eye. Keep one focal subject in every frame and let the rest support it.
-   The opposite fails too: a small UI token or a short line alone on a blank ground beat after beat, generic cards with
-   two grey lines, nothing specific, no picture, no texture, no depth. A frame is calm when the eye knows where to look,
-   not when it is empty.
+   The opposite fails too: a small UI token or a short line alone on a dead ground beat after beat, generic cards with
+   two grey lines, nothing specific, no designed light, no depth, nothing moving. A frame is calm when the eye knows
+   where to look, not when it is empty.
 2. **Text as fog.** Blurred, ghosted, faded or tiny unreadable copies of words, rows or code behind or around a
    statement; a wall of tiny pale rows; a full-frame screen of code nobody can read; tiny captions on tiles and corners.
 3. **Crops that read as mistakes.** Mid-size lines and UI cut on two or three edges at once; a word cut mid-word at
@@ -76,7 +82,8 @@ Hard rules from review; each is a tell on sight. The file named after each owns 
     product's, glow on every card, glass on every panel, a neon route on a black grid, a hand-drawn squiggle in the accent.
 11. **Effects stacked.** Bokeh, particles, lens flares, light leaks, motion blur on every move (or none on a 250 px/f
     whip), pure black with banding gradients.
-12. **Random stock.** Pictures from five different shoots and grades; stock used as wallpaper behind text.
+12. **Random stock.** Pictures from five different shoots and grades; stock used as wallpaper behind text; a picture
+    added because a film "needs visuals"; a white card or plate laid on a photograph.
 
 ### Type
 13. **Medium everything.** Every line the same mid size whatever its word count, and no contrast of scale (no giant
@@ -101,7 +108,8 @@ Hard rules from review; each is a tell on sight. The file named after each owns 
     like a metronome.
 20. **Bounce and overshoot on everything,** including data, prices, progress bars and the pointer; a 360-degree logo
     spin; a bouncing CTA; a screen shake on a landing; a screen flash.
-21. **Dead holds and aimless float.** Frames frozen for a second or more; or the opposite, a camera drifting under
+21. **Dead holds and aimless float.** A frame frozen for a third of a second or more, a move that stops dead or starts
+    with a jerk, a value stepping in whole pixels; or the opposite, a camera drifting under
     everything with no direction and no reason.
 22. **Generic transitions.** Zoom-blur, glitch, slide-wipe, spin, the same one on every cut; a token (a full stop, a
     pill, a dot) carried while the whole ground changes colour around it; a flood that does not cover the frame; the
@@ -148,7 +156,8 @@ frosted panels everywhere; rows of glossy 3D icons as decoration (one crafted ti
 and clay 3D as a default; bento-grid tours and three-card feature rows; a
 centred mid-size headline fading up; a prompt box being typed into as the opener; a fast feature montage nobody can
 read; dark mode with grey text and tracked labels; neon accents; trend display faces used as defaults; floating device
-mockups; electropop with drum drops; motion for its own sake (random pushes, perpetual drift, everything bouncing).
+mockups; electropop with drum drops; motion for its own sake (random pushes, a float with no direction, everything
+bouncing). A slow idle with a direction under a hold is not this: it is required.
 Use one only when the brief truly asks for it.
 
 ---
@@ -159,9 +168,9 @@ Use one only when the brief truly asks for it.
    in one sentence with "until", "then" and "so", and its concept was chosen to tell it, against two rejected ones.
    Every beat is caused by the previous one: an object becomes the next beat, a word carries across a cut, a hub is
    re-entered, one artefact runs through every feature. At least two chaining devices a film (`film-grammar.md` section 3).
-2. **One focus, rich world.** Each frame has one thing to read at a time, supported by a rich, specific world
-   (photographs, texture, the product's real surfaces in detail, secondary elements that react) that may fill the
-   frame; a resting line and the focal component sit 8 % or more from the edges.
+2. **One thing at a time, a designed world.** Each shot has one subject and one thing to read, in a world designed in
+   code (ground, light, the product's surfaces, objects); interface one component, large, built in steps; a resting
+   line and the focal component sit 8 % or more from the edges ([one thing](film-grammar.md#one-thing-at-a-time)).
 3. **One world, held strictly.** One ground system (a flat clean colour, a real picture, or a bold designed scene),
    one palette (one accent, used for meaning, on a tenth of the frame or less), one sans voice
    for statements and UI (or the brand's serif voice for statements), mono only for code and data, one material family
@@ -171,12 +180,14 @@ Use one only when the brief truly asks for it.
 5. **Joins carry the subject.** Each join carries the thing the viewer is watching, large, or is a hard cut on a
    musical event (`film-grammar.md` joins); cuts land on motion; morphs, irises and dives are made of the scene's own
    geometry and cover the frame. Almost no dissolves.
-6. **Front-loaded easing.** Arrivals put 50-80 % of their travel in the first frames and settle long; springs at bounce 0
-   unless the object is playful; re-centres jump; whips are asymmetric; the camera brakes without bounce.
-7. **Two clocks.** Digital things step (on twos, threes, 6 fps), physical things ease. At least one stepped element in a
-   smooth film, or a smooth camera over stepped content.
-8. **Holds are read.** A result or a line is held until it is read, with idle life (a creep, a breath, a sheen); no
-   hold with nothing to read. The ending is the only rest.
+6. **Smooth, exponential motion.** Arrivals put most of their travel in the first frames and settle long (expo-out);
+   moves from rest ease in and out; zooms by a constant ratio; two moves in a row meet without a corner; springs at
+   bounce 0 unless the object is playful; re-centres glide fast and settle; the camera brakes without bounce
+   ([stay in motion](film-grammar.md#stay-in-motion)).
+7. **Two clocks.** Content that is digital by nature (a pixel mosaic, a spinner) may step; position, scale and the
+   camera never step.
+8. **Always in motion.** A result or a line is held until it is read, and while held it moves (a drift, a push, a
+   breath); no hold with nothing to read; every exit is the next entrance. The ending is the only rest.
 9. **Type with a decision.** Resting lines sized by their word count, centred or set beside or over their picture;
    one spectacle word giant. One or two arrival styles. At most one emphasised word or phrase a statement, in the accent; never by a second
    face, a heavier weight or a bounce (`type.md`).
@@ -198,7 +209,9 @@ change of colour with no reason.
 | Symptom on the sheet | Fix |
 |---|---|
 | no story | write the five lines (`film-grammar.md` story) and rebuild the beats from them |
-| a plain or empty frame | add the world: a licensed photograph, the product's detailed surface, texture, depth in layers, secondary elements that react to the subject |
+| a plain or empty frame | design the world: the product's detailed surface, a lit object, depth in layers, a designed move; never a stock photograph or a card added to fill it |
+| a dense screen, too much at once | one component, large, built in steps; a number or claim in its own shot |
+| a move that jerks, stops dead or pops | rebuild it on exponential curves with a long tail (the smooth motion section of the motion references); re-measure with `frames.mjs motion` |
 | generic UI | start from the library's UI ([library-ui.md](library-ui.md)); real names, states, small icons, even padding, its app context |
 | no focal subject | pick the one thing to read; set the rest behind it by scale, focus or depth, or give it its own beat |
 | text behind or around a statement | delete it; the line sits on a flat ground, a calm area of a picture, or beside its object |
@@ -206,7 +219,7 @@ change of colour with no reason.
 | a beat looks like a slide | find what the previous beat can hand it (object, word, direction, shape); rebuild the join |
 | a crossfade between two scenes | a join that carries the subject, or a hard cut on a music event (`film-grammar.md` joins) |
 | identical feature cards | turn them into chapters: hub and dive, or one artefact through every verb |
-| a frozen second | add idle life (a creep of 0.8 % over 20 f, a breath, a sheen) if it is read; cut it if nothing is read |
+| a still stretch (over ~10 f) | add a slow idle with a direction (a creep of 0.8 % over 20 f, a drift, a breath) if it is read; cut it if nothing is read |
 | text fades in | cut on, a swap or a decode, or a masked rise; keep 2-4 f fades only inside words |
 | everything springs | springs at bounce 0, or `ease.out` / `ease.inOut` on cards and camera; keep one pop family |
 | UI unreadable or busy | one component, flat, 1.4x camera; the rest reduced to quiet shapes; or a punch-in |
@@ -246,7 +259,7 @@ contrast of scale; what is the story in one sentence. If an answer is missing, t
 | # | Point | Pass when |
 |---|---|---|
 | 1 | **One focal subject** | in 80 % or more of the frames one element is clearly the subject (the brightest, most contrasted thing) and everything else supports it |
-| 2 | **Rich, not plain** | most frames carry specific content that means something (a photograph, the product's detailed surface, texture, depth, reacting secondary elements); a statement alone on an empty ground only for a line that must land; a resting statement and the focal component sit 8 % or more from every edge |
+| 2 | **One thing, designed** | one subject and one thing to read a shot, in a designed world (ground, light, the product's surface, depth); interface one component, text 30 px or more; no stock picture, no picture that fails the bar, no card that is not real interface; a resting statement and the focal component sit 8 % or more from every edge |
 | 3 | **Clean crops** | on the full-size stills and join images, not the sheet: the frame cuts only a lone giant word, or one component on one side in close-up; no resting line or key word is cut; never two sides at once |
 | 4 | **Readable or absent** | no blurred, ghosted or faded text behind or around statements; no walls of unreadable rows or code; dense UI shown at a readable crop while an action happens in it |
 | 5 | **Clean grounds** | a flat clean colour, a real picture or a bold designed scene; no faint gradient, no soft bloom as a ground, no grain on flat grounds, no vignette corners, no dimmed UI as a ground, no banding |
@@ -258,9 +271,9 @@ contrast of scale; what is the story in one sentence. If an answer is missing, t
 | 11 | **A story, one world** | `BEATS.md` opens with the five-line story and the concept line; the one-sentence test passes ("until", "then", "so"); the payoff is visible and an opening image returns changed; every thumbnail could only belong to this film |
 | 12 | **A first frame with an idea** | frame 0 is the concept's subject already moving (the product, the primitive, the first words, the mark); when the concept shows the product, it or its artefact is on screen by 5 s |
 | 13 | **Joins** | on the whole-move join images, every cell clean; the join test in `BEATS.md` passes: every join carries the subject (a sixth of the frame or more) or is an allowed hard cut on a beat; the frame is covered at every switch; every change of ground, mode or accent has a story reason |
-| 14 | **Holds are read** | no hold with nothing to read before the ending; every hold has idle life; every action shows before, during and after |
-| 15 | **Restrained vocabulary** | against the Devices block: at most 2 text arrival styles, 1 overshoot family, no flash, no shake; no move more than twice; at most 1 flood, and at most two of flood, relay, wall and a mark gathered from a wall |
-| 16 | **Pace** | at most about a third of the half-seconds before the ending are nearly still, each one read (`check` pace); mean beat 1.4-2.2 s; one thing first, then more, then many; a viewer can say what happened in every beat |
+| 14 | **Smooth and always moving** | on the motion pass's strips and `frames.mjs motion`, not the sheet: no pop, no dead stop, no hard start from rest, no stepping of position or scale, nothing still over ~10 f before the ending; every join one move; every action shows before, during and after |
+| 15 | **Strong moves, varied** | against the Devices block: a designed move every 3-4 s, linked; plain text rises or fades on two lines at most; no entrance more than twice; 1 overshoot family, no flash, no shake; at most 1 flood |
+| 16 | **Pace** | every hold read and moving; mean beat 1.4-2.2 s; one thing first, then more, then many; a viewer can say what happened in every beat |
 | 17 | **Composition variety** | no two adjacent beats share a composition; at least 4 compositions; the ground changes only with the story |
 | 18 | **The camera goes to the event** | a held framing carries a large change about every 0.7 s; when something happens elsewhere the camera is on it or travelling; it moves on the machine's turn and holds while the person acts |
 | 19 | **The output and the spectacle** | where the concept requires it, the product's result is seen once in macro or as giant type (key words 120 px or more); the spectacle (15 s or more) lasts 1.5 s or more and reads |
@@ -280,7 +293,26 @@ each cut** (every cut except the one into the ending).
 
 ## 5. The polish loop
 
-A film is not finished after the first cut. After it scores 17 or more, run at least two polish passes:
+A film is not finished after the first cut, and its motion takes the most time of all.
+
+### The motion pass
+
+Before the bug passes, at least two motion passes. Motion that is merely correct reads as angular and laggy; it has to
+be smooth and satisfying, and that takes rework.
+1. List every join and every entrance with its first frame and length (`JOINS` covers the joins).
+2. Render each as consecutive frames (`frames.mjs joins`, `strip --at <s>`) and measure the preview with
+   `frames.mjs motion out/main-preview.mp4` (pops, dead stops, hard starts from rest, stepping, stillness, a curve image).
+3. For each, write in `BEATS.md` (`frame | move | what is not smooth | the change | re-checked on`): a corner between
+   two moves, a landing with no tail, a start from rest with a jerk, a linear ramp, a value stepping in pixels, a still
+   stretch, a join where A stops before B starts, a move too fast to follow. Rebuild it on exponential curves (the
+   smooth motion section of the motion references), re-render, re-measure.
+4. Two passes is the minimum, and a pass that finds nothing is not a reason to stop: look again at the three moves that
+   carry the film and make each one better (a longer tail, a better hand-off, a cleaner curve). Never stop at "it
+   passes"; stop when every join and entrance is one you would show on its own.
+
+### Bug passes
+
+After it scores 17 or more, run at least two polish passes:
 1. Render a preview and make strips of consecutive frames (`frames.mjs strip <video> --at <s>`) of every beat, and the
    join images of every join (`frames.mjs joins`, below), not only the 36-frame sheet. Step through the first twelve
    frames of every plate, card and window as it arrives (`sheet --frames N,N+1,...,N+11`, or its join image): no plate
@@ -320,7 +352,8 @@ The effort checklist: add at least eight of these ten, deliberately, and tick th
    numbers); the real, current, full-colour marks of other products.
 4. **A texture family:** one material across the film (grain on photographs, halftone, dither, a lens, tracking marks,
    paper) used as join material at least twice.
-5. **Photographs:** at least one licensed photograph or footage plate that is the world, the content or the payoff.
+5. **A designed world:** a ground, light and objects built for this film (a picture only when it passed the bar in
+   [imagery](motion/imagery.md#house-rules)).
 6. **Variation:** a recurring device changes every time it returns (timing, direction, size, what it reveals); no
    identical repeat, nothing more than twice.
 7. **Sound on picture:** every cut on the music's grid; one musical event (a drop, a stop) used as a join; effects only

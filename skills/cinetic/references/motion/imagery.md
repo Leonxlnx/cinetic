@@ -5,13 +5,14 @@ in**. In both cases they must look like one shoot, and they must be *acted on*: 
 re-coloured by state. Random stock with mixed grades, used as wallpaper behind text, is the clearest template tell there is.
 All numbers at 30 fps, 1920x1080.
 
-Real pictures make a film rich; an empty ground with a small token on it reads as cheap. Give every film at least one
-licensed photograph or footage plate, and use pictures in these roles:
-- **the world behind the UI:** a landscape behind the calendar, a desk at the hour the story happens, a room the screen lives in;
-- **the content the product acts on:** the shoot that is masked, the portrait that is selected, the page that is edited;
-- **a breather between UI scenes:** a plate that holds while a line is read on it, then carries the next scene in;
-- **the payoff in the world:** the campaign on a street, the shop that is live, the table at the wedding;
-- **a metaphor:** a sunset for a lost evening, a tree in flower for making things.
+**Pictures only when they are good.** A mediocre photograph makes a film look cheaper than no photograph: the world of
+a film is designed in code (grounds, the product's interface, objects, type, light), and a film needs no picture to be
+rich. A photograph appears only when:
+- **the user supplied it** (their product shots, their people, their place), or
+- **it is the product's content** (a photo app's photos, a recipe app's dishes, a travel app's places), shown inside the
+  product or as a designed crop the product acts on (masked, selected, developed),
+and it passes the bar in house rule 9. Never a stock photograph as wallpaper, never a picture because "a film needs
+visuals", never a picture as a breather or a metaphor. If no picture passes the bar, the film has none.
 
 Kit: Remotion's `Img`, `OffthreadVideo`, `staticFile`; `Camera`, `At` (camera); `Card`, `Box`, `Grain` (on photographs only), `Defocus`
 (world); motion helpers. Most image treatments here are SVG filters or CSS layers; the reusable ones are listed as kit gaps.
@@ -36,7 +37,15 @@ Kit: Remotion's `Img`, `OffthreadVideo`, `staticFile`; `Camera`, `At` (camera); 
    never several families in one film.
 8. **The payoff picture stays sharp.** Footage or a photograph under a card or a claim gets a scrim (a 20-40 % ink
    or ground-colour layer, or a soft dark band under the card) or a dim of the picture, never a blur; the picture the
-   film ends on is sharp. Blur on a picture is for a fast move or a short rack focus, never a held state.
+   film ends on is sharp. Blur on a picture is for a fast move or a short rack focus, never a held state. No card,
+   plate or pill is laid on a picture to make text readable: the text moves to the ground, or the picture is cropped to
+   a calm band ([cards-ui.md](cards-ui.md#house-rules)).
+9. **The bar a fetched picture must pass.** Look at it at full size (`frames.mjs still --frame N --full`) and keep it
+   only if every answer is yes: sharp at the size it is shown (no upscale, no compression blocks); well lit, with a
+   clear subject; the exact subject of the beat (the dish the steps cook, the place the story names, the cast's own
+   people), never a near miss; one grade with every other picture in the film; nothing in it that contradicts the words
+   on screen or carries another brand's mark; it would look good with no text on it at all. One "no" and it is
+   dropped: find a better one, or build the beat in code. Write the answers for each kept picture in `BEATS.md`.
 
 ---
 

@@ -281,7 +281,8 @@ different tone (the midpoint is mud).
 
 Every join carries the thing the viewer is watching, large (the object, the sentence being read, the card, the
 picture), or it is a hard cut on a musical event. Never a token (a full stop, a small pill, a dot) carried while
-everything else changes: the eye sees the colour jump, not the continuation. The best joins are made of the scene's own
+everything else changes: the eye sees the colour jump, not the continuation. A join is one move: A's exit is B's
+entrance, with no moment where A has stopped and B has not started ([stay in motion](#stay-in-motion)). The best joins are made of the scene's own
 stuff and usually carry two things at once (an object and a camera move, a word and a beat). Start from the library's
 turns ([library-turns.md](library-turns.md)) and adapt them; build by hand what it lacks
 ([motion/turns.md](motion/turns.md)).
@@ -295,7 +296,7 @@ turns ([library-turns.md](library-turns.md)) and adapt them; build by hand what 
 | **Cause and effect** | A ends on the action (a press, a send, a drop); B is its result forming (6-20 f of development) where the action happened (`WindowOpen` from the pressed button into its window, `GrowIris` into a full scene). |
 | **Camera into or out of the object** | Dive through a shape until the frame is fully covered, rack focus between two layers over a background that stays, or pull back from a detail until it is one of many (`DiveInto`). |
 | **Material bridge** | Only with the film's own texture, and only when it builds the next image (the pile's cells become the next word); never generic noise (`DotReveal`, `BlockBurst`). |
-| **Hard cut on the beat** | Right on the story's turn, the second turn and the cut into the mark; elsewhere only on a music event (a kick, a drop, a stop) or a new act in a tour that opens mid-action, and there the join carries the subject wherever it can. Never two in a row. |
+| **Hard cut on the beat** | Right on the story's turn, the second turn and the cut into the mark; elsewhere only on a music event (a kick, a drop, a stop) or a new act in a tour that opens mid-action, and there the join carries the subject wherever it can. Both sides move: A on its fastest frame, B already moving ([cut on motion](#45-cut-on-motion)). Never two in a row. |
 
 Never: a ground colour change around a small object; the ground changing first and the object after it; a flood or iris
 that ends before it covers the frame; a window that opens to the full frame with anything of the old scene left round
@@ -355,9 +356,9 @@ sometimes a held frame) right before the climax and right before the reveal.
 ### 4.2 Shot and beat lengths (30 fps)
 - Pace: a new beat every 0.8-2.2 s (a 30 s film has 15-30 beats). Inside a beat something larger than a caret changes
   at least every 0.5 s (a word joins, a block lands, the crop changes, a value steps), except while something is read.
-  A statement or a result may rest for its reading time with idle life (a creep, a breathing light): up to about a
-  third of a film's half-seconds may be read like that. The flaw is a hold with nothing to read, and the opposite flaw
-  is a beat too fast to follow: a viewer can say what happened in every beat.
+  A statement or a result rests for its reading time, and while it rests it still moves (a drift, a push, a breath:
+  [stay in motion](#stay-in-motion)). The flaw is a hold with nothing to read, and the opposite flaw is a beat too fast
+  to follow: a viewer can say what happened in every beat.
 - Statement: 30-45 f. Titles are 2-4 words; nothing on screen should need more than 1.5 s to read.
 - Reading hold for a line: `words / 3 + 0.5` s minimum (a 9-word line: 105 f). Read it aloud at speed to check.
   At the end the budget wins: the claim with its full reading time, read while its image still moves, then a lockup of
@@ -389,15 +390,33 @@ Decelerating cadence is the counterpart for emphasis: a colour wave across a wor
 - The end: a 0.4-0.7 s drop-out before the final kick, or a hard stop of the music and 2-3.5 s of silent hold.
 
 ### 4.5 Cut on motion
-Hard cuts land **while something moves**: on the fastest frame of an accelerating exit, never after a settle. A cut after
-a dead stop reads as "next slide". The only cut that may land on stillness is the one into the lockup, and even there the
-mark is usually mid-settle.
+Hard cuts land **while something moves**: on the fastest frame of an accelerating exit, never after a settle, and B
+enters already moving the same way. A cut after a dead stop reads as "next slide"; that includes the cut into the
+lockup, whose mark enters mid-move.
 
 ### 4.6 Holds that are read
-No frame holds dead still for more than ~0.6 s. Every element keeps a small life after it settles (idle life): a creep
-of 0.5-1 % scale over 20 f, a drift of 0.5-2 px/f, a breathing light, a sheen travelling along an edge, a counter, a
-caret. Only the lockup is allowed to freeze, and only after it has crept. Test: no two consecutive frames identical
-anywhere except the last second.
+A hold is never a still frame ([stay in motion](#stay-in-motion)): every element keeps a slow life after it settles (a
+creep of 0.5-1 % scale over 20 f, a drift of 0.5-2 px/f, a breathing light, a counter, a caret). Only the last
+half-second of a lockup may freeze, after it has crept.
+
+### Stay in motion
+A film that stops reads as a slideshow, and a move that starts or ends with a jerk reads as buggy. So:
+- **Nothing is ever fully still.** Two consecutive frames are never identical before the last half-second; a stretch
+  with nothing moving for more than about 10 frames (a third of a second) is a bug, fixed by an idle (a drift with a
+  direction, a slow push, a breath), never by a wiggle.
+- **Nothing stops dead.** Every landing has a tail: it covers most of its distance in the first frames and settles over
+  15-30 more (an exponential approach), so its speed reaches zero gently, never in one frame.
+- **Exponential and logarithmic curves are the house way.** An entrance arrives fast and settles long (expo-out); a move
+  that starts from rest eases in and out; a zoom changes scale by a constant ratio per frame (`logScale`), never a
+  linear scale; when two moves follow each other, the second starts at the speed the first ends with, so the path has
+  no corner. Never a linear ramp, a value stepped in whole pixels, a one-frame pop, a camera snap. The stepped clock
+  ([two clocks](#5-two-clocks)) is for content that is digital by nature (a pixel mosaic, a spinner), never for
+  position, scale or the camera.
+- **Every exit is the next entrance.** A scene does not stop and then cut: its last move hands its speed and its
+  subject to the next scene ([joins](#joins)).
+- **Judge motion on every frame,** never on a sheet: strips of consecutive frames, the join images and
+  `frames.mjs motion` (pops, dead stops, hard starts from rest, stepping, stillness). The curves and helpers are in the
+  smooth motion section of the motion references.
 
 **A result is held until it is read** (0.7-1.5 s, longer for a line by its reading time) with idle life, then it becomes
 the next object. What may not happen is a hold with nothing to read: an empty field waiting, a finished state that says
@@ -563,11 +582,21 @@ each in a different composition (macro, giant type, split, surface), never the s
 swapped. The `output-big` row lands the result before or instead of at UI size (`<Output>` lands the words giant, then
 carries them into the UI). Explaining is one claim a shot, set on or along the object, never a column of text beside it.
 
-Every composition has one focal subject and a rich world (SKILL.md quality 7). A frame is calm when the eye knows where
-to look, not when it is empty: one thing to read at a time, supported by specific stuff that means something (a licensed
-photograph, the product's real surfaces in detail, texture, depth in layers, secondary elements that react to the
-subject), which may fill the frame. A statement alone on an empty ground is for a line that must land, not the default
-beat.
+### One thing at a time
+
+A viewer reads one thing at a time; a frame full of small information reads as noise, however well made.
+- **A shot has one subject and one thing to read.** Everything else is ground, light or depth, quiet and unreadable on
+  purpose, never a second message.
+- **Interface is shown one component at a time,** large enough to read on a phone (UI text 30 px or more on a 1920
+  frame, 40 px or more on a 1080-wide one, after the camera's zoom), built in steps (the frame, then the row that matters,
+  then its state), never a whole dense screen of small text at once. Its context (a title bar, a status bar) may be
+  there, quiet and partly off frame; the component carries the detail.
+- **A number or a claim gets its own shot,** not a corner of a busy one.
+- **The world is designed in code:** grounds, the product's surfaces, objects, type and light. A photograph appears
+  only by the bar in [imagery](motion/imagery.md#house-rules); a frame without one is not "plain" when its ground, light
+  and object are designed. A statement alone on its ground is fine when the ground is designed and moving.
+
+### The tags
 
 | Tag | What is in the frame | Typical use |
 |---|---|---|
@@ -583,11 +612,10 @@ beat.
 | `object` | one hero object large, lit, turning (a device, a mark, a glass solid, a block) | reveal, climax |
 | `surface` | the product's artefact landing inside another product (a message in a chat, a row in a tracker) | integrations |
 | `stack` | a depth ladder or pile, tilted, nothing set over it | the problem (too much), history |
-| `picture` | a licensed photograph or footage plate as the world, the content the product acts on, or the payoff | a place, a person, the result in the world |
+| `picture` | a photograph the user supplied or the product's own picture content, by the bar in [imagery](motion/imagery.md#house-rules) | the content the product acts on, the user's own world |
 
 "Caption + centred card" on every row is the template look. If rows read like that, make the card the frame
-(`full-ui`), push in on its detail (`macro`), put the caption on the card (`type-on-surface`) or set the moment in a
-real picture (`picture`).
+(`full-ui`), push in on its detail (`macro`) or put the caption on the ground itself (`statement`), never on a plate.
 
 ---
 
@@ -661,8 +689,23 @@ Rules for the block:
   arrivals count as moves: no line arrival (a word cut-on, a rise, one library type piece) is used more than twice, and
   the claim arrives differently from the statements (`frames.mjs check` names a type or turn piece placed more than
   twice, and a `<Words arrive>` repeated on more than two lines).
-- **Budget:** one colour flood at most; a wall only when the claim is literally a quantity; two odometers at most;
-  masked rise and born tint count among the film's two text arrivals.
+- **Budget:** one colour flood at most; a wall only when the claim is literally a quantity; two odometers at most.
+- **Strong moves often** (below).
+
+### Strong moves often
+
+A film is carried by designed moves, and a film of plain rises and fades reads as cheap however clean it is. A designed
+move is one a slide could never do: the camera travelling through the product, an object that becomes the next scene,
+type that builds and transforms, a 3D turn, a library showpiece ([pick by job](library.md#pick-by-job)).
+- **One every 3-4 s at least:** a 15 s film carries four or more, a 30 s film eight, a 45 s film twelve; list them in
+  the Devices block with the frame each starts on. Joins count when they are designed moves.
+- **Linked:** each one ends where the next begins (its object, its direction, its speed), so the film reads as one
+  continuous piece, never a set of tricks.
+- **Plain rises and fades of text are the exception,** at most two lines a film; the library's showpieces are the
+  default vocabulary.
+- **Varied:** no entrance (a type piece, a turn, a `<Words arrive>`) is used more than twice in a film.
+- **Polished, not rushed:** a strong move half done is worse than a plain one. Each gets the motion pass
+  ([taste.md](taste.md#the-motion-pass)) until every frame of it is smooth.
 - **Joins by class.** Name each join's class ([joins](#joins)); at least two are built from the scene's own objects (its
   cells, its words, its shape), and the [join test](#the-join-test) passes.
 - **Not the default chain.** The worked films lean on a flood, a three-host relay, a wall pulled back from and a mark
@@ -686,7 +729,8 @@ Frame 0 is never empty and already moving; the story decides what is there (the 
 story's object, the first words, the mark in a sting). The opening shows one thing first, designed with care and held
 long enough to read, then a second, then more ([escalation](#action-and-escalation)). Pick one:
 - **The hero and the cost:** the person or object we follow with the cost already visible (a phone at 18:40 with 63
-  unread, a bin lid's tally, a queue counter), in a licensed photograph or the product's detailed UI.
+  unread, a bin lid's tally, a queue counter), in the product's UI or a designed object; a photograph only by the bar in
+  [imagery](motion/imagery.md#house-rules), never a stock picture with a card laid on it.
 - **Macro pull-back:** one detail at 3-6x pulls back in log space to the whole product (`motion/camera.md` 5.5). Only when
   that detail is the story.
 - **Cut-on stack:** the category line in cut-on words, re-laid out to two lines (`motion/text.md` 1.1).
@@ -775,15 +819,16 @@ the way that suits the signature:
 9. **The closing line becomes the mark:** a letter or a word of the claim travels into the mark while the rest of the
    line leaves (`useGlyphBox` in [kit.md](kit.md) finds where it sits); never its punctuation. Not after a dive to a
    giant figure and the accent filling the frame, since that whole chain in every film is a tell ([taste.md](taste.md) 30).
-10. **The mark over the payoff:** the mark settles small over the story's last picture (the payoff image), which keeps
-    its idle life.
+10. **The mark over the payoff:** the mark settles small on the story's last image (the product's result, a designed
+    scene, or a picture that passed the bar in [imagery](motion/imagery.md#house-rules)), which keeps moving; the mark
+    stands on the image itself, never on a plate or card over it.
 
 The wordmark's soft scan (`motion/text.md` 10) is a finish beside the mark, not a way for the mark to be born.
 
 - **Never a static logo card, never a fade to blank.** A centred wordmark on a plain ground is the commonest ending of
   all: prefer the mark over the last image, the name as the last word of the sentence, the mark beside the product at
   rest, or the product itself where the format allows.
-- **The claim** sits on a flat ground or a calm area of the payoff picture and is fully readable for its reading time
+- **The claim** sits on a designed ground or a calm area of the payoff image, never on a plate, and is fully readable for its reading time
   (when it needs longer, it stays on as the lockup's line); a line of the claim is said once.
 - **A name revealed mid-film** is fine when it is the film's turn; then the end is the mark small with the CTA, not a
   second reveal.
@@ -802,7 +847,7 @@ The wordmark's soft scan (`motion/text.md` 10) is a finish beside the mark, not 
    answer. No move repeats identically, and none more than twice ([Devices](#devices)).
 4. Mark the held frames (at most one per act), the breath gaps and which elements run on the stepped clock.
 5. Name the poster frame in `BEATS.md` before building: the one frame you would use as the film's thumbnail. It is a
-   crafted image (an object with material and light, a photograph, a figure with a real contrast of scale, the product's
+   crafted image (an object with material and light, a figure with a real contrast of scale, the product's
    result at full size), never a centred line on a ground. Build it first, render it as a still and judge it alone; the
    film holds it for 1.5 s or more.
 6. Copy: titles 2-4 words, sentence case, real nouns, never lorem; a statement ends without a full stop unless the

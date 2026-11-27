@@ -21,11 +21,12 @@ Kit (`ui.tsx`): `Theme` (`lightUI`, `darkUI`), `useArrive`, `Card`, `Window`, `B
 2. **Native fonts for borrowed surfaces.** The product's UI in its own face; a third-party surface (a store, a calendar,
    a payment sheet) in its native face so it reads as real. Kit fonts: Inter for UI, Geist for technical products, a mono
    for code and data only (labels are sentence case in the UI face).
-3. **One focal component at a time, in its context**, flat or at one gentle tilt (12° or less), or **one canvas under one
-   camera** (see `camera.md` 6.1). The component sits in its app (a window with its title bar and sidebar, a palette, a
-   phone, a panel with a header and a composer), not alone on the ground; the context is real but quieter, the focal
-   component carries the detail. Never two windows overlapping at an angle, never a chip pasted on a mock at another
-   scale or light, not a dozen panels flying separately.
+3. **One focal component at a time, large, built in steps**, flat or at one gentle tilt (12° or less), or **one canvas
+   under one camera** (see `camera.md` 6.1). The component is large enough to read on a phone (UI text 30 px or more on
+   a 1920 frame, 40 px or more on a 1080-wide one, after the camera's zoom) and arrives in steps (its frame, the row that
+   matters, its state), never a whole dense screen of small text at once. Its app context (a title bar, a status bar)
+   may show, quiet and partly off frame; the focal component carries the detail. Never two windows overlapping at an
+   angle, never a chip pasted on a mock at another scale or light, not a dozen panels flying separately.
 4. **Designed like a shipped product.** Inside the focal component: avatars, names, timestamps, states and counts, small
    icons (`Icon`), hairline dividers, hover and focus states, one title weight and muted secondary lines, even padding on
    every pill and row, nothing cut inside its container (fit it with `useTextWidth` or shorten it). A generic white card
@@ -35,7 +36,7 @@ Kit (`ui.tsx`): `Theme` (`lightUI`, `darkUI`), `useArrive`, `Card`, `Window`, `B
    button. A cursor is optional; when it appears it is a character, not a pointer (section 6).
 6. **One radius family, soft shadows from one light.** Radii from one scale (e.g. 14 / 22 / 34 / pill); shadows layered
    and soft (`softShadow`), all falling the same way, or none on flat worlds; glass only when there is something behind
-   it to blur, once a shot (`effects.md`). White or frosted cards on a coloured ground are fine.
+   it to blur, once a shot (`effects.md`). A card is real interface (rule 13), never decoration.
 7. **Show the work.** Processing is a working state that says what it is doing ("Reading 3,412 comments", plan lines,
    skeletons resolved by a band; a percentage only when the number is the point, such as an upload the story waits on:
    set `ActionMorph`'s `percent` to match) and resolves in one decisive pass; typing runs at a believable speed to the
@@ -54,6 +55,11 @@ Kit (`ui.tsx`): `Theme` (`lightUI`, `darkUI`), `useArrive`, `Card`, `Window`, `B
     highlight bar); the scroll stops because it found the one item that matters, which lights up. No scroll without both.
 12. **A real third-party product** appears as its real full-colour mark (`<Brand>`) or as a faithful, detailed rebuild of
     its real screen ([entrances.md 5.7](entrances.md#57-real-third-party-logos)); never a rough mock of a product people know.
+13. **No card that is not needed.** Type sits on the ground itself. A card, plate, pill or window appears only when it is
+    a real piece of the product's interface or does a real job in the story (a notification that arrives, a sheet the
+    user acts on); never as a box round a statement, never a white plate to make text readable over a picture
+    ([imagery](imagery.md#house-rules) 8), never the lockup on a plate over a photograph: the lockup stands on a
+    designed ground. A needless card reads as sloppy, and over a photograph it reads as a template.
 
 ---
 
@@ -353,7 +359,7 @@ one "Copy" pill pressed at the end. A code card can **peek** 30 px at the bottom
 
 ## 9. Worlds for UI
 
-- **Light UI on a clean ground:** white cards and pills (`lightUI`) on a flat white or a real picture, soft blue-grey shadows,
+- **Light UI on a clean ground:** white cards and pills (`lightUI`), real interface only, on a flat white or a designed ground, soft blue-grey shadows,
   a light-tint user bubble, one accent that is born light and deepens. Depth of field as recency.
 - **Dark glass:** `darkUI` cards with `glass` over a picture or a scene that is really behind them, a lit top rim, a moving
   specular streak (see `effects.md`). A flat deep tone of the accent's hue, never pure black, never a soft bloom as the ground.

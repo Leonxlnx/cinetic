@@ -25,19 +25,21 @@ Hold every film to all nine.
    ([story](references/film-grammar.md#story)).
 2. **Pace and escalation.** A new beat every 0.8-2.2 s; one thing first, held long enough to read and designed with
    care, then a second, then exponentially more. Every action shows before, during and after (a scroll travels to one
-   row and picks it out; a press is answered by its target). Holds that are read (a line, a result) may fill about a
-   third of a film's half-seconds; a hold with nothing to read is the flaw, and so is a beat too fast to follow
+   row and picks it out; a press is answered by its target). A read hold keeps moving (a drift, a push, a breath); a
+   hold with nothing to read is the flaw, and so is a beat too fast to follow
    ([rhythm](references/film-grammar.md#4-rhythm), [action](references/film-grammar.md#action-and-escalation)).
 3. **One world.** One palette, one type voice, one material, one texture family, one signature motif
    ([worlds.md](references/worlds.md)). A supplied brand wins. The ground, colour mode and accent change only when the
    story changes place or state, the whole frame at once; a film may stay on one ground.
-4. **Joins carry the subject.** Every join carries the thing the viewer is watching, large (the object, the sentence
-   being read, the card, the picture), or is a hard cut on a musical event; never a token (a full stop, a small pill)
-   carried while everything else changes, never a cross-fade or an empty frame ([joins](references/film-grammar.md#joins)).
-5. **Motion with weight.** Arrivals are front-loaded (`ease.out`, springs set by duration and bounce, bounce 0 by
-   default, never above 0.4). Exits accelerate and end at full speed (`accel`). Zooms are exponential (`logScale`).
-   Nothing that moves is linear, nothing that carries data overshoots, and a held shot keeps idle life (`creep`,
-   `drift`, a breath, a sheen) ([entrances.md](references/motion/entrances.md#house-rules)).
+4. **Joins carry the subject, as one move.** A scene's exit is the next scene's entrance: the thing the viewer is
+   watching, large, travels or becomes B, never "A stops, cut, B starts"; a hard cut lands only on a musical event with
+   both sides moving. Never a token carried, a cross-fade or an empty frame ([joins](references/film-grammar.md#joins)).
+5. **Always in motion, smooth.** Nothing on screen is ever fully still and nothing stops dead: every landing has a long
+   tail, every hold a slow idle (`creep`, `drift`, a breath). Curves are exponential: an entrance arrives fast and
+   settles long, a move from rest eases in and out, a zoom moves by a constant ratio (`logScale`), two moves in a row
+   meet without a corner. No linear ramp, no stepped position, no one-frame pop, no overshoot on data; still frames
+   for over ~0.3 s are a bug. Motion is judged on every frame, never on a sheet
+   ([smooth motion](references/film-grammar.md#stay-in-motion)).
 6. **Type is an event, set clean.** One sans voice (`fonts.inter` unless the brand has its own), sentence case, weight
    430-550, sized by word count (84-100 px for 5-6 words, 110-150 px for 3-4, 160-240 px for 1-2, one spectacle size of
    280-700 px a film, optional when UI or photographs lead). 2-6 words at once, one line on screen at a time, over its
@@ -49,10 +51,12 @@ Hold every film to all nine.
    (`<Brand>`) or as faithful, detailed rebuilds of their real screens ([hosts](references/library-hosts.md)); glyphs as
    real icons (`<Icon>`). Never a rough
    mock of a product people know, never an emoji for a logo, never lorem ipsum.
-8. **One focus, rich frames.** One thing to read at a time, supported by a rich, specific world: licensed photographs,
-   the product's real surfaces in detail, texture, depth in layers, secondary elements that react. A statement alone on
-   an empty ground is for a line that must land, not the default beat; a resting line and the focal component keep 8 %
-   or more from every edge ([compositions](references/film-grammar.md#compositions)).
+8. **One thing at a time, in a designed world.** A shot has one subject and one thing to read; interface is one
+   component, large enough to read on a phone, built in steps, never a dense screen at once. The world is designed in
+   code (grounds, the product's surfaces, objects, light); a photograph only when the user gave it or it is the
+   product's content and passes the bar ([imagery](references/motion/imagery.md#house-rules)). Type sits on the ground;
+   a card or plate only when it is real interface. The focal line keeps 8 % from every edge
+   ([one thing](references/film-grammar.md#one-thing-at-a-time)).
 9. **Sound designed with the picture.** A licensed music bed that enters with the first idea; few, dry, quiet recorded
    effects whose transient lands on the visual event; never a bell, chime, glass, coin or jingle, a footstep for a UI
    impact or a whoosh on the turn; no effect on the ending, music only ([sound-design.md](references/sound-design.md)).
@@ -72,7 +76,7 @@ kit, a blank film in `src/films/main/Film.tsx`, and the scripts. Work inside tha
 what the product *does* as input -> output; 3-5 features worth a beat; the format (launch, feature, update, loop, sting,
 teaser, explainer, brand film); the brand (logo, colours, fonts, screenshots, URL) or, if none is given, the brand you
 invent (name its colours, its face and where the accent's hue comes from; [palette rules](references/worlds.md#palette-rules-all-worlds));
-the licensed pictures the story needs. Pull real names, numbers and integrations from what the user gave you. List each
+pictures only if the user gave them or the product's content is pictures. Pull real names, numbers and integrations from what the user gave you. List each
 adjective the user wrote ("bold", "warm", "mostly words") and what it becomes in weight, size, pace, colour, picture and
 sound ([type.md](references/type.md#4-weight)).
 
@@ -93,7 +97,9 @@ Never the concept of a worked example you just read. Write `Concept: <name>, bec
 object, name or brand that opens the film, returns in joins and closes it. Write a **Devices** block: the opening, the
 type treatment, each join with its class, the spectacle, the integration form, the ending, each naming the
 [library](references/library.md#pick-by-job) piece behind it, picked by job (or why none fits; `check` counts them), else from the
-[menus](references/film-grammar.md#devices), by what the story needs. No move repeats identically or more than twice. Then one row per beat
+[menus](references/film-grammar.md#devices), by what the story needs. Designed moves carry the film, one every 3-4 s
+(a 15 s film four, 30 s eight; [strong moves](references/film-grammar.md#strong-moves-often)); no entrance more than
+twice. Then one row per beat
 ([structures](references/film-grammar.md#structures)): frames, its composition tag, what the viewer sees, what moves and
 how, how it joins the next beat, the sound. A beat's length is set by its action, not a cap. Name the poster frame.
 
@@ -123,7 +129,8 @@ What each command shows: [rendering.md](references/rendering.md#the-loop).
 - `node scripts/frames.mjs joins` exports every join (the film's `JOINS`, each `{ at, len }`: the move's first frame
   and its length) at real size, every frame of the move: before the final and after every fix that touches a join,
   look at every cell; a fix is closed only on a clean join image.
-- `node scripts/frames.mjs check out/main-preview.mp4` measures pace, holds, empty frames, crowding and the ending and
+- `node scripts/frames.mjs motion out/main-preview.mp4` measures every frame for pops, dead stops, hard starts,
+  stepping and stillness; `check out/main-preview.mp4` measures pace, holds, empty frames, crowding and the ending and
   prints what to fix (`--format loop` or `--format sting` for those formats); its `air` figures are information.
 Write the [join test](references/film-grammar.md#the-join-test) into `BEATS.md` and fix every join that fails. Bugs
 block the final: a full-size still of every beat with type or UI and the join image of every join; fix every cut text,
@@ -132,11 +139,11 @@ overlap, overprint, empty slab, one-frame pop and clipped digit; no fix row is c
 [taste.md](references/taste.md) (20 points; crops and joins only on the join images and full-size stills, never the
 sheet; one open bug caps the film at 14); at 17 or more go to step 9.
 
-**9. Polish (required).** The first cut is never the film. Run at least two passes of the
-[polish loop](references/taste.md#5-the-polish-loop): watch strips of every beat and the join images, write up to ten
-real fixes in `BEATS.md` (never invented to fill a count), do each and re-check it; tick at least eight of the ten effort marks (idle life, local
-reactions, specific content, a texture family, photographs, variation, sound on picture, a surprise, optics, bespoke
-joins).
+**9. Polish (required).** The first cut is never the film. First at least two motion passes
+([motion pass](references/taste.md#the-motion-pass)): every join and entrance as consecutive frames and measured,
+reworked until smooth and satisfying; "it passes" is not a reason to stop. Then at least two passes of the
+[polish loop](references/taste.md#5-the-polish-loop): up to ten real fixes in `BEATS.md`, each re-checked; tick eight
+of the ten effort marks.
 
 **10. Sound.** `node scripts/sfx.mjs roles`, `node scripts/sfx.mjs list <role>`, `node scripts/sfx.mjs get <id> ...` fetches
 judged, licensed recordings into `public/sfx` and writes `src/sfx.ts`; place them with `<Cues>` on the same `T` frames as
@@ -150,8 +157,8 @@ time limit on each job) render silent parts and mux them ([rendering.md](referen
 `node scripts/sfx.mjs credits` plus the logos and pictures used (`public/logos/logos.json`). Deliver the mp4, the
 sheet, `BRIEF.md`, `BEATS.md` (story, devices, beats, join test, polish lists), `CREDITS.md`.
 
-Rendering is CPU- and GPU-heavy: one render at a time, half-size previews while iterating, the final once. On machines
-where the GPU is unstable, set `CINETIC_GL=swangle` (software GL). See [rendering.md](references/rendering.md).
+One render at a time, half-size previews while iterating; on an unstable GPU set `CINETIC_GL=swangle`
+([rendering.md](references/rendering.md)).
 
 ## The kit at a glance
 
@@ -174,8 +181,8 @@ Import everything from `src/kit` (`import { Words, Camera, ease, at } from '../.
 
 **Worked examples.** `kit/src/films/brief`, `forge`, `fieldnote`, `lumen` and `inkwell` show how the kit is used (one
 timeline `T` per film, `Cues` on the same frames, typing, a pointer, a dive, letters as windows, a 3D prism). Read them
-for how the kit is used, not as a standard: their look and structure are below the bar (short, plain, no story, token
-joins), and they will be replaced. Never copy their content, order, palettes, marks or lockups.
+for how the kit is used, not as a standard (they are below the bar). Never copy their content, order, palettes, marks
+or lockups.
 
 ## Hard rules
 
@@ -186,7 +193,7 @@ Each rule's detail and numbers live in the linked section; read it when the rule
   a handwriting font by default, a beat too fast to follow, a move repeated more than twice, colour without meaning
   ([the never list](references/taste.md#never)).
 - **Never linear motion** (a loop's constant cycle aside), never a cross-fade or an empty frame between scenes, never
-  dead still for more than ~0.6 s ([turns.md](references/motion/turns.md#0-the-rule-for-choosing)).
+  still for more than ~0.3 s ([stay in motion](references/film-grammar.md#stay-in-motion)).
 - **Frame 0 is never empty and already moving**; never a static title card ([openings](references/film-grammar.md#openings)).
 - **The join test before the final:** every join listed with what it carries; nothing carried means a hard cut on a
   beat; the frame fully covered at the switch; a story reason for every change of ground, mode or accent
@@ -200,8 +207,8 @@ Each rule's detail and numbers live in the linked section; read it when the rule
 - **One artefact, many places; never two unrelated demos.** A film may follow one task through several real places when
   the story needs it; a tour of logos with nothing happening is at most 15 % of the film
   ([integrations](references/film-grammar.md#integrations)).
-- **One image worth keeping.** Name the poster frame in `BEATS.md`, build it first and judge it alone; a crafted image,
-  never a centred line on a ground, held 1.5 s or more ([planning](references/film-grammar.md#7-planning-discipline)).
+- **One image worth keeping:** the poster frame, named in `BEATS.md`, built first, a crafted image
+  ([planning](references/film-grammar.md#7-planning-discipline)).
 - **One spectacle beat** in films of 15 s or more, 1.5-2.5 s, readable: no label under 28 px, at most about 16
   endpoints ([spectacle](references/film-grammar.md#spectacle)).
 - **A result is held until it is read,** with idle life, then becomes the next object; never a hold with nothing to read
@@ -211,8 +218,6 @@ Each rule's detail and numbers live in the linked section; read it when the rule
 - **The product's result is seen big once** (key words 120 px or more), tagged `output-big` where the concept requires
   it ([compositions](references/film-grammar.md#compositions)).
 - **The biggest word names the benefit or the product**, never the problem or the input ([type.md](references/type.md#3-one-spectacle-size-in-a-film)).
-- **Text is readable or absent;** dense UI is shown at a readable crop with the camera on the part that matters, while an
-  action happens in it ([type.md](references/type.md#7-centred-one-line-at-a-time), [cards-ui.md](references/motion/cards-ui.md#house-rules)).
 - **The frame cuts only on purpose:** a lone giant word (280 px or more) or one component in close-up; never a resting
   line, never two sides, never the key figure ([type.md](references/type.md#7-centred-one-line-at-a-time)).
 - **UI premium and detailed,** flat or tilted 12° or less, in its app context, the region that matters pixel-real; on a
@@ -220,14 +225,17 @@ Each rule's detail and numbers live in the linked section; read it when the rule
 - **Light, material and depth:** two planes moving at different rates in every beat, one light direction, soft rounded
   3D, one texture family; the product sits on a surface in light and the opening's place returns
   ([depth](references/worlds.md#depth-and-the-world-all-worlds)).
-- **Clean grounds:** a flat clean colour, a real picture or a bold designed scene; no vignette, no grain on a flat
-  ground, never dimmed UI as a ground; a picture under UI gets a scrim, never a blur ([palette rules](references/worlds.md#palette-rules-all-worlds) 8).
+- **Clean grounds:** a flat clean colour or a bold designed scene (a picture only by quality 8); no vignette, no grain
+  on a flat ground, never dimmed UI as a ground, never a blurred picture
+  ([palette rules](references/worlds.md#palette-rules-all-worlds) 8).
+- **No card that is not needed:** never a plate or pill to make text readable over a picture, never the lockup on a
+  plate; a card is real interface or it is gone ([cards-ui.md](references/motion/cards-ui.md#house-rules)).
 - **Clean type:** no eyebrows or kickers, no uppercase mono labels, no ALL CAPS or Title Case, no 800-900 weights,
   serif rarely ([type.md](references/type.md#11-no-eyebrows-no-kickers)).
 - **Real marks only;** the product's own mark has an idea, never two or three primitive rectangles
   ([lockups](references/film-grammar.md#lockups), [logos](references/motion/entrances.md#57-real-third-party-logos)).
-- **No generated images, licensed pictures and sound only,** the same people and place through a film; every external
-  file is listed in `CREDITS.md` ([assets.md](references/assets.md#4-photos-and-footage)).
+- **No generated images, no stock wallpaper;** licensed sound, pictures only by quality 8; every external file is
+  listed in `CREDITS.md` ([assets.md](references/assets.md#4-photos-and-footage)).
 - **Invented palettes:** no purple, no green, no purple-to-blue gradient; the accent's hue from the product's own object
   (three candidates in `BRIEF.md`) on a tenth of the frame or less; light ground #FFFFFF to #F4F5F7, dark ground a deep
   tone of the accent's hue ([palette rules](references/worlds.md#palette-rules-all-worlds)).
