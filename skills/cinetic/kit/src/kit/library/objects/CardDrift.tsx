@@ -38,7 +38,12 @@ export const CardDrift: React.FC<{
     const depth = it.pop ? 0.75 + rnd(seed, i, 3) * 0.25 : rnd(seed, i, 3);
     const v = mix(depth, 0.0005, 0.0025) * W;
     const age = t - it.born;
-    const r = d + v * Math.max(0, t);
+    // the drift slows as it nears the frame's edge and never crosses an ellipse 42 % of W by 34 % of H from the centre,
+    // so no item is cut by the frame however long it holds
+    const rMax = Math.min((0.42 * W) / Math.max(1e-6, Math.abs(Math.cos(a))), (0.34 * H) / Math.max(1e-6, 0.9 * Math.abs(Math.sin(a))));
+    const raw = d + v * Math.max(0, t);
+    const knee = rMax * 0.8;
+    const r = raw <= knee ? raw : knee + (raw - knee) / (1 + (raw - knee) / (rMax - knee));
     const px = W / 2 + Math.cos(a) * r;
     const py = H / 2 + Math.sin(a) * r * 0.9;
     const enter = it.pop ? keys(age, [[0, 0.6], [2, 1.08], [4, 1]], ease.out) : mix(ease.out(clamp((age + 1) / 4)), 0.85, 1);

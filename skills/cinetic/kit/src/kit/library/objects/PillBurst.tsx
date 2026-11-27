@@ -3,7 +3,7 @@
 // Numbers: the burst settles in 10 f on expo out, each pill travelling the last quarter of its way out and 12 % of H up,
 // from 85 % size, started 0-3 f apart (the first frame already a third of the way); the fall: gravity 1.4 % of H a frame
 // squared, started 0-4 f apart, a 3 f landing (a 2.5 % rebound), up to 60 degrees of turn on landing, the heap 6 % of
-// H above the bottom edge.
+// H above the bottom edge, each pill in its own lane across 84 % of W (alternate lanes most of a pill higher).
 // Caution: pills are what the line says is too many or scattered (tools, tabs, apps); names short, generic icons or the
 // real marks; the line itself is the film's (draw it above the pills).
 // Catalogue: ../catalog/object.ts; props and recipe: references/library-objects.md.
@@ -45,6 +45,12 @@ export const PillBurst: React.FC<{
   const cy = y ?? H / 2;
   const ts = size ?? H * 0.03;
   const ph = ts * 2.1;
+  // the heap: each pill lands in its own lane across the bottom (in the order of its place left to right), alternate
+  // lanes a little higher, so pills that started close never land on top of each other
+  const n = Math.min(items.length, PLACES.length);
+  const order = PLACES.slice(0, n).map((pl, i) => ({ i, x: pl[0] })).sort((a, b) => a.x - b.x);
+  const lane: number[] = [];
+  order.forEach((o, r) => (lane[o.i] = r));
   return (
     <AbsoluteFill style={{ overflow: 'hidden' }}>
       {items.slice(0, PLACES.length).map((it, i) => {
@@ -62,7 +68,8 @@ export const PillBurst: React.FC<{
           const q = f - fallAt - Math.floor(rnd(seed, i, 2) * 5);
           if (q > 0) {
             const g = 0.014 * H;
-            const floor = H - H * 0.06 - ph / 2 - rnd(seed, i, 3) * ph * 0.5;
+            const floor = H - H * 0.06 - ph / 2 - (lane[i] % 2 ? ph * 0.9 : 0) - rnd(seed, i, 3) * ph * 0.25;
+            const laneX = cx + (n > 1 ? lane[i] / (n - 1) - 0.5 : 0) * W * 0.84;
             const drop = 0.5 * g * q * q;
             const land = Math.sqrt((2 * Math.max(1, floor - fy)) / g);
             const turn = rnd(seed, i, 4) > 0.55 ? (rnd(seed, i, 5) > 0.5 ? 1 : -1) * (25 + rnd(seed, i, 6) * 35) : (rnd(seed, i, 7) - 0.5) * 16;
@@ -75,7 +82,7 @@ export const PillBurst: React.FC<{
               Y = floor - bounce;
               R = mix(ease.out(clamp(after / 4)), rot + turn * 0.3, rot + turn);
             }
-            X = fx + (fx - cx) * 0.12 * clamp(q / Math.max(1, land));
+            X = mix(ease.inOut(clamp(q / Math.max(1, land))), fx, laneX);
           }
         }
         return (

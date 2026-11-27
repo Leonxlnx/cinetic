@@ -28,8 +28,8 @@ export type HubTile = {
   word: number;
 };
 
-// the measured walk of a fresh word: gold, rose, coral, sage, blue, navy, then the ink (2 f a step)
-const WALK = ['#E8B65A', '#E06A7A', '#EE8A6A', '#9CC48A', '#4C7BD8', '#24305A'];
+// the walk of a fresh word: gold, rose, coral, slate blue, blue, navy, then the ink (2 f a step); no green on the way
+const WALK = ['#E8B65A', '#E06A7A', '#EE8A6A', '#8594B8', '#4C7BD8', '#24305A'];
 
 const HubPillInner: React.FC<{
   L: Look;
@@ -108,9 +108,11 @@ const HubPillInner: React.FC<{
           const hx = pw / 2;
           const hy = ph / 2;
           const k = Math.min(hx / Math.max(1e-6, Math.abs(Math.cos(ang))), hy / Math.max(1e-6, Math.abs(Math.sin(ang))));
-          let ex = Math.cos(ang) * k;
-          const ey = Math.sin(ang) * k;
-          ex = clamp(ex, -hx + ph * 0.3, hx - ph * 0.3);
+          const ex0 = Math.cos(ang) * k;
+          const ex = clamp(ex0, -hx + ph * 0.3, hx - ph * 0.3);
+          // a ray that leaves through a rounded end is moved onto the straight top or bottom edge, so the dot sits on the
+          // outline and never inside the corner's curve
+          const ey = ex !== ex0 ? Math.sign(Math.sin(ang) || 1) * hy : Math.sin(ang) * k;
           const d = dotS * 0.8;
           const q = at(frame, t0, 3, ease.snap);
           return <div key={i} style={{ position: 'absolute', left: pw / 2 + ex - d / 2, top: ph / 2 + ey - d / 2, width: d, height: d, borderRadius: d, background: t.dot, transform: `scale(${q})` }} />;

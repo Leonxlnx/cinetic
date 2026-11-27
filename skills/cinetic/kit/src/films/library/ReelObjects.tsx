@@ -70,10 +70,26 @@ const PillLine: React.FC = () => {
   const f = useCurrentFrame();
   return <div style={lineStyle}>{f < 44 ? 'Across nine open tabs' : 'None of them talk'}</div>;
 };
-const PillBurstDemo = on('#FFFFFF', false, <><PillBurst items={TOOLS} at={2} fallAt={44} ground="#FFFFFF" /><PillLine /></>);
-const CellStackDemo = on('#F2F2F0', false, <CellStack at={2} />);
-const DiagonalStreamDemo = on('#FFFFFF', false, <><DiagonalStream pics={PICS} at={0} /><div style={{ ...lineStyle, fontSize: 44, fontWeight: 500 }}>Collected</div></>);
-const BlockPrintDemo = on('#ECEEF1', false, <BlockPrint pics={PICS} at={2} />);
+const PillBurstDemo = on('#FFFFFF', false, <><PillBurst items={TOOLS} at={2} fallAt={44} ground="#FFFFFF" size={38} /><PillLine /></>);
+const CellStackDemo = on('#F2F2F0', false, (
+  <>
+    <div style={{ ...lineStyle, top: '22%', fontSize: 60 }}>Reading your whole library</div>
+    <CellStack at={2} radius={0.24} cell={0.026} y={600} />
+    <div style={{ ...lineStyle, top: '87%', fontSize: 30, fontWeight: 500, color: '#6B6F78' }}>1,204 files indexed</div>
+  </>
+));
+const DiagonalStreamDemo = on('#FFFFFF', false, (
+  <>
+    <DiagonalStream pics={PICS} at={0} />
+    <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', padding: '22px 52px', borderRadius: 999, background: '#FFFFFF', boxShadow: softShadow(4, '#FFFFFF'), fontFamily: fonts.inter, fontSize: 84, fontWeight: 600, letterSpacing: '-0.03em', color: '#17181C', zIndex: 3000 }}>Collected</div>
+  </>
+));
+const BlockPrintDemo = on('#ECEEF1', false, (
+  <>
+    <BlockPrint pics={PICS} at={2} layout="corners" />
+    <div style={{ ...lineStyle, fontSize: 96, fontWeight: 620, letterSpacing: '-0.035em' }}>The spring issue</div>
+  </>
+));
 const MarkDollyDemo = on('#EEF1F6', false, <MarkDolly at={2} flat={ARCH_SVG(504)} />);
 const PixelatePortraitDemo = on('#15110D', true, <PixelatePortrait src={PICS[3]} at={2} />);
 const PixelCells: React.FC<{ size: number }> = ({ size }) => (
@@ -91,8 +107,8 @@ const IrisFrom: React.FC = () => (
 );
 const IrisTo: React.FC = () => (
   <AbsoluteFill style={{ background: '#F4EEE9' }}>
-    <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '46%', background: '#E8503F', borderTopLeftRadius: '60% 40%', borderTopRightRadius: '40% 30%' }} />
-    <div style={{ ...lineStyle, fontSize: 230, fontWeight: 700, letterSpacing: '-0.05em', color: '#1A0F0E' }}>nooka</div>
+    <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '27%', background: '#E8503F', borderTopLeftRadius: '60% 40%', borderTopRightRadius: '40% 30%' }} />
+    <div style={{ ...lineStyle, top: '44%', fontSize: 230, fontWeight: 700, letterSpacing: '-0.05em', color: '#1A0F0E' }}>nooka</div>
   </AbsoluteFill>
 );
 const PixelIrisDemo = on('#F1EFEA', false, <PixelIris at={8} from={<IrisFrom />} to={<IrisTo />} />);
@@ -109,16 +125,16 @@ const ORBIT_ICONS: Array<[string, string, string]> = [
 ];
 const OrbitCentre: React.FC = () => (
   <div style={{ width: 520, height: 340, borderRadius: 40, background: '#FFFFFF', boxShadow: softShadow(5, '#DDE6F2'), padding: 40, boxSizing: 'border-box', fontFamily: fonts.inter }}>
-    <div style={{ fontSize: 30, fontWeight: 600, color: '#15171C' }}>Today</div>
+    <div style={{ fontSize: 34, fontWeight: 620, color: '#15171C' }}>Today</div>
     {['Standup moved to 10:30', 'Draft sent to Mira', 'Flight checked in'].map((r, i) => (
-      <div key={r} style={{ marginTop: 22, display: 'flex', alignItems: 'center', gap: 16, fontSize: 24, color: '#3A3F4A' }}>
+      <div key={r} style={{ marginTop: 22, display: 'flex', alignItems: 'center', gap: 16, fontSize: 29, color: '#3A3F4A' }}>
         <div style={{ width: 12, height: 12, borderRadius: 6, background: ['#2F6BFF', '#F0552B', '#1E8FD0'][i] }} />
         {r}
       </div>
     ))}
   </div>
 );
-const OrbitRingDemo = on('#DDE6F2', false, <OrbitRing at={2} centre={<OrbitCentre />} items={ORBIT_ICONS.map(([g, a, b]) => <AppIcon key={g} size={130} colors={[a, b]} glyph={<Icon name={g} size={60} color="#fff" />} />)} />);
+const OrbitRingDemo = on('#DDE6F2', false, <OrbitRing at={2} ry={0.2} centre={<OrbitCentre />} items={ORBIT_ICONS.map(([g, a, b]) => <AppIcon key={g} size={130} colors={[a, b]} glyph={<Icon name={g} size={60} color="#fff" />} />)} />);
 const WireTetraDemo = on('#030304', true, <WireTetra at={2} />);
 
 const FAN_ICONS = ['Box', 'Database', 'Globe', 'Cpu', 'Table', 'FileJson', 'Image', 'Layers'];
@@ -128,15 +144,15 @@ const FanCard: React.FC<{ i: number }> = ({ i }) => {
   const ink = kind === 0 || kind === 1 ? '#FFFFFF' : '#17181C';
   return (
     <div style={{ width: '100%', height: '100%', background: bg, borderRadius: 6, boxShadow: '0 1px 2px rgba(0,0,0,0.12), 0 6px 18px rgba(0,0,0,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Icon name={FAN_ICONS[i % FAN_ICONS.length]} size={34} color={ink} />
+      <Icon name={FAN_ICONS[i % FAN_ICONS.length]} size={46} color={ink} stroke={2.2} />
     </div>
   );
 };
 const SpiralLine: React.FC = () => {
   const f = useCurrentFrame();
-  return f >= 20 ? <div style={{ ...lineStyle, fontSize: 46, fontWeight: 540 }}>Every format, one call</div> : null;
+  return f >= 20 ? <div style={{ ...lineStyle, fontSize: 58, fontWeight: 600, letterSpacing: '-0.025em' }}>Every format, one call</div> : null;
 };
-const SpiralFanDemo = on('#F7F6F4', false, <><SpiralFan at={2} cards={Array.from({ length: 12 }, (_, i) => <FanCard key={i} i={i} />)} /><SpiralLine /></>);
+const SpiralFanDemo = on('#F7F6F4', false, <><SpiralFan at={2} card={0.1} cards={Array.from({ length: 12 }, (_, i) => <FanCard key={i} i={i} />)} /><SpiralLine /></>);
 const SlotSwapDemo = on('#F4F4F2', false, <SlotSwap pics={PICS} at={2} before="Every" after="kept" />);
 
 const DriftCard: React.FC<{ i: number }> = ({ i }) => {

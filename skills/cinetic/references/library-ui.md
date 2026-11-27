@@ -435,11 +435,12 @@ target, presses into its wall and rests with a slow tilt. Takes the same `keys` 
 A progress log under a shimmering header: rows step on one at a time (an outline icon on a thin rule, a verb, a grey
 line of detail); each verb lands in its icon's colour and cools to the ink, and each arrival nudges the block up.
 ```tsx
-<RowCool L={lookLight('#2B5BFF', '#EEF0F3')} at={T.work} rows={[{ icon: 'Search', color: '#2B6BE8', verb: 'Searching', detail: '42 shots across three shoot days' }, ...]} />
+<RowCool L={lookLight('#2B5BFF', '#EEF0F3')} at={T.work} card rows={[{ icon: 'Search', color: '#2B6BE8', verb: 'Searching', detail: '42 shots across three shoot days' }, ...]} />
 ```
 - Numbers: arrivals every 10, 8, 12, 10, 9, 8 f; a row fades in 3 f; the verb holds its colour 3 f and cools over 9 f;
   the block stays centred, so it rises half a row per arrival; the shimmer crosses in 24 f.
-- Caution: one colour per kind of step, four to seven rows.
+- Caution: one colour per kind of step, four to seven rows. Put it on its own `card` (it grows with the log): a fixed
+  card drawn round it sits empty while the first rows arrive.
 
 ### SkeletonSweep
 Tinted skeleton bars, measured to the text that will replace them, cascade in one row a frame; a warm band then sweeps

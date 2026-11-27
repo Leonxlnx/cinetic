@@ -562,7 +562,7 @@ const S21: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookLight('#2B5BFF', '#F0F0F0');
   return (
     <Shot L={L} n={n} name={name}>
-      <DotCaret L={L} at={6} dropAt={10} text="brand assets from the spring shoot" typeAt={30} />
+      <DotCaret L={L} at={6} dropAt={10} text="brand assets from the spring shoot" typeAt={30} size={100} />
     </Shot>
   );
 };
@@ -636,7 +636,18 @@ const S24: React.FC<DemoProps> = ({ n, name }) => {
           { c: 2, r: 0, kind: 'disc', color: '#1E3A5F', icon: 'Briefcase', from: 'top', delay: 1 },
           { c: 3, r: 0, kind: 'photo', src: im('farms'), from: 'right', delay: 2 },
           { c: 0, r: 1, rh: 2, kind: 'photo', src: im('waves'), from: 'left', delay: 1 },
-          { c: 1, r: 1, kind: 'solid', color: '#1E3A5F', from: 'bottom', delay: 0 },
+          { c: 1, r: 1, kind: 'solid', color: '#1E3A5F', from: 'bottom', delay: 0, node: (
+            <div style={{ position: 'absolute', inset: 0, padding: '34px 40px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontFamily: fonts.inter, color: '#FFFFFF' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 28, fontWeight: 520, color: 'rgba(255,255,255,0.72)' }}>
+                <Icon name="MapPin" size={28} color="rgba(255,255,255,0.72)" stroke={2} />
+                Lisbon, Oslo, remote
+              </div>
+              <div>
+                <div style={{ fontSize: 112, fontWeight: 640, letterSpacing: '-0.04em', lineHeight: 0.95, fontVariantNumeric: 'tabular-nums' }}>24</div>
+                <div style={{ marginTop: 10, fontSize: 32, fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>teams hiring this spring</div>
+              </div>
+            </div>
+          ) },
           { c: 2, r: 1, cw: 2, kind: 'photo', src: im('cloud'), from: 'right', delay: 3 },
           { c: 1, r: 2, kind: 'pill', color: '#E8742E', node: <span style={{ fontFamily: fonts.inter, fontSize: 40, fontWeight: 600, color: '#FFFFFF', letterSpacing: '-0.01em' }}>Open roles</span>, from: 'bottom', delay: 4 },
           { c: 2, r: 2, kind: 'photo', src: im('shore'), from: 'bottom', delay: 5 },
@@ -653,22 +664,37 @@ const S25: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookDark('#E8E8EA', '#0F0F10');
   const Lw = { ...L, surface: '#18181A' };
   const code = [
-    ['1', 'import', ' { Booking } ', 'from', " './booking'"],
-    ['2', 'export', ' function ', 'Wall', '() {'],
-    ['3', '  const', ' slots = ', 'useSlots', "('bouldering')"],
-    ['4', '  return', ' <Calendar ', 'slots', '={slots} />'],
-    ['5', '}', '', '', ''],
+    ['1', 'import', ' { Calendar, Pass } ', 'from', " './ui'"],
+    ['2', 'import', ' { useSlots } ', 'from', " './booking'"],
+    ['3', '', '', '', ''],
+    ['4', 'export', ' function ', 'Wall', '() {'],
+    ['5', '  const', ' slots = ', 'useSlots', "('bouldering')"],
+    ['6', '  const', ' passes = ', 'usePasses', "('day')"],
+    ['7', '  return', ' (', '', ''],
+    ['8', '    <', 'Calendar ', 'slots', '={slots}>'],
+    ['9', '      <', 'Pass ', 'price', '={passes.adult} />'],
+    ['10', '      <', 'Pass ', 'price', '={passes.youth} />'],
+    ['11', '    </', 'Calendar', '>', ''],
+    ['12', '  );', '', '', ''],
+    ['13', '}', '', '', ''],
   ];
+  const steps: Array<[string, string, boolean]> = [['FilePlus2', 'Created booking.ts', true], ['FilePlus2', 'Created Wall.tsx', true], ['Ticket', 'Adding day passes', false]];
   const win = (
     <AppPane L={Lw} w={1300} h={800} title="Climb app" icon="Mountain" size={30}>
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 440, borderRight: `1px solid ${Lw.line}`, padding: 28, boxSizing: 'border-box', fontFamily: Lw.font }}>
         <div style={{ marginLeft: 40, padding: '16px 20px', borderRadius: 18, background: '#26272B', color: Lw.ink, fontSize: 30, lineHeight: 1.35 }}>Build a booking app for a climbing gym, with day passes</div>
         <div style={{ marginTop: 26, display: 'inline-flex', alignItems: 'center', gap: 10, padding: '8px 16px', borderRadius: 30, border: `1px solid ${Lw.line}`, color: Lw.muted, fontSize: 26 }}>Building the app…</div>
+        {steps.map(([ic, label, done]) => (
+          <div key={label} style={{ marginTop: 22, display: 'flex', alignItems: 'center', gap: 14, fontSize: 26, color: done ? Lw.muted : Lw.ink }}>
+            <Icon name={done ? 'Check' : ic} size={26} color={done ? '#7FB4FF' : Lw.ink} stroke={2.2} />
+            {label}
+          </div>
+        ))}
       </div>
-      <div style={{ position: 'absolute', left: 440, right: 0, top: 0, bottom: 0, padding: '28px 30px', fontFamily: fonts.mono, fontSize: 28, lineHeight: 1.7 }}>
+      <div style={{ position: 'absolute', left: 440, right: 0, top: 0, bottom: 0, padding: '28px 30px', fontFamily: fonts.mono, fontSize: 28, lineHeight: 1.62 }}>
         {code.map((c) => (
           <div key={c[0]} style={{ whiteSpace: 'pre' }}>
-            <span style={{ color: '#5C5F66', marginRight: 22 }}>{c[0]}</span>
+            <span style={{ color: '#5C5F66', display: 'inline-block', width: 52, marginRight: 14, textAlign: 'right' }}>{c[0]}</span>
             <span style={{ color: '#E08A6B' }}>{c[1]}</span>
             <span style={{ color: '#D8D9DC' }}>{c[2]}</span>
             <span style={{ color: '#7FB4FF' }}>{c[3]}</span>
@@ -739,6 +765,7 @@ const S28: React.FC<DemoProps> = ({ n, name }) => {
         at={4}
         every={5}
         end
+        h={0.82}
         ground="#E7E8EA"
         backdrops={[{ src: im('waves') }, { src: im('tide') }, { color: '#1E4E8C' }, { src: im('shore') }, { src: im('cloud') }, { color: '#0F2F57' }, { src: im('farms') }]}
       >
@@ -754,7 +781,17 @@ const S28: React.FC<DemoProps> = ({ n, name }) => {
               <span style={{ color: '#2D6BD8', fontWeight: 600 }}>{b}</span>
             </div>
           ))}
-          <div style={{ marginTop: 34, height: 52, borderRadius: 26, background: '#111318', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 600 }}>Add to wallet</div>
+          <div style={{ marginTop: 30, height: 56, borderRadius: 28, background: '#111318', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 23, fontWeight: 600 }}>Add to wallet</div>
+          <div style={{ marginTop: 34, fontSize: 20, fontWeight: 600, color: '#6B7080' }}>Recent</div>
+          {[['Plane', 'Lisbon flight', '−€184'], ['Coffee', 'Café Nata', '−€4.20'], ['TrainFront', 'Airport line', '−€2.90']].map(([ic, a, b]) => (
+            <div key={a} style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 16, fontSize: 21, color: '#111318' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: '#E4E8F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name={ic} size={21} color="#2D6BD8" stroke={2} />
+              </div>
+              <span style={{ flex: 1 }}>{a}</span>
+              <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{b}</span>
+            </div>
+          ))}
         </div>
       </BackdropSwap>
       <Label n={n} name={name} />
@@ -805,9 +842,9 @@ const S31: React.FC<DemoProps> = ({ n, name }) => {
   const L = lookLight('#2B5BFF', '#EEF0F3');
   return (
     <Shot L={L} n={n} name={name}>
-      <div style={{ ...surfaceStyle(L, 3, 34), position: 'absolute', left: 500, top: 150, width: 920, height: 780 }} />
       <RowCool
         L={L}
+        card
         at={4}
         x={960}
         y={540}

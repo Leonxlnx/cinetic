@@ -12,7 +12,7 @@ import { useVideoConfig } from 'remotion';
 import { Icon } from '../../icons';
 import { at, clamp, ease, mix } from '../../motion';
 import { mixColor } from '../../type';
-import { type Look, useUiFrame, withPace } from './_shared';
+import { type Look, surfaceStyle, useUiFrame, withPace } from './_shared';
 
 export type CoolRow = { icon: string; color: string; verb: string; detail: string };
 
@@ -26,8 +26,11 @@ const RowCoolInner: React.FC<{
   y?: number;
   w?: number;
   size?: number;
+  /** Draw the log on its own card, which grows a row with each arrival (a card drawn by the film around it would sit
+   * empty at the start). */
+  card?: boolean;
   speed?: number;
-}> = ({ L, rows, at: start, title = 'Working', gaps = [10, 8, 12, 10, 9, 8], x: xIn, y: yIn, w: wIn, size: sizeIn, speed = 1 }) => {
+}> = ({ L, rows, at: start, title = 'Working', gaps = [10, 8, 12, 10, 9, 8], x: xIn, y: yIn, w: wIn, size: sizeIn, card = false, speed = 1 }) => {
   const { width: W, height: H } = useVideoConfig();
   const frame = start + (useUiFrame() - start) * speed;
   const s = sizeIn ?? H * 0.03;
@@ -45,9 +48,11 @@ const RowCoolInner: React.FC<{
   const top = y - blockH / 2;
   const shimmer = ((frame - start) % 24) / 24;
   const isDone = frame > T[T.length - 1] + 30;
+  const pad = s * 1.4;
   return (
     <div style={{ position: 'absolute', left: x - w / 2, top, width: w, fontFamily: L.font }}>
-      <div style={{ height: headH, display: 'flex', alignItems: 'center', gap: s * 0.5, fontSize: s * 0.95, fontWeight: 560 }}>
+      {card && <div style={{ ...surfaceStyle(L, 3, s * 0.8), position: 'absolute', left: -pad, top: -pad * 0.8, width: w + pad * 2, height: blockH + pad * 1.6 }} />}
+      <div style={{ position: 'relative', height: headH, display: 'flex', alignItems: 'center', gap: s * 0.5, fontSize: s * 0.95, fontWeight: 560 }}>
         <span
           style={{
             color: 'transparent',
