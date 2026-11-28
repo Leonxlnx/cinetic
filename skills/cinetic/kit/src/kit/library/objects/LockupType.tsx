@@ -1,0 +1,97 @@
+// LockupType (logo, build): the mark holds alone at the centre, then slides left as the name appears beside it a letter
+// at a time, each letter cut on at full strength; the lockup ends centred.
+// Numbers: the mark glides to its final place once, in 12 f from rest (critically damped: no jerk, a long tail) from the
+// end of the hold; letters at 1, 2, 3,
+// 5, 6, 8 f after half the glide (about 1.4 f a letter, uneven like a hand on keys), beside a mark nearly at rest (`recentre="letter"`: each
+// letter's share of the re-centring glides in 5 f, the mark stepping with every letter); the gap between mark and name 0.32 of the text size;
+// `per={0}` puts the whole name on one frame and slides the lockup to centre in 10 f. The mark may build while it holds:
+// pass a function `(p) => node` and it receives 0..1 over `build` frames from `at`, already one step in on frame `at`
+// (never a bare p = 0 frame: the mark's tile and glyph should both draw from p, so nothing stands empty).
+// Caution: the letters keep the name's final spacing from their first frame (never wide letters that close up).
+// Catalogue: ../catalog/object.ts; props and recipe: references/library-objects.md.
+import React from 'react';
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { ease, clamp } from '../../motion';
+
+// the mark is on screen, so it leaves from rest (no jerk) and lands on an exponential tail: critically damped, scaled to
+// end on 1 (half-way at 31 % of the glide, 90 % at 64 %)
+const fromRest = (q: number) => {
+  const x = clamp(q) * 5.37;
+  return (1 - (1 + x) * Math.exp(-x)) / (1 - 6.37 * Math.exp(-5.37));
+};
+import { useTextLayout } from '../../type';
+import { fonts } from '../../fonts';
+
+export const LockupType: React.FC<{
+  name: string;
+  /** The mark, or a function of its build progress 0..1. Drawn in a box `markW` wide, centred on the line. */
+  mark: React.ReactNode | ((p: number) => React.ReactNode);
+  markW: number;
+  at?: number;
+  /** Frames the mark holds alone before the name starts (the slide starts here). */
+  hold?: number;
+  /** Frames of the mark's own build (when `mark` is a function): p is 1/build on frame `at` and 1 on `at + build - 1`. */
+  build?: number;
+  /** Mean frames a letter (0: the whole name on one frame). */
+  per?: number;
+  /** Exact frames after the hold for each letter (overrides `per`). */
+  times?: number[];
+  size?: number;
+  color?: string;
+  style?: React.CSSProperties;
+  /** Gap between mark and name as a share of the text size. */
+  gap?: number;
+  x?: number;
+  y?: number;
+  /**
+   * How the lockup re-centres: 'once' (default) the mark slides to its final place in one glide of `glide` frames and
+   * the letters type beside it from half-way through, nothing moving again after it; 'letter' (the earlier default) every letter pushes the
+   * group by its own width, so the mark steps left with each one.
+   */
+  recentre?: 'once' | 'letter';
+  /** Frames of the one glide (default 12; 10 with `per={0}`). */
+  glide?: number;
+}> = ({ name, mark, markW, at = 0, hold = 18, build = 12, per = 1.4, times, size, color = '#16233A', style, gap = 0.32, x, y, recentre = 'once', glide: glideIn }) => {
+  const f = useCurrentFrame();
+  const { width: W, height: H } = useVideoConfig();
+  const ts = size ?? Math.min(W, H) * 0.07;
+  const type: React.CSSProperties = { fontFamily: fonts.inter, fontSize: ts, fontWeight: 560, letterSpacing: '-0.025em', lineHeight: 1.1, color, whiteSpace: 'pre', ...style };
+  const L = useTextLayout(name, type);
+  if (f < at) return null;
+  const cx = x ?? W / 2;
+  const cy = y ?? H / 2;
+  const t = f - at - hold;
+  const chars = Array.from(name);
+  const measured = [1, 2, 3, 5, 6, 8];
+  const tOf = (i: number) => (times ? times[Math.min(i, times.length - 1)] + Math.max(0, i - times.length + 1) : per === 0 ? 0 : per === 1.4 && i < measured.length ? measured[i] : Math.round(1 + i * per));
+  const g = gap * ts;
+  // right edge of the name after letter i (spaces ride with the letter before them)
+  const edge = (i: number) => (L.chars[i] ? L.chars[i].x + L.chars[i].width : 0);
+  let shown = -1;
+  let wSmooth = markW;
+  const once = recentre === 'once' || per === 0;
+  const glide = glideIn ?? (per === 0 ? 10 : once ? 12 : 5);
+  // with one glide the mark has nearly arrived (about 85 %) before the first letter, so the name types beside a mark at rest
+  const delay = once && per !== 0 ? Math.round(glide / 2) : 0;
+  for (let i = 0; i < chars.length; i++) {
+    const ti = tOf(i) + delay;
+    if (t >= ti) shown = i;
+    if (once) continue;
+    const share = (i === 0 ? g : 0) + edge(i) - (i > 0 ? edge(i - 1) : 0);
+    wSmooth += share * fromRest((t - ti + 1) / glide);
+  }
+  // one glide from the mark alone at the centre to the whole lockup centred, from the end of the hold
+  if (once && chars.length) wSmooth += (g + edge(chars.length - 1)) * fromRest((t + 1) / glide);
+  const left = cx - wSmooth / 2;
+  const markNode = typeof mark === 'function' ? mark(ease.out(clamp((f - at + 1) / Math.max(1, build)))) : mark;
+  return (
+    <AbsoluteFill>
+      <div style={{ position: 'absolute', left: 0, top: 0, width: markW, transform: `translate(${left}px, ${cy}px) translateY(-50%)`, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>{markNode}</div>
+      {shown >= 0 && L.ready && (
+        <div style={{ position: 'absolute', left: 0, top: 0, transform: `translate(${left + markW + g}px, ${cy - L.height / 2 - ts * 0.2}px)`, width: edge(shown) + 2, height: L.height + ts * 0.5, overflow: 'hidden' }}>
+          <div style={{ ...type, position: 'absolute', left: 0, top: ts * 0.2 }}>{name}</div>
+        </div>
+      )}
+    </AbsoluteFill>
+  );
+};

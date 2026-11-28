@@ -6,23 +6,102 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 Versions 0.1.0 to 0.5.0 were development versions, and 1.0.0-beta was the first public release. Each was run against the briefs in `evals/evals.json` (the round on 0.2.0 was invalidated by a harness problem and is not reported), and the findings of each reported round became rules in the next version (see [docs/evaluation.md](docs/evaluation.md)). Each version up to 0.5.0 was committed from the snapshot that was evaluated, so every tag's tree is exactly the version that was tested; commit times between two tags are approximate.
 
-## [Unreleased]
+## [Unreleased]: cinetic 2
 
-### Added
-
-- 25 real Mixkit effects in `scripts/audio/sfx-catalogue.json`, among them its first pops and plucked notes, and more low hits, clicks and reverse swells. Each one was taken for an action that earshot 0.4.1 heard it as, on its take as `kit.py real` places it (48 kHz, at most 2.5 s, lead-in trimmed): the sound a film plays. That means z ≥ 2 for the best of the action's phrasings and the forced choice against four cheap-synth descriptions won; nothing earshot's realness calls code-synthesized was taken, and no note that rings past 1.5 s. Each new sound records which actions and kit roles of its kind earshot heard it as (`heard_as`) and which it did not (`not_heard_as`). The 31 candidates that did not pass are in `rejected` with the reason. The pop, the text note and the confirm now play a catalogue sound.
+A rework. The gap between a template video and a launch film by a top studio is direction, not effects, so the skill now
+gives the agent a director's method, a kit and a motion library that look premium by default, tools that measure every
+frame, and a stated bar, and gets out of its way.
 
 ### Changed
 
-- The 84 sounds that were already in `sfx-catalogue.json` were judged the same way on their takes. Each was heard against every action and kit role that lists its kind; `whoosh.long`, which no action lists, by its kit role. Each now records `heard_as` and `not_heard_as`, and its `ear` is earshot 0.4.1's verdict on its take. The 16 that earshot heard as none of their kind's actions moved to `rejected` with the reason: four lockup stings, eight whooshes, two typing runs, a crystal chime and a falling hit. The catalogue now holds 93 sounds in 19 kinds, each with its heard lists.
+- `SKILL.md` is a director's playbook: nine qualities (a story, not a feature list; a new beat every 0.8-2.2 s; one
+  world; joins that carry the subject as one move; always in motion and smooth; type as an event; the real product,
+  premium; one thing at a time in a designed world; sound designed with the picture), an eleven-step default path
+  (project, brief, story, concept, devices and beats, world, build, look, polish, sound, final), the kit at a glance and
+  hard rules, each linked to the reference that owns its numbers.
+- Story first: a five-line story (who, what it costs today, the turn, three to five steps, the payoff) comes before a
+  concept picked from a menu of sixteen; a launch film runs 30-45 s by default (up to 60 s), and `references/formats.md`
+  gives loops, logo stings, vertical teasers, feature updates, explainers, brand films and series openers their own
+  lengths, sections and endings.
+- Every join carries the thing being watched; a hard cut lands only on a musical event with both sides moving; never a
+  cross-fade or an empty frame. The join test is written into `BEATS.md` before the final.
+- Motion: always in motion and smooth. Exponential and log-space curves, landings with a tail of 12-20 frames, moves
+  placed by transform so nothing steps in whole pixels, no linear ramp, no one-frame pop, no dead stop and no dead hold;
+  `frames.mjs check` fails a film with more than 15 still frames in a row or more than 15 % of its frames still.
+  Designed moves carry the film (one every 3-4 s), and no entrance is used more than twice.
+- Pictures: the world is designed in code; a photograph appears only when the user gave it or it is the product's
+  content, and only when it passes a stated bar (sharp at its size, the exact subject, one grade, good with no text on
+  it). Never stock as wallpaper, never a generated image, never a plate or card laid over a picture to make text
+  readable; a card is real interface or it is gone.
+- One thing at a time: a shot has one subject and one thing to read; interface is one component, large enough to read
+  on a phone, built in steps; the frame cuts only a lone giant word or one component in close-up, never two sides.
+- Type follows `references/type.md`: one sans voice (Inter with its display optical size), weight 430-550, sentence case,
+  sized by word count, one line on screen at a time, emphasis by colour in at most two statements, serif only as a
+  brand's own voice (Newsreader replaces Instrument Serif), no eyebrows, no uppercase mono labels.
+- Palettes: the accent's hue comes from the product's own object (three candidates in `BRIEF.md`), on a tenth of the
+  frame or less; no purple, no green, no purple-to-blue gradient; clean flat grounds with no vignette and no grain on a
+  flat colour.
+- Endings follow the format: in launch and feature films the lockup lasts at most 2.5 s and grows out of an object on
+  screen, the claim gets its reading time, and claim and lockup take at most a fifth of the film; no sound effect on the
+  ending.
+- `references/taste.md` holds the never list, the tells of generated video, a 20-point rubric scored on full-size
+  stills, join images and strips (one open bug caps a film at 14; the final needs 17), and a required polish stage: at
+  least two motion passes and two passes of the polish loop.
+- References are organised by what moves (`motion/text`, `entrances`, `exits`, `turns`, `camera`, `cards-ui`,
+  `imagery`, `effects`) beside `film-grammar`, `formats`, `worlds` (fifteen graphic languages), `type`, `taste`,
+  `sound-design`, `library`, `kit`, `assets`, `rendering` and an `INDEX` of every section.
+- The sound catalogue is dry and judged: every bell, chime, glass, coin, riser and trailer hit is in its `rejected`
+  list and `sfx.mjs get` refuses them; no air whoosh plays an interface role; clicks sit under the film's peak; the
+  music shortlist is ordered by mood; `sound-design.md` is rewritten from measurements.
+- Requirements drop to Node 22 and ffmpeg: no Python and no HyperFrames path.
 
-- earshot judges a sound for an action by the best heard of the action's description and two phrasings of what it sounds like (`HEAR` and `phrasings()` in `actions.py`: a source and a character, never the job in the film). Its ears hear a sound, not a job: "a soft rounded pop, something appearing" passed none of 9 real pops of the sound library and "one clean low hit under a logo" none of 4 logo hits, while the pops' own titles ("A soft mouth pop") were heard strong. Over the library's 195 real licensed effects the best of the three passed 176 for their own action (z >= 2; 152 before) and told the actions apart a little better (AUC 0.922, 0.912 before), at 15 % of the other actions passing (10 % before). The phrasings were written before any was scored. `library.py listen` (the library's order of fit) and `kit.py listen` (the kit report and its flags) use them; the bank lists keep the order heard with the description alone.
+### Added
 
-### Fixed
+- `kit/`: one Remotion project every film starts from (`new-film.mjs`), with `src/kit/` modules for motion (house
+  curves, `approach`, `settle`, `chain`, `follow`, `live`, `logMix`, `accel`, `carry`, `logScale`, a stepped clock),
+  type (`Words`, an append `Build` that glides to its new centre, `Swap`, `SlotLine`, `Typing` at a human pace,
+  `Scramble`, `Odometer`, `Marker`, `Output`), a 3D `Camera` with `At`, world pieces (`Ground`, `Box` with content on its
+  faces, `DepthStack`, `Defocus`, `GlassPanel`, `softShadow`), product UI (cards, windows, chat, input bar, terminal,
+  `Relay`, `LockSwap`, `Wall`, `Phone`, `Laptop`, a real pointer), turns (`Iris`, `Tiles`, `Pixelate`, `Push`,
+  `ZoomThrough`, `Flood`), imagery (`Photo` with one grade, `TextWindow`, `Compare`, `Selection`), 3D hero objects
+  (`GLView`, `softStudio`), real marks (`Brand`, `BrandTile`, `AppIcon`, Lucide `Icon`) and sound locked to picture
+  (`Cues` landing each transient on its frame, `Music` with an entry frame, ducks and breath gaps, `db`, a beat grid).
+- The motion library (`kit/src/kit/library/`): 192 finished pieces in nine categories (type 43, turns 23, effects 21,
+  camera 11, interface 35, host screens 7, objects and marks 26, grounds 12, design presets 14), one file a piece, each
+  with what it is, its numbers and its caution; sizes come from the frame's short side, so pieces hold in vertical films.
+  `references/library.md` picks pieces by job (openings, statements, joins by what they carry, the product at work,
+  numbers, pictures, camera, effects, looks, the spectacle, the lockup), and one `library-*.md` a category documents each
+  piece's props. A reel a category (`--film library-type`, `library-turns`, ...) plays every piece by name.
+- The library's catalogue (`catalog/<category>.ts`): category, purpose, subject, mood, length, what it looks like, when to
+  use it, its caution and its reel frames. `frames.mjs library` finds pieces by `--category`, `--purpose`, `--subject`,
+  `--mood` or free words; `--show <Name>` prints a piece in full with its required and optional props and its import
+  line; `--strip <Name>` renders its frames. `scripts/library-docs.mjs --check` and `scripts/library-props.mjs --check`
+  (both in CI) fail when the docs, catalogue, exports and reels disagree or a usage line names a prop a piece lacks.
+- `frames.mjs`: a 36-frame storyboard in one still (`--safe` outlines the 8 % margin), full-size stills, half-size
+  previews, `final` (picture, sound and loudness to -16 LUFS in one pass), silent parts plus `audio` plus `mux` for long
+  films, `strip` for consecutive frames of a moment, and:
+  - `joins`: every join of a film at real size, every frame of the move from 2 frames before to 4 after, read from the
+    film's exported `JOINS`; `--file` cuts the same images from the rendered file;
+  - `motion`: every frame of a rendered file measured for cuts, pops, dead stops, hard starts from rest, stepping,
+    stillness and settling tails, with a chart;
+  - `check`: pace, still runs, empty frames, crowding (an `air` line), stretches cut on two sides, unpainted regions, the
+    ending, a bed that runs out, a silent file whose film plays sound, and which library pieces the film uses;
+    `--format loop|sting`.
+- `sfx.mjs`: the judged effects catalogue by role (Mixkit and Kenney CC0), `shortlist --mood` and `music` for 39
+  licensed tracks measured for tempo, start point and energy, `analyze`, `fit` (where to start a track so the film's main
+  hit lands on a beat where the music lifts; `--enter` for a late bed), and `credits` with licence links.
+- Real marks: `Brand` draws each company's current full-colour mark; 51 marks ship with the kit, `logos.mjs get` fetches
+  others with their source and licence recorded, and `logos.mjs verify` lists any one-colour fallback a film shows.
+- A scaffolded project records the kit version it came from (`cinetic-kit.json`).
+- Five worked films in `kit/src/films/` (`brief`, `forge`, `fieldnote`, `lumen`, `inkwell`). They are older than the
+  rules above: read them for how the kit is wired, not as a standard (`SKILL.md` says what to take from each).
 
-- `sfx.mjs pick` reads a kit role that is judged by its own words under its own name, as `listen.py` hears it, wherever a sound was asked about that role. `tick.crisp` is "a short crisp tick", and `whoosh.short` and `whoosh.long` are their own words. Before, it read `tick.crisp` as a plain tick, and the whooshes under a name no sound's heard lists named, so every whoosh counted as never asked.
+### Removed
 
-- `sfx.mjs pick` places a catalogue sound only in a role of its own kind. Each catalogue kind says what it is (`IS`), and each action and kit role says which sounds may play it (`SOUNDS`, from the words earshot judges its take by). On one test film it had placed a light switch as the pop, a typewriter click as the text note, a digital tone as the confirm and a cinematic swoosh sting as the logo lock, and earshot heard no match for any of them. A role with no sound of its kind keeps the kit's own takes. The catalogue's role and action lists lose the kinds that crossed over. Within its kinds, a role now plays a sound earshot heard as its sound first, then one earshot was never asked about, and one earshot heard as something else last (still a real recording). A sound the last films played gives way to a fresh one at each of the first two steps.
+- The house scene bank, the film templates, the deal, the numeric gates and their Python scripts, the HyperFrames
+  starter and the audio-analysis kit path. They remain in the git history and in release 1.5.1.
+- `shake`, `Flash`, `Aura`, `Field` as a ground and the typing `burst` are deprecated (`references/kit.md` lists what to
+  use instead).
 
 ## [1.5.1] - 2026-11-04
 

@@ -1,0 +1,2794 @@
+{
+ "about": "The real marks this film shows: where each file came from, its licence and its trademark owner. A private record for the film and its delivery notes: never shown on screen. Written by scripts/logos.mjs.",
+ "logos": {
+  "gmail": {
+   "name": "Gmail",
+   "owner": "Google LLC",
+   "site": "https://www.gmail.com",
+   "hex": "#EA4335",
+   "guidelines": "https://about.google/brand-resource-center/logos-list/",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/gmail.svg",
+     "aspect": 1.255,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/google-gmail.svg",
+     "file": "google-gmail.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2026-05",
+    "what": "the M in a soft gradient (the 2026 Workspace icons)",
+    "checked": "2026-10-29",
+    "page": "https://about.google/brand-resource-center/logos-list/"
+   },
+   "trademark": "Gmail is a trademark of Google LLC. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "gmail",
+    "googlegmail"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://about.google/brand-resource-center/logos-list/",
+    "ok": true,
+    "how": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
+   },
+   "licence": {
+    "file": "logos/gmail.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/google-gmail.svg"
+   }
+  },
+  "google-calendar": {
+   "name": "Google Calendar",
+   "owner": "Google LLC",
+   "site": "https://calendar.google.com/",
+   "hex": "#4285F4",
+   "guidelines": "https://about.google/brand-resource-center/logos-list/",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/google-calendar.svg",
+     "aspect": 0.931,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/google-calendar.svg",
+     "file": "google-calendar.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2026-05",
+    "what": "the blue tile with 31 (the 2026 Workspace icons)",
+    "checked": "2026-10-29",
+    "page": "https://about.google/brand-resource-center/logos-list/"
+   },
+   "trademark": "Google Calendar is a trademark of Google LLC. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "googlecalendar"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://about.google/brand-resource-center/logos-list/",
+    "ok": true,
+    "how": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
+   },
+   "licence": {
+    "file": "logos/google-calendar.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/google-calendar.svg"
+   }
+  },
+  "google-drive": {
+   "name": "Google Drive",
+   "owner": "Google LLC",
+   "site": "https://www.google.com/drive/",
+   "hex": "#4285F4",
+   "guidelines": "https://about.google/brand-resource-center/logos-list/",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/google-drive.svg",
+     "aspect": 1.076,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/google-drive.svg",
+     "file": "google-drive.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2026-05",
+    "what": "the rounded triangle in gradient (the 2026 Workspace icons)",
+    "checked": "2026-10-29",
+    "page": "https://about.google/brand-resource-center/logos-list/"
+   },
+   "trademark": "Google Drive is a trademark of Google LLC. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "googledrive"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://about.google/brand-resource-center/logos-list/",
+    "ok": true,
+    "how": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
+   },
+   "licence": {
+    "file": "logos/google-drive.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/google-drive.svg"
+   }
+  },
+  "google-docs": {
+   "name": "Google Docs",
+   "owner": "Google LLC",
+   "site": null,
+   "hex": "#4285F4",
+   "guidelines": "https://about.google/brand-resource-center/logos-list/",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/google-docs.svg",
+     "aspect": 0.727,
+     "from": "commons",
+     "url": "https://upload.wikimedia.org/wikipedia/commons/1/18/Google_Docs_icon_%282026%29.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+    }
+   },
+   "sources": {
+    "commons": {
+     "collection": "Wikimedia Commons",
+     "page": "https://commons.wikimedia.org/wiki/File:Google_Docs_icon_(2026).svg",
+     "licence": "PD",
+     "licenceUrl": "https://commons.wikimedia.org/wiki/Commons:Licensing",
+     "notes": [
+      "restrictions named on the page (trademarked): read it before use"
+     ]
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2026-05",
+    "what": "the page in gradient (the 2026 Workspace icons)",
+    "checked": "2026-10-29",
+    "page": "https://about.google/brand-resource-center/logos-list/"
+   },
+   "trademark": "Google Docs is a trademark of Google LLC. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "googledocs"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://about.google/brand-resource-center/logos-list/",
+    "ok": true,
+    "how": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
+   },
+   "licence": {
+    "file": "logos/google-docs.svg",
+    "from": "Wikimedia Commons",
+    "licence": "PD",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/1/18/Google_Docs_icon_%282026%29.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+   }
+  },
+  "google-sheets": {
+   "name": "Google Sheets",
+   "owner": "Google LLC",
+   "site": "https://sheets.google.com/",
+   "hex": "#34A853",
+   "guidelines": "https://about.google/brand-resource-center/logos-list/",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/google-sheets.svg",
+     "aspect": 1.375,
+     "from": "commons",
+     "url": "https://upload.wikimedia.org/wikipedia/commons/8/86/Google_Sheets_icon_%28August_2026%29.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+    }
+   },
+   "sources": {
+    "commons": {
+     "collection": "Wikimedia Commons",
+     "page": "https://commons.wikimedia.org/wiki/File:Google_Sheets_icon_(August_2026).svg",
+     "licence": "PD",
+     "licenceUrl": "https://commons.wikimedia.org/wiki/Commons:Licensing",
+     "notes": [
+      "restrictions named on the page (trademarked): read it before use"
+     ]
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2026-08",
+    "what": "the sheet in gradient (the 2026 Workspace icons, retouched in August)",
+    "checked": "2026-10-29",
+    "page": "https://about.google/brand-resource-center/logos-list/"
+   },
+   "trademark": "Google Sheets is a trademark of Google LLC. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "googlesheets"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://about.google/brand-resource-center/logos-list/",
+    "ok": true,
+    "how": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
+   },
+   "licence": {
+    "file": "logos/google-sheets.svg",
+    "from": "Wikimedia Commons",
+    "licence": "PD",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/8/86/Google_Sheets_icon_%28August_2026%29.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+   }
+  },
+  "google-slides": {
+   "name": "Google Slides",
+   "owner": "Google LLC",
+   "site": "https://slides.google.com/",
+   "hex": "#FBBC04",
+   "guidelines": "https://about.google/brand-resource-center/logos-list/",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/google-slides.svg",
+     "aspect": 1.037,
+     "from": "commons",
+     "url": "https://upload.wikimedia.org/wikipedia/commons/4/4f/Google_Slides_icon_%282026%29.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+    }
+   },
+   "sources": {
+    "commons": {
+     "collection": "Wikimedia Commons",
+     "page": "https://commons.wikimedia.org/wiki/File:Google_Slides_icon_(2026).svg",
+     "licence": "PD",
+     "licenceUrl": "https://commons.wikimedia.org/wiki/Commons:Licensing",
+     "notes": [
+      "restrictions named on the page (trademarked): read it before use"
+     ]
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2026-05",
+    "what": "the slide in gradient (the 2026 Workspace icons)",
+    "checked": "2026-10-29",
+    "page": "https://about.google/brand-resource-center/logos-list/"
+   },
+   "trademark": "Google Slides is a trademark of Google LLC. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "googleslides"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://about.google/brand-resource-center/logos-list/",
+    "ok": true,
+    "how": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
+   },
+   "licence": {
+    "file": "logos/google-slides.svg",
+    "from": "Wikimedia Commons",
+    "licence": "PD",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/4/4f/Google_Slides_icon_%282026%29.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+   }
+  },
+  "google-meet": {
+   "name": "Google Meet",
+   "owner": "Google LLC",
+   "site": "https://meet.google.com/",
+   "hex": "#00897B",
+   "guidelines": "https://about.google/brand-resource-center/logos-list/",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/google-meet.svg",
+     "aspect": 1.274,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/google-meet.svg",
+     "file": "google-meet.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2026-05",
+    "what": "the camera in a warm gradient (the 2026 Workspace icons)",
+    "checked": "2026-10-29",
+    "page": "https://about.google/brand-resource-center/logos-list/"
+   },
+   "trademark": "Google Meet is a trademark of Google LLC. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "googlemeet"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://about.google/brand-resource-center/logos-list/",
+    "ok": true,
+    "how": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
+   },
+   "licence": {
+    "file": "logos/google-meet.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/google-meet.svg"
+   }
+  },
+  "google": {
+   "name": "Google",
+   "owner": "Google LLC",
+   "site": "https://www.google.com/",
+   "hex": "#4285F4",
+   "guidelines": "https://about.google/brand-resource-center/brand-elements/",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/google.svg",
+     "aspect": 0.979,
+     "from": "svgl",
+     "url": "https://svgl.app/library/google.svg"
+    }
+   },
+   "sources": {
+    "svgl": {
+     "collection": "svgl",
+     "page": "https://svgl.app",
+     "licence": "MIT",
+     "licenceUrl": "https://github.com/pheralb/svgl/blob/main/LICENSE",
+     "seen": {
+      "quote": "ensure you have the right to use it and that its license permits adding it to svgl",
+      "url": "https://github.com/pheralb/svgl#readme"
+     },
+     "terms": "the API asks for cached responses and for no copy of svgl built from it"
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2025-09",
+    "what": "the G in a four-colour gradient",
+    "checked": "2026-10-29",
+    "page": "https://blog.google/inside-google/company-announcements/gradient-g-logo-design/"
+   },
+   "trademark": "Google is a trademark of Google LLC. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "google"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://blog.google/inside-google/company-announcements/gradient-g-logo-design/",
+    "ok": true,
+    "how": "Google's own announcement image (workspaceupdates.googleblog.com, May 2026)"
+   },
+   "licence": {
+    "file": "logos/google.svg",
+    "from": "svgl",
+    "licence": "MIT",
+    "url": "https://svgl.app/library/google.svg"
+   }
+  },
+  "figma": {
+   "name": "Figma",
+   "owner": "Figma, Inc.",
+   "site": "https://www.figma.com/",
+   "hex": "#F24E1E",
+   "guidelines": "https://www.figma.com/using-the-figma-brand/",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/figma.svg",
+     "aspect": 0.667,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/figma.svg",
+     "file": "figma.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the five shapes",
+    "checked": "2026-10-29",
+    "page": "https://www.figma.com/using-the-figma-brand/"
+   },
+   "trademark": "Figma is a trademark of Figma, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "figma"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://www.figma.com/using-the-figma-brand/",
+    "ok": true,
+    "how": "figma.com site icon"
+   },
+   "licence": {
+    "file": "logos/figma.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/figma.svg"
+   }
+  },
+  "linear": {
+   "name": "Linear",
+   "owner": "Linear Orbit, Inc.",
+   "site": "https://linear.app/",
+   "hex": "#5E6AD2",
+   "guidelines": "https://linear.app/brand",
+   "tone": "dark",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/linear.svg",
+     "aspect": 1,
+     "from": "file",
+     "url": "https://static.linear.app/design-assets/Linear-Brand-Assets.zip",
+     "file": "logo-dark.svg"
+    },
+    "markDark": {
+     "path": "logos/linear.dark.svg",
+     "aspect": 1,
+     "from": "file",
+     "url": "https://static.linear.app/design-assets/Linear-Brand-Assets.zip",
+     "file": "logo-dark.svg",
+     "derived": "mark with its neutrals reversed for dark grounds"
+    }
+   },
+   "sources": {
+    "file": {
+     "collection": "the brand's own file (from its brand or press page)",
+     "page": "https://linear.app/brand",
+     "licence": "owner-supplied",
+     "licenceUrl": null
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the striped disc in near-black (#222326), white on dark",
+    "checked": "2026-10-29",
+    "page": "https://linear.app/brand"
+   },
+   "trademark": "Linear is a trademark of Linear Orbit, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "linear"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://linear.app/brand",
+    "ok": true,
+    "how": "linear.app/brand assets (Linear-Brand-Assets.zip): logo-dark.svg #222326, logo-light.svg white"
+   },
+   "licence": {
+    "file": "logos/linear.svg (the brand's own file)",
+    "from": "the brand's own file (from its brand or press page)",
+    "licence": "owner-supplied",
+    "url": "https://static.linear.app/design-assets/Linear-Brand-Assets.zip"
+   }
+  },
+  "notion": {
+   "name": "Notion",
+   "owner": "Notion Labs, Inc.",
+   "site": "https://notion.so/",
+   "hex": "#000000",
+   "guidelines": "https://www.notion.com/about",
+   "tone": "dark",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/notion.svg",
+     "aspect": 0.955,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/notion-icon.svg",
+     "file": "notion-icon.svg"
+    },
+    "markDark": {
+     "path": "logos/notion.dark.svg",
+     "aspect": 0.955,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/notion-icon.svg",
+     "file": "notion-icon.svg",
+     "derived": "mark with its neutrals reversed for dark grounds"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the N cube",
+    "checked": "2026-10-29",
+    "page": "https://www.notion.com/about"
+   },
+   "trademark": "Notion is a trademark of Notion Labs, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "notion"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://www.notion.com/about",
+    "ok": true,
+    "how": "notion.com site icon"
+   },
+   "licence": {
+    "file": "logos/notion.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/notion-icon.svg"
+   }
+  },
+  "slack": {
+   "name": "Slack",
+   "owner": "Slack Technologies, LLC",
+   "site": "https://www.slack.com",
+   "hex": null,
+   "guidelines": "https://slack.com/media-kit",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/slack.svg",
+     "aspect": 1.001,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/slack-icon.svg",
+     "file": "slack-icon.svg",
+     "trimmed": true
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2019-01",
+    "what": "the four-colour hash of pills and dots",
+    "checked": "2026-10-29",
+    "page": "https://slack.com/media-kit"
+   },
+   "trademark": "Slack is a trademark of Slack Technologies, LLC. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "slack"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://slack.com/media-kit",
+    "ok": true,
+    "how": "slack.com site icon"
+   },
+   "licence": {
+    "file": "logos/slack.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/slack-icon.svg"
+   }
+  },
+  "github": {
+   "name": "GitHub",
+   "owner": "GitHub, Inc.",
+   "site": "https://github.com/",
+   "hex": "#181717",
+   "guidelines": "https://github.com/logos",
+   "tone": "dark",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/github.svg",
+     "aspect": 1.024,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/github-icon.svg",
+     "file": "github-icon.svg"
+    },
+    "markDark": {
+     "path": "logos/github.dark.svg",
+     "aspect": 1.024,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/github-icon.svg",
+     "file": "github-icon.svg",
+     "derived": "mark with its neutrals reversed for dark grounds"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the Invertocat",
+    "checked": "2026-10-29",
+    "page": "https://github.com/logos"
+   },
+   "trademark": "GitHub is a trademark of GitHub, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "github"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://github.com/logos",
+    "ok": true,
+    "how": "github.com favicon.svg"
+   },
+   "licence": {
+    "file": "logos/github.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/github-icon.svg"
+   }
+  },
+  "gitlab": {
+   "name": "GitLab",
+   "owner": "GitLab Inc.",
+   "site": "https://gitlab.com/",
+   "hex": "#FC6D26",
+   "guidelines": "https://about.gitlab.com/handbook/marketing/corporate-marketing/brand-activation/trademark-guidelines/",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/gitlab.svg",
+     "aspect": 1.036,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/gitlab-icon.svg",
+     "file": "gitlab-icon.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2022-04",
+    "what": "the 2022 tanuki",
+    "checked": "2026-10-29",
+    "page": "https://about.gitlab.com/press/press-kit/"
+   },
+   "trademark": "GitLab is a trademark of GitLab Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "gitlab"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://about.gitlab.com/press/press-kit/",
+    "ok": true,
+    "how": "about.gitlab.com site icon"
+   },
+   "licence": {
+    "file": "logos/gitlab.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/gitlab-icon.svg"
+   }
+  },
+  "visual-studio-code": {
+   "name": "Visual Studio Code",
+   "owner": "Microsoft Corporation",
+   "site": "https://code.visualstudio.com/",
+   "hex": null,
+   "guidelines": "https://code.visualstudio.com/brand",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/visual-studio-code.svg",
+     "aspect": 1.008,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/visual-studio-code.svg",
+     "file": "visual-studio-code.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the blue ribbon",
+    "checked": "2026-10-29",
+    "page": "https://code.visualstudio.com/brand"
+   },
+   "trademark": "Visual Studio Code is a trademark of Microsoft Corporation. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "visualstudiocode",
+    "vscode"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://code.visualstudio.com/brand",
+    "ok": true,
+    "how": "code.visualstudio.com site icon"
+   },
+   "licence": {
+    "file": "logos/visual-studio-code.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/visual-studio-code.svg"
+   }
+  },
+  "cursor": {
+   "name": "Cursor",
+   "owner": "Anysphere, Inc.",
+   "site": "https://www.cursor.com",
+   "hex": "#000000",
+   "guidelines": "https://cursor.com/brand",
+   "tone": "dark",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/cursor.svg",
+     "aspect": 0.877,
+     "from": "svgl",
+     "url": "https://svgl.app/library/cursor_light.svg"
+    },
+    "markDark": {
+     "path": "logos/cursor.dark.svg",
+     "aspect": 0.877,
+     "from": "svgl",
+     "url": "https://svgl.app/library/cursor_dark.svg"
+    }
+   },
+   "sources": {
+    "svgl": {
+     "collection": "svgl",
+     "page": "https://svgl.app",
+     "licence": "MIT",
+     "licenceUrl": "https://github.com/pheralb/svgl/blob/main/LICENSE",
+     "seen": {
+      "quote": "ensure you have the right to use it and that its license permits adding it to svgl",
+      "url": "https://github.com/pheralb/svgl#readme"
+     },
+     "terms": "the API asks for cached responses and for no copy of svgl built from it"
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the cube",
+    "checked": "2026-10-29",
+    "page": "https://cursor.com/brand"
+   },
+   "trademark": "Cursor is a trademark of Anysphere, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "cursor"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://cursor.com/brand",
+    "ok": true,
+    "how": "cursor.com site icon"
+   },
+   "licence": {
+    "file": "logos/cursor.svg",
+    "from": "svgl",
+    "licence": "MIT",
+    "url": "https://svgl.app/library/cursor_light.svg"
+   }
+  },
+  "vercel": {
+   "name": "Vercel",
+   "owner": "Vercel Inc.",
+   "site": "https://vercel.com/",
+   "hex": "#000000",
+   "guidelines": "https://vercel.com/geist/brands",
+   "tone": "dark",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/vercel.svg",
+     "aspect": 1.153,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/vercel-icon.svg",
+     "file": "vercel-icon.svg"
+    },
+    "markDark": {
+     "path": "logos/vercel.dark.svg",
+     "aspect": 1.153,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/vercel-icon.svg",
+     "file": "vercel-icon.svg",
+     "derived": "mark with its neutrals reversed for dark grounds"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the triangle",
+    "checked": "2026-10-29",
+    "page": "https://vercel.com/geist/brands"
+   },
+   "trademark": "Vercel is a trademark of Vercel Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "vercel"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://vercel.com/geist/brands",
+    "ok": true,
+    "how": "vercel.com site icon"
+   },
+   "licence": {
+    "file": "logos/vercel.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/vercel-icon.svg"
+   }
+  },
+  "stripe": {
+   "name": "Stripe",
+   "owner": "Stripe, Inc.",
+   "site": "https://stripe.com/",
+   "hex": "#635BFF",
+   "guidelines": "https://stripe.com/newsroom/brand-assets",
+   "tone": "colour",
+   "tile": "own",
+   "files": {
+    "mark": {
+     "path": "logos/stripe.svg",
+     "aspect": 1,
+     "from": "file",
+     "url": "https://images.stripeassets.com/fzn2n1nzq965/1hgcBNd12BfT9VLgbId7By/01d91920114b124fb4cf6d448f9f06eb/favicon.svg",
+     "file": "stripe-favicon.svg"
+    }
+   },
+   "sources": {
+    "file": {
+     "collection": "the brand's own file (from its brand or press page)",
+     "page": "https://stripe.com/newsroom/brand-assets",
+     "licence": "owner-supplied",
+     "licenceUrl": null
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2025",
+    "what": "the slanted bar, white on a #533AFD tile (the site icon) or #533AFD alone",
+    "checked": "2026-10-29",
+    "page": "https://stripe.com/newsroom/brand-assets"
+   },
+   "trademark": "Stripe is a trademark of Stripe, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "stripe"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://stripe.com/newsroom/brand-assets",
+    "ok": true,
+    "how": "stripe.com favicon.svg: the slanted bar in white on #533AFD; svgl draws the same bar in #533AFD without the tile"
+   },
+   "licence": {
+    "file": "logos/stripe.svg (the brand's own file)",
+    "from": "the brand's own file (from its brand or press page)",
+    "licence": "owner-supplied",
+    "url": "https://images.stripeassets.com/fzn2n1nzq965/1hgcBNd12BfT9VLgbId7By/01d91920114b124fb4cf6d448f9f06eb/favicon.svg"
+   }
+  },
+  "shopify": {
+   "name": "Shopify",
+   "owner": "Shopify Inc.",
+   "site": "https://www.shopify.com",
+   "hex": "#7AB55C",
+   "guidelines": "https://www.shopify.com/brand-assets",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/shopify.svg",
+     "aspect": 0.879,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/shopify.svg",
+     "file": "shopify.svg",
+     "trimmed": true
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the bag",
+    "checked": "2026-10-29",
+    "page": "https://www.shopify.com/brand-assets"
+   },
+   "trademark": "Shopify is a trademark of Shopify Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "shopify"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://www.shopify.com/brand-assets",
+    "ok": true,
+    "how": "shopify.com site icon"
+   },
+   "licence": {
+    "file": "logos/shopify.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/shopify.svg"
+   }
+  },
+  "zoom": {
+   "name": "Zoom",
+   "owner": "Zoom Communications, Inc.",
+   "site": "https://zoom.us/",
+   "hex": "#0B5CFF",
+   "guidelines": "https://brand.zoom.us/usage-legal/",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "wordmark": {
+     "path": "logos/zoom.wordmark.svg",
+     "aspect": 4.376,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/zoom.svg",
+     "file": "zoom.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "unknown",
+    "checked": "2026-10-29",
+    "page": "https://www.zoom.com/en/about/media-kit/"
+   },
+   "trademark": "Zoom is a trademark of Zoom Communications, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "zoom"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://www.zoom.com/en/about/media-kit/",
+    "ok": true,
+    "how": "zoom.com media kit: the wordmark only (zoom-logo-2025.png); zoom.com and brand.zoom.com favicons: the \"zm\" squircle, no vector file published"
+   },
+   "licence": {
+    "file": "logos/zoom.wordmark.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/zoom.svg"
+   },
+   "note": "The app icon (a \"zm\" squircle) has no vector file from Zoom or an open collection: the mark shown is the wordmark, as on Zoom's media kit."
+  },
+  "microsoft-teams": {
+   "name": "Microsoft Teams",
+   "owner": "Microsoft Corporation",
+   "site": "https://www.microsoft.com/microsoft-teams/group-chat-software",
+   "hex": null,
+   "guidelines": "https://www.microsoft.com/microsoft-teams",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/microsoft-teams.svg",
+     "aspect": 0.947,
+     "from": "svgl",
+     "url": "https://svgl.app/library/microsoft-teams.svg"
+    }
+   },
+   "sources": {
+    "svgl": {
+     "collection": "svgl",
+     "page": "https://svgl.app",
+     "licence": "MIT",
+     "licenceUrl": "https://github.com/pheralb/svgl/blob/main/LICENSE",
+     "seen": {
+      "quote": "ensure you have the right to use it and that its license permits adding it to svgl",
+      "url": "https://github.com/pheralb/svgl#readme"
+     },
+     "terms": "the API asks for cached responses and for no copy of svgl built from it"
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2025-10",
+    "what": "the folded 2025 icon",
+    "checked": "2026-10-29",
+    "page": "https://www.microsoft.com/microsoft-teams"
+   },
+   "trademark": "Microsoft Teams is a trademark of Microsoft Corporation. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "microsoftteams",
+    "teams"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://www.microsoft.com/microsoft-teams",
+    "ok": true,
+    "how": "microsoft.design, the 2025 Microsoft 365 icons"
+   },
+   "licence": {
+    "file": "logos/microsoft-teams.svg",
+    "from": "svgl",
+    "licence": "MIT",
+    "url": "https://svgl.app/library/microsoft-teams.svg"
+   }
+  },
+  "microsoft-outlook": {
+   "name": "Microsoft Outlook",
+   "owner": "Microsoft Corporation",
+   "site": "https://www.microsoft.com/microsoft-365/outlook/email-and-calendar-software-application",
+   "hex": null,
+   "guidelines": "https://www.microsoft.com/microsoft-365/outlook",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/microsoft-outlook.svg",
+     "aspect": 1.056,
+     "from": "svgl",
+     "url": "https://svgl.app/library/microsoft-outlook.svg"
+    }
+   },
+   "sources": {
+    "svgl": {
+     "collection": "svgl",
+     "page": "https://svgl.app",
+     "licence": "MIT",
+     "licenceUrl": "https://github.com/pheralb/svgl/blob/main/LICENSE",
+     "seen": {
+      "quote": "ensure you have the right to use it and that its license permits adding it to svgl",
+      "url": "https://github.com/pheralb/svgl#readme"
+     },
+     "terms": "the API asks for cached responses and for no copy of svgl built from it"
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2025-10",
+    "what": "the folded 2025 icon",
+    "checked": "2026-10-29",
+    "page": "https://www.microsoft.com/microsoft-365/outlook"
+   },
+   "trademark": "Microsoft Outlook is a trademark of Microsoft Corporation. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "microsoftoutlook",
+    "outlook"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://www.microsoft.com/microsoft-365/outlook",
+    "ok": true,
+    "how": "microsoft.design, the 2025 Microsoft 365 icons"
+   },
+   "licence": {
+    "file": "logos/microsoft-outlook.svg",
+    "from": "svgl",
+    "licence": "MIT",
+    "url": "https://svgl.app/library/microsoft-outlook.svg"
+   }
+  },
+  "microsoft-excel": {
+   "name": "Microsoft Excel",
+   "owner": "Microsoft Corporation",
+   "site": "https://www.microsoft.com/microsoft-365/excel",
+   "hex": null,
+   "guidelines": "https://www.microsoft.com/microsoft-365/excel",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/microsoft-excel.svg",
+     "aspect": 0.972,
+     "from": "svgl",
+     "url": "https://svgl.app/library/microsoft-excel.svg"
+    }
+   },
+   "sources": {
+    "svgl": {
+     "collection": "svgl",
+     "page": "https://svgl.app",
+     "licence": "MIT",
+     "licenceUrl": "https://github.com/pheralb/svgl/blob/main/LICENSE",
+     "seen": {
+      "quote": "ensure you have the right to use it and that its license permits adding it to svgl",
+      "url": "https://github.com/pheralb/svgl#readme"
+     },
+     "terms": "the API asks for cached responses and for no copy of svgl built from it"
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2025-10",
+    "what": "the folded 2025 icon",
+    "checked": "2026-10-29",
+    "page": "https://www.microsoft.com/microsoft-365/excel"
+   },
+   "trademark": "Microsoft Excel is a trademark of Microsoft Corporation. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "microsoftexcel",
+    "excel"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://www.microsoft.com/microsoft-365/excel",
+    "ok": true,
+    "how": "microsoft.design, the 2025 Microsoft 365 icons"
+   },
+   "licence": {
+    "file": "logos/microsoft-excel.svg",
+    "from": "svgl",
+    "licence": "MIT",
+    "url": "https://svgl.app/library/microsoft-excel.svg"
+   }
+  },
+  "microsoft-word": {
+   "name": "Microsoft Word",
+   "owner": "Microsoft Corporation",
+   "site": "https://www.microsoft.com/microsoft-365/word",
+   "hex": null,
+   "guidelines": "https://www.microsoft.com/microsoft-365/word",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/microsoft-word.svg",
+     "aspect": 0.972,
+     "from": "svgl",
+     "url": "https://svgl.app/library/microsoft-word.svg"
+    }
+   },
+   "sources": {
+    "svgl": {
+     "collection": "svgl",
+     "page": "https://svgl.app",
+     "licence": "MIT",
+     "licenceUrl": "https://github.com/pheralb/svgl/blob/main/LICENSE",
+     "seen": {
+      "quote": "ensure you have the right to use it and that its license permits adding it to svgl",
+      "url": "https://github.com/pheralb/svgl#readme"
+     },
+     "terms": "the API asks for cached responses and for no copy of svgl built from it"
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2025-10",
+    "what": "the folded 2025 icon with three bars",
+    "checked": "2026-10-29",
+    "page": "https://www.microsoft.com/microsoft-365/word"
+   },
+   "trademark": "Microsoft Word is a trademark of Microsoft Corporation. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "microsoftword",
+    "word"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://www.microsoft.com/microsoft-365/word",
+    "ok": true,
+    "how": "microsoft.design, the 2025 Microsoft 365 icons"
+   },
+   "licence": {
+    "file": "logos/microsoft-word.svg",
+    "from": "svgl",
+    "licence": "MIT",
+    "url": "https://svgl.app/library/microsoft-word.svg"
+   }
+  },
+  "discord": {
+   "name": "Discord",
+   "owner": "Discord Inc.",
+   "site": "https://discord.com/",
+   "hex": "#5865F2",
+   "guidelines": "https://discord.com/branding",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/discord.svg",
+     "aspect": 1.286,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/discord-icon.svg",
+     "file": "discord-icon.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2021-05",
+    "what": "Clyde without the bubble, in #5865F2",
+    "checked": "2026-10-29",
+    "page": "https://discord.com/branding"
+   },
+   "trademark": "Discord is a trademark of Discord Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "discord"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://discord.com/branding",
+    "ok": true,
+    "how": "discord.com site icon"
+   },
+   "licence": {
+    "file": "logos/discord.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/discord-icon.svg"
+   }
+  },
+  "whatsapp": {
+   "name": "WhatsApp",
+   "owner": "Meta Platforms, Inc.",
+   "site": "https://web.whatsapp.com",
+   "hex": "#25D366",
+   "guidelines": "https://about.meta.com/brand/resources/whatsapp/whatsapp-brand",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/whatsapp.svg",
+     "aspect": 0.992,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/whatsapp-icon.svg",
+     "file": "whatsapp-icon.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the phone in a bubble",
+    "checked": "2026-10-29",
+    "page": "https://about.meta.com/brand/resources/whatsapp/whatsapp-brand/"
+   },
+   "trademark": "WhatsApp is a trademark of Meta Platforms, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "whatsapp"
+   ],
+   "verified": {
+    "on": "2026-10-29",
+    "page": "https://about.meta.com/brand/resources/whatsapp/whatsapp-brand/",
+    "ok": true
+   },
+   "licence": {
+    "file": "logos/whatsapp.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/whatsapp-icon.svg"
+   }
+  },
+  "telegram": {
+   "name": "Telegram",
+   "owner": "Telegram FZ-LLC",
+   "site": "https://web.telegram.org/",
+   "hex": "#26A5E4",
+   "guidelines": "https://telegram.org/tour/screenshots",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/telegram.svg",
+     "aspect": 1,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/telegram.svg",
+     "file": "telegram.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the paper plane",
+    "checked": "2026-10-29",
+    "page": "https://telegram.org/tour/screenshots"
+   },
+   "trademark": "Telegram is a trademark of Telegram FZ-LLC. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "telegram"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://telegram.org/tour/screenshots",
+    "ok": true,
+    "how": "telegram.org site icon"
+   },
+   "licence": {
+    "file": "logos/telegram.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/telegram.svg"
+   }
+  },
+  "x": {
+   "name": "X",
+   "owner": "X Corp.",
+   "site": "https://x.com",
+   "hex": "#000000",
+   "guidelines": "https://about.x.com/en/who-we-are/brand-toolkit",
+   "tone": "dark",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/x.svg",
+     "aspect": 0.98,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/x.svg",
+     "file": "x.svg"
+    },
+    "markDark": {
+     "path": "logos/x.dark.svg",
+     "aspect": 0.98,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/x.svg",
+     "file": "x.svg",
+     "derived": "mark with its neutrals reversed for dark grounds"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2023-07",
+    "what": "the X",
+    "checked": "2026-10-29",
+    "page": "https://about.x.com/en/who-we-are/brand-toolkit"
+   },
+   "trademark": "X is a trademark of X Corp.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "x",
+    "twitter",
+    "xformerlytwitter"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://about.x.com/en/who-we-are/brand-toolkit",
+    "ok": true,
+    "how": "x.com site icon"
+   },
+   "licence": {
+    "file": "logos/x.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/x.svg"
+   }
+  },
+  "instagram": {
+   "name": "Instagram",
+   "owner": "Meta Platforms, Inc.",
+   "site": "https://www.instagram.com/",
+   "hex": "#FF0069",
+   "guidelines": "https://about.instagram.com/brand",
+   "tone": "colour",
+   "tile": "own",
+   "files": {
+    "mark": {
+     "path": "logos/instagram.svg",
+     "aspect": 1,
+     "from": "svgl",
+     "url": "https://svgl.app/library/instagram-icon.svg"
+    }
+   },
+   "sources": {
+    "svgl": {
+     "collection": "svgl",
+     "page": "https://svgl.app",
+     "licence": "MIT",
+     "licenceUrl": "https://github.com/pheralb/svgl/blob/main/LICENSE",
+     "seen": {
+      "quote": "ensure you have the right to use it and that its license permits adding it to svgl",
+      "url": "https://github.com/pheralb/svgl#readme"
+     },
+     "terms": "the API asks for cached responses and for no copy of svgl built from it"
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2022-05",
+    "what": "the camera glyph on the brighter 2022 gradient",
+    "checked": "2026-10-29",
+    "page": "https://about.meta.com/brand/resources/instagram/instagram-brand/"
+   },
+   "trademark": "Instagram is a trademark of Meta Platforms, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "instagram"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://about.meta.com/brand/resources/instagram/instagram-brand/",
+    "ok": true,
+    "how": "instagram.com site icon"
+   },
+   "licence": {
+    "file": "logos/instagram.svg",
+    "from": "svgl",
+    "licence": "MIT",
+    "url": "https://svgl.app/library/instagram-icon.svg"
+   }
+  },
+  "youtube": {
+   "name": "YouTube",
+   "owner": "Google LLC",
+   "site": "https://www.youtube.com",
+   "hex": "#FF0000",
+   "guidelines": "https://www.youtube.com/howyoutubeworks/resources/brand-resources/#logos-icons-and-colors",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/youtube.svg",
+     "aspect": 1.45,
+     "from": "commons",
+     "url": "https://upload.wikimedia.org/wikipedia/commons/f/fd/YouTube_full-color_icon_%282024%29.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+    }
+   },
+   "sources": {
+    "commons": {
+     "collection": "Wikimedia Commons",
+     "page": "https://commons.wikimedia.org/wiki/File:YouTube_full-color_icon_(2024).svg",
+     "licence": "PD",
+     "licenceUrl": "https://commons.wikimedia.org/wiki/Commons:Licensing",
+     "notes": [
+      "restrictions named on the page (trademarked): read it before use"
+     ]
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2024-11",
+    "what": "the play button in the cooler 2024 red (#FF0033)",
+    "checked": "2026-10-29",
+    "page": "https://www.youtube.com/howyoutubeworks/resources/brand-resources/"
+   },
+   "trademark": "YouTube is a trademark of Google LLC. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "youtube"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://www.youtube.com/howyoutubeworks/resources/brand-resources/",
+    "ok": true,
+    "how": "youtube.com site icon"
+   },
+   "licence": {
+    "file": "logos/youtube.svg",
+    "from": "Wikimedia Commons",
+    "licence": "PD",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/f/fd/YouTube_full-color_icon_%282024%29.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+   }
+  },
+  "spotify": {
+   "name": "Spotify",
+   "owner": "Spotify AB",
+   "site": "https://www.spotify.com/",
+   "hex": "#1ED760",
+   "guidelines": "https://developer.spotify.com/documentation/general/design-and-branding/#using-our-logo",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/spotify.svg",
+     "aspect": 1,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/spotify-icon.svg",
+     "file": "spotify-icon.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the three arcs in green",
+    "checked": "2026-10-29",
+    "page": "https://developer.spotify.com/documentation/design"
+   },
+   "trademark": "Spotify is a trademark of Spotify AB. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "spotify"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://developer.spotify.com/documentation/design",
+    "ok": true,
+    "how": "open.spotify.com site icon"
+   },
+   "licence": {
+    "file": "logos/spotify.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/spotify-icon.svg"
+   }
+  },
+  "dropbox": {
+   "name": "Dropbox",
+   "owner": "Dropbox, Inc.",
+   "site": "https://www.dropbox.com/",
+   "hex": "#0061FF",
+   "guidelines": "https://www.dropbox.com/branding",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/dropbox.svg",
+     "aspect": 1.174,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/dropbox.svg",
+     "file": "dropbox.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2017-10",
+    "what": "the open box in #0061FF",
+    "checked": "2026-10-29",
+    "page": "https://www.dropbox.com/branding"
+   },
+   "trademark": "Dropbox is a trademark of Dropbox, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "dropbox"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://www.dropbox.com/branding",
+    "ok": true,
+    "how": "dropbox.com site icon"
+   },
+   "licence": {
+    "file": "logos/dropbox.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/dropbox.svg"
+   }
+  },
+  "asana": {
+   "name": "Asana",
+   "owner": "Asana, Inc.",
+   "site": "https://asana.com",
+   "hex": "#F06A6A",
+   "guidelines": "https://asana.com/brand",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/asana.svg",
+     "aspect": 1.08,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/asana-icon.svg",
+     "file": "asana-icon.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the three coral dots",
+    "checked": "2026-10-29",
+    "page": "https://asana.com/brand"
+   },
+   "trademark": "Asana is a trademark of Asana, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "asana"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://asana.com/brand",
+    "ok": true,
+    "how": "asana.com site icon"
+   },
+   "licence": {
+    "file": "logos/asana.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/asana-icon.svg"
+   }
+  },
+  "trello": {
+   "name": "Trello",
+   "owner": "Atlassian",
+   "site": "https://trello.com/",
+   "hex": "#0052CC",
+   "guidelines": "https://atlassian.design/foundations/logos",
+   "tone": "colour",
+   "tile": "own",
+   "files": {
+    "mark": {
+     "path": "logos/trello.svg",
+     "aspect": 1,
+     "from": "file",
+     "url": "https://atlassian.design/assets/efec7753a0cb/logos/trello_app.zip",
+     "file": "Trello_icon.svg"
+    }
+   },
+   "sources": {
+    "file": {
+     "collection": "the brand's own file (from its brand or press page)",
+     "page": "https://atlassian.design/foundations/logos",
+     "licence": "owner-supplied",
+     "licenceUrl": null
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2025",
+    "what": "the two white boards on a flat Atlassian-blue tile (#1558BC) (no open collection draws it yet)",
+    "checked": "2026-10-29",
+    "page": "https://atlassian.design/foundations/logos"
+   },
+   "trademark": "Trello is a trademark of Atlassian. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "trello"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://atlassian.design/foundations/logos",
+    "ok": true,
+    "how": "atlassian.design/foundations/logos trello_app.zip Trello_icon.svg; trello.com favicon"
+   },
+   "licence": {
+    "file": "logos/trello.svg (the brand's own file)",
+    "from": "the brand's own file (from its brand or press page)",
+    "licence": "owner-supplied",
+    "url": "https://atlassian.design/assets/efec7753a0cb/logos/trello_app.zip"
+   }
+  },
+  "airtable": {
+   "name": "Airtable",
+   "owner": "Formagrid, Inc.",
+   "site": "https://airtable.com/",
+   "hex": "#18BFFF",
+   "guidelines": "https://airtable.com/newsroom",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/airtable.svg",
+     "aspect": 1.191,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/airtable.svg",
+     "file": "airtable.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the three-colour box",
+    "checked": "2026-10-29",
+    "page": "https://airtable.com/newsroom"
+   },
+   "trademark": "Airtable is a trademark of Formagrid, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "airtable"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://airtable.com/newsroom",
+    "ok": true,
+    "how": "airtable.com site icon"
+   },
+   "licence": {
+    "file": "logos/airtable.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/airtable.svg"
+   }
+  },
+  "zapier": {
+   "name": "Zapier",
+   "owner": "Zapier, Inc.",
+   "site": "https://zapier.com/",
+   "hex": "#FF4F00",
+   "guidelines": "https://www.figma.com/file/NQFxTCE5pGR3dHZt0DkOyy/Zapier-Brand-Guidelines-%5BExternal%5D?type=design&node-id=101-9701&mode=design",
+   "tone": "colour",
+   "tile": "own",
+   "files": {
+    "mark": {
+     "path": "logos/zapier.svg",
+     "aspect": 1,
+     "from": "simple-icons",
+     "url": "https://cdn.jsdelivr.net/npm/simple-icons@16/icons/zapier.svg",
+     "derived": "the one-colour mark in the brand's official hex (no full-colour file in the open collections)"
+    }
+   },
+   "sources": {
+    "simple-icons": {
+     "collection": "Simple Icons",
+     "page": "https://simpleicons.org",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md",
+     "seen": {
+      "quote": "Please see individual licenses where available.",
+      "url": "https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the orange mark",
+    "checked": "2026-10-29",
+    "page": "https://zapier.com/brand"
+   },
+   "trademark": "Zapier is a trademark of Zapier, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "zapier"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://zapier.com/brand",
+    "ok": true,
+    "how": "zapier.com site icon (the orange tile) and brand.zapier.com"
+   },
+   "licence": {
+    "file": "logos/zapier.svg",
+    "from": "Simple Icons",
+    "licence": "CC0-1.0",
+    "url": "https://cdn.jsdelivr.net/npm/simple-icons@16/icons/zapier.svg"
+   }
+  },
+  "hubspot": {
+   "name": "HubSpot",
+   "owner": "HubSpot, Inc.",
+   "site": "https://www.hubspot.com/",
+   "hex": "#FF7A59",
+   "guidelines": "https://www.hubspot.com/style-guide",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/hubspot.svg",
+     "aspect": 0.954,
+     "from": "file",
+     "url": "https://www.hubspot.com/ (the site's own logo files)",
+     "file": "hubspot-sprocket-site.svg",
+     "trimmed": true
+    }
+   },
+   "sources": {
+    "file": {
+     "collection": "the brand's own file (from its brand or press page)",
+     "page": "https://www.hubspot.com/",
+     "licence": "owner-supplied",
+     "licenceUrl": null
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2025",
+    "what": "the sprocket in the 2025 orange (#FF4800)",
+    "checked": "2026-10-29",
+    "page": "https://www.hubspot.com/"
+   },
+   "trademark": "HubSpot is a trademark of HubSpot, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "hubspot"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://www.hubspot.com/",
+    "ok": true,
+    "how": "hubspot.com header logo and sprocket SVG (#FF4800); favicon HubSpot-Inversed-Favicon.png"
+   },
+   "licence": {
+    "file": "logos/hubspot.svg (the brand's own file)",
+    "from": "the brand's own file (from its brand or press page)",
+    "licence": "owner-supplied",
+    "url": "https://www.hubspot.com/ (the site's own logo files)"
+   }
+  },
+  "salesforce": {
+   "name": "Salesforce",
+   "owner": "Salesforce, Inc.",
+   "site": "https://www.salesforce.com",
+   "hex": null,
+   "guidelines": "https://www.salesforce.com/news/press-kits/",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/salesforce.svg",
+     "aspect": 1.429,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/salesforce.svg",
+     "file": "salesforce.svg",
+     "trimmed": true
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the cloud",
+    "checked": "2026-10-29",
+    "page": "https://www.salesforce.com/news/press-kits/"
+   },
+   "trademark": "Salesforce is a trademark of Salesforce, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "salesforce"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://www.salesforce.com/news/press-kits/",
+    "ok": true,
+    "how": "salesforce.com site icon"
+   },
+   "licence": {
+    "file": "logos/salesforce.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/salesforce.svg"
+   }
+  },
+  "openai": {
+   "name": "OpenAI",
+   "owner": "OpenAI",
+   "site": "https://openai.com/",
+   "hex": null,
+   "guidelines": "https://openai.com/brand/",
+   "tone": "dark",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/openai.svg",
+     "aspect": 1,
+     "from": "svgl",
+     "url": "https://svgl.app/library/openai.svg",
+     "trimmed": true
+    },
+    "markDark": {
+     "path": "logos/openai.dark.svg",
+     "aspect": 1,
+     "from": "svgl",
+     "url": "https://svgl.app/library/openai_dark.svg",
+     "trimmed": true
+    }
+   },
+   "sources": {
+    "svgl": {
+     "collection": "svgl",
+     "page": "https://svgl.app",
+     "licence": "MIT",
+     "licenceUrl": "https://github.com/pheralb/svgl/blob/main/LICENSE",
+     "seen": {
+      "quote": "ensure you have the right to use it and that its license permits adding it to svgl",
+      "url": "https://github.com/pheralb/svgl#readme"
+     },
+     "terms": "the API asks for cached responses and for no copy of svgl built from it"
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2025-02",
+    "what": "the blossom, redrawn with the 2025 identity",
+    "checked": "2026-10-29",
+    "page": "https://openai.com/brand/"
+   },
+   "trademark": "OpenAI is a trademark of OpenAI. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "openai"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://openai.com/brand/",
+    "ok": true,
+    "how": "openai.com site icon"
+   },
+   "licence": {
+    "file": "logos/openai.svg",
+    "from": "svgl",
+    "licence": "MIT",
+    "url": "https://svgl.app/library/openai.svg"
+   }
+  },
+  "chatgpt": {
+   "name": "ChatGPT",
+   "owner": "OpenAI",
+   "site": null,
+   "hex": null,
+   "guidelines": "https://openai.com/brand/",
+   "tone": "dark",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/chatgpt.svg",
+     "aspect": 1,
+     "from": "svgl",
+     "url": "https://svgl.app/library/openai.svg",
+     "trimmed": true
+    },
+    "markDark": {
+     "path": "logos/chatgpt.dark.svg",
+     "aspect": 1,
+     "from": "svgl",
+     "url": "https://svgl.app/library/openai.svg",
+     "trimmed": true,
+     "derived": "mark with its neutrals reversed for dark grounds"
+    }
+   },
+   "sources": {
+    "svgl": {
+     "collection": "svgl",
+     "page": "https://svgl.app",
+     "licence": "MIT",
+     "licenceUrl": "https://github.com/pheralb/svgl/blob/main/LICENSE",
+     "seen": {
+      "quote": "ensure you have the right to use it and that its license permits adding it to svgl",
+      "url": "https://github.com/pheralb/svgl#readme"
+     },
+     "terms": "the API asks for cached responses and for no copy of svgl built from it"
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2023-05",
+    "what": "the OpenAI blossom in black or white (the app icon), no green",
+    "checked": "2026-10-29",
+    "page": "https://openai.com/brand/"
+   },
+   "trademark": "ChatGPT is a trademark of OpenAI. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "chatgpt"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://openai.com/brand/",
+    "ok": true,
+    "how": "chatgpt.com site icon"
+   },
+   "licence": {
+    "file": "logos/chatgpt.svg",
+    "from": "svgl",
+    "licence": "MIT",
+    "url": "https://svgl.app/library/openai.svg"
+   }
+  },
+  "claude": {
+   "name": "Claude",
+   "owner": "Anthropic PBC",
+   "site": "https://claude.ai/",
+   "hex": "#D97757",
+   "guidelines": "https://claude.ai",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/claude.svg",
+     "aspect": 0.996,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/claude-icon.svg",
+     "file": "claude-icon.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the spark in its own terracotta",
+    "checked": "2026-10-29",
+    "page": "https://claude.ai"
+   },
+   "trademark": "Claude is a trademark of Anthropic PBC. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "claude"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://claude.ai",
+    "ok": true,
+    "how": "claude.com icon.svg (#D97757)"
+   },
+   "licence": {
+    "file": "logos/claude.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/claude-icon.svg"
+   }
+  },
+  "gemini": {
+   "name": "Gemini",
+   "owner": "Google LLC",
+   "site": "https://gemini.google.com/",
+   "hex": "#8E75B2",
+   "guidelines": "https://gemini.google.com",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/gemini.svg",
+     "aspect": 1,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/google-gemini-icon.svg",
+     "file": "google-gemini-icon.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2025-07",
+    "what": "the sparkle in the four Google colours",
+    "checked": "2026-10-29",
+    "page": "https://gemini.google.com"
+   },
+   "trademark": "Gemini is a trademark of Google LLC. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "gemini",
+    "googlegemini"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://gemini.google.com",
+    "ok": true,
+    "how": "gemini.google.com site icon"
+   },
+   "licence": {
+    "file": "logos/gemini.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/google-gemini-icon.svg"
+   }
+  },
+  "apple": {
+   "name": "Apple",
+   "owner": "Apple Inc.",
+   "site": "https://www.apple.com",
+   "hex": "#000000",
+   "guidelines": "https://www.apple.com/legal/intellectual-property/guidelinesfor3rdparties.html",
+   "tone": "dark",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/apple.svg",
+     "aspect": 0.813,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/apple.svg",
+     "file": "apple.svg"
+    },
+    "markDark": {
+     "path": "logos/apple.dark.svg",
+     "aspect": 0.813,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/apple.svg",
+     "file": "apple.svg",
+     "derived": "mark with its neutrals reversed for dark grounds"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the apple",
+    "checked": "2026-10-29",
+    "page": "https://www.apple.com/legal/intellectual-property/guidelinesfor3rdparties.html"
+   },
+   "trademark": "Apple is a trademark of Apple Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "apple"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://www.apple.com/legal/intellectual-property/guidelinesfor3rdparties.html",
+    "ok": true,
+    "how": "apple.com site icon"
+   },
+   "licence": {
+    "file": "logos/apple.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/apple.svg"
+   }
+  },
+  "android": {
+   "name": "Android",
+   "owner": "Google LLC",
+   "site": "https://www.android.com/",
+   "hex": null,
+   "guidelines": "https://partnermarketinghub.withgoogle.com/brands/android/",
+   "tone": "dark",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/android.svg",
+     "aspect": 1.717,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/android-icon.svg",
+     "file": "android-icon.svg",
+     "trimmed": true
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2023-09",
+    "what": "the rounded 2023 robot head",
+    "checked": "2026-10-29",
+    "page": "https://partnermarketinghub.withgoogle.com/brands/android/"
+   },
+   "trademark": "Android is a trademark of Google LLC. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "android"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://partnermarketinghub.withgoogle.com/brands/android/",
+    "ok": true,
+    "how": "android.com site icon"
+   },
+   "licence": {
+    "file": "logos/android.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/android-icon.svg"
+   }
+  },
+  "google-chrome": {
+   "name": "Google Chrome",
+   "owner": "Google LLC",
+   "site": "https://chrome.com/",
+   "hex": "#4285F4",
+   "guidelines": "https://partnermarketinghub.withgoogle.com/brands/chrome",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/google-chrome.svg",
+     "aspect": 1,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/chrome.svg",
+     "file": "chrome.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2022-02",
+    "what": "the flat 2022 ball",
+    "checked": "2026-10-29",
+    "page": "https://www.google.com/chrome/"
+   },
+   "trademark": "Google Chrome is a trademark of Google LLC. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "googlechrome",
+    "chrome"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://www.google.com/chrome/",
+    "ok": true,
+    "how": "google.com/chrome site icon"
+   },
+   "licence": {
+    "file": "logos/google-chrome.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/chrome.svg"
+   }
+  },
+  "safari": {
+   "name": "Safari",
+   "owner": "Apple Inc.",
+   "site": "https://www.apple.com/safari",
+   "hex": "#006CFF",
+   "guidelines": "https://www.apple.com/safari/",
+   "tone": "dark",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/safari.svg",
+     "aspect": 0.996,
+     "from": "svgl",
+     "url": "https://svgl.app/library/safari.svg",
+     "trimmed": true
+    }
+   },
+   "sources": {
+    "svgl": {
+     "collection": "svgl",
+     "page": "https://svgl.app",
+     "licence": "MIT",
+     "licenceUrl": "https://github.com/pheralb/svgl/blob/main/LICENSE",
+     "seen": {
+      "quote": "ensure you have the right to use it and that its license permits adding it to svgl",
+      "url": "https://github.com/pheralb/svgl#readme"
+     },
+     "terms": "the API asks for cached responses and for no copy of svgl built from it"
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the compass (iOS 26 draws it in glass; the open collections keep the flat drawing)",
+    "checked": "2026-10-29",
+    "page": "https://www.apple.com/safari/"
+   },
+   "trademark": "Safari is a trademark of Apple Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "safari"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://www.apple.com/safari/",
+    "ok": true,
+    "how": "no site icon of its own; the flat compass Apple still draws outside iOS 26"
+   },
+   "licence": {
+    "file": "logos/safari.svg",
+    "from": "svgl",
+    "licence": "MIT",
+    "url": "https://svgl.app/library/safari.svg"
+   }
+  },
+  "hugging-face": {
+   "name": "Hugging Face",
+   "owner": "Hugging Face, Inc.",
+   "site": "https://huggingface.co/",
+   "hex": "#FFD21E",
+   "guidelines": "https://huggingface.co/brand",
+   "tone": "dark",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/hugging-face.svg",
+     "aspect": 1.076,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/hugging-face-icon.svg",
+     "file": "hugging-face-icon.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the hugging emoji",
+    "checked": "2026-10-29",
+    "page": "https://huggingface.co/brand"
+   },
+   "trademark": "Hugging Face is a trademark of Hugging Face, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "huggingface"
+   ],
+   "verified": {
+    "on": "2026-10-29",
+    "page": "https://huggingface.co/brand",
+    "ok": true
+   },
+   "licence": {
+    "file": "logos/hugging-face.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/hugging-face-icon.svg"
+   }
+  },
+  "docker": {
+   "name": "Docker",
+   "owner": "Docker, Inc.",
+   "site": "https://www.docker.com/",
+   "hex": "#2496ED",
+   "guidelines": "https://www.docker.com/company/newsroom/media-resources/",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/docker.svg",
+     "aspect": 1.384,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/docker-icon.svg",
+     "file": "docker-icon.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": null,
+    "what": "the whale",
+    "checked": "2026-10-29",
+    "page": "https://www.docker.com/company/newsroom/media-resources/"
+   },
+   "trademark": "Docker is a trademark of Docker, Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "docker"
+   ],
+   "verified": {
+    "on": "2026-10-29",
+    "page": "https://www.docker.com/company/newsroom/media-resources/",
+    "ok": true
+   },
+   "licence": {
+    "file": "logos/docker.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/docker-icon.svg"
+   }
+  },
+  "jira": {
+   "name": "Jira",
+   "owner": "Atlassian",
+   "site": "https://www.atlassian.com/software/jira",
+   "hex": "#0052CC",
+   "guidelines": "https://atlassian.design/foundations/logos/",
+   "tone": "colour",
+   "tile": "own",
+   "files": {
+    "mark": {
+     "path": "logos/jira.svg",
+     "aspect": 1,
+     "from": "file",
+     "url": "https://atlassian.design/assets/efec7753a0cb/logos/jira_app.zip",
+     "file": "Jira_icon.svg"
+    }
+   },
+   "sources": {
+    "file": {
+     "collection": "the brand's own file (from its brand or press page)",
+     "page": "https://atlassian.design/foundations/logos",
+     "licence": "owner-supplied",
+     "licenceUrl": null
+    }
+   },
+   "version": {
+    "status": "current",
+    "since": "2025",
+    "what": "the Jira mark in white on an Atlassian-blue tile (#1868DB) (no open collection draws it yet)",
+    "checked": "2026-10-29",
+    "page": "https://atlassian.design/foundations/logos"
+   },
+   "trademark": "Jira is a trademark of Atlassian. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "jira"
+   ],
+   "verified": {
+    "on": "2026-11-25",
+    "page": "https://atlassian.design/foundations/logos",
+    "ok": true,
+    "how": "atlassian.design/foundations/logos jira_app.zip Jira_icon.svg"
+   },
+   "licence": {
+    "file": "logos/jira.svg (the brand's own file)",
+    "from": "the brand's own file (from its brand or press page)",
+    "licence": "owner-supplied",
+    "url": "https://atlassian.design/assets/efec7753a0cb/logos/jira_app.zip"
+   }
+  },
+  "nvidia": {
+   "name": "NVIDIA",
+   "owner": "NVIDIA Corporation",
+   "site": "https://www.nvidia.com",
+   "hex": "#76B900",
+   "guidelines": "https://www.nvidia.com/en-us/about-nvidia/legal-info/logo-brand-usage",
+   "tone": "dark",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/nvidia.svg",
+     "aspect": 1.358,
+     "from": "svgl",
+     "url": "https://svgl.app/library/nvidia-icon-light.svg"
+    },
+    "markDark": {
+     "path": "logos/nvidia.dark.svg",
+     "aspect": 1.358,
+     "from": "svgl",
+     "url": "https://svgl.app/library/nvidia-icon-dark.svg"
+    }
+   },
+   "sources": {
+    "svgl": {
+     "collection": "svgl",
+     "page": "https://svgl.app",
+     "licence": "MIT",
+     "licenceUrl": "https://github.com/pheralb/svgl/blob/main/LICENSE",
+     "seen": {
+      "quote": "ensure you have the right to use it and that its license permits adding it to svgl",
+      "url": "https://github.com/pheralb/svgl#readme"
+     },
+     "terms": "the API asks for cached responses and for no copy of svgl built from it"
+    }
+   },
+   "trademark": "NVIDIA is a trademark of NVIDIA Corporation. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "nvidia"
+   ],
+   "licence": {
+    "file": "logos/nvidia.svg",
+    "from": "svgl",
+    "licence": "MIT",
+    "url": "https://svgl.app/library/nvidia-icon-light.svg"
+   }
+  },
+  "obsidian": {
+   "name": "Obsidian",
+   "owner": "Dynalist Inc.",
+   "site": "https://obsidian.md/",
+   "hex": "#7C3AED",
+   "guidelines": "https://obsidian.md/brand",
+   "tone": "colour",
+   "tile": "none",
+   "files": {
+    "mark": {
+     "path": "logos/obsidian.svg",
+     "aspect": 0.771,
+     "from": "gilbarbara",
+     "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/obsidian-icon.svg",
+     "file": "obsidian-icon.svg"
+    }
+   },
+   "sources": {
+    "gilbarbara": {
+     "collection": "SVG Logos (gilbarbara/logos)",
+     "page": "https://github.com/gilbarbara/logos",
+     "licence": "CC0-1.0",
+     "licenceUrl": "https://github.com/gilbarbara/logos/blob/main/LICENSE.txt",
+     "seen": {
+      "quote": "CC0 1.0 Universal",
+      "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/LICENSE.txt"
+     }
+    }
+   },
+   "trademark": "Obsidian is a trademark of Dynalist Inc.. Shown only for what the product works with, imports from, runs on or names; no endorsement or partnership implied. Colours and proportions as published.",
+   "fetched": "2026-11-25",
+   "keys": [
+    "obsidian"
+   ],
+   "licence": {
+    "file": "logos/obsidian.svg",
+    "from": "SVG Logos (gilbarbara/logos)",
+    "licence": "CC0-1.0",
+    "url": "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/obsidian-icon.svg"
+   }
+  }
+ }
+}

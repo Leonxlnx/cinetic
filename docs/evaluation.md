@@ -1,5 +1,7 @@
 # Evaluation
 
+> This page records the judged evaluation rounds of cinetic 0.1 to 1.0 (the scene-bank skill). cinetic 2 is a rework; its films are tested by fresh agents with no context, one fixed brief and one new brief per round.
+
 How cinetic was tested, what the results were, and what they do and do not show.
 
 In short: across six judged rounds, cinetic met more of the written expectations than the baseline every time and won every house-style comparison. The neutral blind judge was split: 7 wins in 23 comparisons over the six rounds, and 2 of 4 in the last, on a snapshot of 1.0.0. Against the films of 0.5.0, the last version whose films were judged, 1.0.0's films won 5 of 8 blind comparisons. A cinetic run costs about three times the time and tokens of the baseline.

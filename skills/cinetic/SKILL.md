@@ -1,263 +1,257 @@
 ---
 name: cinetic
-description: Direct, build and render premium motion films from code - launch films, update films ("vX is out"), product and feature videos, looping feature animations, logo stings, UI walkthroughs, teasers and promo clips. Use this whenever the user wants any video, animation, motion graphic or animated demo made with Remotion, HyperFrames, HTML/GSAP or React, or asks to storyboard, time, score, render, polish or critique one - even if they only say "make a video about X", "animate this feature" or "we need a launch clip". It supplies a default path one agent finishes in one to two hours, scenes dealt from a house bank, plain-word copy checked by script, one face with rotating voices, flowing seams, real product UI, current official logos, a licensed track with recorded effects and film-grade finishing.
+description: Direct, build and render premium motion films from code - product launch films, feature and update videos, teasers, social clips, UI walkthroughs, kinetic type, logo reveals. Use this whenever the user wants any video, animation, motion graphic or animated demo made with Remotion or React, or asks to storyboard, animate, score, render, polish or critique one - even if they only say "make a video about X", "animate this feature" or "we need a launch clip". It brings a director's method (beats, one world, carried transitions, type as an event), a Remotion kit and a motion library of finished moves picked by job (kinetic type, 3D camera, product UI, real logos, transitions, sound locked to picture), licensed sound and music, and tools that measure every frame.
 license: MIT
-compatibility: Needs Node 22+, ffmpeg 6+ with libx264, Python 3.11+ with numpy, scipy, soundfile, pyloudnorm, opencv-python and librosa (fonttools, brotli and uharfbuzz for outlined logos; pillow for plates), and Chromium or Chrome Headless Shell for rendering; earshot 0.4+ (in its own virtualenv) listens to the effects and the soundtrack. Works with Remotion 4 (React) or HyperFrames (HTML and GSAP).
+compatibility: Node 22+, ffmpeg 6+, Chromium (Remotion downloads its own headless shell). Remotion 4. Works offline after install except for fetching sounds, music and logos.
 ---
 
 # cinetic
 
-You are directing a short film, not animating a web page. Picture, words and sound are one system driven by one
-timeline file; nothing is finished until rendered, measured and reviewed once against the standard below.
+You are the director of a short film, not a web developer animating a page. The bar is a launch film by a frontier
+lab or a top design studio: it tells what happens to someone, every second has an idea, every frame is composed and
+rich, every move has weight, and the whole thing feels like one continuous world. What separates a film from a
+slideshow is story, motion and joins that carry the eye; how much is on screen follows the story.
 
-- **Engines.** Remotion 4.0.529 (React, frame-driven) is the default. HyperFrames 0.8.79 (HTML, a paused GSAP timeline) mirrors the tokens and timeline contract for HTML projects ([hyperframes-engine.md](references/hyperframes-engine.md)).
-- **Paths.** Scripts work from the skill root and in a film project (`new-film.sh` copies them in); each prints `--help` (not the helpers `brand-svg.ts`, `hf-preflight.cjs`).
-- **Brand.** A supplied brand (logo, colours, fonts, screenshots, tone) wins over the house taste ([brand-kits.md](references/brand-kits.md)); record any banned look it brings in `BRIEF.md`.
-- **Python.** Commands say `python3`: `node scripts/frames.mjs python` names the interpreter with `scripts/requirements.txt`; set `PYTHON` to it once.
+The kit in `kit/` gives you premium pieces (type, camera, UI, transitions, sound) and a motion library of finished
+moves. Your job is the film: what happens, what the viewer sees each second, how one moment turns into the next.
 
-## The standard
+## What great looks like
 
-Every film is held to these rules and numbers; the gates in brackets measure them.
+Hold every film to all nine.
 
-1. **Words in the middle.** A statement is centred and sits in the middle band of the frame (its centre at 35-65 % of
-   the height): centred for 80 % of the statement time or more, in the middle band for 85 % or more. Centred top or
-   bottom only over a full-bleed picture. Never flush left at the top or the bottom. "Text on top, big picture below"
-   at most once a film; a line beside, above or below a picture at most once per 30 s. (`layout-audit.sh` placement.)
-2. **One element carried, the text mixed in.** Every scene change hands one element on (it grows, swells, flies,
-   converges): never a cut from a line to a card, never the line-card-line-card loop, never an empty frame between
-   scenes. Lines alone only for the promise and the claim (read in 1.2 s); between them inside the product's own words or
-   around the element; first line by 1 s. (`grid-check.ts --part spine`, `forensics.py --spine`, empty-frame.)
-3. **The picture tells what the product does.** Each picture proves its line without repeating its words (input ->
-   output, a count rising; "every" drawn as many at once); a line its picture already says is cut (`copy-check`
-   repeats, quantity). The first picture beat shows the core action literally, with a real person giving the input where the input is human (real footage or a photo),
-   and the product's main act plays on screen (the input becoming the output in steps, never a cut from the request to
-   the finished result); what it makes is rich and holds the brief's own subjects. With the words covered, every
-   picture beat still reads. Data agrees when paused: newest first in a stack, counts and times that agree, a
-   face with its own name (`precheck.mjs` cast).
-4. **Less text, every word chosen.** 1-5 words a line typically, 2-7 at most, one claim, plain words a customer would
-   use; 0.3-1.5 headline words a second; what the product is by 3 s. No text in 15 % of the frames or more; at most two
-   text blocks at once outside a product beat; no floating chips, counters or captions beside a statement.
-   (`copy-check.py`, `--ui src`.)
-5. **Text with love: one face, voices that rotate, events.** Lines arrive in the film's one face, the voice turning
-   line by line (build, blur-in, ink-in: never two lines in a row alike, [catalogue.md](references/catalogue.md) §1),
-   big (a line alone at a 9.2 % cap, never under 6.5 %; the claim bigger), whole or in 2-3 chunks, never word by word.
-   One type event a film (a giant word with the product rising behind it, a line an object pushes apart, a
-   decode, a build that re-centres). Emphasis is quiet: the key word in the accent on at most two lines, not always the
-   last word; a box, marker, pill, underline or knockout only as the one signature. Every line reads at 3:1 against
-   what is behind it, never held up by a grey halo. (`lint-film.mjs` emphasis, `forensics.py` legibility.)
-6. **Scene changes that flow.** Every hard cut hides itself: inside a blur making both sides unreadable, an anchor
-   held within 10 px, or a whip carrying the picture a fifth of the frame in its last 0.2 s, smeared; the kept
-   ground alone hides nothing; never a cross-fade of two scenes or a cut torn across two frames; at most 10 % of hard
-   cuts bare (`forensics.py` carried-cut, ghost-cut). One ground a film, changed once on purpose at most (a colour flood; grid-check `grounds`). Two or three seam kinds a film, none
-   over 40 % of the scene changes, and one exit-then-enter, text-swap or match-cut in a film of four lines or more.
-   Build them with `fx/Seam` ([transitions.md §2](references/transitions.md#2-recipes-at-60-fps)). (`forensics.py --seams`.)
-7. **Clean UI.** The product's real screens built in code at film size, every string the product's own: no bracket
-   slot, no stand-in number, no kit sample, no title cut with "...". Left edges of stacked rows within 4 px, inner
-   padding about 2.4 cap heights and even (never under 0.8), no text touching an asset, no accent bar beside a card;
-   widths measured, never guessed from a letter count (`lint-film.mjs`, `layout-audit.sh`).
-8. **Logos current, presented well.** Other products' marks come from `scripts/logos.mjs` in their newest official
-   form, verified on the brand's own page within 12 months, in one presentation a film (a chip in the line, pills round
-   a centred line, or a wall), never a pill on every line or a drawn stand-in for a real mark (`logos.mjs check`). The end card is built from the
-   film's last element (the last picture's element becomes the mark, the last word the wordmark, the badge spins in),
-   lands centred and keeps creeping in about its centre (never a slide off it) while the music rings out and the frame
-   settles out with it, the name once and the one fact under it. The logo is the brand's own, never a sparkle, a star or a
-   generic glyph (`forensics.py` end-drift, end-centre, audio-end).
-9. **Its own film, never a template.** One world for the whole film, one face and its voices, two
-   or three moves, two or three seam kinds, one signature and one end-card design, picked from
-   [catalogue.md](references/catalogue.md) and declared in `film.json`. The world (kind and hue), the voice, the signature
-   and the end card differ from each of the last three films, and the move set shares at most 25 % with each of them; a film
-   made from a template plays another device than its floor in half its slots or more. (`film-diff.mjs`; the deals
-   leave the last films' choices out.)
-10. **Premium, not just clean: every shot keeps the habits.** One sharp plane and a graded blur ladder behind it; one
-    camera move with a job, front-loaded, landing (else still: no float, drift, bob or panning back); a world in one
-    colour family with its key light, the product's own place, living (light or sky moving, changing between acts),
-    never one still stock plate or murk; glass as a lens on it; light sized to its source and timed (a band as the pane
-    lands, a glow the size of the button); a hero object in a real material; the product's real content in quantity; a
-    scale jump (macro to wide, a giant word); smear only on fast moves; transitions made of focus and light. Cards face
-    the camera (a 3D turn is a designed move). A flat field with small type and a still card fails.
-11. **Simple and finished.** The path below, one review round, on the time plan; a gate costing over 5 minutes
-    on a 30 s film is advisory. A film is delivered whole, never cut.
+1. **A story, not a feature list.** Someone wants something, it costs them today (one picture that gets worse), the
+   turn comes at 20-30 %, three to five steps act on the same object, and a visible payoff pays the cost back with an
+   opening image returned changed. Turns are events in a real surface, never a headline on an empty frame
+   ([story](references/film-grammar.md#story)).
+2. **Pace and escalation.** A new beat every 0.8-2.2 s; one thing first, held long enough to read and designed with
+   care, then a second, then exponentially more. Every action shows before, during and after (a scroll travels to one
+   row and picks it out; a press is answered by its target). A read hold keeps moving (a drift, a push, a breath); a
+   hold with nothing to read is the flaw, and so is a beat too fast to follow
+   ([rhythm](references/film-grammar.md#4-rhythm), [action](references/film-grammar.md#action-and-escalation)).
+3. **One world.** One palette, one type voice, one material, one texture family, one signature motif
+   ([worlds.md](references/worlds.md)). A supplied brand wins. The ground, colour mode and accent change only when the
+   story changes place or state, the whole frame at once; a film may stay on one ground.
+4. **Joins carry the subject, as one move.** A scene's exit is the next scene's entrance: the thing the viewer is
+   watching, large, travels or becomes B, never "A stops, cut, B starts"; a hard cut lands only on a musical event with
+   both sides moving. Never a token carried, a cross-fade or an empty frame ([joins](references/film-grammar.md#joins)).
+5. **Always in motion, smooth.** Nothing on screen is ever fully still and nothing stops dead: every landing has a long
+   tail, every hold a slow idle (`live`, `drift`). Curves are exponential: an entrance arrives fast and
+   settles long, a move from rest eases in and out, a zoom moves by a constant ratio (`logScale`), two moves in a row
+   meet without a corner. No linear ramp, no stepped position, no one-frame pop, no overshoot on data; `check` fails
+   over 15 still frames in a row or 15 % still ([limits](references/film-grammar.md#stay-in-motion)). Motion is judged
+   on every frame, never on a sheet ([smooth motion](references/motion/entrances.md#smooth-motion)).
+6. **Type is an event, set clean.** One sans voice (`fonts.inter` unless the brand has its own), sentence case, weight
+   430-550, sized by word count (84-100 px for 5-6 words, 110-150 px for 3-4, 160-240 px for 1-2, one spectacle size of
+   280-700 px a film, optional when UI or photographs lead). 2-6 words at once, one line on screen at a time, over its
+   picture, beside its object or centred, built 1-3 at a time, never faded in. At most one emphasised word a statement,
+   in the accent, in at most two statements a film. Everything else: [type.md](references/type.md).
+7. **The real product, premium.** Its UI really used, designed like a shipped product: its app context, real names and
+   data, states, small icons, even padding, nothing cut inside its container, a crafted pointer (start from the
+   [library's UI](references/library-ui.md)). Other companies appear as their real, current, full-colour marks
+   (`<Brand>`) or as faithful, detailed rebuilds of their real screens ([hosts](references/library-hosts.md)); glyphs as
+   real icons (`<Icon>`). Never a rough
+   mock of a product people know, never an emoji for a logo, never lorem ipsum.
+8. **One thing at a time, in a designed world.** A shot has one subject and one thing to read; interface is one
+   component, large enough to read on a phone, built in steps, never a dense screen at once. The world is designed in
+   code (grounds, the product's surfaces, objects, light); a photograph only when the user gave it or it is the
+   product's content and passes the bar ([imagery](references/motion/imagery.md#house-rules)). Type sits on the ground;
+   a card or plate only when it is real interface. The focal line keeps 8 % from every edge
+   ([one thing](references/film-grammar.md#one-thing-at-a-time)).
+9. **Sound designed with the picture.** A licensed music bed that enters with the first idea; few, dry, quiet recorded
+   effects whose transient lands on the visual event; never a bell, chime, glass, coin or jingle, a footstep for a UI
+   impact or a whoosh on the turn; no effect on the ending, music only ([sound-design.md](references/sound-design.md)).
 
-## Hard bans
+Read [taste.md](references/taste.md) once in a film: the never list, the tells, the rubric and the polish loop.
 
-In a look you invent, none of these appear (`lint-film.mjs` checks the code, the director pass the frames).
-- **Words:** grey bars or "Placeholder" where words belong; vague, fancy or metaphor copy (unleash, reimagine,
-  seamless, elevate, unlock, the future of, magic) and slogan shapes ("X, reimagined", "Less X. More Y."); keyword
-  piles; two lines readable at once (a declared swap excepted); eyebrow labels, stacked taglines, "Introducing…";
-  filler text, fake metrics.
-- **Type:** serif faces, italic or oblique (or a skew faking one); a payoff word may take an italic accent face
-  (`// cinetic:accent-face <family>`). One clean sans, plus a mono for code.
-- **Colour:** orange, amber, beige, cream, tan or sand as an accent, a paper or a glow; neon; purple, violet or
-  indigo; green in a brand you invent; a monochrome accent wash; glassmorphism as a UI style.
-- **Decoration:** emoji and stock icons; an accent bar down a card's side; sparkles for "AI", confetti, lens flares,
-  code rain; bounce on anything not landing; a springy overshoot on copy.
-- **Pictures:** a person, place or product drawn in SVG where a photo belongs; grey cards standing in for pictures;
-  stock gestures (handshakes, pointing at screens); low-resolution or mixed-grade pictures.
-- **Sound:** generated music; a film with no music; ducking the music under effects; copyrighted audio in any repository.
-- **Credits:** none in the picture; licence records stay private with the project.
+## The default path
 
-Light from a source, spectral accents, dithered gradients and glass are allowed where they do a job, with one dominant
-accent over the film's world ([lighting.md](references/lighting.md)).
+A launch film runs 30-45 s by default and may run 60 s; shorter only when the user asks or the format is shorter
+(teasers, updates, stings: lengths in [formats.md](references/formats.md)). Do the steps in order; do not skip the story or the
+storyboard.
 
-## The time plan
+**1. Project.** `node <skill>/kit/scripts/new-film.mjs <folder> --name "<Product>"` creates a Remotion project with the
+kit, a blank film in `src/films/main/Film.tsx`, and the scripts. Work inside that folder from then on.
 
-A run has a budget (1-2 h; 90 min if none is given). Renders are slow: the whole film exists early, every later
-look cut from it:
-- **15 %:** brief, scaffold (seconds), direction, a script passing `copy-check`, the track picked and fitted: the
-  picture is cut to it, never watched without its sound (a silent film fails `forensics.py` audio).
-- **25 %:** the ending as stills: `node scripts/frames.mjs end` (the lockup, the name and the mark read).
-- **45 %:** a complete draft with its ending: `render.sh Film out/draft.mp4 --draft --max-min 9` (the whole film at half size, fast encode, the current sound) and its sheet `out/qa/draft-sheet.png`.
-- **45-70 %:** the soundtrack, the review round on the draft, fixes, the draft again.
-- **Long mode.** Given hours (an ultra run), polish each dealt scene in its own pass against its recipe numbers, its
-  stills beside the recipe's, before the next, instead of one pass over the film.
-- **70 %:** the final starts: `bash scripts/render.sh Film out/film.mp4 --max-min 9` (parts resume: rerun until exit 0). If it cannot finish in time, deliver the draft scaled up (`--from-draft out/draft.mp4`).
+**2. Brief (write `BRIEF.md`, 10 lines).** The product in one sentence; who it is for; the one promise the film makes;
+what the product *does* as input -> output; 3-5 features worth a beat; the format (launch, feature, update, loop, sting,
+teaser, explainer, brand film); the brand (logo, colours, fonts, screenshots, URL) or, if none is given, the brand you
+invent (name its colours, its face and where the accent's hue comes from; [palette rules](references/worlds.md#palette-rules-all-worlds));
+pictures only if the user gave them or the product's content is pictures. Pull real names, numbers and integrations from what the user gave you. List each
+adjective the user wrote ("bold", "warm", "mostly words") and what it becomes in weight, size, pace, colour, picture and
+sound ([type.md](references/type.md#4-weight)).
 
-## The simple path
+**3. Story (the first block of `BEATS.md`).** Write the five lines before anything else: who we follow from the first
+second; what they want and what it costs today, as one picture that gets worse; the turn; three to five steps done to
+the same object, each a cause and its effect; the payoff that pays back the cost, with one image from the opening that
+returns changed. Tell it aloud in one sentence with "until", "then" and "so"; a list joined by "and" is not a story
+yet. At 45 s or more add a second turn at 55-70 % and a "many" climax at 80-88 %. Method, act lengths and three worked
+examples: [story](references/film-grammar.md#story), [acts](references/film-grammar.md#1-lengths-and-acts).
 
-Read a reference only when its step needs it.
+**4. Concept (under the story).** The form that tells this story, from the
+[menu](references/film-grammar.md#concepts) (sixteen: one task start to finish, one artefact through many verbs, before
+and after, a day, the number, one sentence, ...). The format allows only some ([formats.md](references/formats.md)).
+Weigh three candidates by their opening, middle and last frame; strike any that needs what the brief does not have.
+Never the concept of a worked example you just read. Write `Concept: <name>, because <story fact>; rejected: <a>, <b>`.
 
-**1. Brief and scaffold.** Write `BRIEF.md`: the spec line (`1920x1080@30, 25s, format: launch, audio:
-licensed track + launch kit`), what is supplied (a brand kit, a clip to feel like, footage, the products it works
-with), the hard bans. Ask at most 3 questions, only if the product, format or length is missing.
-Then scaffold:
-```
-bash scripts/new-film.sh films/<name> --name "<Product>" [--brand <kit>] [--like <clip>] [--music <file> + licence flags] [--link-modules <node_modules>]
-```
-A launch gets `launch-simple`, `--format update` the update film, other shapes [templates.md](references/templates.md);
-it writes `film.json` and deals the type pairing (`type-deal.ts`).
+**5. Devices, then beats (the rest of `BEATS.md`).** Find the signature: one motif from the story and the product's
+object, name or brand that opens the film, returns in joins and closes it. Write a **Devices** block: the opening, the
+type treatment, each join with its class, the spectacle, the integration form, the ending, each naming the
+[library](references/library.md#pick-by-job) piece behind it, picked by job (or why none fits; `check` counts them), else from the
+[menus](references/film-grammar.md#devices), by what the story needs. Designed moves carry the film, one every 3-4 s
+(a 15 s film four, 30 s eight; [strong moves](references/film-grammar.md#strong-moves-often)); no entrance more than
+twice. Then one row per beat
+([structures](references/film-grammar.md#structures)): frames, its composition tag, what the viewer sees, what moves and
+how, how it joins the next beat, the sound. A beat's length is set by its action, not a cap. Name the poster frame.
 
-**2. Direction, then the spine, first.** `python3 scripts/deck.py --brief "<one line>" --format launch [--have ui,photos]
-[--brand brand/brand.json]` deals three directions into `out/OPTIONS.md`; pick one with
-`--direction <id> --why "<one line>"`. Then the spine, before any picture ([spine.md](references/spine.md)): one
-sentence as 3-5 acts, one case (the brief's request, names and numbers in every act), one element changing form act to
-act, said as a chain ("the word becomes the pill becomes the page becomes the count becomes the mark"); lines alone
-only for the promise and the claim. In launch-simple it is `src/spine.ts`: print its plan, pass `grid-check.ts --part
-spine`. Its lines go in [TREATMENT.md](assets/TREATMENT.md) (the idea sentence fails with a competitor's name in it);
-`copy-check.py TREATMENT.md` passes before any picture work ([copy-and-type.md](references/copy-and-type.md)).
+**6. World.** Choose one world from [worlds.md](references/worlds.md) (or derive it from the brand). Write its tokens at the
+top of the film: ground, ink, accent, the statement face and its sizes ([type.md](references/type.md)), UI theme
+(`lightUI` / `darkUI` spread with the brand), radius, the light's direction, the texture family.
 
-**3. World and scenes.** The deal (`src/dealt.ts`) holds the **world** where a template lights one: a designed place in
-the brand's hue; a photograph only of the brief's own subject (`node scripts/assets.mjs plate <kind>`, then `--pick <n>
---to public/plates --accent '<accent>'`). **Scenes are dealt, not chosen:** launch-simple casts 8-12 **house scenes**
-(`src/scenes`, 1.5-3 s, the lockup 2.5 s; two big at least) at random from the bank (`src/bank.ts`; update `src/deal.ts`),
-seeded by the name and the last films, toward the act's verb and big scenes, none twice, two of the last film's at most;
-you fill them with the product's content. 75 % or more from the bank, **one own scene at most** (`own`, 1.5-3 s); a dealt
-slot is redrawn only with its reason (`why`; grid-check `deal-*`). One ground (`src/palette.ts`), one subject 4.5 s at
-most, each point a big line, then its scene. Parts: `fx/world`, `fx/light`
-([lighting.md](references/lighting.md) §8), `fx/depth` ([camera.md](references/camera.md) §13), `fx/three`
-([three.md](references/three.md)), `kit/screens` ([product-ui.md](references/product-ui.md) §15). Content: `node
-scripts/content.mjs --brief BRIEF.md --fetch --force`; keep what is true, look at every picture. Other templates pick
-from the catalogue into `film.json` `devices`, then `node scripts/film-diff.mjs`.
+**7. Build.** Write the film as one timeline object `T` (every scene and sound cue reads its frames from it) plus one
+component per section. Take turns, type moves and UI pieces from the library (`frames.mjs library` finds them by purpose,
+subject and mood; [pick by job](references/library.md#pick-by-job)) and adapt them; [kit.md](references/kit.md) is the API,
+[type.md](references/type.md) covers every word on screen, and the motion references hold recipes for what the library
+lacks: [text](references/motion/text.md),
+[entrances](references/motion/entrances.md), [exits](references/motion/exits.md), [turns](references/motion/turns.md),
+[camera](references/motion/camera.md), [cards and UI](references/motion/cards-ui.md),
+[imagery](references/motion/imagery.md), [effects](references/motion/effects.md). Build the poster frame first, then one
+section at a time: render its sheet, look, then the next. Overlap sections. To find a move by what it does, search
+[INDEX.md](references/INDEX.md).
 
-**4. Music.** The track is chosen before the timeline and the picture is cut to it
-([music.md](references/music.md)): `node scripts/music.mjs pick --mood "<words>" --length <s>` (the curated library;
-`music.mjs search` without one), `get '#n' --to audio/music` (never the last film's track), then `python3
-scripts/audio/track.py analyze` and, once the script is written, `fit` (the timeline's bars, the entry on the lockup,
-the track's own ending: never a cut), `check`. The track plays only through `score.py` (`--bed-only` before the kit
-exists); never cut it by hand.
+**8. Look at it (after every section, and before you claim anything works).** Type-check first (`npx tsc --noEmit`; in
+a project that shares another folder's `node_modules`, `node <that folder>/node_modules/typescript/bin/tsc --noEmit -p .`).
+What each command shows: [rendering.md](references/rendering.md#the-loop).
+- `node scripts/frames.mjs sheet` (36 frames in one still; `--safe` outlines the 8 % margin), and
+  `node scripts/frames.mjs sheet --frames 120,126,132,...` for one moment.
+- `node scripts/frames.mjs still --frame N --full` for any beat with UI text or a label: read the words.
+- `node scripts/frames.mjs render` (half-size preview), then `node scripts/frames.mjs strip out/main-preview.mp4 --at 4.2`
+  to judge motion and actions on consecutive frames.
+- `node scripts/frames.mjs joins` exports every join (the film's `JOINS`, each `{ at, len }`: the move's first frame
+  and its length) at real size, every frame of the move: before the final and after every fix that touches a join,
+  look at every cell; a fix is closed only on a clean join image (`--file out/main.mp4`: cut from the final).
+- `node scripts/frames.mjs motion out/main-preview.mp4` measures every frame for pops, dead stops, hard starts,
+  stepping and stillness; `check out/main-preview.mp4` measures pace, holds, empty frames, crowding and the ending and
+  prints what to fix (`--format loop` or `--format sting` for those formats); its `air` figures are information.
+Write the [join test](references/film-grammar.md#the-join-test) into `BEATS.md` and fix every join that fails. Bugs
+block the final: a full-size still of every beat with type or UI and the join image of every join; fix every cut text,
+overlap, overprint, empty slab, one-frame pop and clipped digit; no fix row is closed as "accepted"
+([polish loop](references/taste.md#5-the-polish-loop)). Score with the rubric in
+[taste.md](references/taste.md) (20 points; crops and joins only on the join images and full-size stills, never the
+sheet; one open bug caps the film at 14); at 17 or more go to step 9.
 
-**5. The product's scenes.** In launch-simple each scene's content is its `props` in `src/spine.ts` (the case's own
-words; the rest from `src/content.ts`); your one own scene goes in `src/product.tsx` `OWN` from the kit. Something purposeful moves in every frame (a hold is a move's landing
-tail, never still over 0.8 s, the lockup too); cards are lit or glass, never plain slabs. The kit shows only the film's own content (a part given nothing draws a dashed box and fails precheck;
-[product-ui.md](references/product-ui.md)). Real people, places and objects are real photos or clips with a studio
-finish, never drawn (`node scripts/assets.mjs recipe "<product>"`; [imagery.md](references/imagery.md)). Other products' marks: `node scripts/logos.mjs get <name> --film .`. Before a look:
-`node scripts/precheck.mjs` (seconds). Look
-with `node scripts/frames.mjs end` (the ending, first) and `still <frames>` (several in one call); then the draft.
+**9. Polish (required).** The first cut is never the film. First at least two motion passes
+([motion pass](references/taste.md#the-motion-pass)): every join and entrance as consecutive frames and measured,
+reworked until smooth and satisfying; "it passes" is not a reason to stop. Then at least two passes of the
+[polish loop](references/taste.md#5-the-polish-loop): up to ten real fixes in `BEATS.md`, each re-checked; tick eight
+of the ten effort marks.
 
-**6. Draft, sound and check.** `npm run check` (tsc, `lint-film.mjs`, `grid-check.ts`) clean, then the whole draft:
-`bash scripts/render.sh Film out/draft.mp4 --draft --max-min 9` (rerun until exit 0; the picked track under it until
-the mix exists). `npm run sound` (cues, kit and mix in one command; it ends PASS, FAIL or PARTIAL), the draft again.
-The fast gates: `npm run gates` (`forensics.py out/draft.mp4 --grammar-only`, `copy-check.py --ui src`, `logos.mjs
-check`), `look-audit.py
-out/draft.mp4 --look` (no flat void or slab cards) and `bash scripts/layout-audit.sh Film --cues --scale 0.5` (text cut by the frame) ([checks.md](references/checks.md) §1).
+**10. Sound.** `node scripts/sfx.mjs roles`, then `list <role>` and `get <id> ...` fetches
+judged, licensed recordings into `public/sfx` and writes `src/sfx.ts`; place them with `<Cues>` on the same `T` frames as
+the picture. Music: pick a licensed track for this film's world, never one reused from a worked example
+([assets.md](references/assets.md#6-music); `sfx.mjs shortlist --mood "<its world>"`), fetch it with `sfx.mjs music`, then `sfx.mjs fit <file> --hit <frame> --len <frames>` gives the
+start that lands the film's main hit on a beat where the music lifts (for a bed that enters late, `--enter <frame>` with
+the `<Music enterAt>` frame). Duck it under the big hits, let it ring out under the end card.
 
-**7. One review round.** `node scripts/frames.mjs sheet --from out/draft.mp4` (16 tiles; `--frames A-B --every N` for
-an act, `grab --from` for full frames), then the director pass
-([director.md](assets/critics/director.md)): read the picture beats with the words ignored first (what
-does the product do in each?), then the standard above, item by item, with frames. Fix every P0 and the P1s time allows, then the draft again. A second round only when a gate fails ([review-loop.md](references/review-loop.md) §1).
+**11. Final.** `node scripts/frames.mjs final` renders picture and sound and sets the loudness. For long films (or a
+time limit on each job) render silent parts and mux them ([rendering.md](references/rendering.md)). Write `CREDITS.md` with
+`node scripts/sfx.mjs credits` plus the logos and pictures used (`public/logos/logos.json`). Deliver the mp4, the
+sheet, `BRIEF.md`, `BEATS.md` (story, devices, beats, join test, polish lists), `CREDITS.md`.
 
-**8. Master and delivery.** By 70 % of the budget: `bash scripts/render.sh Film out/film.mp4 --max-min 9` (PNG frames;
-`--blur` when the blur policy asks). Full `forensics.py` on the master, then `bash scripts/deliver.sh out/film.mp4`
-with the format's variants (it runs `credits.py`: credits go into `CREDITS.md`, never the picture), a short
-`README.md`, and `node scripts/film-diff.mjs --record` (the film joins the history; the run's minutes print).
+One render at a time, half-size previews while iterating; on an unstable GPU set `CINETIC_GL=swangle`
+([rendering.md](references/rendering.md)).
 
-## Formats
+## The kit at a glance
 
-| Format | Length | Template | Script | Deliverables |
-|---|---|---|---|---|
-| Launch film | 15-30 s (to 45) | `launch-simple` | what it is, 2-5 things it does, the close | 16:9 master, 9:16 and 1:1 variants, poster |
-| Update film ("vX is out") | 8-20 s | `update` | a line and a house scene per change; the mark pulls back | master, poster, 9:16 |
-| Product or feature video | 8-30 s | `launch-simple` or `ui-walkthrough` | 3-6 lines | master, poster |
-| UI walkthrough | 20-90 s | `ui-walkthrough` | what it is, one line per step | master, SRT captions |
-| Feature loop | 4-15 s, whole bars | `--template none` | 1-2 lines, reads muted | MP4, WebM, GIF, seamless seam |
-| Logo sting | 3-8 s | `--template none` | the name and at most one line | MP4, ProRes 4444 alphas, poster |
+Import everything from `src/kit` (`import { Words, Camera, ease, at } from '../../kit'`). Full API: [kit.md](references/kit.md).
 
-An update film: its lone line big, read whole in 1.2 s; no scene
-over 3 s (a typed change 3 s); the lockup snaps once and keeps moving to the last frame; a plan outside `src/deal.ts` LIMITS fails: shorten the content, never raise a limit.
-Films render at 30 fps (a move over 25 px a frame is smeared; `--fps 60` for fast camera travel);
-a loop's last frame flows into frame 0 (`forensics.py --loop`, `render.sh --loop`).
-
-## Craft essentials
-
-**Timing.** `src/timeline.ts` is the only source of timing; picture, cues and checks import it. Acts, the reveal and
-the ending land on the track's events within 1 frame (`b(bar, beat, sub)`); graphic cuts on its accents,
-the picture leading by up to 3 f; a 0.2-0.5 s stop or dip before the biggest reveal
-([timing-grid.md](references/timing-grid.md)).
-
-**Motion. Never linear:** every move eases, by role from `lib/anim.ts` (`E.glideOut` to arrive, `stdInOut` to
-reposition, `buildIn` to leave); zooms run in log space, pans and travels on exponential curves (fast out, long
-landing); `lint-film.mjs` fails linear motion. One spring class a film, never an overshoot on type; never scale from zero; speed carried through cuts; nothing
-changes state in one frame (`glideValue`), every move lands before its cut, no resting tilt; the signature moves are `fx/Moves`
-([motion-tokens.md](references/motion-tokens.md), [camera.md](references/camera.md)).
-
-**Engine.** Everything is a pure function of the frame: no CSS transitions or keyframes, no `Math.random`, `Date.now`
-or `performance.now` (seeded `rand(seed)`); all translation in one `transform`; clamp every value feeding geometry;
-no `will-change` where a blur animates, defocus at fixed levels, large soft shapes baked into dithered plates; fonts
-loaded before any measurement. Never loop `npx remotion still`: a cut from the draft costs
-seconds (`frames.mjs` and `render.sh` share one bundle)
-([remotion-engine.md](references/remotion-engine.md), [chromium-rendering.md](references/chromium-rendering.md)).
-
-**Sound.** A licensed, human-made instrumental track cut to the picture carries the film; each visible action gets a
-real licensed recording (a line landing, a click, a result, a moving seam, one hit on the lockup) from the skill's
-catalogue, a new set each film, fetched at film time with its licence (`node scripts/audio/sfx.mjs`, never committed);
-earshot judges the takes, sync and mix. Placed by `plan.py` from the cues the picture exports, at -14 LUFS (-16 for a sting) and -1.5 dBTP, no ducking, a stop-down
-before each hit; `check-sync.py` holds every effect and the music within 1 frame of its picture
-([sound.md](references/sound.md)).
-
-**Finishing.** BT.709 tags, no banding (dithered gradients), blur as a declared policy (`LOOK.blur`: crisp films sharp,
-camera films with shutter samples on fast frames); never upscale a final ([finishing.md](references/finishing.md)).
-
-## When you need more
-
-| When | File |
+| Need | Use |
 |---|---|
-| picking the voice, moves, seams, ground, end card, marks | [catalogue.md](references/catalogue.md) |
-| the script, one line at a time, type roles and sizes | [copy-and-type.md](references/copy-and-type.md) |
-| the idea, the inventory, the direction deck, story shapes | [concept-and-story.md](references/concept-and-story.md) |
-| beat grammar and timings per format | [formats.md](references/formats.md) |
-| other templates, and how a film differs from one | [templates.md](references/templates.md) |
-| colour, ground families, marks and lockups | [brand-and-color.md](references/brand-and-color.md) |
-| a supplied brand kit; a clip to feel like | [brand-kits.md](references/brand-kits.md), [clip-match.md](references/clip-match.md) |
-| the track: licences, analysis, the edit, cutting to music | [music.md](references/music.md) |
-| real photos and footage, the core action, the studio finish | [imagery.md](references/imagery.md) |
-| the product's UI, the kit, the macro screens, data | [product-ui.md](references/product-ui.md) |
-| the timeline, declarations, density, holds | [timing-grid.md](references/timing-grid.md) |
-| curves, springs, carry, creep; the camera; the seams | [motion-tokens.md](references/motion-tokens.md), [camera.md](references/camera.md), [transitions.md](references/transitions.md) |
-| the world, the key light, glass, glow and plates; 3D hero objects | [lighting.md](references/lighting.md), [three.md](references/three.md) |
-| moves, effects, seams, worlds with their numbers; every device (search it) | [motion-library/](references/motion-library/README.md), [devices/INDEX.md](references/devices/INDEX.md) |
-| the effects kit, cues, placement, levels, mastering | [sound.md](references/sound.md) |
-| render paths, blur, banding, encoding, deliverables | [finishing.md](references/finishing.md) |
-| every gate script and its rules | [checks.md](references/checks.md) |
-| the review round, and the long review when asked | [review-loop.md](references/review-loop.md), [assets/critics/](assets/critics/) |
-| cheap-looking tells, mistakes of code films | [taste-and-slop.md](references/taste-and-slop.md), [craft-rules.md](references/craft-rules.md) |
-| a whole film from idea to master, with its mistakes | [worked-example.md](references/worked-example.md) |
-| update films | [update-films.md](references/update-films.md) |
+| library (first) | finished type moves, turns, effects, camera moves, product UI, host screens, objects and marks, grounds and design presets: find one with `frames.mjs library --category turn --purpose join` (also `--subject`, `--mood`), see it with `library --strip <Name>`; a reel a category (`--film library-turns`, `library-fx`, ...): [library.md](references/library.md) |
+| timing | `at(frame, start, dur, ease.out)` -> 0..1, `mix(p, a, b)`, `springAt(frame, fps, start, springs.card)`, `stagger(i)`, `accel()` for exits, `creep()` for holds, `keys()` for keyframes, `logScale()` for zooms |
+| curves | `approach` (arrive), `settle` (from rest), `ease.expoIn` (leave), `chain`, `follow`, `live` (hold), `logMix` (zoom) |
+| type | `<Words text arrive="rise\|blur\|scale\|drop\|slide\|flip\|cut" by="word\|char\|line" born accent leaveAt times>`, `<Build words times>` (append, the line re-centres with a glide), `<Swap items>`, `<SlotLine>`, `useGlyphBox()`, `<Typing>` (believable speed), `<Scramble>`, `<Odometer>` (sharp digits), `<Marker>`, `<Output>` (the result giant, then into the UI) |
+| camera | `<Camera keys={[{f, x, y, zoom, rx, ry, rz}]}>` (a 3D stage), `<At x y z rx ry>` places things in it, `fillZoom()`, `drift()` |
+| world | `<Ground>` (flat by default), `<GridLines>`, `<CornerMarks>`, `<Box bevel material>` (a CSS 3D block), `<DepthStack>`, `<Defocus>` (depth of field for shapes), `softShadow()`, `<Beam>` / `<Pool>`, `<GlassPanel>`, `<Glow>`, `<Sheen>`, `<Grain>` (photographs only) |
+| product UI | `<Card>`, `<Window>`, `<InputBar>`, `<Bubble>`, `<ChatStack>`, `<Thinking>`, `<Row>`, `<Chip>`, `<Toast>`, `<Terminal>`, `<Relay>` + `<PartnerSurface>`, `<Progress>`, `<Spinner>`, `<StatePill>`, `<Wall>`, `<Button pressAt>`, `<Avatar>`, `<Cursor keys clicks exitAt>`, `focusStyles()`, `useArrive()` |
+| 3D object | `<GLView build draw state>` (three.js on one shared renderer), `softStudio()` (soft studio light, the default) |
+| imagery | `<Photo grade develop>` (one look for every picture), `<TextWindow>` (letters as windows onto a picture), `<Compare>` (before/after), `<Selection>` |
+| turns | `<Iris>`, `<Push>`, `<Pixelate>`, `<Tiles>`, `<ZoomThrough>`, `<Flood>` (once a film at most, covering the frame); the library's turns come first |
+| marks | `<Brand name="github">` (the real full-colour mark), `<BrandTile>`, `<AppIcon>` (an icon tile with depth), `<Icon name="Calendar">` (Lucide) |
+| sound | `<Cues cues={[{ at, ...sfx['mixkit-3124'], volume }]}>`, `<Music src startFrom enterAt duck breaths>`, `db()`, `beats(bpm)` |
 
-## Other tools
+**Worked examples.** `kit/src/films/brief`, `forge`, `fieldnote`, `lumen` and `inkwell` predate today's rules: read
+them only for how the kit is wired (one `T`, `Cues` on its frames; `brief`'s pointer, `forge`'s dive into a face,
+`fieldnote`'s letters as windows, `lumen`'s 3D prism). Never take their typing bursts, `shake`, `Flash`, moves by
+`left`/`top`, repeated entrances, hard cuts or pictures; never copy their content, order, palettes, marks or lockups.
 
-| Need | Tool |
-|---|---|
-| spec, A/V lag, frame sync and true-peak gates | `scripts/probe.py`, `scripts/check-sync.py` |
-| the recorded effects, their plan, the mix, the listening pass, credits | `scripts/audio/sfx.mjs`, `kit.py`, `plan.py`, `score.py`, `listen.py`, `credits.py` |
-| a supplied kit; a palette or a ground family's tokens; a font | `scripts/brand.py`; `scripts/palette.py` (`--family`, `--recipe`); `scripts/add-font.mjs`, `scripts/font-match.mjs` |
-| advisory reads: flat-film floors, grammar, speed, data | `scripts/look-audit.py`, `scripts/grammar-score.mjs`, `scripts/measure-speed.py`, `scripts/data-check.mjs` |
-| a clip's grammar and the guard against copying it; the detail pass; device draws | `scripts/like.py`; `scripts/detail-pair.py`; `scripts/pick.py` |
+## Hard rules
+
+Each rule's detail and numbers live in the linked section; read it when the rule applies.
+
+- **Never** a screen shake, a screen flash, text that fades out while rising, letters spaced wide that pull together, a
+  full stop on every statement or an animated one, a typing burst, a smeared or half-rolled number, a faint gradient ground,
+  a handwriting font by default, a beat too fast to follow, a move repeated more than twice, colour without meaning
+  ([the never list](references/taste.md#never)).
+- **Never linear motion** (a loop's constant cycle aside), never a cross-fade or an empty frame between scenes, never
+  a dead hold ([stay in motion](references/film-grammar.md#stay-in-motion)).
+- **Frame 0 is never empty and already moving**; never a static title card ([openings](references/film-grammar.md#openings)).
+- **The join test before the final:** every join listed with what it carries; nothing carried means a hard cut on a
+  beat; the frame fully covered at the switch; a story reason for every change of ground, mode or accent
+  ([join test](references/film-grammar.md#the-join-test)).
+- **Vary the frame.** Tag every `BEATS.md` row with a composition; no two rows in a row share one. One scale jump a
+  film, and a macro moment in every film that shows UI ([compositions](references/film-grammar.md#compositions)).
+- **Endings follow the format** ([formats.md](references/formats.md), [lockups](references/film-grammar.md#lockups)). In
+  launch and feature films the lockup lasts at most 2.5 s and grows out of an object on screen; claim and lockup take
+  at most a fifth of the film; the claim gets its reading time (words / 3 + 0.5 s). Never a static logo card, never a
+  fade to blank, never a sound effect on the ending.
+- **One artefact, many places; never two unrelated demos.** A film may follow one task through several real places when
+  the story needs it; a tour of logos with nothing happening is at most 15 % of the film
+  ([integrations](references/film-grammar.md#integrations)).
+- **One image worth keeping:** the poster frame, named in `BEATS.md`, built first, a crafted image
+  ([planning](references/film-grammar.md#7-planning-discipline)).
+- **One spectacle beat** in films of 15 s or more, 1.5-2.5 s, readable: no label under 28 px, at most about 16
+  endpoints ([spectacle](references/film-grammar.md#spectacle)).
+- **A result is held until it is read,** with idle life, then becomes the next object; never a hold with nothing to read
+  ([holds](references/film-grammar.md#46-holds-that-are-read)).
+- **The camera goes to the event** and performs: it pushes in on typing, rides the actor, pulls back as the count grows
+  ([camera.md](references/motion/camera.md#house-rules)).
+- **The product's result is seen big once** (key words 120 px or more), tagged `output-big` where the concept requires
+  it ([compositions](references/film-grammar.md#compositions)).
+- **The biggest word names the benefit or the product**, never the problem or the input ([type.md](references/type.md#3-one-spectacle-size-in-a-film)).
+- **The frame cuts only on purpose:** a lone giant word (280 px or more) or one component in close-up; never a resting
+  line, never two sides, never the key figure ([type.md](references/type.md#7-centred-one-line-at-a-time)).
+- **UI premium and detailed,** flat or tilted 12° or less, in its app context, the region that matters pixel-real; on a
+  phone a touch, never a cursor ([cards-ui.md](references/motion/cards-ui.md#house-rules), [library-ui.md](references/library-ui.md)).
+- **Light, material and depth:** two planes moving at different rates in every beat, one light direction, soft rounded
+  3D, one texture family; the product sits on a surface in light and the opening's place returns
+  ([depth](references/worlds.md#depth-and-the-world-all-worlds)).
+- **Clean grounds:** a flat clean colour or a bold designed scene (a picture only past the picture bar); no vignette, no grain
+  on a flat ground, never dimmed UI as a ground, never a blurred picture
+  ([palette rules](references/worlds.md#palette-rules-all-worlds) 8).
+- **No card that is not needed:** never a plate or pill to make text readable over a picture, never the lockup on a
+  plate; a card is real interface or it is gone ([cards-ui.md](references/motion/cards-ui.md#house-rules)).
+- **Clean type:** no eyebrows or kickers, no uppercase mono labels, no ALL CAPS or Title Case, no 800-900 weights,
+  serif rarely ([type.md](references/type.md#11-no-eyebrows-no-kickers)).
+- **Real marks only;** the product's own mark has an idea, never two or three primitive rectangles
+  ([lockups](references/film-grammar.md#lockups), [logos](references/motion/entrances.md#57-real-third-party-logos)).
+- **No generated images, no stock wallpaper;** licensed sound, pictures only past the bar; every external file is
+  listed in `CREDITS.md` ([picture bar](references/motion/imagery.md#house-rules) 9).
+- **Invented palettes:** no purple, no green, no purple-to-blue gradient; the accent's hue from the product's own object
+  (three candidates in `BRIEF.md`) on a tenth of the frame or less; light ground #FFFFFF to #F4F5F7, dark ground a deep
+  tone of the accent's hue ([palette rules](references/worlds.md#palette-rules-all-worlds)).
+- **Legibility:** statements at 7:1 or more, no word under 64 px, no line over 1500 px; UI text 30-44 px at 4.5:1; a
+  needed label a third of its line and 40 px or more; text never crops in its own box ([type.md](references/type.md#2-size-by-word-count)).
+- **Respect the brief's facts.** Never invent customer logos, testimonials or numbers presented as real; use the user's
+  data or clearly fictional demo data.
+
+## When the request is different
+
+- **Another format** (a loop, a logo sting, an explainer, a vertical teaser, a feature update, a brand film, a series
+  opener): read [formats.md](references/formats.md) first. It gives the length, the sections, the concepts that suit
+  and what differs from a launch film; the format decides the ending.
+- **Vertical (9:16) or square:** re-lay out, never crop: compositions stack vertically, type wraps to 2-3 words a line,
+  the camera moves vertically. Keep type and the subject out of the top 12 % and the bottom 20 % (the platform's own UI
+  sits there), and fit giant type to the width: a key word is never cut off by the frame edge. Give the film its size in `src/films.ts` (`width: 1080, height: 1920`); the sheet and
+  `check` follow it. `fillZoom` and `diveZoom` take the frame size as their last arguments, `toScreen` as `{ frameW, frameH }`.
+- **Critique of an existing video:** `frames.mjs check <video>` for the measures, `frames.mjs strip <video> --at ...` for
+  moments, then score with [taste.md](references/taste.md).

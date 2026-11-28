@@ -144,7 +144,7 @@ jobs:
           # The films the README gallery shows, as named on the media branch. A film cut to a licensed track goes
           # there only when its licence record quotes a clause that covers a public video; a credit the licence
           # asks for sits next to it as <stem>.credits.md and is attached with it.
-          # TODO(gallery): the 1.2 example films (E1-E5), in gallery order.
+          # None yet: list the cinetic 2 demo films here, in gallery order, once they are on the media branch.
           DEMOS: ''
         run: |
           mkdir -p dist/demos
