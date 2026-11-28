@@ -170,7 +170,7 @@ Frames per beat at 30 fps = `1800 / BPM`:
 | 150 | 12 | 48 |
 
 - **Music-only films:** cut on the beat or half-beat grid; put the kick 2-3 f after carried cuts. `node scripts/sfx.mjs fit
-  <track> --hit <frame> --len <frames> [--enter <frame>]` lists the starts that land the main hit on a beat and prints the
+  public/music/<file> --hit <frame> --len <frames> [--enter <frame>]` lists the starts that land the main hit on a beat and prints the
   grid in the film's frames (`beats(bpm, offset)`). Each start says whether the hit lands on the first beat of a bar or
   only on a beat: land the main hit on a bar's first beat.
 - **Voice-over films:** the picture follows the voice, the effects follow the picture.

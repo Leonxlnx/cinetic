@@ -19,7 +19,7 @@ judged: pick one there first and adapt its content, colour and timing. The recip
 4. **Front-load every move.** Re-centres and arrivals put 50-80 % of their travel in the first 1-2 frames. A symmetric
    ease-in-out on text always looks late.
 5. **Size is a decision** ([type.md](../type.md)): resting lines sized by word count (84-100 px for 5-6 words, 110-150 px
-   for 3-4, 160-240 px for 1-2), and once a film one giant spectacle size (280-700 px, cropped by the frame).
+   for 3-4, 160-240 px for 1-2), and once a film one giant spectacle size (280-700 px; a lone giant word may be cropped by the frame on one side).
    Medium-everything is the template look.
 6. **Copy**: 2-6 words at once (most titles 2-4), built 1-3 at a time, sentence case, real nouns. A line should be readable
    in `words / 3 + 0.5` s; the film's pace decides the rest.

@@ -130,8 +130,8 @@ standing in for one.
 
 **By claim:** one flow 1; a shape or the brand itself 2, 3; an abstract model or platform 3, 4; a place or a physical
 thing 5, 11; content or people 6, 16; the opposite of what people assume 7; order out of a mess 8; something
-measurable 9; a dialogue 10; a habit 11; making things 12; three pillars 13; a belief or an identity 14; many uses 15,
-16. **By format:** [formats.md](formats.md) lists the concepts each format allows.
+measurable 9; a dialogue 10; a habit 11; making things 12; three pillars 13; a belief or an identity 14; many uses
+15, 16. **By format:** [formats.md](formats.md) lists the concepts each format allows.
 
 **How the product is shown follows the concept:** its UI really used (task, artefact, update and explainer films), its
 output or its object (shape, point, object and number films), or its words (sentence, case and manifesto films). UI is
@@ -141,12 +141,12 @@ used by a real pointer or by visible state changes.
 
 ## 1. Lengths and acts
 
-A launch film needs room for a story: 30-45 s by default, up to 60 s. 15-20 s is for teasers, updates and stings, or
-when the user asks for it. Specs for every format except the launch film are in [formats.md](formats.md).
+A launch film needs room for a story: 30-45 s by default, up to 60 s; shorter only when the user asks. Every other
+format's length and spec is in [formats.md](formats.md), which wins where this table is shorter.
 
 | Format | Length | Beats | Typical use |
 |---|---|---|---|
-| Logo sting | 3-7 s | 4-6 stages | a mark reveal, the head of a longer video |
+| Logo sting | 3-5 s (7 at most) | 4-6 stages | a mark reveal, the head of a longer video |
 | Loop | 4-12 s | one cycle a cell | a landing-page hero |
 | Update (8-20 s), vertical teaser (8-15 s) | 8-20 s | 5-12 | "version N is out", social, "coming soon" |
 | Feature film | 20-30 s | 12-20 | one feature with its own small story |
@@ -169,7 +169,7 @@ a sentence to explain is two beats.
 | ~60 s | the problem 0-25 % / reveal / features / **the problem restated harder** at 45-50 % / features / climax 85 % / mark | 25 %, then about 46 % | 85-88 % | 18-45, mean 1.5-4 s | a hub that recurs (dive into each part, snap back); a change of mode (explainer to live demo); a breakdown in the music |
 
 At every length: the turn at 20-30 %; at 45 s and more a second turn or re-ignition at 55-70 %; the climax at 80-88 % is
-the "many" (a wall, a reel, everything connected, the result in the world); the mark in the last 7-12 %; no stretch
+the "many" (a wall, a reel, everything connected, the result in the world); the mark in the last 2.5 s at most; no stretch
 longer than about 8 s without a change of place, mode or stakes.
 
 ---
@@ -200,12 +200,12 @@ The concept decides the order of a film's sections. There are eleven orders:
 |---|---|---|---|---|---|
 | **Hook** | stop the scroll; show the hero, the cost or the story's object, one thing first | 5-12 % | 45-120 f | first frame already moving | a carried cut or a dive |
 | **Problem** | make the cost felt, escalating | 10-20 % | 90-360 f | hard cut on a beat, or the hook's object carried | a held question |
-| **Pivot / held question** | the one designed stillness before the answer | 3-5 % | 45-75 f | resolve of the problem device | breath gap, then hit |
+| **Pivot / held question** | the one designed quiet before the answer: nothing new arrives, the frame still creeps | 3-5 % | 45-75 f | resolve of the problem device | breath gap, then hit |
 | **Reveal** | name and mark, born from the film's own devices | 5-10 % | 45-120 f | lands on the biggest hit so far | grows into the feature map |
 | **Features** | 3-5 chapters, each one action and one result | 40-55 % | 75-240 f each | dive, carry, or hub | state change, then carry |
 | **Proof** | numbers, real logos, the result in the world | 8-15 % | 60-180 f | from the last feature's result | gathers into the climax |
 | **Climax** | everything connects; the fastest or biggest beat | 5-8 % | 45-90 f | assembly, scatter, scale-out | snaps into the lockup |
-| **Lockup / CTA** | mark, name, one line, URL; the only true rest | 5-10 % | 45-75 f (2.5 s at most); with the claim at most a fifth of the film (105 f under 18 s) | grows out of an object already on screen | music decays under it |
+| **Lockup / CTA** | mark, name, one line, URL; the only true rest | 2.5 s at most | 45-75 f; with the claim at most a fifth of the film (105 f under 18 s) | grows out of an object already on screen | music decays under it |
 
 Rules for this structure:
 
@@ -215,8 +215,8 @@ Rules for this structure:
 - **When the concept shows the product, show it or its artefact by 3-5 s** (an input field, a result, a card) unless
   the film is a teaser.
 - **The problem act escalates** in pace and in quantity: one thing first, then more, then many, the camera pulling back
-  so the count can grow ([escalation](#action-and-escalation)). It ends on **one** held frame of 45-75 f: a single
-  unresolved line, an empty field, a number that will not settle.
+  so the count can grow ([escalation](#action-and-escalation)). It ends on **one** held beat of 45-75 f that keeps
+  a slow push or breath: a single unresolved line, an empty field, a number that will not settle.
 - **The reveal lands on the biggest audio hit so far**, after a breath gap (see `sound-design.md`).
 - **Features are chapters, not slides.** Each enters by a dive, a hub or a carried object; each shows a real state change
   (an Add pill flips to Added, a check lands, a counter settles); each leaves on motion.
@@ -342,7 +342,7 @@ things change and how much the viewer can follow, not how much is in the frame):
 
 ```
 problem  ████████████  fast, piling up (0.6-0.9 s per beat)
-pivot    █             ONE held frame (45-75 f)
+pivot    █             ONE held beat (45-75 f), still creeping
 reveal   ███           medium, one big hit
 features ██████ ████ ██████   medium, each chapter fast-in / readable-hold / fast-out
 proof    ████████      faster (accelerating lists, counters)
@@ -351,7 +351,7 @@ lockup   ██            slow; the only rest
 ```
 
 Alternate tension and release: FAST, SLOW, FAST, SLOW, FAST, HOLD. Put a deliberate pause (a breath gap of 6-18 f,
-sometimes a held frame) right before the climax and right before the reveal.
+sometimes a held beat that keeps its idle) right before the climax and right before the reveal.
 
 ### 4.2 Shot and beat lengths (30 fps)
 - Pace: a new beat every 0.8-2.2 s (a 30 s film has 15-30 beats). Inside a beat something larger than a caret changes
@@ -387,7 +387,7 @@ Decelerating cadence is the counterpart for emphasis: a colour wave across a wor
 - Breath gaps: the bed drops 10-20 dB for 6-18 f before each act's hit.
 - A breakdown in long films: the beat stops for 5-10 s in the middle under the most intimate beat, so the drop that ends
   it lands hard.
-- The end: a 0.4-0.7 s drop-out before the final kick, or a hard stop of the music and 2-3.5 s of silent hold.
+- The end: a 0.4-0.7 s drop-out before the final kick, or a hard stop of the music under a lockup of 2.5 s at most.
 
 ### 4.5 Cut on motion
 Hard cuts land **while something moves**: on the fastest frame of an accelerating exit, never after a settle, and B
@@ -396,16 +396,18 @@ lockup, whose mark enters mid-move.
 
 ### 4.6 Holds that are read
 A hold is never a still frame ([stay in motion](#stay-in-motion)): every element keeps a slow life after it settles (a
-creep of 0.5-1 % scale over 20 f, a drift of 0.5-2 px/f, a breathing light, a counter, a caret). Only the last
-half-second of a lockup may freeze, after it has crept.
+creep of 0.5-1 % scale over 20 f, a drift of 0.5-2 px/f, a breathing light, a counter, a caret). Only the lockup's
+last moments may freeze, after it has crept (`check` leaves the last 1.5 s out of its stillness count).
 
 ### Stay in motion
 A film that stops reads as a slideshow, and a move that starts or ends with a jerk reads as buggy. So:
-- **Nothing is ever fully still.** Two consecutive frames are never identical before the last half-second; a stretch
-  with nothing moving for more than about 10 frames (a third of a second) is a bug, fixed by an idle (a drift with a
-  direction, a slow push, a breath), never by a wiggle.
+- **Nothing is ever fully still.** This is the one statement of the limits; every other page links here.
+  `frames.mjs check` fails a film with more than 15 fully still frames in a row (half a second at 30 fps) before its
+  last 1.5 s, or with more than 15 % of its frames fully still, and names still runs of 9-15 frames to look at.
+  Well-made films have about 7 % of their frames still. Fix a still stretch with an idle (`live`, a drift with a
+  direction, a slow push, a breath), never by a wiggle. A held beat (a read, a designed silence) keeps that idle.
 - **Nothing stops dead.** Every landing has a tail: it covers most of its distance in the first frames and settles over
-  15-30 more (an exponential approach), so its speed reaches zero gently, never in one frame.
+  12-20 more (an exponential approach), so its speed reaches zero gently, never in one frame.
 - **Exponential and logarithmic curves are the house way.** An entrance arrives fast and settles long (expo-out); a move
   that starts from rest eases in and out; a zoom changes scale by a constant ratio per frame (`logScale`), never a
   linear scale; when two moves follow each other, the second starts at the speed the first ends with, so the path has
@@ -602,12 +604,12 @@ A viewer reads one thing at a time; a frame full of small information reads as n
 |---|---|---|
 | `full-ui` | the product's UI as one component, large, camera 1.2-1.6x; one edge may leave the frame while the camera follows it | the core action |
 | `macro` | one detail at 3-6x: a caret, a button, a number, a row | the moment of the action |
-| `giant-type` | 1-3 words at 20-40 % of the frame height, alone, may crop at the frame edge | promise, claim, the result of a turn already shown |
+| `giant-type` | 1-3 words at 20-40 % of the frame height, alone; only a lone word of 280 px or more may crop, on one side | promise, claim, the result of a turn already shown |
 | `type-on-surface` | words laid on an object or plane in perspective (a block's face, a floor, a card) | hooks, chapter titles |
-| `ground` | one object or picture fills the frame, by any carrier (`forge`'s beat sheet calls it `flood`) | a join between places |
+| `ground` | one object or picture fills the frame, by any carrier (older beat sheets call it `flood`) | a join between places |
 | `statement` | a line that must land: alone on a flat ground, over a calm area of a picture, or beside its object | a claim that answers what was just shown (the turn itself is an event, [story](#story)) |
 | `split` | two grounds or two states side by side (before / after, input / output) | proof, comparison |
-| `quantity` | many of a thing (twenty documents, a hundred runs), by any spectacle in the menu (`forge`'s `wall`) | "all of it", scale |
+| `quantity` | many of a thing (twenty documents, a hundred runs), by any spectacle in the menu (older beat sheets call it `wall`) | "all of it", scale |
 | `panels` | a gutterless grid of 2-4 panels, each on its own clock (`motion/camera.md` 6.6) | the product doing several things at once |
 | `object` | one hero object large, lit, turning (a device, a mark, a glass solid, a block) | reveal, climax |
 | `surface` | the product's artefact landing inside another product (a message in a chat, a row in a tracker) | integrations |
@@ -845,7 +847,7 @@ The wordmark's soft scan (`motion/text.md` 10) is a finish beside the mark, not 
    both. Total duration = sum of sequences minus overlaps.
 3. For every join, write its class and what it carries ([the join test](#the-join-test)). "Cut" alone is not an
    answer. No move repeats identically, and none more than twice ([Devices](#devices)).
-4. Mark the held frames (at most one per act), the breath gaps and which elements run on the stepped clock.
+4. Mark the held beats (at most one per act, each with its idle), the breath gaps and which elements run on the stepped clock.
 5. Name the poster frame in `BEATS.md` before building: the one frame you would use as the film's thumbnail. It is a
    crafted image (an object with material and light, a figure with a real contrast of scale, the product's
    result at full size), never a centred line on a ground. Build it first, render it as a still and judge it alone; the

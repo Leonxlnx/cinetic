@@ -34,13 +34,13 @@ current frame itself; you pass **start frames** taken from the film's timeline o
 
 | Function | What it does |
 |---|---|
-| `ease.out` | expo out, `cubic-bezier(0.16, 1, 0.3, 1)`: the default arrival |
+| `ease.out` | expo out, `cubic-bezier(0.16, 1, 0.3, 1)`: an arrival over 30 f or more (shorter lands angular; prefer `approach`) |
 | `ease.soft` | quint out `(0.22, 1, 0.36, 1)`: heavy arrivals (hero card, lockup) |
 | `ease.snap` | `(0.05, 0.9, 0.1, 1)`: tiny UI pops, chips, cursor targets |
 | `ease.inOut` | expo in-out `(0.87, 0, 0.13, 1)`: travel that starts and ends at rest |
 | `ease.glide` | quart in-out `(0.76, 0, 0.24, 1)`: gentle long pans |
 | `ease.in` | expo in `(0.7, 0, 0.84, 0)`: leaving, ends at full speed |
-| `ease.back` | `(0.34, 1.36, 0.64, 1)`: ~6 % overshoot for things that land with weight |
+| `ease.back` | `(0.34, 1.36, 0.64, 1)`: ~6 % overshoot; rare, never on data, a camera or a line of type (landings use `settle`) |
 | `ease.linear` | colour, clocks and real rates only |
 | `ease.expoOut` / `expoIn` / `expoInOut` | true exponential curves (a constant share of the distance left, each frame): long tails, no dead stop; `expo(k)` makes one with your rate (6 default, 8 sharper, 4 softer) |
 | `at(frame, start, dur, curve = ease.out)` | progress 0..1 of a move, clamped |
@@ -67,14 +67,14 @@ current frame itself; you pass **start frames** taken from the film's timeline o
 Pattern:
 ```tsx
 const f = useCurrentFrame();
-const p = at(f, T.card, 18, ease.out);            // arrive
+const p = approach(f, T.card, 6);                 // arrive (already moving), long tail
 const q = accel(f, T.cardOut - 10, 10);           // leave at speed
 const style = { transform: `translateY(${mix(p, 80, 0) - q * 900}px) scale(${mix(p, 0.94, 1)})`, filter: `blur(${mix(p, 8, 0) + q * 20}px)` };
 ```
 
 Move with `transform`, never with `left`/`top`/`margin`/`width` or a changing `fontSize`: layout values snap to whole
 pixels, so a slow move steps (a 20 px move over 60 frames stands still on half its frames). Measure a render with
-`node scripts/frames.mjs motion out/film.mp4`; the rules are in [motion/entrances.md, Smooth
+`node scripts/frames.mjs motion out/main-preview.mp4`; the rules are in [motion/entrances.md, Smooth
 motion](motion/entrances.md#smooth-motion).
 
 ## 2. Type
@@ -219,7 +219,7 @@ push and turn to add to a held camera. `shake()` is deprecated ([section 11](#11
   `force`: grain on a flat light ground reads as mud, not film. Banding is `<Dither>`'s job (Ground and Field carry it).
   **`<Paper color fibre>`** a still paper ground (without `color`: only the fibre, to lay over other layers),
   **`<Stroke d start dur color width wobble>`** a hand-drawn line that draws itself (sketches, underlines, circles),
-  **`<Vignette amount color>`** darkened edges: rare, on a photograph or footage plate only, never on a ground.
+  **`<Vignette amount color>`** darkened edges: kept for older films; a film does not use it (no vignette, SKILL.md).
 
 ## 5. Product UI
 
@@ -245,8 +245,8 @@ Every surface (Card, Window, Bubble, Toast, Chip, InputBar) takes the theme's sh
 - **`<Phone w frame screen>`** and **`<Laptop w frame base screen>`**: flat, precise device frames whose screen is a slot for
   any UI (`children` at the screen's size: phone `w x w * 2.167` inside a 2.8 % bezel, laptop `w x w * 0.625`). Pose them
   with a transform or in a `<Camera>`; cut to one when a footage shot has no screen facing the lens.
-- **`<LockSwap anchor artefact hosts={[{ f, node }]} end push>`**: an object-lock swap: the artefact fixed and still while
-  hosts hard-cut behind it on the beat, each pushing in a touch; `artefact` may be `(i) => node` to re-tint per host.
+- **`<LockSwap anchor artefact hosts={[{ f, node }]} end push>`**: an object-lock swap: the artefact held in place (give it a
+  `live` idle) while hosts cut behind it on the beat, each already pushing in, so both sides of every cut move; `artefact` may be `(i) => node` to re-tint per host.
 - **`<Relay anchor={{ x, y }} artefact={node} hosts={[{ f, node }]} lift>`**: integrations as a relay: the artefact pinned at
   one screen point, the hosts (each a full-frame composition you build: a full-bleed page, a tilted plane, a macro crop)
   changing behind it on their frames, a small settle at each cut (`pose` on a host tilts the artefact with a tilted host).
@@ -357,6 +357,7 @@ object carries the film.
 
 - **`<Cues cues={[{ at, src, leadMs, volume, rate, maxS }]}>`**: each effect starts `leadMs` early so its transient (or, for
   whooshes and swells, its peak) lands exactly on frame `at`. Spread the entries of `src/sfx.ts`: `{ at: T.press, ...sfx['mixkit-3124'], volume: 0.5 }`.
+  **`<Sfx at src leadMs volume>`** is one such cue on its own (what `sfx.mjs` help names).
 - **`db(-6)`** dB to gain; **`beats(bpm, offsetFrame)`** a beat grid (`.at(n)`, `.bar(n)`, `.snap(f)`, `.half(f)`).
 - **`<Music src startFrom volume fadeIn fadeOut duck breaths breathLen enterAt endAt>`**: the bed (`endAt`: the frame it has
   faded out by, for a silent last beat under the mark). `startFrom` (s) skips the intro,
@@ -380,12 +381,13 @@ src/films/main/Film.tsx   the film (timeline T + sections)      src/films.ts    
 src/kit/                  the kit                                src/Sheet.tsx   the 36-frame storyboard composition
 src/sfx.ts                fetched sounds (generated)             public/         sfx/, music/, logos/, images (never commit audio)
 scripts/frames.mjs        sheet | still | render | final | audio | mux | strip | joins | check | motion | library   (mux without audio
-                          joins muted parts silent; joins: every join at real size, frames J-4 .. J+4; check --format launch |
+                          joins muted parts silent; joins: every join at real size, 2 frames before its move to 4 after; check --format launch |
                           loop | sting, --silent; motion <file.mp4> [--range a-b] [--cuts f,..] [--json]: every frame's change as a
                           chart with pops, dead stops, hard starts, stepping, still stretches and tails)
 src/kit/library/          the motion library: a folder a category (type, turns, fx, camera, ui, hosts, objects, grounds,
                           designs), one file a piece; catalog/<category>.ts lists each category's pieces (frames.mjs
-                          library [--category --purpose --subject --mood] | --show <Name> | --strip <Name>)
+                          library [words] [--category --purpose --subject --mood] [--json] | --show <Name> |
+                          --strip <Name>)
 src/films/library/        the motion library's reels, one a category (--film library-type | library-turns | library-fx |
                           library-camera | library-ui | library-hosts | library-objects | library-grounds |
                           library-designs), each a list of segments
@@ -414,7 +416,7 @@ Kept so older films compile; never use them in a new film. Each was retired by t
 
 | Deprecated | Why | Use instead |
 |---|---|---|
-| `shake()` (`camera.tsx`) | a screen shake reads as an error, even a small one on a landing | the object's own landing (a scale from 1.2 to 1 over 6 f, `ease.back`), or `ChromaHit` on the object that lands |
+| `shake()` (`camera.tsx`) | a screen shake reads as an error, even a small one on a landing | the object's own landing (a scale from 1.2 to 1 with `approach`, a half-life of 4-5 f), or `ChromaHit` on the object that lands |
 | `<Flash>` (`turns.tsx`) | a flash of light hides a cut instead of making one | a turn that carries the subject through the cut: `DotReveal`, `GrowIris`, `DiveInto`, `WindowOpen` ([library-turns.md](library-turns.md)) |
 | `<Aura>` (and `<Field>` as a ground, `world.tsx`) | a pale drifting gradient field reads as cheap | a flat `<Ground>` in the world's colour; depth from objects, light and pictures |
 | `<Typing burst>` (`type.tsx`) | the rest of a line landing at once breaks the typing | the believable cadence to the end: show a prefix as already typed and type the rest, or shorten the line |

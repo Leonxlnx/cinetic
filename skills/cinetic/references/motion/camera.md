@@ -20,7 +20,7 @@ push, turn)`, `camAt`. From motion: `creep`, `logScale`, `keys`, `accel`, `ease`
 
 ## House rules
 
-1. **Never dead still for more than ~0.3 s (10 f).** Every hold carries an idle: `live` (a sub-pixel drift and a 0.6 %/s
+1. **Never dead still** (the limits: [stay in motion](../film-grammar.md#stay-in-motion)). Every hold carries an idle: `live` (a sub-pixel drift and a 0.6 %/s
    push), a creep (0.5-1 % scale over 20-30 f) or a drift of 0.5-2 px/f. Only the lockup may freeze, after its own creep
    ([Smooth motion](entrances.md#smooth-motion)).
 2. **Pull back to establish; push in to leave.** Slow pull-backs (to 0.74-0.90 over 1-2 s) on establishing holds;
@@ -36,8 +36,8 @@ push, turn)`, `camAt`. From motion: `creep`, `logScale`, `keys`, `accel`, `ease`
    somewhere that means something, and changes or stops with the story; a uniform float under everything is a tell.
 9. **Context before a zoom.** Show the whole (the window, the page, the map) before pushing into a detail, with a landmark
    both frames share; centre on the evidence, not the click; never zoom out before the result has been read.
-10. **The machine's turn moves, the person's turn holds.** While the person types, picks or presses, the camera is still
-    (under ~10 px in 2.5 s); while the product works, the camera travels.
+10. **The machine's turn moves, the person's turn is calm.** While the person types, picks or presses, the camera only
+    creeps in on the event (a slow push, never a travel); while the product works, the camera travels.
 11. **The camera goes to the event.** A framing may hold while something large changes in it about every 0.7 s (a line
     lands, a panel turns, the UI acts); when only a label or a detail changes, move on: a push, a ride along the object, a
     cut to macro. When the next thing happens somewhere else, the camera is already travelling to it.
@@ -123,7 +123,7 @@ with `rotateY` 0 -> -8 deg (perspective 1400) and `rotateZ` 0 -> +1 deg ramping 
 ## 3. Pull-backs and reveals
 
 ### 3.1 Establishing pull-back
-Slow pull-back on a hold: zoom 0.90 over 23 f linear, or 0.74 over 55 f with a slightly peaked middle
+Slow pull-back on a hold: zoom 0.90 over 23 f in log space (`logMix`, near constant ratio), or 0.74 over 55 f with a slightly peaked middle
 (`cubic-bezier(0.35,0.1,0.65,0.9)`). Elements of the world **rise into frame** during the first 12 f, so the world builds
 as the camera leaves.
 

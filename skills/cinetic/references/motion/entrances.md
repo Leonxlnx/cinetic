@@ -58,8 +58,8 @@ Rules:
 3. **Never stop dead.** A move ends on a tail, or hands its speed to the next move (`chain`, `carry`), or leaves the
    frame. Nothing travels at speed on one frame and stands still on the next.
 4. **Never hold dead.** Every hold carries `live` (about 0.3-1 % of the frame a second: the defaults) or rides a camera
-   drift; stillness ends the film, nowhere else. Well-made films have about 7 % of their frames fully still; more than
-   10 still frames in a row before the ending is a fault.
+   drift; stillness ends the film, nowhere else. The limits `check` enforces are in
+   [stay in motion](../film-grammar.md#stay-in-motion).
 5. **Move with transforms.** `left`, `top`, `margin`, `width` and a changing `fontSize` snap to whole pixels, so a
    slow move stands still on half its frames and jumps on the others (measured: a 20 px move over 60 frames held still
    on 15-38 of 58 frames placed by `left`, on none placed by `translate`). Place by `transform: translate(...)`, size by
@@ -322,7 +322,7 @@ vertical motion blur 30 -> 0 px for a grid.
 
 ### 4.3 Pre-punched footage
 A footage or still plate hard-cuts in at 1.406x and eases back to 1.0 in 15 f (1.406, 1.329, 1.265, 1.214, 1.173, 1.14 ...,
-`cubic-bezier(0.16,0.60,0.33,0.88)`), with a low boom ~8 f in. A cheap and very effective impact entrance for stock.
+`cubic-bezier(0.16,0.60,0.33,0.88)`), with a low boom ~8 f in. A cheap and very effective impact entrance for a picture the film has.
 
 ### 4.4 Diagonal wave
 A mosaic of thumbnails materialises as a wave from the top-left: cell onset = start + column + 1.4 x row, each a 2 f pop

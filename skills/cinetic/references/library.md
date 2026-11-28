@@ -188,6 +188,9 @@ races while a feed rushes); `LinkPanel` (totals count up from the sources).
 
 ### Pictures
 
+Only when the film has pictures: the user's own, or the product's content, past the
+[picture bar](motion/imagery.md#house-rules). None of these makes a stock photograph a ground.
+
 | Job | Pieces |
 |---|---|
 | many at once | `TilePop` (tiles pop on, then a ribbon); `BentoFly` (tiles brake into a grid on a cut); `BlockPrint` (a collage prints itself, pastel blocks to photos); `DiagonalStream` (two bands of cards behind a word); `CurlRing` (a row curls into a spinning ring) |

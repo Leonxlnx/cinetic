@@ -13,18 +13,20 @@
   <a href="https://github.com/Leonxlnx/cinetic/releases/latest"><img src="https://img.shields.io/github/v/release/Leonxlnx/cinetic?color=1f2328" alt="Latest release"></a>
 </p>
 
-<!-- EXAMPLE (hero), for the owner to fill: a GIF excerpt of an approved cinetic 2 film linking to its MP4 on the media branch. No media is committed to this branch. -->
+<!-- Hero example to add: a GIF excerpt of a cinetic 2 film linking to its MP4 on the media branch. No media is committed to this branch. -->
 
 cinetic (cinema + kinetic) is an agent skill that makes your coding agent direct a short film instead of arranging animation components: launch films, feature and update videos, teasers, social clips and UI walkthroughs, built in Remotion.
 
 **cinetic 2** is a rework around one idea: the gap between a template video and a launch film by a top studio is direction, not effects. The skill now gives the agent a director's method and a kit that looks premium by default, and gets out of its way.
 
-- **A director's method.** A new idea every 1-2 seconds; one world per film; nothing is ever just cut away (the full stop grows into the next scene, the button becomes the progress bar, the camera dives into a tile and its inside is the next shot); front-loaded motion that is never linear and never dead still; type as an event; the real product, really used.
-- **Motion references organised by what moves.** Text, big entrances, exits, mid-turns and transitions, camera, cards and UI, imagery, extra effects, sound design, film grammar, ten graphic worlds and a taste guide with the tells of AI-made video and a scoring rubric: every recipe with numbers at 30 fps and code against the kit.
-- **A Remotion kit that looks premium by default.** Kinetic type (masked rise, born-tint, cut-on words on the beat, swaps, typing at a human pace, decode, rolling odometers), a 3D camera with log-space zooms, solid 3D blocks with type on their faces, depth ladders, product UI (cards, windows, chat, input bars, terminals, toasts) driven by a real arrow pointer, turns (iris, tiles, mosaic, push, zoom-through, flash), imagery (one grade for every picture, duotone develop, letters as windows, before/after).
+- **A director's method.** A story first (who wants what, the turn, the payoff), then a concept, then beats: a new beat every 0.8-2.2 seconds; one world per film; every join carries the thing being watched (the button becomes the progress bar, the camera dives into a tile and its inside is the next shot); type as an event; the real product, really used.
+- **A motion library of 192 finished pieces**, picked by the job a beat needs: type moves, turns, finishing effects, camera moves, product UI, faithful host screens, objects and marks, grounds and design presets. `frames.mjs library` finds them by purpose, subject, mood or free words, `--show` prints a piece's props, `--strip` renders its frames.
+- **Rules for motion and pictures.** Always in motion and smooth (exponential curves, long tails, log-space zooms, nothing stepping or stopping dead, no dead holds); one thing at a time; a designed world, with a photograph only when you gave it or it is the product's content and it passes a stated bar; no card or plate that is not real interface.
+- **Motion references organised by what moves.** Text, big entrances, exits, turns, camera, cards and UI, imagery, effects, sound design, film grammar, fifteen graphic worlds, formats, type, and a taste guide with the tells of AI-made video and a 20-point rubric: every recipe with numbers at 30 fps and code against the kit.
+- **A Remotion kit that looks premium by default.** Kinetic type (masked rise, born-tint, cut-on words on the beat, swaps, typing at a human pace, decode, rolling odometers), a 3D camera with log-space zooms, solid 3D blocks with type on their faces, depth ladders, product UI (cards, windows, chat, input bars, terminals, toasts) driven by a real pointer (a touch on a phone), turns (iris, tiles, mosaic, push, zoom-through), imagery (one grade for every picture, duotone develop, letters as windows, before/after).
 - **Real marks, real icons.** Company logos in their own colours from Simple Icons or, for marks Simple Icons cannot carry, in their newest official form through `logos.mjs`, with source and licence recorded. Interface icons from Lucide.
 - **Real, licensed sound.** A judged catalogue of recorded effects that land on their transient (or, for whooshes and swells, their peak) on the exact frame, and a measured shortlist of licensed music tracks with tempo and the second each one gets going. Breath gaps before the hit, music that rings out under the end card.
-- **A fast look-fix loop.** `frames.mjs sheet` renders a whole film as 16 frozen frames in one still; `strip` shows any moment of a preview at 15 frames a second. The agent reads both and fixes the three worst things before the final.
+- **Tools that measure, and a look-fix loop.** `frames.mjs sheet` renders a whole film as 36 frozen frames in one still; `strip` shows any moment of a preview at 15 frames a second; `joins` exports every frame of every join at real size; `motion` measures every frame for pops, dead stops, hard starts, stepping and stillness; `check` measures pace, holds, empty frames, crowding and the ending. The agent scores the film with the rubric and runs at least two motion passes and two polish passes before the final.
 
 ## Quick start
 
@@ -96,23 +98,27 @@ Rendering is heavy. The skill renders half-size previews while it iterates and t
 ## How a film is made
 
 1. `new-film.mjs` scaffolds a Remotion project with the kit.
-2. The agent writes `BRIEF.md` (what the product does as input -> output, the features, the brand) and `BEATS.md` (one row per beat: what is seen, what moves, how it hands off to the next beat, the sound).
-3. It picks one world, builds the film section by section on one timeline, and looks at a 16-frame sheet after each section.
+2. The agent writes `BRIEF.md` (what the product does as input -> output, the features, the brand) and `BEATS.md` (the five-line story, the concept, the devices picked from the library by job, then one row per beat: what is seen, what moves, how it joins the next beat, the sound).
+3. It picks one world, builds the film section by section on one timeline, and looks at a 36-frame sheet, full-size stills and join images after each section.
 4. It fetches licensed sounds and a music track and places them on the same frames as the picture.
-5. It scores a preview with the rubric, fixes the worst three things, renders the master and writes `CREDITS.md`.
+5. It measures a preview (`motion`, `check`), scores it with the rubric, runs the motion and polish passes, renders the master and writes `CREDITS.md`.
 
 ## What's inside
 
 ```
 skills/cinetic/
   SKILL.md                 the director's method and the default path
-  references/              film-grammar, worlds, taste, sound-design, kit, assets, rendering,
+  references/              INDEX, film-grammar, formats, worlds, type, taste, sound-design, kit, assets, rendering,
+                           library (pick by job) and one library-*.md a category,
                            motion/ text, entrances, exits, turns, camera, cards-ui, imagery, effects
   kit/                     the Remotion project every film starts from
-    src/kit/               motion, type, camera, world, ui, turns, imagery, sound, icons, fonts
-    src/films/             worked examples (light product UI; an isometric block world; editorial imagery)
-    scripts/               new-film, frames (sheet, still, render, join, strip), sfx (effects and music),
-                           logos (official marks), the sound catalogue and the music shortlist
+    src/kit/               motion, type, camera, world, ui, turns, imagery, gl (3D), sound, icons, fonts
+    src/kit/library/       the motion library: a folder a category, one file a piece, catalog/ for search
+    src/films/             the library's reels and five worked examples (older than today's rules: read for
+                           how the kit is wired, not as a standard)
+    scripts/               new-film, frames (sheet, still, render, final, audio, mux, strip, joins, motion, check,
+                           library), sfx (effects and music), logos (official marks), the sound catalogue and
+                           the music shortlist
 ```
 
 ## Credits

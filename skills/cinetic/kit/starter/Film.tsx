@@ -2,7 +2,8 @@
 // component per section, and the film that places them. Split into files once it grows.
 // Write BEATS.md first: the five-line story, the concept, the devices, one row per beat. Take turns, type moves and
 // product UI from the motion library (references/library.md) and adapt them; hand-build only what it lacks.
-// The ground is flat by default: a flat clean colour, a real picture, or a bold designed scene.
+// The ground is flat by default: a flat clean colour or a bold designed scene; a picture only when the user gave it or
+// it is the product's content. Frame 0 is never empty and already moving: the first words start before frame 0.
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { creep, fonts, Ground, Words } from '../../kit';
@@ -23,7 +24,7 @@ const Open: React.FC = () => {
   return (
     <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', transform: `scale(${push})` }}>
       <div style={{ fontFamily: fonts.inter, fontWeight: 520, fontSize: 180, letterSpacing: '-0.025em', color: '#111' }}>
-        <Words text="Replace me" start={4} arrive="rise" style={{ color: '#111' }} />
+        <Words text="Replace me" start={-8} arrive="rise" style={{ color: '#111' }} />
       </div>
     </AbsoluteFill>
   );

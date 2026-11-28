@@ -35,8 +35,8 @@ starting look, never the film's idea: the world still comes from the product ([w
 | [Folio](#folio) | build | 75 f | a serif voice set big on paper grey with a faint grid, editorial pictures full-bleed, corner brackets and handles in one clay accent | an image or fashion product whose voice is a serif |
 | [Pixel](#pixel) | build | 75 f | one screen material in every scene: dots on black, a halftone field, words in dot matrix, the pitch constant within a scene | a short expressive type film or a sting about screens |
 | [Sketchbook](#sketchbook) | build | 75 f | warm paper, a slate cutting mat under blind shadows, one dry-brush marker colour, tiles and stickers with short shadows, a hero word dead centre | a hackathon, maker or collage film that should feel made by hand |
-| [Cobalt](#cobalt) | build | 75 f | one flat ultramarine as the whole ground with faint arcs, white glass cards with a hairline rim, big Title Case headlines | a creator or commerce product whose brand is one saturated blue |
-| [Frost](#frost) | build | 75 f | a photograph or footage as the ground, frosted glass pills and panels over it showing the picture through, white type, a black send button | a consumer assistant set in the world (sky, travel, health) |
+| [Cobalt](#cobalt) | build | 75 f | one flat ultramarine as the whole ground with faint arcs, white glass cards with a hairline rim, big sentence-case headlines | a creator or commerce product whose brand is one saturated blue |
+| [Frost](#frost) | build | 75 f | a photograph or footage the user gave as the ground, frosted glass pills and panels over it showing the picture through, white type, a black send button | a consumer assistant set in the world (sky, travel, health) when the user gave the pictures |
 | [Tray](#tray) | build | 75 f | real-looking objects on a light grey void: a white tray with a lit bevel, squircle sockets, a heavy grotesk word under a light serif lead | an opener about apps and tools as objects, ending in a lockup |
 | [Shout](#shout) | build | 75 f | a tight heavy grotesk with overlapping lines cropped by the frame, tiny type for scale, flat tags turned -3 degrees, one red flood, a graph grid | an agency or launch finale where the words are the image |
 
@@ -59,8 +59,8 @@ Each `Design` carries `palette`, `accents` (the others the look allows), `ground
 `texture`, `spacing` (margin, gap, padding), `picture` (radius and the one grade every picture takes) and `moves` (the
 library pieces whose motion fits). `DesignFrame` draws a designed frame in any preset (a statement, a card, a picture
 and a mark placeholder); the reel shows every preset with it. Its card text is never under `minText` (30 px at
-1080), whatever the look's own body and label sizes, so the card reads in the frame; `plate` backs the statement and
-the mark on a busy ground (a white paper label on Drafting's blocks and Sketchbook's cutting mat). Sizes in the presets were measured on full-resolution
+1080), whatever the look's own body and label sizes, so the card reads in the frame; `DesignFrame`'s `plate` (a white paper label on Drafting's blocks and Sketchbook's
+cutting mat) is for the reel's swatches, not a model for a film: in a film, type sits on the ground. Sizes in the presets were measured on full-resolution
 frames: a quiet statement is 4.5-6 % of the frame height, not the 2 % it looks like in a thumbnail.
 
 No preset carries a purple or a green, and none carries a faint gradient ground; looks that need one are not here.
@@ -87,8 +87,10 @@ Each preset gives its statement sizes as shares of the frame height (`type.sizes
 | Tray | 0.09 | 0.14 | 0.19 |
 | Shout | 0.12 | 0.185 | 0.21 |
 
-Over a busy picture give the statement a `plate` (a dark glass, e.g. `rgba(12,14,18,0.72)` with a blur) so white type
-keeps 7:1.
+These shares are the looks' proportions, not the film's sizes: in a film, statements take the sizes by word count in
+[type.md](type.md#2-size-by-word-count) (never under 64 px), and these shares only say how a look leans. Over a busy
+picture the statement moves to the ground or to a calm band of the picture; never a plate under it
+([no card that is not needed](motion/cards-ui.md#house-rules)).
 
 ### Drafting
 
@@ -118,7 +120,8 @@ belongs to an object.
 
 Cream #F2ECE3, deep ink #1D2B45, one light face (Inter 300, a hook at 88 px), warm photographs in one grade, pills and
 tiles radius 28 px, thin white outlines drawn on the photos (PhotoPlate `shapes`), apricot and sky as flat shapes; no
-shadows. Caution: one grade for every photograph.
+shadows. Caution: only with the user's own photographs or the product's own pictures that pass the
+[picture bar](motion/imagery.md#house-rules); one grade for every photograph; statements at 430 or more in a film.
 
 ### Quiet
 
@@ -152,13 +155,16 @@ strokes (the kit's `Stroke`), never in a handwriting font for statements.
 ### Cobalt
 
 Flat ultramarine #2140D9 with faint arcs (CobaltArcs), white glass cards (14 % white, 1 px rim at 25 %, softShadow
-5, radius 22 px), Title Case headlines at 140 px Inter 400. Caution: keep the blue flat.
+5, radius 22 px), headlines at 140 px Inter 450 in sentence case. Caution: keep the blue flat; the glass cards
+only as real interface.
 
 ### Frost
 
 A photograph or footage as the ground (PhotoPlate), frosted glass over it (16 % white, 20 px backdrop blur, 1 px rim
 at 30 %), pills 6 % of the height tall, panels radius 30 px, white Inter 500 at 64 px, a black round send button.
-Caution: the picture is the ground, never a pastel gradient field.
+Caution: only with a picture the user gave or the product's own that passes the
+[picture bar](motion/imagery.md#house-rules); the glass is real interface (an assistant's input, its answers), never a
+plate for a line; without such a picture, choose another look.
 
 ### Tray
 

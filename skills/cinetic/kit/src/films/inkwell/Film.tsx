@@ -1,4 +1,4 @@
-// "Inkwell": the look pass (round 4). 9.0 s (271 f) at 30 fps. An invented writing app with Claude inside every document.
+// "Inkwell": a worked example. 9.0 s (271 f) at 30 fps. An invented writing app with Claude inside every document.
 // World: editorial paper. A warm-white paper ground (a writing product may keep paper), one serif voice (Newsreader) for
 // every statement, the document's own text and the wordmark; Inter only inside other products' UI and the prompt pill.
 // One accent from the product's object: a royal blue ink, wet when a word is new and drying to black. Grounds: paper

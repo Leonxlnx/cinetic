@@ -21,7 +21,7 @@ export const FILMS: Record<string, { component: React.FC; duration: number; fps:
   fieldnote: { component: FieldnoteFilm, duration: fieldnoteDuration, fps: 30 },
   lumen: { component: LumenFilm, duration: lumenDuration, fps: 30 },
   inkwell: { component: InkwellFilm, duration: inkwellDuration, fps: 30 },
-  // the motion library's reels: every piece of a category, named, in catalogue order (src/kit/library/catalog.ts)
+  // the motion library's reels: every piece of a category, named, in catalogue order (src/kit/library/catalog/)
   'library-type': { component: ReelType, duration: reelTypeDuration, fps: 30 },
   'library-turns': { component: ReelTurns, duration: reelTurnsDuration, fps: 30 },
   'library-fx': { component: ReelFx, duration: reelFxDuration, fps: 30 },

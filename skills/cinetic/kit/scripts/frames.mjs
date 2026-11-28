@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // frames.mjs: every picture a film makes, from one command. Run it inside a film project.
 //
-//   node scripts/frames.mjs sheet [--film main] [--grid 6] [--from 0 --to 599 | --frames 0,40,90] [--out out/sheet.png]
+//   node scripts/frames.mjs sheet [--film main] [--grid 6] [--from 0 --to 599 | --frames 0,40,90] [--out out/main-sheet.png]
 //        the whole film as 36 frozen frames in ONE still (6x6, 320 px cells; --grid 4 or 3 for bigger cells, --half for a
 //        faster, smaller sheet). The fastest look at a film: use it after every change. --safe outlines the 8 % safe
 //        margin in every cell: what sits outside it is cut or crowding an edge.
@@ -167,10 +167,10 @@ function musicRunsOut(dur) {
   return out;
 }
 
-const GROUND_LIT = process.env.CINETIC_CHECK_OLDGROUND ? false : true; // private calibration switch
+const GROUND_LIT = process.env.CINETIC_CHECK_OLDGROUND ? false : true; // switch for the older ground measure
 // a frame is empty when almost nothing differs from the ground (a single clean line of type is NOT empty)
 const EMPTY_FILL = Number(process.env.CINETIC_CHECK_EMPTY || 0.006);
-// air (calibrated on 40 reference launch films): sharp detail = type, UI, hard edges; soft light, gradients and blur are not
+// air: sharp detail = type, UI, hard edges; soft light, gradients and blur are not
 const CROWD = Number(process.env.CINETIC_CHECK_CROWD || 0.27); // FAIL: share of samples with 35 %+ of the frame in sharp detail
 const BUSY = Number(process.env.CINETIC_CHECK_BUSY || 0.25); // LOOK: share of samples with 3+ separate things and 20 %+ detail
 const CUT = Number(process.env.CINETIC_CHECK_CUT || 0.25); // LOOK: share of samples where the frame edge cuts detail on 2+ sides

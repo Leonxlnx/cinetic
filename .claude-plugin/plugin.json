@@ -3,7 +3,7 @@
   "name": "cinetic",
   "displayName": "cinetic",
   "version": "1.5.1",
-  "description": "Direct and render launch films, update videos, product videos, feature loops, logo stings and UI walkthroughs with Remotion or HyperFrames: a direction per film, real imagery, brand kits and a licensed music track.",
+  "description": "Direct, build and render premium launch films, feature and update videos, teasers, loops, logo stings and UI walkthroughs from code with Remotion: a director's method, a motion library of 192 finished pieces picked by job, tools that measure every frame, real marks and licensed sound.",
   "author": {
     "name": "Leonxlnx",
     "url": "https://github.com/Leonxlnx"
@@ -11,5 +11,5 @@
   "homepage": "https://github.com/Leonxlnx/cinetic",
   "repository": "https://github.com/Leonxlnx/cinetic",
   "license": "MIT",
-  "keywords": ["video", "motion-design", "launch-video", "remotion", "hyperframes", "gsap", "animation", "sound-design", "music"]
+  "keywords": ["video", "motion-design", "launch-video", "remotion", "animation", "kinetic-type", "sound-design", "music"]
 }

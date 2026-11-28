@@ -406,14 +406,12 @@ const AT = { x: 960, y: 560 };
   { f: T.hostB, node: <HostTracker anchor={AT} zoom={2.8} /> },   // macro, on the inverse ground
 ]} />
 ```
-The worked films `forge` and `fieldnote` build their hosts this way (read their relay sections).
 
 **Into the relay (the artefact is born in the beat before):** the thing the product just made (the rewritten sentence, the
 generated chart) arrives at the anchor by one of: a flight from where it was made (it lifts off its page as a plate and
 flies in 12-16 f, `ease.inOut`, a small arc, scaling to its relay size; `<Relay enter={{ f, from: { x, y, scale } }}>`), a
 match cut on its box, a morph from the UI element that made it (`turns.md` 5.8), or a hard cut on the beat. The first host
-cuts in the frame it lands. A flood out of the plate's box (`<Flood from={box} to={<FirstHost />} reveal>`, as `inkwell`
-does) is allowed only if the film has not spent its one flood elsewhere.
+cuts in the frame it lands. A flood out of the plate's box (`<Flood from={box} to={<FirstHost />} reveal>`) is allowed only if the film has not spent its one flood elsewhere.
 
 **Following one artefact through real places.** When the story is a journey (a sketch that becomes a frame, then code, then a
 merged pull request), give each place its own act: the artefact arrives, a real state change happens there (converted,
@@ -431,7 +429,8 @@ tracker, a phone's lock screen, a doc, a terminal), each its own full-frame comp
 **Numbers:** 4-6 f per host, hard cuts on the beat or on its eighths, accelerating slightly (6, 6, 5, 5, 4, 4 f); each host
 pushes 1.00 -> 1.02 over its own frames; the artefact (outside the camera, `camera.md` 6.5) re-tints its plate for each
 ground in the cut frame and creeps 0.5 % across the whole run; the last host holds 12-18 f so it reads. A tick per cut.
-**Sells it:** the artefact not moving by a pixel while everything behind it changes; each host recognisable at a glance by
+**Sells it:** the artefact holding its place (its slow creep, never a jump) while everything behind it changes, every
+host already pushing when it cuts in, so both sides of each cut move; each host recognisable at a glance by
 its real mark and its layout, not by reading.
 **Avoid:** hosts that share a layout; text in the hosts that must be read; moving the artefact between hosts.
 
@@ -472,8 +471,7 @@ the accent on about a quarter at the peak, the smallest label 28 px or more, a c
 Every item is real content, never grey bars; never hundreds of tiny pale cells. The same holds for any spectacle at its
 widest frame (`film-grammar.md` spectacle).
 **Out of a relay into a wall:** start the wall on its centre item at the artefact's exact screen size (wall zoom = 1 / the
-item's scale, pivot on the item) so the cut matches on the artefact, then pull back as above (`inkwell` builds this,
-`WallBeat`). Never in a film that also floods into the relay, and never followed by the wall draining into the mark: end
+item's scale, pivot on the item) so the cut matches on the artefact, then pull back as above. Never in a film that also floods into the relay, and never followed by the wall draining into the mark: end
 some other way (`film-grammar.md` lockups).
 **Avoid:** a wall as the default spectacle; a wall and a relay and a flood in one film; a wall whose items are all alike.
 

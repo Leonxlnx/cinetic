@@ -1,8 +1,8 @@
 # Library: grounds
 
 **What it is for:** the ground a film's scenes stand on and how it moves, each the ground of a design preset. Reach
-first for `HairlineGrid` (a clean light product), `TechGrid` (night and technical), `PhotoPlate` (a photograph as the
-world), `OrbitLines` (quiet statements on cream) and `IsoFloor` (poster fields with blocks). Not here: a ground change
+first for `HairlineGrid` (a clean light product), `TechGrid` (night and technical), `PhotoPlate` (only for a picture the
+user gave or the product's own, past the [picture bar](motion/imagery.md#house-rules)), `OrbitLines` (quiet statements on cream) and `IsoFloor` (poster fields with blocks). Not here: a ground change
 as a join (`TileFlood`, `PixelStair` in [turns](library-turns.md)), a glow (`GlowBars` in [fx](library-fx.md)), faint
 gradients or wallpapers. Most grounds here were checked on stills only; their cautions say so. Near neighbours
 elsewhere: `IsoFloor` beside `FloorTilt` (camera), `PlanetRim` beside `PlanetPull` (camera) and `GlowBars` (fx),
@@ -29,7 +29,7 @@ ground built from the film's own material. Never a faint gradient or a drifting 
 | [PlanetRim](#planetrim) | enter, exit | 30 f | on black, a dark planet rises from the foot: a thin peach rim, a burnt band inside, warm light just above the rim; it sinks on an ease-in | under a product name or a claim on a black film, once (the opening title or the end card) |
 | [OrbitLines](#orbitlines) | enter, idle | 22 f | on a warm flat ground two hairline circles larger than the frame start as one, part, turn as a pair and keep turning slowly | under quiet statements on cream, so an empty ground never stands still |
 | [CobaltArcs](#cobaltarcs) | idle | 60 f | one flat saturated blue with quiet concentric hairline arcs round a point under the frame, widening slowly outward | a brand-colour ground for glass cards and notices |
-| [PhotoPlate](#photoplate) | idle, emphasis | 60 f | a full-bleed photograph pushing in slowly, thin white outline shapes drawing onto it, a re-grade that eases in on an event | a photograph as the world: under glass panels, under words, with outlines that frame the subject |
+| [PhotoPlate](#photoplate) | idle, emphasis | 60 f | a full-bleed photograph pushing in slowly, thin white outline shapes drawing onto it, a re-grade that eases in on an event | a photograph the user gave, or a product picture, as the world: under glass interface, under words on a calm band, with outlines that frame the subject |
 | [CuttingMat](#cuttingmat) | idle | 60 f | a tabletop from above: a slate cutting mat with its grid, a strip of desk, window-blind shadows across it, tracking slowly | a collage or paper look: tiles, stickers and cards laid on a real-looking table |
 | [GhostWord](#ghostword) | idle | 30 f | a flat light ground with one giant word a few percent lighter than it, cropped by the frame and drifting sideways | the home ground of a long film whose brand word is the texture under small type |
 | [FourUp](#fourup) | loop | 120 f | the frame split into four panels, each playing its own scene on its own loop length and phase, so the four never cut together | a showreel tile or a social loop that shows a body of work at once |
@@ -139,7 +139,8 @@ Caution: keep the blue flat; no lighter centre, no glow at the foot.
 A full-bleed photograph pushing in (scale 1.04, +0.006 a second), graded by `grade` (one CSS filter for every picture
 of the film). `shapes` draw 1.5 px white outlines onto it in 14 f each (a rectangle beside a circle, a pill, a ring:
 shares of the frame); `tint` multiplies a colour over it from `tint.at` to `tint.until` (a state: an error, a
-warning), easing in and out over `tint.fade` frames (10, never under 8) at `amount` 0.45, so the light never jumps. The ground for glass panels (Frost) and editorial words (Gallery).
+warning), easing in and out over `tint.fade` frames (10, never under 8) at `amount` 0.45, so the light never jumps. The ground for glass panels (Frost) and editorial words (Gallery), with the same
+picture rule: never a stock photograph as wallpaper, and words over it sit on a calm band, never on a plate.
 
 ```tsx
 <PhotoPlate src={photo} at={0} shapes={[{ kind: 'rect', x: 0.43, y: 0.5, w: 0.13, h: 0.3, at: 10 }, { kind: 'circle', x: 0.57, y: 0.5, w: 0.15, h: 0.27, at: 16 }]} tint={{ at: 54, until: 78, color: '#C8321E', amount: 0.5, fade: 10 }} />

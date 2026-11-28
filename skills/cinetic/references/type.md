@@ -29,7 +29,7 @@ A resting line (the size a normal statement settles at) is sized by how many wor
 | 5-6 words | 84-100 px | 430-500 | -0.015 em |
 | 3-4 words | 110-150 px | 450-550 | -0.015 to -0.02 em |
 | 1-2 words | 160-240 px | 450-550; 600-700 for one headline word | -0.02 to -0.03 em |
-| the spectacle, once a film | 280-700 px, may crop at the frame edge | 500-700 | -0.03 to -0.05 em, line height 0.85-0.95 |
+| the spectacle, once a film | 280-700 px, a lone word may crop on one side | 500-700 | -0.03 to -0.05 em, line height 0.85-0.95 |
 | the wordmark on the end card | cap height 90-140 px | 600-700 for a sans mark, regular for a serif mark | by size |
 | a label the viewer needs | a third of the line it serves, 40 px or more | the UI's weight | 0 |
 | a texture label inside a UI component (chips, status lines, tags) | 20-28 px | the UI's weight | 0 |
@@ -66,7 +66,8 @@ The 64 px floor for a statement word holds; a line that needs to go under it hol
 - The giant word is optional in a film led by product UI or by the product's own pictures: there the scale contrast can come from a macro
   of the UI or a full-frame picture instead, and the statements keep their sizes by word count. When a film has one, it
   follows this section.
-- It may crop at the frame edge (never inside a box) as long as the word still reads.
+- A lone giant word may crop at the frame edge, on one side only (never inside a box), as long as it still reads; a
+  2-3 word phrase stays whole.
 - Weight 500-700, tracking -0.03 to -0.05 em, line height 0.85-0.95.
 - The resting lines keep their sizes around it; the jump between the two is the point. No third size in between: a film
   whose statements come in five sizes has no scale at all.
@@ -144,7 +145,7 @@ to make room for words: the picture is the world, and a dimmed world reads as a 
   question mark.
 - Build them 1-3 words at a time, on the music: cut-on words (`<Words arrive="cut" times>`), an append that re-centres
   (`<Build>`), a last-word swap (`<Swap>`), a decode, a colour wake, type set on a surface, a masked rise (two a film).
-  Two arrival styles a film. Never fade a whole line in.
+  No arrival used more than twice ([strong moves](film-grammar.md#strong-moves-often)). Never fade a whole line in.
 - One line on screen at a time.
 
 **One type treatment a film.** Beside its arrivals, a film picks one treatment for its statements (a slot in the

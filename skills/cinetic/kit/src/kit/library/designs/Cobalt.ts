@@ -1,7 +1,7 @@
 // Cobalt (design, preset): one saturated ultramarine as the whole ground, faint concentric arcs on it, white glass
-// cards with a hairline rim, big Title Case headlines in a round grotesk, one warm colour inside pictures only.
+// cards with a hairline rim, big sentence-case headlines in a round grotesk, one warm colour inside pictures only.
 // Numbers: ground #2140D9 flat; glass white at 14 % with a 1 px white 25 % rim, radius 22 px, a deep soft shadow
-// (softShadow 5); headlines 140 px at 1080 (cap 10 % of the height, Inter 400); UI 26 px.
+// (softShadow 5); headlines 140 px at 1080 (cap 10 % of the height, Inter 450); UI 26 px.
 // Caution: keep the blue flat (no lighter centre, no glow at the foot); white on blue needs weight 400 or more.
 // Statement sizes (share of the frame height): 5-6 words 0.085, 3-4 words 0.13, 1-2 words 0.22.
 // Catalogue: ../catalog/design.ts; tokens and use: references/library-designs.md.
@@ -15,7 +15,7 @@ export const Cobalt: Design = {
   accents: ['#FF6A2B'],
   grounds: ['ultramarine #2140D9 with concentric arcs (CobaltArcs)', 'white #FFFFFF title cards', 'near-black #05070F for input scenes'],
   groundPiece: 'CobaltArcs',
-  type: { sizes: { long: 0.085, mid: 0.13, short: 0.22 }, font: fonts.inter, scale: { statement: 140, heading: 34, body: 26, label: 20 }, weights: { statement: 400, heading: 500, body: 400 }, tracking: '-0.025em', display: 240, case: 'title' },
+  type: { sizes: { long: 0.085, mid: 0.13, short: 0.22 }, font: fonts.inter, scale: { statement: 140, heading: 34, body: 26, label: 20 }, weights: { statement: 450, heading: 500, body: 400 }, tracking: '-0.025em', display: 240, case: 'sentence' },
   radii: { small: 999, card: 22, window: 28 },
   shadow: { card: 5, hero: 6 },
   stroke: { width: 1, color: 'rgba(255,255,255,0.25)' },

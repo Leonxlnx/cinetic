@@ -1,4 +1,4 @@
-// "Fieldnote": the look pass. ~14.1 s at 30 fps. An invented product (ask any question about any place on Earth,
+// "Fieldnote": a worked example. ~14.1 s at 30 fps. An invented product (ask any question about any place on Earth,
 // answered from satellite imagery). World: photo plates on clean paper. The licensed photographs are the world and are
 // seen large and clean; the paper is a clean near-white, flat. One sans voice (Inter: 480 for lines and UI, 700 only
 // where letters are windows onto a picture and for the wordmark). One accent, a sea blue taken from the channels in the

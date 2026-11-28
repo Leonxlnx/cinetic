@@ -92,7 +92,7 @@ For people who already use the product. The beat table is in [film-grammar.md](f
 
 A rebrand, a company or a recruiting film.
 - **Length:** 25-50 s; 3-6 lines of belief.
-- **Sections:** a line over a picture > the identity in the world (signage, print, screens built in code, the brand's own
+- **Sections:** a line over its designed ground (or the brand's own photograph, past the picture bar) > the identity in the world (signage, print, screens built in code, the brand's own
   photographs in one grade, or a lit 3D world) > the product at most once > the belief completed > a quiet end card of
   3-4 s, still creeping.
 - **Different:** fewer, longer shots (beats of 1.5-3 s); the subtle, unexpected choice beats the busy one; no spectacle

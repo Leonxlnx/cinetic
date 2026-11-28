@@ -64,7 +64,9 @@ and data only, never for labels ([type.md](type.md)).
 
 ## 4. Photos and footage
 
-Never generated images. In order of preference:
+Never generated images. A photograph or clip appears only when the user gave it or it is the product's content (what
+the product makes, finds, sells or acts on, shown being acted on), and passes the picture bar
+([imagery.md](motion/imagery.md#house-rules)); otherwise the film has none. In order of preference:
 1. The user's screenshots, product photos, team photos, customer footage.
 2. Code: UI, type, geometry and light carry most launch films.
 3. When the product's input is human (someone speaking, writing, cooking, paying), a licensed clip or photo of a real
@@ -74,7 +76,7 @@ Never generated images. In order of preference:
    and text; without them it says so and still works). Keyless open collections are thin for everyday subjects (food,
    interiors): if nothing fits, build the subject in code (words on shelves, objects as type) rather than force a poor
    picture. Resize with `assets.mjs grade --width 1600` (`get --width` does not shrink every source). Check the framing fits your use (a webcam tile needs someone facing the lens).
-4. Licensed stock, downloaded by hand or script and recorded:
+4. Licensed stock, under the same rule (the product's content, past the bar), downloaded by hand or script and recorded:
    - Unsplash (https://unsplash.com/license): free for commercial use, no attribution required (credit appreciated); not
      for building a competing service, not to sell unaltered copies.
    - Pexels photos and videos (https://www.pexels.com/license/): free for commercial use, no attribution required; do not
@@ -83,7 +85,7 @@ Never generated images. In order of preference:
    Grade every picture into the film's world (one look across all of them), show it with intent (bare cards on paper, a
    window in type, a parallax plate), never as wallpaper behind text.
 
-**Pictures are the film's world, not decoration.** Choose them before the beats are written, from what the story needs:
+**When a film has pictures, they are its world, not decoration.** Choose them before the beats are written, from what the story needs:
 the same people and the same place through the whole film, one shoot where you can (a collection's photographer often
 has a series of one family or one studio). Check every picture's people against the cast: never a different adult or
 child standing in for a named character, never a second kitchen for the first. A film uses a photograph only when it
@@ -112,7 +114,7 @@ bubbles, swells, risers, sub booms and trailer hits are in its `rejected` list w
 refuses them ([sound-design.md](sound-design.md#3-hard-rules)).
 
 ```
-node scripts/sfx.mjs roles                  # click.hard click.soft key typing paper tick impact shutter whoosh.short whoosh.medium
+node scripts/sfx.mjs roles                  # click.hard click.soft key typing paper tick impact shutter whoosh.short
 node scripts/sfx.mjs list click.soft        # strong and plausible picks first
 node scripts/sfx.mjs get kenney-interface-click_001 mixkit-2384 ...   # -> public/sfx/* + src/sfx.ts
 node scripts/sfx.mjs pick paper 2 --seed <film>       # a different pick per film

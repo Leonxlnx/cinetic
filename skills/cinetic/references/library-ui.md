@@ -59,7 +59,7 @@ every piece with its name: render it to see them move.
 | [SendLaunch](#sendlaunch) | join | 24 f | the send button lifts away and the composer falls out of frame; on the cut a small spark of pixels on a dark ground leads the app window in with a smear | a prompt sent and the product starting to work: from the request to the result |
 | [FileDrop](#filedrop) | build | 40 f | the pointer carries a file in on an arc, the file swinging from its tip like a pendulum, drops it into the composer, the send button appears | a document handed to the product: a contract, a brief, a spreadsheet |
 | [Cursor3D](#cursor3d) | emphasis | 20 f | a chunky extruded arrowhead cursor with a satin top, a side wall and a soft shadow glides onto a button, presses and rests with a slow tilt | a press in a soft, three-dimensional product world |
-| [BackdropSwap](#backdropswap) | emphasis | 35 f | a phone holds still at the centre while the pictures behind it hard-cut every five frames, the phone shifting a few pixels with each | the "wherever you are" beat: one product in many places |
+| [BackdropSwap](#backdropswap) | emphasis | 35 f | a phone holds its place at the centre while the pictures behind it hard-cut every five frames, the phone shifting a few pixels with each | the "wherever you are" beat: one product in many places |
 | [FloodAway](#floodaway) | exit | 30 f | the cards round a line flood one by one with a saturated colour, keeping their shape and corners, then blow away outward, the outer ones first, turning edge-on | clearing a frame of clutter to leave one line: "too much of this", then the answer |
 | [StickyType](#stickytype) | emphasis | 16 f | a sticky label appears as a square, stretches while its words type into it and draws a connector to what it annotates | a comment or a note pinned on a design, a page, a plan |
 | [RowCool](#rowcool) | build | 60 f | a progress log under a shimmering header: each row lands with its verb in its icon's colour, cools to the ink as the next arrives, the block nudging up | an agent working through its steps, with each step's kind visible |
@@ -324,7 +324,7 @@ track (a straight move). `<ToggleSwitch L onAt offAt size />` the knob travels w
 a small overshoot), the track takes the accent over 6 f (its state). `<ValueSlider L keys w size format pill />` the
 thumb follows eased keys, swelling 10 % with a soft accent halo while dragged. `<SelectFrame L at left top w h tag />`
 a 2 px accent frame dragged open from its top-left corner (12 f), handles popping on 2 f apart.
-- Caution: one control changes at a time; everything else in the card stays still.
+- Caution: one control changes at a time; everything else in the card holds its state (the card keeps a slow idle).
 
 ### PhoneDrop
 A phone drops in with weight onto a lock screen (status icons, date, time, two older notices as lips, torch and camera,
@@ -515,8 +515,8 @@ on the cut a small spark of square pixels glows low on a dark ground and leads t
 - Caution: the window is the answer to the prompt, in the same product chrome.
 
 ### BackdropSwap
-A phone holds still at the centre while the pictures behind it hard-cut every five frames; the phone shifts a few
-pixels and a degree with each, and its shadow falls on every one.
+A phone holds its place at the centre while the pictures behind it hard-cut every five frames; the phone shifts a few
+pixels and a degree with each (so both sides of every cut move), and its shadow falls on every one.
 ```tsx
 <BackdropSwap at={T.world} every={5} backdrops={[{ src: 'img/...' }, { color: '#1E4E8C' }, ...]}><Wallet /></BackdropSwap>
 ```

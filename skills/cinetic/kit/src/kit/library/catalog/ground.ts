@@ -96,7 +96,7 @@ export const GROUND: LibraryEntry[] = [
     mood: ['editorial', 'calm'],
     frames: 60,
     summary: 'a full-bleed photograph pushing in slowly, thin white outline shapes drawing onto it, a re-grade that eases in on an event',
-    use: 'a photograph as the world: under glass panels, under words, with outlines that frame the subject',
+    use: 'a photograph the user gave, or a product picture, as the world: under glass interface, under words on a calm band, with outlines that frame the subject',
     caution: 'one grade for every picture of a film; a re-grade needs a reason on screen and eases over 8 f or more (a one-frame re-grade is a flash); checked on stills only (its motion not compared frame by frame)',
     reel: { film: 'library-grounds', from: 658, to: 747 },
   },
@@ -121,7 +121,7 @@ export const GROUND: LibraryEntry[] = [
     frames: 30,
     summary: 'a flat light ground with one giant word a few percent lighter than it, cropped by the frame and drifting sideways',
     use: 'the home ground of a long film whose brand word is the texture under small type',
-    caution: 'if the ghost reads before the line in front, it is too strong; checked on stills only (its motion not compared frame by frame)',
+    caution: 'a faded word behind type is a tell (type.md): only for the brand word of a long film, set in the film sans and sharp (font, italic false, blur 0; the defaults are a serif italic softened 2 px); if the ghost reads before the line in front, it is too strong; checked on stills only',
     reel: { film: 'library-grounds', from: 838, to: 927 },
   },
   {

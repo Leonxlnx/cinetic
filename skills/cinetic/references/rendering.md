@@ -41,10 +41,11 @@ preview, not from single frames.
   fails as crowded only when detail covers 35 % or more of the frame in over a quarter of its samples; the texture of
   one full-bleed photograph or footage is not counted, only the layer above it (a `picture` line says where), so the
   payoff picture stays sharp: never blur it to pass, move the text to the ground or drop what crowds it). A LOOK line names
-  every stretch over 1 s cut on 2+ sides: a resting interface line cut that long is a FIX to look at on a full-size
-  still, though the measure alone fails nothing. The coverage
-  figure is information too. Still half-seconds are named past a quarter (each hold must have something to read) and
-  fail past 40 %. `--format loop` drops the sound, ending and music lines and fails when the last
+  every stretch over 1 s cut on 2+ sides: an interface line cut on two sides is a bug at any length (look on a
+  full-size still), though the measure alone fails nothing. The coverage
+  figure is information too. Still half-seconds are named past a quarter (each hold must have something to read). It
+  fails a still run of more than 15 frames or more than 15 % of frames still
+  ([stay in motion](film-grammar.md#stay-in-motion)). `--format loop` drops the sound, ending and music lines and fails when the last
   frame does not match the first; `--format sting` has no pace gate under 8 s and lets the ending hold. Its `library`
   line counts the motion-library pieces the film's source imports and how often each is placed (a LOOK line when none,
 when a type or turn piece is placed more than twice, and when a words-led `BRIEF.md` imports no type piece). The
@@ -57,7 +58,8 @@ ending is measured from the film's `LOCKUP` or `T.lockup` frame when it has one 
 ## Safety
 
 - **One render at a time.** Never start a second render while one runs; never run renders in parallel agents.
-- **Half size while iterating**, the full-size final once, when the sheet passes the rubric.
+- **Half size while iterating**, the full-size final once, when the rubric (scored on stills, join images and strips)
+  reaches 17.
 - **Unstable GPU** (driver resets, blue screens, a laptop iGPU): render on the CPU with `CINETIC_GL=swangle`. It is slower and
   safe. If the user tells you their machine has such a rule or a wrapper for heavy jobs, use it for every render.
 - **Concurrency:** `CINETIC_CONCURRENCY` (default 2). Higher is faster and hotter; keep 1-2 on laptops. A render that

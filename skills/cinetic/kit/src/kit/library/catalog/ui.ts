@@ -371,7 +371,7 @@ export const UI: LibraryEntry[] = [
     subject: ['phone', 'photo', 'scene'],
     mood: ['bold', 'editorial'],
     frames: 35,
-    summary: 'a phone holds still at the centre while the pictures behind it hard-cut every five frames, the phone shifting a few pixels with each',
+    summary: 'a phone holds its place at the centre while the pictures behind it hard-cut every five frames, the phone shifting a few pixels with each',
     use: 'the "wherever you are" beat: one product in many places',
     caution: 'backdrops that share a colour with the screen; at most eight; no hands hold the phone, so it floats over the pictures',
     reel: { film: 'library-ui', from: 2896, to: 2945 },

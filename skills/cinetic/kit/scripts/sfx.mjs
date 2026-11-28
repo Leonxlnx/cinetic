@@ -3,10 +3,10 @@
 //
 //   node scripts/sfx.mjs roles                      the roles and how many judged sounds each has
 //   node scripts/sfx.mjs list [role] [--all]        sounds of a role (strong/plausible verdicts first; --all adds weak)
-//   node scripts/sfx.mjs get <id> [<id> ...]        download to public/sfx/<id>.<ext>; writes public/sfx/sfx.json
+//   node scripts/sfx.mjs get <id> [<id> ...]        download to public/sfx/<id>.<ext>; writes src/sfx.ts and public/sfx/sfx.json
 //                                                   ({ id: { src, leadMs, durS, title, role, licence, page } })
 //   node scripts/sfx.mjs pick <role> [n] [--seed s] get n sounds of a role, a different pick per seed (film name)
-//   node scripts/sfx.mjs shortlist [--vibe v] [--energy 3] [--bpm 100-125] [--for "ai product"]
+//   node scripts/sfx.mjs shortlist [--mood "warm, quiet"] [--vibe v] [--energy 3] [--bpm 100-125] [--for "ai product"]
 //                                                   licensed tracks measured for launch films: tempo, the second the
 //                                                   beat is going (start the bed there), energy, mood (music-shortlist.json)
 //   node scripts/sfx.mjs music <shortlist id> [--as bed]  fetch a shortlist track with its licence and credit

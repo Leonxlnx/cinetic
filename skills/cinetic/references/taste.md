@@ -39,7 +39,7 @@ Hard rules from review; each is a tell on sight. The file named after each owns 
   ([sound-design.md](sound-design.md)).
 - No stock photograph as wallpaper, no picture that fails the bar, no card or plate over a photograph, no lockup on a
   plate ([imagery](motion/imagery.md#house-rules), [cards-ui](motion/cards-ui.md#house-rules)).
-- No motion that stops dead, starts with a jerk or steps in whole pixels; no frame still for over ~0.3 s; no screen
+- No motion that stops dead, starts with a jerk or steps in whole pixels; no dead hold (limits in [stay in motion](film-grammar.md#stay-in-motion)); no screen
   full of small information at once ([stay in motion](film-grammar.md#stay-in-motion),
   [one thing](film-grammar.md#one-thing-at-a-time)).
 - Other products only as their real, current, full-colour marks or faithful rebuilds of their real screens; never a
@@ -108,7 +108,7 @@ Hard rules from review; each is a tell on sight. The file named after each owns 
     like a metronome.
 20. **Bounce and overshoot on everything,** including data, prices, progress bars and the pointer; a 360-degree logo
     spin; a bouncing CTA; a screen shake on a landing; a screen flash.
-21. **Dead holds and aimless float.** A frame frozen for a third of a second or more, a move that stops dead or starts
+21. **Dead holds and aimless float.** A frame frozen past the limit `check` enforces, a move that stops dead or starts
     with a jerk, a value stepping in whole pixels; or the opposite, a camera drifting under
     everything with no direction and no reason.
 22. **Generic transitions.** Zoom-blur, glitch, slide-wipe, spin, the same one on every cut; a token (a full stop, a
@@ -131,7 +131,7 @@ Hard rules from review; each is a tell on sight. The file named after each owns 
     one it happens to: no want, no cost, no turn, a payoff that is a statement ([story](film-grammar.md#story)).
 28. **Features as equal slides.** Identical cards ("Fast / Secure / Smart") with the same animation; every beat a fresh
     layout with nothing carried from the last; no through-line, no bookend.
-29. **Monotone or unreadable pace.** Every beat the same length; no held frame before the reveal; no rest at the end;
+29. **Monotone or unreadable pace.** Every beat the same length; no held beat before the reveal; no rest at the end;
     beats too fast to follow; one move repeated three times or more; a change of colour or mode with no reason.
 30. **The same film every time.** The same concept (one task, start to finish), the same opening (a macro pull-back, a
     prompt box being typed into), the same back half (a flood out of a button, a relay of three hosts, a wall pulled
@@ -147,9 +147,9 @@ Hard rules from review; each is a tell on sight. The file named after each owns 
 33. **A turn told, not shown.** The turn or the second turn as a headline on an empty frame; the same card's text
     swapped again and again as the join; a step that happens nowhere real.
 34. **Bugs left in.** Text cut by the frame or a mask, an overlap or overprint, an empty slab during a reflow, a
-    one-frame pop, a digit half-rolled on a held frame, a fix row closed as "accepted"; an interface line or card at
-    rest, cut by the frame on two sides for more than a second (`check`'s "cut on 2+ sides" names the seconds: each is
-    a bug to fix, not information).
+    one-frame pop, a digit half-rolled on a held frame, a fix row closed as "accepted"; an interface line or card cut
+    by the frame on two sides, at any length (`check`'s "cut on 2+ sides" names the stretches over a second: each is a
+    bug to fix, not information; shorter ones need the full-size stills).
 
 ### Overused now
 
@@ -191,7 +191,7 @@ Use one only when the brief truly asks for it.
 8. **Always in motion.** A result or a line is held until it is read, and while held it moves (a drift, a push, a
    breath); no hold with nothing to read; every exit is the next entrance. The ending is the only rest.
 9. **Type with a decision.** Resting lines sized by their word count, centred or set beside or over their picture;
-   one spectacle word giant. One or two arrival styles. At most one emphasised word or phrase a statement, in the accent; never by a second
+   one spectacle word giant. Arrivals varied, none used more than twice. At most one emphasised word or phrase a statement, in the accent; never by a second
    face, a heavier weight or a bounce (`type.md`).
 10. **Effects with a job.** The world's effect budget respected (`motion/effects.md`); glow and glass at most once a
     shot, on the accent, glows in their own hue and sized to their source; blur only on fast frames and on shapes.
@@ -221,7 +221,7 @@ change of colour with no reason.
 | a beat looks like a slide | find what the previous beat can hand it (object, word, direction, shape); rebuild the join |
 | a crossfade between two scenes | a join that carries the subject, or a hard cut on a music event (`film-grammar.md` joins) |
 | identical feature cards | turn them into chapters: hub and dive, or one artefact through every verb |
-| a still stretch (over ~10 f) | add a slow idle with a direction (a creep of 0.8 % over 20 f, a drift, a breath) if it is read; cut it if nothing is read |
+| a still stretch (9 f or more; `check` fails over 15) | add a slow idle with a direction (a creep of 0.8 % over 20 f, a drift, a breath) if it is read; cut it if nothing is read |
 | text fades in | cut on, a swap or a decode, or a masked rise; keep 2-4 f fades only inside words |
 | everything springs | springs at bounce 0, or `ease.out` / `ease.inOut` on cards and camera; keep one pop family |
 | UI unreadable or busy | one component, flat, 1.4x camera; the rest reduced to quiet shapes; or a punch-in |
@@ -254,7 +254,7 @@ film with one blocking bug open (text cut by the frame, a mask or its own box; a
 without its text; a one-frame pop; the old scene left round the new one; a clipped digit) scores 14 at most and does not
 ship, whatever its points add up to.
 
-A film can pass every point and still be forgettable. Before the final, answer three questions in one line each: which
+A film can pass every point and still be forgettable. Before the final, answer four questions in one line each: which
 frame is the poster (a crafted image, not a centred line); what is the film's one material or picture; where is its
 contrast of scale; what is the story in one sentence. If an answer is missing, the film is not ready, whatever it scores.
 
@@ -273,7 +273,7 @@ contrast of scale; what is the story in one sentence. If an answer is missing, t
 | 11 | **A story, one world** | `BEATS.md` opens with the five-line story and the concept line; the one-sentence test passes ("until", "then", "so"); the payoff is visible and an opening image returns changed; every thumbnail could only belong to this film |
 | 12 | **A first frame with an idea** | frame 0 is the concept's subject already moving (the product, the primitive, the first words, the mark); when the concept shows the product, it or its artefact is on screen by 5 s |
 | 13 | **Joins** | on the whole-move join images, every cell clean; the join test in `BEATS.md` passes: every join carries the subject (a sixth of the frame or more) or is an allowed hard cut on a beat; the frame is covered at every switch; every change of ground, mode or accent has a story reason |
-| 14 | **Smooth and always moving** | on the motion pass's strips and `frames.mjs motion`, not the sheet: no pop, no dead stop, no hard start from rest, no stepping of position or scale, nothing still over ~10 f before the ending; every join one move; every action shows before, during and after |
+| 14 | **Smooth and always moving** | on the motion pass's strips and `frames.mjs motion`, not the sheet: no pop, no dead stop, no hard start from rest, no stepping of position or scale, no still run `check` fails (over 15 f) and none of the 9-15 f runs it names left unread; every join one move; every action shows before, during and after |
 | 15 | **Strong moves, varied** | against the Devices block: a designed move every 3-4 s, linked; plain text rises or fades on two lines at most; no entrance more than twice; 1 overshoot family, no flash, no shake; at most 1 flood |
 | 16 | **Pace** | every hold read and moving; mean beat 1.4-2.2 s; one thing first, then more, then many; a viewer can say what happened in every beat |
 | 17 | **Composition variety** | no two adjacent beats share a composition; at least 4 compositions; the ground changes only with the story |
@@ -328,7 +328,7 @@ After it scores 17 or more, run at least two polish passes:
    composition's image, which is what the code meant and not what the encode shipped.
 3. Do every fix, re-render, and re-check each one on its strip or join image; tick it off.
 4. Run the pass again with a fresh list. Two passes is the minimum; stop when a pass finds fewer than five real faults.
-   Each pass lists the bugs it found by frame (`f618-623 overprint at the dive; f782-786 claim outside the plate`),
+   Each pass lists the bugs it found by frame (`f618-623 overprint at the dive; f782-786 claim past the safe margin`),
    never as a count ("3 bugs fixed").
 
 **Joins are judged at real size, every frame.** A small strip hides what breaks a join, and a fix made on one frame

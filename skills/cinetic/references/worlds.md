@@ -119,8 +119,8 @@ changes and no cursor; selection boxes with corner handles; a mosaic bookend.
 
 **Fits:** image, design, publishing, creative tools; products whose output is pictures or pages.
 **Ground:** clean white (#FFFFFF) or, for a print or paper product, an off-white paper (#F2F1EE), flat, no grain and no
-darkened edges, sometimes a 1 px grey graph grid (120 px pitch); full-bleed
-photographs as the alternate ground.
+darkened edges, sometimes a 1 px grey graph grid (120 px pitch); the product's own pictures, full bleed, as the
+alternate ground when they pass the picture bar.
 **Palette:** paper, near-black ink #0D0D0D, white type on pictures; **one accent saved for the tool grammar** (handles, corner
 squares, the brand tile): e.g. vermilion #E4472B or ultramarine #2A3FD6. The pictures carry all other colour.
 **Type:** statements in one sans (`inter` 430-500), centred, sentence case. When the brand's own voice is a serif (a
@@ -128,31 +128,33 @@ publisher, a magazine), that serif sets every statement instead: `serif` (Newsre
 serif, tracking 0 to -0.01 em, never mixed with sans statements. Large and confident, no shadows, no outlines, no glow;
 optional letterpress speckle on a serif; `inter` for UI and for labels, sentence case.
 **Materials:** bare picture cards (no radius, border or shadow) on a grid; cut-outs used for layer order; print mock-ups.
-**Motion character:** graphics on a **stepped clock** (on twos, 15 fps) with hard expo-out steps, nothing fades, scale changes
-are cuts; photographs and footage on every frame; hard cuts every 9-30 f; slow pushes as breaths.
+**Motion character:** crisp and decisive: short orthogonal moves that land on a `settle` tail (half-life 2-3 f), nothing
+fades, scale changes are cuts on the beat with both sides moving; glyph rerolls may run on a stepped clock, positions
+never; slow pushes as breaths.
 **Signature devices:** tracking snap with corner markers (`text.md`); orthogonal-step grid with tint develop (`imagery.md` 2.1,
 3.1); glyph reroll and font cycle for names; staircase settle over a picture montage; type hides the swap; canvas return
 (`turns.md` 8.5); letters as windows; outpaint window; selection handles that blink, stretch and converge into the mark;
 before/after by cut on one picture; the artefact in the world (pull-backs on print and screens).
 **Effects:** grain on photographs only, never on the paper; a texture montage once if the claim needs it. No glow, no motion blur.
-**Kit:** `Ground`, `GridLines`, `Photo`, `Words` (cut/rise), `Scramble`, `Camera`, `CornerMarks`; stepped clock `Math.floor(frame / 2) * 2`.
+**Kit:** `Ground`, `GridLines`, `Photo`, `Words` (cut/rise), `Scramble`, `Camera`, `CornerMarks`, `chain`.
 
 ```tsx
-const fe = Math.floor(frame / 2) * 2;     // graphics on twos
 <Ground color="#FFFFFF">
   <GridLines size={120} color="#DADDE3" />
-  <Photo src="img/still-04.jpg" x={keys(fe, [[0, 1500], [4, 1380], [12, 1380], [16, 1260]], ease.snap)} y={300} w={360} h={450} />
+  {/* the product's own picture, two crisp moves as one gesture, never stepped */}
+  <Photo src="img/product-04.jpg" x={chain(frame, [[0, 1500], [6, 1380], [12, 1380], [18, 1260]])} y={300} w={360} h={450} />
 </Ground>
 ```
-**Avoid:** rounded shadowed photo cards, glass, gradients in UI, tweens on graphics, a different grade per feature.
+**Avoid:** rounded shadowed photo cards, glass, gradients in UI, soft floaty tweens on graphics, a stepped position, a
+different grade per feature.
 
 ---
 
 ## 3. Paper collage
 
 **Fits:** brand identities, creative and "idea" products, manifestos; when the film should feel handmade.
-**Ground:** white or cream paper with its real fibre, flat; a flat deep tone of the accent for the mark; photographic
-layers torn over each other.
+**Ground:** white or cream paper with its real fibre, flat; a flat deep tone of the accent for the mark; torn paper layers
+over each other (photographic only with the user's or the product's pictures).
 **Palette:** white #FFFFFF (cream #F8F1E6 only for a paper or print product), ink #16181C, one accent (e.g. ultramarine
 #2A3FD6 or vermilion #E4412B); all imagery through **one**
 gradient-map grade derived from the palette (`imagery.md` 1).
@@ -192,7 +194,7 @@ ease-out arrivals with no overshoot; depth of field as recency.
 thinking-to-answer morph; caret-follow camera; button-to-window; iris under the UI; type fly-through; mark drawn during its own
 entrance. A recurring shape (the circle) as the through-line.
 **Effects:** depth of field, one click glow bloom, one rim light; motion blur on fast moves only. No grain, no vignette.
-**Kit:** `Photo`, `Ground`, `Card`, `Bubble`, `Thinking`, `InputBar`, `Cursor`, `Words`, `Typing`, `Camera`, the library's UI
+**Kit:** `Photo`, `Ground`, `Card`, `Bubble`, `Thinking`, `InputBar`, `Cursor` (on a phone, `Pointer touch`), `Words`, `Typing`, `Camera`, the library's UI
 pieces, `lightUI` with the brand accent.
 
 ```tsx
@@ -238,7 +240,10 @@ neon on black, text on every beat.
 ## 6. Footage + glass UI
 
 **Fits:** consumer and health/finance apps with a human story; products used in real life.
-**Ground:** real footage or aerial plates (low saturation, always slowly pushing), shown through masks and glass; flat
+**Only with footage the user gave or the product's own** that passes the
+[picture bar](motion/imagery.md#house-rules); without it, choose another world. The glass is real interface, never a
+plate for a line.
+**Ground:** that footage (low saturation, always slowly pushing), shown through masks and glass; flat
 deep or pale grounds between plates; the ground changes when the story changes place.
 **Palette:** a deep tone of the accent (e.g. #0A1622) and a bright pale (#F6F7F9) as the two poles; one accent family
 (e.g. cyan #22B8E8 -> deep teal-blue #0E6E9C, or amber when the product's object is warm); colour temperature contrast
@@ -255,7 +260,7 @@ headline; carried word; staged push wipe from footage to product; light flood cu
 that develop; selection by growth; white fly-through panel; manifesto line built word by word; wordmark slam and swell.
 **Effects:** backdrop blur scaled to slab size, lit rims, text glow on hero words, sheens on the beat, motion blur on fast
 frames. No flash, no vignette; grain only on the footage.
-**Kit:** `OffthreadVideo`, `Photo`, `Card glass`, `InputBar`, `Cursor`, `Words`, `Swap`, `Iris`, `Push`, `Sheen`.
+**Kit:** `OffthreadVideo`, `Photo`, `Card glass`, `InputBar`, `Cursor` (on a phone, `Pointer touch`), `Words`, `Swap`, `Iris`, `Push`, `Sheen`.
 **Avoid:** footage as wallpaper; glass over flat colour; a flat screenshot sliding in; gradient fields as grounds.
 
 ---
@@ -357,7 +362,7 @@ peak, entries already moving; one camera over one UI canvas in the demo act.
 snap; skeleton cascade resolved by a colour band; send glow; lens-only demo with hidden cuts; state grade on footage; a
 scale-out finale; a hard music stop and silent end card.
 **Effects:** none: no grain, no bloom, no vignette, no motion blur. Light effects are colour (ramps, warm pulses, shimmers).
-**Kit:** `Ground`, `Words` (cut + `born`), `Swap`, `Typing`, `InputBar`, `Cursor`, `Camera`, `lightUI` with soft shadows.
+**Kit:** `Ground`, `Words` (cut + `born`), `Swap`, `Typing`, `InputBar`, `Cursor` (on a phone, `Pointer touch`), `Camera`, `lightUI` with soft shadows.
 
 ```tsx
 <Ground color="#FFFFFF">
@@ -386,7 +391,7 @@ a duotone that develops to true colour; a slow push carried across a hard cut.
 ## 12. Daylight set
 
 **Fits:** consumer AI, assistants, playful products, brand films that want warmth without paper.
-**Ground:** a three.js diorama under overcast light (`GLView` + `softStudio`): a flat pale backdrop or a sky photograph
+**Ground:** a three.js diorama under overcast light (`GLView` + `softStudio`): a flat pale backdrop or a soft sky built in code
 behind, a floor that catches soft contact shadows.
 **Palette:** pastel neighbours of the accent (sky, peach, rose; never lilac or mint for an invented brand) on white.
 **Type:** one soft sans, centred above or beside the object with air; never on the object.
@@ -441,15 +446,15 @@ A world sets the rules; a look is one way to make it. Pick one look for a film, 
   the product's UI beside or inside it, never a card over a photograph;
 - a clay or plush hero in soft key light and shallow focus;
 - glossy app tiles standing on a frosted shelf, shallow focus, cool grey ground;
-- graded photographs of people at work that pass the picture bar, the line on a clean band of the picture;
+- the user's own photographs of people at work, graded, past the picture bar, the line on a clean band of the picture;
 - a flat deep navy with glossy outlined pills and a lit 3D object as the only light;
-- cool white falling into a saturated brand colour, white glass cards on it;
+- cool white falling into a saturated brand colour, the product's interface as white glass cards on it;
 - hairline construction: thin circles and guides as structure behind a short line;
 - liquid light bands: reflective stripes in one hue family, cropped giant type over them;
 - a field of small squares in tints of the accent, filling and draining;
 - a wall of identical soft objects in perspective with depth of field, one pointer among them;
 - a calm architectural room where the product's screen lives;
-- engraving and photo collage on white, recoloured into the palette;
+- public-domain engraving collage on white (photographs only the user's), recoloured into the palette;
 - the product's own surface (a paper rota, a bake list, a code diff) filling the frame, detailed and real;
 - a highlight block in the accent behind one word, slightly offset;
 - the mark assembled from small solids in 3D, then flattened into the 2D glyph.
@@ -466,10 +471,10 @@ A world sets the rules; a look is one way to make it. Pick one look for a film, 
 | brand identity reel, creative AI | paper collage | pixel and dither |
 | personal assistant, consumer AI | soft air | footage + glass UI |
 | flagship platform brand film | dark stage, light and glass | block grid |
-| app with a human use case | footage + glass UI | soft air |
+| app with a human use case | footage + glass UI (with the user's footage) | soft air |
 | abstract AI (agents, indexing) | ink on white | block grid |
 | bold short social launch | Swiss poster type | brand field |
-| consumer, travel, food, place; brand film | photo plates | daylight set |
+| consumer, travel, food, place; brand film | photo plates (with the user's or the product's pictures) | daylight set |
 | playful consumer AI, assistants | daylight set | soft air |
 | a supplied brand with one strong colour | brand field | ink on white |
 | planning, education, notes | marker on grid | ink on white |

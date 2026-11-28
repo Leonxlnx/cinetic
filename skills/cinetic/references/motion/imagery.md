@@ -1,7 +1,7 @@
 # Imagery: photos, footage and 3D renders
 
-Pictures in a launch film are either **the product's content** (what it makes, finds, sells, edits) or **the world it lives
-in**. In both cases they must look like one shoot, and they must be *acted on*: masked, pushed, developed, selected,
+Pictures in a launch film are either **the product's content** (what it makes, finds, sells, edits) or **pictures the
+user gave** (their product, their people, their place). In both cases they must look like one shoot, and they must be *acted on*: masked, pushed, developed, selected,
 re-coloured by state. Random stock with mixed grades, used as wallpaper behind text, is the clearest template tell there is.
 All numbers at 30 fps, 1920x1080.
 
@@ -30,14 +30,15 @@ Kit: Remotion's `Img`, `OffthreadVideo`, `staticFile`; `Camera`, `At` (camera); 
    claimed by the brand) and the true colour always means "found / real / done".
 5. **Pictures are acted on.** Masked by an iris, pushed by a panel, shrunk back into a card, developed, selected. A
    full-bleed photo with nothing happening in it always pushes slowly and holds only while something on it is read.
-6. **Licences.** Use the user's own pictures, licensed stock or public-domain material, listed in `CREDITS.md`; never
+6. **Licences.** Use the user's own pictures, or licensed or public-domain pictures only when they are the product's
+   content and pass rule 9, listed in `CREDITS.md`; never
    generated images, never pictures lifted from someone else's film.
 7. **One texture family.** A film may carry one material across its pictures and joins (grain on photographs, halftone,
    dither, a lens, tracking marks, paper), used as transition material at least twice; never on a flat colour ground,
    never several families in one film.
-8. **The payoff picture stays sharp.** Footage or a photograph under a card or a claim gets a scrim (a 20-40 % ink
-   or ground-colour layer, or a soft dark band under the card) or a dim of the picture, never a blur; the picture the
-   film ends on is sharp. Blur on a picture is for a fast move or a short rack focus, never a held state. No card,
+8. **The payoff picture stays sharp.** Footage or a photograph under real interface may take a scrim (a 20-40 % ink
+   or ground-colour layer) so the interface reads, never a blur; a claim never sits on a dimmed picture; the picture
+   the film ends on is sharp. Blur on a picture is for a fast move or a short rack focus, never a held state. No card,
    plate or pill is laid on a picture to make text readable: the text moves to the ground, or the picture is cropped to
    a calm band ([cards-ui.md](cards-ui.md#house-rules)).
 9. **The bar a fetched picture must pass.** Look at it at full size (`frames.mjs still --frame N --full`) and keep it
@@ -132,8 +133,9 @@ const s = start + i * 2, k = mix(at(frame, s, 6, ease.out), 4 / 420, 1);   // a 
 ### 3.1 Bare picture cards
 Sharp rectangles, **no radius, no border, no shadow**, 240-480 px, square or portrait, each a tight crop of one strong colour
 shape, aligned to a 120 px grid on paper with paper breathing between them. They read like prints without a frame: pure picture.
-Motion in **orthogonal steps only** (purely horizontal or vertical, 40-200 px per step, each step 4 f with most of it on the
-first frame, holds of 4-10 f), staggered so 1-2 things move at a time; cards above words, so a word slides out from under a
+Motion in **orthogonal moves only** (purely horizontal or vertical, 40-200 px per move, each a short `settle` with a
+half-life of 2-3 f so it lands on a tail, never a stepped position; between moves a `live` idle), staggered so 1-2
+things move at a time; cards above words, so a word slides out from under a
 photo. Pair with the tint develop (2.1) and a silent bed with a click per step.
 **Avoid:** rounded, bordered, shadowed "UI cards" for photographs on paper.
 
@@ -164,12 +166,13 @@ one to pass carries the cut.
 ## 4. Collage and paper
 
 ### 4.1 Paper build (stop-motion collage)
-On white or paper, 6-10 cut-out pieces (recoloured public-domain engravings, one 3D render, one tinted photo with a torn edge)
+On white or paper, 6-10 cut-out pieces (recoloured public-domain engravings, one 3D render, one tinted photo with a torn edge when the film has the user's or the product's photographs)
 and one label strip with a short line in the film's voice that is always on top. Clock: hold 5 f (6 fps). Every piece **cuts on** (never
 slides or fades), several in 2-3 steps (a torn fragment first, the whole a step later), 1-2 steps apart; the label adds a word
 every 2-3 steps and re-centres by a cut; on 3-4 steps every piece jitters by a seeded 1-2 px (re-placement wobble); a drawn
-line or contour "boils" (redrawn with a 2-4 px drift each step). The camera runs smooth on every frame: 0.96 -> 1.0 linear,
-then 1.0 -> 1.27 sine in-out over 30 f, hold, ease-in back to ~1.08 into the exit.
+line or contour "boils" (redrawn with a 2-4 px drift each step). The camera runs smooth on every frame: 0.96 -> 1.0 on a slow `live` push,
+then 1.0 -> 1.27 with `logMix` on `ease.expoInOut` over 30 f, a creeping hold, `ease.expoIn` back to ~1.08 into the exit.
+The stepped clock is the collage's own look (paper cut-outs placed by hand); it never moves the camera.
 
 ```tsx
 const step = Math.floor(frame / 5);
@@ -192,7 +195,7 @@ paper, or a band of edge dots between photos. Text lives on each layer (`text.md
 Cut-outs exist to change **layer order or ground**, never as stickers.
 - **Type behind the subject:** a word in front of a person until the "mask" moment, then between the backdrop and the cut-out.
 - **Product locked, world swaps:** the product cut-out stays at frame centre with a slow push (1.00 -> 1.12, every frame)
-  while the ground cuts every 7-8 f (white with a soft drop shadow, then 2-3 saturated textures shot from above); a giant word
+  while the ground cuts every 7-8 f (white with a soft drop shadow, then 2-3 saturated grounds built in code, or the brand's own photographs); a giant word
   rises in front to hide a variant swap (`text.md` 7.4). With host products behind the artefact instead of textures, this
   is the object-lock swap (`cards-ui.md`).
 - **Before / after on one picture:** pose fixed, one property changed by a cut (backdrop, garment colour, a label line). The
@@ -232,10 +235,14 @@ Cut-outs exist to change **layer order or ground**, never as stickers.
 
 ## 8. Full-bleed stills and footage
 
+Everything in this section needs pictures the user gave or the product's own content, past the bar in house rule 9;
+without them, build the beat in code.
+
 ### 8.1 Stills as type grounds
-For a fast list hook: one word per still, 12-18 f each, hard cuts on hits. Choose stills with **one strong mass** (an arc, a
-disc, a horizon) and a quiet horizontal band (y ~420-660) where the word sits; repeat a shape across the set (every still has
-an arc) for continuity between unrelated images. The stills are static; only the grain lives.
+For a fast list hook built from the user's or the product's pictures: one word per still, 12-18 f each, hard cuts on
+hits with both sides moving. Choose stills with **one strong mass** (an arc, a disc, a horizon) and a quiet horizontal
+band (y ~420-660) where the word sits; repeat a shape across the set (every still has an arc) for continuity. Every
+still pushes slowly; none is static.
 
 ### 8.2 Footage, acted on
 Real footage is used by the product: seen through an iris, pushed off by the product's panel (the human moment hands the
@@ -257,9 +264,11 @@ in contrasting palettes so the brand art pops, one live element (a passer-by cro
 **Avoid:** drop-shadowed floating devices; fast moves on mock-ups.
 
 ### 8.4 Texture montage
-When a claim needs energy rather than content (precision, imagination), pictures can become texture: blurred 15-30 px,
-gradient-mapped, with a chromatic offset (red +20-30 px right, blue -20-30 px left), horizontal smears on 10-25 % of rows, grain,
-cut every 2-8 f under a **static** title that stays readable throughout. Once in a film, never as a house look.
+When a claim needs energy rather than content (precision, imagination), the film's own pictures can pass as texture:
+gradient-mapped, with a chromatic offset (red +20-30 px right, blue -20-30 px left), horizontal smears on 10-25 % of
+rows, cut every 2-8 f under a title that stays sharp and readable throughout and creeps slowly. The pictures are moving
+fast, never a held blurred picture (SKILL.md: never a blurred picture as a ground). Once in a film, never as a house
+look.
 
 ---
 
@@ -279,7 +288,7 @@ cut every 2-8 f under a **static** title that stays readable throughout. Once in
 ```
 - **Designer glass** for light worlds: per-face tints (2-3 related hues at alpha 0.45-0.7), white 2 px edges, a fresnel-strong
   rim, an interior light (the hero's halo inside), no refraction. A frost-to-clear state change is a beat (`effects.md`).
-- **One soft organic thing** inside a hard system world (a blurred photo texture inside a glass object) stands for the human or
+- **One soft organic thing** inside a hard system world (a soft gradient or a moving light inside a glass object) stands for the human or
   intelligent part.
 - **A 3D render inside UI** (a model in an app card) is app content: it turns once (e.g. 180 deg in 14 f ease-in-out), then
   serves the interaction.

@@ -1,6 +1,6 @@
 ---
 name: cinetic
-description: Direct, build and render premium motion films from code - product launch films, feature and update videos, teasers, social clips, UI walkthroughs, kinetic type, logo reveals. Use this whenever the user wants any video, animation, motion graphic or animated demo made with Remotion or React, or asks to storyboard, animate, score, render, polish or critique one - even if they only say "make a video about X", "animate this feature" or "we need a launch clip". It brings a director's method (beats, one world, carried transitions, type as an event), a Remotion kit that looks premium by default (kinetic type, 3D camera, product UI, real logos and icons, transitions, sound locked to picture), real licensed sound effects and music, and a fast storyboard-render-review loop.
+description: Direct, build and render premium motion films from code - product launch films, feature and update videos, teasers, social clips, UI walkthroughs, kinetic type, logo reveals. Use this whenever the user wants any video, animation, motion graphic or animated demo made with Remotion or React, or asks to storyboard, animate, score, render, polish or critique one - even if they only say "make a video about X", "animate this feature" or "we need a launch clip". It brings a director's method (beats, one world, carried transitions, type as an event), a Remotion kit and a motion library of finished moves picked by job (kinetic type, 3D camera, product UI, real logos, transitions, sound locked to picture), licensed sound and music, and tools that measure every frame.
 license: MIT
 compatibility: Node 22+, ffmpeg 6+, Chromium (Remotion downloads its own headless shell). Remotion 4. Works offline after install except for fetching sounds, music and logos.
 ---
@@ -37,9 +37,9 @@ Hold every film to all nine.
 5. **Always in motion, smooth.** Nothing on screen is ever fully still and nothing stops dead: every landing has a long
    tail, every hold a slow idle (`live`, `drift`). Curves are exponential: an entrance arrives fast and
    settles long, a move from rest eases in and out, a zoom moves by a constant ratio (`logScale`), two moves in a row
-   meet without a corner. No linear ramp, no stepped position, no one-frame pop, no overshoot on data; still frames
-   for over ~0.3 s are a bug. Motion is judged on every frame, never on a sheet
-   ([smooth motion](references/motion/entrances.md#smooth-motion)).
+   meet without a corner. No linear ramp, no stepped position, no one-frame pop, no overshoot on data; `check` fails
+   over 15 still frames in a row or 15 % still ([limits](references/film-grammar.md#stay-in-motion)). Motion is judged
+   on every frame, never on a sheet ([smooth motion](references/motion/entrances.md#smooth-motion)).
 6. **Type is an event, set clean.** One sans voice (`fonts.inter` unless the brand has its own), sentence case, weight
    430-550, sized by word count (84-100 px for 5-6 words, 110-150 px for 3-4, 160-240 px for 1-2, one spectacle size of
    280-700 px a film, optional when UI or photographs lead). 2-6 words at once, one line on screen at a time, over its
@@ -65,8 +65,8 @@ Read [taste.md](references/taste.md) once in a film: the never list, the tells, 
 
 ## The default path
 
-A launch film runs 30-45 s by default and may run 60 s; 15-20 s only for teasers, updates and stings or when the user
-asks (other formats: [formats.md](references/formats.md)). Do the steps in order; do not skip the story or the
+A launch film runs 30-45 s by default and may run 60 s; shorter only when the user asks or the format is shorter
+(teasers, updates, stings: lengths in [formats.md](references/formats.md)). Do the steps in order; do not skip the story or the
 storyboard.
 
 **1. Project.** `node <skill>/kit/scripts/new-film.mjs <folder> --name "<Product>"` creates a Remotion project with the
@@ -145,10 +145,10 @@ reworked until smooth and satisfying; "it passes" is not a reason to stop. Then 
 [polish loop](references/taste.md#5-the-polish-loop): up to ten real fixes in `BEATS.md`, each re-checked; tick eight
 of the ten effort marks.
 
-**10. Sound.** `node scripts/sfx.mjs roles`, `node scripts/sfx.mjs list <role>`, `node scripts/sfx.mjs get <id> ...` fetches
+**10. Sound.** `node scripts/sfx.mjs roles`, then `list <role>` and `get <id> ...` fetches
 judged, licensed recordings into `public/sfx` and writes `src/sfx.ts`; place them with `<Cues>` on the same `T` frames as
 the picture. Music: pick a licensed track for this film's world, never one reused from a worked example
-([assets.md](references/assets.md#6-music); `sfx.mjs shortlist --mood "<its world>"`), fetch it with `sfx.mjs music`, then `sfx.mjs fit <track> --hit <frame> --len <frames>` gives the
+([assets.md](references/assets.md#6-music); `sfx.mjs shortlist --mood "<its world>"`), fetch it with `sfx.mjs music`, then `sfx.mjs fit <file> --hit <frame> --len <frames>` gives the
 start that lands the film's main hit on a beat where the music lifts (for a bed that enters late, `--enter <frame>` with
 the `<Music enterAt>` frame). Duck it under the big hits, let it ring out under the end card.
 
@@ -168,8 +168,8 @@ Import everything from `src/kit` (`import { Words, Camera, ease, at } from '../.
 |---|---|
 | library (first) | finished type moves, turns, effects, camera moves, product UI, host screens, objects and marks, grounds and design presets: find one with `frames.mjs library --category turn --purpose join` (also `--subject`, `--mood`), see it with `library --strip <Name>`; a reel a category (`--film library-turns`, `library-fx`, ...): [library.md](references/library.md) |
 | timing | `at(frame, start, dur, ease.out)` -> 0..1, `mix(p, a, b)`, `springAt(frame, fps, start, springs.card)`, `stagger(i)`, `accel()` for exits, `creep()` for holds, `keys()` for keyframes, `logScale()` for zooms |
-| curves | `ease.out` (arrive), `ease.soft` (heavy arrive), `ease.snap` (UI pop), `ease.inOut` / `ease.glide` (travel), `ease.in` (leave), `ease.back` (land with weight) |
-| type | `<Words text arrive="rise\|blur\|scale\|drop\|slide\|flip\|cut" by="word\|char\|line" born accent leaveAt times>`, `<Build words times>` (append with a re-centre jump), `<Swap items>`, `<SlotLine>`, `useGlyphBox()`, `<Typing>` (believable speed), `<Scramble>`, `<Odometer>` (sharp digits), `<Marker>`, `<Output>` (the result giant, then into the UI) |
+| curves | `approach` (arrive), `settle` (from rest), `ease.expoIn` (leave), `chain`, `follow`, `live` (hold), `logMix` (zoom) |
+| type | `<Words text arrive="rise\|blur\|scale\|drop\|slide\|flip\|cut" by="word\|char\|line" born accent leaveAt times>`, `<Build words times>` (append, the line re-centres with a glide), `<Swap items>`, `<SlotLine>`, `useGlyphBox()`, `<Typing>` (believable speed), `<Scramble>`, `<Odometer>` (sharp digits), `<Marker>`, `<Output>` (the result giant, then into the UI) |
 | camera | `<Camera keys={[{f, x, y, zoom, rx, ry, rz}]}>` (a 3D stage), `<At x y z rx ry>` places things in it, `fillZoom()`, `drift()` |
 | world | `<Ground>` (flat by default), `<GridLines>`, `<CornerMarks>`, `<Box bevel material>` (a CSS 3D block), `<DepthStack>`, `<Defocus>` (depth of field for shapes), `softShadow()`, `<Beam>` / `<Pool>`, `<GlassPanel>`, `<Glow>`, `<Sheen>`, `<Grain>` (photographs only) |
 | product UI | `<Card>`, `<Window>`, `<InputBar>`, `<Bubble>`, `<ChatStack>`, `<Thinking>`, `<Row>`, `<Chip>`, `<Toast>`, `<Terminal>`, `<Relay>` + `<PartnerSurface>`, `<Progress>`, `<Spinner>`, `<StatePill>`, `<Wall>`, `<Button pressAt>`, `<Avatar>`, `<Cursor keys clicks exitAt>`, `focusStyles()`, `useArrive()` |
@@ -179,10 +179,10 @@ Import everything from `src/kit` (`import { Words, Camera, ease, at } from '../.
 | marks | `<Brand name="github">` (the real full-colour mark), `<BrandTile>`, `<AppIcon>` (an icon tile with depth), `<Icon name="Calendar">` (Lucide) |
 | sound | `<Cues cues={[{ at, ...sfx['mixkit-3124'], volume }]}>`, `<Music src startFrom enterAt duck breaths>`, `db()`, `beats(bpm)` |
 
-**Worked examples.** `kit/src/films/brief`, `forge`, `fieldnote`, `lumen` and `inkwell` show how the kit is used (one
-timeline `T` per film, `Cues` on the same frames, typing, a pointer, a dive, letters as windows, a 3D prism). Read them
-for how the kit is used, not as a standard (they are below the bar). Never copy their content, order, palettes, marks
-or lockups.
+**Worked examples.** `kit/src/films/brief`, `forge`, `fieldnote`, `lumen` and `inkwell` predate today's rules: read
+them only for how the kit is wired (one `T`, `Cues` on its frames; `brief`'s pointer, `forge`'s dive into a face,
+`fieldnote`'s letters as windows, `lumen`'s 3D prism). Never take their typing bursts, `shake`, `Flash`, moves by
+`left`/`top`, repeated entrances, hard cuts or pictures; never copy their content, order, palettes, marks or lockups.
 
 ## Hard rules
 
@@ -193,7 +193,7 @@ Each rule's detail and numbers live in the linked section; read it when the rule
   a handwriting font by default, a beat too fast to follow, a move repeated more than twice, colour without meaning
   ([the never list](references/taste.md#never)).
 - **Never linear motion** (a loop's constant cycle aside), never a cross-fade or an empty frame between scenes, never
-  still for more than ~0.3 s ([stay in motion](references/film-grammar.md#stay-in-motion)).
+  a dead hold ([stay in motion](references/film-grammar.md#stay-in-motion)).
 - **Frame 0 is never empty and already moving**; never a static title card ([openings](references/film-grammar.md#openings)).
 - **The join test before the final:** every join listed with what it carries; nothing carried means a hard cut on a
   beat; the frame fully covered at the switch; a story reason for every change of ground, mode or accent
@@ -225,7 +225,7 @@ Each rule's detail and numbers live in the linked section; read it when the rule
 - **Light, material and depth:** two planes moving at different rates in every beat, one light direction, soft rounded
   3D, one texture family; the product sits on a surface in light and the opening's place returns
   ([depth](references/worlds.md#depth-and-the-world-all-worlds)).
-- **Clean grounds:** a flat clean colour or a bold designed scene (a picture only by quality 8); no vignette, no grain
+- **Clean grounds:** a flat clean colour or a bold designed scene (a picture only past the picture bar); no vignette, no grain
   on a flat ground, never dimmed UI as a ground, never a blurred picture
   ([palette rules](references/worlds.md#palette-rules-all-worlds) 8).
 - **No card that is not needed:** never a plate or pill to make text readable over a picture, never the lockup on a
@@ -234,8 +234,8 @@ Each rule's detail and numbers live in the linked section; read it when the rule
   serif rarely ([type.md](references/type.md#11-no-eyebrows-no-kickers)).
 - **Real marks only;** the product's own mark has an idea, never two or three primitive rectangles
   ([lockups](references/film-grammar.md#lockups), [logos](references/motion/entrances.md#57-real-third-party-logos)).
-- **No generated images, no stock wallpaper;** licensed sound, pictures only by quality 8; every external file is
-  listed in `CREDITS.md` ([assets.md](references/assets.md#4-photos-and-footage)).
+- **No generated images, no stock wallpaper;** licensed sound, pictures only past the bar; every external file is
+  listed in `CREDITS.md` ([picture bar](references/motion/imagery.md#house-rules) 9).
 - **Invented palettes:** no purple, no green, no purple-to-blue gradient; the accent's hue from the product's own object
   (three candidates in `BRIEF.md`) on a tenth of the frame or less; light ground #FFFFFF to #F4F5F7, dark ground a deep
   tone of the accent's hue ([palette rules](references/worlds.md#palette-rules-all-worlds)).
@@ -252,6 +252,6 @@ Each rule's detail and numbers live in the linked section; read it when the rule
 - **Vertical (9:16) or square:** re-lay out, never crop: compositions stack vertically, type wraps to 2-3 words a line,
   the camera moves vertically. Keep type and the subject out of the top 12 % and the bottom 20 % (the platform's own UI
   sits there), and fit giant type to the width: a key word is never cut off by the frame edge. Give the film its size in `src/films.ts` (`width: 1080, height: 1920`); the sheet and
-  `check` follow it. `fillZoom`, `diveZoom` and `toScreen` take the frame size as their last arguments.
+  `check` follow it. `fillZoom` and `diveZoom` take the frame size as their last arguments, `toScreen` as `{ frameW, frameH }`.
 - **Critique of an existing video:** `frames.mjs check <video>` for the measures, `frames.mjs strip <video> --at ...` for
   moments, then score with [taste.md](references/taste.md).
